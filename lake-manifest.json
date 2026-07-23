@@ -1,0 +1,6 @@
+{"version": "1.2.0",
+ "packagesDir": ".lake/packages",
+ "packages": [],
+ "name": "«bpmn-lean-experiment»",
+ "lakeDir": ".lake",
+ "fixedToolchain": false}

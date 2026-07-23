@@ -1,0 +1,18 @@
+/.lake
+/.uv-cache
+/node_modules
+/dist
+/coverage
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# OMG permits use of BPMN 2.0.2 to build software, but the full converted
+# specification is not a redistributable project artifact. Keep the downloaded
+# source corpus local and track only our provenance, hashes, and original digest.
+/docs/reference/bpmn-2.0.2/BPMN-2.0.2.pdf
+/docs/reference/bpmn-2.0.2/BPMN-2.0.2.md
+/docs/reference/bpmn-2.0.2/BPMN-2_0_2_images/
+/docs/reference/bpmn-2.0.2/machine-readable/
+/docs/reference/bpmn-2.0.2/examples/

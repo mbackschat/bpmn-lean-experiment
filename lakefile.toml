@@ -1,0 +1,11 @@
+name = "bpmn-lean-experiment"
+version = "0.1.0"
+defaultTargets = ["BpmnSemantics"]
+testDriver = "checkConformance"
+
+[[lean_lib]]
+name = "BpmnSemantics"
+
+[[lean_exe]]
+name = "checkConformance"
+root = "BpmnSemantics.ConformanceMain"
