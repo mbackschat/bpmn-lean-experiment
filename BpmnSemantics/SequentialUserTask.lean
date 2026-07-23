@@ -236,7 +236,7 @@ private def executeStimuli (closureLimit : Nat) (definition : Model) :
             | none =>
                 { outcome := .harnessFailure
                   state := result.state
-                  trace := [commandObservation] }
+                  trace := [] }
             | some snapshot =>
                 let rest := executeStimuli closureLimit definition result.state remaining
                 { outcome := rest.outcome
