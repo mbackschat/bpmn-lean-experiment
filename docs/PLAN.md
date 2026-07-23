@@ -57,7 +57,7 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 - Current package: M0.3 is implemented; M0.4 pure TypeScript reducer is next.
 - Last verified commands: `./scripts/verify.sh`, `lake build checkConformance`, `lake exe checkConformance`, `lake build checkSemanticRepresentationSpike`, and `lake exe checkSemanticRepresentationSpike`.
 - Current state: the content-addressed BPMN fixture, draft spike profile, calibrated CIB trace, typed Java protocol, repeated embedded CIB execution, production Lean interpreter, lifecycle proofs, diagnostic PVM projection, cleanup checks, and component timings are green.
-- Next implementation target: select and obtain approval for exact Node and pnpm versions, read the required JavaScript/TypeScript long-running-command guidance, then add the smallest failing reducer test against the independently written calibrated trace.
+- Next implementation target: obtain approval for the proposed M0.4 dependency set—Homebrew Node `24.18.0`, Homebrew pnpm `11.17.0`, and development-only `typescript@7.0.2`; then install exactly that set and add the smallest failing reducer test against the independently written calibrated trace using Node's built-in test runner.
 - M0.2 calibrated result: deployment and both commands commit; start reaches one `UserTask_Approve` wait with multiplicity one and enables its completion stimulus; completion ends `Instance_1`; logical time remains zero.
 - M0.2 diagnostic result: ordered PVM topology matches the source sequence, ordinary flow activities have no PVM event scope, and the None End Event’s internal type is `noneEndEvent`; these facts remain diagnostic rather than compatibility keys.
 - M0.2 performance result: dependency-warm engine startup measured 1.983 seconds and one scenario including cleanup measured 0.492 seconds; the dependency-warm Maven gate completed in 5.28 seconds.
@@ -65,7 +65,8 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 - Transport status: JSON Lines is implemented for CIB but remains provisional until a Lean or TypeScript process consumes the same framing; the Lean interpreter currently consumes the shared logical contract in-process.
 - Architecture-spike status: M0.3 transferred only the definition/runtime, command/closure, and bound-classification distinctions; the experiment's source/IR, scope, and token types remain outside production semantic authority.
 - Later Temporal implementation constraint: Event History, not Workflow cache or Visibility, is the durability source; the initial adapter must serialize all reducer mutation through one Workflow loop and treat Search Attributes as an eventually consistent projection.
-- Known environment constraints: Homebrew Java 21 is installed but not globally active and is selected explicitly by the CIB gate; Maven is supplied by the repository wrapper; Node and pnpm are absent and not yet approved; BPMN-ingestion and Temporal package additions also remain unapproved.
+- Known environment constraints: Homebrew Java 21 is installed but not globally active and is selected explicitly by the CIB gate; Maven is supplied by the repository wrapper; the M0.4 Node/pnpm/TypeScript proposal is recorded but not approved or installed; BPMN-ingestion and Temporal package additions also remain unapproved.
+- JavaScript/TypeScript command policy: the shared long-running-command guidance was read before selecting or running the M0.4 toolchain; keep tests at or below 60 seconds, builds at or below 120 seconds, and diagnose silent CPU saturation instead of extending timeouts.
 
 ## Stop conditions
 

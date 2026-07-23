@@ -193,8 +193,10 @@ Known decisions still required:
 | CIB database | `com.h2database:h2:2.3.232` | Approved on 2026-07-24; MPL-2.0 or EPL-1.0; replaceable only with a recorded oracle-environment change |
 | Java test harness | `junit:junit:4.13.2` | Approved on 2026-07-24; EPL-1.0; final JUnit 4 maintenance release, test-only, and independently replaceable |
 | Java JSON transport | `com.fasterxml.jackson.core:jackson-databind:2.21.2` | Approved on 2026-07-24; Apache-2.0; transport-only and replaceable without changing canonical semantics |
-| Node runtime | Homebrew-managed, project-pinned Node version supported by the chosen Temporal SDK | Node is not currently installed |
-| Package manager | pnpm | pnpm is not currently installed |
+| Node runtime | Homebrew `node@24` `24.18.0` | Proposed for M0.4; pending approval; MIT formula; current LTS, satisfies the inspected Temporal SDK `>=20.3.0` range, and is exercised as its current maximum CI runtime; replacing it affects all TypeScript build/run scripts but no semantic contract |
+| Package manager | Homebrew pnpm `11.17.0` | Proposed for M0.4; pending approval; MIT; requires Node `>=22.13`; replacing it requires lockfile and workspace migration but no semantic change |
+| TypeScript compiler | `typescript@7.0.2` | Proposed M0.4 development dependency; pending approval; Apache-2.0; supplies strict type checking and JavaScript emission; removable by replacing the compiler/toolchain, with no runtime semantic role |
+| TypeScript test harness | Node `node:test` | Proposed with the Node runtime; no package dependency or additional license graph |
 | BPMN ingestion | `bpmn-moddle` or a smaller standards-preserving XML front end | Dependency and preservation policy require approval |
 | Temporal | Exact `@temporalio/*` SDK packages and a local test-server strategy | Versions must be selected together and replay support verified |
 | Cross-language schema validation | Prefer generated or dependency-free validation until a concrete gap exists | The shared schema must not become a semantic implementation |
