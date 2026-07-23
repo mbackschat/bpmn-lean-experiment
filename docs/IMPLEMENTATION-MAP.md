@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, and e
 
 | Surface | Implemented | Explicitly absent |
 |---|---|---|
-| Project contract | Pinned Lean 4.31.0/Lake 5.0 setup; shared `CLAUDE.md`/`AGENTS.md` guidance; project and documentation ownership; command-versus-harness-versus-infrastructure outcome vocabulary; dependency-free verification script | License decision, release process, CI, packaging |
+| Project contract | Pinned Lean 4.31.0/Lake 5.0 setup; MIT license for project-authored material; shared `CLAUDE.md`/`AGENTS.md` guidance; project and documentation ownership; command-versus-harness-versus-infrastructure outcome vocabulary; dependency-free verification script | Release process, CI, packaging |
 | Milestone 0 pipeline | Durable walking-skeleton scope, shared runner contract, performance budgets, work packages, dependency gates, acceptance criteria, and resume protocol; M0.0 and M0.1 complete | External runner transport, comparator, timings, replay, end-to-end execution |
 | BPMN 2.0.2 source | Official 532-page PDF downloaded; digital-first Markdown conversion with 333 linked figures; eleven normative machine-readable files; hashes, provenance, conformance digest, and Git-ignore boundary | Requirement-level coverage ledger, errata register, formalized metamodel, XML ingestion |
 | BPMN conformance | Process Execution Conformance identified as the ultimate normative target; modeling/BPEL/choreography scope separated; import/admission and external-suite claim boundaries recorded | Any implemented conformance point or conformance claim |

@@ -2,6 +2,20 @@
 
 This document owns source provenance and controlled reference navigation. Reference checkouts are not project dependencies. Recorded baseline revisions remain pristine evidence anchors; separately named local branches or worktrees may be instrumented under [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md).
 
+## Project license audit
+
+Project-authored code and documentation are released under the root [MIT License](../LICENSE). The current dependency surface permits that choice:
+
+| Surface | License status | Project consequence |
+|---|---|---|
+| Lean `v4.31.0` toolchain and Lake | Apache-2.0 in the installed distribution and the [upstream Lean repository](https://github.com/leanprover/lean4) | External toolchain, not vendored or redistributed; it retains its own license |
+| Lake packages | `lake-manifest.json` records an empty `packages` array | No external Lean package license enters the tracked source or package graph |
+| Shell verification tools | Git, `jq`, `xmllint`, and `shasum` are environment prerequisites | Invoked as external tools and not distributed by this repository |
+| CIB Seven, Temporal, MIWG, Betsy, fUML, and other research trees | Separate checkouts under their own upstream terms | Evidence inputs only; they are not project dependencies and are not relicensed |
+| OMG BPMN corpus | Copyrighted external material retained only in ignored local paths | Excluded from the MIT-licensed tracked repository material |
+
+This audit covers the repository as it exists now, not planned dependencies. Before adopting any Maven, pnpm, Lake, parser, Temporal, test, build, or runtime package, inspect its exact transitive license graph, preserve required notices, and update this record. An incompatible future dependency must be replaced, isolated behind a non-distributed research boundary, or explicitly reconsidered; it must never silently alter the project license.
+
 ## OMG BPMN 2.0.2
 
 The normative standard source is OMG **Business Process Model and Notation, Version 2.0.2**, January 2014, document `formal/13-12-09`. The official specification catalog and machine-readable catalog are:
@@ -32,6 +46,7 @@ Pinned baseline checkout: [cibseven/cibseven](../../oss/cibseven/cibseven/README
 - Checked-out revision: `5a45b47ea22688d774de97277c3ff7013f54fdd2`
 - Published `v2.2.0` tag revision: `834a9874760de8a0107f7c1b32806e37f17fb017`
 - Inherited baseline: Camunda `7.22.0` at `1727de82ed7b655ade4f84fe70eff7b52e81a5ca`
+- License: Apache-2.0
 - Role: complete executable behavioral oracle source and diagnostic reference, never a semantic-core dependency
 
 The checked-out `main` revision exactly matches the source revision named by the handoff.
@@ -55,6 +70,7 @@ Pinned baseline checkout: [temporalio/sdk-typescript](../../oss/temporal/sdk-typ
 
 - Remote: `https://github.com/temporalio/sdk-typescript.git`
 - Inspected revision: `2595d1b62cf5c3ff1748df0df2f9b303902bb31c`
+- License: MIT
 - Role: authoritative implementation reference for TypeScript Workflow replay, timers, Activities, cancellation, delivery, and SDK boundaries
 
 This revision is a development reference, not yet a project dependency or profile pin.
@@ -65,6 +81,7 @@ Pinned baseline checkout: [temporalio/samples-typescript](../../oss/temporal/sam
 
 - Remote: `https://github.com/temporalio/samples-typescript.git`
 - Inspected revision: `fb0aa23d75394a132646de883842dfacdacd5aa0`
+- License: MIT
 - Role: concrete Workflow, Activity, signal, update, timer, cancellation, testing, and replay-pattern research
 
 The samples can inform adapter mechanics but cannot define BPMN behavior.

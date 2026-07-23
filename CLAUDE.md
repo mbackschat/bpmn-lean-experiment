@@ -1,64 +1,174 @@
-# CLAUDE.md
+# CLAUDE.md / AGENTS.md
 
-Guidance for working in **bpmn-lean-experiment**, a versioned CIB Seven semantic-profile, executable Lean reference-interpreter, pure TypeScript reducer, Temporal adapter, and continuous-assurance experiment.
+Shared guidance for Claude Code, OpenAI Codex, and human contributors working in **bpmn-lean-experiment**. [AGENTS.md](AGENTS.md) is a symlink to this file; keep one canonical guide and preserve the symlink.
 
-## Start here
+## Mission
 
-Read the complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and the project’s [BPMN conformance target](docs/BPMN-CONFORMANCE-TARGET.md) before changing semantic boundaries. Read the [semantic-representation research](docs/research/SEMANTIC-REPRESENTATIONS.md) before changing BPMN ingestion, normalization, executable IR, scope ownership, runtime identity, token or activation state, or command closure. Read the [Temporal execution-model research](docs/TEMPORAL-EXECUTION-MODEL.md) before changing adapter, retry, message, replay, or deployment boundaries. Read the [formal-methods toolbox](docs/TLA-AND-BISIMULATION-RESEARCH.md) before changing refinement, behavioral-equivalence, liveness, fairness, or model-checking boundaries. Read the [reference-engine instrumentation policy](docs/REFERENCE-INSTRUMENTATION.md) before modifying or accelerating a sibling CIB Seven or Temporal checkout. Use [docs/README.md](docs/README.md) as the documentation registry, [docs/MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md) for the current walking-skeleton contract, [docs/IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for exact implemented scope, and [docs/PLAN.md](docs/PLAN.md) for the current checkpoint and unresolved decisions.
+Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ultimately satisfies OMG Process Execution Conformance. Establish that result through four independent components:
 
-## Current phase
+1. a versioned CIB Seven semantic profile;
+2. an executable Lean reference interpreter;
+3. a pure TypeScript semantic reducer;
+4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The project is in Milestone 0: establish a fast full-pipeline walking skeleton from research and CIB probing through Lean, a pure TypeScript reducer, a Temporal adapter, differential comparison, and replay. The existing Lean code is only profile-independent contract vocabulary. It is not BPMN execution semantics and supplies no CIB Seven compatibility evidence.
+The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. The current Lean production surface is profile-independent contract vocabulary, not BPMN execution semantics. Code under `BpmnSemantics/Experiments/` is provisional and separately gated.
 
-The ultimate normative goal is full OMG BPMN 2.0.2 Process Execution Conformance for a Temporal-hosted adapter that imports BPMN Process diagrams, including their definitional Collaboration. Do not call this “BPMN Complete Conformance,” which also requires Process Modeling, BPEL Process Execution, and Choreography Modeling conformance.
+Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
-Do not implement profile-dependent behavior until the relevant decision is approved and recorded. Never silently choose an oracle release, feature interpretation, expression subset, observation boundary, scheduling policy, listener scope, or external-effect contract.
+## Start every session
 
-## Authority and independence
+1. Read the current checkpoint and exact resume point in [PLAN.md](docs/PLAN.md).
+2. Read the implemented/absent boundary in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
+3. Read the active milestone contract in [MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md).
+4. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes.
+5. Run the current applicable gate from [TESTING.md](docs/TESTING.md).
+6. Take the first incomplete work item unless the user explicitly changes scope.
 
-1. BPMN 2.0.2 and its normative machine-readable artifacts are authoritative for BPMN syntax, metamodel, and Process Execution Conformance.
+Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely on chat history for project state.
+
+## Read before changing a boundary
+
+| Change | Required context |
+|---|---|
+| Mission, authority, compatibility, or assurance | Complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
+| BPMN import, conformance, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md) and applicable normative sources |
+| Source model, normalization, executable IR, scope, runtime identity, token/activation state, or command closure | [Semantic representations research](docs/research/SEMANTIC-REPRESENTATIONS.md) and relevant [experiments](docs/experiments/README.md) |
+| Temporal adapter, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-MODEL.md](docs/TEMPORAL-EXECUTION-MODEL.md) |
+| Refinement, equivalence, liveness, fairness, TLA+, or auxiliary formal tools | [TLA-AND-BISIMULATION-RESEARCH.md](docs/TLA-AND-BISIMULATION-RESEARCH.md) |
+| CIB Seven or Temporal source instrumentation/acceleration | [REFERENCE-INSTRUMENTATION.md](docs/REFERENCE-INSTRUMENTATION.md) |
+| External checkout or fixture provenance | [SOURCES.md](docs/SOURCES.md) |
+
+Read the complete selected document before acting on it.
+
+## Authority model
+
+1. BPMN 2.0.2 and its normative machine-readable artifacts are authoritative for syntax, metamodel, and Process Execution Conformance.
 2. An approved immutable semantic profile is the compatibility authority for one declared target.
 3. Lean is the formal semantic authority for that profile’s explicit operational meaning.
-4. The pinned complete CIB Seven engine is the executable behavioral oracle for the declared CIB compatibility profile.
-5. The pure TypeScript reducer must not depend on CIB Seven internals or Temporal.
-6. The Temporal adapter may add hidden durable work but must not redefine BPMN behavior.
+4. The pinned complete CIB Seven engine is the executable behavioral oracle for its declared compatibility profile.
+5. The pure TypeScript reducer independently implements the semantic contract and has no CIB Seven or Temporal dependency.
+6. The Temporal adapter provides durability and hidden orchestration work without defining BPMN behavior.
 
-Read reference checkouts to learn behavior and architecture, but write an independent semantic account. Do not transplant CIB Seven PVM types, persistence entities, behavior classes, or engine algorithms into the Lean model or reducer. Keep pinned baseline revisions pristine. Source instrumentation or acceleration is permitted only on explicit experimental branches or worktrees under the provenance and shadow-equivalence rules in [docs/REFERENCE-INSTRUMENTATION.md](docs/REFERENCE-INSTRUMENTATION.md); never present a modified checkout as oracle or upstream behavior.
+When sources disagree, classify the disagreement against the standard, profile, configuration, observation boundary, and evidence. Do not use majority voting.
+
+## Non-negotiable boundaries
+
+- Do not implement profile-dependent behavior until the relevant interpretation and scope are approved and recorded.
+- Never silently choose an oracle release, feature meaning, expression subset, observation boundary, scheduling rule, listener scope, history contract, or external-effect contract.
+- Do not transplant CIB PVM types, persistence entities, behavior classes, or engine algorithms into Lean or the reducer.
+- Do not encode Temporal Workflow tasks, Activity attempts, retries, Run IDs, or Event History as BPMN semantic facts.
+- Keep BPMN import/admission, executable normalization, runtime execution, public observation, and host persistence conceptually separate.
+- Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
+- An experiment is not semantic authority merely because it compiles or passes a finite witness.
+- Do not broaden Milestone 0 beyond the approved sequential User Task slice without explicit approval.
 
 ## Semantic invariants
 
-- Commands distinguish commit, rollback, rejection, semantic failure, and unsupported operation.
-- Harness and infrastructure failures remain separate from semantic command outcomes.
-- Logical time and scheduler choices are explicit semantic inputs.
+- Commands distinguish committed, rolled back, rejected, semantic failure, and unsupported outcomes.
+- Harness and infrastructure failures remain separate from semantic outcomes.
+- Logical time, scheduler actions, races, and other nondeterministic choices are explicit inputs.
 - Enabled external interactions are part of the observation contract.
-- Collections preserve multiplicity, and variables preserve semantic scope and type.
-- External-effect lifecycle remains distinct from internal state.
-- Temporal retries remain distinct from CIB-visible retries.
-- No public claim exceeds the declared profile, environment, observation boundary, and evidence.
+- Collections preserve multiplicity; variables preserve scope and semantic type.
+- Definition identity, semantic instance identity, and host-runtime identity remain distinct.
+- External-effect lifecycle remains distinct from internal semantic state.
+- Temporal transport retries remain distinct from CIB-visible retries and incidents.
+- Speculative command state is not exposed as committed observation.
+- No claim exceeds the declared profile, environment, feature surface, observation boundary, and evidence.
 
-## Workflow
+## Working method
 
-Use red/green TDD for semantic code. Add the smallest separating executable example first, confirm that it fails for the intended missing behavior, implement the semantic root, then run the applicable gate in [docs/TESTING.md](docs/TESTING.md).
+### Semantic code
 
-Keep dependencies at zero unless a concrete capability requires one. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing a Lake, Java, Node, pnpm, Temporal, test, build, or runtime dependency.
+Use red/green TDD:
 
-Use one Markdown paragraph per line without hard wrapping. Link referenced Markdown documents with regular relative Markdown links. Update the owning document in the same change; do not duplicate live status or decision inventories.
+1. identify the normative requirement, CIB probe, or explicit open interpretation;
+2. add the smallest separating executable example;
+3. confirm failure for the intended missing mechanism;
+4. implement the semantic root rather than a case-specific patch;
+5. run the focused gate and then the complete applicable gate;
+6. update the owning research, experiment, implementation, and plan documents.
 
-Keep durable external-system and semantic-background analysis under [docs/research](docs/research/README.md), bounded executable learning records under [docs/experiments](docs/experiments/README.md), exact current implementation facts in [docs/IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and immediate sequencing in [docs/PLAN.md](docs/PLAN.md). An experiment remains outside semantic authority until the profile and evidence process adopts it.
+Prefer enum-based pattern matching or switch statements for semantic variants. Keep executable IR and runtime state as serializable data; keep effects explicit and perform no I/O in the pure reducer.
 
-Never commit absolute home paths, usernames, hostnames, credentials, or machine-specific state. Refer to sibling checkouts through the relative paths documented in [docs/SOURCES.md](docs/SOURCES.md).
+### Architecture experiments
 
-The downloaded OMG PDF, its full Markdown conversion, extracted figures, and machine-readable source corpus are local research material and Git-ignored under [docs/reference/bpmn-2.0.2/](docs/reference/bpmn-2.0.2/README.md). Track project-authored digests, provenance, and hashes only; do not stage or redistribute the ignored corpus.
+A bounded spike requires competing accounts and a witness capable of separating them. End it as:
 
-Use Conventional Commits in the form `type(scope): subject`, with a lowercase type and an imperative subject. Do not push without an explicit current request.
+- an adopted capsule through the normal profile/evidence process;
+- a precisely recorded unresolved boundary;
+- or a representation correction with affected semantics, proofs, serializers, and adapters re-audited.
 
-## Build
+Do not generalize after one consumer. Retain a provisional implementation only while it remains a useful discriminator.
+
+### Dependencies
+
+Keep dependencies at zero until a concrete capability requires one. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing any Lake, Java, Node, pnpm, Temporal, parser, test, build, or runtime dependency.
+
+Record exact version, role, license, provenance, and removal cost before adoption.
+
+## Documentation ownership
+
+Use one owner for each fact and link to it elsewhere:
+
+| Information | Owner |
+|---|---|
+| Mission, authority, and approved durable boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
+| Exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
+| Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
+| External-system and semantic-background findings | [docs/research](docs/research/README.md) |
+| Bounded executable questions and results | [docs/experiments](docs/experiments/README.md) |
+| Gates, evidence lanes, and test procedure | [TESTING.md](docs/TESTING.md) |
+| External revisions, licenses, and checkout navigation | [SOURCES.md](docs/SOURCES.md) |
+
+Write one Markdown paragraph per line without hard wrapping. Use regular relative Markdown links for other project documents. Update the owner in the same change and avoid copying live inventories.
+
+## Reference and source discipline
+
+Reference checkouts are research inputs, never runtime dependencies of Lean or the reducer. Navigate them through relative links recorded in [SOURCES.md](docs/SOURCES.md); never commit absolute home paths, usernames, hostnames, credentials, or machine-specific state.
+
+Project-authored code and documentation are released under the [MIT License](LICENSE). Do not copy, vendor, or redistribute external material under that license without verifying compatibility, preserving required notices and attribution, and recording the decision in [SOURCES.md](docs/SOURCES.md).
+
+The downloaded OMG PDF, its Markdown conversion, extracted figures, and machine-readable corpus are local Git-ignored research material under [docs/reference/bpmn-2.0.2](docs/reference/bpmn-2.0.2/README.md). Track only project-authored digests, provenance, and hashes; do not stage or redistribute the ignored corpus.
+
+For CIB or Temporal source changes, preserve a clean pinned evidence lane and follow the branch, provenance, noninterference, and shadow-equivalence rules in [REFERENCE-INSTRUMENTATION.md](docs/REFERENCE-INSTRUMENTATION.md).
+
+## Verification
 
 The Lean toolchain is pinned in [lean-toolchain](lean-toolchain) and currently has no external Lake packages.
 
+Current contract gate:
+
 ```sh
-lake build
-lake test
-git diff --check
+./scripts/verify.sh
 git status --short
 ```
+
+Provisional representation-spike gate:
+
+```sh
+lake build checkSemanticRepresentationSpike
+lake exe checkSemanticRepresentationSpike
+```
+
+Before JavaScript or TypeScript tests/builds exist, follow the global long-running-command policy and the future gate definitions in [TESTING.md](docs/TESTING.md). Use pnpm, not npm.
+
+Always run:
+
+```sh
+git diff --check
+```
+
+## Git and delivery
+
+- Preserve unrelated user changes and avoid destructive Git operations.
+- Commit only when explicitly requested in the current task.
+- Use Conventional Commits: `type(scope): subject`, lowercase type, imperative subject, subject-only by default.
+- Do not push without an explicit current request.
+- Keep [AGENTS.md](AGENTS.md) as a symlink to `CLAUDE.md`; never maintain divergent copies.
+
+Before handing off:
+
+1. update [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) with exact implemented and absent scope;
+2. update [PLAN.md](docs/PLAN.md) with the last verified command and exact next action;
+3. run the applicable gates and `git diff --check`;
+4. leave a clean working tree, or explicitly document every unfinished file and failing command.
