@@ -2,20 +2,49 @@
 
 This is the sole documentation registry for the project. It identifies the purpose and owner of each maintained document.
 
+## Fast navigation
+
+| Task | Read |
+|---|---|
+| Resume implementation | [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the current gate in [TESTING.md](TESTING.md) |
+| Change project mission or semantic authority | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) and [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) |
+| Change BPMN import or semantic meaning | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) and the [research index](research/README.md) |
+| Run or evaluate a bounded architecture spike | [experiments](experiments/README.md) |
+| Inspect external source provenance | [SOURCES.md](SOURCES.md) |
+
+## Registry
+
 | Document | Audience and ownership |
 |---|---|
 | Top-level [README.md](../README.md) | New readers; concise purpose, honest status, quick start, and routes into this registry |
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
+| [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md) | Adapter contributors and reviewers; Temporal replay, execution, messaging, failure, concurrency, versioning, and BPMN-boundary research |
+| [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) | Semantic and adapter assurance contributors; question-driven formal-methods toolbox, behavioral relations, candidate experiments, and evidence limits |
+| [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) | Researchers and performance contributors; pristine evidence lane, experimental source branches, execution profiles, acceleration limits, and shadow-equivalence gate |
+| [research/README.md](research/README.md) | Researchers and semantic contributors; topic index and boundary between research input and approved decisions |
+| [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md) | Semantic architects; CIB Model API/PVM, fUML/PSSM execution models, code examples, and provisional source/IR/runtime consequences |
+| [experiments/README.md](experiments/README.md) | Contributors running bounded risk spikes; experiment lifecycle, required evidence, and registry |
+| [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md) | Semantic architects; executable source/IR, scope, join-provenance, and command-closure discriminators |
 | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, authority model, initial boundary, and success criteria |
 | [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md) | Contributors and resuming agents; durable walking-skeleton scope, runner contracts, performance budgets, work packages, and resume protocol |
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
 | [PLAN.md](PLAN.md) | Resuming agents and owners; current checkpoint, candidate profile decisions, next steps, and stop conditions |
 | [TESTING.md](TESTING.md) | Contributors; red/green workflow and verification gates |
-| [SOURCES.md](SOURCES.md) | Researchers; provenance and read-only reference navigation |
+| [SOURCES.md](SOURCES.md) | Researchers; provenance and controlled reference-checkout navigation |
 | [reference/bpmn-2.0.2/README.md](reference/bpmn-2.0.2/README.md) | Researchers; local BPMN 2.0.2 corpus, conversion QA, license boundary, and reproducibility hashes |
 | [../CLAUDE.md](../CLAUDE.md) | Contributors and agents; mandatory repository workflow and architecture boundaries |
 
 The [profile artifact root](../profiles/README.md) and [scenario artifact root](../scenarios/README.md) explain why no approved profile or neutral scenario exists yet.
 
 When a fact is useful elsewhere, link to its owner and add only the local consequence. Exact current status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](PLAN.md), durable project boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), and provenance in [SOURCES.md](SOURCES.md).
+
+## Placement rules
+
+- Put stable mission, authority, and approved boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
+- Put external-system and semantic-background analysis under [research](research/README.md).
+- Put bounded executable questions, red/green evidence, and provisional outcomes under [experiments](experiments/README.md).
+- Put exact implemented, proved, tested, and absent surfaces in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+- Put only the current checkpoint, ordered next work, unresolved decisions, and resume point in [PLAN.md](PLAN.md).
+- Put source revisions, licenses, and controlled checkout navigation in [SOURCES.md](SOURCES.md).
+- Link to the owning document instead of copying its live inventory.

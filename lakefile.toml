@@ -9,3 +9,7 @@ name = "BpmnSemantics"
 [[lean_exe]]
 name = "checkConformance"
 root = "BpmnSemantics.ConformanceMain"
+
+[[lean_exe]]
+name = "checkSemanticRepresentationSpike"
+root = "BpmnSemantics.Experiments.SemanticRepresentationsMain"

@@ -28,6 +28,21 @@ The M0.1 red run imported the intentionally absent `BpmnSemantics.Scenario` modu
 
 The first measured warm contract gate on 2026-07-23 completed in 1.36 seconds. This is a baseline for the current Lean-and-artifact contract only; it is not yet the semantic-loop measurement because the TypeScript reducer does not exist.
 
+## Provisional architecture-spike gate
+
+The semantic-representation candidates are intentionally separate from the current contract gate:
+
+```sh
+lake build checkSemanticRepresentationSpike
+lake exe checkSemanticRepresentationSpike
+```
+
+The gate covers the bounded witnesses recorded in [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md). Passing demonstrates only that the candidate types can express the examples and distinguish the seeded weak join account. It does not establish BPMN semantics or make the candidates part of the default Lean authority.
+
+The red run imported the absent `BpmnSemantics.Experiments.SemanticRepresentations` module and failed for that missing implementation. The green build and executable pass after adding the experiment-local source compiler, runtime state, join accounts, and closure checks.
+
+The first measured warm focused build completed in 0.20 seconds, and the warm executable gate completed in 0.40 seconds on 2026-07-23. These are architecture-spike timings, not semantic-loop or full-pipeline measurements.
+
 ## Milestone 0 feedback gates
 
 The durable contract and exact performance definitions are in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
@@ -92,3 +107,5 @@ A CIB oracle gate must pin executable artifacts and configuration, control logic
 A future TypeScript gate must follow the global JavaScript/TypeScript long-running-command guidance, use pnpm, and test the reducer without CIB Seven or Temporal dependencies.
 
 A future Temporal gate must include retained-history replay, duplicate delivery, timer, message, cancellation, retry-separation, Continue-As-New, and reducer-refinement checks. Passing Temporal tests must never substitute for reducer-versus-Lean or reducer-versus-CIB differential evidence.
+
+If an auxiliary formal-method experiment from [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) is approved, its focused check initially belongs in extended assurance rather than the semantic or Milestone 0 full-pipeline gate. Every result must report the exact tool and model revisions, finite configuration or proof assumptions, checked properties, fairness assumptions where applicable, explored state counts, and counterexample status. It must detect its named seeded defect before it becomes a retained gate. Model checking, equivalence checking, or net analysis never substitutes for Temporal fault injection, replay, or implementation refinement evidence.

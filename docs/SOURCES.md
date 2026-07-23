@@ -1,6 +1,6 @@
 # Sources
 
-This document owns source provenance and read-only navigation. Reference checkouts are not project dependencies and must not be modified from this repository.
+This document owns source provenance and controlled reference navigation. Reference checkouts are not project dependencies. Recorded baseline revisions remain pristine evidence anchors; separately named local branches or worktrees may be instrumented under [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md).
 
 ## OMG BPMN 2.0.2
 
@@ -18,9 +18,15 @@ The project-local [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANC
 
 The handoff reports an investigation of CIB Seven source revision `5a45b47ea22688d774de97277c3ff7013f54fdd2` (`2.3.0-SNAPSHOT`) while its embedded prototype executed published CIB Seven `2.2.0`, Java 17, and H2 `2.3.232`. This mismatch is architectural evidence only; it must not become one merged semantic profile.
 
+## Controlled source experiments
+
+The CIB Seven and Temporal source checkouts may host local experimental branches for profiling, deterministic fault points, tracing, batching, or reduced harness overhead. The exact pinned revision remains the evidence lane. A modified build is a diagnostic surrogate until the same neutral scenarios have been shadow-compared against that lane.
+
+Every such experiment must record its base revision, patch or branch revision, build and runtime configuration, question, measurements, and shadow scenarios. See [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) for permitted acceleration, candidate probe locations, and the shadow-equivalence gate.
+
 ## CIB Seven
 
-Read-only checkout: [cibseven/cibseven](../../oss/cibseven/cibseven/README.md)
+Pinned baseline checkout: [cibseven/cibseven](../../oss/cibseven/cibseven/README.md)
 
 - Remote: `https://github.com/cibseven/cibseven.git`
 - Checked-out revision: `5a45b47ea22688d774de97277c3ff7013f54fdd2`
@@ -45,7 +51,7 @@ CIB’s [implemented-standards page](https://docs.cibseven.org/manual/latest/int
 
 ## Temporal TypeScript SDK
 
-Read-only checkout: [temporalio/sdk-typescript](../../oss/temporal/sdk-typescript/README.md)
+Pinned baseline checkout: [temporalio/sdk-typescript](../../oss/temporal/sdk-typescript/README.md)
 
 - Remote: `https://github.com/temporalio/sdk-typescript.git`
 - Inspected revision: `2595d1b62cf5c3ff1748df0df2f9b303902bb31c`
@@ -55,13 +61,46 @@ This revision is a development reference, not yet a project dependency or profil
 
 ## Temporal TypeScript samples
 
-Read-only checkout: [temporalio/samples-typescript](../../oss/temporal/samples-typescript/README.md)
+Pinned baseline checkout: [temporalio/samples-typescript](../../oss/temporal/samples-typescript/README.md)
 
 - Remote: `https://github.com/temporalio/samples-typescript.git`
 - Inspected revision: `fb0aa23d75394a132646de883842dfacdacd5aa0`
 - Role: concrete Workflow, Activity, signal, update, timer, cancellation, testing, and replay-pattern research
 
 The samples can inform adapter mechanics but cannot define BPMN behavior.
+
+## Temporal documentation
+
+Pinned baseline checkout: [temporalio/documentation](../../oss/temporal/documentation/README.md)
+
+- Remote: `https://github.com/temporalio/documentation.git`
+- Inspected revision: `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`
+- Role: authoritative current documentation for Workflow execution, Event History, Commands, messaging, retries, concurrency, Continue-As-New, versioning, testing, and operational features
+
+The project-authored [Temporal execution-model research](TEMPORAL-EXECUTION-MODEL.md) combines this documentation with pinned TypeScript SDK implementation evidence and records the consequences for the BPMN adapter boundary. Current documentation can describe features newer than the eventual project dependency, so every implemented feature still requires an exact SDK and server version pin.
+
+## Formal methods and behavioral refinement
+
+The project-authored [formal-methods toolbox](TLA-AND-BISIMULATION-RESEARCH.md) evaluates temporal specification, model checking, process algebra, behavioral relations, relational modeling, and Petri-net analysis against this project’s existing Lean, differential, Temporal-refinement, and replay boundaries.
+
+Primary sources inspected:
+
+- Leslie Lamport’s [Specifying Systems](https://lamport.azurewebsites.net/tla/book.html) for TLA+ behaviors, stuttering, refinement mappings, fairness, composition, and TLC
+- Abadi and Lamport’s [The Existence of Refinement Mappings](https://lics.siglog.org/archive/1988/AbadiLamport-Theexistenceofrefin.html) for the lower-level-to-higher-level implementation relation
+- the [TLA+ Wiki](https://docs.tlapl.us/) and [TLC trace validation](https://docs.tlapl.us/using%3Atlc%3Atrace_validation) for current tool behavior
+- the [Apalache documentation](https://apalache-mc.org/docs/apalache/index.html) for bounded symbolic checking and its documented experimental status
+- [Quint](https://quint-lang.org/) for typed executable TLA-style specifications, simulation, model checking, and model-based testing
+- the [P language](https://github.com/p-org/P) for event-driven state machines, systematic asynchronous testing, safety, liveness, and implementation trace validation
+- [SPIN](https://spinroot.com/spin/whatispin.html) for mature Promela process/channel verification, assertions, progress, and LTL
+- the [mCRL2 user manual](https://mcrl2.org/web/user_manual/index.html) for process algebra, labelled transition systems, behavioral-relation comparison, deadlock, and modal properties
+- [FDR](https://cocotec.io/fdr/) for CSP traces, failures, failures-divergences, refinement, and deadlock
+- [Alloy](https://alloytools.org/) and [Electrum](https://haslab.github.io/Electrum/) for relational and temporal structure exploration
+- [LoLA](https://theo.informatik.uni-rostock.de/theo-forschung/tools/lola/) for Petri-net reachability, deadlock, and temporal properties
+- [UPPAAL](https://uppaal.org/) for timed automata and [PRISM](https://www.prismmodelchecker.org/) for probabilistic model checking
+- van Glabbeek and Weijland’s [Branching Time and Abstraction in Bisimulation Semantics](https://theory.stanford.edu/~rvg/abstraction/) for branching bisimulation and silent actions
+- Kiepuszewski, ter Hofstede, and van der Aalst’s [Fundamentals of Control Flow in Workflows](https://pure.tue.nl/ws/files/1688655/612177.pdf) for simulation, branching, deadlock, termination, and workflow-net equivalence
+
+The latest stable GitHub releases inspected on 2026-07-23 were TLA+ tools `v1.7.4` under MIT and Apalache `v0.58.3` under Apache-2.0. These are research observations, not approved dependencies or project pins. The alternatives have not been selected or installed. No first-party formal adapter model was located in the inspected Temporal documentation, TypeScript SDK, samples, or current server repository tree, so the project cannot inherit an official Temporal formal specification.
 
 ## BPMN XML/metamodel reference
 
@@ -124,3 +163,15 @@ Read-only checkout: [a12-kernel-lean](../../oss/a12/a12-kernel-lean/README.md)
 - Role: precedent for a pinned dependency-free Lean toolchain, executable-first semantic capsules, proof/evidence separation, documentation ownership, honest claim boundaries, and shared `CLAUDE.md`/`AGENTS.md` guidance
 
 This project adopts those working conventions where they fit, but it does not copy A12 domain semantics, evidence, or project-specific governance.
+
+## fUML reference implementation
+
+Read-only checkout: [ModelDriven/fUML-Reference-Implementation](../../oss/fuml-reference-implementation/README.md)
+
+- Remote: `https://github.com/ModelDriven/fUML-Reference-Implementation.git`
+- Inspected revision: `45e506336d4cd56965d4ad3b684149245f899f3a`
+- Role: concrete Java companion for understanding fUML 1.5 syntax, Locus/Executor setup, semantic visitors, Activity node activations, edge instances, offers, and tokens
+
+The repository describes itself as an open-source reference implementation of fUML and accepts conforming UML XMI for execution. It is a research reference, not a project dependency, BPMN authority, or proof that its implementation satisfies every fUML requirement. Its architecture and transfer limits are recorded in [semantic-representation research](research/SEMANTIC-REPRESENTATIONS.md).
+
+Normative authority remains the [OMG fUML 1.5 specification catalog](https://www.omg.org/spec/FUML/1.5) and its syntax, semantics, library, and PDF artifacts.

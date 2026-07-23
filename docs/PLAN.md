@@ -11,7 +11,12 @@ The durable milestone contract is [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAS
 - The Phase 0 contract vocabulary passes `lake build` and `lake test`.
 - The CIB Seven source checkout matches the handoff’s investigated revision.
 - CIB Seven’s inherited semantic regression corpus and harness have been characterized, the BPMN MIWG interchange suite is pinned, and Betsy is available as a historical cross-engine execution-case source.
-- The official Temporal TypeScript SDK and the sibling Lean experiment are available as read-only references with exact revisions in [SOURCES.md](SOURCES.md).
+- The official Temporal TypeScript SDK and the sibling Lean experiment are available as pinned references with exact revisions in [SOURCES.md](SOURCES.md).
+- Temporal’s replay mechanism, Workflow and Activity execution, message types, concurrency, retries, timers, cancellation, Continue-As-New, versioning, data and visibility boundaries, human-task mechanics, and unsafe BPMN mapping shortcuts are recorded in [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md).
+- The question-driven formal-methods toolbox is assessed in [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md): no Milestone 0 expansion or selected auxiliary tool; observational stuttering refinement remains an unimplemented adapter design target; TLA+, P, SPIN, mCRL2, Alloy/Electrum, LoLA, and specialized alternatives are available only for concrete questions.
+- Controlled source instrumentation and acceleration are authorized by [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md): pinned pristine evidence lanes remain authoritative, experimental branches are diagnostic, and semantics-relevant acceleration requires shadow comparison.
+- CIB Seven’s typed DOM authoring model, separate deployment parse tree, PVM definition graph, runtime execution tree, and the corresponding fUML/PSSM execution-model precedents are recorded in [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md).
+- A separately gated representation spike now distinguishes source from executable IR, flow scope from event scope, arrival count from edge provenance, and external commands from internal closure; its candidates remain provisional and are recorded in [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
 
 ## Locked ultimate target
 
@@ -37,20 +42,25 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Next ordered work
 
-1. Complete M0.0 by recording the milestone, performance contract, dependency decisions, and resume protocol.
-2. Complete M0.1 with the actual BPMN fixture, draft profile identity, neutral scenario/stimulus/observation contracts, and separating Lean checks.
-3. Obtain approval for the exact Maven, CIB, H2, JUnit, Jackson, Node, pnpm, BPMN ingestion, and Temporal dependencies before adding them.
-4. Complete M0.2 through M0.6 in the order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
-5. After the walking skeleton is fast and green, expand the BPMN requirement ledger, MIWG ingestion coverage, and CIB assertion/fixture extraction one semantic capsule at a time.
+1. Obtain approval for the exact Maven, CIB, H2, JUnit, Jackson, Node, pnpm, BPMN ingestion, and Temporal dependencies before adding them.
+2. Complete M0.2 through M0.6 in the order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
+3. During M0.2, add only the first read-only PVM definition projection needed to compare the sequential User Task model’s resolved topology, behavior type, ordered transitions, and scope relations; retain advanced boundary Event, Event Sub-Process, and multi-instance models in the diagnostic research lane.
+4. For M0.5, implement one synchronous message handler that enqueues versioned inputs, one deterministic Workflow loop that alone advances the reducer, and separate live-server and retained-history replay gates.
+5. After the walking skeleton is fast and green, add the researched User Task discovery/completion vertical slice and explicitly decide Update versus Signal, the task projection, Search Attribute registry, and production inbox boundary.
+6. Before adding an auxiliary formal tool, identify a concrete question and seeded defect, then time-box the smallest candidate experiment from [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md); no formal-method spike is currently scheduled.
+7. Expand the BPMN requirement ledger, MIWG ingestion coverage, and CIB assertion/fixture extraction one semantic capsule at a time.
 
 ## Exact resume point
 
 - Current package: M0.1 is implemented; M0.2 CIB calibration is next.
-- Last verified command: `./scripts/verify.sh`.
+- Last verified commands: `./scripts/verify.sh`, `lake build checkSemanticRepresentationSpike`, and `lake exe checkSemanticRepresentationSpike`.
 - Current state: the standard BPMN fixture, draft spike profile, neutral scenario, canonical observation vocabulary, logical runner boundary, and separating Lean checks are green.
 - Next implementation target: approve the exact M0.2 dependency set recorded in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md), then create the embedded CIB deploy/start/wait/complete/cleanup runner that emits the first calibrated trace.
+- M0.2 performance rule: measure the pristine pinned runner by phase and remove harness overhead first; create an experimental CIB source branch only when a named bottleneck or semantic question cannot be answered through public hooks, following [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md).
 - First M0.2 research anchor: inspect the pinned CIB User Task and process-completion assertion/fixture pairs and select the smallest public-API precedent before writing the red oracle test.
 - First M0.2 research result: `UserTaskTest` supplies the start-and-active-task precedent, while `TaskAssigneeTest` supplies the complete-and-process-ended precedent; the neutral scenario removes their assignment and vendor-specific concerns.
+- Architecture-spike status: the representation candidates and their focused gate are green, remain outside the default semantic authority, and do not reorder M0.2 calibration before the M0.3 Lean semantic capsule.
+- Later Temporal implementation constraint: Event History, not Workflow cache or Visibility, is the durability source; the initial adapter must serialize all reducer mutation through one Workflow loop and treat Search Attributes as an eventually consistent projection.
 - Known environment constraints: Homebrew Java 21 is installed but not active; Node, pnpm, and Maven are absent; no dependency installation or package addition is approved yet.
 
 ## Stop conditions

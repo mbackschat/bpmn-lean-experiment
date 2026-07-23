@@ -4,7 +4,7 @@ Guidance for working in **bpmn-lean-experiment**, a versioned CIB Seven semantic
 
 ## Start here
 
-Read the complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and the project’s [BPMN conformance target](docs/BPMN-CONFORMANCE-TARGET.md) before changing semantic boundaries. Use [docs/README.md](docs/README.md) as the documentation registry, [docs/MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md) for the current walking-skeleton contract, [docs/IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for exact implemented scope, and [docs/PLAN.md](docs/PLAN.md) for the current checkpoint and unresolved decisions.
+Read the complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and the project’s [BPMN conformance target](docs/BPMN-CONFORMANCE-TARGET.md) before changing semantic boundaries. Read the [semantic-representation research](docs/research/SEMANTIC-REPRESENTATIONS.md) before changing BPMN ingestion, normalization, executable IR, scope ownership, runtime identity, token or activation state, or command closure. Read the [Temporal execution-model research](docs/TEMPORAL-EXECUTION-MODEL.md) before changing adapter, retry, message, replay, or deployment boundaries. Read the [formal-methods toolbox](docs/TLA-AND-BISIMULATION-RESEARCH.md) before changing refinement, behavioral-equivalence, liveness, fairness, or model-checking boundaries. Read the [reference-engine instrumentation policy](docs/REFERENCE-INSTRUMENTATION.md) before modifying or accelerating a sibling CIB Seven or Temporal checkout. Use [docs/README.md](docs/README.md) as the documentation registry, [docs/MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md) for the current walking-skeleton contract, [docs/IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for exact implemented scope, and [docs/PLAN.md](docs/PLAN.md) for the current checkpoint and unresolved decisions.
 
 ## Current phase
 
@@ -23,7 +23,7 @@ Do not implement profile-dependent behavior until the relevant decision is appro
 5. The pure TypeScript reducer must not depend on CIB Seven internals or Temporal.
 6. The Temporal adapter may add hidden durable work but must not redefine BPMN behavior.
 
-Read reference checkouts to learn behavior and architecture, but write an independent semantic account. Do not transplant CIB Seven PVM types, persistence entities, behavior classes, or engine algorithms into the Lean model or reducer. Do not modify sibling reference repositories from this project.
+Read reference checkouts to learn behavior and architecture, but write an independent semantic account. Do not transplant CIB Seven PVM types, persistence entities, behavior classes, or engine algorithms into the Lean model or reducer. Keep pinned baseline revisions pristine. Source instrumentation or acceleration is permitted only on explicit experimental branches or worktrees under the provenance and shadow-equivalence rules in [docs/REFERENCE-INSTRUMENTATION.md](docs/REFERENCE-INSTRUMENTATION.md); never present a modified checkout as oracle or upstream behavior.
 
 ## Semantic invariants
 
@@ -43,6 +43,8 @@ Use red/green TDD for semantic code. Add the smallest separating executable exam
 Keep dependencies at zero unless a concrete capability requires one. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing a Lake, Java, Node, pnpm, Temporal, test, build, or runtime dependency.
 
 Use one Markdown paragraph per line without hard wrapping. Link referenced Markdown documents with regular relative Markdown links. Update the owning document in the same change; do not duplicate live status or decision inventories.
+
+Keep durable external-system and semantic-background analysis under [docs/research](docs/research/README.md), bounded executable learning records under [docs/experiments](docs/experiments/README.md), exact current implementation facts in [docs/IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and immediate sequencing in [docs/PLAN.md](docs/PLAN.md). An experiment remains outside semantic authority until the profile and evidence process adopts it.
 
 Never commit absolute home paths, usernames, hostnames, credentials, or machine-specific state. Refer to sibling checkouts through the relative paths documented in [docs/SOURCES.md](docs/SOURCES.md).
 
