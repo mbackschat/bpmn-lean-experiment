@@ -18,7 +18,7 @@ The durable milestone contract is [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAS
 - CIB Seven’s typed DOM authoring model, separate deployment parse tree, PVM definition graph, runtime execution tree, and the corresponding fUML/PSSM execution-model precedents are recorded in [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md).
 - A separately gated representation spike now distinguishes source from executable IR, flow scope from event scope, arrival count from edge provenance, and external commands from internal closure; its candidates remain provisional and are recorded in [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
 - M0.2 is complete: the repository-local Java 21 runner embeds pinned CIB Seven `2.2.0` on H2 `2.3.232`, controls logical time and automatic job execution, emits the calibrated sequential User Task trace, exposes a read-only PVM diagnostic, serves multiple JSON-lines requests through one warm engine, and proves cleanup after every run.
-- M0.3 is complete: the production Lean capsule separates command admission from internal closure, derives the calibrated canonical trace, keeps bound exhaustion outside semantic outcomes, and proves start-to-wait, matching-completion, and non-matching-completion invariants.
+- M0.3 is complete: the production Lean capsule separates command admission from internal closure, derives the calibrated canonical trace, keeps bound exhaustion outside semantic outcomes and committed observations, and proves start-to-wait, matching-completion, and non-matching-completion invariants.
 
 ## Locked ultimate target
 

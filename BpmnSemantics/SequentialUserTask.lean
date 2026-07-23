@@ -216,20 +216,20 @@ private def finishNonCommit (outcome : CommandOutcome) (state : RuntimeState)
     state
     trace := [observation] }
 
-private def executeStimuli (definition : Model) :
+private def executeStimuli (closureLimit : Nat) (definition : Model) :
     RuntimeState → List Stimulus → Execution
   | state, [] =>
       { outcome := .semantic .committed
         state
         trace := [] }
   | state, stimulus :: remaining =>
-      let result := reduce internalClosureLimit definition state stimulus
-      let commandObservation := CanonicalObservation.command (commandId stimulus) result.outcome
+      let result := reduce closureLimit definition state stimulus
       if result.internalStepBoundExceeded then
         { outcome := .harnessFailure
           state := result.state
-          trace := [commandObservation] }
+          trace := [] }
       else
+        let commandObservation := CanonicalObservation.command (commandId stimulus) result.outcome
         match result.outcome with
         | .committed =>
             match observeStableState definition result.state remaining with
@@ -238,7 +238,7 @@ private def executeStimuli (definition : Model) :
                   state := result.state
                   trace := [commandObservation] }
             | some snapshot =>
-                let rest := executeStimuli definition result.state remaining
+                let rest := executeStimuli closureLimit definition result.state remaining
                 { outcome := rest.outcome
                   state := rest.state
                   trace := commandObservation :: .state snapshot :: rest.trace }
@@ -257,16 +257,20 @@ private def supportedScenario (scenario : Scenario) : Bool :=
       scenario.bpmn.sha256 =
         "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295")
 
-/-- Execute the supported profile capsule and derive canonical observations from stable state. -/
-def run : ScenarioRunner :=
+/-- Execute with an explicit harness limit so bound-exhaustion behavior remains testable. -/
+def runWithClosureLimit (closureLimit : Nat) : ScenarioRunner :=
   fun scenario =>
     if supportedScenario scenario then
-      let execution := executeStimuli model initialState scenario.stimuli
+      let execution := executeStimuli closureLimit model initialState scenario.stimuli
       { outcome := execution.outcome
         trace := .deployment .committed :: execution.trace }
     else
       { outcome := .semantic .unsupported
         trace := [.deployment .unsupported] }
+
+/-- Execute the supported profile capsule and derive canonical observations from stable state. -/
+def run : ScenarioRunner :=
+  runWithClosureLimit internalClosureLimit
 
 def startStimulus : Stimulus :=
   .startProcess ⟨"start-process"⟩ model.processId ⟨"Instance_1"⟩

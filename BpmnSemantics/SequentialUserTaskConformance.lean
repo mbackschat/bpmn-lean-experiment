@@ -40,4 +40,10 @@ example :
 
 example : expectedCalibratedTrace.length = 5 := rfl
 
+example :
+    runWithClosureLimit 0 contractScenario =
+      { outcome := .harnessFailure
+        trace := [.deployment .committed] } := by
+  decide
+
 end BpmnSemantics.SequentialUserTaskConformance
