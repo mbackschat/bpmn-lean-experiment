@@ -6,7 +6,7 @@ This note records the Temporal mechanisms that constrain the BPMN adapter archit
 
 The central conclusion is:
 
-> Temporal is the durable orchestration substrate for the adapter, while the versioned BPMN semantic profile, Lean interpreter, and pure TypeScript reducer remain the authorities for BPMN behavior.
+> Temporal is the durable orchestration substrate for the adapter, while the versioned BPMN semantic profile, Lean interpreter, and pure TypeScript semantic core remain the authorities for BPMN behavior.
 
 Temporal can durably remember inputs, wakeups, external-operation outcomes, and the ordered Commands produced by Workflow code. It does not supply BPMN token semantics, CIB Seven compatibility, or an automatically correct mapping from Temporal primitives to BPMN concepts.
 
@@ -48,10 +48,10 @@ The mechanism is durable re-execution, not durable memory snapshots and not ordi
 | Event | A fact persisted by the Temporal Service in Event History |
 | Temporal Command | A requested durable action emitted by Workflow execution |
 | Activity Execution | A chain of Activity Task attempts for one scheduled Activity |
-| project command or stimulus | A versioned input to the BPMN reducer; never interchangeable with a Temporal Command |
-| reducer decision | The pure `decide` operation in the semantic core; never interchangeable with an old Temporal “Decision” |
+| project command or stimulus | A versioned input to the BPMN semantic core; never interchangeable with a Temporal Command |
+| semantic transition | The pure `applyStimulus` operation in the semantic core; never interchangeable with an old Temporal “Decision” |
 
-Older Temporal and Cadence material used “Decision Task” and “Decision” terminology. Current Temporal terminology is Workflow Task and Command. This project should reserve “decision” for the pure reducer and always qualify “Temporal Command.”
+Older Temporal and Cadence material used “Decision Task” and “Decision” terminology. Current Temporal terminology is Workflow Task and Command. This project uses “semantic transition” for the pure core operation and always qualifies “Temporal Command.”
 
 ## Runtime architecture
 
@@ -63,7 +63,7 @@ The TypeScript SDK’s [activation sequence](https://github.com/temporalio/sdk-t
 
 Task Queues are routing and load-balancing infrastructure, not semantic FIFO queues. Multiple pollers and partitions permit physical concurrency, and the adapter must not derive BPMN scheduling rules from Task Queue arrival order.
 
-Task priority, fairness, rate limiting, poller tuning, eager Activity execution, and sticky execution can change latency and throughput. They must not change reducer observations, and conformance tests must remain valid with those optimizations disabled or configured differently.
+Task priority, fairness, rate limiting, poller tuning, eager Activity execution, and sticky execution can change latency and throughput. They must not change semantic observations, and conformance tests must remain valid with those optimizations disabled or configured differently.
 
 Namespaces are operational isolation boundaries. Workflow identity is Namespace plus Workflow ID plus Run ID; multiple Runs connected by retry, cron, or Continue-As-New share a Workflow ID but have separate Event Histories.
 
@@ -107,23 +107,23 @@ The SDK exposes `workflowInfo().unsafe.isReplaying`, but business logic must not
 
 ## Temporal Commands are not BPMN transitions
 
-A Temporal Command asks the Service to perform a durable platform action. A BPMN semantic transition changes the reducer’s versioned semantic state.
+A Temporal Command asks the Service to perform a durable platform action. A BPMN semantic transition changes the semantic core’s versioned semantic state.
 
-One reducer transition may produce no Temporal Command, one Temporal Command, or several Temporal Commands. Conversely, a Temporal Workflow Task may replay many reducer transitions or merely deliver an operational result.
+One semantic core transition may produce no Temporal Command, one Temporal Command, or several Temporal Commands. Conversely, a Temporal Workflow Task may replay many semantic core transitions or merely deliver an operational result.
 
 The adapter must preserve this separation:
 
 ```text
 typed external stimulus
   -> adapter ingress and deduplication
-  -> pure reducer decision and semantic state
+  -> pure semantic transition and semantic state
   -> typed effect intent
   -> Temporal API and Temporal Command
   -> recorded result Event
-  -> typed reducer result stimulus
+  -> typed semantic core result stimulus
 ```
 
-The adapter must not treat the existence or order of arbitrary Temporal Events as the canonical BPMN trace. Canonical observations come from the reducer’s semantic state and observation contract.
+The adapter must not treat the existence or order of arbitrary Temporal Events as the canonical BPMN trace. Canonical observations come from the semantic core’s semantic state and observation contract.
 
 ## Workflows
 
@@ -133,7 +133,7 @@ Workflow code must remain deterministic, side-effect-free except through Tempora
 
 Workflow executions have no default retry policy. A Workflow retry policy is optional and creates another Run in the same Workflow Execution chain. It is usually the wrong first response to a BPMN process-level semantic failure because it re-runs the Workflow Definition rather than applying BPMN error semantics.
 
-The TypeScript failure boundary is intentionally sharp: an explicit `ApplicationFailure` or an uncaught Temporal failure can fail the Workflow Execution, while an ordinary programming error commonly fails the current Workflow Task and is retried. Adapter code must deliberately translate reducer terminal states into completion or a typed failure and must not rely on accidental JavaScript exceptions as business outcomes.
+The TypeScript failure boundary is intentionally sharp: an explicit `ApplicationFailure` or an uncaught Temporal failure can fail the Workflow Execution, while an ordinary programming error commonly fails the current Workflow Task and is retried. Adapter code must deliberately translate semantic core terminal states into completion or a typed failure and must not rely on accidental JavaScript exceptions as business outcomes.
 
 ## Activities
 
@@ -212,7 +212,7 @@ A Query is a synchronous read of reconstructed Workflow state. A Query handler m
 
 Queries are not Events and do not become part of Event History. They require a Worker capable of running the Workflow code.
 
-A Query can expose the reducer’s current projection for diagnostics and tests, but it cannot be the durable authority for a canonical semantic observation. The authoritative projection must be derived from semantic state reconstructed through replay.
+A Query can expose the semantic core’s current projection for diagnostics and tests, but it cannot be the durable authority for a canonical semantic observation. The authoritative projection must be derived from semantic state reconstructed through replay.
 
 ### Updates
 
@@ -236,9 +236,9 @@ Synchronous handlers are atomic with respect to Workflow code execution. The saf
 
 1. Register narrow, synchronous handlers that validate envelopes and enqueue neutral stimuli.
 2. Let one main Workflow loop consume the queue.
-3. Let only that loop call the pure reducer and mutate reducer state.
+3. Let only that loop call the pure semantic core and mutate semantic state.
 4. Let only that loop issue effect intents in a deterministic order.
-5. Complete an Update only after the reducer has produced its typed command outcome.
+5. Complete an Update only after the semantic core has produced its typed command outcome.
 
 Before Workflow completion or Continue-As-New, the main loop must wait for `allHandlersFinished()` so accepted handler work is not silently abandoned.
 
@@ -246,19 +246,19 @@ Before Workflow completion or Continue-As-New, the main loop must wait for `allH
 
 Temporal’s official [Approval pattern](https://docs.temporal.io/design-patterns/approval) demonstrates the generic human-in-the-loop mechanism: a Workflow records pending approval state, waits on a deterministic condition, and a Signal supplies a decision. That pattern is useful infrastructure evidence, but a BPMN User Task has a richer lifecycle than one approval variable.
 
-A BPMN User Task must remain reducer state. At minimum, its semantic representation may need a stable task-instance ID, BPMN element ID, lifecycle state, form reference or form schema identity, assignee and candidate information, creation and due-time semantics, variables visible to the form, completion data schema, and command history. Multi-instance tasks mean that one process can have several open task instances for the same BPMN element.
+A BPMN User Task must remain semantic state. At minimum, its semantic representation may need a stable task-instance ID, BPMN element ID, lifecycle state, form reference or form schema identity, assignee and candidate information, creation and due-time semantics, variables visible to the form, completion data schema, and command history. Multi-instance tasks mean that one process can have several open task instances for the same BPMN element.
 
-A Workflow should wait for a reducer-owned condition such as “at least one semantic input is ready,” not directly encode every User Task as a bespoke language-level wait. In TypeScript, `condition()` is clean and replay-safe when its predicate is pure; the Python `wait_condition()` syntax is only an SDK-language difference, not a different durability model.
+A Workflow should wait for a semantic-core-owned condition such as “at least one semantic input is ready,” not directly encode every User Task as a bespoke language-level wait. In TypeScript, `condition()` is clean and replay-safe when its predicate is pure; the Python `wait_condition()` syntax is only an SDK-language difference, not a different durability model.
 
 ### Completion transport
 
-A UI submission is an external command, not an Activity completion. The initial preference is a single versioned Update handler with an envelope such as `complete-user-task`, because the caller can receive the reducer’s typed committed, rejected, rolled-back, failed, or unsupported outcome.
+A UI submission is an external command, not an Activity completion. The initial preference is a single versioned Update handler with an envelope such as `complete-user-task`, because the caller can receive the semantic core’s typed committed, rejected, rolled-back, failed, or unsupported outcome.
 
 A global Signal name can also carry a versioned command envelope across all adapter Workflows, but Signal acknowledgement proves only Service acceptance. If Signal is chosen, the UI needs a separate Query, Workflow result, event stream, or application read model to learn the semantic outcome.
 
-Every submission needs a stable `commandId` and task-instance ID. The reducer must reject stale, already completed, unknown, or unauthorized task-instance commands according to the approved profile, and a duplicate transport delivery must not complete a task twice.
+Every submission needs a stable `commandId` and task-instance ID. The semantic core must reject stale, already completed, unknown, or unauthorized task-instance commands according to the approved profile, and a duplicate transport delivery must not complete a task twice.
 
-The handler should enqueue the submission. It should not directly set a `completed` flag or update Search Attributes, because that would bypass reducer validation and make handler interleaving part of BPMN semantics.
+The handler should enqueue the submission. It should not directly set a `completed` flag or update Search Attributes, because that would bypass semantic core validation and make handler interleaving part of BPMN semantics.
 
 ### Activities are not human waits
 
@@ -266,11 +266,11 @@ A normal Activity should not remain running while a human thinks. It would turn 
 
 Async Activity Completion can technically let an external user complete an Activity later, but the Activity Task Token is attempt-specific and retry behavior can invalidate it. This is a poor default mapping for BPMN User Tasks and obscures the distinction between task creation, claim, delegation, completion, and BPMN command outcomes.
 
-Activities can still support a User Task by publishing a task to an external task service, synchronizing an external read model, resolving identity, sending notifications, or loading a form. Those are typed external effects around a reducer-owned task, not the task itself.
+Activities can still support a User Task by publishing a task to an external task service, synchronizing an external read model, resolving identity, sending notifications, or loading a form. Those are typed external effects around a semantic-core-owned task, not the task itself.
 
 ### Querying open tasks
 
-A Query can return the exact open-task projection from the reconstructed reducer state for one known Workflow ID. It is appropriate for a task-detail screen or diagnostic inspection, provided the caller accepts that a compatible Worker must answer and that the response is not itself a durable Event.
+A Query can return the exact open-task projection from the reconstructed semantic state for one known Workflow ID. It is appropriate for a task-detail screen or diagnostic inspection, provided the caller accepts that a compatible Worker must answer and that the response is not itself a durable Event.
 
 Temporal’s list and describe APIs return Workflow Executions and operational pending Activities. They do not natively list BPMN User Task instances, and pending Temporal Activities must not be presented as pending BPMN User Tasks.
 
@@ -279,11 +279,11 @@ For a small experiment, the UI can discover candidate Workflows through Visibili
 For a production task inbox, the likely architecture is:
 
 ```text
-reducer-owned User Task state
+semantic-core-owned User Task state
   -> coarse Workflow-level Search Attribute projection for discovery
   -> exact Query or external task read model for task instances
   -> UI submits versioned Update command
-  -> reducer validates and commits
+  -> semantic core validates and commits
   -> visibility/read-model projection catches up
 ```
 
@@ -308,7 +308,7 @@ Possible coarse projections, subject to an explicit data and access review, are:
 
 Do not put task payloads, form data, user names, comments, sensitive business variables, or an unbounded list of task IDs in Search Attributes. Values are plaintext to the Visibility store and are not processed by Payload Codecs. Current defaults also limit a single value to 2 KB, total Search Attributes to 40 KB, and characters per value to 255.
 
-The aggregate values should be derived from committed reducer state and upserted by the single main Workflow loop immediately after the relevant semantic transition. Initialization at Workflow start is useful, but it must use the reducer’s initial projection rather than an independent flag.
+The aggregate values should be derived from committed semantic state and upserted by the single main Workflow loop immediately after the relevant semantic transition. Initialization at Workflow start is useful, but it must use the semantic core’s initial projection rather than an independent flag.
 
 Upserting a Search Attribute emits a Temporal Command and affects replay compatibility. Upserts must therefore occur at stable deterministic points and be covered by retained-history replay tests.
 
@@ -324,7 +324,7 @@ Temporal Cloud uses its Namespace management path or Cloud UI instead. Search-at
 
 ### UI and form selection
 
-The form reference is semantic task metadata and belongs in reducer state. A UI can obtain a task projection containing the form key or schema identity, task-instance ID, allowed command schema, and non-sensitive display data.
+The form reference is semantic task metadata and belongs in semantic state. A UI can obtain a task projection containing the form key or schema identity, task-instance ID, allowed command schema, and non-sensitive display data.
 
 Search Attributes may expose a coarse form category only if global inbox filtering needs it and the value is safe. They should not carry the form model itself.
 
@@ -334,12 +334,12 @@ Authentication and authorization remain outside Temporal’s BPMN semantics. The
 
 The walking skeleton should add one User Task only after the generic runner exists, with this exact evidence chain:
 
-1. The reducer opens one task instance and emits a canonical `user-task-opened` observation.
+1. The semantic core opens one task instance and emits a canonical `user-task-opened` observation.
 2. The adapter upserts `BpmnHasOpenUserTasks = true` and a count of one.
 3. Visibility eventually discovers the candidate Workflow.
 4. Query returns the exact task projection for the known Workflow.
 5. The UI or test harness sends a versioned Update with `commandId`, task-instance ID, actor reference, and completion variables.
-6. The reducer commits or rejects the command and the Update returns that exact typed outcome.
+6. The semantic core commits or rejects the command and the Update returns that exact typed outcome.
 7. On commit, the adapter upserts the derived open-task projection and emits the canonical semantic observation.
 8. Duplicate, stale, and wrong-task commands are separating tests.
 9. Cache eviction and retained-history replay produce the same result and Search Attribute Commands.
@@ -354,7 +354,7 @@ Within one Workflow Execution, Workflow code remains single-threaded and determi
 
 Temporal history records one accepted order for external messages, timer firings, and completions, and replay reproduces that order. It does not decide what concurrent BPMN tokens mean, whether a gateway fires, or which events a semantic race permits.
 
-The reducer must represent enabled semantic work, multiplicity, and scheduler or race choices explicitly. The adapter may feed the order established by durable delivery as an input only where the approved profile permits that ordering rule.
+The semantic core must represent enabled semantic work, multiplicity, and scheduler or race choices explicitly. The adapter may feed the order established by durable delivery as an input only where the approved profile permits that ordering rule.
 
 Task Queue order must never become an implicit BPMN scheduler. At scale, Task Queue partitions and pollers do not provide a semantic FIFO guarantee.
 
@@ -364,9 +364,9 @@ Temporal timers are durable minimum-duration wakeups. A Workflow can await `slee
 
 Timers consume history Events but not a dedicated sleeping thread or Worker slot. They can survive Worker and Service process restarts.
 
-Timer precision and Event delivery order are platform facts, not automatically BPMN timer semantics. The reducer must own timer definition interpretation, boundary attachment behavior, interruption, repetition, and the semantic winner of any allowed race.
+Timer precision and Event delivery order are platform facts, not automatically BPMN timer semantics. The semantic core must own timer definition interpretation, boundary attachment behavior, interruption, repetition, and the semantic winner of any allowed race.
 
-The initial adapter should calculate a typed logical deadline in the reducer and let the Temporal adapter implement the physical wakeup. On firing, the adapter sends a typed timer-fired stimulus back to the reducer.
+The initial adapter should calculate a typed logical deadline in the semantic core and let the Temporal adapter implement the physical wakeup. On firing, the adapter sends a typed timer-fired stimulus back to the semantic core.
 
 Temporal Schedules, Cron, and Start Delay are Workflow-start automation features. They are not substitutes for BPMN timer Start Events, Intermediate Catch Events, or Boundary Events.
 
@@ -376,7 +376,7 @@ TypeScript `CancellationScope` forms a tree of cancellable work. Cancellation pr
 
 A non-cancellable scope can perform cleanup after cancellation. A timed scope can cancel its descendants when its timeout expires.
 
-Temporal cancellation scopes are an implementation mechanism. They do not define BPMN scopes, interrupting boundary Events, event subprocess cancellation, compensation, or transaction cancellation. Every mapping requires a reducer-owned semantic rule and a tested adapter refinement.
+Temporal cancellation scopes are an implementation mechanism. They do not define BPMN scopes, interrupting boundary Events, event subprocess cancellation, compensation, or transaction cancellation. Every mapping requires a semantic-core-owned semantic rule and a tested adapter refinement.
 
 Cancellation, termination, and failure are different:
 
@@ -392,14 +392,14 @@ Operational termination must not be presented as a normal BPMN cancellation outc
 |---|---|---|
 | Workflow Task programming or nondeterminism failure | Retry the Workflow Task while the Workflow Execution stays open | Treat as adapter defect or deployment incompatibility, never a BPMN outcome |
 | Activity attempt failure | Retry according to Activity Retry Policy | Hide as infrastructure only when the approved profile permits; do not expose as CIB-visible retry |
-| Exhausted or non-retryable Activity failure | Deliver `ActivityFailure` to Workflow | Translate through an explicit effect-result contract before reducer handling |
-| Workflow application failure | Close the Run as failed; retry only if a Workflow Retry Policy exists | Emit only from an explicit reducer terminal outcome or adapter infrastructure policy |
+| Exhausted or non-retryable Activity failure | Deliver `ActivityFailure` to Workflow | Translate through an explicit effect-result contract before semantic core handling |
+| Workflow application failure | Close the Run as failed; retry only if a Workflow Retry Policy exists | Emit only from an explicit semantic core terminal outcome or adapter infrastructure policy |
 | Workflow Execution timeout | Close or retry according to policy | Operational guard, not an implicit BPMN timer Event |
 | Workflow Task timeout | Retry Workflow Task | Infrastructure only |
 
 Retry policies have initial interval, backoff coefficient, maximum interval, maximum attempts, and non-retryable error types. Setting maximum attempts to zero means unlimited attempts.
 
-The most dangerous default for this project is unlimited Activity retries: a permanently broken external effect could remain invisible to the reducer forever. The Activity retry and timeout policy must therefore be an explicit adapter/profile decision before service-task behavior is implemented.
+The most dangerous default for this project is unlimited Activity retries: a permanently broken external effect could remain invisible to the semantic core forever. The Activity retry and timeout policy must therefore be an explicit adapter/profile decision before service-task behavior is implemented.
 
 Temporal retries can be used to repair transient delivery failures below the semantic boundary. CIB-visible job retries, incidents, retries that change observable attempt counts, and BPMN error behavior must be modeled explicitly and cannot be inferred from Temporal attempt numbers.
 
@@ -419,7 +419,7 @@ External Workflow handles can Signal or request cancellation of another Workflow
 
 Continue-As-New closes the current Run and atomically creates a new Run with the same Workflow ID, a new Run ID, and an empty Event History.
 
-The old Run’s in-memory state does not automatically enter the new Run. Required reducer state, semantic-profile identity, model identity, logical clock, deduplication ledger, and open-effect reconciliation data must be passed explicitly in the new Run input.
+The old Run’s in-memory state does not automatically enter the new Run. Required semantic state, semantic-profile identity, model identity, logical clock, deduplication ledger, and open-effect reconciliation data must be passed explicitly in the new Run input.
 
 Continue-As-New is the primary mechanism for bounding long-running Workflow history. The Service currently warns as histories approach limits and ultimately enforces a history size/count limit; the adapter should respond to `continueAsNewSuggested()` before the hard boundary.
 
@@ -435,7 +435,7 @@ This project has several independent version dimensions:
 |---|---|
 | BPMN model identity | Exact admitted source model and normalized representation |
 | Semantic-profile identity | Versioned CIB-compatible or standards profile |
-| Reducer semantics version | Pure implementation expected to refine the profile and Lean model |
+| Semantic core semantics version | Pure implementation expected to refine the profile and Lean model |
 | Adapter/history compatibility | Ability of new Workflow code to replay retained Temporal histories |
 | Worker deployment version | Operational routing of Workflow Tasks to compatible code |
 | Payload schema and converter version | Ability to decode historical inputs, results, failures, and carried state |
@@ -491,7 +491,7 @@ Payload encryption protects Event payload contents from the Service’s persiste
 
 Memo is non-indexed Workflow visibility metadata. Search Attributes are indexed metadata used to list and find Workflow Executions.
 
-Neither is the semantic source of truth. The reducer’s local state is reconstructed from Workflow History, and required state is passed across Continue-As-New explicitly.
+Neither is the semantic source of truth. The semantic core’s local state is reconstructed from Workflow History, and required state is passed across Continue-As-New explicitly.
 
 Search Attribute visibility can be eventually consistent and values are exposed to the Temporal visibility system. Use it for operational discovery, never as a commit record or canonical trace.
 
@@ -515,7 +515,7 @@ Cron is the older Workflow-chain scheduling mechanism; new periodic start automa
 
 Start Delay defers the first Workflow Task once. It is not recurring scheduling.
 
-These are process-instantiation and operations features. They must not be equated with BPMN timer-event semantics, whose meaning remains in the reducer.
+These are process-instantiation and operations features. They must not be equated with BPMN timer-event semantics, whose meaning remains in the semantic core.
 
 ## Nexus
 
@@ -529,7 +529,7 @@ Nexus operations have at-least-once delivery concerns and therefore require the 
 
 Workflow Streams is a newer contrib-level abstraction that composes a Workflow-local append-only log with internal Signal, Update, and Query handlers. Publishers batch Signals; subscribers long-poll with Updates and track offsets.
 
-It is useful for non-canonical progress streaming to user interfaces. It is not a replacement for the reducer’s canonical trace, and truncating its in-memory log does not remove already recorded Signal Events from Workflow History.
+It is useful for non-canonical progress streaming to user interfaces. It is not a replacement for the semantic core’s canonical trace, and truncating its in-memory log does not remove already recorded Signal Events from Workflow History.
 
 The initial adapter should not adopt Workflow Streams. The ordinary versioned runner protocol is smaller, easier to compare across Lean, TypeScript, Temporal, and CIB, and does not introduce an additional log or delivery contract.
 
@@ -539,7 +539,7 @@ Workflow cancellation requests cooperative cleanup. Termination closes immediate
 
 Workflow Pause is an operational feature with version and deployment constraints. While paused, the Service can still accept some Events even though it does not schedule new Workflow Tasks. It must not be used to implement BPMN suspension without a formal mapping.
 
-Activity Operations can pause, unpause, reset, or update options for pending Activity Executions in supported server versions. These operator actions are not automatically visible as reducer inputs and must not silently alter semantic outcomes.
+Activity Operations can pause, unpause, reset, or update options for pending Activity Executions in supported server versions. These operator actions are not automatically visible as semantic inputs and must not silently alter semantic outcomes.
 
 Operational repair can change what work executes. If such features are enabled in a conformance environment, the harness must record them separately from semantic commands.
 
@@ -547,12 +547,12 @@ Operational repair can change what work executes. If such features are enabled i
 
 | Temporal feature | Initial disposition | Reason |
 |---|---|---|
-| Workflow | Adopt | Durable host for one reducer-controlled process execution |
+| Workflow | Adopt | Durable host for one semantic-core-controlled process execution |
 | Event History and replay | Adopt and test directly | Fundamental durability and deployment-compatibility mechanism |
 | Signal | Candidate ingress | Durable asynchronous command transport without result |
 | Query | Adopt for diagnostics only | Convenient projection, but not durable observation authority |
 | Update | Candidate command ingress | Durable request-response fits typed command outcomes |
-| Durable timers | Adopt | Physical wakeup mechanism behind reducer-owned timer semantics |
+| Durable timers | Adopt | Physical wakeup mechanism behind semantic-core-owned timer semantics |
 | Activities | Adopt when external effects enter scope | I/O boundary with retries, timeouts, and idempotency obligations |
 | Cancellation scopes | Adopt as adapter mechanism | Useful structured cancellation, never BPMN semantic authority |
 | Continue-As-New | Plan early, implement when needed | Required for bounded history; must be observation-transparent |
@@ -575,28 +575,28 @@ Direct syntax-to-syntax translation is attractive but unsafe. The following tabl
 
 | BPMN or CIB concept | Proposed Temporal analogue | Verdict | Required project interpretation |
 |---|---|---|---|
-| Process Definition | Workflow Definition or class | False equivalence | The BPMN model is versioned data interpreted by a generic reducer; a Temporal Workflow Definition is adapter code and may host many model versions |
+| Process Definition | Workflow Definition or class | False equivalence | The BPMN model is versioned data interpreted by a generic semantic core; a Temporal Workflow Definition is adapter code and may host many model versions |
 | Process Instance | Workflow Execution | Useful hosting identity, not equality | One Workflow Execution can host one semantic process instance if profile, model, and Run-chain identity are carried explicitly |
-| Sequence Flow | Code order | False equivalence | Sequence Flows are model edges with conditions and token semantics evaluated by the reducer |
+| Sequence Flow | Code order | False equivalence | Sequence Flows are model edges with conditions and token semantics evaluated by the semantic core |
 | Start Event | Implicit Workflow start | Partial host mapping | Workflow start can deliver instantiation input, but BPMN Start Event type, trigger, event subprocess behavior, and multiplicity remain semantic |
-| End Event | Function return | Partial host mapping | Workflow return can close the host only after reducer-owned End Event, terminate, error, escalation, compensation, and multi-token rules are resolved |
-| Service Task | Activity | Useful effect mapping, not equality | The reducer owns task lifecycle and effect intent; an Activity performs the external operation under an explicit retry and idempotency policy |
-| User Task | UI completion Signal | Partial ingress mapping | The reducer owns task instances and command outcomes; Update is preferred when the UI needs the outcome, while Visibility and Query support discovery and detail |
-| Exclusive Gateway | `if`/`else` decision | Implementation technique only | The reducer evaluates all relevant conditions, default-flow rules, data semantics, and selected outgoing Sequence Flow |
-| Parallel Gateway | `Promise.all` or `asyncio.gather` | False equivalence | The reducer owns token split, multiplicity, activation, and join semantics; `Promise.all` only hosts concurrent Temporal operations |
-| Message Event | Signal | Partial transport mapping | Signal can carry ingress, but BPMN subscription, correlation, consumption, boundary behavior, and message-flow semantics remain reducer-owned |
-| Receive Task | Wait for Signal or Update | Partial transport mapping | The semantic subscription and completion are reducer state; Temporal message delivery is the durable wakeup |
-| Conditional Event | `condition()` or `wait_condition()` | Partial wait mapping | The reducer owns condition subscription and evaluation semantics; the SDK condition only blocks deterministic Workflow progress |
-| Timer Event | Temporal timer or await-with-timeout | Partial clock mapping | The reducer calculates semantic timer behavior; Temporal supplies a physical durable wakeup |
-| Subprocess with Error Boundary Event | `try`/`catch` | False equivalence | The reducer owns BPMN scope, propagation, matching, interruption, token cancellation, and outgoing flow; exceptions are only adapter control flow |
+| End Event | Function return | Partial host mapping | Workflow return can close the host only after semantic-core-owned End Event, terminate, error, escalation, compensation, and multi-token rules are resolved |
+| Service Task | Activity | Useful effect mapping, not equality | The semantic core owns task lifecycle and effect intent; an Activity performs the external operation under an explicit retry and idempotency policy |
+| User Task | UI completion Signal | Partial ingress mapping | The semantic core owns task instances and command outcomes; Update is preferred when the UI needs the outcome, while Visibility and Query support discovery and detail |
+| Exclusive Gateway | `if`/`else` decision | Implementation technique only | The semantic core evaluates all relevant conditions, default-flow rules, data semantics, and selected outgoing Sequence Flow |
+| Parallel Gateway | `Promise.all` or `asyncio.gather` | False equivalence | The semantic core owns token split, multiplicity, activation, and join semantics; `Promise.all` only hosts concurrent Temporal operations |
+| Message Event | Signal | Partial transport mapping | Signal can carry ingress, but BPMN subscription, correlation, consumption, boundary behavior, and message-flow semantics remain semantic-core-owned |
+| Receive Task | Wait for Signal or Update | Partial transport mapping | The semantic subscription and completion are semantic state; Temporal message delivery is the durable wakeup |
+| Conditional Event | `condition()` or `wait_condition()` | Partial wait mapping | The semantic core owns condition subscription and evaluation semantics; the SDK condition only blocks deterministic Workflow progress |
+| Timer Event | Temporal timer or await-with-timeout | Partial clock mapping | The semantic core calculates semantic timer behavior; Temporal supplies a physical durable wakeup |
+| Subprocess with Error Boundary Event | `try`/`catch` | False equivalence | The semantic core owns BPMN scope, propagation, matching, interruption, token cancellation, and outgoing flow; exceptions are only adapter control flow |
 | External-task topic implementation | Reusable Activity or function | Partial operational mapping | CIB job acquisition, lock, retries, incidents, completion, and failure are profile semantics and cannot be replaced by a helper function |
 | Call Activity | Child Workflow | Candidate requiring proof | A child can isolate history, but model binding, input/output mapping, propagation, cancellation, and version identity require an explicit mapping |
 
-The safe translation rule is: model elements become reducer data and state transitions; Temporal primitives host durable waits and effects only after the reducer has decided their semantic meaning.
+The safe translation rule is: model elements become semantic core data and state transitions; Temporal primitives host durable waits and effects only after the semantic core has decided their semantic meaning.
 
 ## Recommended initial adapter shape
 
-The pure TypeScript reducer remains necessary precisely because Temporal APIs add durability semantics that should not be mistaken for BPMN semantics.
+The pure TypeScript semantic core remains necessary precisely because Temporal APIs add durability semantics that should not be mistaken for BPMN semantics.
 
 The minimum adapter should contain:
 
@@ -609,7 +609,7 @@ type AdapterInput =
 type AdapterState = {
   readonly profileId: string;
   readonly modelId: string;
-  readonly reducerState: ReducerState;
+  readonly semanticState: SemanticState;
   readonly pendingInputs: readonly AdapterInput[];
   readonly appliedCommandIds: ReadonlySet<string>;
 };
@@ -622,13 +622,13 @@ One Workflow loop should:
 1. Initialize versioned state before registering message handlers.
 2. Accept a typed Signal or Update envelope and enqueue it synchronously.
 3. Wait until an input is available.
-4. Apply exactly one pure reducer decision or a documented deterministic batch.
-5. Append canonical reducer observations to the harness-facing result.
+4. Apply exactly one pure semantic transition or a documented deterministic batch.
+5. Append canonical semantic observations to the harness-facing result.
 6. Translate typed effect intents into Temporal timers, Activities, or child operations.
-7. Feed their recorded outcomes back as typed reducer inputs.
+7. Feed their recorded outcomes back as typed semantic inputs.
 8. Continue-As-New only at a safe quiescent boundary with all required state carried explicitly.
 
-The reducer should never import the Temporal SDK. The adapter should never reproduce gateway, token, scope, incident, or event-subscription semantics that belong in the reducer.
+The semantic core should never import the Temporal SDK. The adapter should never reproduce gateway, token, scope, incident, or event-subscription semantics that belong in the semantic core.
 
 ## Initial replay and refinement test matrix
 
@@ -640,7 +640,7 @@ The first end-to-end scenario should establish the entire assurance loop, not br
 4. Prove that a command-preserving refactor still replays.
 5. Add an intentionally reordered Temporal Command in a test fixture and prove replay rejects it.
 6. Force Workflow cache eviction or Worker restart before and after the external command and compare canonical traces.
-7. Deliver a duplicate logical Signal or Update and prove the reducer command is applied once.
+7. Deliver a duplicate logical Signal or Update and prove the semantic command is applied once.
 8. Compare Signal acknowledgement with Update completion so the chosen runner contract is explicit.
 9. Force Continue-As-New at an artificially low threshold and prove profile, model, state, deduplication, and trace continuity.
 10. When Activities enter scope, simulate a side effect followed by lost completion and prove idempotent retry or reconciliation.
@@ -670,18 +670,18 @@ The following decisions remain unapproved:
 - A Workflow cache hit and a full replay must produce the same semantic observations.
 - Only Event History and explicit Continue-As-New input can be assumed durable.
 - The same retained history must reproduce compatible Temporal Commands in the same order.
-- Temporal Commands, reducer commands, and BPMN transitions remain distinct types and vocabulary.
-- Signal acceptance is not reducer commitment.
+- Temporal Commands, semantic commands, and BPMN transitions remain distinct types and vocabulary.
+- Signal acceptance is not semantic core commitment.
 - Query output is not a durable semantic fact.
-- Async message handlers do not mutate reducer state directly.
+- Async message handlers do not mutate semantic state directly.
 - Activity effects are idempotent or explicitly reconcilable.
 - Temporal retry attempts never silently become CIB-visible attempts.
 - Continue-As-New is invisible at the BPMN observation boundary.
 - Search Attributes, Memo, logs, Sinks, and Workflow Streams never become the semantic source of truth.
-- Search Attribute task-inbox results are candidate projections and must be revalidated against exact reducer state.
-- BPMN User Tasks are reducer state; Signals, Updates, Queries, Search Attributes, Activities, and UI code each provide only one surrounding mechanism.
+- Search Attribute task-inbox results are candidate projections and must be revalidated against exact semantic state.
+- BPMN User Tasks are semantic state; Signals, Updates, Queries, Search Attributes, Activities, and UI code each provide only one surrounding mechanism.
 - Worker Versioning and patching preserve replay compatibility but never authorize semantic reinterpretation.
-- Every external delivery, timer race, and concurrency choice that affects BPMN behavior enters the reducer as an explicit typed input.
+- Every external delivery, timer race, and concurrency choice that affects BPMN behavior enters the semantic core as an explicit typed input.
 
 ## Primary sources
 

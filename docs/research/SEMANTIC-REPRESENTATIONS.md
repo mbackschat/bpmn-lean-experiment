@@ -2,7 +2,7 @@
 
 **Status:** Research result with provisional project consequences
 
-**Scope:** CIB Seven BPMN Model API, deployment parser, PVM definition and runtime representations, fUML Activity execution, PSSM State Machine execution, and candidate consequences for the project’s BPMN source model, Lean semantics, pure TypeScript reducer, and Temporal adapter.
+**Scope:** CIB Seven BPMN Model API, deployment parser, PVM definition and runtime representations, fUML Activity execution, PSSM State Machine execution, and candidate consequences for the project’s BPMN source model, Lean semantics, pure TypeScript semantic core, and Temporal adapter.
 
 **Decision status:** No production parser, IR schema, token model, scope algebra, or scheduling semantics is selected by this document. Executable discriminators are recorded separately in [Semantic representation spikes](../experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
 
@@ -105,7 +105,7 @@ The authoring layer needs properties that are mostly irrelevant to execution:
 - validation and serialization
 - round-trip behavior
 
-A live DOM is a defensible implementation choice for this problem. It is a poor candidate for the project’s executable semantic authority because DOM mutation, XML ordering, namespace concerns, and host object identity would leak into Lean, reducer determinism, and Temporal serialization.
+A live DOM is a defensible implementation choice for this problem. It is a poor candidate for the project’s executable semantic authority because DOM mutation, XML ordering, namespace concerns, and host object identity would leak into Lean, semantic core determinism, and Temporal serialization.
 
 ## CIB Seven deployment parse tree
 
@@ -441,7 +441,7 @@ Not directly transferable:
 
 ### First reflection: separation is necessary but not sufficient
 
-The existing architecture already separates BPMN input, Lean, reducer, Temporal, and observations. This research shows that each semantic implementation also needs an internal separation:
+The existing architecture already separates BPMN input, Lean, semantic core, Temporal, and observations. This research shows that each semantic implementation also needs an internal separation:
 
 ```text
 source-preserving model
@@ -457,7 +457,7 @@ Without this internal split, XML concerns leak into semantics or runtime state l
 
 ### Second reflection: normalization is a proof boundary
 
-The compiler does more than improve runtime speed. It establishes facts that every later theorem and reducer step assumes:
+The compiler does more than improve runtime speed. It establishes facts that every later theorem and semantic core step assumes:
 
 - references resolve;
 - identities are unique;
@@ -555,7 +555,7 @@ Only the first two belong in canonical semantic reasoning. Host IDs remain adapt
 
 ### Seventh reflection: behavior belongs in the transition system, not in IR objects
 
-CIB and fUML attach mutable behavior/visitor objects to syntax or definition nodes. For Lean and a replay-safe reducer, a better starting point is:
+CIB and fUML attach mutable behavior/visitor objects to syntax or definition nodes. For Lean and a replay-safe semantic core, a better starting point is:
 
 ```lean
 inductive NodeKind
@@ -582,10 +582,10 @@ PSSM’s separation between activation hierarchy and active configuration sugges
 - derived indexes and activation machinery used to execute efficiently;
 - canonical public observation projected only at command boundaries.
 
-The reducer result should make closure explicit:
+The semantic core result should make closure explicit:
 
 ```ts
-interface ReducerResult {
+interface SemanticTransitionResult {
   readonly outcome:
     | "committed"
     | "rolledBack"
@@ -603,7 +603,7 @@ The internal loop must distinguish stable external wait, scheduler wait, deadloc
 
 ### Ninth reflection: centralized selection fits Temporal replay
 
-PSSM’s global event accepter reinforces the existing Temporal boundary. Signal or Update handlers should validate and enqueue versioned inputs. One Workflow loop should invoke the reducer and select globally compatible semantic progress.
+PSSM’s global event accepter reinforces the existing Temporal boundary. Signal or Update handlers should validate and enqueue versioned inputs. One Workflow loop should invoke the semantic core and select globally compatible semantic progress.
 
 ```ts
 setHandler(completeTaskSignal, input => {
@@ -613,13 +613,13 @@ setHandler(completeTaskSignal, input => {
 while (!state.isTerminal) {
   await condition(() => inbox.length > 0 || hasDueSemanticTimer(state));
   const stimulus = selectNextStimulus(state, inbox, logicalTime);
-  const result = reduce(profile, model, state, stimulus);
+  const result = applyStimulus(profile, model, state, stimulus);
   state = result.stableState;
   await dispatchDeclaredEffects(result.effects);
 }
 ```
 
-The handler does not complete a BPMN Task directly. Temporal’s replay order is a durable delivery fact; the reducer remains the authority for BPMN acceptance, correlation, races, cancellation, and command outcome.
+The handler does not complete a BPMN Task directly. Temporal’s replay order is a durable delivery fact; the semantic core remains the authority for BPMN acceptance, correlation, races, cancellation, and command outcome.
 
 ### Tenth reflection: version every boundary that can reinterpret state
 
@@ -631,7 +631,7 @@ The durable identity chain likely needs:
 - semantic profile version;
 - executable-IR schema version;
 - executable semantic digest;
-- reducer semantic version;
+- semantic core semantic version;
 - adapter history/version marker.
 
 The exact scheme is undecided. The design must prevent an old Temporal history or persisted runtime state from being silently interpreted by a different compiler or semantic profile.
@@ -645,12 +645,12 @@ flowchart TB
   Validate --> Compile[Versioned normalization compiler]
   Compile --> IR[Immutable executable semantic IR]
   IR --> Lean[Lean relation and interpreter]
-  IR --> Reducer[Pure TypeScript reducer]
+  IR --> SemanticCore[Pure TypeScript semantic core]
   State[Explicit semantic runtime state] --> Lean
-  State --> Reducer
+  State --> SemanticCore
   Stimulus[Versioned stimulus and semantic choice] --> Lean
-  Stimulus --> Reducer
-  Reducer --> Result[Stable state, effects, observations, microtrace]
+  Stimulus --> SemanticCore
+  SemanticCore --> Result[Stable state, effects, observations, microtrace]
   Result --> Temporal[Temporal durability adapter]
   CIB[CIB public oracle] --> Compare[Canonical differential comparison]
   Lean --> Compare

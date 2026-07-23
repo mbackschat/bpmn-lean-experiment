@@ -18,7 +18,7 @@ If the project later grows a graphical modeler, exporter, BPEL mapper, or choreo
 |---|---|---|
 | BPMN conformance | OMG BPMN 2.0.2 | The adapter imports Process diagrams and supports the required metamodel, operational execution semantics, and Activity lifecycle |
 | CIB compatibility | Immutable CIB Seven semantic profile plus differential evidence | Observable behavior agrees with one pinned CIB release, configuration, feature surface, and observation boundary |
-| Temporal correctness | Reducer-to-adapter refinement plus replay and integration evidence | Durable Temporal execution adds only permitted hidden work and preserves reducer-visible BPMN behavior |
+| Temporal correctness | Semantic-core-to-adapter refinement plus replay and integration evidence | Durable Temporal execution adds only permitted hidden work and preserves semantic-core-visible BPMN behavior |
 
 Agreement with CIB Seven does not by itself prove BPMN conformance. BPMN conformance does not imply CIB-specific jobs, retries, incidents, extensions, or listener behavior. Passing Temporal replay does not establish either semantic claim.
 

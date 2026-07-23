@@ -8,9 +8,9 @@ The current disposition is:
 
 1. Add no auxiliary formal tool to Milestone 0. Keep exact canonical trace equality for its sequential walking skeleton.
 2. Keep Lean as the only normative BPMN semantics and proof layer.
-3. Retain **observational, weak, stuttering-aware refinement** as the architecture’s candidate reducer-to-Temporal correctness relation, but do not claim it until the relation and observations are implemented and checked.
+3. Retain **observational, weak, stuttering-aware refinement** as the architecture’s candidate semantic-core-to-Temporal correctness relation, but do not claim it until the relation and observations are implemented and checked.
 4. Treat simulation, trace inclusion, divergence-sensitive branching bisimulation, temporal model checking, process algebra, Petri-net analysis, and implementation-state exploration as selectable techniques.
-5. Select a technique only for a named question, a separating defect it must expose, a feedback-time budget, and a defined correspondence back to Lean, the reducer, or the real Temporal adapter.
+5. Select a technique only for a named question, a separating defect it must expose, a feedback-time budget, and a defined correspondence back to Lean, the semantic core, or the real Temporal adapter.
 6. Remove an experimental tool if it does not find useful counterexamples or establish evidence more cheaply and clearly than the existing pipeline.
 
 This sharpens the direction already present in the [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md#193-reducer-to-temporal-adapter), which requires weak, stuttering-aware adapter refinement.
@@ -33,8 +33,8 @@ Bisimulation and simulation make “the two transition systems behave the same�
 | Question | Primary method | Why |
 |---|---|---|
 | Is the chosen BPMN/profile meaning internally coherent? | Lean operational semantics, proofs, executable examples, and bounded exploration | This is the normative semantic account |
-| Does the TypeScript reducer agree with Lean and pinned CIB Seven? | Neutral differential scenarios and, selectively, Lean-level simulation theorems | CIB is a black-box oracle and TypeScript is not extracted from Lean |
-| Does the Temporal adapter preserve reducer behavior despite hidden durable work? | Stuttering refinement tests, replay, fault injection, and, if justified, a bounded protocol model or implementation-state explorer | This is the concurrency and durability boundary |
+| Does the TypeScript semantic core agree with Lean and pinned CIB Seven? | Neutral differential scenarios and, selectively, Lean-level simulation theorems | CIB is a black-box oracle and TypeScript is not extracted from Lean |
+| Does the Temporal adapter preserve semantic core behavior despite hidden durable work? | Stuttering refinement tests, replay, fault injection, and, if justified, a bounded protocol model or implementation-state explorer | This is the concurrency and durability boundary |
 
 No auxiliary formal tool should answer the first question independently. Rewriting the complete BPMN semantics in Lean and another language would create two formal authorities and a permanent synchronization problem.
 
@@ -46,7 +46,7 @@ TLC explicitly explores the states reachable in a finite configuration. It is we
 
 - a message accepted before or after a Workflow Task starts;
 - duplicate command delivery around a Worker crash;
-- reducer advancement followed by an uncommitted Workflow Task completion;
+- semantic core advancement followed by an uncommitted Workflow Task completion;
 - Activity side effect followed by lost Activity completion;
 - cancellation racing with an Activity result;
 - a timer firing while a completion message is accepted;
@@ -61,14 +61,14 @@ Scenario tests sample schedules. A bounded model checker can enumerate all sched
 TLA+ and TLC can check invariants such as:
 
 - one logical command produces at most one semantic commit;
-- every committed command result corresponds to one reducer transition;
+- every committed command result corresponds to one semantic core transition;
 - a rolled-back or rejected command exposes no speculative semantic state;
 - replay and cache eviction do not change the semantic projection;
 - Continue-As-New preserves model, profile, state, deduplication, and pending-work identity;
 - one event race has at most one semantic winner;
 - no cancelled scope retains forbidden semantic work;
 - no completed process retains active semantic entities;
-- Search Attributes and other projections never drive reducer decisions.
+- Search Attributes and other projections never drive semantic transitions.
 
 These properties complement the Lean invariants because they apply to a deliberately lower-level adapter protocol model with crashes and hidden steps.
 
@@ -79,7 +79,7 @@ TLA+ directly represents temporal properties and weak or strong fairness assumpt
 Candidate conditional properties include:
 
 - if a Worker continues polling and an accepted command remains enabled, the command is eventually committed, rejected, or failed;
-- if a timer becomes due and delivery remains enabled, the reducer eventually receives one timer-fired stimulus;
+- if a timer becomes due and delivery remains enabled, the semantic core eventually receives one timer-fired stimulus;
 - if an external effect eventually returns or reaches its terminal delivery policy, the semantic wait eventually resolves;
 - an enabled semantic branch is not permanently starved under the scheduler assumption declared by the profile;
 - Continue-As-New cannot permanently postpone an already accepted input.
@@ -94,7 +94,7 @@ For this project, the refinement mapping would forget Temporal-only state:
 
 ```text
 concrete adapter state
-  = reducer state
+  = semantic state
   + accepted-message queue
   + Workflow Task phase
   + replay/cache phase
@@ -104,7 +104,7 @@ concrete adapter state
   + projection-delivery state
 
 abstract state
-  = reducer state
+  = semantic state
   + semantically pending inputs and effects
 ```
 
@@ -120,7 +120,7 @@ TLC counterexamples should not remain tool-specific traces. A small exporter can
 - expected invariant violation or forbidden observation;
 - exact model/profile/tool provenance.
 
-The minimized result can then become a permanent Lean, reducer, Temporal, and differential regression scenario.
+The minimized result can then become a permanent Lean, semantic core, Temporal, and differential regression scenario.
 
 TLC also supports validating recorded implementation traces against a TLA+ specification. The TLA+ documentation correctly warns that trace validation is not exhaustive, but it could later provide another view of actual Temporal fault-injection histories. [TLC trace validation](https://docs.tlapl.us/using%3Atlc%3Atrace_validation)
 
@@ -129,7 +129,7 @@ TLC also supports validating recorded implementation traces against a TLA+ speci
 TLA+ does not automatically prove:
 
 - that the TLA+ model matches the Lean BPMN semantics;
-- that the TypeScript reducer implements either model;
+- that the TypeScript semantic core implements either model;
 - that the Temporal SDK or Service implements the adapter protocol model;
 - that the BPMN XML parser is correct;
 - CIB Seven compatibility;
@@ -160,7 +160,7 @@ The useful division is therefore Lean for semantic truth and proof, TLA+ for bou
 
 ## Behavioral relations available to the project
 
-Let `A` be the abstract reducer transition system and `C` the concrete adapter transition system. Let `obsA` and `obsC` be their canonical observation projections, and let `α : C → A` be an abstraction mapping.
+Let `A` be the abstract semantic core transition system and `C` the concrete adapter transition system. Let `obsA` and `obsC` be their canonical observation projections, and let `α : C → A` be an abstraction mapping.
 
 ### Exact state equality
 
@@ -186,11 +186,11 @@ It states that the adapter introduces no forbidden semantic behavior. It does no
 
 A forward simulation is asymmetric: every concrete step can be matched by an abstract step or permitted abstract stuttering while related states remain related.
 
-This is the best default proof shape for “the adapter implements the reducer.” Refinement is intentionally directional; a production implementation may restrict nondeterministic choices without being behaviorally identical in every operational respect.
+This is the best default proof shape for “the adapter implements the semantic core.” Refinement is intentionally directional; a production implementation may restrict nondeterministic choices without being behaviorally identical in every operational respect.
 
 ### Weak stuttering simulation
 
-The adapter needs a weak or stuttering version because one visible reducer transition may correspond to many concrete steps.
+The adapter needs a weak or stuttering version because one visible semantic core transition may correspond to many concrete steps.
 
 A useful project relation should require:
 
@@ -206,7 +206,7 @@ Items 5–7 go beyond a minimal safety simulation and are essential for this pro
 
 ### Strong bisimulation
 
-Strong bisimulation requires both systems to match each transition directly in both directions. It is categorically too strong for reducer-to-Temporal comparison because replay, persistence, retries, Workflow Tasks, and Continue-As-New have no one-step abstract counterparts.
+Strong bisimulation requires both systems to match each transition directly in both directions. It is categorically too strong for semantic-core-to-Temporal comparison because replay, persistence, retries, Workflow Tasks, and Continue-As-New have no one-step abstract counterparts.
 
 ### Weak bisimulation
 
@@ -234,7 +234,7 @@ This makes branching bisimulation a strong candidate for bounded comparisons inv
 
 Any relation that simply hides internal `τ` steps risks equating harmless finite replay with infinite internal livelock.
 
-For example, an adapter that endlessly fails and retries Workflow Tasks without changing reducer state can stutter forever. It is safety-equivalent to waiting, but it violates progress under the assumptions that should make the command advance.
+For example, an adapter that endlessly fails and retries Workflow Tasks without changing semantic state can stutter forever. It is safety-equivalent to waiting, but it violates progress under the assumptions that should make the command advance.
 
 The project therefore needs either:
 
@@ -250,8 +250,8 @@ Bisimulation is symmetric. Implementation correctness is normally asymmetric.
 
 The project needs two distinguishable obligations:
 
-- **Soundness:** every visible adapter behavior is allowed by the reducer.
-- **Realizability:** every supported reducer interaction can be realized by the adapter under stated environment and fairness assumptions.
+- **Soundness:** every visible adapter behavior is allowed by the semantic core.
+- **Realizability:** every supported semantic core interaction can be realized by the adapter under stated environment and fairness assumptions.
 
 Together they may resemble an observational equivalence in a closed bounded model, but calling the actual Temporal implementation bisimilar to Lean would overstate the evidence unless both transition systems and the relation are machine checked.
 
@@ -290,7 +290,7 @@ The relation should also compare enabled semantic stimuli, not only emitted obse
 
 ## Candidate TLA+ target: the adapter protocol
 
-If TLA+ is selected for a concrete experiment, its strongest initial target is the durability protocol around one tiny reducer interface. It should not parse BPMN or reproduce gateway semantics.
+If TLA+ is selected for a concrete experiment, its strongest initial target is the durability protocol around one tiny semantic core interface. It should not parse BPMN or reproduce gateway semantics.
 
 ### Abstract variables
 
@@ -303,7 +303,7 @@ If TLA+ is selected for a concrete experiment, its strongest initial target is t
 ### Concrete variables
 
 - all abstract variables or their concrete representation;
-- accepted but not yet reduced inputs;
+- accepted but not yet applied inputs;
 - Workflow Task phase and commit status;
 - Worker cache present or evicted;
 - Activity attempt and completion state;
@@ -316,7 +316,7 @@ If TLA+ is selected for a concrete experiment, its strongest initial target is t
 
 - start;
 - accept supported semantic command;
-- apply one reducer transition;
+- apply one semantic core transition;
 - deliver one semantic effect result;
 - complete.
 
@@ -326,7 +326,7 @@ If TLA+ is selected for a concrete experiment, its strongest initial target is t
 - enqueue input;
 - dispatch Workflow Task;
 - replay history;
-- invoke reducer;
+- invoke semantic core;
 - emit Temporal Command;
 - persist Workflow Task completion;
 - crash or evict cache;
@@ -340,11 +340,11 @@ If TLA+ is selected for a concrete experiment, its strongest initial target is t
 ### Initial invariants
 
 - no duplicate semantic commit;
-- reducer state changes only through the reducer action;
+- semantic state changes only through the semantic transition;
 - uncommitted Workflow Task work is absent after crash/replay reconstruction;
-- recorded completion reconstructs the same reducer state;
+- recorded completion reconstructs the same semantic state;
 - Continue-As-New preserves all required semantic and deduplication state;
-- visibility state is a projection and never an input to reducer decisions;
+- visibility state is a projection and never an input to semantic transitions;
 - canonical observations equal the abstraction mapping’s observations.
 
 ### Initial progress properties
@@ -352,15 +352,15 @@ If TLA+ is selected for a concrete experiment, its strongest initial target is t
 Under explicit assumptions that a compatible Worker polls, accepted Tasks are eventually delivered, and external effects eventually terminate according to policy:
 
 - every accepted command eventually receives one terminal semantic outcome;
-- every due semantic timer eventually yields one reducer timer stimulus;
-- finite replay and infrastructure retry cannot starve a ready reducer input;
+- every due semantic timer eventually yields one semantic core timer stimulus;
+- finite replay and infrastructure retry cannot starve a ready semantic input;
 - Continue-As-New cannot lose or indefinitely postpone accepted handler work.
 
 ## Candidate TLA+ evaluation experiment
 
 There is no approved TLA+ spike. The following is a ready-made evaluation design if a later adapter question needs exhaustive interleaving, liveness, fairness, or refinement-mapping exploration and the existing test pipeline does not answer it cheaply.
 
-Wait until M0.6 is green so the model can be challenged against an implemented abstraction boundary. A small evaluation could use the calibrated sequential User Task reducer interface but add hidden adapter faults:
+Wait until M0.6 is green so the model can be challenged against an implemented abstraction boundary. A small evaluation could use the calibrated sequential User Task semantic core interface but add hidden adapter faults:
 
 - two logical command IDs;
 - duplicate delivery of one command;
@@ -402,7 +402,7 @@ The question determines the tool. These options overlap, and a small time-boxed 
 
 ### TLA+ and TLC
 
-TLC is mature, explicit-state, checks invariants and liveness over finite configurations, and produces concrete counterexample behaviors. TLA+ makes stuttering, temporal properties, fairness assumptions, and abstraction mappings first-class, which aligns well with the reducer-to-Temporal boundary. The project’s Java 21 runtime could host TLC without another runtime language. [Specifying Systems](https://lamport.azurewebsites.net/tla/book.html)
+TLC is mature, explicit-state, checks invariants and liveness over finite configurations, and produces concrete counterexample behaviors. TLA+ makes stuttering, temporal properties, fairness assumptions, and abstraction mappings first-class, which aligns well with the semantic-core-to-Temporal boundary. The project’s Java 21 runtime could host TLC without another runtime language. [Specifying Systems](https://lamport.azurewebsites.net/tla/book.html)
 
 The latest stable GitHub release inspected on 2026-07-23 is `tlaplus/tlaplus` `v1.7.4`, released 2024-08-05 under MIT. This is research provenance, not a project pin.
 
@@ -422,7 +422,7 @@ The latest stable release inspected on 2026-07-23 is `apalache-mc/apalache` `v0.
 
 ### mCRL2, FDR, and behavioral equivalence
 
-[mCRL2](https://mcrl2.org/web/user_manual/index.html) directly supports process-algebra models, labelled-transition-system generation, behavioral-relation comparison including branching variants, deadlock checking, and modal properties. It may be more suitable than TLA+ when the central artifact is a finite reducer/adapter LTS and the question is genuinely simulation or bisimulation.
+[mCRL2](https://mcrl2.org/web/user_manual/index.html) directly supports process-algebra models, labelled-transition-system generation, behavioral-relation comparison including branching variants, deadlock checking, and modal properties. It may be more suitable than TLA+ when the central artifact is a finite semantic core/adapter LTS and the question is genuinely simulation or bisimulation.
 
 [FDR](https://cocotec.io/fdr/) checks CSP refinement in traces, failures, and failures-divergences models. That vocabulary is excellent for refusal, deadlock, and divergence questions, but its licensing and ecosystem must be evaluated before project use.
 
@@ -459,7 +459,7 @@ Any auxiliary formal experiment belongs in extended assurance unless its measure
 ```text
 BPMN/CIB research
   -> Lean semantic capsule and invariants
-  -> TypeScript reducer differential tests
+  -> TypeScript semantic core differential tests
   -> optional question-specific exploration or equivalence check
   -> Temporal adapter and fault-injection tests
   -> retained-history replay
@@ -496,7 +496,7 @@ No report should say “the Temporal adapter is proved correct” unless the act
 
 ### Duplicate formal semantics
 
-The largest risk is reimplementing BPMN twice. Keep every auxiliary model restricted to the question-specific boundary and a tiny reducer-interface abstraction.
+The largest risk is reimplementing BPMN twice. Keep every auxiliary model restricted to the question-specific boundary and a tiny semantic-core-interface abstraction.
 
 ### Wrong abstraction mapping
 
@@ -544,7 +544,7 @@ An auxiliary tool is valuable only if counterexamples or evidence arrive quickly
 
 ## Final assessment
 
-TLA+ has high potential at one narrow boundary: designing and model-checking the durable protocol that connects the pure reducer to Temporal under interleavings and faults. It is not uniquely required. P or SPIN may fit an event-driven protocol better, mCRL2 or FDR may fit an explicit equivalence question better, Alloy or Electrum may fit metamodel constraints better, and LoLA may fit net-shaped soundness questions better.
+TLA+ has high potential at one narrow boundary: designing and model-checking the durable protocol that connects the pure semantic core to Temporal under interleavings and faults. It is not uniquely required. P or SPIN may fit an event-driven protocol better, mCRL2 or FDR may fit an explicit equivalence question better, Alloy or Electrum may fit metamodel constraints better, and LoLA may fit net-shaped soundness questions better.
 
 Bisimulation has high conceptual value, but “bisimulation” is not one property. Strong bisimulation is wrong for this architecture; ordinary weak bisimulation is too permissive around branching and divergence; symmetric equivalence is usually stronger than implementation correctness requires.
 

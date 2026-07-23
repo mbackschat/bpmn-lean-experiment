@@ -19,6 +19,7 @@ The durable milestone contract is [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAS
 - A separately gated representation spike now distinguishes source from executable IR, flow scope from event scope, arrival count from edge provenance, and external commands from internal closure; its candidates remain provisional and are recorded in [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
 - M0.2 is complete: the repository-local Java 21 runner embeds pinned CIB Seven `2.2.0` on H2 `2.3.232`, controls logical time and automatic job execution, emits the calibrated sequential User Task trace, exposes a read-only PVM diagnostic, serves multiple JSON-lines requests through one warm engine, and proves cleanup after every run.
 - M0.3 is complete: the production Lean capsule separates command admission from internal closure, derives the calibrated canonical trace, keeps bound exhaustion outside semantic outcomes and committed observations, and proves start-to-wait, matching-completion, and non-matching-completion invariants.
+- M0.4 is complete: the dependency-free pure TypeScript semantic core independently derives the calibrated trace, cannot read the calibration answer, matches the lifecycle and bound-exhaustion guards, and joins Lean in a 1.11–1.17 second warm semantic gate.
 
 ## Locked ultimate target
 
@@ -31,7 +32,7 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 | Decision | Milestone choice | Reason |
 |---|---|---|
 | CIB oracle | CIB Seven `v2.2.0` at `834a9874760de8a0107f7c1b32806e37f17fb017` | It is the published release actually executed by the source investigation; the investigated `2.3.0-SNAPSHOT` source must not be mixed into its behavior claims |
-| Delivery architecture | Establish research, CIB, Lean, reducer, Temporal, diff, and replay in Milestone 0 | Every later semantic capsule must use the real assurance pipeline rather than a deferred integration path |
+| Delivery architecture | Establish research, CIB, Lean, semantic core, Temporal, diff, and replay in Milestone 0 | Every later semantic capsule must use the real assurance pipeline rather than a deferred integration path |
 | BPMN features | None Start Event, User Task, None End Event, two Sequence Flows, and Process completion | This is the smallest useful external wait and command-closure slice |
 | CIB extensions | None | Extensions would enlarge the compatibility boundary before the core oracle is calibrated |
 | Oracle environment | Java 21, H2 fast lane, automatic job executor disabled, explicit logical clock and scheduler | CIB Seven 2.2 supports Java 17 and 21, publishes Java 21 Docker images, and the machine already has Homebrew Java 21 |
@@ -44,28 +45,30 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Next ordered work
 
-1. Complete M0.4 through M0.6 in order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
-2. Obtain approval for the exact Node, pnpm, BPMN-ingestion, and Temporal dependencies before the package that adds them; the M0.2 Maven, CIB, H2, Jackson, and JUnit set is approved and implemented.
+1. Complete M0.5 and M0.6 in order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
+2. Obtain approval for the exact BPMN-ingestion and Temporal dependencies before the package that adds them; the M0.2 Java graph and M0.4 Node, pnpm, and TypeScript toolchain are approved and implemented.
 3. Keep advanced boundary Event, Event Sub-Process, and multi-instance PVM models in the diagnostic research lane until the walking skeleton is complete; the first read-only sequential-model projection has answered the M0.2 topology question.
-4. For M0.5, implement one synchronous message handler that enqueues versioned inputs, one deterministic Workflow loop that alone advances the reducer, and separate live-server and retained-history replay gates.
+4. For M0.5, implement one synchronous message handler that enqueues versioned inputs, one deterministic Workflow loop that alone advances the semantic core, and separate live-server and retained-history replay gates.
 5. After the walking skeleton is fast and green, add the researched User Task discovery/completion vertical slice and explicitly decide Update versus Signal, the task projection, Search Attribute registry, and production inbox boundary.
 6. Before adding an auxiliary formal tool, identify a concrete question and seeded defect, then time-box the smallest candidate experiment from [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md); no formal-method spike is currently scheduled.
 7. Expand the BPMN requirement ledger, MIWG ingestion coverage, and CIB assertion/fixture extraction one semantic capsule at a time.
+8. After Milestone 0 is complete, review the sibling `a12-kernel-lean` project as a bounded process-transfer study: compare how it turns kernel probes into durable evidence, captures learned facts in Lean, and synchronizes formal code with its specification documentation; adopt only practices that survive the domain difference between a validation kernel and BPMN execution semantics.
 
 ## Exact resume point
 
-- Current package: M0.3 is implemented; M0.4 pure TypeScript reducer is next.
-- Last verified commands: `./scripts/verify.sh`, `lake build checkConformance`, `lake exe checkConformance`, `lake build checkSemanticRepresentationSpike`, and `lake exe checkSemanticRepresentationSpike`.
-- Current state: the content-addressed BPMN fixture, draft spike profile, calibrated CIB trace, typed Java protocol, repeated embedded CIB execution, production Lean interpreter, lifecycle proofs, diagnostic PVM projection, cleanup checks, and component timings are green.
-- Next implementation target: obtain approval for the proposed M0.4 dependency set—Homebrew Node `24.18.0`, Homebrew pnpm `11.17.0`, and development-only `typescript@7.0.2`; then install exactly that set and add the smallest failing reducer test against the independently written calibrated trace using Node's built-in test runner.
+- Current package: M0.4 is implemented; M0.5 Temporal adapter and retained-history replay are next.
+- Last verified commands: `./scripts/pnpm.sh run test:semantic-core`, `./scripts/pnpm.sh run test:semantic`, and the complete `./scripts/verify.sh`; the final source-current complete gate finished in 12.23 seconds.
+- Current state: the content-addressed BPMN fixture, draft spike profile, calibrated CIB trace, typed Java protocol, repeated embedded CIB execution, production Lean interpreter and proofs, pure TypeScript semantic core and negative guards, diagnostic PVM projection, cleanup checks, and component timings are green.
+- Next implementation target: select and obtain approval for exact `@temporalio/*` packages and the pinned local Temporal CLI strategy, audit the resolved license graph, then add the smallest failing adapter-refinement and retained-history replay tests.
 - M0.2 calibrated result: deployment and both commands commit; start reaches one `UserTask_Approve` wait with multiplicity one and enables its completion stimulus; completion ends `Instance_1`; logical time remains zero.
 - M0.2 diagnostic result: ordered PVM topology matches the source sequence, ordinary flow activities have no PVM event scope, and the None End Event’s internal type is `noneEndEvent`; these facts remain diagnostic rather than compatibility keys.
 - M0.2 performance result: dependency-warm engine startup measured 1.983 seconds and one scenario including cleanup measured 0.492 seconds; the dependency-warm Maven gate completed in 5.28 seconds.
 - M0.3 performance result: the source-current Lean build measured 3.29 seconds; the artifact-warm focused build measured 0.14 seconds and execution measured 0.16 seconds.
-- Transport status: JSON Lines is implemented for CIB but remains provisional until a Lean or TypeScript process consumes the same framing; the Lean interpreter currently consumes the shared logical contract in-process.
+- M0.4 performance result: two artifact-warm semantic-gate runs covering Lean and the TypeScript semantic core measured 1.17 seconds and 1.11 seconds, within the less-than-two-second budget.
+- Transport status: JSON Lines is implemented for CIB but remains provisional until a Lean or TypeScript process consumes the same framing; Lean and TypeScript currently consume the shared logical contract in-process.
 - Architecture-spike status: M0.3 transferred only the definition/runtime, command/closure, and bound-classification distinctions; the experiment's source/IR, scope, and token types remain outside production semantic authority.
-- Later Temporal implementation constraint: Event History, not Workflow cache or Visibility, is the durability source; the initial adapter must serialize all reducer mutation through one Workflow loop and treat Search Attributes as an eventually consistent projection.
-- Known environment constraints: Homebrew Java 21 is installed but not globally active and is selected explicitly by the CIB gate; Maven is supplied by the repository wrapper; the M0.4 Node/pnpm/TypeScript proposal is recorded but not approved or installed; BPMN-ingestion and Temporal package additions also remain unapproved.
+- Later Temporal implementation constraint: Event History, not Workflow cache or Visibility, is the durability source; the initial adapter must serialize all semantic core mutation through one Workflow loop and treat Search Attributes as an eventually consistent projection.
+- Known environment constraints: Homebrew Java 21 and Node 24 are installed but not globally active and are selected explicitly by maintained wrappers; `.nvmrc` and `.node-version` also pin Node 24.18.0; Maven is supplied by the repository wrapper; BPMN-ingestion and Temporal package additions remain unapproved.
 - JavaScript/TypeScript command policy: the shared long-running-command guidance was read before selecting or running the M0.4 toolchain; keep tests at or below 60 seconds, builds at or below 120 seconds, and diagnose silent CPU saturation instead of extending timeouts.
 
 ## Stop conditions

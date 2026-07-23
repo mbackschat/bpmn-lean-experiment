@@ -15,7 +15,7 @@ profile decision + neutral scenario
           ↓
 executable Lean semantics
           ↓
-pure TypeScript reducer
+pure TypeScript semantic core
           ↓
 Temporal adapter
           ↓
@@ -34,7 +34,7 @@ The milestone keeps three questions independent:
 
 1. Does the interpretation have a defensible BPMN 2.0.2 basis?
 2. Does the selected profile reproduce the observable behavior of pinned CIB Seven?
-3. Does Temporal preserve the pure reducer behavior under durable execution and replay?
+3. Does Temporal preserve the pure semantic core behavior under durable execution and replay?
 
 ## Locked milestone scope
 
@@ -59,8 +59,8 @@ Required runners:
 
 - pinned CIB Seven `v2.2.0` black-box oracle;
 - executable Lean reference interpreter;
-- pure TypeScript reducer;
-- Temporal TypeScript adapter around the reducer.
+- pure TypeScript semantic core;
+- Temporal TypeScript adapter around the semantic core.
 
 Explicit exclusions:
 
@@ -137,8 +137,8 @@ Performance is an acceptance criterion from the first pipeline implementation.
 
 | Gate | Contents | Initial budget |
 |---|---|---:|
-| Semantic loop | Lean, pure TypeScript reducer, and diff | less than 2 seconds warm |
-| Full-pipeline smoke | CIB, Lean, reducer, Temporal, diff, and retained-history replay | less than 15 seconds warm |
+| Semantic loop | Lean, pure TypeScript semantic core, and diff | less than 2 seconds warm |
+| Full-pipeline smoke | CIB, Lean, semantic core, Temporal, diff, and retained-history replay | less than 15 seconds warm |
 | Cold full-pipeline smoke | Required builds and service startup plus the same smoke | less than 45 seconds |
 | Extended assurance | Larger CIB, MIWG, conformance, exploration, and replay suites | measured and selective; may take minutes |
 
@@ -171,13 +171,13 @@ Each completed package ends with updated [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP
 | M0.1 | Neutral contract and fixture | Actual BPMN XML, draft profile identity, scenario/stimulus types, observation types, and separating Lean contract checks exist | `feat(contract): add walking-skeleton scenario protocol` |
 | M0.2 | CIB calibration runner | Pinned embedded CIB deploy/start/wait/complete/cleanup probe emits canonical trace and reports timings | `test(cib): calibrate sequential user-task oracle` |
 | M0.3 | Lean semantic capsule | Lean interpreter produces the calibrated trace and proves the first lifecycle invariants | `feat(lean): execute sequential user-task semantics` |
-| M0.4 | Pure TypeScript reducer | Independent reducer matches Lean and CIB through the shared scenario without CIB or Temporal dependencies | `feat(reducer): implement sequential user-task semantics` |
-| M0.5 | Temporal adapter | Workflow adapter hosts the reducer, emits the same canonical trace, and replays retained history | `feat(temporal): run sequential user-task workflow` |
+| M0.4 | Pure TypeScript semantic core | Independent semantic core matches Lean and CIB through the shared scenario without CIB or Temporal dependencies | `feat(core): implement sequential user-task semantics` |
+| M0.5 | Temporal adapter | Workflow adapter hosts the semantic core, emits the same canonical trace, and replays retained history | `feat(temporal): run sequential user-task workflow` |
 | M0.6 | Fast differential gate | One command runs targets concurrently, classifies an injected disagreement, reports phase timings, and meets the budgets | `test(pipeline): verify fast end-to-end differential` |
 
 Package order protects calibration and independence. The repository should still gain the runner skeleton early: M0.1 defines it, M0.2 exercises one external runner, and every following package plugs into the same orchestrator boundary.
 
-M0.0 through M0.3 are complete. M0.4 is the next package and requires the exact Node/pnpm dependency decision below before implementation.
+M0.0 through M0.4 are complete. M0.5 is the next package and requires the exact Temporal dependency and local-server decision below before implementation.
 
 ## Dependency decisions
 
@@ -193,10 +193,10 @@ Known decisions still required:
 | CIB database | `com.h2database:h2:2.3.232` | Approved on 2026-07-24; MPL-2.0 or EPL-1.0; replaceable only with a recorded oracle-environment change |
 | Java test harness | `junit:junit:4.13.2` | Approved on 2026-07-24; EPL-1.0; final JUnit 4 maintenance release, test-only, and independently replaceable |
 | Java JSON transport | `com.fasterxml.jackson.core:jackson-databind:2.21.2` | Approved on 2026-07-24; Apache-2.0; transport-only and replaceable without changing canonical semantics |
-| Node runtime | Homebrew `node@24` `24.18.0` | Proposed for M0.4; pending approval; MIT formula; current LTS, satisfies the inspected Temporal SDK `>=20.3.0` range, and is exercised as its current maximum CI runtime; replacing it affects all TypeScript build/run scripts but no semantic contract |
-| Package manager | Homebrew pnpm `11.17.0` | Proposed for M0.4; pending approval; MIT; requires Node `>=22.13`; replacing it requires lockfile and workspace migration but no semantic change |
-| TypeScript compiler | `typescript@7.0.2` | Proposed M0.4 development dependency; pending approval; Apache-2.0; supplies strict type checking and JavaScript emission; removable by replacing the compiler/toolchain, with no runtime semantic role |
-| TypeScript test harness | Node `node:test` | Proposed with the Node runtime; no package dependency or additional license graph |
+| Node runtime | Node `24.18.0` through nvm/asdf or Homebrew `node@24` | Approved and implemented for M0.4; MIT Homebrew formula; current LTS, satisfies the inspected Temporal SDK `>=20.3.0` range, and is exercised as its current maximum CI runtime; replacing it affects TypeScript build/run scripts but no semantic contract |
+| Package manager | pnpm `11.17.0` | Approved and implemented for M0.4; MIT; requires Node `>=22.13`; replacing it requires lockfile and workspace migration but no semantic change |
+| TypeScript compiler | `typescript@7.0.2` | Approved M0.4 development dependency; Apache-2.0; the resolved platform graph contains only `typescript@7.0.2` and `@typescript/typescript-darwin-arm64@7.0.2`, both Apache-2.0; removable by replacing the compiler/toolchain, with no runtime semantic role |
+| TypeScript test harness | Node `node:test` | Implemented with the approved Node runtime; no package dependency or additional license graph |
 | BPMN ingestion | `bpmn-moddle` or a smaller standards-preserving XML front end | Dependency and preservation policy require approval |
 | Temporal | Exact `@temporalio/*` SDK packages and a local test-server strategy | Versions must be selected together and replay support verified |
 | Cross-language schema validation | Prefer generated or dependency-free validation until a concrete gap exists | The shared schema must not become a semantic implementation |
@@ -205,7 +205,7 @@ Known decisions still required:
 
 Milestone 0 is complete only when:
 
-1. one actual BPMN XML model traverses import, CIB, Lean, reducer, and Temporal boundaries;
+1. one actual BPMN XML model traverses import, CIB, Lean, semantic core, and Temporal boundaries;
 2. all targets produce equal canonical traces after the declared projection;
 3. an intentional semantic mutation fails with a classified disagreement;
 4. retained Temporal history replays successfully;
@@ -213,7 +213,7 @@ Milestone 0 is complete only when:
 6. semantic failures remain distinct from harness and infrastructure failures;
 7. the semantic and full-pipeline feedback budgets are measured and met;
 8. every result records scenario, profile, BPMN requirement, CIB revision, and implementation revision;
-9. Lean and the reducer remain free of CIB and Temporal dependencies;
+9. Lean and the semantic core remain free of CIB and Temporal dependencies;
 10. no BPMN or CIB compatibility claim exceeds the single calibrated slice.
 
 ## Resume protocol
@@ -234,13 +234,15 @@ The exact resume point must name the current package, last verified command, nex
 
 | Date | Decision | Status |
 |---|---|---|
-| 2026-07-23 | Establish the complete research → Lean → reducer → Temporal → differential pipeline before expanding BPMN coverage | Approved for Milestone 0 |
+| 2026-07-23 | Establish the complete research → Lean → semantic core → Temporal → differential pipeline before expanding BPMN coverage | Approved for Milestone 0 |
 | 2026-07-23 | Make fast feedback a milestone acceptance criterion with separate warm, cold, and extended lanes | Approved for Milestone 0 |
 | 2026-07-23 | Use the none-start → User Task → none-end slice as the walking skeleton | Approved for Milestone 0 |
 | 2026-07-23 | Use CIB Seven `v2.2.0` as the spike oracle because its core BPMN test trees match the investigated `main` revision | Approved for Milestone 0; M0.2 draft-profile trace calibrated, while immutable compatibility identity still awaits independent consumers |
 | 2026-07-23 | Use provisional JSON Lines framing for persistent runner processes | Provisional until two independent runners consume it |
-| 2026-07-23 | Use Java 21 for the embedded CIB oracle; Java remains test infrastructure and never enters Lean, the reducer, or the Temporal adapter | Approved for Milestone 0; CIB Seven 2.2 supports Java 21 and publishes Java 21 Docker images |
+| 2026-07-23 | Use Java 21 for the embedded CIB oracle; Java remains test infrastructure and never enters Lean, the semantic core, or the Temporal adapter | Approved for Milestone 0; CIB Seven 2.2 supports Java 21 and publishes Java 21 Docker images |
 | 2026-07-24 | Adopt the exact M0.2 Maven wrapper, build plugins, CIB engine, H2, Jackson, and JUnit coordinates recorded above | Approved; resolved runtime/test graph contains only Apache-2.0, MIT, MPL-2.0/EPL-1.0, EPL-1.0, and BSD-3-Clause licenses |
 | 2026-07-24 | Keep CIB’s audit history default with a `P180D` default TTL while excluding history from the canonical M0.2 observation boundary | Implemented; the TTL satisfies CIB Seven 2.2 deployment validation and does not turn history into a comparison surface |
 | 2026-07-24 | Keep PVM topology, behavior class, flow scope, optional event scope, and ordered transitions in runner diagnostics only | Implemented for the sequential model; public service observations remain the compatibility evidence |
 | 2026-07-24 | Transfer only the external-command/internal-closure and definition/runtime distinctions from the representation spike into the M0.3 Lean capsule | Implemented; the capsule uses its own compressed sequential control state and does not adopt the experiment's provisional general IR or token model |
+| 2026-07-24 | Adopt Node 24.18.0, pnpm 11.17.0, TypeScript 7.0.2, and built-in `node:test` for M0.4 | Approved and implemented; nvm/asdf pins and a Homebrew fallback coexist, the compiler graph is Apache-2.0, and the semantic core has no runtime package dependency |
+| 2026-07-24 | Name the independent TypeScript component “semantic core” and its public transition `applyStimulus` | Approved; “semantic transition system” is the formal description, while the preserved handoff’s “reducer” term remains a historical alias |

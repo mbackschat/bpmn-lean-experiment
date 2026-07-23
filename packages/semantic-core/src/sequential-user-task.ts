@@ -1,0 +1,404 @@
+import {
+  CanonicalObservationKind,
+  CommandOutcome,
+  ProcessStatus,
+  ScenarioOutcomeKind,
+  StimulusKind,
+  WaitKind,
+} from "./contract.js";
+import type {
+  CanonicalObservation,
+  Scenario,
+  ScenarioResult,
+  Stimulus,
+} from "./contract.js";
+
+export type SequentialUserTaskModel = Readonly<{
+  processId: string;
+  userTaskId: string;
+}>;
+
+export const sequentialUserTaskModel: SequentialUserTaskModel = {
+  processId: "Process_SequentialUserTask",
+  userTaskId: "UserTask_Approve",
+};
+
+export enum ControlStateKind {
+  NotStarted = "notStarted",
+  EnteringStart = "enteringStart",
+  EnteringUserTask = "enteringUserTask",
+  WaitingUserTask = "waitingUserTask",
+  LeavingUserTask = "leavingUserTask",
+  EnteringEnd = "enteringEnd",
+  Completed = "completed",
+}
+
+type NotStartedControl = Readonly<{
+  kind: ControlStateKind.NotStarted;
+}>;
+
+type InstancedControl = Readonly<{
+  kind:
+    | ControlStateKind.EnteringStart
+    | ControlStateKind.EnteringUserTask
+    | ControlStateKind.WaitingUserTask
+    | ControlStateKind.LeavingUserTask
+    | ControlStateKind.EnteringEnd
+    | ControlStateKind.Completed;
+  instanceId: string;
+}>;
+
+export type ControlState = NotStartedControl | InstancedControl;
+
+export type RuntimeState = Readonly<{
+  control: ControlState;
+  logicalTimeMs: number;
+}>;
+
+export const initialState: RuntimeState = {
+  control: { kind: ControlStateKind.NotStarted },
+  logicalTimeMs: 0,
+};
+
+type SemanticCommandOutcome =
+  | CommandOutcome.Committed
+  | CommandOutcome.Rejected;
+
+export type CommandResult = Readonly<{
+  outcome: SemanticCommandOutcome;
+  state: RuntimeState;
+  internalStepBoundExceeded: boolean;
+}>;
+
+type CommandAdmission = Readonly<{
+  outcome: CommandOutcome.Committed | CommandOutcome.Rejected;
+  state: RuntimeState;
+}>;
+
+type ClosureResult = Readonly<{
+  state: RuntimeState;
+  hitBound: boolean;
+}>;
+
+const internalClosureLimit = 4;
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported semantic variant: ${JSON.stringify(value)}`);
+}
+
+function withControl(state: RuntimeState, control: ControlState): RuntimeState {
+  return {
+    control,
+    logicalTimeMs: state.logicalTimeMs,
+  };
+}
+
+function internalStep(state: RuntimeState): RuntimeState | null {
+  switch (state.control.kind) {
+    case ControlStateKind.EnteringStart:
+      return withControl(state, {
+        kind: ControlStateKind.EnteringUserTask,
+        instanceId: state.control.instanceId,
+      });
+    case ControlStateKind.EnteringUserTask:
+      return withControl(state, {
+        kind: ControlStateKind.WaitingUserTask,
+        instanceId: state.control.instanceId,
+      });
+    case ControlStateKind.LeavingUserTask:
+      return withControl(state, {
+        kind: ControlStateKind.EnteringEnd,
+        instanceId: state.control.instanceId,
+      });
+    case ControlStateKind.EnteringEnd:
+      return withControl(state, {
+        kind: ControlStateKind.Completed,
+        instanceId: state.control.instanceId,
+      });
+    case ControlStateKind.NotStarted:
+    case ControlStateKind.WaitingUserTask:
+    case ControlStateKind.Completed:
+      return null;
+    default:
+      return assertNever(state.control);
+  }
+}
+
+function closeInternal(state: RuntimeState, limit: number): ClosureResult {
+  let current = state;
+  for (let stepCount = 0; stepCount < limit; stepCount += 1) {
+    const next = internalStep(current);
+    if (next === null) {
+      return { state: current, hitBound: false };
+    }
+    current = next;
+  }
+  return {
+    state: current,
+    hitBound: internalStep(current) !== null,
+  };
+}
+
+function validateClosureLimit(closureLimit: number): void {
+  if (!Number.isSafeInteger(closureLimit) || closureLimit < 0) {
+    throw new RangeError("closureLimit must be a non-negative safe integer");
+  }
+}
+
+function admit(
+  model: SequentialUserTaskModel,
+  state: RuntimeState,
+  stimulus: Stimulus,
+): CommandAdmission {
+  switch (stimulus.kind) {
+    case StimulusKind.StartProcess:
+      if (
+        state.control.kind === ControlStateKind.NotStarted &&
+        stimulus.processId === model.processId
+      ) {
+        return {
+          outcome: CommandOutcome.Committed,
+          state: withControl(state, {
+            kind: ControlStateKind.EnteringStart,
+            instanceId: stimulus.instanceId,
+          }),
+        };
+      }
+      return { outcome: CommandOutcome.Rejected, state };
+    case StimulusKind.CompleteUserTask:
+      if (
+        state.control.kind === ControlStateKind.WaitingUserTask &&
+        stimulus.elementId === model.userTaskId
+      ) {
+        return {
+          outcome: CommandOutcome.Committed,
+          state: withControl(state, {
+            kind: ControlStateKind.LeavingUserTask,
+            instanceId: state.control.instanceId,
+          }),
+        };
+      }
+      return { outcome: CommandOutcome.Rejected, state };
+    default:
+      return assertNever(stimulus);
+  }
+}
+
+export function applyStimulus(
+  model: SequentialUserTaskModel,
+  state: RuntimeState,
+  stimulus: Stimulus,
+  closureLimit: number = internalClosureLimit,
+): CommandResult {
+  validateClosureLimit(closureLimit);
+
+  const admission = admit(model, state, stimulus);
+  switch (admission.outcome) {
+    case CommandOutcome.Committed: {
+      const closure = closeInternal(admission.state, closureLimit);
+      return {
+        outcome: CommandOutcome.Committed,
+        state: closure.state,
+        internalStepBoundExceeded: closure.hitBound,
+      };
+    }
+    case CommandOutcome.Rejected:
+      return {
+        outcome: CommandOutcome.Rejected,
+        state: admission.state,
+        internalStepBoundExceeded: false,
+      };
+    default:
+      return assertNever(admission.outcome);
+  }
+}
+
+function enabledCompletions(
+  model: SequentialUserTaskModel,
+  remainingStimuli: ReadonlyArray<Stimulus>,
+): ReadonlyArray<Stimulus> {
+  return remainingStimuli.filter(
+    (stimulus) =>
+      stimulus.kind === StimulusKind.CompleteUserTask &&
+      stimulus.elementId === model.userTaskId,
+  );
+}
+
+function observeStableState(
+  model: SequentialUserTaskModel,
+  state: RuntimeState,
+  remainingStimuli: ReadonlyArray<Stimulus>,
+): CanonicalObservation | null {
+  switch (state.control.kind) {
+    case ControlStateKind.WaitingUserTask:
+      return {
+        kind: CanonicalObservationKind.State,
+        instanceId: state.control.instanceId,
+        status: ProcessStatus.Running,
+        activeWaits: [
+          {
+            elementId: model.userTaskId,
+            kind: WaitKind.UserTask,
+            multiplicity: 1,
+          },
+        ],
+        enabledStimuli: enabledCompletions(model, remainingStimuli),
+        logicalTimeMs: state.logicalTimeMs,
+      };
+    case ControlStateKind.Completed:
+      return {
+        kind: CanonicalObservationKind.State,
+        instanceId: state.control.instanceId,
+        status: ProcessStatus.Completed,
+        activeWaits: [],
+        enabledStimuli: [],
+        logicalTimeMs: state.logicalTimeMs,
+      };
+    case ControlStateKind.NotStarted:
+    case ControlStateKind.EnteringStart:
+    case ControlStateKind.EnteringUserTask:
+    case ControlStateKind.LeavingUserTask:
+    case ControlStateKind.EnteringEnd:
+      return null;
+    default:
+      return assertNever(state.control);
+  }
+}
+
+function commandId(stimulus: Stimulus): string {
+  switch (stimulus.kind) {
+    case StimulusKind.StartProcess:
+    case StimulusKind.CompleteUserTask:
+      return stimulus.commandId;
+    default:
+      return assertNever(stimulus);
+  }
+}
+
+type Execution = Readonly<{
+  outcome: ScenarioResult["outcome"];
+  trace: ReadonlyArray<CanonicalObservation>;
+}>;
+
+function executeStimuli(
+  model: SequentialUserTaskModel,
+  stimuli: ReadonlyArray<Stimulus>,
+  closureLimit: number,
+): Execution {
+  let state = initialState;
+  const trace: CanonicalObservation[] = [];
+
+  for (const [index, stimulus] of stimuli.entries()) {
+    const result = applyStimulus(model, state, stimulus, closureLimit);
+    if (result.internalStepBoundExceeded) {
+      return {
+        outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+        trace,
+      };
+    }
+
+    switch (result.outcome) {
+      case CommandOutcome.Committed: {
+        const snapshot = observeStableState(
+          model,
+          result.state,
+          stimuli.slice(index + 1),
+        );
+        if (snapshot === null) {
+          return {
+            outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+            trace,
+          };
+        }
+        trace.push(
+          {
+            kind: CanonicalObservationKind.Command,
+            commandId: commandId(stimulus),
+            outcome: result.outcome,
+          },
+          snapshot,
+        );
+        state = result.state;
+        break;
+      }
+      case CommandOutcome.Rejected:
+        trace.push({
+          kind: CanonicalObservationKind.Command,
+          commandId: commandId(stimulus),
+          outcome: result.outcome,
+        });
+        return {
+          outcome: {
+            kind: ScenarioOutcomeKind.Semantic,
+            outcome: result.outcome,
+          },
+          trace,
+        };
+      default:
+        return assertNever(result.outcome);
+    }
+  }
+
+  return {
+    outcome: {
+      kind: ScenarioOutcomeKind.Semantic,
+      outcome: CommandOutcome.Committed,
+    },
+    trace,
+  };
+}
+
+function supportsScenario(scenario: Scenario): boolean {
+  return (
+    scenario.schemaVersion === "0.1.0" &&
+    scenario.id === "m0-sequential-user-task" &&
+    scenario.profile === "cibseven-2.2.0-spike.1" &&
+    scenario.bpmn.id === "m0-sequential-user-task-process" &&
+    scenario.bpmn.relativePath ===
+      "scenarios/m0-sequential-user-task/process.bpmn" &&
+    scenario.bpmn.sha256 ===
+      "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295"
+  );
+}
+
+export function runScenarioWithClosureLimit(
+  closureLimit: number,
+  scenario: Scenario,
+): ScenarioResult {
+  validateClosureLimit(closureLimit);
+
+  if (!supportsScenario(scenario)) {
+    return {
+      outcome: {
+        kind: ScenarioOutcomeKind.Semantic,
+        outcome: CommandOutcome.Unsupported,
+      },
+      trace: [
+        {
+          kind: CanonicalObservationKind.Deployment,
+          outcome: CommandOutcome.Unsupported,
+        },
+      ],
+    };
+  }
+
+  const execution = executeStimuli(
+    sequentialUserTaskModel,
+    scenario.stimuli,
+    closureLimit,
+  );
+  return {
+    outcome: execution.outcome,
+    trace: [
+      {
+        kind: CanonicalObservationKind.Deployment,
+        outcome: CommandOutcome.Committed,
+      },
+      ...execution.trace,
+    ],
+  };
+}
+
+export function runScenario(scenario: Scenario): ScenarioResult {
+  return runScenarioWithClosureLimit(internalClosureLimit, scenario);
+}

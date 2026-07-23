@@ -1,0 +1,20 @@
+{
+  "name": "bpmn-lean-experiment",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": "24.18.0",
+    "pnpm": "11.17.0"
+  },
+  "scripts": {
+    "build:semantic-core": "tsc -p packages/semantic-core/tsconfig.json",
+    "test:semantic-core": "tsc -p packages/semantic-core/tsconfig.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.mjs",
+    "test:semantic": "lake test && tsc -p packages/semantic-core/tsconfig.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

@@ -2,7 +2,7 @@
 
 This Java 21 module embeds pinned CIB Seven `2.2.0` as the Milestone 0 behavioral oracle. It deploys the content-addressed BPMN resource, invokes public engine commands, projects canonical observations, removes all scenario-owned state, and keeps one engine warm across compact JSON-lines requests.
 
-It is calibration infrastructure, not a reusable BPMN semantic kernel. The read-only PVM definition projection explains engine compilation choices but is never a compatibility key or an input to Lean or the reducer.
+It is calibration infrastructure, not a reusable BPMN semantic kernel. The read-only PVM definition projection explains engine compilation choices but is never a compatibility key or an input to Lean or the semantic core.
 
 ## Run the gate
 

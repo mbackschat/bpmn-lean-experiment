@@ -1,7 +1,9 @@
 /.lake
 /.uv-cache
 /node_modules
+/.pnpm-store
 /dist
+/packages/*/dist
 /coverage
 **/target/
 .DS_Store

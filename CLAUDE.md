@@ -8,10 +8,12 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 
 1. a versioned CIB Seven semantic profile;
 2. an executable Lean reference interpreter;
-3. a pure TypeScript semantic reducer;
+3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. M0.2 calibrated that trace through the embedded CIB Seven runner, and M0.3 now derives it through a capsule-specific Lean interpreter with lifecycle proofs. M0.4, the independent pure TypeScript reducer, is next. Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. CIB Seven calibrated the trace, and both the Lean interpreter and independent pure TypeScript semantic core now derive it. M0.5, the Temporal adapter and retained-history replay gate, is next. Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+
+The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
 Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -46,7 +48,7 @@ Read the complete selected document before acting on it.
 2. An approved immutable semantic profile is the compatibility authority for one declared target.
 3. Lean is the formal semantic authority for that profile’s explicit operational meaning.
 4. The pinned complete CIB Seven engine is the executable behavioral oracle for its declared compatibility profile.
-5. The pure TypeScript reducer independently implements the semantic contract and has no CIB Seven or Temporal dependency.
+5. The pure TypeScript semantic core independently implements the semantic contract and has no CIB Seven or Temporal dependency.
 6. The Temporal adapter provides durability and hidden orchestration work without defining BPMN behavior.
 
 When sources disagree, classify the disagreement against the standard, profile, configuration, observation boundary, and evidence. Do not use majority voting.
@@ -55,7 +57,7 @@ When sources disagree, classify the disagreement against the standard, profile, 
 
 - Do not implement profile-dependent behavior until the relevant interpretation and scope are approved and recorded.
 - Never silently choose an oracle release, feature meaning, expression subset, observation boundary, scheduling rule, listener scope, history contract, or external-effect contract.
-- Do not transplant CIB PVM types, persistence entities, behavior classes, or engine algorithms into Lean or the reducer.
+- Do not transplant CIB PVM types, persistence entities, behavior classes, or engine algorithms into Lean or the semantic core.
 - Do not encode Temporal Workflow tasks, Activity attempts, retries, Run IDs, or Event History as BPMN semantic facts.
 - Keep BPMN import/admission, executable normalization, runtime execution, public observation, and host persistence conceptually separate.
 - Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
@@ -88,7 +90,7 @@ Use red/green TDD:
 5. run the focused gate and then the complete applicable gate;
 6. update the owning research, experiment, implementation, and plan documents.
 
-Prefer enum-based pattern matching or switch statements for semantic variants. Keep executable IR and runtime state as serializable data; keep effects explicit and perform no I/O in the pure reducer.
+Prefer enum-based pattern matching or switch statements for semantic variants. Keep executable IR and runtime state as serializable data; keep effects explicit and perform no I/O in the pure semantic core.
 
 ### Architecture experiments
 
@@ -124,7 +126,7 @@ Write one Markdown paragraph per line without hard wrapping. Use regular relativ
 
 ## Reference and source discipline
 
-Reference checkouts are research inputs, never runtime dependencies of Lean or the reducer. Navigate them through relative links recorded in [SOURCES.md](docs/SOURCES.md); never commit absolute home paths, usernames, hostnames, credentials, or machine-specific state.
+Reference checkouts are research inputs, never runtime dependencies of Lean or the semantic core. Navigate them through relative links recorded in [SOURCES.md](docs/SOURCES.md); never commit absolute home paths, usernames, hostnames, credentials, or machine-specific state.
 
 Project-authored code and documentation are released under the [MIT License](LICENSE). Do not copy, vendor, or redistribute external material under that license without verifying compatibility, preserving required notices and attribution, and recording the decision in [SOURCES.md](docs/SOURCES.md).
 
@@ -141,6 +143,12 @@ Current verification gate:
 ```sh
 ./scripts/verify.sh
 git status --short
+```
+
+Fast semantic gate (Lean plus TypeScript semantic core):
+
+```sh
+./scripts/pnpm.sh run test:semantic
 ```
 
 Focused CIB calibration gate:

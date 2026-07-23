@@ -2,7 +2,7 @@
 
 **Status:** Executed, provisional candidates retained
 
-**Purpose:** Test foundational representation distinctions before selecting the production BPMN source model, executable IR, runtime state, or reducer transition system.
+**Purpose:** Test foundational representation distinctions before selecting the production BPMN source model, executable IR, runtime state, or semantic core transition system.
 
 **Non-claim:** These experiments do not implement BPMN semantics, establish CIB Seven compatibility, select a parser, or change the approved Milestone 0 feature profile.
 
@@ -169,6 +169,8 @@ This result supports preserving distinct flow-scope and optional event-scope rel
 The production [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) capsule transfers two distinctions that are now independently demanded by the BPMN lifecycle basis, the CIB trace, and a second semantic consumer: immutable definition versus runtime instance state, and external command admission versus internal closure. It also retains bound exhaustion as a harness condition.
 
 The capsule deliberately does not import or reproduce the experiment's source compiler, general executable nodes, scope relations, tokens, or wait records. Its compressed control state is sufficient only for the fixed sequential model. This is evidence that the distinctions transfer; it is not evidence that the experiment types are the production BPMN IR.
+
+M0.4 independently transfers the same narrow distinctions into the pure TypeScript semantic core. Its model retains only the Process and User Task identities needed by public transition application and observation; it does not copy Lean microtraces or the experiment's unused Start/End definition detail. Agreement across CIB, Lean, and TypeScript now supports the command/closure and definition/runtime boundaries for this capsule while leaving the general IR question open.
 
 ## Next experiments
 

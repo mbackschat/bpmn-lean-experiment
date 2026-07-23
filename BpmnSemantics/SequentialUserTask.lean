@@ -62,7 +62,7 @@ private structure CommandAdmission where
   microtrace : List MicroEvent
   deriving Repr, DecidableEq
 
-/-- The public reducer result keeps closure protection outside the semantic command outcome. -/
+/-- The public semantic core result keeps closure protection outside the semantic command outcome. -/
 structure CommandResult where
   outcome : CommandOutcome
   state : RuntimeState
@@ -135,7 +135,7 @@ private def admit (definition : Model) (state : RuntimeState)
   | _, _ => { outcome := .rejected, state, microtrace := [] }
 
 /-- Apply one external command, then normalize committed control to the next stable boundary. -/
-def reduce (fuel : Nat) (definition : Model) (state : RuntimeState)
+def applyStimulus (fuel : Nat) (definition : Model) (state : RuntimeState)
     (stimulus : Stimulus) : CommandResult :=
   let admission := admit definition state stimulus
   match admission.outcome with
@@ -223,7 +223,7 @@ private def executeStimuli (closureLimit : Nat) (definition : Model) :
         state
         trace := [] }
   | state, stimulus :: remaining =>
-      let result := reduce closureLimit definition state stimulus
+      let result := applyStimulus closureLimit definition state stimulus
       if result.internalStepBoundExceeded then
         { outcome := .harnessFailure
           state := result.state
@@ -288,7 +288,7 @@ def completedState : RuntimeState :=
 
 /-- Starting the calibrated Process closes at exactly one User Task wait. -/
 theorem start_reaches_single_user_task_wait :
-    reduce internalClosureLimit model initialState startStimulus =
+    applyStimulus internalClosureLimit model initialState startStimulus =
       { outcome := .committed
         state := afterStartState
         microtrace :=
@@ -299,7 +299,7 @@ theorem start_reaches_single_user_task_wait :
 
 /-- The matching completion command releases the wait and closes the Process. -/
 theorem matching_completion_terminates :
-    reduce internalClosureLimit model afterStartState completionStimulus =
+    applyStimulus internalClosureLimit model afterStartState completionStimulus =
       { outcome := .committed
         state := completedState
         microtrace :=
@@ -311,7 +311,7 @@ theorem matching_completion_terminates :
 
 /-- A non-matching completion cannot advance or complete the waiting Process. -/
 theorem no_completion_before_matching_command :
-    reduce internalClosureLimit model afterStartState
+    applyStimulus internalClosureLimit model afterStartState
         (.completeUserTask ⟨"wrong-completion"⟩ ⟨"Other_Task"⟩) =
       { outcome := .rejected
         state := afterStartState

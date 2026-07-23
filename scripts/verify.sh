@@ -37,5 +37,6 @@ fi
 
 lake build
 lake test
+./scripts/pnpm.sh run test:semantic-core
 ./scripts/test-cibseven-oracle.sh
 git diff --check

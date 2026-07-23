@@ -11,15 +11,17 @@ Project-authored code and documentation are released under the root [MIT License
 | Lean `v4.31.0` toolchain and Lake | Apache-2.0 in the installed distribution and the [upstream Lean repository](https://github.com/leanprover/lean4) | External toolchain, not vendored or redistributed; it retains its own license |
 | Lake packages | `lake-manifest.json` records an empty `packages` array | No external Lean package license enters the tracked source or package graph |
 | Shell verification tools | Git, `jq`, `xmllint`, and `shasum` are environment prerequisites | Invoked as external tools and not distributed by this repository |
+| Node and pnpm | Node `24.18.0` and pnpm `11.17.0`; Homebrew formulae report MIT | External runtime and package manager; exact nvm/asdf pins and a non-mutating Homebrew fallback are tracked |
+| TypeScript compiler graph | `typescript@7.0.2` and the resolved `@typescript/typescript-darwin-arm64@7.0.2` platform package are Apache-2.0 | Development-only compiler; exact integrities are locked, packages are not vendored, and no runtime dependency enters the semantic core |
 | Maven wrapper and build plugins | Wrapper `3.2.0`, Maven `3.8.8`, Compiler Plugin `3.14.1`, and Surefire Plugin `3.5.4` are Apache-2.0 | The wrapper script/JAR is retained under its upstream license; build tooling is isolated to the Java oracle |
-| CIB Seven oracle graph | CIB engine `2.2.0` and most transitives are Apache-2.0; the resolved graph also contains MIT and BSD-3-Clause components | External Java oracle only; no CIB type or algorithm enters Lean, the reducer, or project-authored semantic authority |
+| CIB Seven oracle graph | CIB engine `2.2.0` and most transitives are Apache-2.0; the resolved graph also contains MIT and BSD-3-Clause components | External Java oracle only; no CIB type or algorithm enters Lean, the semantic core, or project-authored semantic authority |
 | H2 `2.3.232` | Dual MPL-2.0 or EPL-1.0 | External in-memory oracle database; compatible with distribution of MIT-licensed project source |
 | Jackson `2.21.2` | Apache-2.0 | External Java JSON transport implementation |
 | JUnit `4.13.2` and Hamcrest | EPL-1.0 and BSD-3-Clause | Test-only Java oracle dependencies |
 | Temporal, MIWG, Betsy, fUML, and other research trees | Separate checkouts under their own upstream terms | Evidence inputs only; they are not project dependencies and are not relicensed |
 | OMG BPMN corpus | Copyrighted external material retained only in ignored local paths | Excluded from the MIT-licensed tracked repository material |
 
-The approved M0.2 graph was resolved before adoption and contains only Apache-2.0, MIT, MPL-2.0/EPL-1.0, EPL-1.0, and BSD-3-Clause licenses. Before adopting any further Maven, pnpm, Lake, parser, Temporal, test, build, or runtime package, inspect its exact transitive license graph, preserve required notices, and update this record. An incompatible future dependency must be replaced, isolated behind a non-distributed research boundary, or explicitly reconsidered; it must never silently alter the project license.
+The approved M0.2 Java graph and M0.4 TypeScript compiler graph contain only Apache-2.0, MIT, MPL-2.0/EPL-1.0, EPL-1.0, and BSD-3-Clause licenses. Before adopting any further Maven, pnpm, Lake, parser, Temporal, test, build, or runtime package, inspect its exact transitive license graph, preserve required notices, and update this record. An incompatible future dependency must be replaced, isolated behind a non-distributed research boundary, or explicitly reconsidered; it must never silently alter the project license.
 
 ## OMG BPMN 2.0.2
 

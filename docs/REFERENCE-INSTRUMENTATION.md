@@ -22,7 +22,7 @@ Public APIs and black-box traces are the preferred compatibility evidence, but s
 - test a semantic hypothesis near its actual decision point;
 - produce an execution profile that explains why a supposedly small capsule is slow or nondeterministic.
 
-This is diagnostic leverage, not permission to derive the independent Lean model or TypeScript reducer by transplanting engine algorithms.
+This is diagnostic leverage, not permission to derive the independent Lean model or TypeScript semantic core by transplanting engine algorithms.
 
 ## Two lanes
 
@@ -72,7 +72,7 @@ Prefer official SDK observability boundaries before patching source:
 If those boundaries cannot answer a named question, candidate TypeScript SDK instrumentation points include:
 
 - Workflow Task polling, activation decode, sandbox dispatch, and activation completion;
-- handler admission, input queueing, reducer invocation, and Temporal Command collection;
+- handler admission, input queueing, semantic core invocation, and Temporal Command collection;
 - replay matching, cache hit or eviction, and nondeterminism reporting;
 - Activity scheduling, attempt delivery, completion, cancellation, and result decode;
 - payload codec and history serialization cost;

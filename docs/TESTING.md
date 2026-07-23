@@ -1,6 +1,6 @@
 # Testing
 
-The current test estate covers the Phase 0 Lean contract vocabulary, the M0.2 CIB Seven calibration runner, and the M0.3 Lean sequential User Task capsule. It supplies one draft-profile behavioral calibration and a matching executable formal account, but no BPMN conformance or immutable CIB compatibility claim.
+The current test estate covers the Phase 0 Lean contract vocabulary, the M0.2 CIB Seven calibration runner, the M0.3 Lean sequential User Task capsule, and the M0.4 pure TypeScript semantic core. It supplies one draft-profile behavioral calibration and two matching independent semantic accounts, but no BPMN conformance or immutable CIB compatibility claim.
 
 ## Red/green workflow
 
@@ -22,11 +22,28 @@ The first scaffold capsule followed this workflow: the conformance module import
 git status --short
 ```
 
-The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD, Lean build, executable contract checks, the embedded CIB Seven oracle tests, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
+The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD, Lean build, executable contract checks, the pure TypeScript semantic core, the embedded CIB Seven oracle tests, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
 
 The M0.1 red run imported the intentionally absent `BpmnSemantics.Scenario` module and failed. The first implementation run then exposed Lean’s requirement that imports precede module documentation; moving the import to the module beginning fixed that structural error. The green run passes with the implementation-neutral scenario, stimulus, observation, result, and runner types.
 
-The first measured warm contract gate on 2026-07-23 completed in 1.36 seconds. This is a baseline for the current Lean-and-artifact contract only; it is not yet the semantic-loop measurement because the TypeScript reducer does not exist.
+The first measured warm contract gate on 2026-07-23 completed in 1.36 seconds. At that checkpoint the TypeScript semantic core did not yet exist, so this remains a historical Lean-and-artifact baseline rather than the accepted semantic-loop measurement.
+
+## M0.4 pure TypeScript semantic core
+
+The focused and semantic gates are:
+
+```sh
+./scripts/pnpm.sh run test:semantic-core
+./scripts/pnpm.sh run test:semantic
+```
+
+The red build failed with `TS2307` because the exported `sequential-user-task` semantic owner did not exist. The green package implements immutable capsule definition/runtime data, external command admission, bounded internal closure, pure transition application, stable observation projection, and the logical scenario runner without runtime dependencies.
+
+The terminology refactor was also red/green: the focused test imported the approved `applyStimulus` API before it existed and failed with an ESM missing-export error; the package became green after the transition function and package boundary were renamed to `@bpmn-lean/semantic-core`.
+
+Six tests derive the independently stored CIB/Lean trace, poison the scenario calibration to prove the runner does not read its answer, lock start-to-wait and matching-completion behavior, reject a non-matching completion without state change, and prevent closure-bound exhaustion from exposing a committed command.
+
+On 2026-07-24, two artifact-warm semantic-gate runs covering Lean and the TypeScript semantic core completed in 1.17 seconds and 1.11 seconds. The implemented semantic gate therefore meets the less-than-two-second warm budget. After the terminology refactor, an artifact-current complete implemented gate finished in 5.54 seconds; the final source-current gate after aligning the Lean transition name finished in 12.23 seconds.
 
 ## M0.3 Lean semantic capsule
 
@@ -41,7 +58,7 @@ The red build imported an intentionally absent `BpmnSemantics.SequentialUserTask
 
 [SequentialUserTaskConformance.lean](../BpmnSemantics/SequentialUserTaskConformance.lean) writes the calibrated five-observation trace independently and proves equality with the interpreter result. Named theorems prove that start closes at exactly one active User Task wait, matching completion closes the Process, and a completion naming another task is rejected with runtime state unchanged. A separate bound-zero example proves that harness exhaustion retains the committed deployment observation but does not expose the admitted command as committed. These results cover only the content-addressed Milestone 0 capsule.
 
-On 2026-07-24, a source-current focused build completed in 3.29 seconds, while the artifact-warm build and executable completed in 0.14 seconds and 0.16 seconds respectively. The Lean-only warm loop is below the two-second semantic-loop budget; the budget cannot be accepted for the combined semantic loop until M0.4 adds the reducer.
+On 2026-07-24, a source-current focused build completed in 3.29 seconds, while the artifact-warm build and executable completed in 0.14 seconds and 0.16 seconds respectively. The Lean-only warm loop was below the two-second budget at the M0.3 checkpoint; the M0.4 combined measurements above now establish the accepted semantic-loop result.
 
 ## M0.2 CIB calibration gate
 
@@ -76,17 +93,20 @@ The first measured warm focused build completed in 0.20 seconds, and the warm ex
 
 The durable contract and exact performance definitions are in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
 
-The planned public gates are:
+The implemented semantic gate is:
 
 ```sh
-pnpm test:semantic
-pnpm test:pipeline
-pnpm test:assurance
+./scripts/pnpm.sh run test:semantic
 ```
 
-`test:semantic` must keep the Lean and pure reducer red/green loop below two warm seconds. `test:pipeline` must run the walking skeleton through CIB, Lean, the reducer, Temporal, differential comparison, replay, and cleanup below fifteen warm seconds and forty-five cold seconds. `test:assurance` owns larger selective suites and may take minutes.
+The later public gates remain planned:
 
-These commands do not exist yet. Until their package is implemented, `./scripts/verify.sh` remains authoritative and [PLAN.md](PLAN.md) must say which partial gate is current.
+```sh
+./scripts/pnpm.sh run test:pipeline
+./scripts/pnpm.sh run test:assurance
+```
+
+`test:pipeline` must run the walking skeleton through CIB, Lean, the semantic core, Temporal, differential comparison, replay, and cleanup below fifteen warm seconds and forty-five cold seconds. `test:assurance` owns larger selective suites and may take minutes. These two scripts do not exist yet; `./scripts/verify.sh` remains the complete implemented gate.
 
 ## Evidence lanes
 
@@ -99,8 +119,8 @@ No single external suite proves the project goal. Every release claim must name 
 | CIB compatibility | Pinned CIB Java assertion/fixture pairs exercised through public services | Agreement with the declared CIB release and observation boundary | OMG conformance |
 | Historical cross-engine | Independently reviewed Betsy cases | Portable black-box separating examples and known engine disagreements | Current-engine support or an OMG TCK result |
 | Lean semantics | Executable examples, proofs, and bounded exploration | The profile’s independent operational account and proved invariants | External implementation agreement |
-| TypeScript differential | Neutral scenarios compared with Lean and CIB | Reducer agreement within the declared profile | Temporal refinement |
-| Temporal refinement | Adapter observations, retained-history replay, duplicate delivery, and fault injection | Durable implementation preserves reducer-visible semantics under the tested refinement contract | Unsupported BPMN or CIB behavior |
+| TypeScript differential | Neutral scenarios compared with Lean and CIB | Semantic core agreement within the declared profile | Temporal refinement |
+| Temporal refinement | Adapter observations, retained-history replay, duplicate delivery, and fault injection | Durable implementation preserves semantic-core-visible semantics under the tested refinement contract | Unsupported BPMN or CIB behavior |
 
 ## CIB corpus adoption
 
@@ -133,8 +153,8 @@ Betsy and other engines are discovery sources. Before a case enters the neutral 
 
 The implemented CIB oracle gate pins executable artifacts and configuration, controls logical time and scheduling, and verifies isolation and cleanup. Negative deployment/command classification beyond the successful M0.2 slice remains future work toward the milestone-wide semantic-versus-harness-versus-infrastructure acceptance criterion.
 
-A future TypeScript gate must follow the global JavaScript/TypeScript long-running-command guidance, use pnpm, and test the reducer without CIB Seven or Temporal dependencies.
+A future TypeScript gate must follow the global JavaScript/TypeScript long-running-command guidance, use pnpm, and test the semantic core without CIB Seven or Temporal dependencies.
 
-A future Temporal gate must include retained-history replay, duplicate delivery, timer, message, cancellation, retry-separation, Continue-As-New, and reducer-refinement checks. Passing Temporal tests must never substitute for reducer-versus-Lean or reducer-versus-CIB differential evidence.
+A future Temporal gate must include retained-history replay, duplicate delivery, timer, message, cancellation, retry-separation, Continue-As-New, and semantic-core refinement checks. Passing Temporal tests must never substitute for semantic-core-versus-Lean or semantic-core-versus-CIB differential evidence.
 
 If an auxiliary formal-method experiment from [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) is approved, its focused check initially belongs in extended assurance rather than the semantic or Milestone 0 full-pipeline gate. Every result must report the exact tool and model revisions, finite configuration or proof assumptions, checked properties, fairness assumptions where applicable, explored state counts, and counterexample status. It must detect its named seeded defect before it becomes a retained gate. Model checking, equivalence checking, or net analysis never substitutes for Temporal fault injection, replay, or implementation refinement evidence.
