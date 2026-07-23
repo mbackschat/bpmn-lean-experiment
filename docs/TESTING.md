@@ -15,16 +15,18 @@ For each semantic capsule:
 
 The first scaffold capsule followed this workflow: the conformance module imported an absent contract, the red run failed on that missing semantic owner, and the green run passed only after the outcome vocabulary was implemented.
 
-## Current foundation gate
+## Current contract gate
 
 ```sh
-lake build
-lake test
-git diff --check
+./scripts/verify.sh
 git status --short
 ```
 
-`lake test` elaborates the separating examples through the `checkConformance` executable and must remain dependency-free in Phase 0.
+The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD, Lean build, executable contract checks, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable.
+
+The M0.1 red run imported the intentionally absent `BpmnSemantics.Scenario` module and failed. The first implementation run then exposed Lean’s requirement that imports precede module documentation; moving the import to the module beginning fixed that structural error. The green run passes with the implementation-neutral scenario, stimulus, observation, result, and runner types.
+
+The first measured warm contract gate on 2026-07-23 completed in 1.36 seconds. This is a baseline for the current Lean-and-artifact contract only; it is not yet the semantic-loop measurement because the TypeScript reducer does not exist.
 
 ## Milestone 0 feedback gates
 
@@ -40,7 +42,7 @@ pnpm test:assurance
 
 `test:semantic` must keep the Lean and pure reducer red/green loop below two warm seconds. `test:pipeline` must run the walking skeleton through CIB, Lean, the reducer, Temporal, differential comparison, replay, and cleanup below fifteen warm seconds and forty-five cold seconds. `test:assurance` owns larger selective suites and may take minutes.
 
-These commands do not exist yet. Until their package is implemented, the foundation gate remains authoritative and [PLAN.md](PLAN.md) must say which partial gate is current.
+These commands do not exist yet. Until their package is implemented, the contract gate remains authoritative and [PLAN.md](PLAN.md) must say which partial gate is current.
 
 ## Evidence lanes
 

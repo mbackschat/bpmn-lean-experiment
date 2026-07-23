@@ -45,11 +45,13 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Exact resume point
 
-- Current package: M0.0, durable milestone plan.
-- Last verified command before this package: `lake build && lake test`.
-- Current task: finish and verify the M0.0 documentation checkpoint, then begin M0.1 without adding dependencies.
-- Next implementation target: a standard BPMN XML fixture plus profile-independent scenario and canonical-observation types with a deliberate red Lean conformance check.
-- Known environment constraints: Node and pnpm are absent; the active Java is 25 rather than the required Java 17; no dependency installation or package addition is approved yet.
+- Current package: M0.1 is implemented; M0.2 CIB calibration is next.
+- Last verified command: `./scripts/verify.sh`.
+- Current state: the standard BPMN fixture, draft spike profile, neutral scenario, canonical observation vocabulary, logical runner boundary, and separating Lean checks are green.
+- Next implementation target: approve the exact M0.2 dependency set recorded in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md), then create the embedded CIB deploy/start/wait/complete/cleanup runner that emits the first calibrated trace.
+- First M0.2 research anchor: inspect the pinned CIB User Task and process-completion assertion/fixture pairs and select the smallest public-API precedent before writing the red oracle test.
+- First M0.2 research result: `UserTaskTest` supplies the start-and-active-task precedent, while `TaskAssigneeTest` supplies the complete-and-process-ended precedent; the neutral scenario removes their assignment and vendor-specific concerns.
+- Known environment constraints: Homebrew Java 17 is installed but not active; Node, pnpm, and Maven are absent; no dependency installation or package addition is approved yet.
 
 ## Stop conditions
 

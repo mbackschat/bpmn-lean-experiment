@@ -1,12 +1,9 @@
-/-! # BpmnSemantics.Basic — project identity
-
-The project is intentionally in Phase 0: profile and oracle calibration.
--/
+/-! # BpmnSemantics.Basic — project identity -/
 
 namespace BpmnSemantics
 
-/-- The current experiment phase. This is not a semantic-profile identity. -/
-def projectPhase : String := "phase-0"
+/-- The current experiment milestone. This is not a semantic-profile identity. -/
+def projectPhase : String := "milestone-0-fast-pipeline"
 
 #eval projectPhase
 

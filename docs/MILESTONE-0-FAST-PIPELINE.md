@@ -185,11 +185,15 @@ Known decisions still required:
 
 | Capability | Candidate | Current constraint |
 |---|---|---|
-| Java runtime | Homebrew-managed Java 17 | The current shell exposes Java 25; the pinned CIB oracle environment requires Java 17 |
+| Java runtime | Homebrew `openjdk@17` `17.0.20` | Already installed at the Homebrew prefix; the current shell exposes Java 25, so oracle commands must select Java 17 explicitly |
+| Java build | Apache Maven Wrapper `3.2.0` running Maven `3.8.8` | Matches the pinned CIB release wrapper and must be added with its Apache-2.0 provenance |
+| CIB oracle | `org.cibseven.bpm:cibseven-engine:2.2.0` | Available from Maven Central; Apache-2.0 |
+| CIB database | `com.h2database:h2:2.3.232` | Matches the pinned CIB database POM; MPL-2.0 or EPL-1.0 |
+| Java test harness | `junit:junit:4.13.1` | Matches the pinned CIB parent; EPL-1.0 |
+| Java JSON transport | `com.fasterxml.jackson.core:jackson-databind:2.21.2` | Matches the pinned CIB parent; Apache-2.0; required only when the runner emits JSON Lines |
 | Node runtime | Homebrew-managed, project-pinned Node version supported by the chosen Temporal SDK | Node is not currently installed |
 | Package manager | pnpm | pnpm is not currently installed |
 | BPMN ingestion | `bpmn-moddle` or a smaller standards-preserving XML front end | Dependency and preservation policy require approval |
-| CIB oracle | Published CIB Seven `v2.2.0` artifacts plus H2 `2.3.232` | Exact Maven coordinates and test harness dependencies must be pinned |
 | Temporal | Exact `@temporalio/*` SDK packages and a local test-server strategy | Versions must be selected together and replay support verified |
 | Cross-language schema validation | Prefer generated or dependency-free validation until a concrete gap exists | The shared schema must not become a semantic implementation |
 

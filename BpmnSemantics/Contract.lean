@@ -28,10 +28,11 @@ def isCommit : CommandOutcome → Bool
 
 end CommandOutcome
 
-/-- A scenario result keeps semantic outcomes separate from harness or infrastructure failure. -/
+/-- A scenario result keeps semantic outcomes separate from harness and infrastructure failure. -/
 inductive ScenarioOutcome where
   | semantic (outcome : CommandOutcome)
   | harnessFailure
+  | infrastructureFailure
   deriving Repr, DecidableEq
 
 end BpmnSemantics
