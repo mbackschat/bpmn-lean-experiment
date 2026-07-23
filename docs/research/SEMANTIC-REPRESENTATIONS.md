@@ -239,6 +239,8 @@ List<PvmNodeProjection> projection =
 
 A real projector must recurse through nested flow scopes, enumerate event activities, retain outgoing order, identify defaults and synthetic nodes, and execute wholly inside the command context. It belongs to the diagnostic lane described in [Reference instrumentation](../REFERENCE-INSTRUMENTATION.md).
 
+The first bounded implementation now exists as [PvmDefinitionProjector.java](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java). Its M0.2 result confirms the sequential topology and behavior strategies, while also showing that ordinary flow activities have `null` PVM event scope and that CIB normalizes a None End Event’s type to `noneEndEvent`. Those internal facts are retained only in diagnostics; the corresponding public deploy/start/task/complete observations remain the compatibility evidence. The executable result and remaining limits are recorded in [Semantic representation spikes](../experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
+
 ## CIB Seven runtime representation
 
 [`PvmExecutionImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/PvmExecutionImpl.java) contains per-instance state: current activity and transition, parent and child executions, activity-instance identity, variables, and flags such as active, scope, concurrent, ended, and event scope. [`ExecutionEntity`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java) adds persistence behavior.

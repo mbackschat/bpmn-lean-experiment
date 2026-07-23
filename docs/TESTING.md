@@ -1,6 +1,6 @@
 # Testing
 
-The current test estate covers only the Phase 0 Lean contract vocabulary. It supplies no BPMN or compatibility evidence.
+The current test estate covers the Phase 0 Lean contract vocabulary and the M0.2 CIB Seven calibration runner. It supplies one draft-profile behavioral calibration but no BPMN conformance or immutable CIB compatibility claim.
 
 ## Red/green workflow
 
@@ -15,22 +15,36 @@ For each semantic capsule:
 
 The first scaffold capsule followed this workflow: the conformance module imported an absent contract, the red run failed on that missing semantic owner, and the green run passed only after the outcome vocabulary was implemented.
 
-## Current contract gate
+## Current verification gate
 
 ```sh
 ./scripts/verify.sh
 git status --short
 ```
 
-The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD, Lean build, executable contract checks, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable.
+The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD, Lean build, executable contract checks, the embedded CIB Seven oracle tests, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
 
 The M0.1 red run imported the intentionally absent `BpmnSemantics.Scenario` module and failed. The first implementation run then exposed Lean’s requirement that imports precede module documentation; moving the import to the module beginning fixed that structural error. The green run passes with the implementation-neutral scenario, stimulus, observation, result, and runner types.
 
 The first measured warm contract gate on 2026-07-23 completed in 1.36 seconds. This is a baseline for the current Lean-and-artifact contract only; it is not yet the semantic-loop measurement because the TypeScript reducer does not exist.
 
+## M0.2 CIB calibration gate
+
+The focused gate is:
+
+```sh
+./scripts/test-cibseven-oracle.sh
+```
+
+The first red run failed at Java test compilation because the scenario protocol, JSON codec, and runner did not exist. After the public-service runner was implemented, deployment exposed a required CIB Seven 2.2 history-TTL configuration; the runner now keeps the default audit history level and pins a `P180D` default TTL while excluding history from canonical observations. The first PVM projection then disproved two provisional diagnostic expectations: ordinary flow nodes have no PVM `eventScope`, and CIB normalizes the None End Event type to `noneEndEvent`. The calibrated test expectation records those observed internals only in diagnostics.
+
+The green gate deploys the content-addressed BPMN resource, starts the Process, observes exactly one User Task, completes it, observes Process completion, and repeats against one warm engine. It compares the result with the typed trace parsed from [scenario.json](../scenarios/m0-sequential-user-task/scenario.json), verifies the diagnostic topology and ordered transitions, and proves zero deployments, definitions, instances, tasks, jobs, incidents, and historic Process instances after each run. A second test sends two compact requests through one JSON-lines runner and verifies stable traces, cleanup, and absence of generated engine identifiers.
+
+On 2026-07-24, a dependency-warm direct JSON-lines sample measured 1.983 seconds for embedded-engine startup and 0.492 seconds for the scenario including cleanup. Its scenario phases were 0.146 seconds deployment, 0.005 seconds PVM definition projection, 0.037 seconds start, 0.027 seconds wait projection, 0.027 seconds completion, 0.002 seconds completion projection, and 0.049 seconds cleanup. The dependency-warm Maven gate, including compilation checks and four isolated executions across the two tests, completed in 5.28 seconds. These are M0.2 component measurements, not yet the full-pipeline budget result.
+
 ## Provisional architecture-spike gate
 
-The semantic-representation candidates are intentionally separate from the current contract gate:
+The semantic-representation candidates are intentionally separate from the current verification gate:
 
 ```sh
 lake build checkSemanticRepresentationSpike
@@ -57,7 +71,7 @@ pnpm test:assurance
 
 `test:semantic` must keep the Lean and pure reducer red/green loop below two warm seconds. `test:pipeline` must run the walking skeleton through CIB, Lean, the reducer, Temporal, differential comparison, replay, and cleanup below fifteen warm seconds and forty-five cold seconds. `test:assurance` owns larger selective suites and may take minutes.
 
-These commands do not exist yet. Until their package is implemented, the contract gate remains authoritative and [PLAN.md](PLAN.md) must say which partial gate is current.
+These commands do not exist yet. Until their package is implemented, `./scripts/verify.sh` remains authoritative and [PLAN.md](PLAN.md) must say which partial gate is current.
 
 ## Evidence lanes
 
@@ -102,7 +116,7 @@ Betsy and other engines are discovery sources. Before a case enters the neutral 
 
 ## Future gates
 
-A CIB oracle gate must pin executable artifacts and configuration, control logical time and scheduling, verify isolation and cleanup, and distinguish deployment or command semantics from harness failure.
+The implemented CIB oracle gate pins executable artifacts and configuration, controls logical time and scheduling, and verifies isolation and cleanup. Negative deployment/command classification beyond the successful M0.2 slice remains future work toward the milestone-wide semantic-versus-harness-versus-infrastructure acceptance criterion.
 
 A future TypeScript gate must follow the global JavaScript/TypeScript long-running-command guidance, use pnpm, and test the reducer without CIB Seven or Temporal dependencies.
 

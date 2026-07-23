@@ -88,13 +88,13 @@ none Start Event → User Task → none End Event
 
 | Surface | Current state |
 |---|---|
-| Planning and contracts | M0.0 and M0.1 complete; profile, scenario, observation, runner, and feedback-budget contracts exist |
+| Planning and contracts | M0.0 through M0.2 complete; profile, scenario, observation, runner, and feedback-budget contracts exist |
 | BPMN sources | Official BPMN 2.0.2 PDF and machine-readable corpus ingested locally with project-authored conformance research |
 | Lean | Profile-independent contract vocabulary and separately gated representation experiments compile and execute |
-| CIB Seven | `v2.2.0` selected for Milestone 0; public test precedents researched; executable calibration runner not yet implemented |
+| CIB Seven | Pinned `v2.2.0` embedded runner deploys, starts, observes, completes, cleans, emits the calibrated trace, and exposes a diagnostic PVM projection through a persistent JSON-lines boundary |
 | TypeScript reducer | Architecture boundary documented; workspace and implementation not yet initialized |
 | Temporal adapter | Replay and SDK semantics researched; adapter and retained-history tests not yet implemented |
-| Evidence | No BPMN conformance, CIB compatibility, reducer differential, Temporal refinement, or replay claim yet |
+| Evidence | One draft-profile CIB calibration trace exists; no BPMN conformance, immutable CIB compatibility, reducer differential, Temporal refinement, or replay claim yet |
 
 The authoritative live checkpoint and next task are in [PLAN.md](docs/PLAN.md); exact implemented and absent surfaces are in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -107,11 +107,18 @@ The current verification gate requires:
 - `xmllint`;
 - `shasum`;
 - a Lean installation that honors the pinned [lean-toolchain](lean-toolchain), normally through `elan`.
+- Homebrew Java 21 at `/opt/homebrew/opt/openjdk@21`, or `BPMN_JAVA_HOME` pointing to another Java 21 installation.
 
-Run the maintained contract gate:
+Run the maintained verification gate:
 
 ```sh
 ./scripts/verify.sh
+```
+
+The repository-local Maven wrapper downloads the approved Maven and Java dependencies on its first run. To run only the CIB oracle gate:
+
+```sh
+./scripts/test-cibseven-oracle.sh
 ```
 
 Run the provisional semantic-representation spike separately:
@@ -129,6 +136,7 @@ The spike is a bounded architecture experiment, not part of the approved BPMN se
 BpmnSemantics/       Lean contract vocabulary and isolated experiments
 docs/                Architecture, plans, research, testing, and source provenance
 profiles/            Versioned semantic-profile artifacts
+runners/             Persistent external semantic-oracle runners
 scenarios/           Neutral BPMN models, stimuli, and observation requests
 scripts/             Maintained verification entry points
 ```
@@ -160,7 +168,7 @@ Start with the [documentation registry](docs/README.md). Common routes are:
 
 - [x] M0.0 — durable fast-pipeline plan
 - [x] M0.1 — neutral scenario and observation contracts
-- [ ] M0.2 — calibrated embedded CIB Seven runner
+- [x] M0.2 — calibrated embedded CIB Seven runner
 - [ ] M0.3 — executable Lean semantic capsule
 - [ ] M0.4 — independent pure TypeScript reducer
 - [ ] M0.5 — Temporal adapter and retained-history replay

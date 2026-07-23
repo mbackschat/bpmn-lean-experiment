@@ -156,13 +156,19 @@ The measured warm focused build completed in 0.20 seconds, and the measured warm
 
 None of these findings selects a production schema. They define information that a candidate must not erase prematurely.
 
+## Executed M0.2 PVM projection
+
+The first read-only projector is implemented in [PvmDefinitionProjector.java](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) and covered by [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java). It executes inside a CIB command context, resolves the deployed definition from the deployment cache, recursively enumerates flow and event activities, preserves outgoing-transition order, normalizes the generated root definition identity back to the source Process ID, and emits only diagnostics.
+
+For the sequential User Task model, the projected topology is `StartEvent_1 → UserTask_Approve → EndEvent_1`; behavior classes are `NoneStartEventActivityBehavior`, `UserTaskActivityBehavior`, and `NoneEndEventActivityBehavior`; every activity has the source Process as flow scope; ordinary flow activities have no PVM event scope; and the None End Event’s internal activity type is `noneEndEvent`. The absent event-scope values and normalized end-event type correct provisional expectations without changing the canonical public trace.
+
+This result supports preserving distinct flow-scope and optional event-scope relations, but it does not yet justify a final scope algebra. Defaults, synthetic nodes, nested scope behavior, scope flags, boundary Event attachment, Event Sub-Processes, and multi-instance normalization remain untested.
+
 ## Next experiments
 
-### PVM definition projection
+### PVM definition projection extensions
 
-After the M0.2 CIB dependency set is approved, add a diagnostic command that projects the deployed PVM definition into neutral data: activity ID and type, behavior class, flow and event scope, scope flags, ordered transitions, defaults, and synthetic nodes. Compare this structurally with the project compiler output while retaining the public CIB trace as the compatibility evidence.
-
-Start with the Milestone 0 User Task model. Add boundary Event, Event Sub-Process, and multi-instance fixtures only in the diagnostic research lane; they do not expand the product profile.
+After the walking skeleton establishes a project compiler output, compare it structurally with the implemented diagnostic projection while retaining the public CIB trace as the compatibility evidence. Add scope flags, defaults, synthetic nodes, boundary Event, Event Sub-Process, and multi-instance fixtures only when a named diagnostic question requires them; they remain outside the product profile.
 
 ### Source-preservation comparison
 

@@ -11,7 +11,7 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic reducer;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. The current Lean production surface is profile-independent contract vocabulary, not BPMN execution semantics. Code under `BpmnSemantics/Experiments/` is provisional and separately gated.
+The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. M0.2 has calibrated that trace through the embedded CIB Seven runner; M0.3 Lean execution semantics is next. The current Lean production surface remains profile-independent contract vocabulary, not BPMN execution semantics. Code under `BpmnSemantics/Experiments/` is provisional and separately gated.
 
 Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -102,7 +102,7 @@ Do not generalize after one consumer. Retain a provisional implementation only w
 
 ### Dependencies
 
-Keep dependencies at zero until a concrete capability requires one. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing any Lake, Java, Node, pnpm, Temporal, parser, test, build, or runtime dependency.
+Keep each component’s dependencies at the smallest approved set and add one only when a concrete capability requires it. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing any Lake, Java, Node, pnpm, Temporal, parser, test, build, or runtime dependency.
 
 Record exact version, role, license, provenance, and removal cost before adoption.
 
@@ -136,11 +136,17 @@ For CIB or Temporal source changes, preserve a clean pinned evidence lane and fo
 
 The Lean toolchain is pinned in [lean-toolchain](lean-toolchain) and currently has no external Lake packages.
 
-Current contract gate:
+Current verification gate:
 
 ```sh
 ./scripts/verify.sh
 git status --short
+```
+
+Focused CIB calibration gate:
+
+```sh
+./scripts/test-cibseven-oracle.sh
 ```
 
 Provisional representation-spike gate:

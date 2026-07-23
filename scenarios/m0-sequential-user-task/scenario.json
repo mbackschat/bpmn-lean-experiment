@@ -40,7 +40,50 @@
     ]
   },
   "calibration": {
-    "status": "pending",
-    "expectedTrace": null
+    "status": "calibrated",
+    "expectedTrace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Approve",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "enabledStimuli": [
+          {
+            "kind": "completeUserTask",
+            "commandId": "complete-user-task",
+            "elementId": "UserTask_Approve"
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-user-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "enabledStimuli": [],
+        "logicalTimeMs": 0
+      }
+    ]
   }
 }

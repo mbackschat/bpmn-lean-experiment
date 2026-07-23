@@ -12,6 +12,7 @@ xsd_path="docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
 
 jq empty "$profile_path" "$scenario_path"
 jq -e '.status == "draft"' "$profile_path" >/dev/null
+jq -e '.calibration.status == "calibrated" and (.calibration.expectedTrace | type == "array")' "$scenario_path" >/dev/null
 
 profile_id=$(jq -r '.id' "$profile_path")
 scenario_profile=$(jq -r '.profile' "$scenario_path")
@@ -36,4 +37,5 @@ fi
 
 lake build
 lake test
+./scripts/test-cibseven-oracle.sh
 git diff --check

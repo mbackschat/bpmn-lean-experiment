@@ -177,6 +177,8 @@ Each completed package ends with updated [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP
 
 Package order protects calibration and independence. The repository should still gain the runner skeleton early: M0.1 defines it, M0.2 exercises one external runner, and every following package plugs into the same orchestrator boundary.
 
+M0.0 through M0.2 are complete. M0.3 is the next package.
+
 ## Dependency decisions
 
 No new dependency is added implicitly. Before the package that needs it, record and obtain approval for the exact dependency, version, role, license, and removal cost.
@@ -185,12 +187,12 @@ Known decisions still required:
 
 | Capability | Candidate | Current constraint |
 |---|---|---|
-| Java runtime | Homebrew `openjdk@21` `21.0.12` | Already installed at the Homebrew prefix; the current shell exposes Java 25, so oracle commands must select Java 21 explicitly |
-| Java build | Apache Maven Wrapper `3.2.0` running Maven `3.8.8` | Matches the pinned CIB release wrapper and must be added with its Apache-2.0 provenance |
-| CIB oracle | `org.cibseven.bpm:cibseven-engine:2.2.0` | Available from Maven Central; Apache-2.0 |
-| CIB database | `com.h2database:h2:2.3.232` | Matches the pinned CIB database POM; MPL-2.0 or EPL-1.0 |
-| Java test harness | `junit:junit:4.13.1` | Matches the pinned CIB parent; EPL-1.0 |
-| Java JSON transport | `com.fasterxml.jackson.core:jackson-databind:2.21.2` | Matches the pinned CIB parent; Apache-2.0; required only when the runner emits JSON Lines |
+| Java runtime | Homebrew `openjdk@21` `21.0.12` | Approved; already installed at the Homebrew prefix; oracle commands must select Java 21 explicitly |
+| Java build | Apache Maven Wrapper `3.2.0` running Maven `3.8.8`; Compiler Plugin `3.14.1`; Surefire Plugin `3.5.4` | Approved on 2026-07-24; Apache-2.0; isolated to the CIB runner and removable with that module |
+| CIB oracle | `org.cibseven.bpm:cibseven-engine:2.2.0` | Approved on 2026-07-24; Apache-2.0; required only by the external oracle runner |
+| CIB database | `com.h2database:h2:2.3.232` | Approved on 2026-07-24; MPL-2.0 or EPL-1.0; replaceable only with a recorded oracle-environment change |
+| Java test harness | `junit:junit:4.13.2` | Approved on 2026-07-24; EPL-1.0; final JUnit 4 maintenance release, test-only, and independently replaceable |
+| Java JSON transport | `com.fasterxml.jackson.core:jackson-databind:2.21.2` | Approved on 2026-07-24; Apache-2.0; transport-only and replaceable without changing canonical semantics |
 | Node runtime | Homebrew-managed, project-pinned Node version supported by the chosen Temporal SDK | Node is not currently installed |
 | Package manager | pnpm | pnpm is not currently installed |
 | BPMN ingestion | `bpmn-moddle` or a smaller standards-preserving XML front end | Dependency and preservation policy require approval |
@@ -233,6 +235,9 @@ The exact resume point must name the current package, last verified command, nex
 | 2026-07-23 | Establish the complete research → Lean → reducer → Temporal → differential pipeline before expanding BPMN coverage | Approved for Milestone 0 |
 | 2026-07-23 | Make fast feedback a milestone acceptance criterion with separate warm, cold, and extended lanes | Approved for Milestone 0 |
 | 2026-07-23 | Use the none-start → User Task → none-end slice as the walking skeleton | Approved for Milestone 0 |
-| 2026-07-23 | Use CIB Seven `v2.2.0` as the spike oracle because its core BPMN test trees match the investigated `main` revision | Approved for Milestone 0; immutable compatibility profile still pending calibration |
+| 2026-07-23 | Use CIB Seven `v2.2.0` as the spike oracle because its core BPMN test trees match the investigated `main` revision | Approved for Milestone 0; M0.2 draft-profile trace calibrated, while immutable compatibility identity still awaits independent consumers |
 | 2026-07-23 | Use provisional JSON Lines framing for persistent runner processes | Provisional until two independent runners consume it |
 | 2026-07-23 | Use Java 21 for the embedded CIB oracle; Java remains test infrastructure and never enters Lean, the reducer, or the Temporal adapter | Approved for Milestone 0; CIB Seven 2.2 supports Java 21 and publishes Java 21 Docker images |
+| 2026-07-24 | Adopt the exact M0.2 Maven wrapper, build plugins, CIB engine, H2, Jackson, and JUnit coordinates recorded above | Approved; resolved runtime/test graph contains only Apache-2.0, MIT, MPL-2.0/EPL-1.0, EPL-1.0, and BSD-3-Clause licenses |
+| 2026-07-24 | Keep CIB’s audit history default with a `P180D` default TTL while excluding history from the canonical M0.2 observation boundary | Implemented; the TTL satisfies CIB Seven 2.2 deployment validation and does not turn history into a comparison surface |
+| 2026-07-24 | Keep PVM topology, behavior class, flow scope, optional event scope, and ordered transitions in runner diagnostics only | Implemented for the sequential model; public service observations remain the compatibility evidence |

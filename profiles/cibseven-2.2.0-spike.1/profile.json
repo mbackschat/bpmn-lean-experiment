@@ -12,7 +12,10 @@
     "java": "21",
     "database": "H2 2.3.232",
     "automaticJobExecutor": "disabled",
-    "clock": "explicit"
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
   },
   "bpmn": {
     "process": "private-executable",

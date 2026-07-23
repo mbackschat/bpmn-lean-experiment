@@ -17,6 +17,7 @@ The durable milestone contract is [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAS
 - Controlled source instrumentation and acceleration are authorized by [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md): pinned pristine evidence lanes remain authoritative, experimental branches are diagnostic, and semantics-relevant acceleration requires shadow comparison.
 - CIB Seven’s typed DOM authoring model, separate deployment parse tree, PVM definition graph, runtime execution tree, and the corresponding fUML/PSSM execution-model precedents are recorded in [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md).
 - A separately gated representation spike now distinguishes source from executable IR, flow scope from event scope, arrival count from edge provenance, and external commands from internal closure; its candidates remain provisional and are recorded in [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
+- M0.2 is complete: the repository-local Java 21 runner embeds pinned CIB Seven `2.2.0` on H2 `2.3.232`, controls logical time and automatic job execution, emits the calibrated sequential User Task trace, exposes a read-only PVM diagnostic, serves multiple JSON-lines requests through one warm engine, and proves cleanup after every run.
 
 ## Locked ultimate target
 
@@ -42,9 +43,9 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Next ordered work
 
-1. Obtain approval for the exact Maven, CIB, H2, JUnit, Jackson, Node, pnpm, BPMN ingestion, and Temporal dependencies before adding them.
-2. Complete M0.2 through M0.6 in the order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
-3. During M0.2, add only the first read-only PVM definition projection needed to compare the sequential User Task model’s resolved topology, behavior type, ordered transitions, and scope relations; retain advanced boundary Event, Event Sub-Process, and multi-instance models in the diagnostic research lane.
+1. Complete M0.3 through M0.6 in order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
+2. Obtain approval for the exact Node, pnpm, BPMN-ingestion, and Temporal dependencies before the package that adds them; the M0.2 Maven, CIB, H2, Jackson, and JUnit set is approved and implemented.
+3. Keep advanced boundary Event, Event Sub-Process, and multi-instance PVM models in the diagnostic research lane until the walking skeleton is complete; the first read-only sequential-model projection has answered the M0.2 topology question.
 4. For M0.5, implement one synchronous message handler that enqueues versioned inputs, one deterministic Workflow loop that alone advances the reducer, and separate live-server and retained-history replay gates.
 5. After the walking skeleton is fast and green, add the researched User Task discovery/completion vertical slice and explicitly decide Update versus Signal, the task projection, Search Attribute registry, and production inbox boundary.
 6. Before adding an auxiliary formal tool, identify a concrete question and seeded defect, then time-box the smallest candidate experiment from [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md); no formal-method spike is currently scheduled.
@@ -52,16 +53,17 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Exact resume point
 
-- Current package: M0.1 is implemented; M0.2 CIB calibration is next.
-- Last verified commands: `./scripts/verify.sh`, `lake build checkSemanticRepresentationSpike`, and `lake exe checkSemanticRepresentationSpike`.
-- Current state: the standard BPMN fixture, draft spike profile, neutral scenario, canonical observation vocabulary, logical runner boundary, and separating Lean checks are green.
-- Next implementation target: approve the exact M0.2 dependency set recorded in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md), then create the embedded CIB deploy/start/wait/complete/cleanup runner that emits the first calibrated trace.
-- M0.2 performance rule: measure the pristine pinned runner by phase and remove harness overhead first; create an experimental CIB source branch only when a named bottleneck or semantic question cannot be answered through public hooks, following [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md).
-- First M0.2 research anchor: inspect the pinned CIB User Task and process-completion assertion/fixture pairs and select the smallest public-API precedent before writing the red oracle test.
-- First M0.2 research result: `UserTaskTest` supplies the start-and-active-task precedent, while `TaskAssigneeTest` supplies the complete-and-process-ended precedent; the neutral scenario removes their assignment and vendor-specific concerns.
-- Architecture-spike status: the representation candidates and their focused gate are green, remain outside the default semantic authority, and do not reorder M0.2 calibration before the M0.3 Lean semantic capsule.
+- Current package: M0.2 is implemented; M0.3 Lean semantic capsule is next.
+- Last verified commands: `./scripts/verify.sh`, `./scripts/test-cibseven-oracle.sh`, `lake build checkSemanticRepresentationSpike`, and `lake exe checkSemanticRepresentationSpike`.
+- Current state: the content-addressed BPMN fixture, draft spike profile, calibrated canonical trace, typed Java protocol, repeated embedded CIB execution, persistent JSON-lines boundary, diagnostic PVM projection, cleanup checks, and phase timings are green.
+- Next implementation target: add the smallest failing Lean example for the calibrated trace, then implement an explicit sequential User Task state machine and interpreter in a new production semantic module without importing CIB representation or algorithms.
+- M0.2 calibrated result: deployment and both commands commit; start reaches one `UserTask_Approve` wait with multiplicity one and enables its completion stimulus; completion ends `Instance_1`; logical time remains zero.
+- M0.2 diagnostic result: ordered PVM topology matches the source sequence, ordinary flow activities have no PVM event scope, and the None End Event’s internal type is `noneEndEvent`; these facts remain diagnostic rather than compatibility keys.
+- M0.2 performance result: dependency-warm engine startup measured 1.983 seconds and one scenario including cleanup measured 0.492 seconds; the dependency-warm Maven gate completed in 5.28 seconds.
+- Transport status: JSON Lines is implemented for CIB but remains provisional until an independent Lean or TypeScript runner consumes the same logical contract.
+- Architecture-spike status: the representation candidates and their focused gate are green, remain outside the default semantic authority, and must not enter M0.3 unless the calibrated scenario requires the same information.
 - Later Temporal implementation constraint: Event History, not Workflow cache or Visibility, is the durability source; the initial adapter must serialize all reducer mutation through one Workflow loop and treat Search Attributes as an eventually consistent projection.
-- Known environment constraints: Homebrew Java 21 is installed but not active; Node, pnpm, and Maven are absent; no dependency installation or package addition is approved yet.
+- Known environment constraints: Homebrew Java 21 is installed but not globally active and is selected explicitly by the CIB gate; Maven is supplied by the repository wrapper; Node and pnpm are absent; later Node/BPMN-ingestion/Temporal package additions are not yet approved.
 
 ## Stop conditions
 
