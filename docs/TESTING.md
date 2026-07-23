@@ -15,7 +15,7 @@ For each semantic capsule:
 
 The first scaffold capsule followed this workflow: the conformance module imported an absent contract, the red run failed on that missing semantic owner, and the green run passed only after the outcome vocabulary was implemented.
 
-## Current gate
+## Current foundation gate
 
 ```sh
 lake build
@@ -25,6 +25,22 @@ git status --short
 ```
 
 `lake test` elaborates the separating examples through the `checkConformance` executable and must remain dependency-free in Phase 0.
+
+## Milestone 0 feedback gates
+
+The durable contract and exact performance definitions are in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
+
+The planned public gates are:
+
+```sh
+pnpm test:semantic
+pnpm test:pipeline
+pnpm test:assurance
+```
+
+`test:semantic` must keep the Lean and pure reducer red/green loop below two warm seconds. `test:pipeline` must run the walking skeleton through CIB, Lean, the reducer, Temporal, differential comparison, replay, and cleanup below fifteen warm seconds and forty-five cold seconds. `test:assurance` owns larger selective suites and may take minutes.
+
+These commands do not exist yet. Until their package is implemented, the foundation gate remains authoritative and [PLAN.md](PLAN.md) must say which partial gate is current.
 
 ## Evidence lanes
 

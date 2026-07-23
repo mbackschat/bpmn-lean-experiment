@@ -8,6 +8,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
 | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, authority model, initial boundary, and success criteria |
+| [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md) | Contributors and resuming agents; durable walking-skeleton scope, runner contracts, performance budgets, work packages, and resume protocol |
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
 | [PLAN.md](PLAN.md) | Resuming agents and owners; current checkpoint, candidate profile decisions, next steps, and stop conditions |
 | [TESTING.md](TESTING.md) | Contributors; red/green workflow and verification gates |

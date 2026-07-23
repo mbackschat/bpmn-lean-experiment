@@ -4,11 +4,11 @@ Guidance for working in **bpmn-lean-experiment**, a versioned CIB Seven semantic
 
 ## Start here
 
-Read the complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and the project’s [BPMN conformance target](docs/BPMN-CONFORMANCE-TARGET.md) before changing semantic boundaries. Use [docs/README.md](docs/README.md) as the documentation registry, [docs/IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for exact implemented scope, and [docs/PLAN.md](docs/PLAN.md) for the current checkpoint and unresolved decisions.
+Read the complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and the project’s [BPMN conformance target](docs/BPMN-CONFORMANCE-TARGET.md) before changing semantic boundaries. Use [docs/README.md](docs/README.md) as the documentation registry, [docs/MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md) for the current walking-skeleton contract, [docs/IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for exact implemented scope, and [docs/PLAN.md](docs/PLAN.md) for the current checkpoint and unresolved decisions.
 
 ## Current phase
 
-The project is in Phase 0: profile and oracle calibration. The existing Lean code is only profile-independent contract vocabulary. It is not BPMN execution semantics and supplies no CIB Seven compatibility evidence.
+The project is in Milestone 0: establish a fast full-pipeline walking skeleton from research and CIB probing through Lean, a pure TypeScript reducer, a Temporal adapter, differential comparison, and replay. The existing Lean code is only profile-independent contract vocabulary. It is not BPMN execution semantics and supplies no CIB Seven compatibility evidence.
 
 The ultimate normative goal is full OMG BPMN 2.0.2 Process Execution Conformance for a Temporal-hosted adapter that imports BPMN Process diagrams, including their definitional Collaboration. Do not call this “BPMN Complete Conformance,” which also requires Process Modeling, BPEL Process Execution, and Choreography Modeling conformance.
 

@@ -12,45 +12,38 @@ Build independent implementations that agree through a neutral profile, scenario
 
 Lean’s purpose is not merely to document an already finished adapter. It should accelerate implementation by making ambiguous rules, state distinctions, preservation obligations, counterexamples, generated traces, and refinement relations executable before they are duplicated in TypeScript and Temporal.
 
-## Initial delivery boundary
+## Milestone 0 delivery boundary
 
 Required now:
 
-- preserve the handoff inside the repository;
-- ingest the normative BPMN 2.0.2 sources and identify the exact conformance target;
-- establish project-specific contributor and documentation rules;
-- pin a dependency-free Lean toolchain;
-- encode only profile-independent distinctions already required by the handoff;
-- make the initial profile decisions explicit and owner-reviewable;
-- retain exact provenance for reference checkouts;
-- provide repeatable build and test commands.
-
-Optional after owner approval:
-
-- calibrate an embedded CIB Seven oracle against the selected release and environment;
-- define the first immutable semantic profile;
-- implement the Phase 1 sequential Lean semantics and neutral scenarios;
-- introduce the pure TypeScript reducer against the same approved contract;
-- introduce Temporal only after reducer behavior is independently executable and comparable.
+- retain the verified foundation and source boundaries;
+- establish the complete fast walking-skeleton pipeline defined in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md);
+- use actual BPMN XML for the none-start → User Task → none-end slice;
+- calibrate pinned CIB Seven behavior through public APIs;
+- execute the same neutral scenario in Lean and a pure TypeScript reducer;
+- host the reducer through a Temporal adapter without moving semantics into Temporal;
+- compare canonical traces and replay retained history;
+- measure and meet the warm and cold feedback budgets.
 
 Excluded from this first delivery:
 
 - claims of BPMN conformance or CIB compatibility;
-- profile-dependent BPMN execution behavior;
-- a machine-readable profile or scenario format chosen without a consumer;
-- CIB Seven extraction, forking, or runtime linkage from the semantic core;
-- TypeScript, Temporal, Java, database, or test dependencies;
-- differential, refinement, replay, or generated-test infrastructure.
+- BPMN features outside the single sequential User Task slice;
+- CIB Seven extraction, forking, or runtime linkage from Lean or the reducer;
+- production Temporal deployment concerns;
+- broad conformance, MIWG, or CIB-suite execution before the walking skeleton is fast.
 
 ## Success criteria
 
-The initial setup is complete when:
+Milestone 0 is complete when:
 
-1. a new contributor can identify the authority boundaries, current scope, sources, and next decisions without external context;
-2. `lake build` and `lake test` pass with the pinned toolchain and no external Lake package;
-3. the Lean vocabulary distinguishes semantic command outcomes from harness failure without claiming BPMN behavior;
-4. no unapproved semantic-profile choice is encoded as fact;
-5. exact reference revisions and the handoff’s source/executable revision mismatch are visible;
-6. the repository contains no machine-specific paths, redistributed full OMG specification conversion, or copied reference implementation code.
+1. a new contributor can resume from repository documentation without chat history;
+2. the single scenario executes through CIB, Lean, the reducer, and Temporal;
+3. all targets agree through the canonical observation contract;
+4. an injected semantic disagreement is classified correctly;
+5. retained Temporal history replays deterministically;
+6. repeated runs prove isolation and cleanup;
+7. the measured semantic and full-pipeline feedback loops meet their budgets;
+8. no public claim or dependency crosses its declared boundary.
 
 The exact current state is maintained in the [implementation map](IMPLEMENTATION-MAP.md), while the next owner decisions and work sequence are maintained in the [plan](PLAN.md).
