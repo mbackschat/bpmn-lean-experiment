@@ -18,6 +18,7 @@ The durable milestone contract is [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAS
 - CIB Seven’s typed DOM authoring model, separate deployment parse tree, PVM definition graph, runtime execution tree, and the corresponding fUML/PSSM execution-model precedents are recorded in [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md).
 - A separately gated representation spike now distinguishes source from executable IR, flow scope from event scope, arrival count from edge provenance, and external commands from internal closure; its candidates remain provisional and are recorded in [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
 - M0.2 is complete: the repository-local Java 21 runner embeds pinned CIB Seven `2.2.0` on H2 `2.3.232`, controls logical time and automatic job execution, emits the calibrated sequential User Task trace, exposes a read-only PVM diagnostic, serves multiple JSON-lines requests through one warm engine, and proves cleanup after every run.
+- M0.3 is complete: the production Lean capsule separates command admission from internal closure, derives the calibrated canonical trace, keeps bound exhaustion outside semantic outcomes, and proves start-to-wait, matching-completion, and non-matching-completion invariants.
 
 ## Locked ultimate target
 
@@ -43,7 +44,7 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Next ordered work
 
-1. Complete M0.3 through M0.6 in order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
+1. Complete M0.4 through M0.6 in order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
 2. Obtain approval for the exact Node, pnpm, BPMN-ingestion, and Temporal dependencies before the package that adds them; the M0.2 Maven, CIB, H2, Jackson, and JUnit set is approved and implemented.
 3. Keep advanced boundary Event, Event Sub-Process, and multi-instance PVM models in the diagnostic research lane until the walking skeleton is complete; the first read-only sequential-model projection has answered the M0.2 topology question.
 4. For M0.5, implement one synchronous message handler that enqueues versioned inputs, one deterministic Workflow loop that alone advances the reducer, and separate live-server and retained-history replay gates.
@@ -53,17 +54,18 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Exact resume point
 
-- Current package: M0.2 is implemented; M0.3 Lean semantic capsule is next.
-- Last verified commands: `./scripts/verify.sh`, `./scripts/test-cibseven-oracle.sh`, `lake build checkSemanticRepresentationSpike`, and `lake exe checkSemanticRepresentationSpike`.
-- Current state: the content-addressed BPMN fixture, draft spike profile, calibrated canonical trace, typed Java protocol, repeated embedded CIB execution, persistent JSON-lines boundary, diagnostic PVM projection, cleanup checks, and phase timings are green.
-- Next implementation target: add the smallest failing Lean example for the calibrated trace, then implement an explicit sequential User Task state machine and interpreter in a new production semantic module without importing CIB representation or algorithms.
+- Current package: M0.3 is implemented; M0.4 pure TypeScript reducer is next.
+- Last verified commands: `./scripts/verify.sh`, `lake build checkConformance`, `lake exe checkConformance`, `lake build checkSemanticRepresentationSpike`, and `lake exe checkSemanticRepresentationSpike`.
+- Current state: the content-addressed BPMN fixture, draft spike profile, calibrated CIB trace, typed Java protocol, repeated embedded CIB execution, production Lean interpreter, lifecycle proofs, diagnostic PVM projection, cleanup checks, and component timings are green.
+- Next implementation target: select and obtain approval for exact Node and pnpm versions, read the required JavaScript/TypeScript long-running-command guidance, then add the smallest failing reducer test against the independently written calibrated trace.
 - M0.2 calibrated result: deployment and both commands commit; start reaches one `UserTask_Approve` wait with multiplicity one and enables its completion stimulus; completion ends `Instance_1`; logical time remains zero.
 - M0.2 diagnostic result: ordered PVM topology matches the source sequence, ordinary flow activities have no PVM event scope, and the None End Event’s internal type is `noneEndEvent`; these facts remain diagnostic rather than compatibility keys.
 - M0.2 performance result: dependency-warm engine startup measured 1.983 seconds and one scenario including cleanup measured 0.492 seconds; the dependency-warm Maven gate completed in 5.28 seconds.
-- Transport status: JSON Lines is implemented for CIB but remains provisional until an independent Lean or TypeScript runner consumes the same logical contract.
-- Architecture-spike status: the representation candidates and their focused gate are green, remain outside the default semantic authority, and must not enter M0.3 unless the calibrated scenario requires the same information.
+- M0.3 performance result: the source-current Lean build measured 3.29 seconds; the artifact-warm focused build measured 0.14 seconds and execution measured 0.16 seconds.
+- Transport status: JSON Lines is implemented for CIB but remains provisional until a Lean or TypeScript process consumes the same framing; the Lean interpreter currently consumes the shared logical contract in-process.
+- Architecture-spike status: M0.3 transferred only the definition/runtime, command/closure, and bound-classification distinctions; the experiment's source/IR, scope, and token types remain outside production semantic authority.
 - Later Temporal implementation constraint: Event History, not Workflow cache or Visibility, is the durability source; the initial adapter must serialize all reducer mutation through one Workflow loop and treat Search Attributes as an eventually consistent projection.
-- Known environment constraints: Homebrew Java 21 is installed but not globally active and is selected explicitly by the CIB gate; Maven is supplied by the repository wrapper; Node and pnpm are absent; later Node/BPMN-ingestion/Temporal package additions are not yet approved.
+- Known environment constraints: Homebrew Java 21 is installed but not globally active and is selected explicitly by the CIB gate; Maven is supplied by the repository wrapper; Node and pnpm are absent and not yet approved; BPMN-ingestion and Temporal package additions also remain unapproved.
 
 ## Stop conditions
 

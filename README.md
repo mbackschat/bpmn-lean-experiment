@@ -6,7 +6,7 @@ This project is an experiment toward a Temporal-hosted BPMN 2.0.2 execution adap
 
 The ambition is deliberately high: not merely to translate BPMN shapes into Workflow code, but to build an auditable chain from the standard and observed engine behavior to production execution.
 
-> **Project status:** Foundation and research phase. The repository does not yet contain a BPMN engine and makes no BPMN-conformance or CIB-compatibility claim.
+> **Project status:** Milestone 0 walking skeleton in progress. CIB calibration and the first Lean semantic capsule are executable, but the repository does not yet contain a general BPMN engine and makes no BPMN-conformance or CIB-compatibility claim.
 
 ## Why this project exists
 
@@ -88,9 +88,9 @@ none Start Event → User Task → none End Event
 
 | Surface | Current state |
 |---|---|
-| Planning and contracts | M0.0 through M0.2 complete; profile, scenario, observation, runner, and feedback-budget contracts exist |
+| Planning and contracts | M0.0 through M0.3 complete; profile, scenario, observation, runner, and feedback-budget contracts exist |
 | BPMN sources | Official BPMN 2.0.2 PDF and machine-readable corpus ingested locally with project-authored conformance research |
-| Lean | Profile-independent contract vocabulary and separately gated representation experiments compile and execute |
+| Lean | The sequential User Task interpreter derives the calibrated trace and proves start-to-wait, matching-completion, and non-matching-completion invariants; broader BPMN semantics remain absent |
 | CIB Seven | Pinned `v2.2.0` embedded runner deploys, starts, observes, completes, cleans, emits the calibrated trace, and exposes a diagnostic PVM projection through a persistent JSON-lines boundary |
 | TypeScript reducer | Architecture boundary documented; workspace and implementation not yet initialized |
 | Temporal adapter | Replay and SDK semantics researched; adapter and retained-history tests not yet implemented |
@@ -133,7 +133,7 @@ The spike is a bounded architecture experiment, not part of the approved BPMN se
 ## Repository guide
 
 ```text
-BpmnSemantics/       Lean contract vocabulary and isolated experiments
+BpmnSemantics/       Lean contracts, executable semantic capsules, and isolated experiments
 docs/                Architecture, plans, research, testing, and source provenance
 profiles/            Versioned semantic-profile artifacts
 runners/             Persistent external semantic-oracle runners
@@ -169,7 +169,7 @@ Start with the [documentation registry](docs/README.md). Common routes are:
 - [x] M0.0 — durable fast-pipeline plan
 - [x] M0.1 — neutral scenario and observation contracts
 - [x] M0.2 — calibrated embedded CIB Seven runner
-- [ ] M0.3 — executable Lean semantic capsule
+- [x] M0.3 — executable Lean semantic capsule
 - [ ] M0.4 — independent pure TypeScript reducer
 - [ ] M0.5 — Temporal adapter and retained-history replay
 - [ ] M0.6 — fast differential/refinement gate with injected disagreement

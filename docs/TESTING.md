@@ -1,6 +1,6 @@
 # Testing
 
-The current test estate covers the Phase 0 Lean contract vocabulary and the M0.2 CIB Seven calibration runner. It supplies one draft-profile behavioral calibration but no BPMN conformance or immutable CIB compatibility claim.
+The current test estate covers the Phase 0 Lean contract vocabulary, the M0.2 CIB Seven calibration runner, and the M0.3 Lean sequential User Task capsule. It supplies one draft-profile behavioral calibration and a matching executable formal account, but no BPMN conformance or immutable CIB compatibility claim.
 
 ## Red/green workflow
 
@@ -27,6 +27,21 @@ The verification script checks the profile and scenario JSON, profile reference,
 The M0.1 red run imported the intentionally absent `BpmnSemantics.Scenario` module and failed. The first implementation run then exposed Lean’s requirement that imports precede module documentation; moving the import to the module beginning fixed that structural error. The green run passes with the implementation-neutral scenario, stimulus, observation, result, and runner types.
 
 The first measured warm contract gate on 2026-07-23 completed in 1.36 seconds. This is a baseline for the current Lean-and-artifact contract only; it is not yet the semantic-loop measurement because the TypeScript reducer does not exist.
+
+## M0.3 Lean semantic capsule
+
+The focused gate is:
+
+```sh
+lake build checkConformance
+lake exe checkConformance
+```
+
+The red build imported an intentionally absent `BpmnSemantics.SequentialUserTask` module and failed on that missing semantic owner. The green module admits an external start or User Task completion command, performs explicit deterministic internal closure, derives stable canonical observations, and returns closure-bound exhaustion as a harness failure rather than a semantic outcome.
+
+[SequentialUserTaskConformance.lean](../BpmnSemantics/SequentialUserTaskConformance.lean) writes the calibrated five-observation trace independently and proves equality with the interpreter result. Named theorems prove that start closes at exactly one active User Task wait, matching completion closes the Process, and a completion naming another task is rejected with runtime state unchanged. These results cover only the content-addressed Milestone 0 capsule.
+
+On 2026-07-24, a source-current focused build completed in 3.29 seconds, while the artifact-warm build and executable completed in 0.14 seconds and 0.16 seconds respectively. The Lean-only warm loop is below the two-second semantic-loop budget; the budget cannot be accepted for the combined semantic loop until M0.4 adds the reducer.
 
 ## M0.2 CIB calibration gate
 

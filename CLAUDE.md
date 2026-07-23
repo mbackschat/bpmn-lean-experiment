@@ -11,7 +11,7 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic reducer;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. M0.2 has calibrated that trace through the embedded CIB Seven runner; M0.3 Lean execution semantics is next. The current Lean production surface remains profile-independent contract vocabulary, not BPMN execution semantics. Code under `BpmnSemantics/Experiments/` is provisional and separately gated.
+The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. M0.2 calibrated that trace through the embedded CIB Seven runner, and M0.3 now derives it through a capsule-specific Lean interpreter with lifecycle proofs. M0.4, the independent pure TypeScript reducer, is next. Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 

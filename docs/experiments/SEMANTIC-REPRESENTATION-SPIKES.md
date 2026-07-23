@@ -164,6 +164,12 @@ For the sequential User Task model, the projected topology is `StartEvent_1 → 
 
 This result supports preserving distinct flow-scope and optional event-scope relations, but it does not yet justify a final scope algebra. Defaults, synthetic nodes, nested scope behavior, scope flags, boundary Event attachment, Event Sub-Processes, and multi-instance normalization remain untested.
 
+## Executed M0.3 Lean transfer
+
+The production [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) capsule transfers two distinctions that are now independently demanded by the BPMN lifecycle basis, the CIB trace, and a second semantic consumer: immutable definition versus runtime instance state, and external command admission versus internal closure. It also retains bound exhaustion as a harness condition.
+
+The capsule deliberately does not import or reproduce the experiment's source compiler, general executable nodes, scope relations, tokens, or wait records. Its compressed control state is sufficient only for the fixed sequential model. This is evidence that the distinctions transfer; it is not evidence that the experiment types are the production BPMN IR.
+
 ## Next experiments
 
 ### PVM definition projection extensions

@@ -177,7 +177,7 @@ Each completed package ends with updated [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP
 
 Package order protects calibration and independence. The repository should still gain the runner skeleton early: M0.1 defines it, M0.2 exercises one external runner, and every following package plugs into the same orchestrator boundary.
 
-M0.0 through M0.2 are complete. M0.3 is the next package.
+M0.0 through M0.3 are complete. M0.4 is the next package and requires the exact Node/pnpm dependency decision below before implementation.
 
 ## Dependency decisions
 
@@ -241,3 +241,4 @@ The exact resume point must name the current package, last verified command, nex
 | 2026-07-24 | Adopt the exact M0.2 Maven wrapper, build plugins, CIB engine, H2, Jackson, and JUnit coordinates recorded above | Approved; resolved runtime/test graph contains only Apache-2.0, MIT, MPL-2.0/EPL-1.0, EPL-1.0, and BSD-3-Clause licenses |
 | 2026-07-24 | Keep CIB’s audit history default with a `P180D` default TTL while excluding history from the canonical M0.2 observation boundary | Implemented; the TTL satisfies CIB Seven 2.2 deployment validation and does not turn history into a comparison surface |
 | 2026-07-24 | Keep PVM topology, behavior class, flow scope, optional event scope, and ordered transitions in runner diagnostics only | Implemented for the sequential model; public service observations remain the compatibility evidence |
+| 2026-07-24 | Transfer only the external-command/internal-closure and definition/runtime distinctions from the representation spike into the M0.3 Lean capsule | Implemented; the capsule uses its own compressed sequential control state and does not adopt the experiment's provisional general IR or token model |
