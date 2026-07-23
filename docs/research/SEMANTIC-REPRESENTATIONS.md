@@ -46,9 +46,9 @@ There is no direct object handoff from the Model API builder to the PVM. Deploym
 
 ### What it looks like
 
-[`ModelInstanceImpl`](../../../oss/cibseven/cibseven/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/impl/ModelInstanceImpl.java) owns a DOM document and a model-type registry. [`ModelElementInstanceImpl`](../../../oss/cibseven/cibseven/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/impl/instance/ModelElementInstanceImpl.java) combines a typed model element, its `ModelElementType`, and its [`DomElement`](../../../oss/cibseven/cibseven/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/instance/DomElement.java). [`DomElementImpl`](../../../oss/cibseven/cibseven/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/impl/instance/DomElementImpl.java) wraps `org.w3c.dom.Element`.
+[`ModelInstanceImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/impl/ModelInstanceImpl.java) owns a DOM document and a model-type registry. [`ModelElementInstanceImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/impl/instance/ModelElementInstanceImpl.java) combines a typed model element, its `ModelElementType`, and its [`DomElement`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/instance/DomElement.java). [`DomElementImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/model-api/xml-model/src/main/java/org/cibseven/bpm/model/xml/impl/instance/DomElementImpl.java) wraps `org.w3c.dom.Element`.
 
-The BPMN element classes register XML attributes, references, child collections, inheritance, and vendor extensions. For example, [`FlowNodeImpl`](../../../oss/cibseven/cibseven/model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/FlowNodeImpl.java) registers incoming and outgoing references, while [`SequenceFlowImpl`](../../../oss/cibseven/cibseven/model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/SequenceFlowImpl.java) registers `sourceRef` and `targetRef`.
+The BPMN element classes register XML attributes, references, child collections, inheritance, and vendor extensions. For example, [`FlowNodeImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/FlowNodeImpl.java) registers incoming and outgoing references, while [`SequenceFlowImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/SequenceFlowImpl.java) registers `sourceRef` and `targetRef`.
 
 The builder therefore operates on a typed façade whose mutations immediately affect a live XML document.
 
@@ -89,9 +89,9 @@ repositoryService
     .deploy();
 ```
 
-[`DeploymentBuilderImpl.addModelInstance`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/repository/DeploymentBuilderImpl.java) calls `Bpmn.writeModelToStream`, stores the resulting bytes as a deployment resource, and hands those bytes to the normal deployer path.
+[`DeploymentBuilderImpl.addModelInstance`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/repository/DeploymentBuilderImpl.java) calls `Bpmn.writeModelToStream`, stores the resulting bytes as a deployment resource, and hands those bytes to the normal deployer path.
 
-When a caller later requests the deployed `BpmnModelInstance`, [`BpmnModelInstanceCache`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/deploy/cache/BpmnModelInstanceCache.java) reparses the original resource. The public model and PVM definition coexist but are not views over the same object graph.
+When a caller later requests the deployed `BpmnModelInstance`, [`BpmnModelInstanceCache`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/deploy/cache/BpmnModelInstanceCache.java) reparses the original resource. The public model and PVM definition coexist but are not views over the same object graph.
 
 ### Why DOM is appropriate here
 
@@ -109,11 +109,11 @@ A live DOM is a defensible implementation choice for this problem. It is a poor 
 
 ## CIB Seven deployment parse tree
 
-The engine does not compile through the public Model API. [`BpmnParser`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParser.java) uses the engine’s generic SAX parser and builds [`org.cibseven.bpm.engine.impl.util.xml.Element`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/util/xml/Element.java).
+The engine does not compile through the public Model API. [`BpmnParser`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParser.java) uses the engine’s generic SAX parser and builds [`org.cibseven.bpm.engine.impl.util.xml.Element`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/util/xml/Element.java).
 
 That element stores the namespace URI, tag, attributes, text, children, and source position. It is deliberately smaller than a standards-preserving authoring DOM.
 
-[`BpmnParse`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java) then:
+[`BpmnParse`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java) then:
 
 - validates the schema;
 - reads Processes, Collaborations, Messages, Signals, Errors, and diagram information;
@@ -165,13 +165,13 @@ classDiagram
   ActivityImpl "1" --> "*" TransitionImpl : outgoing
 ```
 
-[`ProcessDefinitionImpl`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/ProcessDefinitionImpl.java) is a root `ScopeImpl` with a default initial activity and cached start stacks. [`ProcessDefinitionEntity`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ProcessDefinitionEntity.java) adds deployed product metadata such as version, deployment, forms, authorization, history configuration, and tenant state.
+[`ProcessDefinitionImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/ProcessDefinitionImpl.java) is a root `ScopeImpl` with a default initial activity and cached start stacks. [`ProcessDefinitionEntity`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ProcessDefinitionEntity.java) adds deployed product metadata such as version, deployment, forms, authorization, history configuration, and tenant state.
 
-[`ActivityImpl`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/ActivityImpl.java) is both an executable activity and a possible nested scope. It contains ordered incoming and outgoing [`TransitionImpl`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/TransitionImpl.java) objects, behavior and start-behavior strategies, async flags, properties, and scope relations.
+[`ActivityImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/ActivityImpl.java) is both an executable activity and a possible nested scope. It contains ordered incoming and outgoing [`TransitionImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/TransitionImpl.java) objects, behavior and start-behavior strategies, async flags, properties, and scope relations.
 
 ### Flow scope and event scope
 
-[`ScopeImpl`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/ScopeImpl.java) explicitly owns two collections:
+[`ScopeImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/process/ScopeImpl.java) explicitly owns two collections:
 
 - flow activities for which it is the `flowScope`;
 - event-listener activities for which it is the `eventScope`.
@@ -184,9 +184,9 @@ The immediate lesson is not “copy these two Java fields.” It is “do not as
 
 The parser attaches a behavior strategy to each activity. Examples include:
 
-- [`ExclusiveGatewayActivityBehavior`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ExclusiveGatewayActivityBehavior.java), which selects the first condition-true outgoing transition in stored order and then the default;
-- [`ParallelGatewayActivityBehavior`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java), which counts inactive concurrent executions at the gateway;
-- [`UserTaskActivityBehavior`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java), which creates a persistent Task and leaves the activity when signaled.
+- [`ExclusiveGatewayActivityBehavior`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ExclusiveGatewayActivityBehavior.java), which selects the first condition-true outgoing transition in stored order and then the default;
+- [`ParallelGatewayActivityBehavior`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java), which counts inactive concurrent executions at the gateway;
+- [`UserTaskActivityBehavior`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java), which creates a persistent Task and leaves the activity when signaled.
 
 This object strategy is effective inside a mutable Java engine. It is not a good direct Lean or TypeScript IR because executable class identity, property bags, listeners, and mutable service dependencies are difficult to serialize, compare, version, and reason about.
 
@@ -241,7 +241,7 @@ A real projector must recurse through nested flow scopes, enumerate event activi
 
 ## CIB Seven runtime representation
 
-[`PvmExecutionImpl`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/PvmExecutionImpl.java) contains per-instance state: current activity and transition, parent and child executions, activity-instance identity, variables, and flags such as active, scope, concurrent, ended, and event scope. [`ExecutionEntity`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java) adds persistence behavior.
+[`PvmExecutionImpl`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/PvmExecutionImpl.java) contains per-instance state: current activity and transition, parent and child executions, activity-instance identity, variables, and flags such as active, scope, concurrent, ended, and event scope. [`ExecutionEntity`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java) adds persistence behavior.
 
 The execution tree functions as control-path and scope bookkeeping, but one execution is not one BPMN token:
 
@@ -253,7 +253,7 @@ The execution tree functions as control-path and scope bookkeeping, but one exec
 
 Therefore, copying the execution tree as the project’s token semantics would import CIB implementation compromises and make normative BPMN reasoning harder.
 
-CIB advances execution through named [`PvmAtomicOperation`](../../../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperation.java) phases such as activity start, behavior execution, scope creation, transition taking, listener invocation, and activity destruction. These phase names are useful diagnostic probe points and inspiration for a microtrace vocabulary. They are not automatically the smallest normative BPMN transition relation.
+CIB advances execution through named [`PvmAtomicOperation`](https://github.com/cibseven/cibseven/blob/5a45b47ea22688d774de97277c3ff7013f54fdd2/engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperation.java) phases such as activity start, behavior execution, scope creation, transition taking, listener invocation, and activity destruction. These phase names are useful diagnostic probe points and inspiration for a microtrace vocabulary. They are not automatically the smallest normative BPMN transition relation.
 
 ### A revealing parallel-join behavior
 
@@ -307,9 +307,9 @@ ExecutionEnvironment execution = new ExecutionEnvironment(environment);
 ParameterValueList outputs = execution.execute(behavior);
 ```
 
-[`Environment`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/org/modeldriven/fuml/environment/Environment.java) creates a `Locus`, `Executor`, `ExecutionFactory`, primitive types, and selection/dispatch strategies. [`ExecutionEnvironment`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/org/modeldriven/fuml/environment/ExecutionEnvironment.java) prepares parameters and invokes `locus.executor.execute`.
+[`Environment`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/org/modeldriven/fuml/environment/Environment.java) creates a `Locus`, `Executor`, `ExecutionFactory`, primitive types, and selection/dispatch strategies. [`ExecutionEnvironment`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/org/modeldriven/fuml/environment/ExecutionEnvironment.java) prepares parameters and invokes `locus.executor.execute`.
 
-At the lower level, [`ActivityExecution`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityExecution.java) creates an [`ActivityNodeActivationGroup`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityNodeActivationGroup.java), then activates the Activity’s nodes and edges:
+At the lower level, [`ActivityExecution`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityExecution.java) creates an [`ActivityNodeActivationGroup`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityNodeActivationGroup.java), then activates the Activity’s nodes and edges:
 
 ```java
 Activity activity = (Activity) getTypes().getValue(0);
@@ -319,11 +319,11 @@ activationGroup.activityExecution = this;
 activationGroup.activate(activity.node, activity.edge);
 ```
 
-Each [`ActivityNodeActivation`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityNodeActivation.java) keeps its syntax node, incoming and outgoing edge instances, held tokens, group, and running state.
+Each [`ActivityNodeActivation`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityNodeActivation.java) keeps its syntax node, incoming and outgoing edge instances, held tokens, group, and running state.
 
 ### Edge instances, offers, and tokens
 
-[`ActivityEdgeInstance`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityEdgeInstance.java) stores pending [`Offer`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/Offer.java) objects. Sending an offer retains the offered [`Token`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/Token.java) objects until the target activation takes them. Withdrawal invalidates outstanding offers for an already-consumed token.
+[`ActivityEdgeInstance`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/ActivityEdgeInstance.java) stores pending [`Offer`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/Offer.java) objects. Sending an offer retains the offered [`Token`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/Token.java) objects until the target activation takes them. Withdrawal invalidates outstanding offers for an already-consumed token.
 
 The concrete join activation is notably small:
 
@@ -339,7 +339,7 @@ public boolean isReady() {
 }
 ```
 
-[`JoinNodeActivation`](../../../oss/fuml-reference-implementation/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/JoinNodeActivation.java) therefore retains the identity of the incoming edge supplying readiness.
+[`JoinNodeActivation`](https://github.com/ModelDriven/fUML-Reference-Implementation/blob/45e506336d4cd56965d4ad3b684149245f899f3a/org.modeldriven.fuml/src/main/java/fuml/semantics/activities/JoinNodeActivation.java) therefore retains the identity of the incoming edge supplying readiness.
 
 ### What transfers and what does not
 
@@ -694,4 +694,4 @@ Primary project and source evidence:
 - [BPMN conformance target](../BPMN-CONFORMANCE-TARGET.md)
 - [Reference instrumentation policy](../REFERENCE-INSTRUMENTATION.md)
 
-The CIB and fUML code links point to controlled sibling checkouts recorded in [Sources](../SOURCES.md). PSSM API-like code in this document is explanatory pseudocode over its normative execution model.
+The CIB and fUML code links point to the immutable upstream revisions recorded in [Sources](../SOURCES.md). PSSM API-like code in this document is explanatory pseudocode over its normative execution model.

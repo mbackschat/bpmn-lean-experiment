@@ -40,7 +40,7 @@ Every such experiment must record its base revision, patch or branch revision, b
 
 ## CIB Seven
 
-Pinned baseline checkout: [cibseven/cibseven](../../oss/cibseven/cibseven/README.md)
+Pinned baseline checkout: [cibseven/cibseven at `5a45b47`](https://github.com/cibseven/cibseven/tree/5a45b47ea22688d774de97277c3ff7013f54fdd2)
 
 - Remote: `https://github.com/cibseven/cibseven.git`
 - Checked-out revision: `5a45b47ea22688d774de97277c3ff7013f54fdd2`
@@ -66,7 +66,7 @@ CIB’s [implemented-standards page](https://docs.cibseven.org/manual/latest/int
 
 ## Temporal TypeScript SDK
 
-Pinned baseline checkout: [temporalio/sdk-typescript](../../oss/temporal/sdk-typescript/README.md)
+Pinned baseline checkout: [temporalio/sdk-typescript at `2595d1b`](https://github.com/temporalio/sdk-typescript/tree/2595d1b62cf5c3ff1748df0df2f9b303902bb31c)
 
 - Remote: `https://github.com/temporalio/sdk-typescript.git`
 - Inspected revision: `2595d1b62cf5c3ff1748df0df2f9b303902bb31c`
@@ -77,7 +77,7 @@ This revision is a development reference, not yet a project dependency or profil
 
 ## Temporal TypeScript samples
 
-Pinned baseline checkout: [temporalio/samples-typescript](../../oss/temporal/samples-typescript/README.md)
+Pinned baseline checkout: [temporalio/samples-typescript at `fb0aa23`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0)
 
 - Remote: `https://github.com/temporalio/samples-typescript.git`
 - Inspected revision: `fb0aa23d75394a132646de883842dfacdacd5aa0`
@@ -88,7 +88,7 @@ The samples can inform adapter mechanics but cannot define BPMN behavior.
 
 ## Temporal documentation
 
-Pinned baseline checkout: [temporalio/documentation](../../oss/temporal/documentation/README.md)
+Pinned baseline checkout: [temporalio/documentation at `16c1899`](https://github.com/temporalio/documentation/tree/16c1899a0380eaf3457a0b163b2b2232c39a5d)
 
 - Remote: `https://github.com/temporalio/documentation.git`
 - Inspected revision: `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`
@@ -121,7 +121,7 @@ The latest stable GitHub releases inspected on 2026-07-23 were TLA+ tools `v1.7.
 
 ## BPMN XML/metamodel reference
 
-Read-only checkout: [bpmn-io/bpmn-moddle](../../oss/bpmn-io/bpmn-moddle/README.md)
+Read-only checkout: [bpmn-io/bpmn-moddle at `47d8f75`](https://github.com/bpmn-io/bpmn-moddle/tree/47d8f75eed773829f20537adbb7086b290096006)
 
 - Remote: `https://github.com/bpmn-io/bpmn-moddle.git`
 - Inspected revision: `47d8f75eed773829f20537adbb7086b290096006`
@@ -131,7 +131,7 @@ This project may teach ingestion techniques but is neither a normative semantic 
 
 ## BPMN MIWG interchange corpus
 
-Read-only checkout: [bpmn-miwg-test-suite](../../oss/bpmn-miwg/bpmn-miwg-test-suite/README.md)
+Read-only checkout: [bpmn-miwg/bpmn-miwg-test-suite at `cb26295`](https://github.com/bpmn-miwg/bpmn-miwg-test-suite/tree/cb2629519cee6280ab521f99dc46a9815a221a35)
 
 - Remote: `https://github.com/bpmn-miwg/bpmn-miwg-test-suite.git`
 - Checked-out revision: `cb2629519cee6280ab521f99dc46a9815a221a35`
@@ -152,7 +152,7 @@ At the pinned revision, `Reference/` contains 21 BPMN models and 25 reference im
 
 ## Betsy cross-engine execution benchmark
 
-Read-only checkout: [uniba-dsg/betsy](../../oss/uniba-dsg/betsy/README.md)
+Read-only checkout: [uniba-dsg/betsy at `fd40241`](https://github.com/uniba-dsg/betsy/tree/fd402415665e914ba7e4d9948de66c4156f08bab)
 
 - Remote: `https://github.com/uniba-dsg/betsy.git`
 - Checked-out revision: `fd402415665e914ba7e4d9948de66c4156f08bab`
@@ -174,7 +174,7 @@ These engines are useful for discovering ambiguity and constructing hostile sepa
 
 ## Lean sibling experiment
 
-Read-only checkout: [a12-kernel-lean](../../oss/a12/a12-kernel-lean/README.md)
+Read-only checkout: [mbackschat/a12-kernel-lean at `6f9bbf6`](https://github.com/mbackschat/a12-kernel-lean/tree/6f9bbf64489c3eee9ffebf72b70116f7e02e36b5)
 
 - Inspected revision: `6f9bbf64489c3eee9ffebf72b70116f7e02e36b5`
 - Role: precedent for a pinned dependency-free Lean toolchain, executable-first semantic capsules, proof/evidence separation, documentation ownership, honest claim boundaries, and shared `CLAUDE.md`/`AGENTS.md` guidance
@@ -183,7 +183,7 @@ This project adopts those working conventions where they fit, but it does not co
 
 ## fUML reference implementation
 
-Read-only checkout: [ModelDriven/fUML-Reference-Implementation](../../oss/fuml-reference-implementation/README.md)
+Read-only checkout: [ModelDriven/fUML-Reference-Implementation at `45e5063`](https://github.com/ModelDriven/fUML-Reference-Implementation/tree/45e506336d4cd56965d4ad3b684149245f899f3a)
 
 - Remote: `https://github.com/ModelDriven/fUML-Reference-Implementation.git`
 - Inspected revision: `45e506336d4cd56965d4ad3b684149245f899f3a`
