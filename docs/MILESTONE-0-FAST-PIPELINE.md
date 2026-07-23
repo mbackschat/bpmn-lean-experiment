@@ -185,7 +185,7 @@ Known decisions still required:
 
 | Capability | Candidate | Current constraint |
 |---|---|---|
-| Java runtime | Homebrew `openjdk@17` `17.0.20` | Already installed at the Homebrew prefix; the current shell exposes Java 25, so oracle commands must select Java 17 explicitly |
+| Java runtime | Homebrew `openjdk@21` `21.0.12` | Already installed at the Homebrew prefix; the current shell exposes Java 25, so oracle commands must select Java 21 explicitly |
 | Java build | Apache Maven Wrapper `3.2.0` running Maven `3.8.8` | Matches the pinned CIB release wrapper and must be added with its Apache-2.0 provenance |
 | CIB oracle | `org.cibseven.bpm:cibseven-engine:2.2.0` | Available from Maven Central; Apache-2.0 |
 | CIB database | `com.h2database:h2:2.3.232` | Matches the pinned CIB database POM; MPL-2.0 or EPL-1.0 |
@@ -235,3 +235,4 @@ The exact resume point must name the current package, last verified command, nex
 | 2026-07-23 | Use the none-start → User Task → none-end slice as the walking skeleton | Approved for Milestone 0 |
 | 2026-07-23 | Use CIB Seven `v2.2.0` as the spike oracle because its core BPMN test trees match the investigated `main` revision | Approved for Milestone 0; immutable compatibility profile still pending calibration |
 | 2026-07-23 | Use provisional JSON Lines framing for persistent runner processes | Provisional until two independent runners consume it |
+| 2026-07-23 | Use Java 21 for the embedded CIB oracle; Java remains test infrastructure and never enters Lean, the reducer, or the Temporal adapter | Approved for Milestone 0; CIB Seven 2.2 supports Java 21 and publishes Java 21 Docker images |

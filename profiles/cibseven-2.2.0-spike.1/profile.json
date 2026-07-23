@@ -9,7 +9,7 @@
     "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
   },
   "environment": {
-    "java": "17",
+    "java": "21",
     "database": "H2 2.3.232",
     "automaticJobExecutor": "disabled",
     "clock": "explicit"

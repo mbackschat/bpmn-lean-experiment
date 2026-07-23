@@ -27,7 +27,7 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 | Delivery architecture | Establish research, CIB, Lean, reducer, Temporal, diff, and replay in Milestone 0 | Every later semantic capsule must use the real assurance pipeline rather than a deferred integration path |
 | BPMN features | None Start Event, User Task, None End Event, two Sequence Flows, and Process completion | This is the smallest useful external wait and command-closure slice |
 | CIB extensions | None | Extensions would enlarge the compatibility boundary before the core oracle is calibrated |
-| Oracle environment | Java 17, H2 fast lane, automatic job executor disabled, explicit logical clock and scheduler | This matches the demonstrated embedded approach while keeping choices reproducible |
+| Oracle environment | Java 21, H2 fast lane, automatic job executor disabled, explicit logical clock and scheduler | CIB Seven 2.2 supports Java 17 and 21, publishes Java 21 Docker images, and the machine already has Homebrew Java 21 |
 | Expressions and values | No expression evaluation in the first executable slice | Coercion and serialization are high-risk compatibility domains and need their own explicit profile decision |
 | Public observation | Deployment outcome, command outcome, Process status, active semantic waits with multiplicity, enabled stimuli, logical time, and stable semantic identity | These are the minimum high-value categories for the walking skeleton without exposing host internals |
 | Listener and history scope | Exclude both initially | Including ordering and history projections would materially expand the observation boundary |
@@ -39,7 +39,7 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 1. Complete M0.0 by recording the milestone, performance contract, dependency decisions, and resume protocol.
 2. Complete M0.1 with the actual BPMN fixture, draft profile identity, neutral scenario/stimulus/observation contracts, and separating Lean checks.
-3. Obtain approval for the exact Java 17, CIB, H2, Node, pnpm, BPMN ingestion, and Temporal dependencies before adding them.
+3. Obtain approval for the exact Maven, CIB, H2, JUnit, Jackson, Node, pnpm, BPMN ingestion, and Temporal dependencies before adding them.
 4. Complete M0.2 through M0.6 in the order and against the exit conditions in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md).
 5. After the walking skeleton is fast and green, expand the BPMN requirement ledger, MIWG ingestion coverage, and CIB assertion/fixture extraction one semantic capsule at a time.
 
@@ -51,7 +51,7 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 - Next implementation target: approve the exact M0.2 dependency set recorded in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md), then create the embedded CIB deploy/start/wait/complete/cleanup runner that emits the first calibrated trace.
 - First M0.2 research anchor: inspect the pinned CIB User Task and process-completion assertion/fixture pairs and select the smallest public-API precedent before writing the red oracle test.
 - First M0.2 research result: `UserTaskTest` supplies the start-and-active-task precedent, while `TaskAssigneeTest` supplies the complete-and-process-ended precedent; the neutral scenario removes their assignment and vendor-specific concerns.
-- Known environment constraints: Homebrew Java 17 is installed but not active; Node, pnpm, and Maven are absent; no dependency installation or package addition is approved yet.
+- Known environment constraints: Homebrew Java 21 is installed but not active; Node, pnpm, and Maven are absent; no dependency installation or package addition is approved yet.
 
 ## Stop conditions
 
