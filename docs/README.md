@@ -16,7 +16,8 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Understand assurance roles, Lean’s value, or MVP feasibility | [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the [implementation map](IMPLEMENTATION-MAP.md), and the active [semantic capsule](capsules/README.md) |
 | Change a shared wire format | [Shared wire contracts](../contracts/README.md), the applicable [semantic capsule](capsules/README.md), and [TESTING.md](TESTING.md) |
 | Change project mission or semantic authority | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) and [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) |
-| Change BPMN import or semantic meaning | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) and the [research index](research/README.md) |
+| Classify CIB behavior relative to BPMN | [CIB-BPMN-RELATION.md](CIB-BPMN-RELATION.md), the applicable [semantic capsule](capsules/README.md), and [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) |
+| Change BPMN import or semantic meaning | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md), [CIB-BPMN-RELATION.md](CIB-BPMN-RELATION.md), and the [research index](research/README.md) |
 | Run or evaluate a bounded architecture spike | [experiments](experiments/README.md) |
 | Inspect external source provenance | [SOURCES.md](SOURCES.md) |
 
@@ -28,6 +29,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [MVP-WALKTHROUGH.md](MVP-WALKTHROUGH.md) | New readers and reviewers; source-synchronized tour through exact BPMN input, executable IR, CIB, Lean, the semantic core, Temporal, comparison, mutation, and replay |
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
+| [CIB-BPMN-RELATION.md](CIB-BPMN-RELATION.md) | Semantic contributors and stakeholders; prominent central register for CIB normative agreement, gap resolutions, extensions, configuration-specific behavior, limitations, and candidate or confirmed deviations |
 | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md) | Contributors and owner; adopted exact parser dependency, source-preservation contract, security boundary, bounded CMOF use, license graph, and first implementation slice |
 | [capsules/README.md](capsules/README.md) | Semantic contributors; registry and ownership boundary for project-authored semantic capsules |
 | [capsules/USER-TASK-INTERACTION.md](capsules/USER-TASK-INTERACTION.md) | Semantic contributors; evidence-closed draft task identity, projection, exact completion admission, witnesses, laws, closure interpretation, and exclusions |
@@ -41,14 +43,14 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [experiments/README.md](experiments/README.md) | Contributors running bounded risk spikes; experiment lifecycle, required evidence, and registry |
 | [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md) | Semantic architects; executable source/IR, scope, join-provenance, and command-closure discriminators |
 | [experiments/BPMN-XML-INGESTION-SPIKE.md](experiments/BPMN-XML-INGESTION-SPIKE.md) | Import contributors; read-only published-parser probe against the current fixture and 21 MIWG reference models |
-| [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, authority and assurance roles, Lean value and limits, interpreter architecture, MVP feasibility, initial boundary, and success criteria |
-| [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md) | Contributors and resuming agents; durable walking-skeleton scope, runner contracts, performance budgets, work packages, and resume protocol |
+| [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, authority and assurance roles, Lean value and limits, interpreter architecture, pre-release evolution policy, MVP feasibility, and capsule success criteria |
+| [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md) | Historical first walking-skeleton scope, contracts, budgets, work packages, and decision record; current state is owned elsewhere |
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
 | [PLAN.md](PLAN.md) | Resuming agents and owners; current checkpoint, candidate profile decisions, next steps, and stop conditions |
 | [TESTING.md](TESTING.md) | Contributors; red/green workflow and verification gates |
 | [SOURCES.md](SOURCES.md) | Researchers; provenance and controlled reference-checkout navigation |
 | [reference/bpmn-2.0.2/README.md](reference/bpmn-2.0.2/README.md) | Researchers; local BPMN 2.0.2 corpus, conversion QA, license boundary, and reproducibility hashes |
-| [../contracts/README.md](../contracts/README.md) | Cross-language contributors; language-neutral schema ownership and independent version dimensions |
+| [../contracts/README.md](../contracts/README.md) | Cross-language contributors; current language-neutral schemas, artifact roles, content identity, and pre-release evolution policy |
 | [../CLAUDE.md](../CLAUDE.md) | Contributors and agents; mandatory repository workflow and architecture boundaries |
 
 The [profile artifact root](../profiles/README.md) and [scenario artifact root](../scenarios/README.md) explain artifact lifecycle, the draft profile boundary, and the calibrated neutral scenario.
@@ -58,6 +60,7 @@ When a fact is useful elsewhere, link to its owner and add only the local conseq
 ## Placement rules
 
 - Put stable mission, authority, and approved boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
+- Put every reviewed CIB agreement, operational detail, interpretation, extension, configuration dependency, limitation, or deviation relative to BPMN in [CIB-BPMN-RELATION.md](CIB-BPMN-RELATION.md).
 - Put bounded project-owned semantic meaning, laws, witnesses, and exclusions under [capsules](capsules/README.md).
 - Put external-system and semantic-background analysis under [research](research/README.md).
 - Put bounded executable questions, red/green evidence, and provisional outcomes under [experiments](experiments/README.md).

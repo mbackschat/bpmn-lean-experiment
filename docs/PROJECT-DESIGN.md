@@ -1,112 +1,140 @@
 # Project design
 
-The project’s durable goal is a Temporal adapter that imports BPMN 2.0.2 Process diagrams and fully satisfies OMG BPMN Process Execution Conformance. That normative goal is implemented and assured through a versioned CIB Seven semantic profile, an executable Lean reference interpreter, a pure TypeScript semantic core, and continuous differential and refinement testing.
+## Mission
 
-The BPMN and CIB targets are related but not interchangeable. BPMN 2.0.2 defines the normative Process Execution Conformance obligation. A versioned CIB Seven profile defines a concrete behavioral-compatibility claim for a pinned release and observation boundary where the standard is ambiguous, non-operational, configuration-dependent, extended, or observably different.
+Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ultimately satisfies OMG Process Execution Conformance.
 
-The complete architecture contract is the [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md), and the exact standard-facing goal is owned by the [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md). This document owns only the project-local constitution and the first delivery boundary.
+The project pursues that goal through four independent components:
 
-The preserved handoff calls the TypeScript component a “reducer.” The project now calls the same component the **semantic core**, describes it formally as a semantic transition system, and names its public transition operation `applyStimulus`. This vocabulary change avoids an unnecessary Redux association and does not alter the component boundary.
+1. a versioned CIB Seven semantic profile;
+2. an executable Lean reference interpreter;
+3. an independently implemented pure TypeScript semantic core;
+4. a Temporal durability adapter continuously checked through differential, refinement, and replay testing.
 
-## Decision
+The complete supplied architecture contract is the [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md). The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the prominent [CIB–BPMN register](CIB-BPMN-RELATION.md). This document owns the project-local constitution.
 
-Build independent implementations that agree through a neutral profile, scenario vocabulary, canonical observations, and evidence. CIB Seven remains a complete external oracle rather than a reusable semantic kernel. Lean turns the standard, profile decisions, and observed behavior into an executable operational account with machine-checked properties. TypeScript provides the production semantic core without Temporal or CIB dependencies. Temporal provides durable hosting and hidden orchestration work without becoming a BPMN semantic authority.
+## Authority model
 
-Lean’s purpose is not merely to document an already finished adapter. It should accelerate implementation by making ambiguous rules, state distinctions, preservation obligations, counterexamples, generated traces, and refinement relations executable before they are duplicated in TypeScript and Temporal.
+BPMN and CIB are related but not interchangeable. BPMN 2.0.2 is authoritative for syntax, metamodel, and Process Execution Conformance. CIB Seven is a mature, compliance-oriented implementation whose normal role is to realize BPMN faithfully, make underspecified behavior operational, and add explicit engine extensions.
 
-## Assurance roles and Lean value
+The default CIB classification is normative agreement. Greater operational specificity is an interpretation when it resolves a BPMN gap. Worker, job, retry, incident, listener, or other added capabilities are extensions when they exceed bare BPMN. A normative deviation is exceptional and requires clear standard language, pinned separating evidence, alternative-explanation exclusion, and owner review.
 
-Correctness is not one binary property in this architecture. Each component answers a different question, and no agreement vote can replace the missing lane:
+CIB participates twice:
 
-| Component | Strongest question it can answer | What it cannot establish alone |
+- before formalization, a normative requirement and the smallest relevant CIB probe are reviewed and classified into a semantic profile;
+- after implementation, the pinned complete engine remains the independent behavioral oracle for that declared profile.
+
+Raw CIB output never becomes Lean authority automatically, and differential mismatches are never resolved by majority vote.
+
+## Component boundaries
+
+| Component | Responsibility | Explicit limit |
 |---|---|---|
-| BPMN clauses and semantic profile | What behavior is required or deliberately selected? | That an implementation performs it |
-| Pinned CIB Seven | What did the selected compatibility oracle do under the declared environment and observation boundary? | Universal BPMN correctness or project semantics |
-| Lean reference interpreter | What does the selected operational account mean, and which laws hold for every represented state satisfying their hypotheses? | Correctness of CIB, XML parsing, TypeScript, Temporal, databases, or effects |
-| TypeScript semantic core | Does the production transition implementation independently realize the selected behavior for tested inputs? | Universal correspondence with Lean or durable-host correctness |
-| Temporal adapter | Does the tested durable host preserve core-visible behavior under Query, Update, duplicate delivery, and replay? | BPMN meaning that is absent from the semantic core |
-| Differential and refinement pipeline | Do the independent observable results and durable-host projections agree for the maintained evidence? | Universal equivalence outside the declared corpus and hypotheses |
+| Semantic profile | Select reviewed meaning, compatibility target, configuration, feature surface, observation boundary, interpretations, extensions, and deviations | It is not an engine build or a generic document-format version |
+| BPMN source boundary | Preserve exact bytes, validate and admit source, and compile project-owned executable IR | Parser objects and CMOF facts do not define execution behavior |
+| Lean reference interpreter | Give the selected capsule executable operational meaning and prove reusable laws | It does not automatically prove CIB, XML parsing, TypeScript, Temporal, databases, or effects |
+| TypeScript semantic core | Implement production semantic transitions independently and deterministically | It performs no I/O and has no CIB or Temporal dependency |
+| Temporal adapter | Persist semantic state, deliver inputs, and host declared effects and waits durably | Hidden Workflow work may not redefine BPMN-visible behavior |
+| Assurance pipeline | Compare canonical consequences, detect seeded disagreement, check isolation, and test Temporal refinement/replay | Finite evidence never implies universal conformance |
 
-Lean is valuable when it converts a semantic risk into a reusable quantified law. The first interaction capsule’s [`task_identity_mismatch_is_rejected`](../BpmnSemantics/SequentialUserTask.lean) theorem quantifies over the model, active Process instance and activation, submitted task occurrence, command identity, and logical time. Given a mismatch in any semantic identity component, it proves rejection, exact state preservation, an empty semantic microtrace, and no closure-bound involvement. The narrower wrong-activation theorem is a corollary. Removing any identity check from command admission makes the general theorem fail, which guards the semantic mechanism rather than one fixture.
+The preserved handoff calls the TypeScript component a “reducer.” This project calls it the **semantic core** and names its public transition operation `applyStimulus`. The boundary is a semantic transition system; the terminology avoids an unnecessary Redux association.
 
-Concrete `by decide` trace theorems remain useful executable witnesses, but they are not presented as general laws. Likewise, determinism merely inherited from implementing a transition as a function is not a substantive assurance result. A retained Lean law should quantify over a meaningful class of states or inputs, expose its exact hypotheses, rule out a realistic defect, survive reuse by another witness, and fail under a mutation of the protected semantic mechanism.
+## Why Lean
 
-Formalization also provides architectural value before a theorem is finished: it forces definition identity apart from runtime occurrence identity, external command admission apart from internal closure, committed outcomes apart from harness exhaustion, and semantic state apart from CIB and Temporal host identity. These distinctions are transferred into the executable IR, TypeScript core, observation contract, and adapter boundary.
+Lean is useful when it converts semantic risk into an executable definition, a reusable quantified law, or a checked counterexample before the same choice spreads through TypeScript and Temporal.
 
-The current Lean account is intentionally bounded. It does not parse BPMN XML, prove the compiler, consume arbitrary executable IR, or machine-check TypeScript or Temporal refinement. Those gaps are maintained explicitly in the [implementation map](IMPLEMENTATION-MAP.md). A future correspondence bridge must be evidenced rather than inferred from matching names or serialized examples.
+The first capsule’s `task_identity_mismatch_is_rejected` theorem quantifies over the model, active Process instance, activation, submitted occurrence, command identity, and logical time. If any semantic occurrence component differs, it proves rejection, exact state preservation, an empty internal microtrace, and no closure-bound involvement. The nearby element-only identity non-law demonstrates the realistic defect that this theorem prevents.
 
-## Semantic rule traceability
+That is stronger than replaying one serialized example, but it remains bounded to the Lean account. A CIB witness, a Lean theorem, TypeScript behavior, and Temporal refinement are separate claims even when they agree.
 
-Each semantic capsule owns stable identifiers for its material rules and maps them to distinct normative/profile, Lean, CIB, TypeScript, Temporal, negative-witness, and mutation lanes. An identifier names one proposition rather than a function or test, so ordinary implementation renaming does not change it and a material semantic change does not silently reuse it.
+Lean also forces architectural distinctions to become explicit:
 
-For each newly adopted runtime-transition family, Lean keeps the permitted transition relation separate from the executable transition selector. Every transition produced by that selector must have a machine-checked soundness bridge into the relation. Completeness, determinism, and refinement are stronger independent claims and are required only when their exact scope and hypotheses are stated. The TypeScript semantic core remains independently implemented; it is not generated from the Lean relation or a shared semantic DSL.
+- shared definition identity versus runtime occurrence identity;
+- external command admission versus internal microstep closure;
+- semantic failure versus rejected command versus harness exhaustion;
+- semantic state versus CIB and Temporal host identity;
+- declarative permitted transition relation versus executable transition selector.
 
-Runtime-only and synthetic constructs are legitimate when source syntax alone cannot express execution state, but each capsule must record their derivation, ownership, lifecycle invariants, and public projection. Host identifiers and hidden Temporal or CIB mechanics never become semantic facts through that inventory.
+Every new transition family should have a declarative Lean relation and an executable evaluator with a soundness bridge. Completeness, determinism, compiler correspondence, TypeScript correspondence, liveness, and refinement remain separate obligations and must not be implied by evaluator soundness.
 
-Target scenarios contain only model, profile, and explicit semantic inputs. Expected outcomes and portable semantic assertions are bound verifier-side and never supplied to target runners. The current contract and the deliberately deferred machine-readable assertion vocabulary are owned by [the shared wire contracts](../contracts/README.md#portable-semantic-assertions).
+The current Lean implementation does not parse BPMN XML, consume arbitrary executable IR, prove the compiler, or machine-check the TypeScript or Temporal implementation. Those are explicit gaps, not hidden assumptions.
 
-## BPMN ingestion and execution decision
+## Interpreter architecture
 
 The production architecture is an **interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**.
 
 ```text
 BPMN 2 XML
-  → source-preserving BPMN model
-  → schema, reference, and profile validation
-  → normalized executable IR as versioned data
-  → TypeScript semantic-core transitions
-  → Temporal durability and effect hosting
+  → exact source identity and bounded structural import
+  → profile admission and normalized executable IR data
+  → pure TypeScript semantic-core transitions
+  → Temporal durability, delivery, timers, and effects
 ```
 
-Parsing and deployment admission occur outside deterministic Temporal Workflow execution. The admitted executable IR is immutable or content-addressed and carries the exact source-model and semantic-profile identity needed for replay. A generic Workflow hosts that representation and serializes external inputs through the semantic core; Temporal Activities, timers, messages, and child operations implement declared effects and waits only after the semantic core has assigned their BPMN meaning.
+Parsing and admission occur outside deterministic Workflow execution. A generic Workflow receives admitted executable IR and serializes semantic inputs through the core. Temporal Activities, timers, messages, and child operations implement declared effects only after the core assigns their BPMN meaning.
 
-This choice keeps one inspectable data representation aligned across Lean, TypeScript, CIB probes, differential traces, and retained histories. It also avoids compiling each model into a new Workflow Definition whose generated control flow, SDK calls, deployment version, and replay compatibility could become accidental semantics. Profile migration, parser evolution, semantic-core evolution, and Worker deployment remain separate version dimensions.
+This choice preserves one inspectable model representation, avoids generating a new Workflow Definition for every diagram, and keeps SDK calls, Workflow deployment, and replay mechanics from becoming accidental BPMN semantics. It also keeps parser evolution, profile evolution, semantic-core evolution, and Worker deployment conceptually separate.
 
-Code generation is not prohibited. A generated TypeScript view may later serve debugging, static specialization, performance, or deployment packaging, but it remains a derived artifact. It may replace interpretation only after explicit equivalence and replay evidence and must never become the semantic authority by construction.
+Generated TypeScript is not prohibited. It may later serve as a derived diagnostic, specialization, optimization, or packaging artifact after explicit equivalence and replay evidence. It is never the semantic authority by construction.
 
-Milestone 0 first exercised the hosting boundary with an explicit sequential model. The approved first ingestion slice now captures the actual BPMN XML bytes and hash, imports a private structural view with isolated `bpmn-moddle@10.0.0`, compiles only the sequential Process to source/profile/compiler-identified project IR, and supplies that data to both the pure core and Temporal. A general BPMN source model/compiler, full CMOF binding, and deployment store remain explicitly absent.
+## Semantic rule traceability
 
-## MVP feasibility conclusion
+Each semantic capsule owns stable identifiers for its material propositions and maps them to distinct BPMN/profile, CIB, Lean, TypeScript, Temporal, negative-witness, and mutation lanes.
 
-The bounded sequential User Task slice demonstrates that the architecture is technically feasible as a fast development loop: exact BPMN bytes can be admitted once, CIB and Lean can remain independent semantic references, the production TypeScript transition system can stay pure, and one generic Temporal Workflow can host its state through replay-safe versioned IR. The maintained batch amortizes the expensive reference and host boundaries rather than multiplying their startup cost per witness.
+A rule identifier names a proposition rather than a function or test. Ordinary implementation renaming does not change it; a material semantic change must not silently reuse it.
 
-This result validates the separation of responsibilities, not the scalability of the semantic model to all BPMN. The current control state has no general token, scope, race, effect, or variable model; the compiler recognizes one topology; Lean’s batch emitter uses compiled-in capsule scenarios; and Temporal has not yet exercised Activities, timers, cancellation, Worker restart, or Continue-As-New. The evidence therefore supports advancing one separating semantic capsule at a time while retaining the same pipeline, not broadening the public claim.
+Target scenarios contain only model/profile identity and explicit semantic inputs. Expected results remain verifier-side, content-bound evidence. Canonical observations depend only on admitted definition/runtime state and explicit semantic inputs, never on future scripted commands, host IDs, or expected output.
 
-The next feature should be selected for the distinct semantic and representation risk it exposes. General infrastructure is introduced only when that feature provides a second real consumer and a mutation or counterexample capable of distinguishing competing designs. The current recommendation and exact resume point belong in the [plan](PLAN.md).
+## Pre-release evolution policy
 
-## Milestone 0 delivery boundary
+The project is far from a production compatibility boundary and expects substantial change. Its current evolution policy therefore optimizes for one clean scalable architecture:
 
-Required now:
+- each wire artifact has a stable structural `kind`;
+- JSON Schema `$id` owns schema-document identity;
+- a semantic profile `id` owns reviewed semantic and compatibility meaning;
+- executable IR carries stable compiler, exact source, and selected profile identity;
+- a breaking shape change replaces all current producers, consumers, schemas, examples, and tests atomically;
+- no parallel legacy format, embedded format counter, compatibility switch, migration reader, or fallback constructor is retained before a durable release baseline exists;
+- local Temporal tests use a fresh in-memory server, replay the histories created in that same gate, and then discard all server state.
 
-- retain the verified foundation and source boundaries;
-- establish the complete fast walking-skeleton pipeline defined in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md);
-- use actual BPMN XML for the none-start → User Task → none-end slice;
-- capture and compile that exact XML outside Workflow execution without exposing parser objects;
-- calibrate pinned CIB Seven behavior through public APIs;
-- execute the same neutral scenario in Lean and a pure TypeScript semantic core;
-- host the semantic core through a Temporal adapter without moving semantics into Temporal;
-- compare canonical traces and replay retained history;
-- measure and meet the warm and cold feedback budgets.
+This policy avoids prototype branches that scale linearly across Java, Lean, TypeScript, Temporal, fixtures, and documentation. It does not waive future compatibility.
 
-Excluded from this first delivery:
+Before the first immutable release or persisted production history, the owner must explicitly approve:
 
-- claims of BPMN conformance or CIB compatibility;
-- BPMN features outside the single sequential User Task slice;
-- CIB Seven extraction, forking, or runtime linkage from Lean or the semantic core;
-- production Temporal deployment concerns;
-- broad conformance, MIWG, or CIB-suite execution before the walking skeleton is fast.
+1. which profile and wire artifacts become immutable;
+2. the Event History baseline and Worker/version markers;
+3. migration, patching, deprecation, and rollback rules;
+4. retained replay fixtures and their provenance;
+5. support windows and removal criteria.
 
-## Success criteria
+From that point onward, history compatibility and artifact migration become mandatory evidence based on real retained state rather than speculative prototypes.
 
-Milestone 0 is complete when:
+## MVP conclusion
 
-1. a new contributor can resume from repository documentation without chat history;
-2. the single scenario executes through CIB, Lean, the semantic core, and Temporal;
-3. all targets agree through the canonical observation contract;
-4. an injected semantic disagreement is classified correctly;
-5. retained Temporal history replays deterministically;
-6. repeated runs prove isolation and cleanup;
-7. the measured semantic and full-pipeline feedback loops meet their budgets;
-8. no public claim or dependency crosses its declared boundary.
+The bounded `None Start Event → User Task → None End Event` slice demonstrates that the architecture is feasible as a fast loop:
 
-The exact current state is maintained in the [implementation map](IMPLEMENTATION-MAP.md), while the next owner decisions and work sequence are maintained in the [plan](PLAN.md).
+- exact BPMN bytes are admitted once and compiled to project-owned IR;
+- CIB and Lean remain independent semantic references;
+- the production TypeScript transition system stays pure;
+- one generic Temporal Workflow hosts the core through Query and acknowledged Update;
+- CIB, Lean, the core, and Temporal agree for exact completion, wrong activation, and stale completion;
+- live Event Histories replay before the disposable server shuts down;
+- a seeded task-activation mutation proves that the observation/comparison boundary can detect the claimed distinction.
+
+This validates the separation of responsibilities, not scalability to all BPMN. The current runtime has no general token, scope, race, effect, or variable model; the compiler recognizes one topology; Lean emits compiled-in capsule scenarios rather than consuming the pipeline IR; and Temporal has not exercised Activities, timers, cancellation, Worker restart, or Continue-As-New.
+
+The next feature must expose a distinct semantic or representation risk. Infrastructure is generalized only when a second real consumer and a separating mutation justify it.
+
+## Success criteria for every capsule
+
+A semantic capsule is closed only when:
+
+1. its normative/profile question and CIB relationship are explicit;
+2. answer-free positive and negative witnesses separate a realistic wrong account;
+3. Lean defines executable meaning and at least one useful law or checked non-law where appropriate;
+4. the TypeScript semantic core independently realizes the selected behavior;
+5. CIB evidence is pinned, content-bound, and mutation-sensitive;
+6. Temporal’s observable behavior refines the core and live histories replay;
+7. harness, semantic, and infrastructure outcomes remain separate;
+8. all public claims and exclusions match [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md);
+9. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed.

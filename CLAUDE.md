@@ -11,7 +11,7 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The bounded `none Start Event → User Task → none End Event` MVP, first BPMN XML ingestion slice, and User Task Query/Update interaction expansion are evidence-closed drafts. One command executes the exact source through CIB Seven, compiles admitted IR once for the independent TypeScript semantic core and isolated Temporal executions, and runs the content-identified Lean capsule; lifecycle, exact-completion, wrong-activation, and stale-completion cases have exact canonical agreement, retained CIB comparison, classified mutations, duplicate-command handling, cleanup, live and retained Signal/Update replay, provenance, timings, and feedback budgets. Lean remains a scenario-identified one-way emitter rather than an IR consumer. The next proposed semantic discriminator and its unapproved boundary are recorded in [PLAN.md](docs/PLAN.md). Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+The bounded `none Start Event → User Task → none End Event` MVP, first BPMN XML ingestion slice, and User Task Query/Update interaction are evidence-closed drafts. One command executes exact source through CIB Seven, compiles admitted IR once for the independent TypeScript semantic core and isolated Temporal executions, and runs the content-identified Lean capsule; exact completion, wrong activation, and stale completion have exact canonical agreement, content-bound CIB evidence, classified mutation, duplicate-command handling, cleanup, live-history replay, provenance, timings, and feedback budgets. Lean remains a scenario-identified one-way emitter rather than an IR consumer. The next proposed semantic discriminator and its unapproved boundary are recorded in [PLAN.md](docs/PLAN.md). Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
@@ -23,10 +23,9 @@ Never claim BPMN conformance or CIB compatibility beyond the exact profile and e
 
 1. Read the current checkpoint and exact resume point in [PLAN.md](docs/PLAN.md).
 2. Read the implemented/absent boundary in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
-3. Read the active milestone contract in [MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md).
-4. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes.
-5. Run the current applicable gate from [TESTING.md](docs/TESTING.md).
-6. Take the first incomplete work item unless the user explicitly changes scope.
+3. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes.
+4. Run the current applicable gate from [TESTING.md](docs/TESTING.md).
+5. Take the first incomplete work item unless the user explicitly changes scope.
 
 Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely on chat history for project state.
 
@@ -35,7 +34,7 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 | Change | Required context |
 |---|---|
 | Mission, authority, compatibility, or assurance | Complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
-| BPMN import, conformance, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), the applicable [semantic capsule](docs/capsules/README.md), and applicable normative sources |
+| BPMN import, conformance, CIB relationship, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [CIB-BPMN-RELATION.md](docs/CIB-BPMN-RELATION.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), the applicable [semantic capsule](docs/capsules/README.md), and applicable normative sources |
 | Source model, normalization, executable IR, scope, runtime identity, token/activation state, or command closure | [Semantic representations research](docs/research/SEMANTIC-REPRESENTATIONS.md) and relevant [experiments](docs/experiments/README.md) |
 | Scenario, profile, stimulus, observation, result, or other cross-language wire format | [Shared wire contracts](contracts/README.md) and the applicable [semantic capsule](docs/capsules/README.md) |
 | Temporal adapter, interpreter hosting, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-MODEL.md](docs/TEMPORAL-EXECUTION-MODEL.md) |
@@ -54,19 +53,21 @@ Read the complete selected document before acting on it.
 5. The pure TypeScript semantic core independently implements the semantic contract and has no CIB Seven or Temporal dependency.
 6. The Temporal adapter provides durability and hidden orchestration work without defining BPMN behavior.
 
-When sources disagree, classify the disagreement against the standard, profile, configuration, observation boundary, and evidence. Do not use majority voting.
+CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or inconsistencies, and add explicit engine extensions. Greater specificity or extension is not a deviation. When sources appear to disagree, classify the relationship in [CIB-BPMN-RELATION.md](docs/CIB-BPMN-RELATION.md) against the standard, profile, configuration, observation boundary, and evidence. Do not use majority voting.
 
 ## Non-negotiable boundaries
 
 - Do not implement profile-dependent behavior until the relevant interpretation and scope are approved and recorded.
+- Do not formalize a CIB/BPMN mismatch as profile behavior until it is classified as normative agreement, gap resolution, extension, configuration-specific realization, limitation, or evidence-backed deviation in [CIB-BPMN-RELATION.md](docs/CIB-BPMN-RELATION.md). Keep candidate and confirmed deviations prominent.
 - Never silently choose an oracle release, feature meaning, expression subset, observation boundary, scheduling rule, listener scope, history contract, or external-effect contract.
 - Do not transplant CIB PVM types, persistence entities, behavior classes, or engine algorithms into Lean or the semantic core.
-- Do not make generated TypeScript the authoritative representation of a BPMN model; preserve the admitted source identity and execute versioned IR data through the semantic core.
+- Do not make generated TypeScript the authoritative representation of a BPMN model; preserve admitted source/profile identity and execute project-owned IR data through the semantic core.
 - Keep `bpmn-moddle` and raw moddle objects inside `@bpmn-lean/bpmn-source`; Lean, the semantic core, and Temporal Workflow code consume only project-owned serializable contracts.
 - Treat every parser warning as admission-blocking until a profile rule explicitly proves it safe; preserve exact bytes and normalized evidence even when compilation is rejected.
 - Do not encode Temporal Workflow tasks, Activity attempts, retries, Run IDs, or Event History as BPMN semantic facts.
 - Keep BPMN import/admission, executable normalization, runtime execution, public observation, and host persistence conceptually separate.
 - Keep neutral scenario inputs physically separate from retained expected results. Target runners receive no oracle answer; evidence replacement is an explicit operation outside ordinary verification and is bound to exact scenario content.
+- Require each semantic-profile artifact to name its reviewed CIB–BPMN relationship IDs. Add the register entry and verifier coverage together; never use an unregistered placeholder ID.
 - Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
 - An experiment is not semantic authority merely because it compiles or passes a finite witness.
 - Do not broaden any semantic capsule beyond its approved feature, interpretation, and observation boundary.
@@ -99,7 +100,7 @@ Use red/green TDD:
 
 Prefer enum-based pattern matching or switch statements for semantic variants. Keep executable IR and runtime state as serializable data; keep effects explicit and perform no I/O in the pure semantic core.
 
-BPMN XML parsing and compilation run before Workflow start with an explicit byte limit and parser Promise-settlement deadline. The current timeout cannot preempt synchronous parser CPU; production untrusted uploads still require a bounded Worker or process. A new Temporal history must contain admitted executable IR and the current version marker; the legacy IR constructor in the adapter exists only for replaying the committed pre-IR history and must not become a deployment fallback.
+BPMN XML parsing and compilation run before Workflow start with an explicit byte limit and parser Promise-settlement deadline. The current timeout cannot preempt synchronous parser CPU; production untrusted uploads still require a bounded Worker or process. Every new Workflow execution must contain admitted current executable IR; no fallback constructor may invent it.
 
 Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim.
 
@@ -109,7 +110,15 @@ For each new runtime-transition family, keep a declarative Lean relation distinc
 
 Each capsule must inventory runtime-only and synthetic constructs, their source or derivation, why they are necessary, which public projections may expose them, and their creation, ownership, and removal invariants. Keep neutral target scenarios answer-free; expected outcomes and portable assertions remain verifier-only artifacts bound to exact scenario and profile identity.
 
-Name a concrete adapter consumer or refinement risk before generalizing a representation or semantic mechanism. Preserve retained CIB observations and Temporal histories as immutable evidence, and require a meaningful seeded mutation for every new evidence projection. Investigate a mismatch at the semantic or projection boundary; never refresh expected evidence merely to make a gate green.
+Name a concrete adapter consumer or refinement risk before generalizing a representation or semantic mechanism. Preserve content-bound CIB observations as immutable evidence and require a meaningful seeded mutation for every new evidence projection. During pre-release, capture and replay Temporal histories within one disposable gate; retain histories only after an explicit durable baseline is approved. Investigate a mismatch at the semantic or projection boundary; never refresh expected evidence merely to make a gate green.
+
+### Pre-release evolution
+
+Keep exactly one current representation of every wire contract. Stable document kinds discriminate artifact roles, JSON Schema `$id` identifies current schemas, and semantic profile `id` identifies reviewed meaning. A breaking shape change replaces all current producers, consumers, fixtures, schemas, and tests atomically.
+
+Do not add embedded format counters, parallel legacy readers, compatibility switches, migration functions, Workflow patch branches, retained Event History fixtures, or deployment fallbacks before an immutable release/history baseline is explicitly approved. Local Temporal gates must start clean state, replay histories produced during that gate, and discard the server state afterward.
+
+This pre-release policy does not waive production compatibility. When the first durable baseline is approved, add retained histories, explicit version/patch markers, migration and rollback evidence, support windows, and removal criteria from real persisted artifacts.
 
 ### Milestone and capsule reflection
 
@@ -121,7 +130,7 @@ After the technical gate is green but before marking a milestone or semantic cap
 4. identify the nearest realistic counterexample and require either a checked non-law or an executable negative witness;
 5. assess whether each Lean theorem has useful hypotheses and reusable semantic content rather than only proving one concrete serialized result;
 6. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
-7. confirm versioning and retained-history behavior, and require a meaningful mutation for every new evidence projection;
+7. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 8. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
 9. decide whether the result changes the next best step.
 
@@ -152,6 +161,7 @@ Use one owner for each fact and link to it elsewhere:
 | Mission, authority, and approved durable boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | Exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
+| CIB behavior relative to BPMN: agreements, operational details, interpretations, extensions, configuration, limitations, and deviations | [CIB-BPMN-RELATION.md](docs/CIB-BPMN-RELATION.md) |
 | Bounded project-owned semantic meaning, laws, witnesses, and exclusions | [docs/capsules](docs/capsules/README.md) |
 | External-system and semantic-background findings | [docs/research](docs/research/README.md) |
 | Bounded executable questions and results | [docs/experiments](docs/experiments/README.md) |
@@ -204,7 +214,6 @@ Focused BPMN source, CMOF-fact, and compiler gate:
 ```
 
 Focused shared-contract and retained-evidence gate:
-
 ```sh
 ./scripts/pnpm.sh run test:contracts
 ```

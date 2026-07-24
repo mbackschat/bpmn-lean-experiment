@@ -2,8 +2,12 @@ export enum BpmnExecutableIrKind {
   SequentialUserTask = "sequentialUserTask",
 }
 
+export enum BpmnCompilerIdentity {
+  SequentialUserTask = "bpmn-source-sequential-user-task",
+}
+
 export type BpmnExecutableIrIdentity = Readonly<{
-  compiler: string;
+  compiler: BpmnCompilerIdentity;
   semanticProfile: string;
   sourceId: string;
   sourceSha256: string;
@@ -15,27 +19,12 @@ export type ExecutableSequenceFlow = Readonly<{
   targetId: string;
 }>;
 
-export type SequentialUserTaskExecutableIrV1 = Readonly<{
-  schemaVersion: "0.1.0";
-  kind: BpmnExecutableIrKind.SequentialUserTask;
-  identity: BpmnExecutableIrIdentity;
-  processId: string;
-  startEventId: string;
-  userTaskId: string;
-  endEventId: string;
-  sequenceFlows: readonly [
-    ExecutableSequenceFlow,
-    ExecutableSequenceFlow,
-  ];
-}>;
-
 export type ExecutableUserTaskDefinition = Readonly<{
   id: string;
   name: string | null;
 }>;
 
-export type SequentialUserTaskExecutableIrV2 = Readonly<{
-  schemaVersion: "0.2.0";
+export type SequentialUserTaskExecutableIr = Readonly<{
   kind: BpmnExecutableIrKind.SequentialUserTask;
   identity: BpmnExecutableIrIdentity;
   processId: string;
@@ -47,7 +36,3 @@ export type SequentialUserTaskExecutableIrV2 = Readonly<{
     ExecutableSequenceFlow,
   ];
 }>;
-
-export type SequentialUserTaskExecutableIr =
-  | SequentialUserTaskExecutableIrV1
-  | SequentialUserTaskExecutableIrV2;

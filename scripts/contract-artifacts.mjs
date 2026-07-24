@@ -14,27 +14,21 @@ const profileSchemaId = `${schemaBaseId}/semantic-profile.schema.json`;
 export const artifactCases = Object.freeze([
   Object.freeze({
     scenarioRelativePath:
-      "scenarios/m0-sequential-user-task/scenario.json",
+      "scenarios/user-task-discovery-completion/scenario.json",
     evidenceRelativePath:
-      "scenarios/m0-sequential-user-task/cibseven-evidence.json",
+      "scenarios/user-task-discovery-completion/cibseven-evidence.json",
   }),
   Object.freeze({
     scenarioRelativePath:
-      "scenarios/m1-user-task-discovery-completion/scenario.json",
+      "scenarios/user-task-discovery-completion/wrong-activation.scenario.json",
     evidenceRelativePath:
-      "scenarios/m1-user-task-discovery-completion/cibseven-evidence.json",
+      "scenarios/user-task-discovery-completion/wrong-activation.cibseven-evidence.json",
   }),
   Object.freeze({
     scenarioRelativePath:
-      "scenarios/m1-user-task-discovery-completion/wrong-activation.scenario.json",
+      "scenarios/user-task-discovery-completion/stale-completion.scenario.json",
     evidenceRelativePath:
-      "scenarios/m1-user-task-discovery-completion/wrong-activation.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/m1-user-task-discovery-completion/stale-completion.scenario.json",
-    evidenceRelativePath:
-      "scenarios/m1-user-task-discovery-completion/stale-completion.cibseven-evidence.json",
+      "scenarios/user-task-discovery-completion/stale-completion.cibseven-evidence.json",
   }),
 ]);
 
@@ -68,8 +62,7 @@ async function createValidator(projectRoot) {
   const schemaDirectory = resolveInside(projectRoot, "contracts/schemas");
   const schemaNames = [
     "scenario.schema.json",
-    "canonical-result-v0.1.schema.json",
-    "canonical-result-v0.2.schema.json",
+    "canonical-result.schema.json",
     "semantic-profile.schema.json",
     "cibseven-evidence.schema.json",
   ];
@@ -88,6 +81,19 @@ async function createValidator(projectRoot) {
     validator.addSchema(schema);
   }
   return validator;
+}
+
+async function readRegisteredRelationshipIds(projectRoot) {
+  const registerPath = resolveInside(projectRoot, "docs/CIB-BPMN-RELATION.md");
+  const register = await readFile(registerPath, "utf8");
+  return new Set(
+    Array.from(
+      register.matchAll(
+        /^### (CIB-(?:AGR|OP|INT|EXT|CFG|LIM|DEV)-[0-9]{4})\b/gm,
+      ),
+      (match) => match[1],
+    ),
+  );
 }
 
 async function validatorFor(projectRoot) {
@@ -118,8 +124,10 @@ export function verifyArtifactSet(artifactSet) {
     profile,
     scenario,
     scenarioBytes,
+    profileBytes,
     evidence,
     bpmnBytes,
+    registeredRelationshipIds,
   } = artifactSet;
   validateWith(validator, profileSchemaId, "profile", profile);
   validateWith(validator, scenarioSchemaId, "scenario", scenario);
@@ -134,14 +142,14 @@ export function verifyArtifactSet(artifactSet) {
   if (evidence.scenario.sha256 !== sha256(scenarioBytes)) {
     throw new Error("evidence scenario digest does not match");
   }
-  if (profile.id !== scenario.profile || evidence.profile !== scenario.profile) {
+  if (
+    profile.id !== scenario.profile ||
+    evidence.profile.id !== scenario.profile
+  ) {
     throw new Error("profile identity does not match across artifacts");
   }
-  if (
-    evidence.traceSchemaVersion !== scenario.traceSchemaVersion ||
-    evidence.projection.version !== scenario.traceSchemaVersion
-  ) {
-    throw new Error("trace projection version does not match scenario");
+  if (evidence.profile.sha256 !== sha256(profileBytes)) {
+    throw new Error("evidence profile digest does not match");
   }
   if (
     evidence.producer.engineRevision !== profile.oracle.revision ||
@@ -149,8 +157,19 @@ export function verifyArtifactSet(artifactSet) {
   ) {
     throw new Error("CIB revision does not match across artifacts");
   }
-  if (!isDeepStrictEqual(profile.observations, scenario.observations)) {
-    throw new Error("profile observations do not match scenario");
+  if (
+    !scenario.observations.every((observation) =>
+      profile.observations.includes(observation),
+    )
+  ) {
+    throw new Error("scenario requests an observation outside its profile");
+  }
+  for (const relationshipId of profile.bpmn.relationships) {
+    if (!registeredRelationshipIds.has(relationshipId)) {
+      throw new Error(
+        `profile references unknown CIB-BPMN relationship: ${relationshipId}`,
+      );
+    }
   }
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
@@ -158,7 +177,7 @@ export function verifyArtifactSet(artifactSet) {
   return artifactSet;
 }
 
-async function readArtifactSet(projectRoot, artifactCase, validator) {
+async function readArtifactSet(projectRoot, artifactCase, context) {
   const scenarioPath = resolveInside(
     projectRoot,
     artifactCase.scenarioRelativePath,
@@ -183,8 +202,10 @@ async function readArtifactSet(projectRoot, artifactCase, validator) {
   ]);
   return verifyArtifactSet({
     ...artifactCase,
-    validator,
+    validator: context.validator,
+    registeredRelationshipIds: context.registeredRelationshipIds,
     profile: profileDocument.value,
+    profileBytes: profileDocument.bytes,
     scenario: scenarioDocument.value,
     scenarioBytes: scenarioDocument.bytes,
     evidence: evidenceDocument.value,
@@ -193,10 +214,16 @@ async function readArtifactSet(projectRoot, artifactCase, validator) {
 }
 
 export async function readAndVerifyArtifactSets(projectRoot) {
-  const validator = await validatorFor(projectRoot);
+  const [validator, registeredRelationshipIds] = await Promise.all([
+    validatorFor(projectRoot),
+    readRegisteredRelationshipIds(projectRoot),
+  ]);
   return Promise.all(
     artifactCases.map((artifactCase) =>
-      readArtifactSet(projectRoot, artifactCase, validator),
+      readArtifactSet(projectRoot, artifactCase, {
+        validator,
+        registeredRelationshipIds,
+      }),
     ),
   );
 }

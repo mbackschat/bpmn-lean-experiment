@@ -172,7 +172,7 @@ private def preserved (documentation : Option String := none) : PreservedSourceD
     extensionAttributes := []
     diagramBounds := none }
 
-/-- The Milestone 0 source shape used only to probe the representation boundary. -/
+/-- The sequential User Task source shape used only to probe the representation boundary. -/
 def sequentialSource : SourceDocument :=
   { processId := "Process_SequentialUserTask"
     nodes :=
@@ -341,7 +341,7 @@ structure ClosureResult where
 
 inductive SpikeStimulus where
   | start
-  | completeUserTask (elementId : ElementId)
+  | completeUserTaskWait (waitId : String)
   deriving Repr, DecidableEq
 
 inductive SpikeCommandOutcome where
@@ -477,8 +477,8 @@ def applyStimulus (fuel : Nat) (model : ExecutableModel) (state : RuntimeState)
             { outcome := closureOutcome closure
               state := closure.state
               microtrace := closure.microtrace }
-  | .completeUserTask elementId =>
-      match state.userTaskWaits.find? fun wait => wait.elementId == elementId with
+  | .completeUserTaskWait waitId =>
+      match state.userTaskWaits.find? fun wait => wait.id == waitId with
       | none => { outcome := .rejected, state, microtrace := [] }
       | some wait =>
           match state.tokens.find? fun token => token.id == wait.tokenId with
@@ -494,7 +494,7 @@ def applyStimulus (fuel : Nat) (model : ExecutableModel) (state : RuntimeState)
               { outcome := closureOutcome closure
                 state := closure.state
                 microtrace :=
-                  .userTaskWaitCompleted elementId token.id :: closure.microtrace }
+                  .userTaskWaitCompleted wait.elementId token.id :: closure.microtrace }
 
 private def sequentialStartResult? : Option SpikeCommandResult :=
   compiledSequential?.map fun model => applyStimulus 8 model initialState .start
@@ -514,7 +514,7 @@ def completionCommandClosureWitness : Bool :=
   match compiledSequential?, sequentialStartResult? with
   | some model, some started =>
       let completed :=
-        applyStimulus 8 model started.state (.completeUserTask "UserTask_Approve")
+        applyStimulus 8 model started.state (.completeUserTaskWait "wait:token:1")
       completed.outcome == .committed &&
       completed.state.status == .completed &&
       completed.state.tokens.isEmpty &&

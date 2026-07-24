@@ -1,12 +1,11 @@
 {
-  "schemaVersion": "0.2.0",
-  "traceSchemaVersion": "0.2.0",
-  "id": "m1-user-task-wrong-activation",
-  "profile": "cibseven-2.2.0-spike.2",
+  "kind": "scenario",
+  "id": "user-task-discovery-completion",
+  "profile": "cibseven-2.2.0-user-task-draft",
   "bpmn": {
-    "id": "m0-sequential-user-task-process",
-    "relativePath": "scenarios/m0-sequential-user-task/process.bpmn",
-    "sha256": "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295"
+    "id": "sequential-user-task-process",
+    "relativePath": "scenarios/user-task-discovery-completion/process.bpmn",
+    "sha256": "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d"
   },
   "stimuli": [
     {
@@ -17,11 +16,11 @@
     },
     {
       "kind": "completeUserTaskInstance",
-      "commandId": "wrong-activation",
+      "commandId": "complete-user-task-instance",
       "taskId": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
-        "activation": 2
+        "activation": 1
       }
     }
   ],

@@ -1,8 +1,8 @@
 # BPMN source ingestion
 
-`@bpmn-lean/bpmn-source` is the deployment-time boundary between untrusted BPMN XML and the dependency-free [TypeScript semantic core](../semantic-core/README.md). It retains exact source bytes through a defensive-copy API, computes their SHA-256 identity before decoding, performs bounded security and encoding checks, imports a private metamodel-aware structural graph with `bpmn-moddle@10.0.0`, normalizes diagnostics, and compiles only admitted source into project-owned serializable executable IR. The parser deadline bounds Promise settlement but cannot preempt the library’s synchronous CPU work; production untrusted uploads still require Worker or process isolation.
+`@bpmn-lean/bpmn-source` is the deployment-time boundary between untrusted BPMN XML and the dependency-free [TypeScript semantic core](../semantic-core/README.md). It retains defensive copies of exact bytes, computes SHA-256 identity before decoding, performs bounded security and encoding checks, imports a private metamodel-aware graph with `bpmn-moddle@10.0.0`, normalizes diagnostics, and compiles admitted source into project-owned serializable executable IR.
 
-The current `bpmn-source-sequential-user-task@0.2.0` compiler supports exactly one executable Process with `None Start Event → User Task → None End Event`. Its project-owned IR preserves the User Task ID and optional BPMN name, representing an omitted name as `null`. Every parser warning blocks admission, and unsupported BPMN elements or properties are rejected instead of being discarded. Raw moddle objects never cross the package boundary. Legacy IR v0.1 is not emitted; the Temporal adapter reads it only for the committed retained-history replay.
+The current `bpmn-source-sequential-user-task` compiler accepts exactly one executable `None Start Event → User Task → None End Event` Process. The IR preserves the User Task ID and optional BPMN name, representing an omitted name as `null`. Every parser warning blocks admission, and unsupported elements or properties are rejected instead of discarded. Raw moddle objects never cross the package boundary.
 
 ```ts
 const compilation = await compileSequentialUserTaskBpmn({
@@ -24,9 +24,11 @@ switch (compilation.status) {
 }
 ```
 
-The bounded [CMOF-derived manifest](src/bpmn-2.0.2-m0-metamodel.json) records only the types, inheritance, references, multiplicities, containment, and default consumed by this compiler. The local checker compares those facts with the exact ignored normative `BPMN20.cmof` source when it is available. It does not claim a complete BPMN metamodel or operational semantics.
+The parser deadline bounds Promise settlement but cannot preempt synchronous parser CPU. Production handling of untrusted uploads still requires Worker or process isolation.
 
-Run the focused gate from the repository root:
+The bounded [CMOF-derived manifest](src/bpmn-2.0.2-sequential-user-task-metamodel.json) records only the types, inheritance, references, multiplicities, containment, and defaults consumed by this compiler. The local checker compares those facts with the exact ignored normative `BPMN20.cmof` when available. It does not claim a complete BPMN metamodel or operational semantics.
+
+Run the focused gate:
 
 ```sh
 ./scripts/pnpm.sh run test:bpmn-source
@@ -38,4 +40,4 @@ Run the optional pinned MIWG interchange observation gate:
 ./scripts/pnpm.sh run test:miwg
 ```
 
-The MIWG files remain in their external CC-BY checkout. The gate captures exact bytes and classifies structural/profile admission; it does not copy fixtures or claim execution conformance.
+MIWG files remain in their external CC-BY checkout. The gate classifies structural/profile admission without copying fixtures or claiming execution conformance.

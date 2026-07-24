@@ -12,6 +12,8 @@ Temporal can durably remember inputs, wakeups, external-operation outcomes, and 
 
 This research inspected the official documentation at revision `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`, the TypeScript SDK at revision `2595d1b62cf5c3ff1748df0df2f9b303902bb31c`, and the TypeScript samples at revision `fb0aa23d75394a132646de883842dfacdacd5aa0`. Their provenance is recorded in [SOURCES.md](SOURCES.md).
 
+**Current implementation note:** the pre-release adapter uses exact Query plus acknowledged Update, starts a fresh in-memory server for each focused gate, replays histories created during that same gate, and then discards all server state. It has no Signal compatibility path, committed history fixture, patch branch, or legacy IR reader. General production history/versioning research below remains valid future guidance; [PROJECT-DESIGN.md](PROJECT-DESIGN.md#pre-release-evolution-policy) owns the current evolution policy.
+
 ## Executive model
 
 A Temporal Workflow is a deterministic program whose durable source of truth is its Event History. A Worker normally keeps a live Workflow instance in a cache, but that cache is only a performance optimization. After eviction, process loss, deployment, or explicit replay testing, the SDK re-executes the Workflow function from its beginning and feeds it the recorded history.
@@ -356,7 +358,7 @@ The caller uses `commandId` as the Temporal Update ID. Temporal deduplicates the
 
 Two different command IDs targeting the same occurrence are distinct semantic attempts. At most one can commit; a later accepted attempt is rejected by the semantic core. An attempt delivered only after the Workflow has closed is a Temporal closed-Workflow transport outcome, not a fabricated BPMN rejection.
 
-Signal remains the retained Milestone 0 harness transport and compatibility path for pre-Update histories. New interaction histories use Update because Service acceptance alone is not the semantic result of a User Task completion command.
+The implemented interaction uses Update because Service acceptance alone is not the semantic result of a User Task completion command. Signal remains a researched transport option for future asynchronous BPMN inputs, but it is not a current completion compatibility path.
 
 The implemented discovery surface is exact Query by known Workflow ID. Search Attributes and a production task inbox remain separate eventually consistent projections and must not become the source of truth for task existence or completion admission. A later proposal must name the global-discovery consumer, data-access boundary, Search Attribute registry, staleness behavior, and rebuild or reconciliation evidence before adding either.
 
@@ -567,15 +569,15 @@ Operational repair can change what work executes. If such features are enabled i
 |---|---|---|
 | Workflow | Adopt | Durable host for one semantic-core-controlled process execution |
 | Event History and replay | Adopt and test directly | Fundamental durability and deployment-compatibility mechanism |
-| Signal | Retained lifecycle-history ingress only | Durable asynchronous transport without a result; new User Task interaction histories use Update |
+| Signal | Researched and currently unused | Durable asynchronous transport without a result; the bounded User Task command needs Update completion |
 | Query | Adopted for diagnostic trace and exact known-Workflow task discovery | Convenient read-only projection, but not durable observation authority |
 | Update | Adopted for the bounded User Task completion API | Durable request-response returns the semantic core’s typed command outcome |
 | Durable timers | Adopt | Physical wakeup mechanism behind semantic-core-owned timer semantics |
 | Activities | Adopt when external effects enter scope | I/O boundary with retries, timeouts, and idempotency obligations |
 | Cancellation scopes | Adopt as adapter mechanism | Useful structured cancellation, never BPMN semantic authority |
 | Continue-As-New | Plan early, implement when needed | Required for bounded history; must be observation-transparent |
-| Replay tests | Adopted in M0.5 | Live and committed-history replay directly guard adapter compatibility |
-| Patching | Defer until first incompatible code change | Compatibility mechanism, not needed before histories exist |
+| Replay tests | Adopted for same-gate live histories | Directly guard current deterministic hosting; retained replay begins with an approved durable baseline |
+| Patching | Defer until a durable baseline and incompatible change exist | Compatibility mechanism, not useful for disposable prototype history |
 | Worker Versioning | Defer deployment choice | Production concern; does not replace replay fixtures |
 | Child Workflows | Defer | Requires a proven BPMN subprocess or Call Activity mapping |
 | Local Activities | Exclude initially | Optimization with weak fit for external BPMN effects |
@@ -593,7 +595,7 @@ The pinned official TypeScript samples include [`dsl-interpreter`](https://githu
 
 This sample supports the project’s interpreter/evaluator decision but does not define the BPMN design. It demonstrates that Temporal can durably host data-driven control flow and place external work behind Activities. It does not supply a source-preserving model, schema/profile admission, an explicit semantic state transition system, canonical observations, command outcomes, retained replay fixtures, or a safe BPMN parallel-state account; its parallel branches share and mutate one bindings object.
 
-The project therefore adopts the sample’s broad hosting pattern while strengthening every semantic boundary: BPMN XML is compiled outside Workflow execution into immutable versioned IR data, the pure semantic core alone assigns BPMN meaning, one Workflow loop alone mutates semantic state, effects remain typed, and differential plus replay gates remain independent. The durable decision and generator exclusion are owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
+The project therefore adopts the sample’s broad hosting pattern while strengthening every semantic boundary: BPMN XML is compiled outside Workflow execution into immutable, source/profile-identified project IR, the pure semantic core alone assigns BPMN meaning, one Workflow loop alone mutates semantic state, effects remain typed, and differential plus replay gates remain independent. The durable decision and generator exclusion are owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
 
 ## Camunda/CIB-to-Temporal mapping audit
 
@@ -601,7 +603,7 @@ Direct syntax-to-syntax translation is attractive but unsafe. The following tabl
 
 | BPMN or CIB concept | Proposed Temporal analogue | Verdict | Required project interpretation |
 |---|---|---|---|
-| Process Definition | Workflow Definition or class | False equivalence | The BPMN model is versioned data interpreted by a generic semantic core; a Temporal Workflow Definition is adapter code and may host many model versions |
+| Process Definition | Workflow Definition or class | False equivalence | The BPMN model is content-addressed, profile-identified data interpreted by a generic semantic core; a Temporal Workflow Definition is adapter code and may host many admitted models |
 | Process Instance | Workflow Execution | Useful hosting identity, not equality | One Workflow Execution can host one semantic process instance if profile, model, and Run-chain identity are carried explicitly |
 | Sequence Flow | Code order | False equivalence | Sequence Flows are model edges with conditions and token semantics evaluated by the semantic core |
 | Start Event | Implicit Workflow start | Partial host mapping | Workflow start can deliver instantiation input, but BPMN Start Event type, trigger, event subprocess behavior, and multiplicity remain semantic |
@@ -662,11 +664,11 @@ The adapter implements this shape for only the sequential User Task capsule. The
 
 The application command ID is the ordinary Temporal Update ID. The Workflow also records the accepted stimulus and first semantic outcome, so delivery of the same semantic command under a different Update ID returns the original result without a second transition. Reusing one command ID for a different payload fails at the adapter boundary instead of silently aliasing two commands. This ledger is Workflow-local; cross-Run deduplication remains absent until Continue-As-New is designed.
 
-The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait and exact open task through Queries, delivers lifecycle completion through the retained Signal or interaction completion through Update, and compares the Workflow result with the pure core result. One server/Worker executes the exact, wrong-activation, and stale-completion cases; the stale case additionally redelivers the first completion under a distinct Update ID. The gate fetches and replays every live history plus committed CLI-exported lifecycle-Signal and exact-completion-Update histories. A Temporal patch marker requires IR for new histories while a narrow compatibility constructor exists only during replay of the older retained history. Activities, timers, Search Attributes, Continue-As-New, and general BPMN model ingestion remain absent.
+The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait and exact open task through Queries, delivers completion through Update, and compares every Workflow result with the pure core. One clean server/Worker executes exact, wrong-activation, and stale-completion cases; duplicate delivery uses a distinct Update ID. The gate fetches and inspects the exact Update history, replays every current live history, and then discards the in-memory server. Activities, timers, Search Attributes, Continue-As-New, retained history baselines, and general BPMN model ingestion remain absent.
 
-## Initial replay and refinement test matrix
+## Production-baseline replay and refinement matrix
 
-The first end-to-end scenario should establish the entire assurance loop, not broad BPMN coverage.
+The current pre-release gate already establishes same-run execution and live replay. The following is the stronger matrix required when the project approves an immutable history baseline; it is not a reason to preserve prototype histories now.
 
 1. Start a process, reach one user-task wait, accept one versioned command, and complete.
 2. Export and retain the exact Temporal Event History.
@@ -681,7 +683,7 @@ The first end-to-end scenario should establish the entire assurance loop, not br
 
 The full local Temporal development server is the preferred integration target because it exercises real server semantics. The TypeScript time-skipping test server is valuable for fast timer tests but does not implement every production feature and should not be the only refinement environment.
 
-`Worker.runReplayHistories` should run as a separate fast batch over committed history fixtures. Live integration and retained-history replay test different invariants and both are required.
+After a durable baseline exists, `Worker.runReplayHistories` should run as a separate fast batch over committed history fixtures. Live integration and retained-history replay test different invariants and both become required at that boundary.
 
 ## Open decisions
 

@@ -22,6 +22,8 @@ If the project later grows a graphical modeler, exporter, BPEL mapper, or choreo
 
 Agreement with CIB Seven does not by itself prove BPMN conformance. BPMN conformance does not imply CIB-specific jobs, retries, incidents, extensions, or listener behavior. Passing Temporal replay does not establish either semantic claim.
 
+The working presumption is that CIB Seven implements BPMN faithfully, operationalizes underspecified or inconsistent areas, and adds explicit engine extensions. The [CIB–BPMN relationship register](CIB-BPMN-RELATION.md) records those categories separately and keeps any evidence-backed candidate or confirmed normative deviation prominent; CIB specificity or extension is never classified as deviation by default.
+
 ## Normative route
 
 | Source area | Project use |

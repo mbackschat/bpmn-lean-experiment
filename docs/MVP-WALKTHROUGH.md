@@ -15,7 +15,7 @@ The MVP covers lifecycle execution plus discovery and exact completion of one Us
 ```mermaid
 flowchart LR
   XML[Exact BPMN XML] --> Import[Bounded admission]
-  Import --> IR[Versioned executable IR]
+  Import --> IR[Profile-identified executable IR]
   IR --> Core[Pure TypeScript semantic core]
   Core --> Temporal[Temporal durability adapter]
 
@@ -31,19 +31,19 @@ flowchart LR
   Lean --> Diff
   Core --> Diff
   Temporal --> Diff
-  Temporal --> Replay[Live and retained replay]
+  Temporal --> Replay[Same-gate live replay]
 ```
 
 There are two intentionally different routes:
 
-- The production route admits exact BPMN bytes, compiles versioned IR data, evaluates that IR in the pure semantic core, and lets Temporal host the same transition system durably.
+- The production route admits exact BPMN bytes, compiles project-owned IR data, evaluates that IR in the pure semantic core, and lets Temporal host the same transition system durably.
 - The assurance route asks CIB Seven and Lean to derive the same public consequences independently, then compares all four targets at a deliberately small observation boundary.
 
 This separation is the architecture’s main safeguard against one shared implementation mistake looking like agreement.
 
 ## 1. Start with exact source and answer-free commands
 
-The source is the real [BPMN XML model](../scenarios/m0-sequential-user-task/process.bpmn), not generated TypeScript. Its SHA-256 is embedded in the [successful interaction scenario](../scenarios/m1-user-task-discovery-completion/scenario.json), which supplies commands and requested observation kinds but no expected answer.
+The source is the real [BPMN XML model](../scenarios/user-task-discovery-completion/process.bpmn), not generated TypeScript. Its SHA-256 is embedded in the [successful interaction scenario](../scenarios/user-task-discovery-completion/scenario.json), which supplies commands and requested observation kinds but no expected answer.
 
 The exact task occurrence used for completion is:
 
@@ -53,7 +53,7 @@ The exact task occurrence used for completion is:
 
 That third identity component matters. A second activation of the same BPMN element is not the same task occurrence, even though both share `UserTask_Approve`.
 
-The [draft profile](../profiles/cibseven-2.2.0-spike.2/profile.json) pins the CIB version, execution environment, feature surface, and public observation boundary. Expected CIB results live in separate immutable evidence artifacts so target inputs cannot smuggle in their oracle answer.
+The [draft profile](../profiles/cibseven-2.2.0-user-task-draft/profile.json) pins the CIB version, execution environment, feature surface, and public observation boundary. Expected CIB results live in separate immutable evidence artifacts so target inputs cannot smuggle in their oracle answer.
 
 ## 2. Admit BPMN and compile data, not source code
 
@@ -65,10 +65,9 @@ The actual compiler projection is kept synchronized from its tested source:
 ```ts
 return {
   executableIr: {
-    schemaVersion: "0.2.0",
     kind: BpmnExecutableIrKind.SequentialUserTask,
     identity: {
-      compiler: compilerIdentity,
+      compiler: BpmnCompilerIdentity.SequentialUserTask,
       semanticProfile,
       sourceId: source.id,
       sourceSha256: source.sha256,
@@ -88,28 +87,24 @@ return {
 
 The IR records source, compiler, and semantic-profile identity alongside the admitted topology. It is data that a generic evaluator can interpret. No BPMN-to-TypeScript generator creates a Workflow class per diagram.
 
-This is important for Temporal replay: a new Workflow history receives immutable admitted IR plus a version marker, so later code can replay the meaning that was actually started. The older IR constructor exists only to replay the committed pre-IR history.
+This is important for Temporal replay: every Workflow receives the admitted IR that it actually evaluates. During pre-release the gate replays its newly created histories and then discards the server state. Retained history compatibility begins only when an immutable deployment baseline is deliberately approved.
 
 ## 3. Observe the pinned CIB Seven engine
 
 CIB Seven is the finite behavioral oracle for the declared compatibility profile. The runner deploys the exact source through public engine services, starts an instance, discovers the task, completes or rejects the requested occurrence, projects only stable semantic observations, and deletes every deployment afterward.
 
-This executable test exercises successful, wrong-activation, and stale completion against one warm embedded engine:
+The test class exercises successful, wrong-activation, and stale completion. This synchronized excerpt shows the two rejection/state-preservation witnesses against one warm embedded engine:
 
 <!-- source-fragment: runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java#cib-user-task-probe -->
 ```java
 try (var runner = CibSevenScenarioRunner.create()) {
-  var calibrated = runner.run(scenario, PROJECT_ROOT);
   var rejected = runner.run(wrongScenario, PROJECT_ROOT);
   var stale = runner.run(staleScenario, PROJECT_ROOT);
 
-  assertEquals(evidence.outcome(), calibrated.outcome());
-  assertEquals(expectedTrace, calibrated.trace());
   assertEquals(wrongEvidence.outcome(), rejected.outcome());
   assertEquals(wrongEvidence.trace(), rejected.trace());
   assertEquals(staleEvidence.outcome(), stale.outcome());
   assertEquals(staleEvidence.trace(), stale.trace());
-  assertEquals(calibrated.trace().get(2), rejected.trace().get(2));
   assertEquals(rejected.trace().get(2), rejected.trace().get(4));
   assertEquals(stale.trace().get(4), stale.trace().get(6));
   assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
@@ -119,7 +114,7 @@ try (var runner = CibSevenScenarioRunner.create()) {
 
 The generated CIB task ID, database rows, and PVM execution identities are excluded from canonical comparison. They are host details, not portable BPMN task identity. A separate PVM projection remains diagnostic because it is useful for understanding CIB without making its internals the compatibility contract.
 
-Retained evidence binds the exact scenario bytes, profile, CIB revision, producer environment, projection version, and canonical result. Normal verification reads that evidence; it never refreshes it.
+Retained evidence binds the exact scenario bytes, profile bytes, CIB revision, producer environment, stable projection identity, and canonical result. Normal verification reads that evidence; it never refreshes it.
 
 ## 4. Give the profile an executable Lean meaning
 
@@ -167,13 +162,13 @@ The semantic core owns BPMN-visible state transitions. It has no CIB or Temporal
 
 Its public transition boundary is:
 
-<!-- source-fragment: packages/semantic-core/src/sequential-user-task.ts#apply-stimulus -->
+<!-- source-fragment: packages/semantic-core/src/sequential-user-task-runtime.ts#apply-stimulus -->
 ```ts
 export function applyStimulus(
   model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
   stimulus: Stimulus,
-  closureLimit: number = internalClosureLimit,
+  closureLimit: number = sequentialUserTaskClosureLimit,
 ): CommandResult {
   validateClosureLimit(closureLimit);
 
@@ -211,9 +206,6 @@ The handler boundary is synchronized from the real Workflow:
 
 <!-- source-fragment: packages/temporal-adapter/src/workflows.ts#temporal-semantic-boundary -->
 ```ts
-setHandler(bpmnStimulusSignal, (stimulus) => {
-  enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-});
 setHandler(bpmnTraceQuery, () => [...trace]);
 setHandler(
   bpmnOpenUserTasksQuery,
@@ -242,7 +234,7 @@ setHandler(
 
 The Workflow loop calls the same semantic-core boundary used outside Temporal. A repeated semantic command is transition-free; reusing its command ID with a different payload is rejected. Temporal Update IDs, Workflow IDs, Run IDs, Workflow Tasks, and Event History remain hosting facts rather than BPMN facts.
 
-Every primary live history is replayed in one Worker. Two committed histories add longitudinal evidence: the original lifecycle Signal history and the exact-completion Update history. The Signal history is also a negative witness that cannot satisfy the newer Update-evidence classification.
+Every primary live history is replayed in one Worker before the clean in-memory server shuts down. The exact-completion history is also inspected to require Update acceptance and completion and to exclude Signal delivery. No prototype Event History fixture or Workflow patch branch is retained.
 
 ## 7. Compare consequences and prove the comparator can fail
 
@@ -292,14 +284,13 @@ const injectedDisagreement = compareTargetResults(
 );
 ```
 
-The current batch mutates lifecycle status for the original scenario and task activation for the interaction scenarios. The comparator must classify the exact first differing path. This tests the sensitivity of the observation boundary rather than merely testing the happy path twice.
+The current batch mutates task activation from `1` to `2`. The comparator must classify the exact first differing path. This tests the sensitivity of the observation boundary rather than merely testing the happy path twice.
 
-The complete pipeline batches four cases:
+The complete pipeline batches three cases:
 
-1. lifecycle start, wait, complete;
-2. exact task-occurrence completion;
-3. wrong activation rejected without state change;
-4. stale completion rejected without state change.
+1. exact task-occurrence completion;
+2. wrong activation rejected without state change;
+3. stale completion rejected without state change.
 
 CIB, Lean, and Temporal startup costs are shared across the batch, while every Temporal case is repeated under a distinct Workflow identity to expose accidental host-ID coupling.
 
@@ -340,11 +331,11 @@ For focused work, use the gate matrix in [TESTING.md](TESTING.md). The [semantic
 
 Within one content-addressed sequential User Task slice, the repository establishes:
 
-- exact-source admission into versioned executable IR;
+- exact-source admission into project-owned executable IR;
 - independent CIB, Lean, and TypeScript accounts with exact canonical agreement;
 - a useful general Lean law plus an executable nearest non-law;
 - Temporal Query/Update hosting that refines the pure core for the tested cases;
-- duplicate-command stability, cleanup, live replay, and retained-history replay;
+- duplicate-command stability, cleanup, and same-gate live replay;
 - mutation-sensitive differential evidence within the feedback budgets.
 
 It does not establish general BPMN parsing or execution, OMG conformance, immutable CIB compatibility, simultaneous or repeated task occurrences, variables, assignment, forms, timers, messages, Activities, fault recovery, Search Attributes, or a production task inbox.

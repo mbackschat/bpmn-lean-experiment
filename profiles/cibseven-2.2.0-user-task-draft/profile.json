@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "0.1.0",
-  "id": "cibseven-2.2.0-spike.1",
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-user-task-draft",
   "status": "draft",
-  "claim": "milestone-0-calibration-only",
+  "claim": "user-task-interaction-calibration-only",
   "oracle": {
     "name": "CIB Seven",
     "version": "2.2.0",
@@ -22,18 +22,27 @@
     "features": [
       "none-start-event",
       "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
       "none-end-event",
       "sequence-flow",
       "process-completion"
     ],
-    "extensions": []
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-OP-0001",
+      "CIB-CFG-0001"
+    ]
   },
   "observations": [
     "deployment",
     "commandResults",
     "processStatus",
     "activeWaits",
-    "enabledStimuli",
+    "openUserTasks",
+    "enabledInteractions",
     "logicalTime"
   ],
   "comparison": {
@@ -41,6 +50,10 @@
     "semanticConcurrency": false
   },
   "excluded": [
+    "claiming",
+    "assignment",
+    "authorization",
+    "forms",
     "variables",
     "expressions",
     "gateways",
@@ -52,6 +65,8 @@
     "compensation",
     "listeners",
     "history",
+    "search-attributes",
+    "global-task-inbox",
     "external-services",
     "vendor-extensions"
   ]

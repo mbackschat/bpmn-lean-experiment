@@ -16,34 +16,16 @@ import {
 
 import { TemporalScenarioRunner } from "../dist/index.js";
 
-
-const scenarioUrl = new URL(
-  "../../../scenarios/m0-sequential-user-task/scenario.json",
+const capsuleUrl = new URL(
+  "../../../scenarios/user-task-discovery-completion/",
   import.meta.url,
 );
-const interactionScenarioUrls = [
+const scenarioUrls = [
   "scenario.json",
   "wrong-activation.scenario.json",
   "stale-completion.scenario.json",
-].map(
-  (relativePath) =>
-    new URL(
-      `../../../scenarios/m1-user-task-discovery-completion/${relativePath}`,
-      import.meta.url,
-    ),
-);
-const bpmnUrl = new URL(
-  "../../../scenarios/m0-sequential-user-task/process.bpmn",
-  import.meta.url,
-);
-const retainedHistoryUrl = new URL(
-  "./fixtures/m0-sequential-user-task.history.json",
-  import.meta.url,
-);
-const retainedInteractionHistoryUrl = new URL(
-  "./fixtures/m1-user-task-exact-update.history.json",
-  import.meta.url,
-);
+].map((relativePath) => new URL(relativePath, capsuleUrl));
+const bpmnUrl = new URL("process.bpmn", capsuleUrl);
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -86,21 +68,49 @@ function collectTemporalIdentities(value, identities = new Set()) {
   return identities;
 }
 
-function requiredHistoryEvent(history, eventType) {
+function requiredHistoryEvent(history, attributesName) {
   const matches = history.events.filter(
-    (event) => event.eventType === eventType,
+    (event) => {
+      const attributes = event[attributesName];
+      return (
+        attributes !== undefined &&
+        attributes !== null &&
+        Object.keys(attributes).length > 0
+      );
+    },
   );
   assert.equal(
     matches.length,
     1,
-    `expected exactly one ${eventType} event`,
+    `expected exactly one history event with ${attributesName}`,
   );
   return matches[0];
 }
 
 function decodeJsonPayload(payload) {
-  assert.equal(typeof payload?.data, "string");
-  return JSON.parse(Buffer.from(payload.data, "base64").toString("utf8"));
+  assert.notEqual(payload?.data, undefined);
+  const bytes =
+    typeof payload.data === "string"
+      ? Buffer.from(payload.data, "base64")
+      : Buffer.from(payload.data);
+  return JSON.parse(bytes.toString("utf8"));
+}
+
+function temporalInt64ToBigInt(value) {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    typeof value.low !== "number" ||
+    typeof value.high !== "number"
+  ) {
+    return BigInt(value);
+  }
+  const low = BigInt(value.low >>> 0);
+  const high = BigInt(value.high >>> 0);
+  const unsigned = (high << 32n) | low;
+  return value.unsigned === true || value.high >= 0
+    ? unsigned
+    : unsigned - (1n << 64n);
 }
 
 function assertExactCompletionUpdateHistory(
@@ -109,11 +119,11 @@ function assertExactCompletionUpdateHistory(
 ) {
   const accepted = requiredHistoryEvent(
     history,
-    "EVENT_TYPE_WORKFLOW_EXECUTION_UPDATE_ACCEPTED",
+    "workflowExecutionUpdateAcceptedEventAttributes",
   );
   const updateCompleted = requiredHistoryEvent(
     history,
-    "EVENT_TYPE_WORKFLOW_EXECUTION_UPDATE_COMPLETED",
+    "workflowExecutionUpdateCompletedEventAttributes",
   );
   assert.deepEqual(
     collectTemporalIdentities(history),
@@ -121,16 +131,21 @@ function assertExactCompletionUpdateHistory(
   );
   assert.equal(
     history.events.some(
-      (event) =>
-        event.eventType ===
-        "EVENT_TYPE_WORKFLOW_EXECUTION_SIGNALED",
+      (event) => {
+        const attributes = event.workflowExecutionSignaledEventAttributes;
+        return (
+          attributes !== undefined &&
+          attributes !== null &&
+          Object.keys(attributes).length > 0
+        );
+      },
     ),
     false,
   );
 
   const started = requiredHistoryEvent(
     history,
-    "EVENT_TYPE_WORKFLOW_EXECUTION_STARTED",
+    "workflowExecutionStartedEventAttributes",
   );
   const workflowInputs =
     started.workflowExecutionStartedEventAttributes.input.payloads;
@@ -152,7 +167,10 @@ function assertExactCompletionUpdateHistory(
 
   const updateCompletedAttributes =
     updateCompleted.workflowExecutionUpdateCompletedEventAttributes;
-  assert.equal(updateCompletedAttributes.acceptedEventId, accepted.eventId);
+  assert.equal(
+    temporalInt64ToBigInt(updateCompletedAttributes.acceptedEventId),
+    temporalInt64ToBigInt(accepted.eventId),
+  );
   assert.equal(
     decodeJsonPayload(
       updateCompletedAttributes.outcome.success.payloads[0],
@@ -162,7 +180,7 @@ function assertExactCompletionUpdateHistory(
 
   const workflowCompleted = requiredHistoryEvent(
     history,
-    "EVENT_TYPE_WORKFLOW_EXECUTION_COMPLETED",
+    "workflowExecutionCompletedEventAttributes",
   );
   assert.deepEqual(
     decodeJsonPayload(
@@ -173,7 +191,7 @@ function assertExactCompletionUpdateHistory(
   );
 }
 
-async function loadExecutionInput(selectedScenarioUrl = scenarioUrl) {
+async function loadExecutionInput(selectedScenarioUrl) {
   const scenario = await loadJson(selectedScenarioUrl);
   const compilation = await compileSequentialUserTaskBpmn({
     bytes: await readFile(bpmnUrl),
@@ -209,86 +227,14 @@ after(async () => {
   }
 });
 
-test("full server preserves the calibrated trace and replays its history", async () => {
-  const { scenario, executableIr } = await loadExecutionInput();
-  const semanticCoreResult = runScenario(scenario, executableIr);
-
-  const execution = await withDeadline(
-    runner.runScenario(
-      scenario,
-      executableIr,
-      {
-        workflowId: "m0-live-sequential-user-task",
-      },
-    ),
-    15_000,
-    "Temporal scenario",
-  );
-
-  assert.deepEqual(
-    execution.waitTrace,
-    semanticCoreResult.trace.slice(0, 3),
-  );
-  assert.equal(execution.interactionEvidence, null);
-  assert.deepEqual(execution.result, semanticCoreResult);
-  assert.ok(execution.history.events.length > 0);
-
-  await withDeadline(
-    runner.replayHistory(
-      execution.history,
-      "m0-live-sequential-user-task",
-    ),
-    10_000,
-    "live history replay",
-  );
-});
-
-test("retained Signal and Update histories replay independently", async () => {
-  const [lifecycleHistory, interactionHistory, interactionInput] =
-    await Promise.all([
-      loadJson(retainedHistoryUrl),
-      loadJson(retainedInteractionHistoryUrl),
-      loadExecutionInput(interactionScenarioUrls[0]),
-    ]);
-  assertExactCompletionUpdateHistory(
-    interactionHistory,
-    interactionInput,
-  );
-  assert.throws(
-    () =>
-      assertExactCompletionUpdateHistory(
-        lifecycleHistory,
-        interactionInput,
-      ),
-    /WORKFLOW_EXECUTION_UPDATE_ACCEPTED/u,
-  );
-
-  await withDeadline(
-    runner.replayHistories([
-      {
-        history: lifecycleHistory,
-        workflowId: "m0-retained-sequential-user-task",
-      },
-      {
-        history: interactionHistory,
-        workflowId: "m1-retained-exact-completion",
-      },
-    ]),
-    10_000,
-    "retained history batch replay",
-  );
-});
-
-test("one server and Worker execute the complete User Task interaction batch", async () => {
-  const inputs = await Promise.all(
-    interactionScenarioUrls.map(loadExecutionInput),
-  );
+test("one clean server executes, captures, and replays the current capsule", async () => {
+  const inputs = await Promise.all(scenarioUrls.map(loadExecutionInput));
   const batchItems = inputs.map(
     ({ scenario, executableIr }, index) => ({
       scenario,
       executableIr,
       options: {
-        workflowId: `m1-user-task-batch-${index}`,
+        workflowId: `user-task-batch-${index}`,
         duplicateFirstCompletionUpdateId:
           index === 2 ? "duplicate-first-completion-transport" : undefined,
       },
@@ -302,10 +248,7 @@ test("one server and Worker execute the complete User Task interaction batch", a
   );
 
   assert.equal(executions.length, inputs.length);
-  assert.deepEqual(
-    collectTemporalIdentities(executions[0].history),
-    new Set([expectedTemporalIdentity]),
-  );
+  assertExactCompletionUpdateHistory(executions[0].history, inputs[0]);
   for (const [index, execution] of executions.entries()) {
     const input = inputs[index];
     const semanticCoreResult = runScenario(
@@ -329,7 +272,6 @@ test("one server and Worker execute the complete User Task interaction batch", a
     );
 
     assert.notEqual(waitingState, undefined);
-    assert.notEqual(execution.interactionEvidence, null);
     assert.deepEqual(
       execution.waitTrace,
       semanticCoreResult.trace.slice(0, 3),
@@ -346,29 +288,30 @@ test("one server and Worker execute the complete User Task interaction batch", a
       execution.interactionEvidence.duplicateCompletionOutcome,
       index === 2 ? CommandOutcome.Committed : null,
     );
+    assert.deepEqual(execution.result, semanticCoreResult);
     assert.deepEqual(
-      execution.result,
-      semanticCoreResult,
+      collectTemporalIdentities(execution.history),
+      new Set([expectedTemporalIdentity]),
     );
-    assert.ok(execution.history.events.length > 0);
   }
+
   await withDeadline(
     runner.replayHistories(
       executions.map((execution, index) => ({
         history: execution.history,
-        workflowId: `m1-user-task-batch-${index}`,
+        workflowId: `user-task-batch-${index}`,
       })),
     ),
     10_000,
-    "interaction history batch replay",
+    "current history batch replay",
   );
 });
 
 test("batch execution rejects duplicate Workflow identities before start", async () => {
-  const input = await loadExecutionInput(interactionScenarioUrls[0]);
+  const input = await loadExecutionInput(scenarioUrls[0]);
   const duplicate = {
     ...input,
-    options: { workflowId: "m1-duplicate-workflow-id" },
+    options: { workflowId: "duplicate-workflow-id" },
   };
 
   await assert.rejects(

@@ -5,7 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schemaVersion",
+    "kind",
     "id",
     "status",
     "claim",
@@ -17,8 +17,8 @@
     "excluded"
   ],
   "properties": {
-    "schemaVersion": {
-      "const": "0.1.0"
+    "kind": {
+      "const": "semanticProfile"
     },
     "id": {
       "type": "string",
@@ -105,7 +105,8 @@
       "required": [
         "process",
         "features",
-        "extensions"
+        "extensions",
+        "relationships"
       ],
       "properties": {
         "process": {
@@ -126,6 +127,15 @@
             "type": "string",
             "minLength": 1
           },
+          "uniqueItems": true
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^CIB-(AGR|OP|INT|EXT|CFG|LIM|DEV)-[0-9]{4}$"
+          },
+          "minItems": 1,
           "uniqueItems": true
         }
       }

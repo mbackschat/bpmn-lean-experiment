@@ -22,7 +22,7 @@ export type BpmnSourceDiagnostic = Readonly<{
 }>;
 
 export type BpmnSourceIdentity = Readonly<{
-  schemaVersion: "0.1.0";
+  kind: "bpmnSource";
   id: string;
   sha256: string;
   byteLength: number;

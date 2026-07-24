@@ -1,4 +1,5 @@
 export {
+  BpmnCompilerIdentity,
   BpmnExecutableIrKind,
 } from "@bpmn-lean/semantic-core";
 

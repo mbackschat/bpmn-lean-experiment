@@ -5,49 +5,22 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schemaVersion",
     "kind",
     "scenario",
     "profile",
-    "traceSchemaVersion",
     "producer",
     "projection",
     "result"
   ],
   "properties": {
-    "schemaVersion": {
-      "const": "0.1.0"
-    },
     "kind": {
       "const": "cibSevenScenarioEvidence"
     },
     "scenario": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "sha256"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        }
-      }
+      "$ref": "#/$defs/contentIdentity"
     },
     "profile": {
-      "type": "string",
-      "minLength": 1
-    },
-    "traceSchemaVersion": {
-      "enum": [
-        "0.1.0",
-        "0.2.0"
-      ]
+      "$ref": "#/$defs/contentIdentity"
     },
     "producer": {
       "type": "object",
@@ -72,7 +45,7 @@
           "pattern": "^[0-9a-f]{40}$"
         },
         "runner": {
-          "const": "cibseven-oracle@0.1.0"
+          "const": "cibseven-oracle"
         },
         "java": {
           "const": "21"
@@ -86,65 +59,36 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id",
-        "version"
+        "id"
       ],
       "properties": {
         "id": {
           "const": "canonical-scenario-result"
-        },
-        "version": {
-          "enum": [
-            "0.1.0",
-            "0.2.0"
-          ]
         }
       }
     },
-    "result": {}
+    "result": {
+      "$ref": "https://bpmn-lean.local/schemas/canonical-result.schema.json"
+    }
   },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "traceSchemaVersion": {
-            "const": "0.1.0"
-          }
+  "$defs": {
+    "contentIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
         },
-        "required": [
-          "traceSchemaVersion"
-        ]
-      },
-      "then": {
-        "properties": {
-          "projection": {
-            "type": "object",
-            "properties": {
-              "version": {
-                "const": "0.1.0"
-              }
-            }
-          },
-          "result": {
-            "$ref": "https://bpmn-lean.local/schemas/canonical-result-v0.1.schema.json"
-          }
-        }
-      },
-      "else": {
-        "properties": {
-          "projection": {
-            "type": "object",
-            "properties": {
-              "version": {
-                "const": "0.2.0"
-              }
-            }
-          },
-          "result": {
-            "$ref": "https://bpmn-lean.local/schemas/canonical-result-v0.2.schema.json"
-          }
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         }
       }
     }
-  ]
+  }
 }

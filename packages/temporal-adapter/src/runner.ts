@@ -22,7 +22,6 @@ import {
   bpmnCompleteUserTaskUpdateName,
   bpmnOpenUserTasksQueryName,
   bpmnSemanticTaskQueue,
-  bpmnStimulusSignalName,
   bpmnTraceQueryName,
 } from "./contracts.js";
 import type {
@@ -136,21 +135,13 @@ export class TemporalScenarioRunner {
       "Workflow wait-state observation",
     );
 
-    const usesCompletionUpdates = scenario.stimuli
-      .slice(1)
-      .some(
-        (stimulus) =>
-          stimulus.kind === StimulusKind.CompleteUserTaskInstance,
-      );
-    const openUserTasksAtWait = usesCompletionUpdates
-      ? await withDeadline(
-          handle.query<ReadonlyArray<OpenUserTask>>(
-            bpmnOpenUserTasksQueryName,
-          ),
-          operationDeadlineMs,
-          "Workflow open User Tasks Query",
-        )
-      : [];
+    const openUserTasksAtWait = await withDeadline(
+      handle.query<ReadonlyArray<OpenUserTask>>(
+        bpmnOpenUserTasksQueryName,
+      ),
+      operationDeadlineMs,
+      "Workflow open User Tasks Query",
+    );
     const completionOutcomes: CommandOutcome[] = [];
     let duplicateCompletionOutcome: CommandOutcome | null = null;
     let duplicatedFirstCompletion = false;
@@ -158,13 +149,6 @@ export class TemporalScenarioRunner {
     for (const stimulus of scenario.stimuli.slice(1)) {
       this.assertWorkerHealthy();
       switch (stimulus.kind) {
-        case StimulusKind.CompleteUserTask:
-          await withDeadline(
-            handle.signal(bpmnStimulusSignalName, stimulus),
-            operationDeadlineMs,
-            `Workflow Signal ${stimulus.commandId}`,
-          );
-          break;
         case StimulusKind.CompleteUserTaskInstance: {
           const outcome = await executeCompletionUpdate(
             handle,
@@ -211,13 +195,11 @@ export class TemporalScenarioRunner {
     this.assertWorkerHealthy();
     return {
       waitTrace,
-      interactionEvidence: usesCompletionUpdates
-        ? {
-            openUserTasksAtWait,
-            completionOutcomes,
-            duplicateCompletionOutcome,
-          }
-        : null,
+      interactionEvidence: {
+        openUserTasksAtWait,
+        completionOutcomes,
+        duplicateCompletionOutcome,
+      },
       result,
       history: history as TemporalHistory,
     };

@@ -2,259 +2,171 @@
 
 Making BPMN execution durable, explainable, and continuously checkable.
 
-This project is an experiment toward a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. It combines a versioned semantic profile, an executable Lean reference interpreter, a pure TypeScript semantic core, a thin Temporal durability adapter, and differential/refinement testing.
+This project explores a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. The ultimate goal is OMG BPMN Process Execution Conformance for imported executable Process diagrams—not merely translating BPMN shapes into Workflow code.
 
-The ambition is deliberately high: not merely to translate BPMN shapes into Workflow code, but to build an auditable chain from the standard and observed engine behavior to production execution.
+> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
 
-> **Project status:** The bounded end-to-end `None Start Event → User Task → None End Event` MVP is evidence-closed. One content-addressed BPMN model is executed from exact source by CIB Seven and compiled into versioned executable IR for the pure TypeScript semantic core and Temporal; Lean independently evaluates the same content-identified capsule for lifecycle, exact completion, wrong activation, and stale completion. The fast gate checks exact four-target agreement, Query/Update refinement, duplicate-command handling, live and retained replay, cleanup, and seeded disagreements. The next proposed capsule is a parallel fork/two waits/join discriminator and is not yet approved or implemented. The repository does not contain a general BPMN engine and makes no BPMN-conformance or immutable CIB-compatibility claim.
-
-**Start here:** [walk through the complete MVP](docs/MVP-WALKTHROUGH.md) from exact BPMN XML to executable IR, CIB evidence, Lean semantics and laws, the TypeScript semantic core, Temporal Query/Update hosting, differential comparison, and replay.
+Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, executable IR, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
 ## Why this project exists
 
 BPMN, CIB Seven, and Temporal solve different problems:
 
-- BPMN 2.0.2 defines the notation, metamodel, and Process execution obligations, but many operational details require careful interpretation.
-- CIB Seven supplies valuable production behavior and a large inherited regression corpus, but its semantics is distributed across parsing, the PVM, persistence, jobs, subscriptions, and transactions.
-- Temporal supplies durable execution, replay, timers, messages, Activities, and recovery, but those mechanisms do not inherently define BPMN behavior.
+- BPMN 2.0.2 defines the normative notation, metamodel, and Process execution obligations.
+- CIB Seven provides a mature implementation and valuable behavioral evidence, but its operational meaning is distributed across parsing, the PVM, persistence, jobs, subscriptions, and transactions.
+- Temporal provides durable execution, replay, messaging, timers, Activities, and recovery, but those mechanisms do not define BPMN semantics.
 
-A direct BPMN-to-Temporal translation would allow SDK mechanics, replay constraints, or ad hoc implementation choices to become accidental semantics. This project instead separates meaning from hosting and continuously checks the boundaries.
-
-## Goal
-
-The ultimate standards target is **OMG BPMN 2.0.2 Process Execution Conformance** for an adapter that imports executable BPMN Process diagrams, including their definitional Collaboration, and runs them durably on Temporal.
-
-That is intentionally distinct from:
-
-- **BPMN Complete Conformance**, which additionally covers Process Modeling, BPEL Process Execution, and Choreography Modeling;
-- **CIB Seven compatibility**, which is a separately versioned claim about one pinned release, configuration, feature surface, and observation boundary;
-- **Temporal correctness**, which requires replay and refinement evidence showing that durable hosting preserves semantic-core-visible BPMN behavior.
-
-The exact claim boundary is documented in [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md).
+A direct BPMN-to-Temporal translation risks turning SDK handlers, retries, scheduling, or replay constraints into accidental BPMN behavior. This project keeps semantic meaning in an explicit profile, Lean reference, and pure TypeScript transition system; Temporal hosts that system durably.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Standard[OMG BPMN 2.0.2] --> Profile[Versioned semantic profile]
-  CIB[CIB Seven oracle] --> Profile
-  Profile --> Lean[Lean reference semantics]
-  BPMN[BPMN XML] --> Source[Bounded source importer and executable IR]
-  Profile --> Source
-  Source --> SemanticCore
-  Profile --> SemanticCore[Pure TypeScript semantic core]
-  Lean --> Diff[Differential comparison]
-  CIB --> Diff
-  SemanticCore --> Diff
-  SemanticCore --> Adapter[Temporal adapter]
-  Adapter --> Refine[Refinement and replay checks]
-  SemanticCore --> Refine
+  BPMN[OMG BPMN 2.0.2] --> Review[Requirement and relationship review]
+  CIB[CIB Seven probe] --> Review
+  Review --> Profile[Versioned semantic profile]
+  Profile --> Lean[Lean reference interpreter]
+
+  XML[Exact BPMN XML] --> Import[Bounded source admission]
+  Import --> IR[Project-owned executable IR]
+  IR --> Core[Pure TypeScript semantic core]
+  Profile --> Core
+  Core --> Temporal[Temporal durability adapter]
+
+  CIB --> Diff[Differential comparison]
+  Lean --> Diff
+  Core --> Diff
+  Temporal --> Diff
+  Temporal --> Replay[Refinement and live replay]
 ```
 
-| Component | Responsibility | Explicit boundary |
-|---|---|---|
-| Semantic profile | Pin the standard interpretation, CIB release/configuration, supported features, observations, and known deviations | A profile is not an engine build or an informal compatibility promise |
-| BPMN source ingestion | Preserve exact bytes and identity, perform bounded structural import, normalize diagnostics, and compile admitted source to versioned project-owned IR | The private parser graph and CMOF-derived facts do not define execution behavior |
-| Lean reference interpreter | Give the selected profile executable operational meaning and support machine-checked properties | Lean does not automatically verify CIB, TypeScript, Temporal, parsers, databases, or networks |
-| Pure TypeScript semantic core | Implement the production semantic state transition independently and deterministically | It performs no I/O and depends on neither CIB Seven nor Temporal |
-| Temporal adapter | Persist semantic state, deliver inputs, schedule declared effects/timers, and survive replay | It may add hidden durable work but may not redefine BPMN behavior |
-| Assurance pipeline | Run neutral scenarios, compare canonical observations, retain regressions, and test adapter refinement | Finite testing supports bounded claims; it is not universal proof |
+CIB contributes twice: first as classified empirical input to the profile, then as the pinned behavioral oracle in differential tests. BPMN remains normative. CIB specificity and extensions are not mislabeled as deviations; every reviewed relationship is recorded in the prominent [CIB–BPMN register](docs/CIB-BPMN-RELATION.md).
 
-The pure semantic core is intentional. It prevents Temporal handler structure, Activity retries, Workflow replay, or SDK scheduling from silently becoming BPMN semantics while still allowing Temporal to provide durability.
+The strongest parts of the approach are:
 
-### BPMN ingestion and execution
+- explicit separation of BPMN source, executable IR, semantic runtime state, and Temporal hosting;
+- Lean as an executable semantic reference with reusable laws—not merely a model checker;
+- an independently implemented TypeScript semantic core;
+- CIB Seven as a pinned compatibility oracle, without copying its implementation;
+- differential testing plus Temporal refinement and replay testing;
+- small, evidence-closed semantic capsules instead of premature “full BPMN” claims.
 
-The target architecture is an interpreter/evaluator, not a BPMN-to-TypeScript code generator:
+## Interpreter, not code generator
+
+The primary execution architecture is a TypeScript interpreter/evaluator:
 
 ```text
-BPMN 2 XML
-  → source-preserving BPMN model
-  → validation and profile admission
-  → content-addressed executable IR (versioned data)
-  → TypeScript semantic core evaluation
-  → Temporal durability, messages, timers, and effects
+BPMN XML
+  → exact source identity and bounded structural import
+  → profile admission and executable IR data
+  → pure semantic-core transitions
+  → Temporal durability and effect hosting
 ```
 
-XML parsing and normalization happen outside deterministic Workflow execution. A generic Workflow hosts an immutable executable representation and the TypeScript semantic core advances its BPMN state. Generated TypeScript may later be useful as a derived diagnostic or optimization artifact, but it is not the semantic authority. The rationale and replay consequences are recorded in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md).
+One generic Workflow hosts admitted IR. The project does not generate an authoritative Workflow class for each BPMN model. This keeps source/profile identity inspectable, prevents generated SDK control flow from becoming semantics, and separates parser, semantic-core, and Worker evolution.
 
-The first bounded ingestion slice now implements this path for exactly one executable `None Start Event → User Task → None End Event` Process. `bpmn-moddle@10.0.0` is isolated in `@bpmn-lean/bpmn-source`; exact bytes, hash, encoding, normalized diagnostics, and a partial CMOF-derived manifest stay outside the pure core and Temporal Workflow bundle. Unsupported elements, non-UTF-8 declarations, parser warnings, and DOCTYPE input fail closed. General BPMN compilation, source locations, extension semantics, full metamodel generation, and deployment storage remain future work.
+Generated TypeScript may later be useful for diagnostics or optimization after equivalence evidence, but it is never the semantic authority by construction. The complete rationale is in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#interpreter-architecture).
 
-## Assurance pipeline
+## Why Lean
 
-Every semantic capsule is intended to travel through the same short feedback loop:
+Lean makes the selected operational meaning executable before it is duplicated in production code. It is most valuable when it turns a semantic risk into a reusable theorem or checked counterexample.
 
-```text
-BPMN/spec research + CIB probe
-                ↓
-profile decision + neutral scenario
-                ↓
-executable Lean semantics
-                ↓
-pure TypeScript semantic core
-                ↓
-Temporal adapter
-                ↓
-differential + refinement + replay checks
-                ↺
-classified, minimized disagreement
-```
+The current capsule proves that any mismatch in Process instance, BPMN element, or activation ordinal rejects User Task completion with exact state preservation. A nearby executable non-law demonstrates why matching only the BPMN element ID is insufficient. These results guard the identity mechanism rather than one serialized fixture.
 
-The systems compare canonical public consequences rather than internal data structures. Runtime-generated IDs, database rows, PVM execution counts, and Temporal Event History are not automatically part of the semantic contract.
+Lean does not automatically prove the parser, CIB, TypeScript, Temporal, database, or network. Those remain distinct evidence lanes. The current Lean emitter is content-identified but does not yet consume arbitrary pipeline IR; that correspondence gap is explicit in the [implementation map](docs/IMPLEMENTATION-MAP.md).
 
-## Current status
+## Current evidence
 
-Milestone 0 establishes the complete fast pipeline using the smallest useful external-wait scenario:
+The implemented capsule owns one exact BPMN model and three answer-free scenarios:
 
-```text
-none Start Event → User Task → none End Event
-```
+1. complete the exact active User Task occurrence;
+2. reject a completion with the wrong activation while preserving the active state;
+3. reject a stale completion after the Process has completed.
 
-| Surface | Current state |
-|---|---|
-| Planning and contracts | M0.0 through M0.6 complete; profile, scenario, observation, runner, comparison, replay, provenance, and feedback-budget contracts are executable |
-| BPMN sources | Official BPMN 2.0.2 PDF and machine-readable corpus ingested locally; exact source capture, security/encoding preflight, private `bpmn-moddle@10.0.0` import, normalized diagnostics, a checked partial CMOF manifest, and the first sequential compiler are implemented |
-| Lean | The sequential User Task interpreter derives the retained lifecycle trace and the interaction capsule’s successful, wrong-activation, and stale-completion traces; it proves exact completion, full task-occurrence mismatch rejection with state preservation, a wrong-activation corollary, and the element-only identity non-law |
-| CIB Seven | Pinned `v2.2.0` embedded runner deploys, starts, observes, completes, rejects wrong and stale task occurrences without state change, cleans every run, and exposes a diagnostic PVM projection through a persistent JSON-lines boundary |
-| TypeScript semantic core | The dependency-free sequential User Task semantic core consumes only validated project-owned IR, independently derives lifecycle, exact, wrong-activation, and stale-completion results, and rejects identity or topology mismatch |
-| Temporal adapter | A full local Temporal server hosts one Workflow loop around the semantic core; exact open-task Query and acknowledged completion Update preserve the core’s projection and command outcomes, duplicate logical commands are deduplicated, and committed Signal and Update histories replay |
-| Evidence | One prepared command compiles the exact BPMN source and batches four answer-free cases through one CIB engine, one Lean emitter, the semantic core, and eight isolated Temporal executions; every target agrees, retained CIB evidence agrees, seeded state and task-projection mutations are detected, four live and two committed histories replay together, cleanup is proven, and the warm budget holds |
+One pipeline command:
 
-The authoritative live checkpoint and next task are in [PLAN.md](docs/PLAN.md); exact implemented and absent surfaces are in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
+- admits and compiles the exact BPMN source;
+- runs all three scenarios through one pinned CIB Seven engine;
+- obtains all three results from the Lean interpreter;
+- evaluates the independent TypeScript semantic core;
+- executes two isolated Temporal Workflows per scenario;
+- requires exact four-target canonical agreement;
+- compares fresh CIB output with content-bound retained CIB evidence;
+- validates Query projections, Update outcomes, duplicate logical delivery, and cleanup;
+- injects activation `2` into an observed task and requires the comparator to identify the exact disagreement;
+- replays all three live Temporal histories before the clean in-memory server shuts down.
+
+The current pre-release contracts have one scalable representation each. Stable document kinds identify artifact roles, JSON Schema `$id` identifies the current wire schema, and semantic profile `id` identifies reviewed behavioral meaning. Prototype format branches and committed Temporal histories are deliberately absent until a durable release baseline is approved.
+
+Exact implemented and absent surfaces are maintained in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
 ## Quick start
 
-The current verification gate requires:
+Prerequisites:
 
-- Git;
-- `jq`;
-- `xmllint`;
-- `shasum`;
-- a Lean installation that honors the pinned [lean-toolchain](lean-toolchain), normally through `elan`.
-- Node `24.18.0`, selected through the root [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew `node@24` keg;
-- pnpm `11.17.0`, with dependencies installed by `./scripts/pnpm.sh install --frozen-lockfile`;
-- permission to download and execute the pinned Temporal CLI `v1.8.1` on the first Temporal test run; it is cached under the ignored `.cache/temporal-cli/` directory;
-- Homebrew Java 21 at `/opt/homebrew/opt/openjdk@21`, or `BPMN_JAVA_HOME` pointing to another Java 21 installation.
-
-The Node wrapper uses an already active exact nvm/asdf-compatible Node first and falls back to the Homebrew keg without changing shell configuration:
+- Git, `jq`, `xmllint`, and `shasum`;
+- Lean through `elan`, honoring [lean-toolchain](lean-toolchain);
+- Node `24.18.0`, selected through [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew fallback;
+- pnpm `11.17.0`;
+- Java 21, by default Homebrew `/opt/homebrew/opt/openjdk@21`;
+- permission for the first Temporal test to download pinned CLI `v1.8.1` into ignored `.cache/temporal-cli/` and run a local server.
 
 ```sh
 nvm install
 nvm use
 ./scripts/pnpm.sh install --frozen-lockfile
-```
-
-Run the maintained verification gate:
-
-```sh
 ./scripts/verify.sh
 ```
 
-The repository-local Maven wrapper downloads the approved Maven and Java dependencies on its first run. To run only the CIB oracle gate:
-
-```sh
-./scripts/test-cibseven-oracle.sh
-```
-
-Run the fast semantic gate (Lean plus TypeScript semantic core):
+Useful focused gates:
 
 ```sh
 ./scripts/pnpm.sh run test:semantic
-```
-
-Run only the BPMN source/CMOF boundary:
-
-```sh
 ./scripts/pnpm.sh run test:bpmn-source
-```
-
-Run the optional local MIWG import observation gate:
-
-```sh
-./scripts/pnpm.sh run test:miwg
-```
-
-Run the focused Temporal refinement and replay gate:
-
-```sh
+./scripts/test-cibseven-oracle.sh
 ./scripts/pnpm.sh run test:temporal
-```
-
-Run the complete fast pipeline:
-
-```sh
 ./scripts/pnpm.sh run test:pipeline
 ```
 
-Run the provisional semantic-representation spike separately:
-
-```sh
-lake build checkSemanticRepresentationSpike
-lake exe checkSemanticRepresentationSpike
-```
-
-The spike is a bounded architecture experiment, not part of the approved BPMN semantic authority.
+The complete gate matrix and evidence boundaries are in [TESTING.md](docs/TESTING.md).
 
 ## Repository guide
 
 ```text
-BpmnSemantics/       Lean contracts, executable semantic capsules, and isolated experiments
-contracts/           Language-neutral profile, scenario, and canonical-result schemas
-docs/                Architecture, plans, research, testing, and source provenance
-packages/            BPMN source importer, TypeScript semantic core, differential comparator, and Temporal adapter
-profiles/            Versioned semantic-profile artifacts
-runners/             Persistent external semantic-oracle runners
-scenarios/           Neutral BPMN models, stimuli, and observation requests
-scripts/             Maintained verification entry points
+BpmnSemantics/       Lean semantic definitions, laws, conformance witnesses, and isolated experiments
+contracts/           Current language-neutral JSON Schemas
+docs/                Architecture, capsules, research, experiments, testing, provenance, and plan
+packages/            BPMN source boundary, TypeScript semantic core, comparator, and Temporal adapter
+profiles/            Reviewed semantic-profile artifacts
+runners/             Pinned external semantic-oracle runners
+scenarios/           Answer-free BPMN scenarios and separate content-bound evidence
+scripts/             Maintained verification and infrastructure guards
 ```
-
-Start with the [documentation registry](docs/README.md). Common routes are:
 
 | Need | Read |
 |---|---|
-| Follow the implemented system end to end | [End-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) |
-| Understand the mission and authority boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
-| Resume implementation | [PLAN.md](docs/PLAN.md) and [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
-| Understand the first full-pipeline milestone | [MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md) |
-| Review the active semantic contract | [User Task interaction capsule](docs/capsules/USER-TASK-INTERACTION.md) |
-| Change a shared wire format | [Shared wire contracts](contracts/README.md) |
-| Understand BPMN, CIB PVM, fUML/PSSM, or Temporal research | [Research index](docs/research/README.md) |
-| Review provisional architecture discriminators | [Experiment index](docs/experiments/README.md) |
-| Run the correct assurance gate | [TESTING.md](docs/TESTING.md) |
-| Locate pinned external sources | [SOURCES.md](docs/SOURCES.md) |
+| Understand the complete MVP | [MVP-WALKTHROUGH.md](docs/MVP-WALKTHROUGH.md) |
+| Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
+| See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
+| Resume the next work | [PLAN.md](docs/PLAN.md) |
+| Review the active semantic meaning | [User Task interaction capsule](docs/capsules/USER-TASK-INTERACTION.md) |
+| Understand CIB relative to BPMN | [CIB-BPMN-RELATION.md](docs/CIB-BPMN-RELATION.md) |
+| Navigate all maintained documentation | [Documentation registry](docs/README.md) |
 
-## Design principles
+## Next
 
-- Treat BPMN as the normative standard and CIB Seven as a versioned behavioral oracle.
-- Compile source-preserving BPMN into an explicit executable semantic representation.
-- Keep shared definitions separate from per-instance runtime state.
-- Keep Lean, the semantic core, CIB Seven, and Temporal independently implemented.
-- Make time, scheduler choices, multiplicity, scope, enabled inputs, and command outcomes explicit.
-- Separate BPMN-visible retries and effects from Temporal transport behavior.
-- Prefer small separating examples and classified counterexamples over broad unexamined implementation.
-- Make no public claim larger than the profile and evidence that support it.
+The next proposed capsule is a parallel fork with two User Task waits and a parallel join. It is intentionally structurally different: it must distinguish incoming-flow provenance from arrival count, preserve token multiplicity, demonstrate completion-order independence, and close the current Lean input-binding gap before any general IR is adopted.
 
-## Roadmap
-
-- [x] M0.0 — durable fast-pipeline plan
-- [x] M0.1 — neutral scenario and observation contracts
-- [x] M0.2 — calibrated embedded CIB Seven runner
-- [x] M0.3 — executable Lean semantic capsule
-- [x] M0.4 — independent pure TypeScript semantic core
-- [x] M0.5 — Temporal adapter and retained-history replay
-- [x] M0.6 — fast differential/refinement gate with injected disagreement
-- [x] First ingestion slice — exact BPMN source → versioned sequential IR → core → Temporal → differential gate
-- [x] First interaction slice — exact User Task Query/Update → Lean/core/CIB/Temporal differential, duplicate, mutation, and retained-replay gate
-
-Later milestones expand BPMN coverage one semantic capsule at a time; they do not begin with a broad engine rewrite.
+The capsule is not yet approved for implementation. Its required research, CIB probe, competing accounts, witnesses, and exact resume point are in [PLAN.md](docs/PLAN.md).
 
 ## Contributing
 
-Read [CLAUDE.md](CLAUDE.md) or its equivalent [AGENTS.md](AGENTS.md) before changing the project. The shared guide defines authority boundaries, mandatory research routes, TDD expectations, documentation ownership, dependency approval, source-checkout discipline, verification, and Git conventions.
+Read [CLAUDE.md](CLAUDE.md) or its symlink [AGENTS.md](AGENTS.md) before changing the project. They define authority boundaries, TDD and Clean Code expectations, documentation ownership, dependency approval, pre-release evolution policy, verification, and Git delivery rules.
 
-Semantic changes begin with the smallest source-grounded separating case and end with updated evidence and an honest implementation boundary. Dependencies and profile-expanding decisions require explicit approval.
+Semantic changes begin with the smallest source-grounded separating witness and end with an honest claim boundary, independent evidence, a meaningful mutation, and an epistemic-closure review.
 
 ## License
 
 Project-authored code and documentation are licensed under the [MIT License](LICENSE).
 
-The license does not relicense external standards, fixtures, reference repositories, or locally ignored research material. Those artifacts retain their own license and provenance boundaries.
+External standards, fixtures, reference repositories, and locally ignored research material retain their own licenses and provenance. See [SOURCES.md](docs/SOURCES.md).

@@ -25,30 +25,34 @@ example : ScenarioOutcome.infrastructureFailure ≠ .harnessFailure := by
   decide
 
 def contractScenario : Scenario :=
-  { schemaVersion := "0.1.0"
-    traceSchemaVersion := "0.1.0"
-    id := ⟨"m0-sequential-user-task"⟩
-    profile := ⟨"cibseven-2.2.0-spike.1"⟩
+  { kind := .scenario
+    id := ⟨"user-task-discovery-completion"⟩
+    profile := ⟨"cibseven-2.2.0-user-task-draft"⟩
     bpmn :=
-      { id := ⟨"m0-sequential-user-task-process"⟩
-        relativePath := "scenarios/m0-sequential-user-task/process.bpmn"
-        sha256 := "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295" }
+      { id := ⟨"sequential-user-task-process"⟩
+        relativePath := "scenarios/user-task-discovery-completion/process.bpmn"
+        sha256 := "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
     stimuli :=
       [ .startProcess ⟨"start-process"⟩ ⟨"Process_SequentialUserTask"⟩ ⟨"Instance_1"⟩
-      , .completeUserTask ⟨"complete-user-task"⟩ ⟨"UserTask_Approve"⟩ ]
+      , .completeUserTaskInstance ⟨"complete-user-task-instance"⟩
+          { processInstanceId := ⟨"Instance_1"⟩
+            elementId := ⟨"UserTask_Approve"⟩
+            activation := 1 } ]
     observations :=
       [ .deployment
       , .commandResults
       , .processStatus
       , .activeWaits
-      , .enabledStimuli
+      , .openUserTasks
+      , .enabledInteractions
       , .logicalTime ]
     provenance :=
       { normativeRefs := ["BPMN 2.0.2 §13.2", "BPMN 2.0.2 §13.3"]
         cibRevision := "834a9874760de8a0107f7c1b32806e37f17fb017"
         cibRefs :=
-          [ "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/UserTaskTest.java"
-          , "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/TaskAssigneeTest.java" ] } }
+          [ "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/UserTaskTest.java#testTaskPropertiesNotNull"
+          , "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/TaskAssigneeTest.java#testTaskAssignee"
+          , "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId" ] } }
 
 example : contractScenario.stimuli.length = 2 := rfl
 

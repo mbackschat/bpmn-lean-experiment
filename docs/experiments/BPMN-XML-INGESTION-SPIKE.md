@@ -15,7 +15,7 @@ The spike supports account 2 and rejects account 1.
 
 The probe used the exact published [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle) tarball with integrity `sha512-vXePD5jkatcILmM3zwJG/m6IIHIghTGB7WvgcdEraEw8E8VdJHrTgrvBUhbzqaXJpnsGQz15QS936xeBY6l9aA==`. Its self-contained published UMD bundle was loaded read-only from a temporary directory, so the project dependency graph and lockfile were not changed.
 
-Inputs were the project-authored [Milestone 0 BPMN fixture](../../scenarios/m0-sequential-user-task/process.bpmn), all 21 reference models from the pinned BPMN MIWG checkout at `cb2629519cee6280ab521f99dc46a9815a221a35`, one upstream invalid-reference fixture, and three project-authored in-memory DOCTYPE/entity witnesses.
+Inputs were the project-authored [sequential User Task BPMN fixture](../../scenarios/user-task-discovery-completion/process.bpmn), all 21 reference models from the pinned BPMN MIWG checkout at `cb2629519cee6280ab521f99dc46a9815a221a35`, one upstream invalid-reference fixture, and three project-authored in-memory DOCTYPE/entity witnesses.
 
 This is interchange and parser evidence only. It does not establish schema validity, executable admission, BPMN behavior, CIB compatibility, Temporal refinement, or conformance.
 

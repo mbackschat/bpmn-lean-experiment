@@ -9,15 +9,16 @@ A capsule does not own implementation sequencing, live completion status, test p
 Every new capsule records:
 
 1. its exact question, status, normative clauses, profile decisions, and exclusions;
-2. stable identifiers for each material semantic rule;
-3. the smallest separating positive and negative witnesses;
-4. source/admission, definition, runtime, command, stable-state, and observation distinctions;
-5. a declarative Lean transition relation and an executable evaluator for every new runtime-transition family;
-6. a checked soundness bridge from every evaluator-produced transition to the relation;
-7. useful laws with exact hypotheses and the nearest plausible checked non-law;
-8. a rule-to-evidence matrix that keeps BPMN/profile, Lean, CIB, TypeScript, Temporal, negative-witness, and mutation claims separate;
-9. an inventory of runtime-only or synthetic constructs, including derivation, ownership, public projection, and lifecycle invariants;
-10. exact unsupported claims, common-mode risks, and versioning consequences.
+2. the applicable normative-agreement, permitted-operational-detail, interpretation, extension, configuration, limitation, or deviation classification from the [CIB–BPMN relationship register](../CIB-BPMN-RELATION.md);
+3. stable identifiers for each material semantic rule;
+4. the smallest separating positive and negative witnesses;
+5. source/admission, definition, runtime, command, stable-state, and observation distinctions;
+6. a declarative Lean transition relation and an executable evaluator for every new runtime-transition family;
+7. a checked soundness bridge from every evaluator-produced transition to the relation;
+8. useful laws with exact hypotheses and the nearest plausible checked non-law;
+9. a rule-to-evidence matrix that keeps BPMN/profile, Lean, CIB, TypeScript, Temporal, negative-witness, and mutation claims separate;
+10. an inventory of runtime-only or synthetic constructs, including derivation, ownership, public projection, and lifecycle invariants;
+11. exact unsupported claims, common-mode risks, and versioning consequences.
 
 Completeness, determinism, liveness, fairness, compiler correspondence, TypeScript correspondence, and Temporal refinement are never implied by evaluator soundness. Record and check each only when its exact scope is meaningful.
 

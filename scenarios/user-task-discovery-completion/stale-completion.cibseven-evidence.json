@@ -1,23 +1,23 @@
 {
-  "schemaVersion": "0.1.0",
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
-    "id": "m1-user-task-stale-completion",
-    "sha256": "c9ffb6bfd5249e17ecc43e9b3f2bb450fcb5ad007f5e580e8e3cf0e374c88f34"
+    "id": "user-task-stale-completion",
+    "sha256": "26f82ab664681f5505276cf2f9abc62e2075502aa8c86249efc1e7e59f393a70"
   },
-  "profile": "cibseven-2.2.0-spike.2",
-  "traceSchemaVersion": "0.2.0",
+  "profile": {
+    "id": "cibseven-2.2.0-user-task-draft",
+    "sha256": "dd6553dd66793ad5dfef2420f545443b7b0b2c645199f020c6993e2b8f62bcae"
+  },
   "producer": {
     "engine": "CIB Seven",
     "engineVersion": "2.2.0",
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
-    "runner": "cibseven-oracle@0.1.0",
+    "runner": "cibseven-oracle",
     "java": "21",
     "database": "H2 2.3.232"
   },
   "projection": {
-    "id": "canonical-scenario-result",
-    "version": "0.2.0"
+    "id": "canonical-scenario-result"
   },
   "result": {
     "outcome": {

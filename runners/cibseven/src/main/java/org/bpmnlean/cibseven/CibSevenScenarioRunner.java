@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
 import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
@@ -32,7 +31,6 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
-import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Diagnostics;
 import org.bpmnlean.cibseven.ScenarioProtocol.EnabledInteraction;
@@ -45,7 +43,6 @@ import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StartProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.Stimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskInstanceId;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
@@ -65,15 +62,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private static final Object PROCESS_GLOBAL_CLOCK_LOCK = new Object();
   private static final String CIBSEVEN_VERSION = "2.2.0";
   private static final String H2_VERSION = "2.3.232";
-  private static final EnumSet<ObservationKind> M0_OBSERVATIONS =
-      EnumSet.of(
-          ObservationKind.DEPLOYMENT,
-          ObservationKind.COMMAND_RESULTS,
-          ObservationKind.PROCESS_STATUS,
-          ObservationKind.ACTIVE_WAITS,
-          ObservationKind.ENABLED_STIMULI,
-          ObservationKind.LOGICAL_TIME);
-  private static final EnumSet<ObservationKind> USER_TASK_INTERACTION_OBSERVATIONS =
+  private static final EnumSet<ObservationKind> SUPPORTED_OBSERVATIONS =
       EnumSet.of(
           ObservationKind.DEPLOYMENT,
           ObservationKind.COMMAND_RESULTS,
@@ -181,9 +170,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           positiveElapsedSince(definitionProjectionStartedAt);
 
       stimulusLoop:
-      for (var index = 0; index < scenario.stimuli().size(); index++) {
-        var stimulus = scenario.stimuli().get(index);
-        var remaining = scenario.stimuli().subList(index + 1, scenario.stimuli().size());
+      for (var stimulus : scenario.stimuli()) {
         switch (stimulus) {
           case StartProcessStimulus start -> {
             var startedAt = System.nanoTime();
@@ -195,24 +182,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(new CommandObservation(start.commandId(), COMMITTED));
 
             var projectionStartedAt = System.nanoTime();
-            trace.add(observeState(scenario, engineInstanceId, stableInstanceId, remaining));
+            trace.add(observeState(engineInstanceId, stableInstanceId));
             timings.waitProjectionNanos = positiveElapsedSince(projectionStartedAt);
-          }
-          case CompleteUserTaskStimulus complete -> {
-            requireStarted(engineInstanceId, stableInstanceId);
-            var completeStartedAt = System.nanoTime();
-            var outcome = completeUserTask(engineInstanceId, complete);
-            timings.completeNanos = positiveElapsedSince(completeStartedAt);
-            trace.add(new CommandObservation(complete.commandId(), outcome));
-
-            var projectionStartedAt = System.nanoTime();
-            trace.add(observeState(scenario, engineInstanceId, stableInstanceId, remaining));
-            timings.completionProjectionNanos =
-                positiveElapsedSince(projectionStartedAt);
-            if (outcome == REJECTED) {
-              scenarioOutcome = REJECTED;
-              break stimulusLoop;
-            }
           }
           case CompleteUserTaskInstanceStimulus complete -> {
             requireStarted(engineInstanceId, stableInstanceId);
@@ -223,7 +194,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(new CommandObservation(complete.commandId(), outcome));
 
             var projectionStartedAt = System.nanoTime();
-            trace.add(observeState(scenario, engineInstanceId, stableInstanceId, remaining));
+            trace.add(observeState(engineInstanceId, stableInstanceId));
             timings.completionProjectionNanos =
                 positiveElapsedSince(projectionStartedAt);
             if (outcome == REJECTED) {
@@ -250,7 +221,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     }
 
     return new ScenarioResult(
-        scenario.traceSchemaVersion(),
+        ScenarioProtocol.SCENARIO_RESULT_KIND,
         scenario.id(),
         new SemanticOutcome(scenarioOutcome),
         trace,
@@ -276,32 +247,12 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private void validateScenario(ScenarioDefinition scenario) {
     Objects.requireNonNull(scenario, "scenario");
-    var isMilestoneZero =
-        ScenarioProtocol.SCHEMA_VERSION.equals(scenario.schemaVersion())
-            && ScenarioProtocol.SUPPORTED_PROFILE.equals(scenario.profile());
-    var isUserTaskInteraction =
-        ScenarioProtocol.USER_TASK_INTERACTION_SCHEMA_VERSION.equals(
-                scenario.schemaVersion())
-            && ScenarioProtocol.USER_TASK_INTERACTION_PROFILE.equals(scenario.profile());
-    if (!isMilestoneZero && !isUserTaskInteraction) {
-      throw new IllegalArgumentException(
-          "Unsupported scenario/profile pair: "
-              + scenario.schemaVersion()
-              + "/"
-              + scenario.profile());
+    if (!ScenarioProtocol.SCENARIO_KIND.equals(scenario.kind())
+        || scenario.profile().isBlank()) {
+      throw new IllegalArgumentException("Scenario kind and profile identity are required");
     }
-    var expectedTraceSchemaVersion =
-        isMilestoneZero
-            ? ScenarioProtocol.TRACE_SCHEMA_VERSION
-            : ScenarioProtocol.USER_TASK_INTERACTION_TRACE_SCHEMA_VERSION;
-    if (!scenario.traceSchemaVersion().equals(expectedTraceSchemaVersion)) {
-      throw new IllegalArgumentException(
-          "Unsupported trace schema version: " + scenario.traceSchemaVersion());
-    }
-    var expectedObservations =
-        isMilestoneZero ? M0_OBSERVATIONS : USER_TASK_INTERACTION_OBSERVATIONS;
-    if (scenario.observations().size() != expectedObservations.size()
-        || !EnumSet.copyOf(scenario.observations()).equals(expectedObservations)) {
+    if (scenario.observations().size() != SUPPORTED_OBSERVATIONS.size()
+        || !EnumSet.copyOf(scenario.observations()).equals(SUPPORTED_OBSERVATIONS)) {
       throw new IllegalArgumentException(
           "Scenario requires its canonical observation kinds exactly once");
     }
@@ -309,36 +260,17 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
         !scenario.stimuli().isEmpty()
             && scenario.stimuli().getFirst() instanceof StartProcessStimulus;
     var hasExpectedCompletions =
-        isMilestoneZero
-            ? scenario.stimuli().size() == 2
-                && scenario.stimuli().get(1) instanceof CompleteUserTaskStimulus
-            : scenario.stimuli().size() >= 2
-                && scenario.stimuli().subList(1, scenario.stimuli().size()).stream()
-                    .allMatch(CompleteUserTaskInstanceStimulus.class::isInstance);
+        startsOnce
+            && scenario.stimuli().subList(1, scenario.stimuli().size()).stream()
+                .allMatch(CompleteUserTaskInstanceStimulus.class::isInstance);
     if (!startsOnce || !hasExpectedCompletions) {
       throw new IllegalArgumentException(
-          "Scenario supports startProcess followed by its profile completion commands");
+          "Scenario supports startProcess followed by task-occurrence completion commands");
     }
   }
 
   private StartProcessStimulus startStimulus(ScenarioDefinition scenario) {
     return (StartProcessStimulus) scenario.stimuli().getFirst();
-  }
-
-  private CommandOutcome completeUserTask(
-      String engineInstanceId, CompleteUserTaskStimulus complete) {
-    var tasks =
-        processEngine
-            .getTaskService()
-            .createTaskQuery()
-            .processInstanceId(engineInstanceId)
-            .taskDefinitionKey(complete.elementId())
-            .list();
-    if (tasks.size() != 1) {
-      return REJECTED;
-    }
-    processEngine.getTaskService().complete(tasks.getFirst().getId());
-    return COMMITTED;
   }
 
   private CommandOutcome completeUserTaskInstance(
@@ -365,10 +297,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   }
 
   private StateObservation observeState(
-      ScenarioDefinition scenario,
       String engineInstanceId,
-      String stableInstanceId,
-      List<Stimulus> remainingStimuli) {
+      String stableInstanceId) {
     var isRunning =
         processEngine
                 .getRuntimeService()
@@ -385,38 +315,18 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 .list()
             : List.<Task>of();
     var activeWaits = observeActiveWaits(tasks);
-    var openUserTasks =
-        usesTaskProjection(scenario)
-            ? observeOpenUserTasks(stableInstanceId, tasks)
-            : null;
-    var activeElements =
-        activeWaits.stream().map(ActiveWait::elementId).collect(Collectors.toSet());
-    var enabledStimuli =
-        usesTaskProjection(scenario)
-            ? null
-            : remainingStimuli.stream()
-                .filter(
-                    stimulus -> switch (stimulus) {
-                      case CompleteUserTaskStimulus complete ->
-                          activeElements.contains(complete.elementId());
-                      case CompleteUserTaskInstanceStimulus ignored -> false;
-                      case StartProcessStimulus ignored -> false;
-                    })
-                .toList();
+    var openUserTasks = observeOpenUserTasks(stableInstanceId, tasks);
     var enabledInteractions =
-        openUserTasks == null
-            ? null
-            : openUserTasks.stream()
-                .<EnabledInteraction>map(
-                    task -> new CompleteUserTaskInstanceInteraction(task.id()))
-                .toList();
+        openUserTasks.stream()
+            .<EnabledInteraction>map(
+                task -> new CompleteUserTaskInstanceInteraction(task.id()))
+            .toList();
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
     return new StateObservation(
         stableInstanceId,
         isRunning ? RUNNING : COMPLETED,
         activeWaits,
         openUserTasks,
-        enabledStimuli,
         enabledInteractions,
         logicalTimeMs);
   }
@@ -450,11 +360,6 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     task.getName(),
                     ACTIVE))
         .toList();
-  }
-
-  private static boolean usesTaskProjection(ScenarioDefinition scenario) {
-    return ScenarioProtocol.USER_TASK_INTERACTION_SCHEMA_VERSION.equals(
-        scenario.schemaVersion());
   }
 
   private CleanupProjection observeCleanup() {

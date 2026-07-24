@@ -2,7 +2,7 @@
 
 **Status:** Complete
 
-This document owns the durable design, work breakdown, acceptance criteria, and resume protocol for the first end-to-end milestone. Immediate sequencing and the exact resume point belong in [PLAN.md](PLAN.md); implemented facts belong in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This document preserves the design, work breakdown, acceptance criteria, and decisions of the first end-to-end milestone. Its prototype-era artifact/history compatibility details are historical and have been superseded by the scalable pre-release policy in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#pre-release-evolution-policy). Immediate sequencing belongs in [PLAN.md](PLAN.md); current implemented facts belong in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 ## Objective
 
@@ -172,12 +172,12 @@ Each completed package ends with updated [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP
 | M0.2 | CIB calibration runner | Pinned embedded CIB deploy/start/wait/complete/cleanup probe emits canonical trace and reports timings | `test(cib): calibrate sequential user-task oracle` |
 | M0.3 | Lean semantic capsule | Lean interpreter produces the calibrated trace and proves the first lifecycle invariants | `feat(lean): execute sequential user-task semantics` |
 | M0.4 | Pure TypeScript semantic core | Independent semantic core matches Lean and CIB through the shared scenario without CIB or Temporal dependencies | `feat(core): implement sequential user-task semantics` |
-| M0.5 | Temporal adapter | Workflow adapter hosts the semantic core, emits the same canonical trace, and replays retained history | `feat(temporal): run sequential user-task workflow` |
+| M0.5 | Temporal adapter | Workflow adapter hosts the semantic core, emits the same canonical trace, and demonstrated replay at the milestone checkpoint | `feat(temporal): run sequential user-task workflow` |
 | M0.6 | Fast differential gate | One command runs targets concurrently, classifies an injected disagreement, reports phase timings, and meets the budgets | `test(pipeline): verify fast end-to-end differential` |
 
 Package order protects calibration and independence. The repository should still gain the runner skeleton early: M0.1 defines it, M0.2 exercises one external runner, and every following package plugs into the same orchestrator boundary.
 
-M0.0 through M0.6 are complete. The public `test:pipeline` gate builds the target boundaries, concurrently runs CIB Seven, Lean, the semantic core, and two isolated Temporal executions, compares canonical results, classifies a seeded disagreement, replays live and retained histories, records provenance and phase timings, proves cleanup, and enforces the budgets.
+M0.0 through M0.6 are complete. The current `test:pipeline` gate builds the target boundaries, concurrently runs CIB Seven, Lean, the semantic core, and two isolated Temporal executions per current witness, compares canonical results, classifies a seeded disagreement, replays live histories on disposable state, records provenance and phase timings, proves cleanup, and enforces the budgets.
 
 ## Dependency decisions
 
@@ -249,7 +249,7 @@ The exact resume point must name the current package, last verified command, nex
 | 2026-07-24 | Adopt Node 24.18.0, pnpm 11.17.0, TypeScript 7.0.2, and built-in `node:test` for M0.4 | Approved and implemented; nvm/asdf pins and a Homebrew fallback coexist, the compiler graph is Apache-2.0, and the semantic core has no runtime package dependency |
 | 2026-07-24 | Name the independent TypeScript component “semantic core” and its public transition `applyStimulus` | Approved; “semantic transition system” is the formal description, while the preserved handoff’s “reducer” term remains a historical alias |
 | 2026-07-24 | Interpret/evaluate versioned executable BPMN IR data in TypeScript rather than generate authoritative TypeScript from each BPMN model | Approved as the production architecture; generated source may be a derived diagnostic or optimization only after equivalence and replay evidence |
-| 2026-07-24 | Adopt the exact Temporal SDK `1.21.0` package set and CLI `v1.8.1` full local server for M0.5 | Approved and implemented; one Workflow loop owns semantic mutation, Signal is only the bounded runner transport, Query is diagnostic, and live plus retained histories replay |
+| 2026-07-24 | Adopt the exact Temporal SDK `1.21.0` package set and CLI `v1.8.1` full local server for M0.5 | Historical milestone decision: one Workflow loop owned semantic mutation and live plus retained histories replayed; the later User Task capsule adopted Query/Update and the pre-release scalability sweep removed the obsolete Signal/history compatibility paths |
 | 2026-07-24 | Deny optional `@swc/core` and protobufjs install scripts and isolate Temporal’s TypeScript 7 declaration incompatibility with adapter-only `skipLibCheck` | Implemented; the native SWC binding works without its fallback script, project source remains strict, and the semantic core retains full library checking |
 | 2026-07-24 | Keep the differential comparator pure and classify the first exact-result divergence without target-specific repairs or majority voting | Implemented; the CIB result is the declared reference only for the draft compatibility profile, and a seeded `trace[2].status` mutation is rejected |
 | 2026-07-24 | Reuse Lean’s built-in JSON support and Surefire’s approved CIB classpath instead of adding pipeline dependencies | Implemented; the Lean boundary is a capsule-specific one-way emitter and the CIB bridge remains test scope |

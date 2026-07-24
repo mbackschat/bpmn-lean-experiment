@@ -1,5 +1,4 @@
 import {
-  BpmnExecutableIrKind,
   CanonicalObservationKind,
   CommandOutcome,
   ScenarioOutcomeKind,
@@ -25,25 +24,19 @@ import {
   allHandlersFinished,
   condition,
   defineQuery,
-  defineSignal,
   defineUpdate,
-  patched,
   setHandler,
 } from "@temporalio/workflow";
 
 import {
   bpmnCompleteUserTaskUpdateName,
   bpmnOpenUserTasksQueryName,
-  bpmnStimulusSignalName,
   bpmnTraceQueryName,
 } from "./contracts.js";
 import type {
   BpmnCompleteUserTaskUpdateArguments,
-  BpmnStimulusSignalArguments,
 } from "./contracts.js";
 
-export const bpmnStimulusSignal =
-  defineSignal<BpmnStimulusSignalArguments>(bpmnStimulusSignalName);
 export const bpmnTraceQuery =
   defineQuery<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName);
 export const bpmnOpenUserTasksQuery =
@@ -60,9 +53,8 @@ type CommandResultLedgerEntry = Readonly<{
 
 export async function runBpmnScenario(
   scenario: Scenario,
-  executableIrInput?: SequentialUserTaskExecutableIr,
+  executableIr: SequentialUserTaskExecutableIr,
 ): Promise<ScenarioResult> {
-  const executableIr = resolveExecutableIr(scenario, executableIrInput);
   const deployment = deployScenario(scenario, executableIr);
   const trace: CanonicalObservation[] = [deployment.observation];
   const pendingStimuli: Stimulus[] = [];
@@ -71,9 +63,6 @@ export async function runBpmnScenario(
   let semanticLoopFinished = false;
 
   // tag::temporal-semantic-boundary[]
-  setHandler(bpmnStimulusSignal, (stimulus) => {
-    enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
-  });
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
     bpmnOpenUserTasksQuery,
@@ -141,7 +130,6 @@ export async function runBpmnScenario(
       executableIr,
       state,
       stimulus,
-      scenario.stimuli.slice(stimulusIndex + 1),
     );
     recordCommandOutcome(commandResults, stimulus, step.observations);
     switch (step.kind) {
@@ -209,12 +197,6 @@ function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.commandId === right.commandId &&
         left.processId === right.processId &&
         left.instanceId === right.instanceId
-      );
-    case StimulusKind.CompleteUserTask:
-      return (
-        right.kind === StimulusKind.CompleteUserTask &&
-        left.commandId === right.commandId &&
-        left.elementId === right.elementId
       );
     case StimulusKind.CompleteUserTaskInstance:
       return (
@@ -309,49 +291,4 @@ function isNonEmptyString(value: unknown): value is string {
 
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported Temporal adapter variant: ${String(value)}`);
-}
-
-function resolveExecutableIr(
-  scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr | undefined,
-): SequentialUserTaskExecutableIr {
-  const requiresExecutableIr = patched("bpmn-source-executable-ir-v1");
-  if (executableIr !== undefined) {
-    return executableIr;
-  }
-  if (requiresExecutableIr) {
-    throw new TypeError("Executable IR is required for new Workflow histories");
-  }
-  return retainedM0ExecutableIr(scenario);
-}
-
-function retainedM0ExecutableIr(
-  scenario: Scenario,
-): SequentialUserTaskExecutableIr {
-  return {
-    schemaVersion: "0.1.0",
-    kind: BpmnExecutableIrKind.SequentialUserTask,
-    identity: {
-      compiler: "bpmn-source-sequential-user-task@0.1.0",
-      semanticProfile: scenario.profile,
-      sourceId: scenario.bpmn.id,
-      sourceSha256: scenario.bpmn.sha256,
-    },
-    processId: "Process_SequentialUserTask",
-    startEventId: "StartEvent_1",
-    userTaskId: "UserTask_Approve",
-    endEventId: "EndEvent_1",
-    sequenceFlows: [
-      {
-        id: "Flow_StartToTask",
-        sourceId: "StartEvent_1",
-        targetId: "UserTask_Approve",
-      },
-      {
-        id: "Flow_TaskToEnd",
-        sourceId: "UserTask_Approve",
-        targetId: "EndEvent_1",
-      },
-    ],
-  };
 }

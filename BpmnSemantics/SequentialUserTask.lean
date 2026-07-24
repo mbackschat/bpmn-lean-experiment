@@ -1,6 +1,6 @@
 import BpmnSemantics.Scenario
 
-/-! # BpmnSemantics.SequentialUserTask — Milestone 0 executable semantics
+/-! # BpmnSemantics.SequentialUserTask — sequential User Task executable semantics
 
 This module is the production Lean account for exactly one semantic capsule: a None Start Event followed by one User Task and one None End Event. It is deliberately not a general BPMN intermediate representation.
 
@@ -25,7 +25,7 @@ structure Model where
   endEventId : SemanticId
   deriving Repr, DecidableEq
 
-/-- Compatibility accessor for the retained Milestone 0 lifecycle account. -/
+/-- Stable accessor used by semantic rules and reusable laws. -/
 def Model.userTaskId (definition : Model) : SemanticId :=
   definition.userTask.id
 
@@ -190,13 +190,6 @@ private def admit (definition : Model) (state : RuntimeState)
           microtrace := [] }
       else
         { outcome := .rejected, state, microtrace := [] }
-  | .completeUserTask _ elementId, .waitingUserTask instanceId activation =>
-      if elementId = definition.userTaskId then
-        { outcome := .committed
-          state := { state with control := .leavingUserTask instanceId activation }
-          microtrace := [.userTaskWaitCompleted definition.userTaskId] }
-      else
-        { outcome := .rejected, state, microtrace := [] }
   | .completeUserTaskInstance _ taskId, .waitingUserTask instanceId activation =>
       if taskId.processInstanceId = instanceId ∧
           taskId.elementId = definition.userTaskId ∧
@@ -242,23 +235,9 @@ def applyStimulus (fuel : Nat) (definition : Model) (state : RuntimeState)
 
 private def commandId : Stimulus → SemanticId
   | .startProcess commandId _ _ => commandId
-  | .completeUserTask commandId _ => commandId
   | .completeUserTaskInstance commandId _ => commandId
 
 private def internalClosureLimit : Nat := 4
-
-/-- Projection versions keep the retained lifecycle trace separate from current semantics. -/
-private inductive ProjectionSchema where
-  | retainedLifecycle
-  | userTaskInteraction
-
-private def enabledCompletions (definition : Model) (stimuli : List Stimulus) :
-    List Stimulus :=
-  stimuli.filter fun stimulus =>
-    match stimulus with
-    | .completeUserTask _ elementId => decide (elementId = definition.userTaskId)
-    | .completeUserTaskInstance _ _ => false
-    | .startProcess _ _ _ => false
 
 private def userTaskInstanceId (definition : Model) (instanceId : SemanticId)
     (activation : Nat) : UserTaskInstanceId :=
@@ -266,59 +245,32 @@ private def userTaskInstanceId (definition : Model) (instanceId : SemanticId)
     elementId := definition.userTaskId
     activation }
 
-private def observeStableState (projection : ProjectionSchema)
-    (definition : Model) (state : RuntimeState)
-    (remainingStimuli : List Stimulus) : Option StateObservation :=
+private def observeStableState (definition : Model) (state : RuntimeState) :
+    Option StateObservation :=
   match state.control with
   | .waitingUserTask instanceId activation =>
       let taskId := userTaskInstanceId definition instanceId activation
-      let activeWaits :=
-        [ { elementId := definition.userTaskId
-            kind := .userTask
-            multiplicity := 1 } ]
-      match projection with
-      | .retainedLifecycle =>
-          some
-            { instanceId
-              status := .running
-              activeWaits
-              openUserTasks := none
-              enabledStimuli := some (enabledCompletions definition remainingStimuli)
-              enabledInteractions := none
-              logicalTimeMs := state.logicalTimeMs }
-      | .userTaskInteraction =>
-          some
-            { instanceId
-              status := .running
-              activeWaits
-              openUserTasks :=
-                some
-                  [ { id := taskId
-                      name := definition.userTask.name
-                      state := .active } ]
-              enabledStimuli := none
-              enabledInteractions := some [.completeUserTaskInstance taskId]
-              logicalTimeMs := state.logicalTimeMs }
+      some
+        { instanceId
+          status := .running
+          activeWaits :=
+            [ { elementId := definition.userTaskId
+                kind := .userTask
+                multiplicity := 1 } ]
+          openUserTasks :=
+            [ { id := taskId
+                name := definition.userTask.name
+                state := .active } ]
+          enabledInteractions := [.completeUserTaskInstance taskId]
+          logicalTimeMs := state.logicalTimeMs }
   | .completed instanceId =>
-      match projection with
-      | .retainedLifecycle =>
-          some
-            { instanceId
-              status := .completed
-              activeWaits := []
-              openUserTasks := none
-              enabledStimuli := some []
-              enabledInteractions := none
-              logicalTimeMs := state.logicalTimeMs }
-      | .userTaskInteraction =>
-          some
-            { instanceId
-              status := .completed
-              activeWaits := []
-              openUserTasks := some []
-              enabledStimuli := none
-              enabledInteractions := some []
-              logicalTimeMs := state.logicalTimeMs }
+      some
+        { instanceId
+          status := .completed
+          activeWaits := []
+          openUserTasks := []
+          enabledInteractions := []
+          logicalTimeMs := state.logicalTimeMs }
   | .notStarted
   | .enteringStart _
   | .enteringUserTask _
@@ -330,21 +282,16 @@ private structure Execution where
   state : RuntimeState
   trace : List CanonicalObservation
 
-private def finishNonCommit (projection : ProjectionSchema) (definition : Model)
-    (remainingStimuli : List Stimulus) (outcome : CommandOutcome)
+private def finishNonCommit (definition : Model) (outcome : CommandOutcome)
     (state : RuntimeState) (observation : CanonicalObservation) : Execution :=
   { outcome := .semantic outcome
     state
     trace :=
-      match projection with
-      | .retainedLifecycle => [observation]
-      | .userTaskInteraction =>
-          match observeStableState projection definition state remainingStimuli with
-          | none => [observation]
-          | some snapshot => [observation, .state snapshot] }
+      match observeStableState definition state with
+      | none => [observation]
+      | some snapshot => [observation, .state snapshot] }
 
-private def executeStimuli (projection : ProjectionSchema)
-    (closureLimit : Nat) (definition : Model) :
+private def executeStimuli (closureLimit : Nat) (definition : Model) :
     RuntimeState → List Stimulus → Execution
   | state, [] =>
       { outcome := .semantic .committed
@@ -360,62 +307,36 @@ private def executeStimuli (projection : ProjectionSchema)
         let commandObservation := CanonicalObservation.command (commandId stimulus) result.outcome
         match result.outcome with
         | .committed =>
-            match observeStableState projection definition result.state remaining with
+            match observeStableState definition result.state with
             | none =>
                 { outcome := .harnessFailure
                   state := result.state
                   trace := [] }
             | some snapshot =>
                 let rest :=
-                  executeStimuli projection closureLimit definition result.state remaining
+                  executeStimuli closureLimit definition result.state remaining
                 { outcome := rest.outcome
                   state := rest.state
                   trace := commandObservation :: .state snapshot :: rest.trace }
         | .rolledBack =>
-            finishNonCommit projection definition remaining .rolledBack
-              result.state commandObservation
+            finishNonCommit definition .rolledBack result.state commandObservation
         | .rejected =>
-            finishNonCommit projection definition remaining .rejected
-              result.state commandObservation
+            finishNonCommit definition .rejected result.state commandObservation
         | .semanticFailure =>
-            finishNonCommit projection definition remaining .semanticFailure
-              result.state commandObservation
+            finishNonCommit definition .semanticFailure result.state commandObservation
         | .unsupported =>
-            finishNonCommit projection definition remaining .unsupported
-              result.state commandObservation
+            finishNonCommit definition .unsupported result.state commandObservation
 
 private abbrev hasCalibratedBpmnIdentity (scenario : Scenario) : Prop :=
-  scenario.bpmn.id = ⟨"m0-sequential-user-task-process"⟩ ∧
-    scenario.bpmn.relativePath = "scenarios/m0-sequential-user-task/process.bpmn" ∧
+  scenario.bpmn.id = ⟨"sequential-user-task-process"⟩ ∧
+    scenario.bpmn.relativePath =
+      "scenarios/user-task-discovery-completion/process.bpmn" ∧
     scenario.bpmn.sha256 =
-      "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295"
+      "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d"
 
-private def isRetainedLifecycleScenario (scenario : Scenario) : Bool :=
+private def isSupportedScenario (scenario : Scenario) : Bool :=
   decide
-    (scenario.schemaVersion = "0.1.0" ∧
-      scenario.traceSchemaVersion = "0.1.0" ∧
-      scenario.id = ⟨"m0-sequential-user-task"⟩ ∧
-      scenario.profile = ⟨"cibseven-2.2.0-spike.1"⟩ ∧
-      hasCalibratedBpmnIdentity scenario ∧
-      scenario.observations =
-        [ .deployment
-        , .commandResults
-        , .processStatus
-        , .activeWaits
-        , .enabledStimuli
-        , .logicalTime ])
-
-private abbrev isInteractionScenarioId (id : ScenarioId) : Prop :=
-  id = ⟨"m1-user-task-discovery-completion"⟩ ∨
-    id = ⟨"m1-user-task-wrong-activation"⟩ ∨
-    id = ⟨"m1-user-task-stale-completion"⟩
-
-private def isUserTaskInteractionScenario (scenario : Scenario) : Bool :=
-  decide
-    (scenario.schemaVersion = "0.2.0" ∧
-      scenario.traceSchemaVersion = "0.2.0" ∧
-      isInteractionScenarioId scenario.id ∧
-      scenario.profile = ⟨"cibseven-2.2.0-spike.2"⟩ ∧
+    (scenario.kind = .scenario ∧
       hasCalibratedBpmnIdentity scenario ∧
       scenario.observations =
         [ .deployment
@@ -426,26 +347,17 @@ private def isUserTaskInteractionScenario (scenario : Scenario) : Bool :=
         , .enabledInteractions
         , .logicalTime ])
 
-private def projectionForScenario (scenario : Scenario) : Option ProjectionSchema :=
-  if isRetainedLifecycleScenario scenario then
-    some .retainedLifecycle
-  else if isUserTaskInteractionScenario scenario then
-    some .userTaskInteraction
-  else
-    none
-
 /-- Execute with an explicit harness limit so bound-exhaustion behavior remains testable. -/
 def runWithClosureLimit (closureLimit : Nat) : ScenarioRunner :=
   fun scenario =>
-    match projectionForScenario scenario with
-    | some projection =>
-        let execution :=
-          executeStimuli projection closureLimit model initialState scenario.stimuli
-        { outcome := execution.outcome
-          trace := .deployment .committed :: execution.trace }
-    | none =>
-        { outcome := .semantic .unsupported
-          trace := [.deployment .unsupported] }
+    if isSupportedScenario scenario then
+      let execution :=
+        executeStimuli closureLimit model initialState scenario.stimuli
+      { outcome := execution.outcome
+        trace := .deployment .committed :: execution.trace }
+    else
+      { outcome := .semantic .unsupported
+        trace := [.deployment .unsupported] }
 
 /-- Execute the supported profile capsule and derive canonical observations from stable state. -/
 def run : ScenarioRunner :=
@@ -454,9 +366,6 @@ def run : ScenarioRunner :=
 def startStimulus : Stimulus :=
   .startProcess ⟨"start-process"⟩ model.processId ⟨"Instance_1"⟩
 
-def completionStimulus : Stimulus :=
-  .completeUserTask ⟨"complete-user-task"⟩ model.userTaskId
-
 def afterStartState : RuntimeState :=
   { control := .waitingUserTask ⟨"Instance_1"⟩ 1
     logicalTimeMs := 0 }
@@ -464,6 +373,15 @@ def afterStartState : RuntimeState :=
 def completedState : RuntimeState :=
   { control := .completed ⟨"Instance_1"⟩
     logicalTimeMs := 0 }
+
+/-- The exact active task occurrence used by the bounded interaction capsule. -/
+def exactTaskInstanceId : UserTaskInstanceId :=
+  { processInstanceId := ⟨"Instance_1"⟩
+    elementId := model.userTaskId
+    activation := 1 }
+
+def completionStimulus : Stimulus :=
+  .completeUserTaskInstance ⟨"complete-user-task-instance"⟩ exactTaskInstanceId
 
 /-- Starting the calibrated Process closes at exactly one User Task wait. -/
 theorem start_reaches_single_user_task_wait :
@@ -488,36 +406,14 @@ theorem matching_completion_terminates :
         internalStepBoundExceeded := false } := by
   decide
 
-/-- A non-matching completion cannot advance or complete the waiting Process. -/
+/-- A non-matching task occurrence cannot advance or complete the waiting Process. -/
 theorem no_completion_before_matching_command :
     applyStimulus internalClosureLimit model afterStartState
-        (.completeUserTask ⟨"wrong-completion"⟩ ⟨"Other_Task"⟩) =
+        (.completeUserTaskInstance ⟨"wrong-completion"⟩
+          { exactTaskInstanceId with elementId := ⟨"Other_Task"⟩ }) =
       { outcome := .rejected
         state := afterStartState
         microtrace := []
-        internalStepBoundExceeded := false } := by
-  decide
-
-/-- The exact active task occurrence used by the bounded interaction capsule. -/
-def exactTaskInstanceId : UserTaskInstanceId :=
-  { processInstanceId := ⟨"Instance_1"⟩
-    elementId := model.userTaskId
-    activation := 1 }
-
-/-- Exact task-instance completion is distinct from the retained element-only command. -/
-def exactTaskCompletionStimulus : Stimulus :=
-  .completeUserTaskInstance ⟨"complete-user-task-instance"⟩ exactTaskInstanceId
-
-/-- Completing the exact active task occurrence releases the wait and terminates the Process. -/
-theorem exact_task_completion_terminates :
-    applyStimulus internalClosureLimit model afterStartState
-        exactTaskCompletionStimulus =
-      { outcome := .committed
-        state := completedState
-        microtrace :=
-          [ .userTaskWaitCompleted model.userTaskId
-          , .flowTaken model.userTaskId model.endEventId
-          , .processCompleted ]
         internalStepBoundExceeded := false } := by
   decide
 

@@ -11,70 +11,25 @@ import type {
   CanonicalObservation,
   Scenario,
   ScenarioResult,
+  StateObservation,
   Stimulus,
 } from "./contract.js";
-import {
-  BpmnExecutableIrKind,
-} from "./executable-ir.js";
 import type {
   SequentialUserTaskExecutableIr,
 } from "./executable-ir.js";
-
-export enum ControlStateKind {
-  NotStarted = "notStarted",
-  EnteringStart = "enteringStart",
-  EnteringUserTask = "enteringUserTask",
-  WaitingUserTask = "waitingUserTask",
-  LeavingUserTask = "leavingUserTask",
-  EnteringEnd = "enteringEnd",
-  Completed = "completed",
-}
-
-type NotStartedControl = Readonly<{
-  kind: ControlStateKind.NotStarted;
-}>;
-
-type OrdinaryInstancedControl = Readonly<{
-  kind:
-    | ControlStateKind.EnteringStart
-    | ControlStateKind.EnteringUserTask
-    | ControlStateKind.EnteringEnd
-    | ControlStateKind.Completed;
-  instanceId: string;
-}>;
-
-type UserTaskControl = Readonly<{
-  kind:
-    | ControlStateKind.WaitingUserTask
-    | ControlStateKind.LeavingUserTask;
-  instanceId: string;
-  activation: number;
-}>;
-
-export type ControlState =
-  | NotStartedControl
-  | OrdinaryInstancedControl
-  | UserTaskControl;
-
-export type RuntimeState = Readonly<{
-  control: ControlState;
-  logicalTimeMs: number;
-}>;
-
-export const initialState: RuntimeState = {
-  control: { kind: ControlStateKind.NotStarted },
-  logicalTimeMs: 0,
-};
-
-type SemanticCommandOutcome =
-  | CommandOutcome.Committed
-  | CommandOutcome.Rejected;
-
-export type CommandResult = Readonly<{
-  outcome: SemanticCommandOutcome;
-  state: RuntimeState;
-  internalStepBoundExceeded: boolean;
-}>;
+import {
+  supportsSequentialUserTaskScenario,
+} from "./sequential-user-task-admission.js";
+import {
+  ControlStateKind,
+  applyStimulus,
+  initialState,
+  sequentialUserTaskClosureLimit,
+  validateClosureLimit,
+} from "./sequential-user-task-runtime.js";
+import type {
+  RuntimeState,
+} from "./sequential-user-task-runtime.js";
 
 export enum ScenarioStepKind {
   Committed = "committed",
@@ -114,222 +69,18 @@ export type ScenarioDeployment = Readonly<{
   >;
 }>;
 
-type CommandAdmission = Readonly<{
-  outcome: CommandOutcome.Committed | CommandOutcome.Rejected;
-  state: RuntimeState;
-}>;
-
-type ClosureResult = Readonly<{
-  state: RuntimeState;
-  hitBound: boolean;
-}>;
-
-const internalClosureLimit = 4;
-
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported semantic variant: ${JSON.stringify(value)}`);
 }
 
-function withControl(state: RuntimeState, control: ControlState): RuntimeState {
-  return {
-    control,
-    logicalTimeMs: state.logicalTimeMs,
-  };
-}
-
-type UserTaskDefinition = Readonly<{
-  id: string;
-  name: string | null;
-}>;
-
-function userTaskDefinition(
-  model: SequentialUserTaskExecutableIr,
-): UserTaskDefinition {
-  switch (model.schemaVersion) {
-    case "0.1.0":
-      return { id: model.userTaskId, name: null };
-    case "0.2.0":
-      return model.userTask;
-    default:
-      return assertNever(model);
-  }
-}
-
-function internalStep(state: RuntimeState): RuntimeState | null {
-  switch (state.control.kind) {
-    case ControlStateKind.EnteringStart:
-      return withControl(state, {
-        kind: ControlStateKind.EnteringUserTask,
-        instanceId: state.control.instanceId,
-      });
-    case ControlStateKind.EnteringUserTask:
-      return withControl(state, {
-        kind: ControlStateKind.WaitingUserTask,
-        instanceId: state.control.instanceId,
-        activation: 1,
-      });
-    case ControlStateKind.LeavingUserTask:
-      return withControl(state, {
-        kind: ControlStateKind.EnteringEnd,
-        instanceId: state.control.instanceId,
-      });
-    case ControlStateKind.EnteringEnd:
-      return withControl(state, {
-        kind: ControlStateKind.Completed,
-        instanceId: state.control.instanceId,
-      });
-    case ControlStateKind.NotStarted:
-    case ControlStateKind.WaitingUserTask:
-    case ControlStateKind.Completed:
-      return null;
-    default:
-      return assertNever(state.control);
-  }
-}
-
-function closeInternal(state: RuntimeState, limit: number): ClosureResult {
-  let current = state;
-  for (let stepCount = 0; stepCount < limit; stepCount += 1) {
-    const next = internalStep(current);
-    if (next === null) {
-      return { state: current, hitBound: false };
-    }
-    current = next;
-  }
-  return {
-    state: current,
-    hitBound: internalStep(current) !== null,
-  };
-}
-
-function validateClosureLimit(closureLimit: number): void {
-  if (!Number.isSafeInteger(closureLimit) || closureLimit < 0) {
-    throw new RangeError("closureLimit must be a non-negative safe integer");
-  }
-}
-
-function admit(
-  model: SequentialUserTaskExecutableIr,
-  state: RuntimeState,
-  stimulus: Stimulus,
-): CommandAdmission {
-  const userTask = userTaskDefinition(model);
-  switch (stimulus.kind) {
-    case StimulusKind.StartProcess:
-      if (
-        state.control.kind === ControlStateKind.NotStarted &&
-        stimulus.processId === model.processId
-      ) {
-        return {
-          outcome: CommandOutcome.Committed,
-          state: withControl(state, {
-            kind: ControlStateKind.EnteringStart,
-            instanceId: stimulus.instanceId,
-          }),
-        };
-      }
-      return { outcome: CommandOutcome.Rejected, state };
-    case StimulusKind.CompleteUserTask:
-      if (
-        state.control.kind === ControlStateKind.WaitingUserTask &&
-        stimulus.elementId === userTask.id
-      ) {
-        return {
-          outcome: CommandOutcome.Committed,
-          state: withControl(state, {
-            kind: ControlStateKind.LeavingUserTask,
-            instanceId: state.control.instanceId,
-            activation: state.control.activation,
-          }),
-        };
-      }
-      return { outcome: CommandOutcome.Rejected, state };
-    case StimulusKind.CompleteUserTaskInstance:
-      if (
-        state.control.kind === ControlStateKind.WaitingUserTask &&
-        stimulus.taskId.processInstanceId === state.control.instanceId &&
-        stimulus.taskId.elementId === userTask.id &&
-        stimulus.taskId.activation === state.control.activation
-      ) {
-        return {
-          outcome: CommandOutcome.Committed,
-          state: withControl(state, {
-            kind: ControlStateKind.LeavingUserTask,
-            instanceId: state.control.instanceId,
-            activation: state.control.activation,
-          }),
-        };
-      }
-      return { outcome: CommandOutcome.Rejected, state };
-    default:
-      return assertNever(stimulus);
-  }
-}
-
-// tag::apply-stimulus[]
-export function applyStimulus(
-  model: SequentialUserTaskExecutableIr,
-  state: RuntimeState,
-  stimulus: Stimulus,
-  closureLimit: number = internalClosureLimit,
-): CommandResult {
-  validateClosureLimit(closureLimit);
-
-  const admission = admit(model, state, stimulus);
-  switch (admission.outcome) {
-    case CommandOutcome.Committed: {
-      const closure = closeInternal(admission.state, closureLimit);
-      return {
-        outcome: CommandOutcome.Committed,
-        state: closure.state,
-        internalStepBoundExceeded: closure.hitBound,
-      };
-    }
-    case CommandOutcome.Rejected:
-      return {
-        outcome: CommandOutcome.Rejected,
-        state: admission.state,
-        internalStepBoundExceeded: false,
-      };
-    default:
-      return assertNever(admission.outcome);
-  }
-}
-// end::apply-stimulus[]
-
-function enabledCompletions(
-  model: SequentialUserTaskExecutableIr,
-  remainingStimuli: ReadonlyArray<Stimulus>,
-): ReadonlyArray<Stimulus> {
-  const userTask = userTaskDefinition(model);
-  return remainingStimuli.filter(
-    (stimulus) =>
-      stimulus.kind === StimulusKind.CompleteUserTask &&
-      stimulus.elementId === userTask.id,
-  );
-}
-
-enum ProjectionSchema {
-  RetainedLifecycle = "retainedLifecycle",
-  UserTaskInteraction = "userTaskInteraction",
-}
-
-function projectionForModel(
-  model: SequentialUserTaskExecutableIr,
-): ProjectionSchema {
-  return model.identity.semanticProfile === "cibseven-2.2.0-spike.2"
-    ? ProjectionSchema.UserTaskInteraction
-    : ProjectionSchema.RetainedLifecycle;
-}
-
-function userTaskInstanceId(
+function taskInstanceId(
   model: SequentialUserTaskExecutableIr,
   instanceId: string,
   activation: number,
 ) {
   return {
     processInstanceId: instanceId,
-    elementId: userTaskDefinition(model).id,
+    elementId: model.userTask.id,
     activation,
   };
 }
@@ -337,82 +88,51 @@ function userTaskInstanceId(
 function observeStableState(
   model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
-  remainingStimuli: ReadonlyArray<Stimulus>,
-): CanonicalObservation | null {
-  const projection = projectionForModel(model);
-  const userTask = userTaskDefinition(model);
+): StateObservation | null {
   switch (state.control.kind) {
     case ControlStateKind.WaitingUserTask: {
-      const base = {
+      const id = taskInstanceId(
+        model,
+        state.control.instanceId,
+        state.control.activation,
+      );
+      return {
         kind: CanonicalObservationKind.State,
         instanceId: state.control.instanceId,
         status: ProcessStatus.Running,
         activeWaits: [
           {
-            elementId: userTask.id,
+            elementId: model.userTask.id,
             kind: WaitKind.UserTask,
             multiplicity: 1,
           },
         ],
+        openUserTasks: [
+          {
+            id,
+            name: model.userTask.name,
+            state: UserTaskLifecycleState.Active,
+          },
+        ],
+        enabledInteractions: [
+          {
+            kind: StimulusKind.CompleteUserTaskInstance,
+            taskId: id,
+          },
+        ],
         logicalTimeMs: state.logicalTimeMs,
-      } as const;
-      switch (projection) {
-        case ProjectionSchema.RetainedLifecycle:
-          return {
-            ...base,
-            enabledStimuli: enabledCompletions(model, remainingStimuli),
-          };
-        case ProjectionSchema.UserTaskInteraction: {
-          const taskId = userTaskInstanceId(
-            model,
-            state.control.instanceId,
-            state.control.activation,
-          );
-          return {
-            ...base,
-            openUserTasks: [
-              {
-                id: taskId,
-                name: userTask.name,
-                state: UserTaskLifecycleState.Active,
-              },
-            ],
-            enabledInteractions: [
-              {
-                kind: StimulusKind.CompleteUserTaskInstance,
-                taskId,
-              },
-            ],
-          };
-        }
-        default:
-          return assertNever(projection);
-      }
+      };
     }
     case ControlStateKind.Completed:
-      switch (projection) {
-        case ProjectionSchema.RetainedLifecycle:
-          return {
-            kind: CanonicalObservationKind.State,
-            instanceId: state.control.instanceId,
-            status: ProcessStatus.Completed,
-            activeWaits: [],
-            enabledStimuli: [],
-            logicalTimeMs: state.logicalTimeMs,
-          };
-        case ProjectionSchema.UserTaskInteraction:
-          return {
-            kind: CanonicalObservationKind.State,
-            instanceId: state.control.instanceId,
-            status: ProcessStatus.Completed,
-            activeWaits: [],
-            openUserTasks: [],
-            enabledInteractions: [],
-            logicalTimeMs: state.logicalTimeMs,
-          };
-        default:
-          return assertNever(projection);
-      }
+      return {
+        kind: CanonicalObservationKind.State,
+        instanceId: state.control.instanceId,
+        status: ProcessStatus.Completed,
+        activeWaits: [],
+        openUserTasks: [],
+        enabledInteractions: [],
+        logicalTimeMs: state.logicalTimeMs,
+      };
     case ControlStateKind.NotStarted:
     case ControlStateKind.EnteringStart:
     case ControlStateKind.EnteringUserTask:
@@ -427,7 +147,6 @@ function observeStableState(
 export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
-    case StimulusKind.CompleteUserTask:
     case StimulusKind.CompleteUserTaskInstance:
       return stimulus.commandId;
     default:
@@ -439,8 +158,7 @@ export function advanceScenario(
   model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
   stimulus: Stimulus,
-  remainingStimuli: ReadonlyArray<Stimulus>,
-  closureLimit: number = internalClosureLimit,
+  closureLimit: number = sequentialUserTaskClosureLimit,
 ): ScenarioStep {
   const result = applyStimulus(model, state, stimulus, closureLimit);
   if (result.internalStepBoundExceeded) {
@@ -451,64 +169,31 @@ export function advanceScenario(
     };
   }
 
+  const snapshot = observeStableState(model, result.state);
+  if (snapshot === null) {
+    return {
+      kind: ScenarioStepKind.HarnessFailure,
+      outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+      observations: [],
+    };
+  }
+  const observations = [
+    {
+      kind: CanonicalObservationKind.Command,
+      commandId: stimulusCommandId(stimulus),
+      outcome: result.outcome,
+    },
+    snapshot,
+  ] as const;
+
   switch (result.outcome) {
-    case CommandOutcome.Committed: {
-      const snapshot = observeStableState(
-        model,
-        result.state,
-        remainingStimuli,
-      );
-      if (snapshot === null) {
-        return {
-          kind: ScenarioStepKind.HarnessFailure,
-          outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
-          observations: [],
-        };
-      }
+    case CommandOutcome.Committed:
       return {
         kind: ScenarioStepKind.Committed,
         state: result.state,
-        observations: [
-          {
-            kind: CanonicalObservationKind.Command,
-            commandId: stimulusCommandId(stimulus),
-            outcome: result.outcome,
-          },
-          snapshot,
-        ],
+        observations,
       };
-    }
     case CommandOutcome.Rejected:
-      if (projectionForModel(model) === ProjectionSchema.UserTaskInteraction) {
-        const snapshot = observeStableState(
-          model,
-          result.state,
-          remainingStimuli,
-        );
-        if (snapshot === null) {
-          return {
-            kind: ScenarioStepKind.HarnessFailure,
-            outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
-            observations: [],
-          };
-        }
-        return {
-          kind: ScenarioStepKind.Terminal,
-          state: result.state,
-          outcome: {
-            kind: ScenarioOutcomeKind.Semantic,
-            outcome: result.outcome,
-          },
-          observations: [
-            {
-              kind: CanonicalObservationKind.Command,
-              commandId: stimulusCommandId(stimulus),
-              outcome: result.outcome,
-            },
-            snapshot,
-          ],
-        };
-      }
       return {
         kind: ScenarioStepKind.Terminal,
         state: result.state,
@@ -516,40 +201,39 @@ export function advanceScenario(
           kind: ScenarioOutcomeKind.Semantic,
           outcome: result.outcome,
         },
-        observations: [
-          {
-            kind: CanonicalObservationKind.Command,
-            commandId: stimulusCommandId(stimulus),
-            outcome: result.outcome,
-          },
-        ],
+        observations,
       };
     default:
       return assertNever(result.outcome);
   }
 }
 
-type Execution = Readonly<{
-  outcome: ScenarioResult["outcome"];
-  trace: ReadonlyArray<CanonicalObservation>;
-}>;
+export function deployScenario(
+  scenario: Scenario,
+  executableIr: SequentialUserTaskExecutableIr,
+): ScenarioDeployment {
+  const outcome = supportsSequentialUserTaskScenario(scenario, executableIr)
+    ? CommandOutcome.Committed
+    : CommandOutcome.Unsupported;
+  return {
+    outcome,
+    observation: {
+      kind: CanonicalObservationKind.Deployment,
+      outcome,
+    },
+  };
+}
 
 function executeStimuli(
   model: SequentialUserTaskExecutableIr,
   stimuli: ReadonlyArray<Stimulus>,
   closureLimit: number,
-): Execution {
+): ScenarioResult {
   let state = initialState;
   const trace: CanonicalObservation[] = [];
 
-  for (const [index, stimulus] of stimuli.entries()) {
-    const step = advanceScenario(
-      model,
-      state,
-      stimulus,
-      stimuli.slice(index + 1),
-      closureLimit,
-    );
+  for (const stimulus of stimuli) {
+    const step = advanceScenario(model, state, stimulus, closureLimit);
     switch (step.kind) {
       case ScenarioStepKind.Committed:
         trace.push(...step.observations);
@@ -572,52 +256,6 @@ function executeStimuli(
       outcome: CommandOutcome.Committed,
     },
     trace,
-  };
-}
-
-function supportsScenario(
-  scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr,
-): boolean {
-  if (
-    !isSupportedExecutableIr(executableIr) ||
-    executableIr.identity.semanticProfile !== scenario.profile ||
-    executableIr.identity.sourceId !== scenario.bpmn.id ||
-    executableIr.identity.sourceSha256 !== scenario.bpmn.sha256
-  ) {
-    return false;
-  }
-
-  switch (scenario.schemaVersion) {
-    case "0.1.0":
-      return (
-        (scenario.traceSchemaVersion ?? scenario.schemaVersion) === "0.1.0" &&
-        scenario.profile === "cibseven-2.2.0-spike.1"
-      );
-    case "0.2.0":
-      return (
-        scenario.traceSchemaVersion === "0.2.0" &&
-        scenario.profile === "cibseven-2.2.0-spike.2" &&
-        executableIr.schemaVersion === "0.2.0"
-      );
-    default:
-      return false;
-  }
-}
-
-export function deployScenario(
-  scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr,
-): ScenarioDeployment {
-  const outcome = supportsScenario(scenario, executableIr)
-    ? CommandOutcome.Committed
-    : CommandOutcome.Unsupported;
-  return {
-    outcome,
-    observation: {
-      kind: CanonicalObservationKind.Deployment,
-      outcome,
-    },
   };
 }
 
@@ -659,123 +297,8 @@ export function runScenario(
   executableIr: SequentialUserTaskExecutableIr,
 ): ScenarioResult {
   return runScenarioWithClosureLimit(
-    internalClosureLimit,
+    sequentialUserTaskClosureLimit,
     scenario,
     executableIr,
-  );
-}
-
-function isSupportedExecutableIr(
-  value: unknown,
-): boolean {
-  if (!isRecord(value)) {
-    return false;
-  }
-  const identity = isRecord(value.identity) ? value.identity : undefined;
-  const sequenceFlows = Array.isArray(value.sequenceFlows)
-    ? value.sequenceFlows
-    : undefined;
-  if (
-    value.kind !== BpmnExecutableIrKind.SequentialUserTask ||
-    identity === undefined ||
-    !isNonEmptyString(identity.semanticProfile) ||
-    !isNonEmptyString(identity.sourceId) ||
-    !isNonEmptyString(identity.sourceSha256) ||
-    sequenceFlows === undefined ||
-    sequenceFlows.length !== 2 ||
-    !sequenceFlows.every(isExecutableSequenceFlow)
-  ) {
-    return false;
-  }
-
-  const userTaskId = supportedUserTaskId(value, identity);
-  if (userTaskId === undefined) {
-    return false;
-  }
-
-  const ids = [
-    value.processId,
-    value.startEventId,
-    userTaskId,
-    value.endEventId,
-    ...sequenceFlows.map(({ id }) => id),
-  ];
-  if (
-    ids.some((id) => !isNonEmptyString(id)) ||
-    new Set(ids).size !== 6
-  ) {
-    return false;
-  }
-
-  return (
-    hasExecutableFlow(
-      sequenceFlows,
-      value.startEventId,
-      userTaskId,
-    ) &&
-    hasExecutableFlow(
-      sequenceFlows,
-      userTaskId,
-      value.endEventId,
-    )
-  );
-}
-
-function supportedUserTaskId(
-  value: Record<string, unknown>,
-  identity: Record<string, unknown>,
-): string | undefined {
-  switch (value.schemaVersion) {
-    case "0.1.0":
-      return identity.compiler ===
-          "bpmn-source-sequential-user-task@0.1.0" &&
-        isNonEmptyString(value.userTaskId)
-        ? value.userTaskId
-        : undefined;
-    case "0.2.0": {
-      const userTask = isRecord(value.userTask)
-        ? value.userTask
-        : undefined;
-      return identity.compiler ===
-          "bpmn-source-sequential-user-task@0.2.0" &&
-        userTask !== undefined &&
-        isNonEmptyString(userTask.id) &&
-        (userTask.name === null || typeof userTask.name === "string")
-        ? userTask.id
-        : undefined;
-    }
-    default:
-      return undefined;
-  }
-}
-
-function hasExecutableFlow(
-  sequenceFlows: ReadonlyArray<Record<string, unknown>>,
-  sourceId: unknown,
-  targetId: unknown,
-): boolean {
-  return sequenceFlows.some(
-    (flow) =>
-      flow.sourceId === sourceId &&
-      flow.targetId === targetId,
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
-}
-
-function isExecutableSequenceFlow(
-  value: unknown,
-): value is Record<string, unknown> {
-  return (
-    isRecord(value) &&
-    isNonEmptyString(value.id) &&
-    isNonEmptyString(value.sourceId) &&
-    isNonEmptyString(value.targetId)
   );
 }

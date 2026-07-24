@@ -74,7 +74,7 @@ The CMOF path can justify facts such as type inheritance, reference targets, own
 
 ### CMOF-derived metamodel facts
 
-The implemented use of CMOF is a versioned, bounded metamodel manifest rather than a second hand-written BPMN type hierarchy. The first [tracked manifest](../packages/bpmn-source/src/bpmn-2.0.2-m0-metamodel.json) retains:
+The implemented use of CMOF is a bounded current metamodel manifest rather than a second hand-written BPMN type hierarchy. The [tracked manifest](../packages/bpmn-source/src/bpmn-2.0.2-sequential-user-task-metamodel.json) retains:
 
 - exact BPMN 2.0.2 artifact identity;
 - the qualified moddle type names consumed by the compiler;
@@ -134,7 +134,7 @@ The package does not export raw moddle objects as a public cross-package contrac
 2. **structural import** — a BPMN definitions graph was produced;
 3. **static admission** — all required references and supported constructs passed project checks;
 4. **profile admission** — the selected semantic profile defines every behavior needed for execution;
-5. **execution** — versioned IR was accepted by the semantic core.
+5. **execution** — admitted current IR was accepted by the semantic core.
 
 Any parser warning blocks static admission until a project rule explicitly classifies that warning as safe for the declared profile. The first implementation uses one stable `parserWarning` diagnostic code with the upstream message as evidence rather than a growing set of message-string special cases.
 
@@ -181,6 +181,6 @@ The completed red/green slice is intentionally smaller than a general BPMN compi
 7. compile versioned, serializable IR v0.2 carrying source/profile/compiler identity plus the admitted User Task ID and optional name;
 8. make the current TypeScript and Temporal paths consume that IR without changing the canonical behavior;
 9. the optional local interchange gate inspects all 21 models at pinned MIWG revision `cb2629519cee6280ab521f99dc46a9815a221a35` without copying their CC-BY files: fourteen reach `unsupportedModel`, six are explicitly blocked as `unsupportedEncoding`, and one is blocked by `parserWarning`;
-10. the complete differential/refinement pipeline now compiles the exact source before the core and Temporal targets, reports the IR identity, preserves four-target agreement and the seeded disagreement, replays new and retained histories, and remains within the existing performance budgets.
+10. the complete differential/refinement pipeline compiles the exact source before the core and Temporal targets, reports the IR identity, preserves four-target agreement and the seeded disagreement, replays each live history before its disposable server shuts down, and remains within the existing performance budgets.
 
 This slice does not add BPMN export, a general metamodel schema, all encoding support, CIB extension semantics, or any new executable BPMN feature.

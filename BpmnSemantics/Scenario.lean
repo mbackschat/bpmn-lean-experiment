@@ -2,7 +2,7 @@ import BpmnSemantics.Contract
 
 /-! # BpmnSemantics.Scenario — implementation-neutral runner contract
 
-This module defines the smallest shared vocabulary needed by the Milestone 0 runners.
+This module defines the smallest shared vocabulary needed by the current semantic runners.
 It contains no BPMN transition semantics and no CIB Seven or Temporal representation.
 -/
 
@@ -54,10 +54,9 @@ inductive EnabledInteraction where
   | completeUserTaskInstance (taskId : UserTaskInstanceId)
   deriving Repr, DecidableEq
 
-/-- External inputs currently admitted by the Milestone 0 scenario boundary. -/
+/-- External inputs currently admitted by the User Task scenario boundary. -/
 inductive Stimulus where
   | startProcess (commandId : SemanticId) (processId : SemanticId) (instanceId : SemanticId)
-  | completeUserTask (commandId : SemanticId) (elementId : SemanticId)
   | completeUserTaskInstance (commandId : SemanticId) (taskId : UserTaskInstanceId)
   deriving Repr, DecidableEq
 
@@ -85,9 +84,8 @@ structure StateObservation where
   instanceId : SemanticId
   status : ProcessStatus
   activeWaits : List ActiveWait
-  openUserTasks : Option (List OpenUserTask)
-  enabledStimuli : Option (List Stimulus)
-  enabledInteractions : Option (List EnabledInteraction)
+  openUserTasks : List OpenUserTask
+  enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
 
@@ -105,7 +103,6 @@ inductive ObservationKind where
   | processStatus
   | activeWaits
   | openUserTasks
-  | enabledStimuli
   | enabledInteractions
   | logicalTime
   deriving Repr, DecidableEq
@@ -117,10 +114,14 @@ structure ScenarioProvenance where
   cibRefs : List String
   deriving Repr, DecidableEq
 
-/-- Inputs shared by all Milestone 0 runners. -/
+/-- Stable structural discriminator for scenario documents. -/
+inductive ScenarioKind where
+  | scenario
+  deriving Repr, DecidableEq
+
+/-- Inputs shared by all current runners. -/
 structure Scenario where
-  schemaVersion : String
-  traceSchemaVersion : String
+  kind : ScenarioKind
   id : ScenarioId
   profile : ProfileId
   bpmn : ResourceIdentity

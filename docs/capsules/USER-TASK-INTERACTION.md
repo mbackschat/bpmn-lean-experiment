@@ -20,6 +20,8 @@ The pinned CIB Seven `v2.2.0` public API exposes active tasks through `TaskServi
 
 CIB’s task ID is generated host identity. It is retained only in oracle diagnostics and in the local mapping needed to invoke `TaskService.complete`; it is not a canonical identity shared with Lean, TypeScript, or Temporal.
 
+The [CIB–BPMN relationship register](../CIB-BPMN-RELATION.md) classifies the sequential lifecycle as `CIB-AGR-0001`, basic active-task discovery and completion as `CIB-AGR-0002`, host-task-to-semantic-task mapping as `CIB-OP-0001`, and the pinned oracle environment as `CIB-CFG-0001`. The current capsule has no candidate or confirmed CIB deviation.
+
 ## Semantic decision
 
 The semantic core owns the User Task occurrence, its exact discoverable projection, and completion admission. Host transports expose that projection and deliver completion commands without becoming semantic authority.
@@ -28,14 +30,14 @@ The semantic core owns the User Task occurrence, its exact discoverable projecti
 BPMN source and profile
           │
           ▼
-versioned User Task definition in executable IR
+profile-identified User Task definition in executable IR
           │
           ▼
 semantic-core runtime creates one task occurrence
           │
           ├────────────► exact open-task projection
           │
-          ◄──────────── versioned completion command
+          ◄──────────── structured completion command
 ```
 
 The adopted Temporal Query/Update binding, replay path, and discovery boundary are owned by [the Temporal execution model](../TEMPORAL-EXECUTION-MODEL.md#initial-user-task-interaction-binding).
@@ -48,9 +50,9 @@ The identifiers below name the bounded propositions established by this capsule.
 |---|---|---|---|---|---|---|---|
 | `UTASK-ACTIVATE-01` | Activation in the admitted sequential model creates exactly one active occurrence `(Process instance, User Task element, activation 1)` | [Source basis](#source-basis) and the sequential draft profile | `start_reaches_single_user_task_wait` in [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) | `calibratesTaskDiscoveryAndRejectsWrongActivationWithoutStateChange` in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Exact-occurrence and full-active-occurrence cases in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Complete interaction batch in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Activation `2` is not silently treated as the active occurrence |
 | `UTASK-DISCOVER-01` | Committed waiting state projects the exact open task, admitted name, active lifecycle state, and command-ID-free enabled completion independently of future scenario commands | [Public task projection](#public-task-projection) | `waitingObservation` and the equal-pre-command-state witness in [UserTaskInteractionConformance.lean](../../BpmnSemantics/UserTaskInteractionConformance.lean) | Public `TaskService` query in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | State-derived-interaction case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Exact open-task Query in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Contract mutation changes observed activation `1` to `2`; successful and wrong-activation cases must have equal waiting projections |
-| `UTASK-COMPLETE-01` | Completing the exact active occurrence commits, removes the open task, and completes the admitted Process | [Completion command](#completion-command) | `exact_task_completion_terminates` in [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) | Exact completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Exact retained-result case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Acknowledged completion Update and retained Update replay in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Retained Signal history is checked as a negative witness for the Update-history claim |
-| `UTASK-REFUSE-01` | A completion whose Process instance, element, or activation differs from the active occurrence is rejected with exact state preservation | [Completion command](#completion-command) | `task_identity_mismatch_is_rejected`, its wrong-activation corollary, and `element_id_alone_is_insufficient` in [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) | Wrong activation in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Wrong-activation and full-occurrence cases in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Rejected wrong-activation Update in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Matching only the BPMN element ID is the checked non-law |
-| `UTASK-REFUSE-02` | Repeating completion for an already completed occurrence under a distinct semantic command ID is rejected without reactivation | [Completion command](#completion-command) | `expectedStaleCompletionTrace` in [UserTaskInteractionConformance.lean](../../BpmnSemantics/UserTaskInteractionConformance.lean) | Stale completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Stale-completion case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Duplicate-delivery ledger plus distinct stale Update in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Completed-state projection before and after rejection must be identical |
+| `UTASK-COMPLETE-01` | Completing the exact active occurrence commits, removes the open task, and completes the admitted Process | [Completion command](#completion-command) | `exact_task_completion_terminates` in [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) | Exact completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Exact retained-result case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Acknowledged completion Update plus live-history replay in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | The live-history guard requires Update acceptance/completion and excludes Signal delivery |
+| `UTASK-REFUSE-01` | A completion whose Process instance, element, or activation differs from the active occurrence is rejected with exact state preservation | [Completion command](#completion-command) and `CIB-OP-0001` | `task_identity_mismatch_is_rejected`, its wrong-activation corollary, and `element_id_alone_is_insufficient` in [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) | Oracle mapping rejects the mismatch before CIB host completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Wrong-activation and full-occurrence cases in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Rejected wrong-activation Update in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Matching only the BPMN element ID is the checked non-law |
+| `UTASK-REFUSE-02` | Repeating completion for an already completed occurrence under a distinct semantic command ID is rejected without reactivation | [Completion command](#completion-command) and `CIB-OP-0001` | `expectedStaleCompletionTrace` in [UserTaskInteractionConformance.lean](../../BpmnSemantics/UserTaskInteractionConformance.lean) | Oracle mapping finds no corresponding live CIB task and refuses before host completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Stale-completion case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Duplicate-delivery ledger plus distinct stale Update in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Completed-state projection before and after rejection must be identical |
 
 The matrix indexes evidence; it does not merge the claims. A Lean theorem proves the selected Lean account, a CIB witness records finite oracle behavior, and the TypeScript and Temporal lanes remain independent implementation and refinement evidence.
 
@@ -88,11 +90,9 @@ interface OpenUserTask {
 }
 ```
 
-The User Task name comes from the admitted BPMN source through a versioned executable-IR field. `null` distinguishes an omitted BPMN name from an invented display value. The task projection does not expose generated host IDs.
+The User Task name comes from the admitted BPMN source through the current executable IR. `null` distinguishes an omitted BPMN name from an invented display value. The task projection does not expose generated host IDs.
 
-The versioned canonical state observation adds `openUserTasks` for the new scenario schema. The Milestone 0 schema and retained Temporal history keep their original projection so replay does not reinterpret an old Workflow completion payload.
-
-The interaction schema reports state-derived, command-ID-free `enabledInteractions`. It must not filter a scenario’s future scripted commands: the same model and runtime state always produce the same canonical state projection.
+The canonical state observation reports `openUserTasks` and state-derived, command-ID-free `enabledInteractions`. It must not filter a scenario’s future scripted commands: the same admitted model and runtime state always produce the same canonical state projection.
 
 ## Completion command
 
@@ -114,7 +114,7 @@ Claiming, delegation, assignment, actor identity, authorization, completion vari
 
 ## IR and Lean consequence
 
-The existing sequential XML compiler gains a second semantic use of the CMOF-derived `FlowElement.name` property by preserving the optional BPMN User Task name in a new executable-IR version. This is not a second structurally distinct compiler consumer. The prior IR version remains readable only where required for retained history and compatibility tests. The change does not generalize the partial CMOF manifest or introduce a universal BPMN IR.
+The sequential XML compiler uses the CMOF-derived `FlowElement.name` property by preserving the optional BPMN User Task name in the current executable IR. This is not a second structurally distinct compiler consumer and does not generalize the partial CMOF manifest or introduce a universal BPMN IR.
 
 Lean keeps a small executable model separate from runtime instances. The model gains the reviewed User Task definition metadata; runtime state gains the semantic activation ordinal; observations gain the exact open-task projection for the new scenario.
 
@@ -130,7 +130,7 @@ These theorems are properties of the Lean account. CIB correspondence and Tempor
 
 ## Declarative relation and executable evaluator
 
-The Lean account now defines `InternalMicroStep` as an inductive relation over the permitted internal transitions and keeps `internalStep` as the executable selector used by bounded closure. The universal `internalStep_sound` theorem proves that every state/event transition returned by `internalStep` is admitted by `InternalMicroStep`; [SequentialUserTaskConformance.lean](../../BpmnSemantics/SequentialUserTaskConformance.lean) requires that bridge to elaborate.
+The Lean account defines `InternalMicroStep` as an inductive relation over permitted internal transitions and keeps `internalStep` as the executable selector used by bounded closure. The universal `internalStep_sound` theorem proves that every state/event transition returned by `internalStep` is admitted by `InternalMicroStep`; [Conformance.lean](../../BpmnSemantics/Conformance.lean) requires that bridge to elaborate.
 
 This result covers only deterministic internal closure for the admitted sequential slice. External command admission remains separately implemented and protected by the exact completion and mismatch laws. Completeness of the evaluator with respect to the relation, compiler correspondence, TypeScript correspondence, and Temporal refinement are not proved by `internalStep_sound`.
 
@@ -147,11 +147,11 @@ The next parallel capsule must add explicit semantic choice where more than one 
 
 ## Closure interpretation
 
-The exact claim established by this capsule is bounded: for the one content-addressed sequential model and draft CIB Seven profile, the semantic task occurrence `(Instance_1, UserTask_Approve, 1)` is discoverable from committed state; completing that exact occurrence commits and completes the Process; wrong-activation and stale completions are rejected without changing committed state; Lean, the independent TypeScript semantic core, and pinned CIB Seven produce the same canonical results for the retained witnesses; and Temporal Query/Update hosting preserves those results under the tested duplicate-delivery and replay histories.
+The exact claim established by this capsule is bounded: for the one content-addressed sequential model and draft CIB Seven profile, the semantic task occurrence `(Instance_1, UserTask_Approve, 1)` is discoverable from committed state; completing that exact occurrence commits and completes the Process; wrong-activation and stale completions are rejected without changing committed state; Lean, the independent TypeScript semantic core, and the pinned CIB-backed oracle adapter produce the same canonical results for the retained witnesses; and Temporal Query/Update hosting preserves those results under duplicate delivery and replay of each live history.
 
 The closest unsupported claim is repeated or simultaneous activation of the same BPMN User Task definition. The current model creates only activation `1`; the checked wrong-ordinal witness proves that element identity alone is insufficient, but it does not establish how ordinals are allocated across loops, multi-instance execution, nested scopes, migration, or Continue-As-New.
 
-The principal common-mode risk is a shared interpretation or observation defect. All semantic targets could agree because the capsule omitted a relevant BPMN fact or because the canonical projection hid it. The answer-free scenarios, independent live CIB execution, checked non-law, source/profile identities, exact task-projection mutation, and retained Temporal histories reduce that risk but do not eliminate it. In particular, Lean currently executes content-identified capsule data compiled into its module rather than decoding the pipeline’s scenario and executable-IR JSON; this is a known correspondence gap, not a general input equivalence proof.
+The principal common-mode risk is a shared interpretation or observation defect. All semantic targets could agree because the capsule omitted a relevant BPMN fact or because the canonical projection hid it. Answer-free scenarios, independent live CIB execution, a checked non-law, source/profile identities, the task-projection mutation, and live Temporal replay reduce that risk but do not eliminate it. In particular, Lean currently executes content-identified capsule data compiled into its module rather than decoding the pipeline’s scenario and executable-IR JSON; this is a known correspondence gap, not a general input equivalence proof.
 
 The declarative relation and evaluator can also share the same incorrect transition account because they are authored in one Lean module. `internalStep_sound` rejects evaluator behavior outside the relation; it does not prove that the relation is complete, sufficiently restrictive, or faithful to BPMN and the selected CIB profile. The normative/profile analysis, checked non-law, independent implementations, CIB evidence, and future structurally distinct capsule remain necessary.
 

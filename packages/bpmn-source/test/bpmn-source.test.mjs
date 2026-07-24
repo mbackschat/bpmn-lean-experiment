@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
+  BpmnCompilerIdentity,
   BpmnCompilationStatus,
   BpmnExecutableIrKind,
   BpmnSourceDiagnosticCode,
@@ -10,11 +11,11 @@ import {
 } from "../dist/index.js";
 
 const scenarioUrl = new URL(
-  "../../../scenarios/m0-sequential-user-task/scenario.json",
+  "../../../scenarios/user-task-discovery-completion/scenario.json",
   import.meta.url,
 );
 const bpmnUrl = new URL(
-  "../../../scenarios/m0-sequential-user-task/process.bpmn",
+  "../../../scenarios/user-task-discovery-completion/process.bpmn",
   import.meta.url,
 );
 const scenario = JSON.parse(await readFile(scenarioUrl, "utf8"));
@@ -46,21 +47,20 @@ test("retains the exact source identity and compiles the model to named-task IR"
   firstCopy[0] = 0;
   assert.equal(result.copyExactBytes()[0], canonicalBytes[0]);
   assert.deepEqual(result.source, {
-    schemaVersion: "0.1.0",
-    id: "m0-sequential-user-task-process",
-    sha256: "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295",
+    kind: "bpmnSource",
+    id: "sequential-user-task-process",
+    sha256: "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
     byteLength: canonicalBytes.byteLength,
     declaredEncoding: "UTF-8",
     decodedAs: "UTF-8",
   });
   assert.deepEqual(result.executableIr, {
-    schemaVersion: "0.2.0",
     kind: BpmnExecutableIrKind.SequentialUserTask,
     identity: {
-      compiler: "bpmn-source-sequential-user-task@0.2.0",
-      semanticProfile: "cibseven-2.2.0-spike.1",
-      sourceId: "m0-sequential-user-task-process",
-      sourceSha256: "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295",
+      compiler: BpmnCompilerIdentity.SequentialUserTask,
+      semanticProfile: "cibseven-2.2.0-user-task-draft",
+      sourceId: "sequential-user-task-process",
+      sourceSha256: "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
     },
     processId: "Process_SequentialUserTask",
     startEventId: "StartEvent_1",

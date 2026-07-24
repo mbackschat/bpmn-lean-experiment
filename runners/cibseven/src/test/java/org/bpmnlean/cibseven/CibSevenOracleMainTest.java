@@ -18,7 +18,7 @@ public class CibSevenOracleMainTest {
   public void servesTheInteractionCapsuleInRequestOrderThroughOneEngine()
       throws Exception {
     var capsuleRoot =
-        PROJECT_ROOT.resolve("scenarios/m1-user-task-discovery-completion");
+        PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion");
     var scenarios =
         List.of(
             ScenarioJson.read(capsuleRoot.resolve("scenario.json")),

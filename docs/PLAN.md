@@ -1,107 +1,95 @@
 # Plan
 
-The durable milestone contract is [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md). This document owns the live checkpoint and exact resume point.
+This document owns the current checkpoint, ordered next work, unresolved decisions, and exact resume point. Durable architecture belongs in [PROJECT-DESIGN.md](PROJECT-DESIGN.md); exact supported and absent surfaces belong in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md); test procedure belongs in [TESTING.md](TESTING.md).
 
-## Verified checkpoint
+## Current checkpoint
 
-- The complete handoff is preserved in [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md).
-- The official BPMN 2.0.2 PDF and machine-readable files are locally ingested, the PDF is converted to Markdown with image/link integrity checked, and the formal target is recorded in [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md).
-- The project is initialized as a Git repository on `main`.
-- Lean 4.31.0 and Lake 5.0 are pinned with no external packages.
-- The Phase 0 contract vocabulary passes `lake build` and `lake test`.
-- The CIB Seven source checkout matches the handoff’s investigated revision.
-- CIB Seven’s inherited semantic regression corpus and harness have been characterized, the BPMN MIWG interchange suite is pinned, and Betsy is available as a historical cross-engine execution-case source.
-- The official Temporal TypeScript SDK and the sibling Lean experiment are available as pinned references with exact revisions in [SOURCES.md](SOURCES.md).
-- Temporal’s replay mechanism, Workflow and Activity execution, message types, concurrency, retries, timers, cancellation, Continue-As-New, versioning, data and visibility boundaries, human-task mechanics, and unsafe BPMN mapping shortcuts are recorded in [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md).
-- The question-driven formal-methods toolbox is assessed in [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md): no Milestone 0 expansion or selected auxiliary tool; observational stuttering refinement remains an unimplemented adapter design target; TLA+, P, SPIN, mCRL2, Alloy/Electrum, LoLA, and specialized alternatives are available only for concrete questions.
-- Controlled source instrumentation and acceleration are authorized by [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md): pinned pristine evidence lanes remain authoritative, experimental branches are diagnostic, and semantics-relevant acceleration requires shadow comparison.
-- CIB Seven’s typed DOM authoring model, separate deployment parse tree, PVM definition graph, runtime execution tree, and the corresponding fUML/PSSM execution-model precedents are recorded in [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md).
-- A separately gated representation spike now distinguishes source from executable IR, flow scope from event scope, arrival count from edge provenance, and external commands from internal closure; its candidates remain provisional and are recorded in [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
-- M0.2 is complete: the repository-local Java 21 runner embeds pinned CIB Seven `2.2.0` on H2 `2.3.232`, controls logical time and automatic job execution, emits the calibrated sequential User Task trace, exposes a read-only PVM diagnostic, serves multiple JSON-lines requests through one warm engine, and proves cleanup after every run.
-- M0.3 is complete: the production Lean capsule separates command admission from internal closure, derives the calibrated canonical trace, keeps bound exhaustion outside semantic outcomes and committed observations, and proves start-to-wait, matching-completion, and non-matching-completion invariants.
-- M0.4 is complete: the dependency-free pure TypeScript semantic core independently derives the calibrated trace from an answer-free scenario, matches the lifecycle and bound-exhaustion guards, and joins Lean in a 1.11–1.17 second warm semantic gate.
-- M0.5 is complete: the full local Temporal server hosts one deterministic Workflow loop around the semantic core, the live Workflow result exactly equals the pure core result, and both live and committed Event Histories replay successfully.
-- M0.6 is complete: one command builds and concurrently runs CIB Seven, the Lean result emitter, the pure semantic core, and two isolated Temporal executions; exact canonical agreement, seeded-disagreement classification, CIB cleanup, live and retained replay, provenance, phase timings, and feedback budgets are enforced.
-- The bounded `a12-kernel-lean` process-transfer study is complete in [research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md): semantic claim lanes, immutable evidence, checked non-laws, mutation-sensitive projections, and specification-ownership rules were adopted without copying A12 domain semantics or introducing premature infrastructure.
-- The first BPMN XML ingestion slice is implemented under [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md): exact `bpmn-moddle@10.0.0` is isolated in `@bpmn-lean/bpmn-source`; exact bytes and hash, encoding, normalized diagnostics, caller byte limit, parser Promise-settlement deadline, DOCTYPE rejection, warning-blocked admission, lost-reference detection, private parser objects, bounded CMOF facts, and the sequential executable IR compiler are retained by focused tests. Synchronous parser CPU isolation remains absent as documented.
-- The complete pipeline now starts from exact BPMN XML, compiles source/profile/compiler-identified IR, passes it into both the pure semantic core and Temporal, records the ingestion phase, preserves four-target agreement, and replays both new IR-bearing history and the committed pre-IR history.
-- The optional pinned MIWG gate reads all 21 external CC-BY models without copying them and currently classifies fourteen as outside the first compiler, six as unsupported encoding, and one as warning-blocked.
-- The evidence-closed draft User Task interaction contract has a versioned profile, three neutral scenario artifacts, and language-neutral schema drafts. The pinned CIB runner observes the task name through public `TaskService` queries, projects structured semantic occurrence `(Instance_1, UserTask_Approve, 1)`, derives its enabled interaction from current state, completes that exact occurrence, rejects wrong-activation and stale completions without state change, and cleans every run. Lean independently derives the three traces and checks bounded exact completion, universal full-occurrence mismatch rejection/state preservation, the named wrong-activation corollary, and the element-only non-law. The XML compiler emits named-task IR v0.2, and the dependency-free TypeScript semantic core independently derives all three interaction traces while retaining v0.1 only for the lifecycle/replay boundary.
-- All four target scenarios are answer-free. Separate immutable CIB evidence artifacts bind exact scenario bytes, profile, trace projection, pinned producer environment, and engine revision; the approved Ajv 8.20.0 Draft 2020-12 gate rejects answer smuggling, stale evidence, and invalid task projection, while the differential pipeline compares live CIB output with retained evidence.
-- The complete pipeline now batches all four scenarios through one CIB engine, one scenario-identified Lean JSON-lines emitter, the semantic core, and two isolated Temporal Workflows per case under one server/Worker. Every four-target and retained-CIB comparison agrees; exact Query projections and Update outcomes match the core; duplicate command delivery is transition-free; lifecycle-state and task-activation mutations are classified; and one replay Worker checks all live plus retained histories.
-- An immutable exact-completion Update history now joins the retained lifecycle Signal history. Its guard checks deterministic runtime identity, exact scenario and IR inputs, the accepted completion request, committed Update result, final semantic result, and absence of Signal delivery; the older Signal history is an executable negative witness for the Update-evidence classification.
-- The capsule closure is recorded in [the semantic owner](capsules/USER-TASK-INTERACTION.md) and [project design](PROJECT-DESIGN.md). It establishes only the content-addressed sequential slice, names repeated or simultaneous activation as the nearest unsupported task claim, records the compiled-in Lean input correspondence gap, and concludes that the architecture is feasible enough to test on a structurally distinct semantic family.
-- The public entry path is complete: the top-level README links a plain-Markdown [end-to-end MVP walkthrough](MVP-WALKTHROUGH.md) across source admission, CIB, Lean, the semantic core, Temporal, comparison, mutation, and replay. Seven canonical excerpts mirror tagged compiling or executed sources through an assert-only drift gate and an explicit synchronization command; no Showboat or new dependency is involved.
-- The WebAssembly/SpecTec recommendations are carefully adopted without a new DSL or dependency: the existing sequential Lean evaluator has a separate declarative internal-step relation and universal soundness bridge; the User Task capsule owns stable rule IDs, a rule-indexed evidence matrix, and a runtime-only construct inventory; and portable assertions remain answer-free, verifier-side, and deliberately without a general schema.
+The bounded `None Start Event → User Task → None End Event` capsule is evidence-closed as a draft:
 
-## Locked ultimate target
+- exact BPMN bytes are admitted and compiled to current project-owned executable IR;
+- the current profile and three answer-free scenarios use one structural contract with content-bound CIB evidence;
+- CIB Seven, Lean, the TypeScript semantic core, and Temporal agree exactly for completion, wrong activation, and stale completion;
+- Lean proves evaluator soundness for internal steps, exact completion, quantified full-occurrence mismatch rejection with state preservation, and the element-only identity non-law;
+- Temporal uses Query plus acknowledged Update, checks duplicate logical delivery, and replays all current live histories on a fresh in-memory server;
+- seeded task-activation disagreement, target isolation, CIB cleanup, process cleanup, and feedback budgets are executable;
+- pre-release prototype compatibility paths, embedded wire-format counters, old milestone artifacts, committed Temporal histories, Workflow patch branches, and legacy IR readers have been removed;
+- the central [CIB–BPMN register](CIB-BPMN-RELATION.md) records all reviewed relationships and currently contains no candidate or confirmed deviation.
 
-The adapter will import BPMN 2.0.2 Process diagrams, including their definitional Collaboration, and ultimately satisfy OMG Process Execution Conformance. The separate CIB Seven profile will target public CIB execution compatibility within a declared observation boundary. BPMN Complete Conformance, Process Modeling Conformance, BPEL mapping, and Choreography Modeling Conformance are outside the current product goal unless the owner explicitly expands it.
+The active implementation boundary is [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
-## Approved Milestone 0 decisions
+## Last verified baseline
 
-These decisions authorize the walking skeleton only. They do not yet constitute an immutable compatibility profile or evidence of CIB or BPMN conformance.
+`/usr/bin/time -p env CI=true /opt/homebrew/bin/timeout 60 ./scripts/verify.sh` passed on 2026-07-24 in 23.56 seconds real time. Its prepared three-case four-target pipeline completed in 5.30 seconds warm and replayed three live histories. The separately gated representation experiment passed with `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike`.
 
-| Decision | Milestone choice | Reason |
-|---|---|---|
-| CIB oracle | CIB Seven `v2.2.0` at `834a9874760de8a0107f7c1b32806e37f17fb017` | It is the published release actually executed by the source investigation; the investigated `2.3.0-SNAPSHOT` source must not be mixed into its behavior claims |
-| Delivery architecture | Establish research, CIB, Lean, semantic core, Temporal, diff, and replay in Milestone 0 | Every later semantic capsule must use the real assurance pipeline rather than a deferred integration path |
-| BPMN features | None Start Event, User Task, None End Event, two Sequence Flows, and Process completion | This is the smallest useful external wait and command-closure slice |
-| CIB extensions | None | Extensions would enlarge the compatibility boundary before the core oracle is calibrated |
-| Oracle environment | Java 21, H2 fast lane, automatic job executor disabled, explicit logical clock and scheduler | CIB Seven 2.2 supports Java 17 and 21, publishes Java 21 Docker images, and the machine already has Homebrew Java 21 |
-| Expressions and values | No expression evaluation in the first executable slice | Coercion and serialization are high-risk compatibility domains and need their own explicit profile decision |
-| Public observation | Deployment outcome, command outcome, Process status, active semantic waits with multiplicity, enabled stimuli, logical time, and stable semantic identity | These are the minimum high-value categories for the walking skeleton without exposing host internals |
-| Listener and history scope | Exclude both initially | Including ordering and history projections would materially expand the observation boundary |
-| Nondeterminism | No semantic concurrency in the first slice; use exact canonical trace equality | Causal-order comparison is unnecessary until a concurrent capsule explicitly introduces it |
-| External services | Exclude initially | External effects require a separate consistency, idempotency, retry, and rollback contract |
-| Feedback budgets | Semantic loop under 2 seconds warm; full pipeline under 15 seconds warm and 45 seconds cold | A correct pipeline that is too slow for red/green work will not serve the project |
+## Next proposed semantic capsule
 
-## Next ordered work
+Research and draft a minimal parallel fork/two User Task waits/parallel join capsule. Do not implement profile-dependent semantics until the owner approves the draft.
 
-1. Treat the [User Task interaction capsule](capsules/USER-TASK-INTERACTION.md) as evidence-closed for its draft bounded claim. Search Attributes, Visibility-based global discovery, a production task inbox, actors, assignment, variables, forms, repeated activation, and broader human-task lifecycle remain outside it.
-2. Next draft and obtain approval for a minimal parallel fork/two User Task waits/parallel join capsule before implementing semantics. Its separating witnesses must cover both completion orders, refusal to complete after only one branch, exact task multiplicity, and the existing duplicate-arrival-provenance counterexample. The draft must assign stable material-rule IDs, include a rule-to-evidence matrix, and inventory every synthetic fork, arrival, activation, and join construct.
-3. Use that parallel capsule as the second structurally distinct compiler and IR consumer. Preserving `FlowElement.name` was a second semantic property use inside the sequential compiler, not evidence that the partial CMOF manifest or executable IR generalizes. Keep full metamodel generation, non-UTF-8 decoding, source locations, extensions, DI, and export outside the next slice.
-4. Close the Lean input correspondence gap only through that real consumer: the next Lean lane must consume or content-bind the exact admitted scenario and executable IR rather than adding another scenario-ID-only compiled-in result. Its declarative transition relation and executable evaluator must receive explicit semantic choice where multiple orders are permitted and must prove evaluator-step soundness before differential agreement is treated as semantic evidence. Do not build a general codec or generator before the capsule determines the minimum contract.
-5. Require parallel-join laws over incoming-flow provenance, token multiplicity, and stable refusal, plus a checked count-only non-law. Preserve explicit completion order as scenario input until a causal comparison contract is approved. Add only the minimum verifier-side assertion forms needed by these witnesses; do not introduce a general assertion language or machine-readable rule registry without measured cross-capsule drift.
-6. Keep advanced boundary Event, Event Sub-Process, multi-instance, expression, and variable semantics in the diagnostic or research lane until their semantic capsules are approved.
-7. Before adding an auxiliary formal tool, identify a concrete question and seeded defect, then time-box the smallest candidate experiment from [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md); no formal-method spike is currently scheduled.
-8. Expand the BPMN requirement ledger, MIWG ingestion coverage, and CIB assertion/fixture extraction one semantic capsule at a time.
+The capsule must separate at least these competing accounts:
 
-## Post-checkpoint roundtrip review
+1. one count-only join state versus incoming-flow provenance;
+2. a single linear active-node state versus multiplicity-preserving concurrent tokens or activations;
+3. evaluator branch order versus semantic completion-order independence;
+4. scenario-identified compiled-in Lean inputs versus admitted executable-IR correspondence.
 
-- The feedback lanes are healthy: the artifact-warm semantic gate completes in 1.38 seconds, the current prepared four-case pipeline in 5.86 seconds, and the current complete repository gate in 24.56 seconds real time. All remain within their budgets; the batching work prevents CIB, Lean, Temporal-server, Worker, and replay startup costs from multiplying per case.
-- The prepared pipeline's dominant cost remains its fresh CIB Maven/Surefire target. One replay Worker now checks six histories after replacing separate replay bundles. The next performance change should target the CIB test-class boundary only if a measured capsule closure shows that further improvement is worth its noninterference cost.
-- The scenario/evidence correction is implemented: target scenarios contain no answer, retained CIB evidence is content-bound and verifier-only, and the maintained schema/mutation gate prevents regression.
-- Keep probe batches coherent and bounded by one semantic question, preserve raw-recovery provenance and a mutation-sensitive canonical projection, and promote only the compact retained observation into the normal verification path. Do not regenerate evidence during an ordinary green run.
-- Reassess CIB transport persistence, Temporal environment reuse, Workflow bundling, projection fidelity, duplicated builds, and gate timings at every capsule closure. Optimize only the measured dominant phase while preserving target independence and failure classification.
-- The [WebAssembly and SpecTec transfer study](research/WEBASSEMBLY-SEMANTICS-TRANSFER.md) supports a bounded trial of stable rule IDs, declarative Lean microsteps, evaluator soundness, and rule-indexed evidence in the already planned parallel capsule. It does not adopt a semantic DSL, generator, new proof assistant, or dependency and does not reorder the plan.
+The smallest candidate model is:
 
-## Exact resume point
+```text
+None Start
+    ↓
+parallel fork
+   ↙   ↘
+User A User B
+   ↘   ↙
+parallel join
+    ↓
+None End
+```
 
-- Current package: Milestone 0, the bounded `a12-kernel-lean` and WebAssembly/SpecTec process-transfer studies and their rule-traceability/relation-evaluator adoption, the first exact BPMN XML → executable IR → semantic core → Temporal → differential slice, the evidence-closed draft User Task interaction expansion, and the source-synchronized public MVP walkthrough are complete.
-- Last measured complete verification: `/usr/bin/time -p env CI=true /opt/homebrew/bin/timeout 60 ./scripts/verify.sh` passes the current source in 24.56 seconds real time, 28.50 seconds aggregate user CPU, and 2.94 seconds system time. Its prepared pipeline completes in 5.86 seconds warm, including four-target agreement for all four cases and replay of four live plus two retained histories. The source-synchronized walkthrough gate checks seven fragments before compilation.
-- Current state: the content-addressed BPMN fixture, exact-source importer, bounded CMOF manifest, named-task sequential compiler, two draft spike profiles, four answer-free scenarios with separate immutable CIB evidence, stable User Task rule IDs and evidence matrix, production Lean lifecycle and interaction interpreter with a declarative internal-step relation, evaluator-soundness and task laws, plus its batch emitter, dependency-free IR-consuming TypeScript semantic core, deterministic Query/Update Temporal host, pure comparator, four-case four-target agreement, duplicate-command evidence, lifecycle/task mutations, batched live replay, retained lifecycle-Signal and exact-completion-Update replay, diagnostic PVM projection, cleanup, provenance, and timing budgets are green.
-- Next implementation target: research and draft—but do not implement before approval—the minimal parallel fork/two User Task waits/parallel join capsule described above. It must become the second structurally distinct compiler consumer and close the scenario-ID-only Lean input-binding gap without prematurely generalizing the full IR or transport. No parallel, Search Attribute, inbox, actor, assignment, variable, form, multi-instance, expression, or broader BPMN semantics is currently approved.
-- Contract dependency result: direct development dependency `ajv@8.20.0` is approved and locked for Draft 2020-12 boundary validation and mutation tests; it is MIT-licensed, already existed transitively, and does not enter Lean, the semantic core, or Temporal Workflow code.
-- M0.2 calibrated result: deployment and both commands commit; start reaches one `UserTask_Approve` wait with multiplicity one and enables its completion stimulus; completion ends `Instance_1`; logical time remains zero.
-- M0.2 diagnostic result: ordered PVM topology matches the source sequence, ordinary flow activities have no PVM event scope, and the None End Event’s internal type is `noneEndEvent`; these facts remain diagnostic rather than compatibility keys.
-- M0.2 performance result: dependency-warm engine startup measured 1.983 seconds and one scenario including cleanup measured 0.492 seconds; the dependency-warm Maven gate completed in 5.28 seconds.
-- M0.3 performance result: the source-current Lean build measured 3.29 seconds; the artifact-warm focused build measured 0.14 seconds and execution measured 0.16 seconds.
-- M0.4 performance result: two artifact-warm semantic-gate runs covering Lean and the TypeScript semantic core measured 1.17 seconds and 1.11 seconds, within the less-than-two-second budget.
-- M0.5 performance result: the first successful source-current Temporal gate completed in 7.33 seconds; an artifact-warm rerun including TypeScript builds, full local-server startup, live execution, live replay, retained replay, and cleanup completed in 2.15 seconds.
-- M0.6 performance result: the first successful source-current pipeline measured 5.03 seconds warm and 6.19 seconds including the build phase, within the 15-second warm and 45-second cold budgets; concurrent scenario execution was the largest phase at 3.33 seconds.
-- M0.5 dependency result: direct Temporal SDK packages are pinned together at `1.21.0`, CLI `v1.8.1` is cached locally, optional SWC/protobuf install scripts are denied, and the permissive graph audit is recorded in [SOURCES.md](SOURCES.md).
-- Post-M0 ingestion result: the exact M0 XML now compiles through `bpmn-source-sequential-user-task@0.2.0` to project-owned IR carrying the admitted User Task ID and optional name; the prior v0.1 IR remains only for retained lifecycle/replay compatibility, and the source compiler is intentionally not general.
-- User Task interaction result: CIB, Lean, and TypeScript independently derive successful exact completion, wrong activation, and stale completion; the canonical enabled interaction is command-ID-free and state-derived; Lean proves universal full-occurrence mismatch rejection/state preservation, retains wrong activation as a corollary, and checks the element-only identity non-law; and the TypeScript core rejects full-identity mismatches with state unchanged. Temporal reproduces the three results through exact open-task Query and acknowledged completion Update, returns the core-owned outcome, deduplicates a repeated semantic command sent under a distinct Update ID, and replays every live interaction history.
-- Batch infrastructure result: one CIB JSON-lines process/engine preserves request identity and cleanup across all four scenarios; one Lean JSON-lines process emits all four interpreter-derived results by scenario identity; one Temporal server/Worker executes two isolated copies of every case; and one replay Worker checks all four primary histories plus retained lifecycle-Signal and exact-completion-Update histories.
-- Current feedback result: the artifact-warm semantic gate completes in 1.38 seconds real time, the clean-commit prepared four-case agreement/replay pipeline completes in 7.24 seconds warm, and the focused Temporal gate completes its Query/Update, duplicate, integrity, and replay checks in 2.61 seconds of Node test time. Prepared mode reports cold time as unavailable rather than treating skipped builds as a zero-duration cold build.
-- M0.5 architecture result: BPMN models are interpreted from versioned executable IR data rather than compiled into authoritative generated TypeScript; the first bounded XML-to-IR path is implemented while general compilation remains absent.
-- Transport status: CIB consumes and produces scenario-identified JSON Lines through a persistent process, while Lean produces scenario-identified JSON Lines from four compiled-in capsule scenarios. The framing is now reused, but Lean remains a one-way capsule emitter rather than a general scenario consumer. TypeScript consumes the shared logical contract in-process, and Temporal’s bounded interaction API uses exact Query plus acknowledged Update.
-- Architecture-spike status: M0.3 transferred only the definition/runtime, command/closure, and bound-classification distinctions; the experiment's source/IR, scope, and token types remain outside production semantic authority.
-- Later Temporal implementation constraint: Event History, not Workflow cache or Visibility, is the durability source; the initial adapter must serialize all semantic core mutation through one Workflow loop and treat Search Attributes as an eventually consistent projection.
-- Known environment constraints: Homebrew Java 21 and Node 24 are installed but not globally active and are selected explicitly by maintained wrappers; `.nvmrc` and `.node-version` also pin Node 24.18.0; Maven is supplied by the repository wrapper; the first Temporal gate downloads CLI `v1.8.1` and the managed sandbox requires permission to execute its local server; the ignored normative CMOF and external MIWG checkout make their respective checks local/optional while tracked focused tests remain self-contained.
-- JavaScript/TypeScript command policy: the shared long-running-command guidance was read before selecting or running the M0.4 toolchain; keep tests at or below 60 seconds, builds at or below 120 seconds, and diagnose silent CPU saturation instead of extending timeouts.
+Required draft outputs:
+
+- exact BPMN 2.0.2 clauses, figures, normative metamodel facts, and relevant open issues;
+- the smallest pristine CIB probe and relationship classification;
+- positive witnesses for `A then B` and `B then A`;
+- a negative witness showing two arrivals through one incoming flow cannot satisfy the join;
+- proposed source, executable-IR, runtime-token, scope, scheduler-choice, command, and observation distinctions;
+- proposed stable rule IDs, useful Lean laws, nearest non-law, and mutation points;
+- an explicit assessment of whether the provisional representation spike supplies useful candidate types or should be discarded;
+- a concrete plan to make Lean consume or content-bind the admitted definition without introducing a general semantic DSL.
+
+## Ordered work
+
+1. Read the applicable normative clauses and current [representation research](research/SEMANTIC-REPRESENTATIONS.md).
+2. Review the provisional [semantic-representation experiment](experiments/SEMANTIC-REPRESENTATION-SPIKES.md) against the concrete parallel consumer.
+3. Create a capsule draft with competing accounts and separating witnesses; do not edit production semantics yet.
+4. Run the smallest CIB probe on the pristine pinned lane and classify its relationship to BPMN.
+5. Present the draft, profile expansion, any dependency implication, and unresolved interpretation to the owner for approval.
+6. After approval, close the capsule lane by lane: contract red test, CIB evidence, Lean relation/evaluator/laws/non-law, independent TypeScript core, Temporal refinement/live replay, differential mutation, docs, and closure review.
+
+## Explicitly deferred
+
+- assignment, users/groups, authorization, forms, variables, expressions, and data associations;
+- global task discovery or Search Attributes;
+- messages, timers, Activities, retries, cancellation, incidents, compensation, and event subprocesses;
+- multi-instance, loops, migration, and Continue-As-New;
+- general BPMN source/IR generation or a semantic DSL;
+- immutable profile or production Event History compatibility;
+- public BPMN conformance or broad CIB compatibility claims.
 
 ## Stop conditions
 
-Stop and request direction if source and executable CIB revisions diverge, a decision would enlarge the approved feature or observation boundary, an exact new dependency has not been approved, reference behavior is ambiguous, a profile choice would be inferred from host runtime behavior, a performance budget cannot be met without changing the contract, or a proposed mechanism duplicates CIB Seven or Temporal semantics inside the wrong component.
+Stop for owner direction if:
+
+- BPMN and pinned CIB evidence leave multiple materially different semantic accounts;
+- the profile feature or observation boundary would expand beyond the approved capsule;
+- a dependency addition, removal, replacement, or upgrade is required;
+- a representation would be generalized without a second concrete consumer and separating mutation;
+- source and executable CIB revisions diverge;
+- the feedback budget cannot be met without weakening independence or evidence;
+- implementation would silently select CIB behavior over clear BPMN requirements or vice versa.
+
+## Exact resume point
+
+Start with the parallel-capsule research draft. First read [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md), [CIB-BPMN-RELATION.md](CIB-BPMN-RELATION.md), [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md), [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md), and the current [User Task capsule](capsules/USER-TASK-INTERACTION.md). Then identify the normative parallel-gateway join rule and design the smallest CIB probe that distinguishes incoming-flow provenance from arrival count.
+
+Before beginning, run the applicable baseline in [TESTING.md](TESTING.md) and confirm `git status --short --branch`.

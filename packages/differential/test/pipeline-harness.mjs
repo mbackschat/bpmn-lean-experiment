@@ -34,11 +34,6 @@ const leanExecutable = "emitSequentialUserTaskResults";
 const buildMs = Number.parseFloat(process.env.BPMN_PIPELINE_BUILD_MS ?? "");
 const buildMode = process.env.BPMN_PIPELINE_BUILD_MODE;
 
-function mutateRunningStatus(result) {
-  const running = runningObservation(result);
-  running.status = ProcessStatus.Completed;
-}
-
 function mutateOpenTaskActivation(result) {
   const running = runningObservation(result);
   const openTask = running.openUserTasks?.[0];
@@ -75,14 +70,11 @@ function interactionCase(
   return Object.freeze({
     id,
     scenarioRelativePath:
-      `scenarios/m1-user-task-discovery-completion/${scenarioFile}`,
+      `scenarios/user-task-discovery-completion/${scenarioFile}`,
     evidenceRelativePath:
-      `scenarios/m1-user-task-discovery-completion/${evidenceFile}`,
+      `scenarios/user-task-discovery-completion/${evidenceFile}`,
     bpmnRelativePath:
-      "scenarios/m0-sequential-user-task/process.bpmn",
-    retainedHistoryRelativePaths: Object.freeze(
-      options.retainedHistoryRelativePaths ?? [],
-    ),
+      "scenarios/user-task-discovery-completion/process.bpmn",
     workflowIdPrefix: id,
     expectedWaitTraceLength: 3,
     duplicateFirstCompletionUpdateId:
@@ -92,39 +84,18 @@ function interactionCase(
 }
 
 export const pipelineCases = Object.freeze([
-  Object.freeze({
-    id: "m0-sequential-user-task",
-    scenarioRelativePath:
-      "scenarios/m0-sequential-user-task/scenario.json",
-    evidenceRelativePath:
-      "scenarios/m0-sequential-user-task/cibseven-evidence.json",
-    bpmnRelativePath:
-      "scenarios/m0-sequential-user-task/process.bpmn",
-    retainedHistoryRelativePaths: Object.freeze([
-      "packages/temporal-adapter/test/fixtures/m0-sequential-user-task.history.json",
-    ]),
-    workflowIdPrefix: "m0-sequential-user-task",
-    expectedWaitTraceLength: 3,
-    duplicateFirstCompletionUpdateId: undefined,
-    injectMutation: mutateRunningStatus,
-  }),
   interactionCase(
-    "m1-user-task-discovery-completion",
+    "user-task-discovery-completion",
     "scenario.json",
     "cibseven-evidence.json",
-    {
-      retainedHistoryRelativePaths: [
-        "packages/temporal-adapter/test/fixtures/m1-user-task-exact-update.history.json",
-      ],
-    },
   ),
   interactionCase(
-    "m1-user-task-wrong-activation",
+    "user-task-wrong-activation",
     "wrong-activation.scenario.json",
     "wrong-activation.cibseven-evidence.json",
   ),
   interactionCase(
-    "m1-user-task-stale-completion",
+    "user-task-stale-completion",
     "stale-completion.scenario.json",
     "stale-completion.cibseven-evidence.json",
     {
@@ -335,22 +306,14 @@ async function loadAndCompileCases(cases) {
         projectRoot,
         pipelineCase.evidenceRelativePath,
       );
-      const [scenario, retainedEvidence, retainedHistories] =
-        await Promise.all([
-          readJson(scenarioPath),
-          readJson(evidencePath),
-          Promise.all(
-            pipelineCase.retainedHistoryRelativePaths.map(
-              (relativePath) =>
-                readJson(path.join(projectRoot, relativePath)),
-            ),
-          ),
-        ]);
+      const [scenario, retainedEvidence] = await Promise.all([
+        readJson(scenarioPath),
+        readJson(evidencePath),
+      ]);
       return {
         pipelineCase,
         scenario,
         retainedEvidence,
-        retainedHistories,
       };
     }),
   );
@@ -516,7 +479,6 @@ function compareCase(context, projectedTargets) {
         profile: scenario.profile,
         bpmnSha256: scenario.bpmn.sha256,
         executableIr: {
-          schemaVersion: executableIr.schemaVersion,
           kind: executableIr.kind,
           compiler: executableIr.identity.compiler,
         },
@@ -545,31 +507,19 @@ function compareCase(context, projectedTargets) {
 }
 
 async function replayEvidence(runner, contexts, temporalResults) {
-  const items = [];
-  let liveHistories = 0;
-  let retainedHistories = 0;
-  for (const context of contexts) {
+  const items = contexts.map((context) => {
     const temporal = requiredResult(
       temporalResults,
       context.scenario.id,
       "Temporal",
     );
-    items.push({
+    return {
       history: temporal.primary.history,
       workflowId: `${context.pipelineCase.workflowIdPrefix}-live-replay`,
-    });
-    liveHistories += 1;
-    for (const [index, history] of context.retainedHistories.entries()) {
-      items.push({
-        history,
-        workflowId:
-          `${context.pipelineCase.workflowIdPrefix}-retained-replay-${index}`,
-      });
-      retainedHistories += 1;
-    }
-  }
+    };
+  });
   await runner.replayHistories(items);
-  return { liveHistories, retainedHistories };
+  return { liveHistories: items.length };
 }
 
 function cibTiming(cibTarget, contexts) {
@@ -699,7 +649,7 @@ export async function runPipelineCases(cases) {
   const warmMs = elapsedMs(warmStarted);
   const coldMs = buildMode === "measured" ? buildMs + warmMs : null;
   const report = {
-    schemaVersion: "0.2.0",
+    kind: "bpmnPipelineReport",
     buildMode,
     implementationRevision: revision,
     cases: caseResults.map(({ report: caseReport }) => caseReport),

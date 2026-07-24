@@ -5,7 +5,7 @@ import Lean.Data.Json
 
 /-! One-way canonical JSON-lines emitter for the sequential User Task results.
 
-This is deliberately not a general scenario parser or transport. It exposes the results derived by the executable Lean interpreter for the content-addressed lifecycle and User Task interaction capsules so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
+This is deliberately not a general scenario parser or transport. It exposes the results derived by the executable Lean interpreter for the content-addressed User Task interaction capsule so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
 -/
 
 namespace BpmnSemantics.SequentialUserTaskJsonMain
@@ -37,24 +37,6 @@ private def userTaskInstanceIdJson (taskId : UserTaskInstanceId) : Json :=
     , ("elementId", toJson taskId.elementId.value)
     , ("activation", toJson taskId.activation) ]
 
-private def stimulusJson : Stimulus → Json
-  | .startProcess commandId processId instanceId =>
-      Json.mkObj
-        [ ("kind", toJson "startProcess")
-        , ("commandId", toJson commandId.value)
-        , ("processId", toJson processId.value)
-        , ("instanceId", toJson instanceId.value) ]
-  | .completeUserTask commandId elementId =>
-      Json.mkObj
-        [ ("kind", toJson "completeUserTask")
-        , ("commandId", toJson commandId.value)
-        , ("elementId", toJson elementId.value) ]
-  | .completeUserTaskInstance commandId taskId =>
-      Json.mkObj
-        [ ("kind", toJson "completeUserTaskInstance")
-        , ("commandId", toJson commandId.value)
-        , ("taskId", userTaskInstanceIdJson taskId) ]
-
 private def activeWaitJson (wait : ActiveWait) : Json :=
   Json.mkObj
     [ ("elementId", toJson wait.elementId.value)
@@ -76,22 +58,16 @@ private def enabledInteractionJson : EnabledInteraction → Json
         [ ("kind", toJson "completeUserTaskInstance")
         , ("taskId", userTaskInstanceIdJson taskId) ]
 
-private def optionalArrayField (name : String) (encode : α → Json) :
-    Option (List α) → List (String × Json)
-  | none => []
-  | some values => [(name, jsonArray (values.map encode))]
-
 private def stateObservationJson (state : StateObservation) : Json :=
   Json.mkObj
-    ([ ("kind", toJson "state")
-     , ("instanceId", toJson state.instanceId.value)
-     , ("status", processStatusJson state.status)
-     , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson)) ] ++
-    optionalArrayField "openUserTasks" openUserTaskJson state.openUserTasks ++
-    optionalArrayField "enabledStimuli" stimulusJson state.enabledStimuli ++
-    optionalArrayField "enabledInteractions" enabledInteractionJson
-      state.enabledInteractions ++
-    [("logicalTimeMs", toJson state.logicalTimeMs)])
+    [ ("kind", toJson "state")
+    , ("instanceId", toJson state.instanceId.value)
+    , ("status", processStatusJson state.status)
+    , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
+    , ("openUserTasks", jsonArray (state.openUserTasks.map openUserTaskJson))
+    , ("enabledInteractions",
+        jsonArray (state.enabledInteractions.map enabledInteractionJson))
+    , ("logicalTimeMs", toJson state.logicalTimeMs) ]
 
 private def canonicalObservationJson : CanonicalObservation → Json
   | .deployment outcome =>
@@ -128,8 +104,7 @@ private def resultRecordJson (scenario : Scenario) : Json :=
         (BpmnSemantics.SequentialUserTask.run scenario)) ]
 
 private def emittedScenarios : List Scenario :=
-  [ contractScenario
-  , BpmnSemantics.UserTaskInteractionConformance.successfulScenario
+  [ BpmnSemantics.UserTaskInteractionConformance.successfulScenario
   , BpmnSemantics.UserTaskInteractionConformance.wrongActivationScenario
   , BpmnSemantics.UserTaskInteractionConformance.staleCompletionScenario ]
 

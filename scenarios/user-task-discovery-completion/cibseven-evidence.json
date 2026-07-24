@@ -1,23 +1,23 @@
 {
-  "schemaVersion": "0.1.0",
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
-    "id": "m0-sequential-user-task",
-    "sha256": "f539a981c61d3de0d8ee411a9888b3bae615400ee82cb2427762481679d41bd1"
+    "id": "user-task-discovery-completion",
+    "sha256": "1d643d9aa6eb7a4a5ab146c52c2102d1bb642cdf14ab497cb032262d5a8d3b84"
   },
-  "profile": "cibseven-2.2.0-spike.1",
-  "traceSchemaVersion": "0.1.0",
+  "profile": {
+    "id": "cibseven-2.2.0-user-task-draft",
+    "sha256": "dd6553dd66793ad5dfef2420f545443b7b0b2c645199f020c6993e2b8f62bcae"
+  },
   "producer": {
     "engine": "CIB Seven",
     "engineVersion": "2.2.0",
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
-    "runner": "cibseven-oracle@0.1.0",
+    "runner": "cibseven-oracle",
     "java": "21",
     "database": "H2 2.3.232"
   },
   "projection": {
-    "id": "canonical-scenario-result",
-    "version": "0.1.0"
+    "id": "canonical-scenario-result"
   },
   "result": {
     "outcome": {
@@ -45,18 +45,32 @@
             "multiplicity": 1
           }
         ],
-        "enabledStimuli": [
+        "openUserTasks": [
           {
-            "kind": "completeUserTask",
-            "commandId": "complete-user-task",
-            "elementId": "UserTask_Approve"
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "name": "Approve",
+            "state": "active"
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            }
           }
         ],
         "logicalTimeMs": 0
       },
       {
         "kind": "command",
-        "commandId": "complete-user-task",
+        "commandId": "complete-user-task-instance",
         "outcome": "committed"
       },
       {
@@ -64,7 +78,8 @@
         "instanceId": "Instance_1",
         "status": "completed",
         "activeWaits": [],
-        "enabledStimuli": [],
+        "openUserTasks": [],
+        "enabledInteractions": [],
         "logicalTimeMs": 0
       }
     ]

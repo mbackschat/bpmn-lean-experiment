@@ -6,7 +6,7 @@ project_root=$(git rev-parse --show-toplevel)
 cd "$project_root"
 
 xsd_path="docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
-bpmn_path="scenarios/m0-sequential-user-task/process.bpmn"
+bpmn_path="scenarios/user-task-discovery-completion/process.bpmn"
 
 ./scripts/pnpm.sh run test:contracts
 ./scripts/pnpm.sh run check:doc-fragments

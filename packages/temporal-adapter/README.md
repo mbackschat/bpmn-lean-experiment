@@ -1,36 +1,33 @@
 # Temporal adapter
 
-`@bpmn-lean/temporal-adapter` is the durable host for the pure [TypeScript semantic core](../semantic-core/README.md). Temporal records delivery and Workflow decisions; the semantic core remains the owner of BPMN-visible state transitions and canonical observations.
+`@bpmn-lean/temporal-adapter` durably hosts the pure [TypeScript semantic core](../semantic-core/README.md). Temporal records message delivery and Workflow decisions; the core remains the owner of BPMN-visible state transitions and canonical observations.
 
-The implementation supports only the content-addressed sequential User Task capsule. Deployment-time code parses BPMN XML outside the Workflow and passes its versioned executable IR plus the neutral scenario into one generic Workflow. The Workflow admits that IR through the semantic core, applies the start stimulus, and returns the same result as the in-process core. Its `bpmn-open-user-tasks` Query exposes the current core-derived task projection for a known Workflow, while its `bpmn-complete-user-task` Update queues one structured completion and returns the core-owned command outcome. Query and Update handlers never advance semantic state directly; one main loop alone calls the core.
+Deployment-time code parses BPMN XML outside Workflow execution and passes admitted executable IR plus the neutral scenario to one generic Workflow. The Workflow applies the start stimulus and completion commands through the core. The `bpmn-open-user-tasks` Query exposes the current core-derived projection. The `bpmn-complete-user-task` Update queues one structured completion and returns the core-owned command outcome. Handlers never advance semantic state directly; one Workflow loop alone calls the core.
 
-The retained `bpmn-stimulus` Signal remains only for the Milestone 0 lifecycle history. New interaction executions use Update IDs equal to semantic command IDs. A Workflow-local result ledger returns the first result when the same semantic command is delivered under another Update ID, and conflicting payload reuse cannot enter the queue. The runner can execute a batch under one server and Worker, requires unique Workflow IDs, waits for every started case before reporting a batch failure, and has a three-case interaction witness.
+A Workflow-local result ledger returns the first outcome when the same semantic command is delivered again under another Temporal Update ID. Conflicting reuse of a semantic command ID cannot enter the queue. Workflow IDs, Run IDs, Update IDs, Workflow Tasks, and Event History remain hosting facts rather than BPMN facts.
 
-New histories carry the executable IR and a Temporal patch marker. A narrowly isolated legacy constructor exists only so the committed pre-IR M0 history continues to replay; a new Workflow execution without IR fails.
+## Pre-release replay policy
 
-## What the gate proves
+Tests start a clean in-memory Temporal server, execute the three current witnesses, fetch their live histories, replay those histories through the current Workflow bundle, and shut the server down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
 
-The focused test:
+This is deliberate, not an abandonment of replay compatibility. Before the first immutable deployment baseline, speculative history compatibility would preserve prototype accidents and multiply branches. Once a durable history baseline is explicitly approved, retained histories, Worker/version markers, compatibility code, and migration/deprecation rules become mandatory evidence.
 
-- starts a full local Temporal development server through pinned CLI `v1.8.1`;
-- compiles the exact BPMN XML before Workflow start and runs SDK `1.21.0` Workflow code against the calibrated scenario and IR;
-- compares the complete Workflow result with the pure core result;
-- replays the fetched live Event History;
-- independently batch-replays committed CLI-exported Signal and exact-completion Update history fixtures;
-- executes exact, wrong-activation, and stale-completion scenarios through one reused server/Worker and compares every Query projection, Update result, and final trace with the pure core;
-- batch-replays all three live interaction histories through one replay Worker;
-- redelivers the first completion under a distinct Update ID and proves the result ledger prevents a second transition.
+## What the focused gate establishes
 
-The Update fixture guard decodes and compares its exact scenario, executable IR, completion stimulus, committed Update result, and final Workflow result; requires Update-accepted and Update-completed events; excludes Signal delivery; and rejects the retained Signal history as Update evidence. Ordinary tests never regenerate either fixture.
+- exact BPMN XML compiles before Workflow start;
+- one clean server and Worker execute exact, wrong-activation, and stale-completion witnesses;
+- Query projections, Update outcomes, and final results equal the pure core;
+- duplicate logical delivery does not cause a second semantic transition;
+- each fetched live history contains the exact completion Update rather than Signal delivery;
+- all fetched live histories replay before shutdown;
+- duplicate Workflow identities are rejected before start.
 
-It does not yet interpret BPMN beyond the single admitted sequential IR or implement Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, or a production authorization/form boundary.
+The adapter does not yet implement Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the single admitted sequential IR.
 
-## Run
-
-From the repository root:
+Run the focused gate:
 
 ```sh
 ./scripts/pnpm.sh run test:temporal
 ```
 
-The first run downloads the exact CLI into the ignored `.cache/temporal-cli/` directory. The complete project boundary and dependency audit are in [TEMPORAL-EXECUTION-MODEL.md](../../docs/TEMPORAL-EXECUTION-MODEL.md) and [SOURCES.md](../../docs/SOURCES.md).
+The first run downloads the pinned CLI into ignored `.cache/temporal-cli/`. The broader boundary and research are in [TEMPORAL-EXECUTION-MODEL.md](../../docs/TEMPORAL-EXECUTION-MODEL.md) and [SOURCES.md](../../docs/SOURCES.md).

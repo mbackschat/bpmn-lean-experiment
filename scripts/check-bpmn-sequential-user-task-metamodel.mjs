@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const manifestPath = fileURLToPath(
   new URL(
-    "../packages/bpmn-source/src/bpmn-2.0.2-m0-metamodel.json",
+    "../packages/bpmn-source/src/bpmn-2.0.2-sequential-user-task-metamodel.json",
     import.meta.url,
   ),
 );
@@ -21,11 +21,13 @@ const cmofPath = fileURLToPath(
 try {
   await access(cmofPath);
 } catch {
-  console.log("BPMN_M0_METAMODEL_CHECK skipped: local normative CMOF is absent");
+  console.log("BPMN_SEQUENTIAL_USER_TASK_METAMODEL_CHECK skipped: local normative CMOF is absent");
   process.exit(0);
 }
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+assert.equal(manifest.kind, "boundedCmofFactManifest");
+assert.equal(manifest.extraction, "bounded-cmof-fact-extraction");
 const cmofBytes = await readFile(cmofPath);
 const actualSha256 = createHash("sha256").update(cmofBytes).digest("hex");
 assert.equal(actualSha256, manifest.source.sha256);
@@ -92,7 +94,7 @@ for (const propertyFact of manifest.properties) {
 }
 
 console.log(
-  `BPMN_M0_METAMODEL_CHECK ${JSON.stringify({
+  `BPMN_SEQUENTIAL_USER_TASK_METAMODEL_CHECK ${JSON.stringify({
     sourceSha256: actualSha256,
     classes: manifest.classes.length,
     properties: manifest.properties.length,

@@ -26,7 +26,7 @@ export async function compileSequentialUserTaskBpmn(
   const declaredEncoding = readDeclaredEncoding(exactBytes);
   let decodedAs: "UTF-8" | null = null;
   const source = (): BpmnSourceIdentity => ({
-    schemaVersion: "0.1.0",
+    kind: "bpmnSource",
     id: request.sourceId,
     sha256,
     byteLength: exactBytes.byteLength,

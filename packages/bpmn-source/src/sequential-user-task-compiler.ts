@@ -1,4 +1,5 @@
 import {
+  BpmnCompilerIdentity,
   BpmnExecutableIrKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -6,7 +7,7 @@ import type {
   SequentialUserTaskExecutableIr,
 } from "@bpmn-lean/semantic-core";
 
-import metamodelManifest from "./bpmn-2.0.2-m0-metamodel.json" with {
+import metamodelManifest from "./bpmn-2.0.2-sequential-user-task-metamodel.json" with {
   type: "json",
 };
 import {
@@ -17,7 +18,6 @@ import type {
   BpmnSourceIdentity,
 } from "./contracts.js";
 
-const compilerIdentity = "bpmn-source-sequential-user-task@0.2.0";
 const bpmnTypes = metamodelManifest.compilerProjection;
 
 type ElementRecord = Record<string, unknown>;
@@ -160,10 +160,9 @@ export function compileSequentialUserTaskGraph(
   // tag::sequential-user-task-ir[]
   return {
     executableIr: {
-      schemaVersion: "0.2.0",
       kind: BpmnExecutableIrKind.SequentialUserTask,
       identity: {
-        compiler: compilerIdentity,
+        compiler: BpmnCompilerIdentity.SequentialUserTask,
         semanticProfile,
         sourceId: source.id,
         sourceSha256: source.sha256,

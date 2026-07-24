@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
-  BpmnExecutableIrKind,
   CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
@@ -17,58 +15,16 @@ import {
   runScenario,
   runScenarioWithClosureLimit,
 } from "../dist/index.js";
-
-const scenarioUrl = new URL(
-  "../../../scenarios/m0-sequential-user-task/scenario.json",
-  import.meta.url,
-);
-const evidenceUrl = new URL(
-  "../../../scenarios/m0-sequential-user-task/cibseven-evidence.json",
-  import.meta.url,
-);
-
-async function loadScenario() {
-  return JSON.parse(await readFile(scenarioUrl, "utf8"));
-}
-
-async function loadEvidence() {
-  return JSON.parse(await readFile(evidenceUrl, "utf8"));
-}
-
-function executableIrFor(scenario) {
-  return {
-    schemaVersion: "0.1.0",
-    kind: BpmnExecutableIrKind.SequentialUserTask,
-    identity: {
-      compiler: "bpmn-source-sequential-user-task@0.1.0",
-      semanticProfile: scenario.profile,
-      sourceId: scenario.bpmn.id,
-      sourceSha256: scenario.bpmn.sha256,
-    },
-    processId: "Process_SequentialUserTask",
-    startEventId: "StartEvent_1",
-    userTaskId: "UserTask_Approve",
-    endEventId: "EndEvent_1",
-    sequenceFlows: [
-      {
-        id: "Flow_StartToTask",
-        sourceId: "StartEvent_1",
-        targetId: "UserTask_Approve",
-      },
-      {
-        id: "Flow_TaskToEnd",
-        sourceId: "UserTask_Approve",
-        targetId: "EndEvent_1",
-      },
-    ],
-  };
-}
+import {
+  executableIrFor,
+  loadCase,
+} from "./user-task-fixture.mjs";
 
 test("derives the independently calibrated CIB and Lean trace", async () => {
-  const [scenario, evidence] = await Promise.all([
-    loadScenario(),
-    loadEvidence(),
-  ]);
+  const { scenario, expected } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
 
   const result = runScenario(scenario, executableIrFor(scenario));
 
@@ -76,11 +32,14 @@ test("derives the independently calibrated CIB and Lean trace", async () => {
     kind: ScenarioOutcomeKind.Semantic,
     outcome: CommandOutcome.Committed,
   });
-  assert.deepEqual(result, evidence.result);
+  assert.deepEqual(result, expected);
 });
 
 test("start closes at one stable User Task wait", async () => {
-  const scenario = await loadScenario();
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
 
   const result = applyStimulus(
     executableIrFor(scenario),
@@ -101,49 +60,37 @@ test("start closes at one stable User Task wait", async () => {
 });
 
 test("incremental execution owns deployment and stable observations", async () => {
-  const [scenario, evidence] = await Promise.all([
-    loadScenario(),
-    loadEvidence(),
-  ]);
-
+  const { scenario, expected } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
   const executableIr = executableIrFor(scenario);
+
   const deployment = deployScenario(scenario, executableIr);
   const step = advanceScenario(
     executableIr,
     initialState,
     scenario.stimuli[0],
-    scenario.stimuli.slice(1),
   );
 
   assert.deepEqual(deployment, {
     outcome: CommandOutcome.Committed,
-    observation: evidence.result.trace[0],
+    observation: expected.trace[0],
   });
   assert.equal(step.kind, ScenarioStepKind.Committed);
-  assert.deepEqual(
-    step.observations,
-    evidence.result.trace.slice(1, 3),
-  );
-  assert.deepEqual(step.state, {
-    control: {
-      kind: ControlStateKind.WaitingUserTask,
-      instanceId: "Instance_1",
-      activation: 1,
-    },
-    logicalTimeMs: 0,
-  });
+  assert.deepEqual(step.observations, expected.trace.slice(1, 3));
 });
 
-test("matching completion closes the Process", async () => {
-  const scenario = await loadScenario();
-  const started = applyStimulus(
-    executableIrFor(scenario),
-    initialState,
-    scenario.stimuli[0],
+test("matching occurrence completion closes the Process", async () => {
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
   );
+  const model = executableIrFor(scenario);
+  const started = applyStimulus(model, initialState, scenario.stimuli[0]);
 
   const completed = applyStimulus(
-    executableIrFor(scenario),
+    model,
     started.state,
     scenario.stimuli[1],
   );
@@ -159,18 +106,22 @@ test("matching completion closes the Process", async () => {
   });
 });
 
-test("non-matching completion is rejected without state change", async () => {
-  const scenario = await loadScenario();
-  const started = applyStimulus(
-    executableIrFor(scenario),
-    initialState,
-    scenario.stimuli[0],
+test("non-matching occurrence completion is rejected without state change", async () => {
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
   );
+  const model = executableIrFor(scenario);
+  const started = applyStimulus(model, initialState, scenario.stimuli[0]);
 
-  const rejected = applyStimulus(executableIrFor(scenario), started.state, {
-    kind: StimulusKind.CompleteUserTask,
+  const rejected = applyStimulus(model, started.state, {
+    kind: StimulusKind.CompleteUserTaskInstance,
     commandId: "wrong-completion",
-    elementId: "Other_Task",
+    taskId: {
+      processInstanceId: "Instance_1",
+      elementId: "Other_Task",
+      activation: 1,
+    },
   });
 
   assert.equal(rejected.outcome, CommandOutcome.Rejected);
@@ -179,7 +130,10 @@ test("non-matching completion is rejected without state change", async () => {
 });
 
 test("closure-bound exhaustion exposes no committed command", async () => {
-  const scenario = await loadScenario();
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
 
   const result = runScenarioWithClosureLimit(
     0,
@@ -199,42 +153,35 @@ test("closure-bound exhaustion exposes no committed command", async () => {
 });
 
 test("rejects an IR whose source identity does not match the scenario", async () => {
-  const scenario = await loadScenario();
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
   const executableIr = executableIrFor(scenario);
   executableIr.identity.sourceSha256 = "0".repeat(64);
 
-  const result = runScenario(scenario, executableIr);
-
-  assert.deepEqual(result, {
-    outcome: {
-      kind: ScenarioOutcomeKind.Semantic,
-      outcome: CommandOutcome.Unsupported,
-    },
-    trace: [
-      {
-        kind: CanonicalObservationKind.Deployment,
-        outcome: CommandOutcome.Unsupported,
-      },
-    ],
-  });
+  assert.equal(
+    deployScenario(scenario, executableIr).outcome,
+    CommandOutcome.Unsupported,
+  );
 });
 
-test("rejects a malformed sequential topology at deployment", async () => {
-  const scenario = await loadScenario();
-  const executableIr = executableIrFor(scenario);
-  executableIr.sequenceFlows[1].targetId = executableIr.startEventId;
+test("rejects malformed current IR without throwing", async () => {
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
+  const malformedTopology = executableIrFor(scenario);
+  malformedTopology.sequenceFlows[1].targetId = malformedTopology.startEventId;
+  const malformedIdentity = executableIrFor(scenario);
+  malformedIdentity.identity = null;
 
-  const deployment = deployScenario(scenario, executableIr);
-
-  assert.equal(deployment.outcome, CommandOutcome.Unsupported);
-});
-
-test("rejects malformed JSON-shaped IR without throwing", async () => {
-  const scenario = await loadScenario();
-  const executableIr = executableIrFor(scenario);
-  executableIr.identity = null;
-
-  const deployment = deployScenario(scenario, executableIr);
-
-  assert.equal(deployment.outcome, CommandOutcome.Unsupported);
+  assert.equal(
+    deployScenario(scenario, malformedTopology).outcome,
+    CommandOutcome.Unsupported,
+  );
+  assert.equal(
+    deployScenario(scenario, malformedIdentity).outcome,
+    CommandOutcome.Unsupported,
+  );
 });

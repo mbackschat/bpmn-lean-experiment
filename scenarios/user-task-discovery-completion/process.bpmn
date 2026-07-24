@@ -2,9 +2,9 @@
 <bpmn:definitions
   xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  id="Definitions_M0"
-  targetNamespace="https://cibseven.org/bpmn-lean-experiment/m0">
-  <bpmn:process id="Process_SequentialUserTask" name="Milestone 0 sequential user task" isExecutable="true">
+  id="Definitions_SequentialUserTask"
+  targetNamespace="https://bpmn-lean.local/scenarios/sequential-user-task">
+  <bpmn:process id="Process_SequentialUserTask" name="Sequential user task" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
     </bpmn:startEvent>

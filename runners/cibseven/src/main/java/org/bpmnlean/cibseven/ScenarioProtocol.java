@@ -1,7 +1,6 @@
 package org.bpmnlean.cibseven;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -9,19 +8,15 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Versioned transport types shared by the CIB-seven oracle and its callers.
+ * Current transport types shared by the CIB-seven oracle and its callers.
  *
  * <p>The canonical trace deliberately contains only stable, observable semantic facts. Engine-generated
  * identifiers and the PVM projection belong in diagnostics.
  */
 public final class ScenarioProtocol {
 
-  public static final String SCHEMA_VERSION = "0.1.0";
-  public static final String TRACE_SCHEMA_VERSION = "0.1.0";
-  public static final String USER_TASK_INTERACTION_SCHEMA_VERSION = "0.2.0";
-  public static final String USER_TASK_INTERACTION_TRACE_SCHEMA_VERSION = "0.2.0";
-  public static final String SUPPORTED_PROFILE = "cibseven-2.2.0-spike.1";
-  public static final String USER_TASK_INTERACTION_PROFILE = "cibseven-2.2.0-spike.2";
+  public static final String SCENARIO_KIND = "scenario";
+  public static final String SCENARIO_RESULT_KIND = "scenarioResult";
 
   private ScenarioProtocol() {}
 
@@ -121,7 +116,6 @@ public final class ScenarioProtocol {
     PROCESS_STATUS("processStatus"),
     ACTIVE_WAITS("activeWaits"),
     OPEN_USER_TASKS("openUserTasks"),
-    ENABLED_STIMULI("enabledStimuli"),
     ENABLED_INTERACTIONS("enabledInteractions"),
     LOGICAL_TIME("logicalTime");
 
@@ -157,8 +151,7 @@ public final class ScenarioProtocol {
   }
 
   public record ScenarioDefinition(
-      String schemaVersion,
-      String traceSchemaVersion,
+      String kind,
       String id,
       String profile,
       BpmnResource bpmn,
@@ -167,8 +160,7 @@ public final class ScenarioProtocol {
       Provenance provenance) {
 
     public ScenarioDefinition {
-      Objects.requireNonNull(schemaVersion, "schemaVersion");
-      Objects.requireNonNull(traceSchemaVersion, "traceSchemaVersion");
+      Objects.requireNonNull(kind, "kind");
       Objects.requireNonNull(id, "id");
       Objects.requireNonNull(profile, "profile");
       Objects.requireNonNull(bpmn, "bpmn");
@@ -198,14 +190,12 @@ public final class ScenarioProtocol {
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
     @JsonSubTypes.Type(value = StartProcessStimulus.class, name = "startProcess"),
-    @JsonSubTypes.Type(value = CompleteUserTaskStimulus.class, name = "completeUserTask"),
     @JsonSubTypes.Type(
         value = CompleteUserTaskInstanceStimulus.class,
         name = "completeUserTaskInstance")
   })
   public sealed interface Stimulus
       permits StartProcessStimulus,
-          CompleteUserTaskStimulus,
           CompleteUserTaskInstanceStimulus {
     String commandId();
   }
@@ -216,14 +206,6 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(processId, "processId");
       Objects.requireNonNull(instanceId, "instanceId");
-    }
-  }
-
-  public record CompleteUserTaskStimulus(String commandId, String elementId)
-      implements Stimulus {
-    public CompleteUserTaskStimulus {
-      Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(elementId, "elementId");
     }
   }
 
@@ -297,45 +279,21 @@ public final class ScenarioProtocol {
       String instanceId,
       ProcessStatus status,
       List<ActiveWait> activeWaits,
-      @JsonInclude(JsonInclude.Include.NON_NULL) List<OpenUserTask> openUserTasks,
-      @JsonInclude(JsonInclude.Include.NON_NULL) List<Stimulus> enabledStimuli,
-      @JsonInclude(JsonInclude.Include.NON_NULL)
-          List<EnabledInteraction> enabledInteractions,
+      List<OpenUserTask> openUserTasks,
+      List<EnabledInteraction> enabledInteractions,
       long logicalTimeMs)
       implements CanonicalObservation {
     public StateObservation {
       Objects.requireNonNull(instanceId, "instanceId");
       Objects.requireNonNull(status, "status");
       activeWaits = List.copyOf(activeWaits);
-      if (openUserTasks != null) {
-        openUserTasks = List.copyOf(openUserTasks);
-      }
-      if (enabledStimuli != null) {
-        enabledStimuli = List.copyOf(enabledStimuli);
-      }
-      if (enabledInteractions != null) {
-        enabledInteractions = List.copyOf(enabledInteractions);
-      }
+      openUserTasks = List.copyOf(openUserTasks);
+      enabledInteractions = List.copyOf(enabledInteractions);
       if (logicalTimeMs < 0) {
         throw new IllegalArgumentException("logicalTimeMs must not be negative");
       }
     }
 
-    public StateObservation(
-        String instanceId,
-        ProcessStatus status,
-        List<ActiveWait> activeWaits,
-        List<Stimulus> enabledStimuli,
-        long logicalTimeMs) {
-      this(
-          instanceId,
-          status,
-          activeWaits,
-          null,
-          enabledStimuli,
-          null,
-          logicalTimeMs);
-    }
   }
 
   public record ActiveWait(String elementId, WaitKind kind, int multiplicity) {
@@ -377,13 +335,13 @@ public final class ScenarioProtocol {
 
   /** Diagnostics are optional because a harness or infrastructure failure may precede collection. */
   public record ScenarioResult(
-      String schemaVersion,
+      String kind,
       String scenarioId,
       ScenarioOutcome outcome,
       List<CanonicalObservation> trace,
       Diagnostics diagnostics) {
     public ScenarioResult {
-      Objects.requireNonNull(schemaVersion, "schemaVersion");
+      Objects.requireNonNull(kind, "kind");
       Objects.requireNonNull(scenarioId, "scenarioId");
       Objects.requireNonNull(outcome, "outcome");
       trace = List.copyOf(trace);

@@ -6,15 +6,13 @@ import type {
   Scenario,
   ScenarioResult,
   SequentialUserTaskExecutableIr,
-  Stimulus,
 } from "@bpmn-lean/semantic-core";
 
 export const bpmnScenarioWorkflowType = "runBpmnScenario";
-export const bpmnStimulusSignalName = "bpmn-stimulus";
 export const bpmnTraceQueryName = "bpmn-trace";
 export const bpmnOpenUserTasksQueryName = "bpmn-open-user-tasks";
 export const bpmnCompleteUserTaskUpdateName = "bpmn-complete-user-task";
-export const bpmnSemanticTaskQueue = "bpmn-semantic-m0";
+export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
 export type BpmnScenarioWorkflow = (
   scenario: Scenario,
@@ -48,7 +46,7 @@ export type TemporalReplayItem = Readonly<{
 
 export type TemporalScenarioExecution = Readonly<{
   waitTrace: ReadonlyArray<CanonicalObservation>;
-  interactionEvidence: TemporalUserTaskInteractionEvidence | null;
+  interactionEvidence: TemporalUserTaskInteractionEvidence;
   result: ScenarioResult;
   history: TemporalHistory;
 }>;
@@ -59,7 +57,6 @@ export type TemporalUserTaskInteractionEvidence = Readonly<{
   duplicateCompletionOutcome: CommandOutcome | null;
 }>;
 
-export type BpmnStimulusSignalArguments = [stimulus: Stimulus];
 export type BpmnCompleteUserTaskUpdateArguments = [
   stimulus: CompleteUserTaskInstanceStimulus,
 ];

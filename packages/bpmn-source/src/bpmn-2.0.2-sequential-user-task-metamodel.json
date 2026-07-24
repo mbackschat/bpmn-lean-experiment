@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "0.1.0",
-  "extraction": "bounded-cmof-fact-extraction@0.1.0",
+  "kind": "boundedCmofFactManifest",
+  "extraction": "bounded-cmof-fact-extraction",
   "source": {
     "specification": "OMG BPMN 2.0.2",
     "artifact": "BPMN20.cmof",
@@ -8,7 +8,7 @@
   },
   "coverage": {
     "status": "partial",
-    "consumer": "bpmn-source-sequential-user-task@0.2.0",
+    "consumer": "bpmn-source-sequential-user-task",
     "included": [
       "Definitions and executable Process identity",
       "StartEvent, UserTask, EndEvent, and SequenceFlow type identity",

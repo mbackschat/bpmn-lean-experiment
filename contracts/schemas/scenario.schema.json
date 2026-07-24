@@ -5,8 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schemaVersion",
-    "traceSchemaVersion",
+    "kind",
     "id",
     "profile",
     "bpmn",
@@ -15,17 +14,8 @@
     "provenance"
   ],
   "properties": {
-    "schemaVersion": {
-      "enum": [
-        "0.1.0",
-        "0.2.0"
-      ]
-    },
-    "traceSchemaVersion": {
-      "enum": [
-        "0.1.0",
-        "0.2.0"
-      ]
+    "kind": {
+      "const": "scenario"
     },
     "id": {
       "$ref": "#/$defs/nonEmptyString"
@@ -38,97 +28,31 @@
     },
     "stimuli": {
       "type": "array",
-      "minItems": 2
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/startProcess"
+        }
+      ],
+      "items": {
+        "$ref": "#/$defs/completeUserTaskInstance"
+      },
+      "minItems": 1
     },
     "observations": {
-      "type": "array",
-      "uniqueItems": true
+      "const": [
+        "deployment",
+        "commandResults",
+        "processStatus",
+        "activeWaits",
+        "openUserTasks",
+        "enabledInteractions",
+        "logicalTime"
+      ]
     },
     "provenance": {
       "$ref": "#/$defs/provenance"
     }
   },
-  "allOf": [
-    {
-      "if": {
-        "type": "object",
-        "properties": {
-          "schemaVersion": {
-            "const": "0.1.0"
-          }
-        }
-      },
-      "then": {
-        "type": "object",
-        "properties": {
-          "traceSchemaVersion": {
-            "const": "0.1.0"
-          },
-          "profile": {
-            "const": "cibseven-2.2.0-spike.1"
-          },
-          "stimuli": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/$defs/startProcess"
-              },
-              {
-                "$ref": "#/$defs/completeUserTask"
-              }
-            ],
-            "items": false,
-            "minItems": 2,
-            "maxItems": 2
-          },
-          "observations": {
-            "const": [
-              "deployment",
-              "commandResults",
-              "processStatus",
-              "activeWaits",
-              "enabledStimuli",
-              "logicalTime"
-            ]
-          }
-        }
-      },
-      "else": {
-        "type": "object",
-        "properties": {
-          "traceSchemaVersion": {
-            "const": "0.2.0"
-          },
-          "profile": {
-            "const": "cibseven-2.2.0-spike.2"
-          },
-          "stimuli": {
-            "type": "array",
-            "prefixItems": [
-              {
-                "$ref": "#/$defs/startProcess"
-              }
-            ],
-            "items": {
-              "$ref": "#/$defs/completeUserTaskInstance"
-            },
-            "minItems": 1
-          },
-          "observations": {
-            "const": [
-              "deployment",
-              "commandResults",
-              "processStatus",
-              "activeWaits",
-              "openUserTasks",
-              "enabledInteractions",
-              "logicalTime"
-            ]
-          }
-        }
-      }
-    }
-  ],
   "$defs": {
     "nonEmptyString": {
       "type": "string",
@@ -263,26 +187,6 @@
           "$ref": "#/$defs/nonEmptyString"
         },
         "instanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        }
-      }
-    },
-    "completeUserTask": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "elementId"
-      ],
-      "properties": {
-        "kind": {
-          "const": "completeUserTask"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "elementId": {
           "$ref": "#/$defs/nonEmptyString"
         }
       }
@@ -433,50 +337,7 @@
         }
       }
     },
-    "stateObservationV1": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "instanceId",
-        "status",
-        "activeWaits",
-        "enabledStimuli",
-        "logicalTimeMs"
-      ],
-      "properties": {
-        "kind": {
-          "const": "state"
-        },
-        "instanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "status": {
-          "enum": [
-            "notStarted",
-            "running",
-            "completed"
-          ]
-        },
-        "activeWaits": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/activeWait"
-          }
-        },
-        "enabledStimuli": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/completeUserTask"
-          }
-        },
-        "logicalTimeMs": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    },
-    "stateObservationV2": {
+    "stateObservation": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -526,7 +387,7 @@
         }
       }
     },
-    "canonicalObservationV1": {
+    "canonicalObservation": {
       "oneOf": [
         {
           "$ref": "#/$defs/deploymentObservation"
@@ -535,24 +396,11 @@
           "$ref": "#/$defs/commandObservation"
         },
         {
-          "$ref": "#/$defs/stateObservationV1"
+          "$ref": "#/$defs/stateObservation"
         }
       ]
     },
-    "canonicalObservationV2": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/deploymentObservation"
-        },
-        {
-          "$ref": "#/$defs/commandObservation"
-        },
-        {
-          "$ref": "#/$defs/stateObservationV2"
-        }
-      ]
-    },
-    "canonicalResultV1": {
+    "canonicalResult": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -566,26 +414,7 @@
         "trace": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/canonicalObservationV1"
-          }
-        }
-      }
-    },
-    "canonicalResultV2": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "outcome",
-        "trace"
-      ],
-      "properties": {
-        "outcome": {
-          "$ref": "#/$defs/scenarioOutcome"
-        },
-        "trace": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/canonicalObservationV2"
+            "$ref": "#/$defs/canonicalObservation"
           }
         }
       }

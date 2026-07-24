@@ -88,7 +88,7 @@ M0.5 separately pins the released packages `@temporalio/client@1.21.0`, `@tempor
 
 The resolved pnpm graph is locked. pnpm’s supply-chain guard explicitly denies install scripts for `@swc/core@1.15.46` and `protobufjs@7.6.5`; the installed native SWC binding was verified without its optional fallback script, and protobufjs’s postinstall is not required for runtime behavior. The exact freshly released Temporal `1.21.0` suite is listed in `minimumReleaseAgeExclude` because the user explicitly approved that coordinated version set. Temporal’s published declarations currently fail library checking under TypeScript `7.0.2`, so only the adapter sets `skipLibCheck: true`; project source remains strict and the semantic core continues to check dependency-free with library checking enabled.
 
-M0.5 uses Temporal CLI `v1.8.1` through `TestWorkflowEnvironment.createLocal` with the SDK’s `cached-download` strategy. The CLI starts the full local development server rather than the time-skipping test server, is cached under ignored `.cache/temporal-cli/`, and is not committed. The retained replay fixture was exported with the CLI’s documented `workflow show --output json` format.
+The adapter uses Temporal CLI `v1.8.1` through `TestWorkflowEnvironment.createLocal` with the SDK’s `cached-download` strategy. The CLI starts the full local development server rather than the time-skipping test server, is cached under ignored `.cache/temporal-cli/`, and is not committed. Current pre-release tests fetch and replay histories produced during the same clean server run; no external Temporal history is redistributed or committed.
 
 ## Temporal TypeScript samples
 

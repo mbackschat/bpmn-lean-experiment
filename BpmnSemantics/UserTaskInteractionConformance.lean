@@ -32,28 +32,27 @@ private def interactionObservations : List ObservationKind :=
   , .logicalTime ]
 
 private def interactionScenario (id : String) (stimuli : List Stimulus) : Scenario :=
-  { schemaVersion := "0.2.0"
-    traceSchemaVersion := "0.2.0"
+  { kind := .scenario
     id := ⟨id⟩
-    profile := ⟨"cibseven-2.2.0-spike.2"⟩
+    profile := ⟨"cibseven-2.2.0-user-task-draft"⟩
     bpmn := contractScenario.bpmn
     stimuli
     observations := interactionObservations
     provenance := contractScenario.provenance }
 
 def successfulScenario : Scenario :=
-  interactionScenario "m1-user-task-discovery-completion"
+  interactionScenario "user-task-discovery-completion"
     [ startStimulus
     , exactCompletionStimulus ]
 
 def wrongActivationScenario : Scenario :=
-  interactionScenario "m1-user-task-wrong-activation"
+  interactionScenario "user-task-wrong-activation"
     [ startStimulus
     , .completeUserTaskInstance ⟨"wrong-activation"⟩
         { exactTaskId with activation := 2 } ]
 
 def staleCompletionScenario : Scenario :=
-  interactionScenario "m1-user-task-stale-completion"
+  interactionScenario "user-task-stale-completion"
     [ startStimulus
     , exactCompletionStimulus
     , .completeUserTaskInstance ⟨"complete-stale-user-task-instance"⟩ exactTaskId ]
@@ -66,21 +65,18 @@ def waitingObservation : StateObservation :=
           kind := .userTask
           multiplicity := 1 } ]
     openUserTasks :=
-      some
-        [ { id := exactTaskId
-            name := some "Approve"
-            state := .active } ]
-    enabledStimuli := none
-    enabledInteractions := some [exactCompletionInteraction]
+      [ { id := exactTaskId
+          name := some "Approve"
+          state := .active } ]
+    enabledInteractions := [exactCompletionInteraction]
     logicalTimeMs := 0 }
 
 def completedObservation : StateObservation :=
   { instanceId := ⟨"Instance_1"⟩
     status := .completed
     activeWaits := []
-    openUserTasks := some []
-    enabledStimuli := none
-    enabledInteractions := some []
+    openUserTasks := []
+    enabledInteractions := []
     logicalTimeMs := 0 }
 
 def expectedSuccessfulTrace : List CanonicalObservation :=
@@ -123,6 +119,12 @@ example :
 example :
     (run successfulScenario).trace[2]? =
       (run wrongActivationScenario).trace[2]? := by
+  decide
+
+example :
+    runWithClosureLimit 0 successfulScenario =
+      { outcome := .harnessFailure
+        trace := [.deployment .committed] } := by
   decide
 
 example :
