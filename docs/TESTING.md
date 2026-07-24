@@ -15,6 +15,25 @@ For each semantic capsule:
 
 The first scaffold capsule followed this workflow: the conformance module imported an absent contract, the red run failed on that missing semantic owner, and the green run passed only after the outcome vocabulary was implemented.
 
+## Semantic capsule closure
+
+After Milestone 0, a feature is not represented by one aggregate “supported” state. The applicable lanes close independently:
+
+1. normative BPMN pointer or approved CIB-profile interpretation;
+2. smallest separating example and its intended red result;
+3. executable Lean definition and static admission boundary;
+4. useful universal law with explicit hypotheses;
+5. nearest plausible stronger false claim as a checked non-law;
+6. retained CIB observation with exact environment and projection fidelity;
+7. independently derived TypeScript semantic-core result;
+8. Temporal refinement, replay, cleanup, and applicable fault evidence;
+9. meaningful mutation that proves the new evidence projection can detect a semantic disagreement;
+10. exact complete, pending, and excluded dimensions in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+
+A proof establishes a property of the chosen Lean account, not correspondence with CIB Seven. A retained CIB trace establishes only finite empirical correspondence at its declared observation boundary and does not transfer Lean’s proofs to CIB, TypeScript, or Temporal. Parser acceptance, model admission, execution behavior, Temporal durability, and conformance are separate assertions.
+
+Retained CIB observations and Temporal histories are immutable. When replay disagrees, investigate the semantic definition, source identity, environment, or projection; never regenerate expected evidence merely to restore green. Batch new CIB probes by coherent semantic family after the separating examples identify the exact observation needed. The full rationale is in [the sibling process-transfer study](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md).
+
 ## Current verification gate
 
 ```sh

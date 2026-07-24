@@ -194,6 +194,8 @@ Read-only checkout: [mbackschat/a12-kernel-lean at `6f9bbf6`](https://github.com
 
 This project adopts those working conventions where they fit, but it does not copy A12 domain semantics, evidence, or project-specific governance.
 
+The bounded process-transfer study in [research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md) also inspected the sibling’s ongoing worktree on 2026-07-24 at committed base [`d25a0ce`](https://github.com/mbackschat/a12-kernel-lean/tree/d25a0ce2fcd61e4b3df50b054adc07d490331875). That worktree contained uncommitted owner changes and was treated as read-only evolving process evidence, not as a replacement pinned semantic source. The stable reference revision above remains unchanged.
+
 ## fUML reference implementation
 
 Read-only checkout: [ModelDriven/fUML-Reference-Implementation at `45e5063`](https://github.com/ModelDriven/fUML-Reference-Implementation/tree/45e506336d4cd56965d4ad3b684149245f899f3a)

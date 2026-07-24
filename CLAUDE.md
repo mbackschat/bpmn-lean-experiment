@@ -95,6 +95,10 @@ Use red/green TDD:
 
 Prefer enum-based pattern matching or switch statements for semantic variants. Keep executable IR and runtime state as serializable data; keep effects explicit and perform no I/O in the pure semantic core.
 
+Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim.
+
+Name a concrete adapter consumer or refinement risk before generalizing a representation or semantic mechanism. Preserve retained CIB observations and Temporal histories as immutable evidence, and require a meaningful seeded mutation for every new evidence projection. Investigate a mismatch at the semantic or projection boundary; never refresh expected evidence merely to make a gate green.
+
 ### Architecture experiments
 
 A bounded spike requires competing accounts and a witness capable of separating them. End it as:
@@ -126,6 +130,8 @@ Use one owner for each fact and link to it elsewhere:
 | External revisions, licenses, and checkout navigation | [SOURCES.md](docs/SOURCES.md) |
 
 Write one Markdown paragraph per line without hard wrapping. Use regular relative Markdown links for other project documents. Update the owner in the same change and avoid copying live inventories.
+
+The rationale and transfer limits for the semantic-capsule workflow are recorded in [the `a12-kernel-lean` process-transfer study](docs/research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md).
 
 ## Reference and source discipline
 
