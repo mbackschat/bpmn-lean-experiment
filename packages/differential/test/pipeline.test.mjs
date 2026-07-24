@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { ProcessStatus } from "@bpmn-lean/semantic-core";
+import {
+  CommandOutcome,
+  ProcessStatus,
+} from "@bpmn-lean/semantic-core";
 
 import {
   ComparisonKind,
@@ -11,7 +14,7 @@ import {
 
 import {
   pipelineCases,
-  runPipelineCase,
+  runPipelineCases,
 } from "./pipeline-harness.mjs";
 
 const cleanCibProjection = {
@@ -25,43 +28,101 @@ const cleanCibProjection = {
 };
 
 test(
-  "runs and compares the complete Milestone 0 pipeline within budget",
+  "runs the lifecycle and User Task interaction cases through one four-target batch",
   { timeout: 45_000 },
   async () => {
-    assert.equal(pipelineCases.length, 1);
-    assert.equal(pipelineCases[0].id, "m0-sequential-user-task");
-    const { report, evidence } = await runPipelineCase(pipelineCases[0]);
-
-    assert.equal(report.comparison.kind, ComparisonKind.Agreement);
-    assert.deepEqual(report.evidenceComparison, {
-      kind: ComparisonKind.Agreement,
-      targets: [
-        DifferentialTarget.RetainedCibEvidence,
-        DifferentialTarget.CibSeven,
-      ],
-    });
-    assert.deepEqual(report.scenario.executableIr, {
-      schemaVersion: "0.2.0",
-      kind: "sequentialUserTask",
-      compiler: "bpmn-source-sequential-user-task@0.2.0",
-    });
-    assert.deepEqual(evidence.actualWaitTrace, evidence.expectedWaitTrace);
     assert.deepEqual(
-      evidence.isolationTemporalResult,
-      evidence.primaryTemporalResult,
+      pipelineCases.map(({ id }) => id),
+      [
+        "m0-sequential-user-task",
+        "m1-user-task-discovery-completion",
+        "m1-user-task-wrong-activation",
+        "m1-user-task-stale-completion",
+      ],
     );
-    assert.deepEqual(evidence.cibCleanup, cleanCibProjection);
-    assert.deepEqual(report.injectedDisagreement, {
-      kind: ComparisonKind.Disagreement,
-      referenceTarget: DifferentialTarget.CibSeven,
-      candidateTarget: DifferentialTarget.SemanticCore,
-      disagreement: {
-        kind: DisagreementKind.ObservationValue,
-        path: "trace[2].status",
-        expected: ProcessStatus.Running,
-        actual: ProcessStatus.Completed,
-      },
+    const { report, evidence } = await runPipelineCases(pipelineCases);
+
+    assert.equal(report.cases.length, pipelineCases.length);
+    assert.equal(evidence.length, pipelineCases.length);
+    for (const [index, caseReport] of report.cases.entries()) {
+      const caseEvidence = evidence[index];
+      assert.equal(caseReport.scenario.id, pipelineCases[index].id);
+      assert.equal(caseEvidence.scenarioId, pipelineCases[index].id);
+      assert.equal(caseReport.comparison.kind, ComparisonKind.Agreement);
+      assert.deepEqual(caseReport.evidenceComparison, {
+        kind: ComparisonKind.Agreement,
+        targets: [
+          DifferentialTarget.RetainedCibEvidence,
+          DifferentialTarget.CibSeven,
+        ],
+      });
+      assert.deepEqual(caseReport.scenario.executableIr, {
+        schemaVersion: "0.2.0",
+        kind: "sequentialUserTask",
+        compiler: "bpmn-source-sequential-user-task@0.2.0",
+      });
+      assert.deepEqual(
+        caseEvidence.actualWaitTrace,
+        caseEvidence.expectedWaitTrace,
+      );
+      assert.deepEqual(
+        caseEvidence.isolationTemporalResult,
+        caseEvidence.primaryTemporalResult,
+      );
+      assert.deepEqual(caseEvidence.cibCleanup, cleanCibProjection);
+
+      const expectedMutation =
+        caseReport.scenario.id === "m0-sequential-user-task"
+          ? {
+              path: "trace[2].status",
+              expected: ProcessStatus.Running,
+              actual: ProcessStatus.Completed,
+            }
+          : {
+              path: "trace[2].openUserTasks[0].id.activation",
+              expected: 1,
+              actual: 2,
+            };
+      assert.deepEqual(caseReport.injectedDisagreement, {
+        kind: ComparisonKind.Disagreement,
+        referenceTarget: DifferentialTarget.CibSeven,
+        candidateTarget: DifferentialTarget.SemanticCore,
+        disagreement: {
+          kind: DisagreementKind.ObservationValue,
+          ...expectedMutation,
+        },
+      });
+
+      if (caseReport.scenario.id === "m0-sequential-user-task") {
+        assert.equal(caseEvidence.temporalInteractionEvidence, null);
+      } else {
+        assert.notEqual(caseEvidence.temporalInteractionEvidence, null);
+        assert.deepEqual(
+          caseEvidence.temporalInteractionEvidence.openUserTasksAtWait,
+          caseEvidence.expectedWaitTrace[2].openUserTasks,
+        );
+        assert.deepEqual(
+          caseEvidence.temporalInteractionEvidence.completionOutcomes,
+          caseEvidence.expectedCompletionOutcomes,
+        );
+        assert.equal(
+          caseEvidence.temporalInteractionEvidence
+            .duplicateCompletionOutcome,
+          caseReport.scenario.id === "m1-user-task-stale-completion"
+            ? CommandOutcome.Committed
+            : null,
+        );
+      }
+    }
+    assert.deepEqual(report.replay, {
+      liveHistories: 4,
+      retainedHistories: 1,
     });
+    assert.equal(report.isolation.temporalWorkflowIds.length, 8);
+    assert.equal(
+      new Set(report.isolation.temporalWorkflowIds).size,
+      report.isolation.temporalWorkflowIds.length,
+    );
     assert.ok(
       report.phaseMs.warmTotal < 15_000,
       `warm pipeline took ${report.phaseMs.warmTotal.toFixed(3)}ms`,
@@ -76,6 +137,6 @@ test(
       assert.equal(report.phaseMs.coldTotal, null);
     }
 
-    console.log(`M0_PIPELINE_REPORT ${JSON.stringify(report)}`);
+    console.log(`BPMN_MVP_PIPELINE_REPORT ${JSON.stringify(report)}`);
   },
 );

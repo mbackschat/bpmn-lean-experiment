@@ -1,10 +1,11 @@
 import BpmnSemantics.Conformance
 import BpmnSemantics.SequentialUserTask
+import BpmnSemantics.UserTaskInteractionConformance
 import Lean.Data.Json
 
-/-! One-way canonical JSON emitter for the Milestone 0 Lean scenario result.
+/-! One-way canonical JSON-lines emitter for the sequential User Task results.
 
-This is deliberately not a general scenario parser or transport. It exposes the result derived by the executable Lean interpreter for the content-addressed sequential User Task capsule so the external differential harness can compare it without parsing Lean's diagnostic `Repr` output.
+This is deliberately not a general scenario parser or transport. It exposes the results derived by the executable Lean interpreter for the content-addressed lifecycle and User Task interaction capsules so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
 -/
 
 namespace BpmnSemantics.SequentialUserTaskJsonMain
@@ -120,10 +121,21 @@ private def scenarioResultJson (result : ScenarioResult) : Json :=
     [ ("outcome", scenarioOutcomeJson result.outcome)
     , ("trace", jsonArray (result.trace.map canonicalObservationJson)) ]
 
+private def resultRecordJson (scenario : Scenario) : Json :=
+  Json.mkObj
+    [ ("scenarioId", toJson scenario.id.value)
+    , ("result", scenarioResultJson
+        (BpmnSemantics.SequentialUserTask.run scenario)) ]
+
+private def emittedScenarios : List Scenario :=
+  [ contractScenario
+  , BpmnSemantics.UserTaskInteractionConformance.successfulScenario
+  , BpmnSemantics.UserTaskInteractionConformance.wrongActivationScenario
+  , BpmnSemantics.UserTaskInteractionConformance.staleCompletionScenario ]
+
 def emit : IO Unit :=
-  IO.println
-    (scenarioResultJson
-      (BpmnSemantics.SequentialUserTask.run contractScenario)).compress
+  for scenario in emittedScenarios do
+    IO.println (resultRecordJson scenario).compress
 
 end BpmnSemantics.SequentialUserTaskJsonMain
 

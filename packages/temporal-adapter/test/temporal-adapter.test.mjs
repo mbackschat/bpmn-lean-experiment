@@ -208,15 +208,17 @@ test("one server and Worker execute the complete User Task interaction batch", a
       semanticCoreResult,
     );
     assert.ok(execution.history.events.length > 0);
-    await withDeadline(
-      runner.replayHistory(
-        execution.history,
-        `m1-user-task-batch-${index}`,
-      ),
-      10_000,
-      `interaction history ${index} replay`,
-    );
   }
+  await withDeadline(
+    runner.replayHistories(
+      executions.map((execution, index) => ({
+        history: execution.history,
+        workflowId: `m1-user-task-batch-${index}`,
+      })),
+    ),
+    10_000,
+    "interaction history batch replay",
+  );
 });
 
 test("batch execution rejects duplicate Workflow identities before start", async () => {

@@ -41,6 +41,11 @@ export type TemporalHistory = Readonly<{
   events: ReadonlyArray<unknown>;
 }>;
 
+export type TemporalReplayItem = Readonly<{
+  history: unknown;
+  workflowId: string;
+}>;
+
 export type TemporalScenarioExecution = Readonly<{
   waitTrace: ReadonlyArray<CanonicalObservation>;
   interactionEvidence: TemporalUserTaskInteractionEvidence | null;

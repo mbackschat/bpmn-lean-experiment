@@ -28,6 +28,7 @@ import {
 import type {
   BpmnScenarioWorkflow,
   TemporalHistory,
+  TemporalReplayItem,
   TemporalScenarioBatchItem,
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
@@ -253,11 +254,26 @@ export class TemporalScenarioRunner {
   }
 
   async replayHistory(history: unknown, workflowId: string): Promise<void> {
+    await this.replayHistories([{ history, workflowId }]);
+  }
+
+  async replayHistories(
+    items: ReadonlyArray<TemporalReplayItem>,
+  ): Promise<void> {
     this.assertAvailable();
+    const workflowIds = items.map(({ workflowId }) => workflowId);
+    if (workflowIds.some((workflowId) => workflowId.length === 0)) {
+      throw new TypeError("Replay Workflow IDs must be non-empty");
+    }
+    if (new Set(workflowIds).size !== workflowIds.length) {
+      throw new TypeError(
+        "Replay Workflow IDs must be unique within one batch",
+      );
+    }
     await withDeadline(
-      Worker.runReplayHistory({ workflowsPath }, history, workflowId),
+      replayHistoryBatch(items),
       replayDeadlineMs,
-      "Workflow history replay",
+      "Workflow history batch replay",
     );
   }
 
@@ -331,6 +347,35 @@ export class TemporalScenarioRunner {
     if (this.workerError !== undefined) {
       throw normalizeError(this.workerError, "Temporal Worker failed");
     }
+  }
+}
+
+async function replayHistoryBatch(
+  items: ReadonlyArray<TemporalReplayItem>,
+): Promise<void> {
+  let replayed = 0;
+  for await (const result of Worker.runReplayHistories(
+    { workflowsPath },
+    items,
+  )) {
+    const expected = items[replayed];
+    if (expected === undefined) {
+      throw new Error("Temporal replay returned an unexpected extra result");
+    }
+    if (result.workflowId !== expected.workflowId) {
+      throw new Error(
+        `Temporal replay returned ${result.workflowId}; expected ${expected.workflowId}`,
+      );
+    }
+    if (result.error !== undefined) {
+      throw result.error;
+    }
+    replayed += 1;
+  }
+  if (replayed !== items.length) {
+    throw new Error(
+      `Temporal replay returned ${replayed} results for ${items.length} histories`,
+    );
   }
 }
 
