@@ -205,6 +205,8 @@ Run the 21 pinned reference models first as import fixtures. Each result must di
 
 If export is added, implement MIWG round-trip and cross-tool procedures against a semantic normalized model plus an explicit preservation policy. Byte equality is not the contract, and diagram screenshots are not execution traces.
 
+The read-only pre-adoption probe in [experiments/BPMN-XML-INGESTION-SPIKE.md](experiments/BPMN-XML-INGESTION-SPIKE.md) imported all 21 reference models with `bpmn-moddle@10.0.0` and retained a limited `$type:id` projection across re-import. Six encoding warnings and three unresolved-reference warnings prove why this is not yet an import gate or conformance result. After dependency approval, the project-owned gate must retain original bytes and diagnostics, block warning-producing models from execution by default, and include a mutation showing that a lost unresolved reference cannot pass admission.
+
 ## External benchmark discipline
 
 Betsy and other engines are discovery sources. Before a case enters the neutral suite, remove obsolete installer assumptions and engine-specific transforms, identify the BPMN clause being tested, and make the expected observation independent of any one product API.

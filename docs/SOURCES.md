@@ -142,6 +142,10 @@ Read-only checkout: [bpmn-io/bpmn-moddle at `47d8f75`](https://github.com/bpmn-i
 
 This project may teach ingestion techniques but is neither a normative semantic authority nor an adopted dependency.
 
+The proposed production dependency is the separately published [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), whose `v10.0.0` tag resolves to `b72949eb6f7d0522f73cb723633ebdbcefd22762`. Its registry tarball integrity is `sha512-vXePD5jkatcILmM3zwJG/m6IIHIghTGB7WvgcdEraEw8E8VdJHrTgrvBUhbzqaXJpnsGQz15QS936xeBY6l9aA==`. The exact proposed runtime graph—`bpmn-moddle@10.0.0`, `moddle@8.2.0`, `moddle-xml@12.1.0`, `min-dash@5.1.0`, and `saxen@11.1.0`—is MIT-licensed and has no registry `preinstall`, `install`, or `postinstall` scripts. It remains unapproved and uninstalled.
+
+The read-only [ingestion spike](experiments/BPMN-XML-INGESTION-SPIKE.md) loaded the published UMD bundle from a temporary directory without changing this repository’s dependency graph. The exact tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are XML-canonical-identical to the official local BPMN 2.0.2 files, and its five published XSDs are content-identical after CRLF normalization. The inspected `main` revision has newer dependency ranges and unpublished generated-type work; it must not be conflated with the published `10.0.0` package.
+
 ## BPMN MIWG interchange corpus
 
 Read-only checkout: [bpmn-miwg/bpmn-miwg-test-suite at `cb26295`](https://github.com/bpmn-miwg/bpmn-miwg-test-suite/tree/cb2629519cee6280ab521f99dc46a9815a221a35)

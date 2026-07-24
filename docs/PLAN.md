@@ -23,6 +23,7 @@ The durable milestone contract is [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAS
 - M0.5 is complete: the full local Temporal server hosts one deterministic Workflow loop around the semantic core, the live Workflow result exactly equals the pure core result, and both live and committed Event Histories replay successfully.
 - M0.6 is complete: one command builds and concurrently runs CIB Seven, the Lean result emitter, the pure semantic core, and two isolated Temporal executions; exact canonical agreement, seeded-disagreement classification, CIB cleanup, live and retained replay, provenance, phase timings, and feedback budgets are enforced.
 - The bounded `a12-kernel-lean` process-transfer study is complete in [research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md): semantic claim lanes, immutable evidence, checked non-laws, mutation-sensitive projections, and specification-ownership rules were adopted without copying A12 domain semantics or introducing premature infrastructure.
+- The exact BPMN XML ingestion proposal is prepared in [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md): use `bpmn-moddle@10.0.0` only in an isolated source package, retain exact bytes and hash, treat its graph as a derived view, block warnings by default, and keep raw parser objects out of the semantic core and Temporal. The dependency remains unapproved and uninstalled.
 
 ## Locked ultimate target
 
@@ -48,7 +49,7 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Next ordered work
 
-1. Prepare the exact BPMN-ingestion dependency and preservation-policy decision, then obtain approval before adding the chosen parser; the M0.2 Java graph, M0.4 Node/pnpm/TypeScript toolchain, and M0.5 Temporal SDK/CLI graph are already approved and implemented.
+1. Obtain owner approval for exactly `bpmn-moddle@10.0.0` in a new isolated `@bpmn-lean/bpmn-source` package, then implement the red/green first slice in [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md); do not add `@types/bpmn-moddle`.
 2. Add the researched User Task discovery/completion vertical slice and explicitly decide Update versus Signal, the task projection, Search Attribute registry, and production inbox boundary.
 3. Keep advanced boundary Event, Event Sub-Process, and multi-instance PVM models in the diagnostic research lane until their semantic capsules are approved; the first read-only sequential-model projection answered the M0 topology question.
 4. Before adding an auxiliary formal tool, identify a concrete question and seeded defect, then time-box the smallest candidate experiment from [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md); no formal-method spike is currently scheduled.
@@ -56,10 +57,10 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Exact resume point
 
-- Current package: Milestone 0 and the bounded `a12-kernel-lean` process-transfer study are complete; the BPMN XML ingestion dependency and preservation-policy decision is next.
+- Current package: Milestone 0, the bounded `a12-kernel-lean` process-transfer study, and the BPMN XML ingestion proposal are complete; exact parser dependency approval is the next gate.
 - Last verified command: the complete `./scripts/verify.sh` gate passed, including exact four-target agreement, a classified seeded disagreement, two isolated Temporal executions, CIB cleanup, and live plus retained replay.
 - Current state: the content-addressed BPMN fixture, draft spike profile, calibrated CIB trace, typed Java protocol, repeated embedded CIB execution, production Lean interpreter and proofs, one-way Lean result emitter, pure TypeScript semantic core and negative guards, deterministic Temporal Workflow host, pure comparator, live refinement equality, retained replay, diagnostic PVM projection, cleanup checks, provenance, and required phase timings are green.
-- Next implementation target: compare exact BPMN XML parser candidates and versions against source-preservation, diagnostics, reference-resolution, license, footprint, and removal-cost requirements; obtain approval before changing the dependency graph.
+- Next implementation target: after explicit approval, add only `bpmn-moddle@10.0.0` to a new isolated `@bpmn-lean/bpmn-source` package and begin with red tests for exact source identity, clean sequential import, warning-blocked admission, DOCTYPE rejection, and lost-reference detection.
 - M0.2 calibrated result: deployment and both commands commit; start reaches one `UserTask_Approve` wait with multiplicity one and enables its completion stimulus; completion ends `Instance_1`; logical time remains zero.
 - M0.2 diagnostic result: ordered PVM topology matches the source sequence, ordinary flow activities have no PVM event scope, and the None End Event’s internal type is `noneEndEvent`; these facts remain diagnostic rather than compatibility keys.
 - M0.2 performance result: dependency-warm engine startup measured 1.983 seconds and one scenario including cleanup measured 0.492 seconds; the dependency-warm Maven gate completed in 5.28 seconds.

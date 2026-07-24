@@ -35,7 +35,7 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 | Change | Required context |
 |---|---|
 | Mission, authority, compatibility, or assurance | Complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
-| BPMN import, conformance, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md) and applicable normative sources |
+| BPMN import, conformance, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), and applicable normative sources |
 | Source model, normalization, executable IR, scope, runtime identity, token/activation state, or command closure | [Semantic representations research](docs/research/SEMANTIC-REPRESENTATIONS.md) and relevant [experiments](docs/experiments/README.md) |
 | Temporal adapter, interpreter hosting, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-MODEL.md](docs/TEMPORAL-EXECUTION-MODEL.md) |
 | Refinement, equivalence, liveness, fairness, TLA+, or auxiliary formal tools | [TLA-AND-BISIMULATION-RESEARCH.md](docs/TLA-AND-BISIMULATION-RESEARCH.md) |

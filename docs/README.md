@@ -22,6 +22,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Top-level [README.md](../README.md) | New readers; concise purpose, honest status, quick start, and routes into this registry |
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
+| [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md) | Contributors and owner; proposed exact parser dependency, source-preservation contract, security boundary, license graph, and first implementation slice |
 | [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md) | Adapter contributors and reviewers; Temporal replay, execution, messaging, failure, concurrency, versioning, and BPMN-boundary research |
 | [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) | Semantic and adapter assurance contributors; question-driven formal-methods toolbox, behavioral relations, candidate experiments, and evidence limits |
 | [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) | Researchers and performance contributors; pristine evidence lane, experimental source branches, execution profiles, acceleration limits, and shadow-equivalence gate |
@@ -30,6 +31,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md) | Semantic contributors; bounded transfer of Lean capsule, evidence, non-law, and specification-synchronization practices from the sibling experiment |
 | [experiments/README.md](experiments/README.md) | Contributors running bounded risk spikes; experiment lifecycle, required evidence, and registry |
 | [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md) | Semantic architects; executable source/IR, scope, join-provenance, and command-closure discriminators |
+| [experiments/BPMN-XML-INGESTION-SPIKE.md](experiments/BPMN-XML-INGESTION-SPIKE.md) | Import contributors; read-only published-parser probe against the current fixture and 21 MIWG reference models |
 | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, authority model, initial boundary, and success criteria |
 | [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md) | Contributors and resuming agents; durable walking-skeleton scope, runner contracts, performance budgets, work packages, and resume protocol |
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
