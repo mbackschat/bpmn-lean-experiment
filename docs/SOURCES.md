@@ -13,6 +13,8 @@ Project-authored code and documentation are released under the root [MIT License
 | Shell verification tools | Git, `jq`, `xmllint`, and `shasum` are environment prerequisites | Invoked as external tools and not distributed by this repository |
 | Node and pnpm | Node `24.18.0` and pnpm `11.17.0`; Homebrew formulae report MIT | External runtime and package manager; exact nvm/asdf pins and a non-mutating Homebrew fallback are tracked |
 | TypeScript compiler graph | `typescript@7.0.2` and the resolved `@typescript/typescript-darwin-arm64@7.0.2` platform package are Apache-2.0 | Development-only compiler; exact integrities are locked, packages are not vendored, and no runtime dependency enters the semantic core |
+| Temporal adapter graph | Direct `@temporalio/client`, `testing`, `worker`, and `workflow` packages at `1.21.0` are MIT; the locked non-vendored graph contains MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, Unlicense, `Apache-2.0 AND MIT`, and CC-BY-4.0 data | External adapter/runtime and test dependencies only; no Temporal dependency enters Lean or the semantic core |
+| Temporal CLI `v1.8.1` | MIT; downloaded from the official Temporal distribution endpoint and Git-ignored | Full local development server for M0.5 integration tests; exact binary is cached locally and not redistributed |
 | Maven wrapper and build plugins | Wrapper `3.2.0`, Maven `3.8.8`, Compiler Plugin `3.14.1`, and Surefire Plugin `3.5.4` are Apache-2.0 | The wrapper script/JAR is retained under its upstream license; build tooling is isolated to the Java oracle |
 | CIB Seven oracle graph | CIB engine `2.2.0` and most transitives are Apache-2.0; the resolved graph also contains MIT and BSD-3-Clause components | External Java oracle only; no CIB type or algorithm enters Lean, the semantic core, or project-authored semantic authority |
 | H2 `2.3.232` | Dual MPL-2.0 or EPL-1.0 | External in-memory oracle database; compatible with distribution of MIT-licensed project source |
@@ -21,7 +23,7 @@ Project-authored code and documentation are released under the root [MIT License
 | Temporal, MIWG, Betsy, fUML, and other research trees | Separate checkouts under their own upstream terms | Evidence inputs only; they are not project dependencies and are not relicensed |
 | OMG BPMN corpus | Copyrighted external material retained only in ignored local paths | Excluded from the MIT-licensed tracked repository material |
 
-The approved M0.2 Java graph and M0.4 TypeScript compiler graph contain only Apache-2.0, MIT, MPL-2.0/EPL-1.0, EPL-1.0, and BSD-3-Clause licenses. Before adopting any further Maven, pnpm, Lake, parser, Temporal, test, build, or runtime package, inspect its exact transitive license graph, preserve required notices, and update this record. An incompatible future dependency must be replaced, isolated behind a non-distributed research boundary, or explicitly reconsidered; it must never silently alter the project license.
+The approved M0.2 Java, M0.4 TypeScript compiler, and M0.5 Temporal graphs remain compatible with releasing project-authored source under MIT. `unionfs@4.6.0` omits a package-manifest license value, but its distributed `LICENSE` is the Unlicense/public-domain dedication. The CC-BY-4.0 entry is `caniuse-lite` browser-support data pulled transitively by the Worker bundler and is neither copied into project source nor separately redistributed by this repository. Before adopting any further Maven, pnpm, Lake, parser, Temporal, test, build, or runtime package, inspect its exact transitive license graph, preserve required notices, and update this record. An incompatible future dependency must be replaced, isolated behind a non-distributed research boundary, or explicitly reconsidered; it must never silently alter the project license.
 
 ## OMG BPMN 2.0.2
 
@@ -80,7 +82,11 @@ Pinned baseline checkout: [temporalio/sdk-typescript at `2595d1b`](https://githu
 - License: MIT
 - Role: authoritative implementation reference for TypeScript Workflow replay, timers, Activities, cancellation, delivery, and SDK boundaries
 
-This revision is a development reference, not yet a project dependency or profile pin.
+M0.5 separately pins the released packages `@temporalio/client@1.21.0`, `@temporalio/testing@1.21.0`, `@temporalio/worker@1.21.0`, and `@temporalio/workflow@1.21.0`. They are isolated to `@bpmn-lean/temporal-adapter`; the semantic core remains dependency-free. The SDK requires Node `>=20.3.0`, satisfied by the project’s pinned Node `24.18.0`.
+
+The resolved pnpm graph is locked. pnpm’s supply-chain guard explicitly denies install scripts for `@swc/core@1.15.46` and `protobufjs@7.6.5`; the installed native SWC binding was verified without its optional fallback script, and protobufjs’s postinstall is not required for runtime behavior. The exact freshly released Temporal `1.21.0` suite is listed in `minimumReleaseAgeExclude` because the user explicitly approved that coordinated version set. Temporal’s published declarations currently fail library checking under TypeScript `7.0.2`, so only the adapter sets `skipLibCheck: true`; project source remains strict and the semantic core continues to check dependency-free with library checking enabled.
+
+M0.5 uses Temporal CLI `v1.8.1` through `TestWorkflowEnvironment.createLocal` with the SDK’s `cached-download` strategy. The CLI starts the full local development server rather than the time-skipping test server, is cached under ignored `.cache/temporal-cli/`, and is not committed. The retained replay fixture was exported with the CLI’s documented `workflow show --output json` format.
 
 ## Temporal TypeScript samples
 
@@ -89,9 +95,9 @@ Pinned baseline checkout: [temporalio/samples-typescript at `fb0aa23`](https://g
 - Remote: `https://github.com/temporalio/samples-typescript.git`
 - Inspected revision: `fb0aa23d75394a132646de883842dfacdacd5aa0`
 - License: MIT
-- Role: concrete Workflow, Activity, signal, update, timer, cancellation, testing, and replay-pattern research
+- Role: concrete Workflow, Activity, signal, update, timer, cancellation, testing, replay, and data-driven DSL-interpreter research
 
-The samples can inform adapter mechanics but cannot define BPMN behavior.
+The [`dsl-interpreter`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0/dsl-interpreter) sample parses YAML into a data AST and recursively interprets sequence, parallel, and Activity nodes inside one Workflow rather than generating TypeScript. It supports the project’s hosting direction but cannot define BPMN behavior; its lessons and limitations are recorded in [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md).
 
 ## Temporal documentation
 

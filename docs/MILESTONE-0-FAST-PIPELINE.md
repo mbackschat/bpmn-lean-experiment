@@ -177,7 +177,7 @@ Each completed package ends with updated [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP
 
 Package order protects calibration and independence. The repository should still gain the runner skeleton early: M0.1 defines it, M0.2 exercises one external runner, and every following package plugs into the same orchestrator boundary.
 
-M0.0 through M0.4 are complete. M0.5 is the next package and requires the exact Temporal dependency and local-server decision below before implementation.
+M0.0 through M0.5 are complete. M0.6 is the next package: assemble the multi-target gate, classify one injected disagreement, record phase timings, and enforce the feedback budgets.
 
 ## Dependency decisions
 
@@ -198,7 +198,7 @@ Known decisions still required:
 | TypeScript compiler | `typescript@7.0.2` | Approved M0.4 development dependency; Apache-2.0; the resolved platform graph contains only `typescript@7.0.2` and `@typescript/typescript-darwin-arm64@7.0.2`, both Apache-2.0; removable by replacing the compiler/toolchain, with no runtime semantic role |
 | TypeScript test harness | Node `node:test` | Implemented with the approved Node runtime; no package dependency or additional license graph |
 | BPMN ingestion | `bpmn-moddle` or a smaller standards-preserving XML front end | Dependency and preservation policy require approval |
-| Temporal | Exact `@temporalio/*` SDK packages and a local test-server strategy | Versions must be selected together and replay support verified |
+| Temporal | `@temporalio/client@1.21.0`, `@temporalio/testing@1.21.0`, `@temporalio/worker@1.21.0`, `@temporalio/workflow@1.21.0`, and CLI `v1.8.1` through full-server `cached-download` | Approved and implemented for M0.5; direct packages and CLI are MIT, the graph audit is in [SOURCES.md](SOURCES.md), and the entire surface is removable with the private adapter package |
 | Cross-language schema validation | Prefer generated or dependency-free validation until a concrete gap exists | The shared schema must not become a semantic implementation |
 
 ## Acceptance criteria
@@ -246,3 +246,6 @@ The exact resume point must name the current package, last verified command, nex
 | 2026-07-24 | Transfer only the external-command/internal-closure and definition/runtime distinctions from the representation spike into the M0.3 Lean capsule | Implemented; the capsule uses its own compressed sequential control state and does not adopt the experiment's provisional general IR or token model |
 | 2026-07-24 | Adopt Node 24.18.0, pnpm 11.17.0, TypeScript 7.0.2, and built-in `node:test` for M0.4 | Approved and implemented; nvm/asdf pins and a Homebrew fallback coexist, the compiler graph is Apache-2.0, and the semantic core has no runtime package dependency |
 | 2026-07-24 | Name the independent TypeScript component “semantic core” and its public transition `applyStimulus` | Approved; “semantic transition system” is the formal description, while the preserved handoff’s “reducer” term remains a historical alias |
+| 2026-07-24 | Interpret/evaluate versioned executable BPMN IR data in TypeScript rather than generate authoritative TypeScript from each BPMN model | Approved as the production architecture; generated source may be a derived diagnostic or optimization only after equivalence and replay evidence |
+| 2026-07-24 | Adopt the exact Temporal SDK `1.21.0` package set and CLI `v1.8.1` full local server for M0.5 | Approved and implemented; one Workflow loop owns semantic mutation, Signal is only the bounded runner transport, Query is diagnostic, and live plus retained histories replay |
+| 2026-07-24 | Deny optional `@swc/core` and protobufjs install scripts and isolate Temporal’s TypeScript 7 declaration incompatibility with adapter-only `skipLibCheck` | Implemented; the native SWC binding works without its fallback script, project source remains strict, and the semantic core retains full library checking |

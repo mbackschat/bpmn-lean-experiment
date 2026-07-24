@@ -11,8 +11,10 @@
   },
   "scripts": {
     "build:semantic-core": "tsc -p packages/semantic-core/tsconfig.json",
+    "build:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json",
     "test:semantic-core": "tsc -p packages/semantic-core/tsconfig.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.mjs",
-    "test:semantic": "lake test && tsc -p packages/semantic-core/tsconfig.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.mjs"
+    "test:semantic": "lake test && tsc -p packages/semantic-core/tsconfig.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.mjs",
+    "test:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json && node --test --test-concurrency=1 packages/temporal-adapter/test/*.test.mjs"
   },
   "devDependencies": {
     "typescript": "7.0.2"

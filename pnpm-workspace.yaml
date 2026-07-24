@@ -1,2 +1,15 @@
 packages:
   - packages/*
+allowBuilds:
+  '@swc/core': false
+  protobufjs: false
+minimumReleaseAgeExclude:
+  - '@temporalio/activity@1.21.0'
+  - '@temporalio/client@1.21.0'
+  - '@temporalio/common@1.21.0'
+  - '@temporalio/core-bridge@1.21.0'
+  - '@temporalio/nexus@1.21.0'
+  - '@temporalio/proto@1.21.0'
+  - '@temporalio/testing@1.21.0'
+  - '@temporalio/worker@1.21.0'
+  - '@temporalio/workflow@1.21.0'

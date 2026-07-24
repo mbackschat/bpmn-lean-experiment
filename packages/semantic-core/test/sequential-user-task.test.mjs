@@ -7,8 +7,11 @@ import {
   CommandOutcome,
   ControlStateKind,
   ScenarioOutcomeKind,
+  ScenarioStepKind,
   StimulusKind,
+  advanceScenario,
   applyStimulus,
+  deployScenario,
   initialState,
   runScenario,
   runScenarioWithClosureLimit,
@@ -58,6 +61,35 @@ test("start closes at one stable User Task wait", async () => {
   assert.equal(result.outcome, CommandOutcome.Committed);
   assert.equal(result.internalStepBoundExceeded, false);
   assert.deepEqual(result.state, {
+    control: {
+      kind: ControlStateKind.WaitingUserTask,
+      instanceId: "Instance_1",
+    },
+    logicalTimeMs: 0,
+  });
+});
+
+test("incremental execution owns deployment and stable observations", async () => {
+  const scenario = await loadScenario();
+
+  const deployment = deployScenario(scenario);
+  const step = advanceScenario(
+    sequentialUserTaskModel,
+    initialState,
+    scenario.stimuli[0],
+    scenario.stimuli.slice(1),
+  );
+
+  assert.deepEqual(deployment, {
+    outcome: CommandOutcome.Committed,
+    observation: scenario.calibration.expectedTrace[0],
+  });
+  assert.equal(step.kind, ScenarioStepKind.Committed);
+  assert.deepEqual(
+    step.observations,
+    scenario.calibration.expectedTrace.slice(1, 3),
+  );
+  assert.deepEqual(step.state, {
     control: {
       kind: ControlStateKind.WaitingUserTask,
       instanceId: "Instance_1",

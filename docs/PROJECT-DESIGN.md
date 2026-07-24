@@ -14,6 +14,27 @@ Build independent implementations that agree through a neutral profile, scenario
 
 Lean’s purpose is not merely to document an already finished adapter. It should accelerate implementation by making ambiguous rules, state distinctions, preservation obligations, counterexamples, generated traces, and refinement relations executable before they are duplicated in TypeScript and Temporal.
 
+## BPMN ingestion and execution decision
+
+The production architecture is an **interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**.
+
+```text
+BPMN 2 XML
+  → source-preserving BPMN model
+  → schema, reference, and profile validation
+  → normalized executable IR as versioned data
+  → TypeScript semantic-core transitions
+  → Temporal durability and effect hosting
+```
+
+Parsing and deployment admission occur outside deterministic Temporal Workflow execution. The admitted executable IR is immutable or content-addressed and carries the exact source-model and semantic-profile identity needed for replay. A generic Workflow hosts that representation and serializes external inputs through the semantic core; Temporal Activities, timers, messages, and child operations implement declared effects and waits only after the semantic core has assigned their BPMN meaning.
+
+This choice keeps one inspectable data representation aligned across Lean, TypeScript, CIB probes, differential traces, and retained histories. It also avoids compiling each model into a new Workflow Definition whose generated control flow, SDK calls, deployment version, and replay compatibility could become accidental semantics. Profile migration, parser evolution, semantic-core evolution, and Worker deployment remain separate version dimensions.
+
+Code generation is not prohibited. A generated TypeScript view may later serve debugging, static specialization, performance, or deployment packaging, but it remains a derived artifact. It may replace interpretation only after explicit equivalence and replay evidence and must never become the semantic authority by construction.
+
+Milestone 0 exercises the hosting boundary before general ingestion exists. Its content-addressed scenario names actual BPMN XML, while the tiny sequential executable model remains explicit in Lean and TypeScript. A source-preserving parser, general executable IR, and deployment store are explicitly absent until their own approved dependency and representation decisions.
+
 ## Milestone 0 delivery boundary
 
 Required now:

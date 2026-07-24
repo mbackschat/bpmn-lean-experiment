@@ -70,6 +70,44 @@ export type CommandResult = Readonly<{
   internalStepBoundExceeded: boolean;
 }>;
 
+export enum ScenarioStepKind {
+  Committed = "committed",
+  Terminal = "terminal",
+  HarnessFailure = "harnessFailure",
+}
+
+type CommittedScenarioStep = Readonly<{
+  kind: ScenarioStepKind.Committed;
+  state: RuntimeState;
+  observations: ReadonlyArray<CanonicalObservation>;
+}>;
+
+type TerminalScenarioStep = Readonly<{
+  kind: ScenarioStepKind.Terminal;
+  state: RuntimeState;
+  outcome: ScenarioResult["outcome"];
+  observations: ReadonlyArray<CanonicalObservation>;
+}>;
+
+type HarnessFailureScenarioStep = Readonly<{
+  kind: ScenarioStepKind.HarnessFailure;
+  outcome: ScenarioResult["outcome"];
+  observations: ReadonlyArray<CanonicalObservation>;
+}>;
+
+export type ScenarioStep =
+  | CommittedScenarioStep
+  | TerminalScenarioStep
+  | HarnessFailureScenarioStep;
+
+export type ScenarioDeployment = Readonly<{
+  outcome: CommandOutcome.Committed | CommandOutcome.Unsupported;
+  observation: Extract<
+    CanonicalObservation,
+    { kind: CanonicalObservationKind.Deployment }
+  >;
+}>;
+
 type CommandAdmission = Readonly<{
   outcome: CommandOutcome.Committed | CommandOutcome.Rejected;
   state: RuntimeState;
@@ -265,13 +303,77 @@ function observeStableState(
   }
 }
 
-function commandId(stimulus: Stimulus): string {
+export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
     case StimulusKind.CompleteUserTask:
       return stimulus.commandId;
     default:
       return assertNever(stimulus);
+  }
+}
+
+export function advanceScenario(
+  model: SequentialUserTaskModel,
+  state: RuntimeState,
+  stimulus: Stimulus,
+  remainingStimuli: ReadonlyArray<Stimulus>,
+  closureLimit: number = internalClosureLimit,
+): ScenarioStep {
+  const result = applyStimulus(model, state, stimulus, closureLimit);
+  if (result.internalStepBoundExceeded) {
+    return {
+      kind: ScenarioStepKind.HarnessFailure,
+      outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+      observations: [],
+    };
+  }
+
+  switch (result.outcome) {
+    case CommandOutcome.Committed: {
+      const snapshot = observeStableState(
+        model,
+        result.state,
+        remainingStimuli,
+      );
+      if (snapshot === null) {
+        return {
+          kind: ScenarioStepKind.HarnessFailure,
+          outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+          observations: [],
+        };
+      }
+      return {
+        kind: ScenarioStepKind.Committed,
+        state: result.state,
+        observations: [
+          {
+            kind: CanonicalObservationKind.Command,
+            commandId: stimulusCommandId(stimulus),
+            outcome: result.outcome,
+          },
+          snapshot,
+        ],
+      };
+    }
+    case CommandOutcome.Rejected:
+      return {
+        kind: ScenarioStepKind.Terminal,
+        state: result.state,
+        outcome: {
+          kind: ScenarioOutcomeKind.Semantic,
+          outcome: result.outcome,
+        },
+        observations: [
+          {
+            kind: CanonicalObservationKind.Command,
+            commandId: stimulusCommandId(stimulus),
+            outcome: result.outcome,
+          },
+        ],
+      };
+    default:
+      return assertNever(result.outcome);
   }
 }
 
@@ -289,53 +391,26 @@ function executeStimuli(
   const trace: CanonicalObservation[] = [];
 
   for (const [index, stimulus] of stimuli.entries()) {
-    const result = applyStimulus(model, state, stimulus, closureLimit);
-    if (result.internalStepBoundExceeded) {
-      return {
-        outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
-        trace,
-      };
-    }
-
-    switch (result.outcome) {
-      case CommandOutcome.Committed: {
-        const snapshot = observeStableState(
-          model,
-          result.state,
-          stimuli.slice(index + 1),
-        );
-        if (snapshot === null) {
-          return {
-            outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
-            trace,
-          };
-        }
-        trace.push(
-          {
-            kind: CanonicalObservationKind.Command,
-            commandId: commandId(stimulus),
-            outcome: result.outcome,
-          },
-          snapshot,
-        );
-        state = result.state;
+    const step = advanceScenario(
+      model,
+      state,
+      stimulus,
+      stimuli.slice(index + 1),
+      closureLimit,
+    );
+    switch (step.kind) {
+      case ScenarioStepKind.Committed:
+        trace.push(...step.observations);
+        state = step.state;
         break;
-      }
-      case CommandOutcome.Rejected:
-        trace.push({
-          kind: CanonicalObservationKind.Command,
-          commandId: commandId(stimulus),
-          outcome: result.outcome,
-        });
+      case ScenarioStepKind.Terminal:
+      case ScenarioStepKind.HarnessFailure:
         return {
-          outcome: {
-            kind: ScenarioOutcomeKind.Semantic,
-            outcome: result.outcome,
-          },
-          trace,
+          outcome: step.outcome,
+          trace: [...trace, ...step.observations],
         };
       default:
-        return assertNever(result.outcome);
+        return assertNever(step);
     }
   }
 
@@ -361,42 +436,49 @@ function supportsScenario(scenario: Scenario): boolean {
   );
 }
 
+export function deployScenario(scenario: Scenario): ScenarioDeployment {
+  const outcome = supportsScenario(scenario)
+    ? CommandOutcome.Committed
+    : CommandOutcome.Unsupported;
+  return {
+    outcome,
+    observation: {
+      kind: CanonicalObservationKind.Deployment,
+      outcome,
+    },
+  };
+}
+
 export function runScenarioWithClosureLimit(
   closureLimit: number,
   scenario: Scenario,
 ): ScenarioResult {
   validateClosureLimit(closureLimit);
 
-  if (!supportsScenario(scenario)) {
-    return {
-      outcome: {
-        kind: ScenarioOutcomeKind.Semantic,
-        outcome: CommandOutcome.Unsupported,
-      },
-      trace: [
-        {
-          kind: CanonicalObservationKind.Deployment,
-          outcome: CommandOutcome.Unsupported,
+  const deployment = deployScenario(scenario);
+  switch (deployment.outcome) {
+    case CommandOutcome.Unsupported:
+      return {
+        outcome: {
+          kind: ScenarioOutcomeKind.Semantic,
+          outcome: deployment.outcome,
         },
-      ],
-    };
+        trace: [deployment.observation],
+      };
+    case CommandOutcome.Committed: {
+      const execution = executeStimuli(
+        sequentialUserTaskModel,
+        scenario.stimuli,
+        closureLimit,
+      );
+      return {
+        outcome: execution.outcome,
+        trace: [deployment.observation, ...execution.trace],
+      };
+    }
+    default:
+      return assertNever(deployment.outcome);
   }
-
-  const execution = executeStimuli(
-    sequentialUserTaskModel,
-    scenario.stimuli,
-    closureLimit,
-  );
-  return {
-    outcome: execution.outcome,
-    trace: [
-      {
-        kind: CanonicalObservationKind.Deployment,
-        outcome: CommandOutcome.Committed,
-      },
-      ...execution.trace,
-    ],
-  };
 }
 
 export function runScenario(scenario: Scenario): ScenarioResult {

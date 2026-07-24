@@ -549,14 +549,14 @@ Operational repair can change what work executes. If such features are enabled i
 |---|---|---|
 | Workflow | Adopt | Durable host for one semantic-core-controlled process execution |
 | Event History and replay | Adopt and test directly | Fundamental durability and deployment-compatibility mechanism |
-| Signal | Candidate ingress | Durable asynchronous command transport without result |
-| Query | Adopt for diagnostics only | Convenient projection, but not durable observation authority |
+| Signal | Adopted for M0.5 runner ingress; public command API still open | Durable asynchronous transport without a result; the Workflow result carries the bounded scenario outcome |
+| Query | Adopted for M0.5 diagnostics only | Convenient projection, but not durable observation authority |
 | Update | Candidate command ingress | Durable request-response fits typed command outcomes |
 | Durable timers | Adopt | Physical wakeup mechanism behind semantic-core-owned timer semantics |
 | Activities | Adopt when external effects enter scope | I/O boundary with retries, timeouts, and idempotency obligations |
 | Cancellation scopes | Adopt as adapter mechanism | Useful structured cancellation, never BPMN semantic authority |
 | Continue-As-New | Plan early, implement when needed | Required for bounded history; must be observation-transparent |
-| Replay tests | Adopt in the first full pipeline | Cheapest direct guard against incompatible adapter changes |
+| Replay tests | Adopted in M0.5 | Live and committed-history replay directly guard adapter compatibility |
 | Patching | Defer until first incompatible code change | Compatibility mechanism, not needed before histories exist |
 | Worker Versioning | Defer deployment choice | Production concern; does not replace replay fixtures |
 | Child Workflows | Defer | Requires a proven BPMN subprocess or Call Activity mapping |
@@ -568,6 +568,14 @@ Operational repair can change what work executes. If such features are enabled i
 | Nexus | Defer | Cross-Namespace service abstraction beyond walking skeleton |
 | Workflow Streams | Exclude initially | Extra contrib protocol unnecessary for canonical differential testing |
 | Pause, Reset, and Activity Operations | Exclude from semantics | Operator repair controls require separate evidence |
+
+## Official TypeScript DSL-interpreter sample
+
+The pinned official TypeScript samples include [`dsl-interpreter`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0/dsl-interpreter). Its client parses YAML into a small data AST with `sequence`, `parallel`, and `activity` statements, then starts one generic `DSLInterpreter` Workflow with that AST as input. The Workflow recursively evaluates the data: sequences use ordered iteration, parallel branches use `Promise.all`, and leaf statements invoke Activities through a dynamic proxy. It generates no TypeScript from the YAML.
+
+This sample supports the project’s interpreter/evaluator decision but does not define the BPMN design. It demonstrates that Temporal can durably host data-driven control flow and place external work behind Activities. It does not supply a source-preserving model, schema/profile admission, an explicit semantic state transition system, canonical observations, command outcomes, retained replay fixtures, or a safe BPMN parallel-state account; its parallel branches share and mutate one bindings object.
+
+The project therefore adopts the sample’s broad hosting pattern while strengthening every semantic boundary: BPMN XML is compiled outside Workflow execution into immutable versioned IR data, the pure semantic core alone assigns BPMN meaning, one Workflow loop alone mutates semantic state, effects remain typed, and differential plus replay gates remain independent. The durable decision and generator exclusion are owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
 
 ## Camunda/CIB-to-Temporal mapping audit
 
@@ -630,6 +638,12 @@ One Workflow loop should:
 
 The semantic core should never import the Temporal SDK. The adapter should never reproduce gateway, token, scope, incident, or event-subscription semantics that belong in the semantic core.
 
+### Milestone 0.5 realization
+
+The first adapter implements this shape for only the sequential User Task capsule. The Workflow receives the neutral scenario, performs semantic deployment admission through the core, queues the start stimulus, registers one synchronous `bpmn-stimulus` Signal handler that only deduplicates and queues later stimuli, and exposes one diagnostic `bpmn-trace` Query. One main loop alone calls the core’s incremental `advanceScenario` operation and mutates semantic state and trace.
+
+The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, observes the stable wait through Query, delivers completion through Signal, compares the Workflow result with the pure core result, fetches Event History, and replays both the live history and a committed CLI-exported history. Activities, timers, Search Attributes, Continue-As-New, production command ingress, and arbitrary BPMN model ingestion remain absent.
+
 ## Initial replay and refinement test matrix
 
 The first end-to-end scenario should establish the entire assurance loop, not broad BPMN coverage.
@@ -654,16 +668,15 @@ The full local Temporal development server is the preferred integration target b
 The following decisions remain unapproved:
 
 1. Whether the public command ingress is Update, Signal plus a separate result protocol, or both with distinct guarantees.
-2. Which Temporal TypeScript SDK and server versions become Milestone 0 dependencies.
-3. The exact Activity retry, timeout, heartbeat, cancellation, and idempotency policy for each effect class.
-4. The state and schema carried through Continue-As-New.
-5. The Worker Versioning strategy for production and the retained-history support window.
-6. The mapping, if any, from child Workflows to BPMN subprocesses or Call Activities.
-7. The boundary between canonical observations returned by the runner and diagnostic Query or visibility projections.
-8. The payload schema, converter compatibility policy, and encryption requirements.
-9. The policy for operator cancellation, termination, reset, pause, and Activity Operations in conformance runs.
-10. The user-task discovery architecture: Visibility plus Query for the spike, an external task read model for production, or another explicitly justified design.
-11. The exact User Task projection, global command-envelope schema, identity and authorization boundary, and Search Attribute registry.
+2. The exact Activity retry, timeout, heartbeat, cancellation, and idempotency policy for each effect class.
+3. The state and schema carried through Continue-As-New.
+4. The Worker Versioning strategy for production and the retained-history support window.
+5. The mapping, if any, from child Workflows to BPMN subprocesses or Call Activities.
+6. The boundary between canonical observations returned by the runner and diagnostic Query or visibility projections.
+7. The payload schema, converter compatibility policy, and encryption requirements.
+8. The policy for operator cancellation, termination, reset, pause, and Activity Operations in conformance runs.
+9. The user-task discovery architecture: Visibility plus Query for the spike, an external task read model for production, or another explicitly justified design.
+10. The exact User Task projection, global command-envelope schema, identity and authorization boundary, and Search Attribute registry.
 
 ## Architectural invariants derived from Temporal
 
@@ -690,4 +703,4 @@ The following decisions remain unapproved:
 - TypeScript programming model: [Core application](https://docs.temporal.io/develop/typescript/core-application), [Message passing](https://docs.temporal.io/develop/typescript/workflows/message-passing), [Failure detection](https://docs.temporal.io/develop/typescript/failure-detection), [Cancellation](https://docs.temporal.io/develop/typescript/cancellation), [Versioning](https://docs.temporal.io/develop/typescript/workflows/versioning), and [Testing](https://docs.temporal.io/develop/typescript/testing-suite)
 - Platform features: [Retry Policies](https://docs.temporal.io/encyclopedia/retry-policies), [Schedules](https://docs.temporal.io/schedule), [Data conversion](https://docs.temporal.io/data-conversion), [Visibility](https://docs.temporal.io/visibility), [Nexus](https://docs.temporal.io/nexus), and [Workflow Streams](https://docs.temporal.io/workflow-streams)
 - Human interaction and discovery: [Approval pattern](https://docs.temporal.io/design-patterns/approval), [Search Attributes](https://docs.temporal.io/search-attribute), [Visibility list filters](https://docs.temporal.io/list-filter), and [TypeScript observability and Visibility](https://docs.temporal.io/develop/typescript/platform/observability)
-- Pinned implementation references: [Workflow API](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/workflow/src/workflow.ts), [Worker replay API](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/worker/src/worker.ts), [Sinks](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/worker/src/sinks.ts), [Data Converter](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/common/src/converter/data-converter.ts), and [SDK activation sequence](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/docs/activation.mermaid)
+- Pinned implementation references: [Workflow API](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/workflow/src/workflow.ts), [Worker replay API](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/worker/src/worker.ts), [Sinks](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/worker/src/sinks.ts), [Data Converter](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/packages/common/src/converter/data-converter.ts), [SDK activation sequence](https://github.com/temporalio/sdk-typescript/blob/2595d1b62cf5c3ff1748df0df2f9b303902bb31c/docs/activation.mermaid), and the official [TypeScript DSL interpreter](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0/dsl-interpreter)

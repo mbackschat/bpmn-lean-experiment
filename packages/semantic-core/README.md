@@ -23,7 +23,9 @@ const result = runScenario(scenario);
 
 `applyStimulus` is pure: the same model, state, stimulus, and closure limit produce the same result. `runScenario` derives canonical observations without reading the scenario's calibration answer. Internal closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
 
-The package intentionally does not reproduce Temporal durability, message delivery, retry, Workflow replay, persistence, or scheduling. The Temporal adapter will host this semantic core and will be tested as a refinement of this boundary.
+`deployScenario` and `advanceScenario` expose the same deployment, command, and stable-state observation logic incrementally for durable hosts. `runScenario` consumes those operations too, so an adapter does not need to copy observation semantics.
+
+The package intentionally does not reproduce Temporal durability, message delivery, retry, Workflow replay, persistence, or scheduling. The [Temporal adapter](../temporal-adapter/README.md) hosts this core and checks its Workflow result as a refinement of this boundary.
 
 ## Test
 

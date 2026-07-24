@@ -6,7 +6,7 @@ This project is an experiment toward a Temporal-hosted BPMN 2.0.2 execution adap
 
 The ambition is deliberately high: not merely to translate BPMN shapes into Workflow code, but to build an auditable chain from the standard and observed engine behavior to production execution.
 
-> **Project status:** Milestone 0 walking skeleton in progress. CIB calibration, the first Lean semantic capsule, and the matching TypeScript semantic core are executable, but the repository does not yet contain a general BPMN engine and makes no BPMN-conformance or CIB-compatibility claim.
+> **Project status:** Milestone 0 walking skeleton in progress. CIB calibration, the first Lean semantic capsule, the matching TypeScript semantic core, and a replay-checked Temporal host are executable. The repository does not yet contain a general BPMN engine and makes no BPMN-conformance or CIB-compatibility claim.
 
 ## Why this project exists
 
@@ -56,6 +56,23 @@ flowchart LR
 
 The pure semantic core is intentional. It prevents Temporal handler structure, Activity retries, Workflow replay, or SDK scheduling from silently becoming BPMN semantics while still allowing Temporal to provide durability.
 
+### BPMN ingestion and execution
+
+The target architecture is an interpreter/evaluator, not a BPMN-to-TypeScript code generator:
+
+```text
+BPMN 2 XML
+  → source-preserving BPMN model
+  → validation and profile admission
+  → content-addressed executable IR (versioned data)
+  → TypeScript semantic core evaluation
+  → Temporal durability, messages, timers, and effects
+```
+
+XML parsing and normalization happen outside deterministic Workflow execution. A generic Workflow hosts an immutable executable representation and the TypeScript semantic core advances its BPMN state. Generated TypeScript may later be useful as a derived diagnostic or optimization artifact, but it is not the semantic authority. The rationale and replay consequences are recorded in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md).
+
+Milestone 0 deliberately stops short of that general ingestion path: its sequential User Task model is explicit in the semantic core and admitted through a content-addressed scenario. Arbitrary BPMN XML parsing and the production executable IR remain future work.
+
 ## Assurance pipeline
 
 Every semantic capsule is intended to travel through the same short feedback loop:
@@ -88,13 +105,13 @@ none Start Event → User Task → none End Event
 
 | Surface | Current state |
 |---|---|
-| Planning and contracts | M0.0 through M0.4 complete; profile, scenario, observation, runner, and feedback-budget contracts exist |
+| Planning and contracts | M0.0 through M0.5 complete; profile, scenario, observation, runner, replay, and feedback-budget contracts exist |
 | BPMN sources | Official BPMN 2.0.2 PDF and machine-readable corpus ingested locally with project-authored conformance research |
 | Lean | The sequential User Task interpreter derives the calibrated trace and proves start-to-wait, matching-completion, and non-matching-completion invariants; broader BPMN semantics remain absent |
 | CIB Seven | Pinned `v2.2.0` embedded runner deploys, starts, observes, completes, cleans, emits the calibrated trace, and exposes a diagnostic PVM projection through a persistent JSON-lines boundary |
-| TypeScript semantic core | The dependency-free sequential User Task semantic core independently derives the calibrated trace and passes lifecycle, poisoned-calibration, and speculative-commit guards |
-| Temporal adapter | Replay and SDK semantics researched; adapter and retained-history tests not yet implemented |
-| Evidence | CIB, Lean, and the TypeScript semantic core agree on one draft-profile trace; no BPMN conformance, immutable CIB compatibility, Temporal refinement, or replay claim yet |
+| TypeScript semantic core | The dependency-free sequential User Task semantic core independently derives the calibrated trace, exposes one incremental transition boundary for durable hosts, and passes lifecycle, poisoned-calibration, and speculative-commit guards |
+| Temporal adapter | A full local Temporal server hosts one Workflow loop around the semantic core; a synchronous Signal handler only queues stimuli, a Query exposes the current projection for testing, and both live and committed-history replay gates pass |
+| Evidence | CIB, Lean, the semantic core, and the Temporal-hosted execution agree on one draft-profile trace; retained history replays, but there is no BPMN conformance or immutable CIB compatibility claim |
 
 The authoritative live checkpoint and next task are in [PLAN.md](docs/PLAN.md); exact implemented and absent surfaces are in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -109,6 +126,7 @@ The current verification gate requires:
 - a Lean installation that honors the pinned [lean-toolchain](lean-toolchain), normally through `elan`.
 - Node `24.18.0`, selected through the root [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew `node@24` keg;
 - pnpm `11.17.0`, with dependencies installed by `./scripts/pnpm.sh install --frozen-lockfile`;
+- permission to download and execute the pinned Temporal CLI `v1.8.1` on the first Temporal test run; it is cached under the ignored `.cache/temporal-cli/` directory;
 - Homebrew Java 21 at `/opt/homebrew/opt/openjdk@21`, or `BPMN_JAVA_HOME` pointing to another Java 21 installation.
 
 The Node wrapper uses an already active exact nvm/asdf-compatible Node first and falls back to the Homebrew keg without changing shell configuration:
@@ -137,6 +155,12 @@ Run the fast semantic gate (Lean plus TypeScript semantic core):
 ./scripts/pnpm.sh run test:semantic
 ```
 
+Run the focused Temporal refinement and replay gate:
+
+```sh
+./scripts/pnpm.sh run test:temporal
+```
+
 Run the provisional semantic-representation spike separately:
 
 ```sh
@@ -151,7 +175,7 @@ The spike is a bounded architecture experiment, not part of the approved BPMN se
 ```text
 BpmnSemantics/       Lean contracts, executable semantic capsules, and isolated experiments
 docs/                Architecture, plans, research, testing, and source provenance
-packages/            Pure TypeScript semantic core and later production packages
+packages/            Pure TypeScript semantic core and Temporal adapter
 profiles/            Versioned semantic-profile artifacts
 runners/             Persistent external semantic-oracle runners
 scenarios/           Neutral BPMN models, stimuli, and observation requests
@@ -188,7 +212,7 @@ Start with the [documentation registry](docs/README.md). Common routes are:
 - [x] M0.2 — calibrated embedded CIB Seven runner
 - [x] M0.3 — executable Lean semantic capsule
 - [x] M0.4 — independent pure TypeScript semantic core
-- [ ] M0.5 — Temporal adapter and retained-history replay
+- [x] M0.5 — Temporal adapter and retained-history replay
 - [ ] M0.6 — fast differential/refinement gate with injected disagreement
 
 Later milestones expand BPMN coverage one semantic capsule at a time; they do not begin with a broad engine rewrite.

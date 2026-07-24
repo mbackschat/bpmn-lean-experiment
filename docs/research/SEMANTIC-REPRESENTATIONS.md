@@ -1,6 +1,6 @@
 # Semantic representations and execution models
 
-**Status:** Research result with provisional project consequences
+**Status:** Research result; source-model → data-IR → interpreter direction adopted, exact representations provisional
 
 **Scope:** CIB Seven BPMN Model API, deployment parser, PVM definition and runtime representations, fUML Activity execution, PSSM State Machine execution, and candidate consequences for the project’s BPMN source model, Lean semantics, pure TypeScript semantic core, and Temporal adapter.
 
@@ -24,6 +24,8 @@ fUML and PSSM reinforce the architectural separation but use more explicit seman
 The strongest provisional project conclusion is:
 
 > Use a source-preserving model for import and diagnostics, compile it into a versioned immutable data-only executable IR, and execute that IR against separate explicit runtime state through a transition relation and bounded executable closure. Preserve provenance, multiplicity, edge-arrival identity, and ownership relations until evidence justifies projection.
+
+On 2026-07-24, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) adopted this boundary and explicitly chose a TypeScript interpreter/evaluator over authoritative BPMN-to-TypeScript generation. The decision does not adopt the experiment’s candidate IR types, parser, scope algebra, token model, or compiler schema; those remain evidence-driven design questions.
 
 ## Representation pipeline in CIB Seven
 
@@ -636,7 +638,7 @@ The durable identity chain likely needs:
 
 The exact scheme is undecided. The design must prevent an old Temporal history or persisted runtime state from being silently interpreted by a different compiler or semantic profile.
 
-## Recommended provisional architecture
+## Adopted direction with provisional representations
 
 ```mermaid
 flowchart TB

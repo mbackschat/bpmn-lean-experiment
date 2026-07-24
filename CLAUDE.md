@@ -11,9 +11,11 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. CIB Seven calibrated the trace, and both the Lean interpreter and independent pure TypeScript semantic core now derive it. M0.5, the Temporal adapter and retained-history replay gate, is next. Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. CIB Seven calibrated the trace, the Lean interpreter and independent pure TypeScript semantic core derive it, and the Temporal adapter preserves it through live execution and retained-history replay. M0.6, the fast multi-target differential/refinement gate with an injected disagreement, is next. Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
+
+The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**. The intended path is BPMN XML → source-preserving model → validated, content-addressed executable IR as data → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority. Milestone 0 still uses an explicit capsule model and does not yet implement arbitrary BPMN XML ingestion.
 
 Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -35,7 +37,7 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 | Mission, authority, compatibility, or assurance | Complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | BPMN import, conformance, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md) and applicable normative sources |
 | Source model, normalization, executable IR, scope, runtime identity, token/activation state, or command closure | [Semantic representations research](docs/research/SEMANTIC-REPRESENTATIONS.md) and relevant [experiments](docs/experiments/README.md) |
-| Temporal adapter, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-MODEL.md](docs/TEMPORAL-EXECUTION-MODEL.md) |
+| Temporal adapter, interpreter hosting, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-MODEL.md](docs/TEMPORAL-EXECUTION-MODEL.md) |
 | Refinement, equivalence, liveness, fairness, TLA+, or auxiliary formal tools | [TLA-AND-BISIMULATION-RESEARCH.md](docs/TLA-AND-BISIMULATION-RESEARCH.md) |
 | CIB Seven or Temporal source instrumentation/acceleration | [REFERENCE-INSTRUMENTATION.md](docs/REFERENCE-INSTRUMENTATION.md) |
 | External checkout or fixture provenance | [SOURCES.md](docs/SOURCES.md) |
@@ -58,6 +60,7 @@ When sources disagree, classify the disagreement against the standard, profile, 
 - Do not implement profile-dependent behavior until the relevant interpretation and scope are approved and recorded.
 - Never silently choose an oracle release, feature meaning, expression subset, observation boundary, scheduling rule, listener scope, history contract, or external-effect contract.
 - Do not transplant CIB PVM types, persistence entities, behavior classes, or engine algorithms into Lean or the semantic core.
+- Do not make generated TypeScript the authoritative representation of a BPMN model; preserve the admitted source identity and execute versioned IR data through the semantic core.
 - Do not encode Temporal Workflow tasks, Activity attempts, retries, Run IDs, or Event History as BPMN semantic facts.
 - Keep BPMN import/admission, executable normalization, runtime execution, public observation, and host persistence conceptually separate.
 - Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
@@ -151,6 +154,12 @@ Fast semantic gate (Lean plus TypeScript semantic core):
 ./scripts/pnpm.sh run test:semantic
 ```
 
+Focused Temporal refinement and replay gate:
+
+```sh
+./scripts/pnpm.sh run test:temporal
+```
+
 Focused CIB calibration gate:
 
 ```sh
@@ -164,7 +173,7 @@ lake build checkSemanticRepresentationSpike
 lake exe checkSemanticRepresentationSpike
 ```
 
-Before JavaScript or TypeScript tests/builds exist, follow the global long-running-command policy and the future gate definitions in [TESTING.md](docs/TESTING.md). Use pnpm, not npm.
+For every JavaScript or TypeScript test/build, follow the global long-running-command policy and the gate definitions in [TESTING.md](docs/TESTING.md). Use pnpm, not npm. The adapter keeps strict checking for project source but sets `skipLibCheck: true` because the pinned Temporal 1.21.0 declarations do not type-check under TypeScript 7.0.2; do not broaden that workaround to the semantic core.
 
 Always run:
 
