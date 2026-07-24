@@ -662,7 +662,7 @@ The adapter implements this shape for only the sequential User Task capsule. The
 
 The application command ID is the ordinary Temporal Update ID. The Workflow also records the accepted stimulus and first semantic outcome, so delivery of the same semantic command under a different Update ID returns the original result without a second transition. Reusing one command ID for a different payload fails at the adapter boundary instead of silently aliasing two commands. This ledger is Workflow-local; cross-Run deduplication remains absent until Continue-As-New is designed.
 
-The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait and exact open task through Queries, delivers lifecycle completion through the retained Signal or interaction completion through Update, and compares the Workflow result with the pure core result. One server/Worker executes the exact, wrong-activation, and stale-completion cases; the stale case additionally redelivers the first completion under a distinct Update ID. The gate fetches and replays every live history plus the committed pre-IR CLI-exported lifecycle history. A Temporal patch marker requires IR for new histories while a narrow compatibility constructor exists only during replay of the retained history. An immutable Update-history fixture, Activities, timers, Search Attributes, Continue-As-New, and general BPMN model ingestion remain absent.
+The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait and exact open task through Queries, delivers lifecycle completion through the retained Signal or interaction completion through Update, and compares the Workflow result with the pure core result. One server/Worker executes the exact, wrong-activation, and stale-completion cases; the stale case additionally redelivers the first completion under a distinct Update ID. The gate fetches and replays every live history plus committed CLI-exported lifecycle-Signal and exact-completion-Update histories. A Temporal patch marker requires IR for new histories while a narrow compatibility constructor exists only during replay of the older retained history. Activities, timers, Search Attributes, Continue-As-New, and general BPMN model ingestion remain absent.
 
 ## Initial replay and refinement test matrix
 
@@ -681,7 +681,7 @@ The first end-to-end scenario should establish the entire assurance loop, not br
 
 The full local Temporal development server is the preferred integration target because it exercises real server semantics. The TypeScript time-skipping test server is valuable for fast timer tests but does not implement every production feature and should not be the only refinement environment.
 
-`Worker.runReplayHistory` should run as a separate fast gate over committed history fixtures. Live integration and retained-history replay test different invariants and both are required.
+`Worker.runReplayHistories` should run as a separate fast batch over committed history fixtures. Live integration and retained-history replay test different invariants and both are required.
 
 ## Open decisions
 

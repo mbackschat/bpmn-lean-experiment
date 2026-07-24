@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
@@ -39,9 +40,14 @@ const retainedHistoryUrl = new URL(
   "./fixtures/m0-sequential-user-task.history.json",
   import.meta.url,
 );
+const retainedInteractionHistoryUrl = new URL(
+  "./fixtures/m1-user-task-exact-update.history.json",
+  import.meta.url,
+);
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
+const expectedTemporalIdentity = "bpmn-lean-test-runtime";
 
 let runner;
 
@@ -58,6 +64,113 @@ function withDeadline(promise, timeoutMs, operation) {
 
 async function loadJson(url) {
   return JSON.parse(await readFile(url, "utf8"));
+}
+
+function collectTemporalIdentities(value, identities = new Set()) {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectTemporalIdentities(item, identities);
+    }
+    return identities;
+  }
+  if (value === null || typeof value !== "object") {
+    return identities;
+  }
+  for (const [key, item] of Object.entries(value)) {
+    if (key === "identity" && typeof item === "string") {
+      identities.add(item);
+    } else {
+      collectTemporalIdentities(item, identities);
+    }
+  }
+  return identities;
+}
+
+function requiredHistoryEvent(history, eventType) {
+  const matches = history.events.filter(
+    (event) => event.eventType === eventType,
+  );
+  assert.equal(
+    matches.length,
+    1,
+    `expected exactly one ${eventType} event`,
+  );
+  return matches[0];
+}
+
+function decodeJsonPayload(payload) {
+  assert.equal(typeof payload?.data, "string");
+  return JSON.parse(Buffer.from(payload.data, "base64").toString("utf8"));
+}
+
+function assertExactCompletionUpdateHistory(
+  history,
+  { scenario, executableIr },
+) {
+  const accepted = requiredHistoryEvent(
+    history,
+    "EVENT_TYPE_WORKFLOW_EXECUTION_UPDATE_ACCEPTED",
+  );
+  const updateCompleted = requiredHistoryEvent(
+    history,
+    "EVENT_TYPE_WORKFLOW_EXECUTION_UPDATE_COMPLETED",
+  );
+  assert.deepEqual(
+    collectTemporalIdentities(history),
+    new Set([expectedTemporalIdentity]),
+  );
+  assert.equal(
+    history.events.some(
+      (event) =>
+        event.eventType ===
+        "EVENT_TYPE_WORKFLOW_EXECUTION_SIGNALED",
+    ),
+    false,
+  );
+
+  const started = requiredHistoryEvent(
+    history,
+    "EVENT_TYPE_WORKFLOW_EXECUTION_STARTED",
+  );
+  const workflowInputs =
+    started.workflowExecutionStartedEventAttributes.input.payloads;
+  assert.deepEqual(decodeJsonPayload(workflowInputs[0]), scenario);
+  assert.deepEqual(decodeJsonPayload(workflowInputs[1]), executableIr);
+
+  const acceptedAttributes =
+    accepted.workflowExecutionUpdateAcceptedEventAttributes;
+  assert.equal(
+    acceptedAttributes.acceptedRequest.input.name,
+    "bpmn-complete-user-task",
+  );
+  assert.deepEqual(
+    decodeJsonPayload(
+      acceptedAttributes.acceptedRequest.input.args.payloads[0],
+    ),
+    scenario.stimuli[1],
+  );
+
+  const updateCompletedAttributes =
+    updateCompleted.workflowExecutionUpdateCompletedEventAttributes;
+  assert.equal(updateCompletedAttributes.acceptedEventId, accepted.eventId);
+  assert.equal(
+    decodeJsonPayload(
+      updateCompletedAttributes.outcome.success.payloads[0],
+    ),
+    CommandOutcome.Committed,
+  );
+
+  const workflowCompleted = requiredHistoryEvent(
+    history,
+    "EVENT_TYPE_WORKFLOW_EXECUTION_COMPLETED",
+  );
+  assert.deepEqual(
+    decodeJsonPayload(
+      workflowCompleted.workflowExecutionCompletedEventAttributes
+        .result.payloads[0],
+    ),
+    runScenario(scenario, executableIr),
+  );
 }
 
 async function loadExecutionInput(selectedScenarioUrl = scenarioUrl) {
@@ -130,13 +243,39 @@ test("full server preserves the calibrated trace and replays its history", async
   );
 });
 
-test("retained history replays independently of a live execution", async () => {
-  const history = await loadJson(retainedHistoryUrl);
+test("retained Signal and Update histories replay independently", async () => {
+  const [lifecycleHistory, interactionHistory, interactionInput] =
+    await Promise.all([
+      loadJson(retainedHistoryUrl),
+      loadJson(retainedInteractionHistoryUrl),
+      loadExecutionInput(interactionScenarioUrls[0]),
+    ]);
+  assertExactCompletionUpdateHistory(
+    interactionHistory,
+    interactionInput,
+  );
+  assert.throws(
+    () =>
+      assertExactCompletionUpdateHistory(
+        lifecycleHistory,
+        interactionInput,
+      ),
+    /WORKFLOW_EXECUTION_UPDATE_ACCEPTED/u,
+  );
 
   await withDeadline(
-    runner.replayHistory(history, "m0-retained-sequential-user-task"),
+    runner.replayHistories([
+      {
+        history: lifecycleHistory,
+        workflowId: "m0-retained-sequential-user-task",
+      },
+      {
+        history: interactionHistory,
+        workflowId: "m1-retained-exact-completion",
+      },
+    ]),
     10_000,
-    "retained history replay",
+    "retained history batch replay",
   );
 });
 
@@ -163,6 +302,10 @@ test("one server and Worker execute the complete User Task interaction batch", a
   );
 
   assert.equal(executions.length, inputs.length);
+  assert.deepEqual(
+    collectTemporalIdentities(executions[0].history),
+    new Set([expectedTemporalIdentity]),
+  );
   for (const [index, execution] of executions.entries()) {
     const input = inputs[index];
     const semanticCoreResult = runScenario(

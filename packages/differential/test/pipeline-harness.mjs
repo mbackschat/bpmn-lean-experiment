@@ -112,6 +112,11 @@ export const pipelineCases = Object.freeze([
     "m1-user-task-discovery-completion",
     "scenario.json",
     "cibseven-evidence.json",
+    {
+      retainedHistoryRelativePaths: [
+        "packages/temporal-adapter/test/fixtures/m1-user-task-exact-update.history.json",
+      ],
+    },
   ),
   interactionCase(
     "m1-user-task-wrong-activation",

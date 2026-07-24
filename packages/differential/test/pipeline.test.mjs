@@ -116,7 +116,7 @@ test(
     }
     assert.deepEqual(report.replay, {
       liveHistories: 4,
-      retainedHistories: 1,
+      retainedHistories: 2,
     });
     assert.equal(report.isolation.temporalWorkflowIds.length, 8);
     assert.equal(

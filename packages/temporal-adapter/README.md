@@ -16,12 +16,14 @@ The focused test:
 - compiles the exact BPMN XML before Workflow start and runs SDK `1.21.0` Workflow code against the calibrated scenario and IR;
 - compares the complete Workflow result with the pure core result;
 - replays the fetched live Event History;
-- independently replays a committed CLI-exported lifecycle history fixture;
+- independently batch-replays committed CLI-exported Signal and exact-completion Update history fixtures;
 - executes exact, wrong-activation, and stale-completion scenarios through one reused server/Worker and compares every Query projection, Update result, and final trace with the pure core;
 - batch-replays all three live interaction histories through one replay Worker;
 - redelivers the first completion under a distinct Update ID and proves the result ledger prevents a second transition.
 
-It does not yet interpret BPMN beyond the single admitted sequential IR or implement Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, or a production authorization/form boundary. The interaction Update history is live-replayed but is not yet retained as an immutable fixture.
+The Update fixture guard decodes and compares its exact scenario, executable IR, completion stimulus, committed Update result, and final Workflow result; requires Update-accepted and Update-completed events; excludes Signal delivery; and rejects the retained Signal history as Update evidence. Ordinary tests never regenerate either fixture.
+
+It does not yet interpret BPMN beyond the single admitted sequential IR or implement Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, or a production authorization/form boundary.
 
 ## Run
 

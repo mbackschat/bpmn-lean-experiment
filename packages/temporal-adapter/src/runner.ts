@@ -37,6 +37,7 @@ import type {
 
 const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
 
+const temporalTestIdentity = "bpmn-lean-test-runtime";
 const operationDeadlineMs = 5_000;
 const environmentStartupDeadlineMs = 40_000;
 const workerStartupDeadlineMs = 20_000;
@@ -72,6 +73,9 @@ export class TemporalScenarioRunner {
             downloadDir: options.downloadDirectory,
           },
         },
+        client: {
+          identity: temporalTestIdentity,
+        },
       }),
       environmentStartupDeadlineMs,
       "Temporal environment startup",
@@ -81,6 +85,7 @@ export class TemporalScenarioRunner {
       const worker = await withDeadline(
         Worker.create({
           connection: environment.nativeConnection,
+          identity: temporalTestIdentity,
           taskQueue: bpmnSemanticTaskQueue,
           workflowsPath,
         }),
