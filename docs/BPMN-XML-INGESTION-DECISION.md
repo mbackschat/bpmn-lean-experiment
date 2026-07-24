@@ -79,7 +79,7 @@ The implemented use of CMOF is a versioned, bounded metamodel manifest rather th
 - exact BPMN 2.0.2 artifact identity;
 - the qualified moddle type names consumed by the compiler;
 - twelve classes and their direct generalizations;
-- seven properties and their value types;
+- eight properties and their value types;
 - lower and upper multiplicities;
 - containment versus cross-reference distinctions;
 - the specified Start Event default;
@@ -91,7 +91,7 @@ That manifest can drive importer validation, supported/unsupported coverage, pro
 
 Lean should formalize the smallest reviewed executable fragment over checked source facts. CMOF justifies the structural premises—for example that a Sequence Flow has admitted source and target Flow Nodes—while Lean defines and proves the operational consequences. A full generated CMOF mirror would add large amounts of diagram, interchange, and modeling structure without supplying the missing execution semantics.
 
-The first ingestion slice therefore does not generate complete TypeScript or Lean bindings. It records only the twelve class/generalization facts and seven property facts consumed by the sequential User Task compiler, including reference targets, multiplicities, containment, and the Start Event default, and explicitly records absent coverage. The maintained checker compares the manifest’s exact source digest and every recorded fact with the ignored normative `BPMN20.cmof` when that corpus is locally available. A second semantic consumer must demonstrate the reusable manifest shape before the project generalizes its extraction machinery.
+The first ingestion slice therefore does not generate complete TypeScript or Lean bindings. It records only the twelve class/generalization facts and eight property facts consumed by the sequential User Task compiler, including the Flow Element name type, reference targets, multiplicities, containment, and the Start Event default, and explicitly records absent coverage. The maintained checker compares the manifest’s exact source digest and every recorded fact with the ignored normative `BPMN20.cmof` when that corpus is locally available. The XML-facing compiler separately tests that the XSD-optional User Task name becomes `null` when omitted. A second semantic consumer must demonstrate the reusable manifest shape before the project generalizes its extraction machinery.
 
 ## Why `bpmn-moddle`
 
@@ -178,7 +178,7 @@ The completed red/green slice is intentionally smaller than a general BPMN compi
 4. implement bounded import and a private moddle adapter;
 5. project only the source facts needed to compile the existing None Start → User Task → None End model;
 6. reject every unsupported BPMN element or extension at compile time rather than dropping it;
-7. compile a versioned, serializable IR carrying source/profile/compiler identity;
+7. compile versioned, serializable IR v0.2 carrying source/profile/compiler identity plus the admitted User Task ID and optional name;
 8. make the current TypeScript and Temporal paths consume that IR without changing the canonical behavior;
 9. the optional local interchange gate inspects all 21 models at pinned MIWG revision `cb2629519cee6280ab521f99dc46a9815a221a35` without copying their CC-BY files: fourteen reach `unsupportedModel`, six are explicitly blocked as `unsupportedEncoding`, and one is blocked by `parserWarning`;
 10. the complete differential/refinement pipeline now compiles the exact source before the core and Temporal targets, reports the IR identity, preserves four-target agreement and the seeded disagreement, replays new and retained histories, and remains within the existing performance budgets.

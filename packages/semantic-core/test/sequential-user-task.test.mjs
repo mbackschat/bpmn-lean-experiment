@@ -94,6 +94,7 @@ test("start closes at one stable User Task wait", async () => {
     control: {
       kind: ControlStateKind.WaitingUserTask,
       instanceId: "Instance_1",
+      activation: 1,
     },
     logicalTimeMs: 0,
   });
@@ -127,6 +128,7 @@ test("incremental execution owns deployment and stable observations", async () =
     control: {
       kind: ControlStateKind.WaitingUserTask,
       instanceId: "Instance_1",
+      activation: 1,
     },
     logicalTimeMs: 0,
   });

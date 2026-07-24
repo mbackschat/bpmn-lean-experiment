@@ -2,7 +2,7 @@
 
 `@bpmn-lean/bpmn-source` is the deployment-time boundary between untrusted BPMN XML and the dependency-free [TypeScript semantic core](../semantic-core/README.md). It retains exact source bytes through a defensive-copy API, computes their SHA-256 identity before decoding, performs bounded security and encoding checks, imports a private metamodel-aware structural graph with `bpmn-moddle@10.0.0`, normalizes diagnostics, and compiles only admitted source into project-owned serializable executable IR. The parser deadline bounds Promise settlement but cannot preempt the library’s synchronous CPU work; production untrusted uploads still require Worker or process isolation.
 
-The current compiler supports exactly one executable Process with `None Start Event → User Task → None End Event`. Every parser warning blocks admission, and unsupported BPMN elements or properties are rejected instead of being discarded. Raw moddle objects never cross the package boundary.
+The current `bpmn-source-sequential-user-task@0.2.0` compiler supports exactly one executable Process with `None Start Event → User Task → None End Event`. Its project-owned IR preserves the User Task ID and optional BPMN name, representing an omitted name as `null`. Every parser warning blocks admission, and unsupported BPMN elements or properties are rejected instead of being discarded. Raw moddle objects never cross the package boundary. Legacy IR v0.1 is not emitted; the Temporal adapter reads it only for the committed retained-history replay.
 
 ```ts
 const compilation = await compileSequentialUserTaskBpmn({

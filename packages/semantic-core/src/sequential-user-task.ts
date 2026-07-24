@@ -4,6 +4,7 @@ import {
   ProcessStatus,
   ScenarioOutcomeKind,
   StimulusKind,
+  UserTaskLifecycleState,
   WaitKind,
 } from "./contract.js";
 import type {
@@ -33,18 +34,27 @@ type NotStartedControl = Readonly<{
   kind: ControlStateKind.NotStarted;
 }>;
 
-type InstancedControl = Readonly<{
+type OrdinaryInstancedControl = Readonly<{
   kind:
     | ControlStateKind.EnteringStart
     | ControlStateKind.EnteringUserTask
-    | ControlStateKind.WaitingUserTask
-    | ControlStateKind.LeavingUserTask
     | ControlStateKind.EnteringEnd
     | ControlStateKind.Completed;
   instanceId: string;
 }>;
 
-export type ControlState = NotStartedControl | InstancedControl;
+type UserTaskControl = Readonly<{
+  kind:
+    | ControlStateKind.WaitingUserTask
+    | ControlStateKind.LeavingUserTask;
+  instanceId: string;
+  activation: number;
+}>;
+
+export type ControlState =
+  | NotStartedControl
+  | OrdinaryInstancedControl
+  | UserTaskControl;
 
 export type RuntimeState = Readonly<{
   control: ControlState;
@@ -127,6 +137,24 @@ function withControl(state: RuntimeState, control: ControlState): RuntimeState {
   };
 }
 
+type UserTaskDefinition = Readonly<{
+  id: string;
+  name: string | null;
+}>;
+
+function userTaskDefinition(
+  model: SequentialUserTaskExecutableIr,
+): UserTaskDefinition {
+  switch (model.schemaVersion) {
+    case "0.1.0":
+      return { id: model.userTaskId, name: null };
+    case "0.2.0":
+      return model.userTask;
+    default:
+      return assertNever(model);
+  }
+}
+
 function internalStep(state: RuntimeState): RuntimeState | null {
   switch (state.control.kind) {
     case ControlStateKind.EnteringStart:
@@ -138,6 +166,7 @@ function internalStep(state: RuntimeState): RuntimeState | null {
       return withControl(state, {
         kind: ControlStateKind.WaitingUserTask,
         instanceId: state.control.instanceId,
+        activation: 1,
       });
     case ControlStateKind.LeavingUserTask:
       return withControl(state, {
@@ -184,6 +213,7 @@ function admit(
   state: RuntimeState,
   stimulus: Stimulus,
 ): CommandAdmission {
+  const userTask = userTaskDefinition(model);
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
       if (
@@ -202,13 +232,31 @@ function admit(
     case StimulusKind.CompleteUserTask:
       if (
         state.control.kind === ControlStateKind.WaitingUserTask &&
-        stimulus.elementId === model.userTaskId
+        stimulus.elementId === userTask.id
       ) {
         return {
           outcome: CommandOutcome.Committed,
           state: withControl(state, {
             kind: ControlStateKind.LeavingUserTask,
             instanceId: state.control.instanceId,
+            activation: state.control.activation,
+          }),
+        };
+      }
+      return { outcome: CommandOutcome.Rejected, state };
+    case StimulusKind.CompleteUserTaskInstance:
+      if (
+        state.control.kind === ControlStateKind.WaitingUserTask &&
+        stimulus.taskId.processInstanceId === state.control.instanceId &&
+        stimulus.taskId.elementId === userTask.id &&
+        stimulus.taskId.activation === state.control.activation
+      ) {
+        return {
+          outcome: CommandOutcome.Committed,
+          state: withControl(state, {
+            kind: ControlStateKind.LeavingUserTask,
+            instanceId: state.control.instanceId,
+            activation: state.control.activation,
           }),
         };
       }
@@ -251,11 +299,37 @@ function enabledCompletions(
   model: SequentialUserTaskExecutableIr,
   remainingStimuli: ReadonlyArray<Stimulus>,
 ): ReadonlyArray<Stimulus> {
+  const userTask = userTaskDefinition(model);
   return remainingStimuli.filter(
     (stimulus) =>
       stimulus.kind === StimulusKind.CompleteUserTask &&
-      stimulus.elementId === model.userTaskId,
+      stimulus.elementId === userTask.id,
   );
+}
+
+enum ProjectionSchema {
+  RetainedLifecycle = "retainedLifecycle",
+  UserTaskInteraction = "userTaskInteraction",
+}
+
+function projectionForModel(
+  model: SequentialUserTaskExecutableIr,
+): ProjectionSchema {
+  return model.identity.semanticProfile === "cibseven-2.2.0-spike.2"
+    ? ProjectionSchema.UserTaskInteraction
+    : ProjectionSchema.RetainedLifecycle;
+}
+
+function userTaskInstanceId(
+  model: SequentialUserTaskExecutableIr,
+  instanceId: string,
+  activation: number,
+) {
+  return {
+    processInstanceId: instanceId,
+    elementId: userTaskDefinition(model).id,
+    activation,
+  };
 }
 
 function observeStableState(
@@ -263,31 +337,80 @@ function observeStableState(
   state: RuntimeState,
   remainingStimuli: ReadonlyArray<Stimulus>,
 ): CanonicalObservation | null {
+  const projection = projectionForModel(model);
+  const userTask = userTaskDefinition(model);
   switch (state.control.kind) {
-    case ControlStateKind.WaitingUserTask:
-      return {
+    case ControlStateKind.WaitingUserTask: {
+      const base = {
         kind: CanonicalObservationKind.State,
         instanceId: state.control.instanceId,
         status: ProcessStatus.Running,
         activeWaits: [
           {
-            elementId: model.userTaskId,
+            elementId: userTask.id,
             kind: WaitKind.UserTask,
             multiplicity: 1,
           },
         ],
-        enabledStimuli: enabledCompletions(model, remainingStimuli),
         logicalTimeMs: state.logicalTimeMs,
-      };
+      } as const;
+      switch (projection) {
+        case ProjectionSchema.RetainedLifecycle:
+          return {
+            ...base,
+            enabledStimuli: enabledCompletions(model, remainingStimuli),
+          };
+        case ProjectionSchema.UserTaskInteraction: {
+          const taskId = userTaskInstanceId(
+            model,
+            state.control.instanceId,
+            state.control.activation,
+          );
+          return {
+            ...base,
+            openUserTasks: [
+              {
+                id: taskId,
+                name: userTask.name,
+                state: UserTaskLifecycleState.Active,
+              },
+            ],
+            enabledInteractions: [
+              {
+                kind: StimulusKind.CompleteUserTaskInstance,
+                taskId,
+              },
+            ],
+          };
+        }
+        default:
+          return assertNever(projection);
+      }
+    }
     case ControlStateKind.Completed:
-      return {
-        kind: CanonicalObservationKind.State,
-        instanceId: state.control.instanceId,
-        status: ProcessStatus.Completed,
-        activeWaits: [],
-        enabledStimuli: [],
-        logicalTimeMs: state.logicalTimeMs,
-      };
+      switch (projection) {
+        case ProjectionSchema.RetainedLifecycle:
+          return {
+            kind: CanonicalObservationKind.State,
+            instanceId: state.control.instanceId,
+            status: ProcessStatus.Completed,
+            activeWaits: [],
+            enabledStimuli: [],
+            logicalTimeMs: state.logicalTimeMs,
+          };
+        case ProjectionSchema.UserTaskInteraction:
+          return {
+            kind: CanonicalObservationKind.State,
+            instanceId: state.control.instanceId,
+            status: ProcessStatus.Completed,
+            activeWaits: [],
+            openUserTasks: [],
+            enabledInteractions: [],
+            logicalTimeMs: state.logicalTimeMs,
+          };
+        default:
+          return assertNever(projection);
+      }
     case ControlStateKind.NotStarted:
     case ControlStateKind.EnteringStart:
     case ControlStateKind.EnteringUserTask:
@@ -303,6 +426,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
     case StimulusKind.CompleteUserTask:
+    case StimulusKind.CompleteUserTaskInstance:
       return stimulus.commandId;
     default:
       return assertNever(stimulus);
@@ -353,6 +477,36 @@ export function advanceScenario(
       };
     }
     case CommandOutcome.Rejected:
+      if (projectionForModel(model) === ProjectionSchema.UserTaskInteraction) {
+        const snapshot = observeStableState(
+          model,
+          result.state,
+          remainingStimuli,
+        );
+        if (snapshot === null) {
+          return {
+            kind: ScenarioStepKind.HarnessFailure,
+            outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+            observations: [],
+          };
+        }
+        return {
+          kind: ScenarioStepKind.Terminal,
+          state: result.state,
+          outcome: {
+            kind: ScenarioOutcomeKind.Semantic,
+            outcome: result.outcome,
+          },
+          observations: [
+            {
+              kind: CanonicalObservationKind.Command,
+              commandId: stimulusCommandId(stimulus),
+              outcome: result.outcome,
+            },
+            snapshot,
+          ],
+        };
+      }
       return {
         kind: ScenarioStepKind.Terminal,
         state: result.state,
@@ -423,15 +577,30 @@ function supportsScenario(
   scenario: Scenario,
   executableIr: SequentialUserTaskExecutableIr,
 ): boolean {
-  return (
-    scenario.schemaVersion === "0.1.0" &&
-    (scenario.traceSchemaVersion ?? scenario.schemaVersion) === "0.1.0" &&
-    scenario.profile === "cibseven-2.2.0-spike.1" &&
-    isSupportedExecutableIr(executableIr) &&
-    executableIr.identity.semanticProfile === scenario.profile &&
-    executableIr.identity.sourceId === scenario.bpmn.id &&
-    executableIr.identity.sourceSha256 === scenario.bpmn.sha256
-  );
+  if (
+    !isSupportedExecutableIr(executableIr) ||
+    executableIr.identity.semanticProfile !== scenario.profile ||
+    executableIr.identity.sourceId !== scenario.bpmn.id ||
+    executableIr.identity.sourceSha256 !== scenario.bpmn.sha256
+  ) {
+    return false;
+  }
+
+  switch (scenario.schemaVersion) {
+    case "0.1.0":
+      return (
+        (scenario.traceSchemaVersion ?? scenario.schemaVersion) === "0.1.0" &&
+        scenario.profile === "cibseven-2.2.0-spike.1"
+      );
+    case "0.2.0":
+      return (
+        scenario.traceSchemaVersion === "0.2.0" &&
+        scenario.profile === "cibseven-2.2.0-spike.2" &&
+        executableIr.schemaVersion === "0.2.0"
+      );
+    default:
+      return false;
+  }
 }
 
 export function deployScenario(
@@ -505,11 +674,8 @@ function isSupportedExecutableIr(
     ? value.sequenceFlows
     : undefined;
   if (
-    value.schemaVersion !== "0.1.0" ||
     value.kind !== BpmnExecutableIrKind.SequentialUserTask ||
     identity === undefined ||
-    identity.compiler !==
-      "bpmn-source-sequential-user-task@0.1.0" ||
     !isNonEmptyString(identity.semanticProfile) ||
     !isNonEmptyString(identity.sourceId) ||
     !isNonEmptyString(identity.sourceSha256) ||
@@ -520,10 +686,15 @@ function isSupportedExecutableIr(
     return false;
   }
 
+  const userTaskId = supportedUserTaskId(value, identity);
+  if (userTaskId === undefined) {
+    return false;
+  }
+
   const ids = [
     value.processId,
     value.startEventId,
-    value.userTaskId,
+    userTaskId,
     value.endEventId,
     ...sequenceFlows.map(({ id }) => id),
   ];
@@ -538,14 +709,42 @@ function isSupportedExecutableIr(
     hasExecutableFlow(
       sequenceFlows,
       value.startEventId,
-      value.userTaskId,
+      userTaskId,
     ) &&
     hasExecutableFlow(
       sequenceFlows,
-      value.userTaskId,
+      userTaskId,
       value.endEventId,
     )
   );
+}
+
+function supportedUserTaskId(
+  value: Record<string, unknown>,
+  identity: Record<string, unknown>,
+): string | undefined {
+  switch (value.schemaVersion) {
+    case "0.1.0":
+      return identity.compiler ===
+          "bpmn-source-sequential-user-task@0.1.0" &&
+        isNonEmptyString(value.userTaskId)
+        ? value.userTaskId
+        : undefined;
+    case "0.2.0": {
+      const userTask = isRecord(value.userTask)
+        ? value.userTask
+        : undefined;
+      return identity.compiler ===
+          "bpmn-source-sequential-user-task@0.2.0" &&
+        userTask !== undefined &&
+        isNonEmptyString(userTask.id) &&
+        (userTask.name === null || typeof userTask.name === "string")
+        ? userTask.id
+        : undefined;
+    }
+    default:
+      return undefined;
+  }
 }
 
 function hasExecutableFlow(

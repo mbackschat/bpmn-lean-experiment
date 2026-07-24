@@ -15,7 +15,7 @@ export type ExecutableSequenceFlow = Readonly<{
   targetId: string;
 }>;
 
-export type SequentialUserTaskExecutableIr = Readonly<{
+export type SequentialUserTaskExecutableIrV1 = Readonly<{
   schemaVersion: "0.1.0";
   kind: BpmnExecutableIrKind.SequentialUserTask;
   identity: BpmnExecutableIrIdentity;
@@ -28,3 +28,26 @@ export type SequentialUserTaskExecutableIr = Readonly<{
     ExecutableSequenceFlow,
   ];
 }>;
+
+export type ExecutableUserTaskDefinition = Readonly<{
+  id: string;
+  name: string | null;
+}>;
+
+export type SequentialUserTaskExecutableIrV2 = Readonly<{
+  schemaVersion: "0.2.0";
+  kind: BpmnExecutableIrKind.SequentialUserTask;
+  identity: BpmnExecutableIrIdentity;
+  processId: string;
+  startEventId: string;
+  userTask: ExecutableUserTaskDefinition;
+  endEventId: string;
+  sequenceFlows: readonly [
+    ExecutableSequenceFlow,
+    ExecutableSequenceFlow,
+  ];
+}>;
+
+export type SequentialUserTaskExecutableIr =
+  | SequentialUserTaskExecutableIrV1
+  | SequentialUserTaskExecutableIrV2;

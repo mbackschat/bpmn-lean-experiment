@@ -17,7 +17,7 @@ import type {
   BpmnSourceIdentity,
 } from "./contracts.js";
 
-const compilerIdentity = "bpmn-source-sequential-user-task@0.1.0";
+const compilerIdentity = "bpmn-source-sequential-user-task@0.2.0";
 const bpmnTypes = metamodelManifest.compilerProjection;
 
 type ElementRecord = Record<string, unknown>;
@@ -126,11 +126,13 @@ export function compileSequentialUserTaskGraph(
 
   const startEventId = readId(startEvent);
   const userTaskId = readId(userTask);
+  const userTaskName = readOptionalName(userTask);
   const endEventId = readId(endEvent);
   const projectedFlows = projectSequenceFlows(sequenceFlows);
   if (
     startEventId === undefined ||
     userTaskId === undefined ||
+    userTaskName === undefined ||
     endEventId === undefined ||
     projectedFlows === undefined ||
     new Set([
@@ -157,7 +159,7 @@ export function compileSequentialUserTaskGraph(
 
   return {
     executableIr: {
-      schemaVersion: "0.1.0",
+      schemaVersion: "0.2.0",
       kind: BpmnExecutableIrKind.SequentialUserTask,
       identity: {
         compiler: compilerIdentity,
@@ -167,7 +169,10 @@ export function compileSequentialUserTaskGraph(
       },
       processId,
       startEventId,
-      userTaskId,
+      userTask: {
+        id: userTaskId,
+        name: userTaskName,
+      },
       endEventId,
       sequenceFlows: projectedFlows,
     },
@@ -214,6 +219,15 @@ function readId(element: ElementRecord): string | undefined {
   return typeof element.id === "string" && element.id.length > 0
     ? element.id
     : undefined;
+}
+
+function readOptionalName(
+  element: ElementRecord,
+): string | null | undefined {
+  if (element.name === undefined) {
+    return null;
+  }
+  return typeof element.name === "string" ? element.name : undefined;
 }
 
 function projectSequenceFlows(

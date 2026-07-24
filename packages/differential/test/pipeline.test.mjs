@@ -41,9 +41,9 @@ test(
       ],
     });
     assert.deepEqual(report.scenario.executableIr, {
-      schemaVersion: "0.1.0",
+      schemaVersion: "0.2.0",
       kind: "sequentialUserTask",
-      compiler: "bpmn-source-sequential-user-task@0.1.0",
+      compiler: "bpmn-source-sequential-user-task@0.2.0",
     });
     assert.deepEqual(evidence.actualWaitTrace, evidence.expectedWaitTrace);
     assert.deepEqual(

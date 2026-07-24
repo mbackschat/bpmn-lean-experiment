@@ -27,6 +27,7 @@ export type ScenarioOutcome =
 export enum StimulusKind {
   StartProcess = "startProcess",
   CompleteUserTask = "completeUserTask",
+  CompleteUserTaskInstance = "completeUserTaskInstance",
 }
 
 export type StartProcessStimulus = Readonly<{
@@ -42,7 +43,22 @@ export type CompleteUserTaskStimulus = Readonly<{
   elementId: string;
 }>;
 
-export type Stimulus = StartProcessStimulus | CompleteUserTaskStimulus;
+export type UserTaskInstanceId = Readonly<{
+  processInstanceId: string;
+  elementId: string;
+  activation: number;
+}>;
+
+export type CompleteUserTaskInstanceStimulus = Readonly<{
+  kind: StimulusKind.CompleteUserTaskInstance;
+  commandId: string;
+  taskId: UserTaskInstanceId;
+}>;
+
+export type Stimulus =
+  | StartProcessStimulus
+  | CompleteUserTaskStimulus
+  | CompleteUserTaskInstanceStimulus;
 
 export enum ProcessStatus {
   NotStarted = "notStarted",
@@ -60,6 +76,8 @@ export enum ObservationRequestKind {
   ProcessStatus = "processStatus",
   ActiveWaits = "activeWaits",
   EnabledStimuli = "enabledStimuli",
+  OpenUserTasks = "openUserTasks",
+  EnabledInteractions = "enabledInteractions",
   LogicalTime = "logicalTime",
 }
 
@@ -75,6 +93,45 @@ export enum CanonicalObservationKind {
   State = "state",
 }
 
+export enum UserTaskLifecycleState {
+  Active = "active",
+}
+
+export type OpenUserTask = Readonly<{
+  id: UserTaskInstanceId;
+  name: string | null;
+  state: UserTaskLifecycleState;
+}>;
+
+export type CompleteUserTaskInstanceInteraction = Readonly<{
+  kind: StimulusKind.CompleteUserTaskInstance;
+  taskId: UserTaskInstanceId;
+}>;
+
+export type EnabledInteraction = CompleteUserTaskInstanceInteraction;
+
+type StateObservationBase = Readonly<{
+  kind: CanonicalObservationKind.State;
+  instanceId: string;
+  status: ProcessStatus;
+  activeWaits: ReadonlyArray<ActiveWait>;
+  logicalTimeMs: number;
+}>;
+
+type RetainedLifecycleStateObservation = StateObservationBase &
+  Readonly<{
+    enabledStimuli: ReadonlyArray<Stimulus>;
+    openUserTasks?: never;
+    enabledInteractions?: never;
+  }>;
+
+type UserTaskInteractionStateObservation = StateObservationBase &
+  Readonly<{
+    openUserTasks: ReadonlyArray<OpenUserTask>;
+    enabledInteractions: ReadonlyArray<EnabledInteraction>;
+    enabledStimuli?: never;
+  }>;
+
 export type CanonicalObservation =
   | Readonly<{
       kind: CanonicalObservationKind.Deployment;
@@ -85,14 +142,8 @@ export type CanonicalObservation =
       commandId: string;
       outcome: CommandOutcome;
     }>
-  | Readonly<{
-      kind: CanonicalObservationKind.State;
-      instanceId: string;
-      status: ProcessStatus;
-      activeWaits: ReadonlyArray<ActiveWait>;
-      enabledStimuli: ReadonlyArray<Stimulus>;
-      logicalTimeMs: number;
-    }>;
+  | RetainedLifecycleStateObservation
+  | UserTaskInteractionStateObservation;
 
 export type BpmnResource = Readonly<{
   id: string;

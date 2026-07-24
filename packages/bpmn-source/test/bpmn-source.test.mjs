@@ -36,7 +36,7 @@ function compile(bytes, overrides = {}) {
   });
 }
 
-test("retains the exact source identity and compiles the M0 model to versioned IR", async () => {
+test("retains the exact source identity and compiles the model to named-task IR", async () => {
   const result = await compile(canonicalBytes);
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
@@ -54,17 +54,20 @@ test("retains the exact source identity and compiles the M0 model to versioned I
     decodedAs: "UTF-8",
   });
   assert.deepEqual(result.executableIr, {
-    schemaVersion: "0.1.0",
+    schemaVersion: "0.2.0",
     kind: BpmnExecutableIrKind.SequentialUserTask,
     identity: {
-      compiler: "bpmn-source-sequential-user-task@0.1.0",
+      compiler: "bpmn-source-sequential-user-task@0.2.0",
       semanticProfile: "cibseven-2.2.0-spike.1",
       sourceId: "m0-sequential-user-task-process",
       sourceSha256: "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295",
     },
     processId: "Process_SequentialUserTask",
     startEventId: "StartEvent_1",
-    userTaskId: "UserTask_Approve",
+    userTask: {
+      id: "UserTask_Approve",
+      name: "Approve",
+    },
     endEventId: "EndEvent_1",
     sequenceFlows: [
       {
@@ -78,6 +81,23 @@ test("retains the exact source identity and compiles the M0 model to versioned I
         targetId: "EndEvent_1",
       },
     ],
+  });
+});
+
+test("preserves an omitted optional User Task name as null", async () => {
+  const xml = new TextDecoder().decode(canonicalBytes);
+  const namelessBytes = new TextEncoder().encode(
+    xml.replace(' name="Approve"', ""),
+  );
+
+  const result = await compile(namelessBytes, {
+    expectedSha256: undefined,
+  });
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(result.executableIr.userTask, {
+    id: "UserTask_Approve",
+    name: null,
   });
 });
 

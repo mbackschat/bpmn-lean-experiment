@@ -8,13 +8,14 @@
   },
   "coverage": {
     "status": "partial",
-    "consumer": "bpmn-source-sequential-user-task@0.1.0",
+    "consumer": "bpmn-source-sequential-user-task@0.2.0",
     "included": [
       "Definitions and executable Process identity",
       "StartEvent, UserTask, EndEvent, and SequenceFlow type identity",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
+      "FlowElement name type identity",
       "CatchEvent and ThrowEvent event-definition containment",
       "StartEvent.isInterrupting default"
     ],
@@ -126,6 +127,14 @@
       "lower": 0,
       "upper": "*",
       "containment": true
+    },
+    {
+      "owner": "FlowElement",
+      "name": "name",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
     },
     {
       "owner": "SequenceFlow",
