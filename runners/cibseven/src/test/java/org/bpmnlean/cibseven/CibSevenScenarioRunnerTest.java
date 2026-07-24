@@ -32,18 +32,30 @@ public class CibSevenScenarioRunnerTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path SCENARIO_PATH =
       PROJECT_ROOT.resolve("scenarios/m0-sequential-user-task/scenario.json");
+  private static final Path EVIDENCE_PATH =
+      PROJECT_ROOT.resolve("scenarios/m0-sequential-user-task/cibseven-evidence.json");
   private static final Path INTERACTION_SCENARIO_PATH =
       PROJECT_ROOT.resolve("scenarios/m1-user-task-discovery-completion/scenario.json");
+  private static final Path INTERACTION_EVIDENCE_PATH =
+      PROJECT_ROOT.resolve(
+          "scenarios/m1-user-task-discovery-completion/cibseven-evidence.json");
   private static final Path WRONG_ACTIVATION_SCENARIO_PATH =
       PROJECT_ROOT.resolve(
           "scenarios/m1-user-task-discovery-completion/wrong-activation.scenario.json");
+  private static final Path WRONG_ACTIVATION_EVIDENCE_PATH =
+      PROJECT_ROOT.resolve(
+          "scenarios/m1-user-task-discovery-completion/wrong-activation.cibseven-evidence.json");
   private static final Path STALE_COMPLETION_SCENARIO_PATH =
       PROJECT_ROOT.resolve(
           "scenarios/m1-user-task-discovery-completion/stale-completion.scenario.json");
+  private static final Path STALE_COMPLETION_EVIDENCE_PATH =
+      PROJECT_ROOT.resolve(
+          "scenarios/m1-user-task-discovery-completion/stale-completion.cibseven-evidence.json");
 
   @Test
   public void calibratesSequentialUserTaskAndCleansEveryRun() throws Exception {
     var scenario = ScenarioJson.read(SCENARIO_PATH);
+    var evidence = ScenarioJson.readEvidenceResult(EVIDENCE_PATH);
     var expectedTrace = List.of(
         new DeploymentObservation(COMMITTED),
         new CommandObservation("start-process", COMMITTED),
@@ -55,8 +67,8 @@ public class CibSevenScenarioRunnerTest {
             0),
         new CommandObservation("complete-user-task", COMMITTED),
         new StateObservation(INSTANCE_ID, COMPLETED, List.of(), List.of(), 0));
-    assertEquals(expectedTrace, ScenarioJson.readCanonicalTrace(scenario.calibration().expectedTrace()));
-    assertEquals(new SemanticOutcome(COMMITTED), scenario.calibration().expectedOutcome());
+    assertEquals(expectedTrace, evidence.trace());
+    assertEquals(new SemanticOutcome(COMMITTED), evidence.outcome());
     assertEquals("0.1.0", scenario.traceSchemaVersion());
 
     try (var runner = CibSevenScenarioRunner.create()) {
@@ -86,8 +98,13 @@ public class CibSevenScenarioRunnerTest {
   public void calibratesTaskDiscoveryAndRejectsWrongActivationWithoutStateChange()
       throws Exception {
     var scenario = ScenarioJson.read(INTERACTION_SCENARIO_PATH);
+    var evidence = ScenarioJson.readEvidenceResult(INTERACTION_EVIDENCE_PATH);
     var wrongScenario = ScenarioJson.read(WRONG_ACTIVATION_SCENARIO_PATH);
+    var wrongEvidence =
+        ScenarioJson.readEvidenceResult(WRONG_ACTIVATION_EVIDENCE_PATH);
     var staleScenario = ScenarioJson.read(STALE_COMPLETION_SCENARIO_PATH);
+    var staleEvidence =
+        ScenarioJson.readEvidenceResult(STALE_COMPLETION_EVIDENCE_PATH);
     assertEquals("0.2.0", scenario.traceSchemaVersion());
     assertEquals(scenario.traceSchemaVersion(), wrongScenario.traceSchemaVersion());
     assertEquals(scenario.traceSchemaVersion(), staleScenario.traceSchemaVersion());
@@ -109,25 +126,19 @@ public class CibSevenScenarioRunnerTest {
             new CommandObservation("complete-user-task-instance", COMMITTED),
             new StateObservation(
                 INSTANCE_ID, COMPLETED, List.of(), List.of(), null, List.of(), 0));
-    assertEquals(
-        expectedTrace,
-        ScenarioJson.readCanonicalTrace(scenario.calibration().expectedTrace()));
-    var wrongExpectedTrace =
-        ScenarioJson.readCanonicalTrace(wrongScenario.calibration().expectedTrace());
-    var staleExpectedTrace =
-        ScenarioJson.readCanonicalTrace(staleScenario.calibration().expectedTrace());
+    assertEquals(expectedTrace, evidence.trace());
 
     try (var runner = CibSevenScenarioRunner.create()) {
       var calibrated = runner.run(scenario, PROJECT_ROOT);
       var rejected = runner.run(wrongScenario, PROJECT_ROOT);
       var stale = runner.run(staleScenario, PROJECT_ROOT);
 
-      assertEquals(scenario.calibration().expectedOutcome(), calibrated.outcome());
+      assertEquals(evidence.outcome(), calibrated.outcome());
       assertEquals(expectedTrace, calibrated.trace());
-      assertEquals(wrongScenario.calibration().expectedOutcome(), rejected.outcome());
-      assertEquals(wrongExpectedTrace, rejected.trace());
-      assertEquals(staleScenario.calibration().expectedOutcome(), stale.outcome());
-      assertEquals(staleExpectedTrace, stale.trace());
+      assertEquals(wrongEvidence.outcome(), rejected.outcome());
+      assertEquals(wrongEvidence.trace(), rejected.trace());
+      assertEquals(staleEvidence.outcome(), stale.outcome());
+      assertEquals(staleEvidence.trace(), stale.trace());
       assertEquals(calibrated.trace().get(2), rejected.trace().get(2));
       assertEquals(rejected.trace().get(2), rejected.trace().get(4));
       assertEquals(stale.trace().get(4), stale.trace().get(6));

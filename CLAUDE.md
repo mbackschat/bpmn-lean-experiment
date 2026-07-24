@@ -66,6 +66,7 @@ When sources disagree, classify the disagreement against the standard, profile, 
 - Treat every parser warning as admission-blocking until a profile rule explicitly proves it safe; preserve exact bytes and normalized evidence even when compilation is rejected.
 - Do not encode Temporal Workflow tasks, Activity attempts, retries, Run IDs, or Event History as BPMN semantic facts.
 - Keep BPMN import/admission, executable normalization, runtime execution, public observation, and host persistence conceptually separate.
+- Keep neutral scenario inputs physically separate from retained expected results. Target runners receive no oracle answer; evidence replacement is an explicit operation outside ordinary verification and is bound to exact scenario content.
 - Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
 - An experiment is not semantic authority merely because it compiles or passes a finite witness.
 - Do not broaden any semantic capsule beyond its approved feature, interpretation, and observation boundary.
@@ -192,6 +193,12 @@ Focused BPMN source, CMOF-fact, and compiler gate:
 
 ```sh
 ./scripts/pnpm.sh run test:bpmn-source
+```
+
+Focused shared-contract and retained-evidence gate:
+
+```sh
+./scripts/pnpm.sh run test:contracts
 ```
 
 Optional local pinned MIWG observation gate:

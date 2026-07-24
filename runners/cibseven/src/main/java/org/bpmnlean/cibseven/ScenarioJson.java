@@ -2,12 +2,10 @@ package org.bpmnlean.cibseven;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 
 public final class ScenarioJson {
 
@@ -32,11 +30,12 @@ public final class ScenarioJson {
     return MAPPER.readValue(json, ScenarioProtocol.ScenarioResult.class);
   }
 
-  public static List<ScenarioProtocol.CanonicalObservation> readCanonicalTrace(
-      JsonNode json) throws IOException {
-    return MAPPER
-        .readerForListOf(ScenarioProtocol.CanonicalObservation.class)
-        .readValue(json);
+  public static ScenarioProtocol.CanonicalResult readEvidenceResult(Path path)
+      throws IOException {
+    var evidence = MAPPER.readTree(path.toFile());
+    return MAPPER.treeToValue(
+        evidence.required("result"),
+        ScenarioProtocol.CanonicalResult.class);
   }
 
   public static String writeScenario(ScenarioProtocol.ScenarioDefinition scenario)

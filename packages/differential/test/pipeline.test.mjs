@@ -33,6 +33,13 @@ test(
     const { report, evidence } = await runPipelineCase(pipelineCases[0]);
 
     assert.equal(report.comparison.kind, ComparisonKind.Agreement);
+    assert.deepEqual(report.evidenceComparison, {
+      kind: ComparisonKind.Agreement,
+      targets: [
+        DifferentialTarget.RetainedCibEvidence,
+        DifferentialTarget.CibSeven,
+      ],
+    });
     assert.deepEqual(report.scenario.executableIr, {
       schemaVersion: "0.1.0",
       kind: "sequentialUserTask",

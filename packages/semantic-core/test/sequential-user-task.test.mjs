@@ -22,9 +22,17 @@ const scenarioUrl = new URL(
   "../../../scenarios/m0-sequential-user-task/scenario.json",
   import.meta.url,
 );
+const evidenceUrl = new URL(
+  "../../../scenarios/m0-sequential-user-task/cibseven-evidence.json",
+  import.meta.url,
+);
 
 async function loadScenario() {
   return JSON.parse(await readFile(scenarioUrl, "utf8"));
+}
+
+async function loadEvidence() {
+  return JSON.parse(await readFile(evidenceUrl, "utf8"));
 }
 
 function executableIrFor(scenario) {
@@ -57,7 +65,10 @@ function executableIrFor(scenario) {
 }
 
 test("derives the independently calibrated CIB and Lean trace", async () => {
-  const scenario = await loadScenario();
+  const [scenario, evidence] = await Promise.all([
+    loadScenario(),
+    loadEvidence(),
+  ]);
 
   const result = runScenario(scenario, executableIrFor(scenario));
 
@@ -65,17 +76,7 @@ test("derives the independently calibrated CIB and Lean trace", async () => {
     kind: ScenarioOutcomeKind.Semantic,
     outcome: CommandOutcome.Committed,
   });
-  assert.deepEqual(result.trace, scenario.calibration.expectedTrace);
-});
-
-test("does not read the calibration answer while deriving the trace", async () => {
-  const scenario = await loadScenario();
-  const expectedTrace = scenario.calibration.expectedTrace;
-  scenario.calibration.expectedTrace = [];
-
-  const result = runScenario(scenario, executableIrFor(scenario));
-
-  assert.deepEqual(result.trace, expectedTrace);
+  assert.deepEqual(result, evidence.result);
 });
 
 test("start closes at one stable User Task wait", async () => {
@@ -99,7 +100,10 @@ test("start closes at one stable User Task wait", async () => {
 });
 
 test("incremental execution owns deployment and stable observations", async () => {
-  const scenario = await loadScenario();
+  const [scenario, evidence] = await Promise.all([
+    loadScenario(),
+    loadEvidence(),
+  ]);
 
   const executableIr = executableIrFor(scenario);
   const deployment = deployScenario(scenario, executableIr);
@@ -112,12 +116,12 @@ test("incremental execution owns deployment and stable observations", async () =
 
   assert.deepEqual(deployment, {
     outcome: CommandOutcome.Committed,
-    observation: scenario.calibration.expectedTrace[0],
+    observation: evidence.result.trace[0],
   });
   assert.equal(step.kind, ScenarioStepKind.Committed);
   assert.deepEqual(
     step.observations,
-    scenario.calibration.expectedTrace.slice(1, 3),
+    evidence.result.trace.slice(1, 3),
   );
   assert.deepEqual(step.state, {
     control: {

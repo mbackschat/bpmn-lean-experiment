@@ -12,8 +12,7 @@
     "bpmn",
     "stimuli",
     "observations",
-    "provenance",
-    "calibration"
+    "provenance"
   ],
   "properties": {
     "schemaVersion": {
@@ -47,9 +46,6 @@
     },
     "provenance": {
       "$ref": "#/$defs/provenance"
-    },
-    "calibration": {
-      "$ref": "#/$defs/calibrationBase"
     }
   },
   "allOf": [
@@ -94,24 +90,6 @@
               "enabledStimuli",
               "logicalTime"
             ]
-          },
-          "calibration": {
-            "allOf": [
-              {
-                "$ref": "#/$defs/calibrationBase"
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "expectedTrace": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/canonicalObservationV1"
-                    }
-                  }
-                }
-              }
-            ]
           }
         }
       },
@@ -145,24 +123,6 @@
               "openUserTasks",
               "enabledInteractions",
               "logicalTime"
-            ]
-          },
-          "calibration": {
-            "allOf": [
-              {
-                "$ref": "#/$defs/calibrationBase"
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "expectedTrace": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/canonicalObservationV2"
-                    }
-                  }
-                }
-              }
             ]
           }
         }
@@ -282,26 +242,6 @@
           }
         }
       ]
-    },
-    "calibrationBase": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "status",
-        "expectedOutcome",
-        "expectedTrace"
-      ],
-      "properties": {
-        "status": {
-          "const": "calibrated"
-        },
-        "expectedOutcome": {
-          "$ref": "#/$defs/semanticOutcome"
-        },
-        "expectedTrace": {
-          "type": "array"
-        }
-      }
     },
     "startProcess": {
       "type": "object",

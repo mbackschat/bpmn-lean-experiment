@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "0.1.0",
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "m0-sequential-user-task",
+    "sha256": "f539a981c61d3de0d8ee411a9888b3bae615400ee82cb2427762481679d41bd1"
+  },
+  "profile": "cibseven-2.2.0-spike.1",
+  "traceSchemaVersion": "0.1.0",
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle@0.1.0",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "projection": {
+    "id": "canonical-scenario-result",
+    "version": "0.1.0"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Approve",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "enabledStimuli": [
+          {
+            "kind": "completeUserTask",
+            "commandId": "complete-user-task",
+            "elementId": "UserTask_Approve"
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-user-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "enabledStimuli": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

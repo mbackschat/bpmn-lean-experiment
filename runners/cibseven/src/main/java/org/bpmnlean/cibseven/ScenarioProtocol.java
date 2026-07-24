@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Objects;
 
@@ -165,8 +164,7 @@ public final class ScenarioProtocol {
       BpmnResource bpmn,
       List<Stimulus> stimuli,
       List<ObservationKind> observations,
-      Provenance provenance,
-      Calibration calibration) {
+      Provenance provenance) {
 
     public ScenarioDefinition {
       Objects.requireNonNull(schemaVersion, "schemaVersion");
@@ -177,7 +175,6 @@ public final class ScenarioProtocol {
       stimuli = List.copyOf(stimuli);
       observations = List.copyOf(observations);
       Objects.requireNonNull(provenance, "provenance");
-      Objects.requireNonNull(calibration, "calibration");
     }
   }
 
@@ -195,15 +192,6 @@ public final class ScenarioProtocol {
       normativeRefs = List.copyOf(normativeRefs);
       Objects.requireNonNull(cibRevision, "cibRevision");
       cibRefs = List.copyOf(cibRefs);
-    }
-  }
-
-  public record Calibration(
-      String status, ScenarioOutcome expectedOutcome, JsonNode expectedTrace) {
-    public Calibration {
-      Objects.requireNonNull(status, "status");
-      Objects.requireNonNull(expectedOutcome, "expectedOutcome");
-      Objects.requireNonNull(expectedTrace, "expectedTrace");
     }
   }
 
@@ -378,6 +366,14 @@ public final class ScenarioProtocol {
   public record HarnessFailure() implements ScenarioOutcome {}
 
   public record InfrastructureFailure() implements ScenarioOutcome {}
+
+  public record CanonicalResult(
+      ScenarioOutcome outcome, List<CanonicalObservation> trace) {
+    public CanonicalResult {
+      Objects.requireNonNull(outcome, "outcome");
+      trace = List.copyOf(trace);
+    }
+  }
 
   /** Diagnostics are optional because a harness or infrastructure failure may precede collection. */
   public record ScenarioResult(

@@ -1,6 +1,7 @@
 import type { ScenarioResult } from "@bpmn-lean/semantic-core";
 
 export enum DifferentialTarget {
+  RetainedCibEvidence = "retainedCibEvidence",
   CibSeven = "cibSeven",
   Lean = "lean",
   SemanticCore = "semanticCore",

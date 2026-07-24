@@ -21,7 +21,7 @@ const started = applyStimulus(
 const result = runScenario(scenario, executableIr);
 ```
 
-`applyStimulus` is pure: the same executable IR, state, stimulus, and closure limit produce the same result. `runScenario` validates the IR schema, compiler/source/profile identity, and sequential topology, then derives canonical observations without reading the scenario's calibration answer. Internal closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
+`applyStimulus` is pure: the same executable IR, state, stimulus, and closure limit produce the same result. `runScenario` validates the IR schema, compiler/source/profile identity, and sequential topology, then derives canonical observations from an answer-free scenario. Retained CIB evidence is loaded only by tests and differential verification, never by this package. Internal closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
 
 `deployScenario` and `advanceScenario` expose the same deployment, command, and stable-state observation logic incrementally for durable hosts. `runScenario` consumes those operations too, so an adapter does not need to copy observation semantics.
 

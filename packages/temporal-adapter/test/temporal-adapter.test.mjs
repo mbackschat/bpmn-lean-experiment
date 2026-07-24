@@ -83,6 +83,7 @@ after(async () => {
 
 test("full server preserves the calibrated trace and replays its history", async () => {
   const { scenario, executableIr } = await loadExecutionInput();
+  const semanticCoreResult = runScenario(scenario, executableIr);
 
   const execution = await withDeadline(
     runner.runScenario(
@@ -98,9 +99,9 @@ test("full server preserves the calibrated trace and replays its history", async
 
   assert.deepEqual(
     execution.waitTrace,
-    scenario.calibration.expectedTrace.slice(0, 3),
+    semanticCoreResult.trace.slice(0, 3),
   );
-  assert.deepEqual(execution.result, runScenario(scenario, executableIr));
+  assert.deepEqual(execution.result, semanticCoreResult);
   assert.ok(execution.history.events.length > 0);
 
   await withDeadline(

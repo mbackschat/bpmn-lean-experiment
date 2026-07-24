@@ -16,6 +16,7 @@
     "build:temporal-adapter": "tsc -p packages/temporal-adapter/tsconfig.json",
     "build:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json",
     "check:cmof-m0": "node scripts/check-bpmn-m0-metamodel.mjs",
+    "test:contracts": "node --test --test-concurrency=1 scripts/contract-artifacts.test.mjs",
     "test:differential": "tsc -p packages/differential/tsconfig.json && node --test --test-concurrency=1 packages/differential/test/comparator.test.mjs",
     "test:infrastructure": "node --test --test-concurrency=1 scripts/*.test.mjs",
     "test:miwg": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && node scripts/test-bpmn-source-miwg.mjs",
@@ -26,6 +27,7 @@
     "test:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json && node --test --test-concurrency=1 packages/temporal-adapter/test/*.test.mjs"
   },
   "devDependencies": {
+    "ajv": "8.20.0",
     "typescript": "7.0.2"
   }
 }

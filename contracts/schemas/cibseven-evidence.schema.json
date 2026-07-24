@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/cibseven-evidence.schema.json",
+  "title": "Retained CIB Seven scenario evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "scenario",
+    "profile",
+    "traceSchemaVersion",
+    "producer",
+    "projection",
+    "result"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "kind": {
+      "const": "cibSevenScenarioEvidence"
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "traceSchemaVersion": {
+      "enum": [
+        "0.1.0",
+        "0.2.0"
+      ]
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engine",
+        "engineVersion",
+        "engineRevision",
+        "runner",
+        "java",
+        "database"
+      ],
+      "properties": {
+        "engine": {
+          "const": "CIB Seven"
+        },
+        "engineVersion": {
+          "const": "2.2.0"
+        },
+        "engineRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "runner": {
+          "const": "cibseven-oracle@0.1.0"
+        },
+        "java": {
+          "const": "21"
+        },
+        "database": {
+          "const": "H2 2.3.232"
+        }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "const": "canonical-scenario-result"
+        },
+        "version": {
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
+        }
+      }
+    },
+    "result": {}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "traceSchemaVersion": {
+            "const": "0.1.0"
+          }
+        },
+        "required": [
+          "traceSchemaVersion"
+        ]
+      },
+      "then": {
+        "properties": {
+          "projection": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "const": "0.1.0"
+              }
+            }
+          },
+          "result": {
+            "$ref": "https://bpmn-lean.local/schemas/canonical-result-v0.1.schema.json"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "projection": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "const": "0.2.0"
+              }
+            }
+          },
+          "result": {
+            "$ref": "https://bpmn-lean.local/schemas/canonical-result-v0.2.schema.json"
+          }
+        }
+      }
+    }
+  ]
+}

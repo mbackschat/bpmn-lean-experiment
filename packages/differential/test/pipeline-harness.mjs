@@ -45,6 +45,8 @@ export const pipelineCases = Object.freeze([
     id: "m0-sequential-user-task",
     scenarioRelativePath:
       "scenarios/m0-sequential-user-task/scenario.json",
+    evidenceRelativePath:
+      "scenarios/m0-sequential-user-task/cibseven-evidence.json",
     bpmnRelativePath:
       "scenarios/m0-sequential-user-task/process.bpmn",
     retainedHistoryRelativePaths: Object.freeze([
@@ -170,11 +172,18 @@ export async function runPipelineCase(pipelineCase) {
     projectRoot,
     pipelineCase.scenarioRelativePath,
   );
+  const evidencePath = path.join(
+    projectRoot,
+    pipelineCase.evidenceRelativePath,
+  );
   const bpmnPath = path.join(
     projectRoot,
     pipelineCase.bpmnRelativePath,
   );
-  const scenario = await readJson(scenarioPath);
+  const [scenario, retainedEvidence] = await Promise.all([
+    readJson(scenarioPath),
+    readJson(evidencePath),
+  ]);
   const ingestionStarted = performance.now();
   const compilation = await compileSequentialUserTaskBpmn({
     bytes: await readFile(bpmnPath),
@@ -215,6 +224,7 @@ export async function runPipelineCase(pipelineCase) {
   let coreTarget;
   let temporalTarget;
   let comparison;
+  let evidenceComparison;
   let injectedComparison;
   let revision;
 
@@ -267,6 +277,18 @@ export async function runPipelineCase(pipelineCase) {
         {
           target: DifferentialTarget.Temporal,
           result: targetResults.temporal,
+        },
+      ],
+    );
+    evidenceComparison = compareTargetResults(
+      {
+        target: DifferentialTarget.RetainedCibEvidence,
+        result: retainedEvidence.result,
+      },
+      [
+        {
+          target: DifferentialTarget.CibSeven,
+          result: targetResults.cibSeven,
         },
       ],
     );
@@ -340,6 +362,7 @@ export async function runPipelineCase(pipelineCase) {
     },
     implementationRevision: revision,
     comparison,
+    evidenceComparison,
     injectedDisagreement: injectedComparison,
     phaseMs: {
       build: buildMs,
@@ -376,7 +399,7 @@ export async function runPipelineCase(pipelineCase) {
   return {
     report,
     evidence: {
-      expectedWaitTrace: scenario.calibration.expectedTrace.slice(
+      expectedWaitTrace: coreTarget.result.trace.slice(
         0,
         pipelineCase.expectedWaitTraceLength,
       ),
