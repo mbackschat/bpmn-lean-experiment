@@ -5,16 +5,22 @@ import { fileURLToPath } from "node:url";
 
 import type {
   CanonicalObservation,
+  CommandOutcome,
+  CompleteUserTaskInstanceStimulus,
+  OpenUserTask,
   Scenario,
   ScenarioResult,
   SequentialUserTaskExecutableIr,
 } from "@bpmn-lean/semantic-core";
+import { StimulusKind } from "@bpmn-lean/semantic-core";
 import type { WorkflowHandle } from "@temporalio/client";
 import { TestWorkflowEnvironment } from "@temporalio/testing";
 import { Worker } from "@temporalio/worker";
 
 import {
   bpmnScenarioWorkflowType,
+  bpmnCompleteUserTaskUpdateName,
+  bpmnOpenUserTasksQueryName,
   bpmnSemanticTaskQueue,
   bpmnStimulusSignalName,
   bpmnTraceQueryName,
@@ -104,6 +110,7 @@ export class TemporalScenarioRunner {
     options: TemporalScenarioExecutionOptions,
   ): Promise<TemporalScenarioExecution> {
     this.assertAvailable();
+    validateExecutionOptions(scenario, options);
     const handle = await withDeadline(
       this.environment.client.workflow.start<BpmnScenarioWorkflow>(
         bpmnScenarioWorkflowType,
@@ -123,13 +130,62 @@ export class TemporalScenarioRunner {
       "Workflow wait-state observation",
     );
 
+    const usesCompletionUpdates = scenario.stimuli
+      .slice(1)
+      .some(
+        (stimulus) =>
+          stimulus.kind === StimulusKind.CompleteUserTaskInstance,
+      );
+    const openUserTasksAtWait = usesCompletionUpdates
+      ? await withDeadline(
+          handle.query<ReadonlyArray<OpenUserTask>>(
+            bpmnOpenUserTasksQueryName,
+          ),
+          operationDeadlineMs,
+          "Workflow open User Tasks Query",
+        )
+      : [];
+    const completionOutcomes: CommandOutcome[] = [];
+    let duplicateCompletionOutcome: CommandOutcome | null = null;
+    let duplicatedFirstCompletion = false;
+
     for (const stimulus of scenario.stimuli.slice(1)) {
       this.assertWorkerHealthy();
-      await withDeadline(
-        handle.signal(bpmnStimulusSignalName, stimulus),
-        operationDeadlineMs,
-        `Workflow Signal ${stimulus.commandId}`,
-      );
+      switch (stimulus.kind) {
+        case StimulusKind.CompleteUserTask:
+          await withDeadline(
+            handle.signal(bpmnStimulusSignalName, stimulus),
+            operationDeadlineMs,
+            `Workflow Signal ${stimulus.commandId}`,
+          );
+          break;
+        case StimulusKind.CompleteUserTaskInstance: {
+          const outcome = await executeCompletionUpdate(
+            handle,
+            stimulus,
+            stimulus.commandId,
+          );
+          completionOutcomes.push(outcome);
+          if (
+            !duplicatedFirstCompletion &&
+            options.duplicateFirstCompletionUpdateId !== undefined
+          ) {
+            duplicateCompletionOutcome = await executeCompletionUpdate(
+              handle,
+              stimulus,
+              options.duplicateFirstCompletionUpdateId,
+            );
+            duplicatedFirstCompletion = true;
+          }
+          break;
+        }
+        case StimulusKind.StartProcess:
+          throw new TypeError(
+            "Only the first scenario stimulus may start the Process",
+          );
+        default:
+          assertNever(stimulus);
+      }
     }
 
     const result = await withDeadline(
@@ -149,6 +205,13 @@ export class TemporalScenarioRunner {
     this.assertWorkerHealthy();
     return {
       waitTrace,
+      interactionEvidence: usesCompletionUpdates
+        ? {
+            openUserTasksAtWait,
+            completionOutcomes,
+            duplicateCompletionOutcome,
+          }
+        : null,
       result,
       history: history as TemporalHistory,
     };
@@ -269,6 +332,57 @@ export class TemporalScenarioRunner {
       throw normalizeError(this.workerError, "Temporal Worker failed");
     }
   }
+}
+
+async function executeCompletionUpdate(
+  handle: WorkflowHandle<BpmnScenarioWorkflow>,
+  stimulus: CompleteUserTaskInstanceStimulus,
+  updateId: string,
+): Promise<CommandOutcome> {
+  return withDeadline(
+    handle.executeUpdate<
+      CommandOutcome,
+      [CompleteUserTaskInstanceStimulus]
+    >(bpmnCompleteUserTaskUpdateName, {
+      args: [stimulus],
+      updateId,
+    }),
+    operationDeadlineMs,
+    `Workflow Update ${updateId}`,
+  );
+}
+
+function validateExecutionOptions(
+  scenario: Scenario,
+  options: TemporalScenarioExecutionOptions,
+): void {
+  const duplicateUpdateId = options.duplicateFirstCompletionUpdateId;
+  if (duplicateUpdateId === undefined) {
+    return;
+  }
+  if (duplicateUpdateId.length === 0) {
+    throw new TypeError("Duplicate completion Update ID must be non-empty");
+  }
+  const firstCompletion = scenario.stimuli
+    .slice(1)
+    .find(
+      (stimulus): stimulus is CompleteUserTaskInstanceStimulus =>
+        stimulus.kind === StimulusKind.CompleteUserTaskInstance,
+    );
+  if (firstCompletion === undefined) {
+    throw new TypeError(
+      "Duplicate completion requires a task-instance completion stimulus",
+    );
+  }
+  if (duplicateUpdateId === firstCompletion.commandId) {
+    throw new TypeError(
+      "Duplicate completion probe requires a distinct Temporal Update ID",
+    );
+  }
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported Temporal runner variant: ${String(value)}`);
 }
 
 function withDeadline<T>(

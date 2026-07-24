@@ -567,9 +567,9 @@ Operational repair can change what work executes. If such features are enabled i
 |---|---|---|
 | Workflow | Adopt | Durable host for one semantic-core-controlled process execution |
 | Event History and replay | Adopt and test directly | Fundamental durability and deployment-compatibility mechanism |
-| Signal | Adopted for M0.5 runner ingress; public command API still open | Durable asynchronous transport without a result; the Workflow result carries the bounded scenario outcome |
-| Query | Adopted for M0.5 diagnostics only | Convenient projection, but not durable observation authority |
-| Update | Candidate command ingress | Durable request-response fits typed command outcomes |
+| Signal | Retained lifecycle-history ingress only | Durable asynchronous transport without a result; new User Task interaction histories use Update |
+| Query | Adopted for diagnostic trace and exact known-Workflow task discovery | Convenient read-only projection, but not durable observation authority |
+| Update | Adopted for the bounded User Task completion API | Durable request-response returns the semantic core’s typed command outcome |
 | Durable timers | Adopt | Physical wakeup mechanism behind semantic-core-owned timer semantics |
 | Activities | Adopt when external effects enter scope | I/O boundary with retries, timeouts, and idempotency obligations |
 | Cancellation scopes | Adopt as adapter mechanism | Useful structured cancellation, never BPMN semantic authority |
@@ -656,11 +656,13 @@ One Workflow loop should:
 
 The semantic core should never import the Temporal SDK. The adapter should never reproduce gateway, token, scope, incident, or event-subscription semantics that belong in the semantic core.
 
-### Milestone 0.5 realization
+### Milestone 0.5 and User Task interaction realization
 
-The first adapter implements this shape for only the sequential User Task capsule. The Workflow receives the neutral scenario, performs semantic deployment admission through the core, queues the start stimulus, registers one synchronous `bpmn-stimulus` Signal handler that only deduplicates and queues later stimuli, and exposes one diagnostic `bpmn-trace` Query. One main loop alone calls the core’s incremental `advanceScenario` operation and mutates semantic state and trace.
+The adapter implements this shape for only the sequential User Task capsule. The Workflow receives the neutral scenario, performs semantic deployment admission through the core, queues the start stimulus, and exposes the diagnostic `bpmn-trace` Query plus the exact `bpmn-open-user-tasks` Query. The `bpmn-complete-user-task` Update validates transport shape, queues the exact task-instance stimulus, and waits for a command-result ledger entry. One main loop alone calls the core’s incremental `advanceScenario` operation and mutates semantic state and trace.
 
-The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait through Query, delivers completion through Signal, compares the Workflow result with the pure core result, fetches Event History, and replays both the live IR-bearing history and a committed pre-IR CLI-exported history. A Temporal patch marker requires IR for new histories while a narrow compatibility constructor exists only during replay of the retained history. Activities, timers, Search Attributes, Continue-As-New, production command ingress, and general BPMN model ingestion remain absent.
+The application command ID is the ordinary Temporal Update ID. The Workflow also records the accepted stimulus and first semantic outcome, so delivery of the same semantic command under a different Update ID returns the original result without a second transition. Reusing one command ID for a different payload fails at the adapter boundary instead of silently aliasing two commands. This ledger is Workflow-local; cross-Run deduplication remains absent until Continue-As-New is designed.
+
+The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait and exact open task through Queries, delivers lifecycle completion through the retained Signal or interaction completion through Update, and compares the Workflow result with the pure core result. One server/Worker executes the exact, wrong-activation, and stale-completion cases; the stale case additionally redelivers the first completion under a distinct Update ID. The gate fetches and replays every live history plus the committed pre-IR CLI-exported lifecycle history. A Temporal patch marker requires IR for new histories while a narrow compatibility constructor exists only during replay of the retained history. An immutable Update-history fixture, Activities, timers, Search Attributes, Continue-As-New, and general BPMN model ingestion remain absent.
 
 ## Initial replay and refinement test matrix
 
@@ -685,16 +687,15 @@ The full local Temporal development server is the preferred integration target b
 
 The following decisions remain unapproved:
 
-1. Whether the public command ingress is Update, Signal plus a separate result protocol, or both with distinct guarantees.
-2. The exact Activity retry, timeout, heartbeat, cancellation, and idempotency policy for each effect class.
-3. The state and schema carried through Continue-As-New.
-4. The Worker Versioning strategy for production and the retained-history support window.
-5. The mapping, if any, from child Workflows to BPMN subprocesses or Call Activities.
-6. The boundary between canonical observations returned by the runner and diagnostic Query or visibility projections.
-7. The payload schema, converter compatibility policy, and encryption requirements.
-8. The policy for operator cancellation, termination, reset, pause, and Activity Operations in conformance runs.
-9. The user-task discovery architecture: Visibility plus Query for the spike, an external task read model for production, or another explicitly justified design.
-10. The exact User Task projection, global command-envelope schema, identity and authorization boundary, and Search Attribute registry.
+1. The exact Activity retry, timeout, heartbeat, cancellation, and idempotency policy for each effect class.
+2. The state and schema carried through Continue-As-New.
+3. The Worker Versioning strategy for production and the retained-history support window.
+4. The mapping, if any, from child Workflows to BPMN subprocesses or Call Activities.
+5. The boundary between canonical observations returned by the runner and future visibility or external read-model projections.
+6. The payload-converter compatibility policy and encryption requirements.
+7. The policy for operator cancellation, termination, reset, pause, and Activity Operations in conformance runs.
+8. The production task-discovery architecture beyond exact Query by known Workflow ID.
+9. The global command-envelope, identity, authorization, form, variable, and Search Attribute registry boundaries beyond the bounded completion command.
 
 ## Architectural invariants derived from Temporal
 

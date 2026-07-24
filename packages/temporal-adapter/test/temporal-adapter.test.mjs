@@ -7,7 +7,11 @@ import {
   BpmnCompilationStatus,
   compileSequentialUserTaskBpmn,
 } from "@bpmn-lean/bpmn-source";
-import { runScenario } from "@bpmn-lean/semantic-core";
+import {
+  CanonicalObservationKind,
+  CommandOutcome,
+  runScenario,
+} from "@bpmn-lean/semantic-core";
 
 import { TemporalScenarioRunner } from "../dist/index.js";
 
@@ -112,6 +116,7 @@ test("full server preserves the calibrated trace and replays its history", async
     execution.waitTrace,
     semanticCoreResult.trace.slice(0, 3),
   );
+  assert.equal(execution.interactionEvidence, null);
   assert.deepEqual(execution.result, semanticCoreResult);
   assert.ok(execution.history.events.length > 0);
 
@@ -145,6 +150,8 @@ test("one server and Worker execute the complete User Task interaction batch", a
       executableIr,
       options: {
         workflowId: `m1-user-task-batch-${index}`,
+        duplicateFirstCompletionUpdateId:
+          index === 2 ? "duplicate-first-completion-transport" : undefined,
       },
     }),
   );
@@ -158,15 +165,57 @@ test("one server and Worker execute the complete User Task interaction batch", a
   assert.equal(executions.length, inputs.length);
   for (const [index, execution] of executions.entries()) {
     const input = inputs[index];
+    const semanticCoreResult = runScenario(
+      input.scenario,
+      input.executableIr,
+    );
+    const waitingState = semanticCoreResult.trace.find(
+      (observation) =>
+        observation.kind === CanonicalObservationKind.State &&
+        observation.status === "running",
+    );
+    const completionCommandIds = new Set(
+      input.scenario.stimuli.slice(1).map(({ commandId }) => commandId),
+    );
+    const expectedCompletionOutcomes = semanticCoreResult.trace.flatMap(
+      (observation) =>
+        observation.kind === CanonicalObservationKind.Command &&
+        completionCommandIds.has(observation.commandId)
+          ? [observation.outcome]
+          : [],
+    );
+
+    assert.notEqual(waitingState, undefined);
+    assert.notEqual(execution.interactionEvidence, null);
     assert.deepEqual(
       execution.waitTrace,
-      runScenario(input.scenario, input.executableIr).trace.slice(0, 3),
+      semanticCoreResult.trace.slice(0, 3),
+    );
+    assert.deepEqual(
+      execution.interactionEvidence.openUserTasksAtWait,
+      waitingState.openUserTasks,
+    );
+    assert.deepEqual(
+      execution.interactionEvidence.completionOutcomes,
+      expectedCompletionOutcomes,
+    );
+    assert.equal(
+      execution.interactionEvidence.duplicateCompletionOutcome,
+      index === 2 ? CommandOutcome.Committed : null,
     );
     assert.deepEqual(
       execution.result,
-      runScenario(input.scenario, input.executableIr),
+      semanticCoreResult,
     );
     assert.ok(execution.history.events.length > 0);
+    await withDeadline(
+      runner.replayHistory(
+        execution.history,
+        `m1-user-task-batch-${index}`,
+      ),
+      10_000,
+      `interaction history ${index} replay`,
+    );
   }
 });
 
