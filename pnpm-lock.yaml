@@ -12,6 +12,12 @@ importers:
         specifier: 7.0.2
         version: 7.0.2
 
+  packages/differential:
+    dependencies:
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../semantic-core
+
   packages/semantic-core: {}
 
   packages/temporal-adapter:

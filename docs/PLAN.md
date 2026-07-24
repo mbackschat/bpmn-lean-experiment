@@ -57,10 +57,10 @@ These decisions authorize the walking skeleton only. They do not yet constitute 
 
 ## Exact resume point
 
-- Current package: M0.5 is implemented; M0.6 fast differential/refinement orchestration is next.
+- Current package: M0.6 is in progress; its pure comparator and injected-disagreement classifier are implemented, while external multi-target orchestration remains next.
 - Last verified command: the complete `./scripts/verify.sh` gate, including the full local Temporal server, finished in 10.01 seconds. Its Temporal refinement/replay phase finished in 2.15 seconds.
 - Current state: the content-addressed BPMN fixture, draft spike profile, calibrated CIB trace, typed Java protocol, repeated embedded CIB execution, production Lean interpreter and proofs, pure TypeScript semantic core and negative guards, deterministic Temporal Workflow host, live refinement equality, retained replay, diagnostic PVM projection, cleanup checks, and component timings are green.
-- Next implementation target: add the smallest failing M0.6 orchestrator/comparator test, including one injected trace disagreement with a typed classification, then compose CIB, Lean, semantic-core, and Temporal phases without broadening the BPMN slice.
+- Next implementation target: add the one-way Lean canonical-result emitter and CIB test bridge needed by the M0.6 harness, then compose CIB, Lean, semantic-core, and Temporal phases concurrently without broadening the BPMN slice.
 - M0.2 calibrated result: deployment and both commands commit; start reaches one `UserTask_Approve` wait with multiplicity one and enables its completion stimulus; completion ends `Instance_1`; logical time remains zero.
 - M0.2 diagnostic result: ordered PVM topology matches the source sequence, ordinary flow activities have no PVM event scope, and the None End Event’s internal type is `noneEndEvent`; these facts remain diagnostic rather than compatibility keys.
 - M0.2 performance result: dependency-warm engine startup measured 1.983 seconds and one scenario including cleanup measured 0.492 seconds; the dependency-warm Maven gate completed in 5.28 seconds.

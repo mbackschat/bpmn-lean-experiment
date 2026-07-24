@@ -28,6 +28,18 @@ The M0.1 red run imported the intentionally absent `BpmnSemantics.Scenario` modu
 
 The first measured warm contract gate on 2026-07-23 completed in 1.36 seconds. At that checkpoint the TypeScript semantic core did not yet exist, so this remains a historical Lean-and-artifact baseline rather than the accepted semantic-loop measurement.
 
+## M0.6 differential comparator
+
+The focused comparator gate is:
+
+```sh
+./scripts/pnpm.sh run test:differential
+```
+
+The first intended red run failed with `TS18003` because the new package had no comparator source. Before that run, adding the workspace package caused pnpm to request a workspace synchronization; that setup failure was corrected and was not counted as semantic red evidence.
+
+The green pure comparator accepts exact canonical agreement and classifies the first disagreement as scenario outcome, trace length, observation kind, or observation value with an exact structural path. Its separating example changes the active-wait state observation from `running` to `completed` and requires an `observationValue` disagreement at `trace[1].status`. External runner orchestration and full-pipeline timings remain incomplete.
+
 ## M0.5 Temporal refinement and replay
 
 The focused gate is:
