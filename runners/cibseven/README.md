@@ -1,6 +1,6 @@
 # CIB Seven oracle runner
 
-This Java 21 module embeds pinned CIB Seven `2.2.0` as the Milestone 0 behavioral oracle. It deploys the content-addressed BPMN resource, invokes public engine commands, projects canonical observations, removes all scenario-owned state, and keeps one engine warm across compact JSON-lines requests.
+This Java 21 module embeds pinned CIB Seven `2.2.0` as the behavioral oracle for the Milestone 0 lifecycle and bounded User Task interaction profiles. It deploys the content-addressed BPMN resource, invokes public engine commands, projects canonical observations, removes all scenario-owned state, and keeps one engine warm across compact JSON-lines requests.
 
 It is calibration infrastructure, not a reusable BPMN semantic kernel. The read-only PVM definition projection explains engine compilation choices but is never a compatibility key or an input to Lean or the semantic core.
 
@@ -41,7 +41,9 @@ Exact dependency versions, licenses, and removal boundaries are recorded in [Mil
 
 ## Boundary
 
-The canonical trace includes only stable deployment, command, Process-state, wait, enabled-stimulus, logical-time, model, and semantic-instance facts. Generated deployment, Process-definition, Process-instance, execution, and task IDs never leave the runner as comparison keys.
+The canonical trace includes only stable deployment, command, Process-state, wait, open semantic User Task, enabled-stimulus, logical-time, model, and semantic-instance facts. The interaction profile maps the single CIB task to structured semantic identity `(Process instance, BPMN element, activation ordinal)` and retains its BPMN name. Generated deployment, Process-definition, Process-instance, execution, and task IDs never leave the runner as comparison keys.
+
+A wrong semantic task occurrence is rejected before CIB host-task completion and leaves the active task unchanged. The focused witness uses the correct BPMN element with the wrong activation ordinal, so matching only the task-definition key cannot accidentally pass.
 
 Diagnostics include engine/database versions, phase timings, the PVM definition projection, and post-run cleanup counts. The PVM projection currently contains activity identity and type, behavior class, flow scope, optional event scope, and ordered outgoing transitions for the sequential model.
 

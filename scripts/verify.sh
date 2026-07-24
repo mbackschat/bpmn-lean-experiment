@@ -5,29 +5,39 @@ set -eu
 project_root=$(git rev-parse --show-toplevel)
 cd "$project_root"
 
-profile_path="profiles/cibseven-2.2.0-spike.1/profile.json"
-scenario_path="scenarios/m0-sequential-user-task/scenario.json"
 bpmn_path="scenarios/m0-sequential-user-task/process.bpmn"
 xsd_path="docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
 
-jq empty "$profile_path" "$scenario_path"
-jq -e '.status == "draft"' "$profile_path" >/dev/null
-jq -e '.calibration.status == "calibrated" and (.calibration.expectedTrace | type == "array")' "$scenario_path" >/dev/null
+verify_scenario_artifacts() {
+  artifact_profile_path=$1
+  artifact_scenario_path=$2
 
-profile_id=$(jq -r '.id' "$profile_path")
-scenario_profile=$(jq -r '.profile' "$scenario_path")
-test "$profile_id" = "$scenario_profile"
+  jq empty "$artifact_profile_path" "$artifact_scenario_path"
+  jq -e '.status == "draft"' "$artifact_profile_path" >/dev/null
+  jq -e '.calibration.status == "calibrated" and (.calibration.expectedTrace | type == "array")' "$artifact_scenario_path" >/dev/null
 
-profile_observations=$(jq -c '.observations' "$profile_path")
-scenario_observations=$(jq -c '.observations' "$scenario_path")
-test "$profile_observations" = "$scenario_observations"
+  artifact_profile_id=$(jq -r '.id' "$artifact_profile_path")
+  artifact_scenario_profile=$(jq -r '.profile' "$artifact_scenario_path")
+  test "$artifact_profile_id" = "$artifact_scenario_profile"
 
-scenario_bpmn_path=$(jq -r '.bpmn.relativePath' "$scenario_path")
-test "$scenario_bpmn_path" = "$bpmn_path"
+  artifact_profile_observations=$(jq -c '.observations' "$artifact_profile_path")
+  artifact_scenario_observations=$(jq -c '.observations' "$artifact_scenario_path")
+  test "$artifact_profile_observations" = "$artifact_scenario_observations"
 
-expected_hash=$(jq -r '.bpmn.sha256' "$scenario_path")
-actual_hash=$(shasum -a 256 "$bpmn_path" | awk '{print $1}')
-test "$expected_hash" = "$actual_hash"
+  artifact_scenario_bpmn_path=$(jq -r '.bpmn.relativePath' "$artifact_scenario_path")
+  test "$artifact_scenario_bpmn_path" = "$bpmn_path"
+
+  artifact_expected_hash=$(jq -r '.bpmn.sha256' "$artifact_scenario_path")
+  artifact_actual_hash=$(shasum -a 256 "$bpmn_path" | awk '{print $1}')
+  test "$artifact_expected_hash" = "$artifact_actual_hash"
+}
+
+verify_scenario_artifacts \
+  "profiles/cibseven-2.2.0-spike.1/profile.json" \
+  "scenarios/m0-sequential-user-task/scenario.json"
+verify_scenario_artifacts \
+  "profiles/cibseven-2.2.0-spike.2/profile.json" \
+  "scenarios/m1-user-task-discovery-completion/scenario.json"
 
 if test -f "$xsd_path"; then
   xmllint --noout --schema "$xsd_path" "$bpmn_path"

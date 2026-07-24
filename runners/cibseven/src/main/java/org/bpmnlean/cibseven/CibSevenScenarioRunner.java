@@ -1,8 +1,10 @@
 package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
+import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
+import static org.bpmnlean.cibseven.ScenarioProtocol.UserTaskLifecycleState.ACTIVE;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.USER_TASK;
 
 import java.io.IOException;
@@ -20,6 +22,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -27,10 +30,13 @@ import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
 import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
+import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
+import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Diagnostics;
 import org.bpmnlean.cibseven.ScenarioProtocol.ObservationKind;
+import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.PhaseTimings;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
@@ -39,10 +45,12 @@ import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StartProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Stimulus;
+import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskInstanceId;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
+import org.cibseven.bpm.engine.task.Task;
 
 /**
  * Embedded, single-threaded CIB-seven calibration oracle.
@@ -57,6 +65,14 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private static final String CIBSEVEN_VERSION = "2.2.0";
   private static final String H2_VERSION = "2.3.232";
   private static final EnumSet<ObservationKind> M0_OBSERVATIONS =
+      EnumSet.of(
+          ObservationKind.DEPLOYMENT,
+          ObservationKind.COMMAND_RESULTS,
+          ObservationKind.PROCESS_STATUS,
+          ObservationKind.ACTIVE_WAITS,
+          ObservationKind.ENABLED_STIMULI,
+          ObservationKind.LOGICAL_TIME);
+  private static final EnumSet<ObservationKind> USER_TASK_INTERACTION_OBSERVATIONS =
       EnumSet.allOf(ObservationKind.class);
 
   private final ProcessEngine processEngine;
@@ -120,6 +136,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     String stableInstanceId = null;
     PvmDefinitionProjection pvmDefinition = null;
     CleanupProjection cleanup = null;
+    CommandOutcome scenarioOutcome = COMMITTED;
 
     ClockUtil.setCurrentTime(LOGICAL_EPOCH);
     try {
@@ -155,6 +172,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       timings.definitionProjectionNanos =
           positiveElapsedSince(definitionProjectionStartedAt);
 
+      stimulusLoop:
       for (var index = 0; index < scenario.stimuli().size(); index++) {
         var stimulus = scenario.stimuli().get(index);
         var remaining = scenario.stimuli().subList(index + 1, scenario.stimuli().size());
@@ -169,20 +187,41 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(new CommandObservation(start.commandId(), COMMITTED));
 
             var projectionStartedAt = System.nanoTime();
-            trace.add(observeState(engineInstanceId, stableInstanceId, remaining));
+            trace.add(observeState(scenario, engineInstanceId, stableInstanceId, remaining));
             timings.waitProjectionNanos = positiveElapsedSince(projectionStartedAt);
           }
           case CompleteUserTaskStimulus complete -> {
             requireStarted(engineInstanceId, stableInstanceId);
             var completeStartedAt = System.nanoTime();
-            completeUserTask(engineInstanceId, complete);
+            var outcome = completeUserTask(engineInstanceId, complete);
             timings.completeNanos = positiveElapsedSince(completeStartedAt);
-            trace.add(new CommandObservation(complete.commandId(), COMMITTED));
+            trace.add(new CommandObservation(complete.commandId(), outcome));
 
             var projectionStartedAt = System.nanoTime();
-            trace.add(observeState(engineInstanceId, stableInstanceId, remaining));
+            trace.add(observeState(scenario, engineInstanceId, stableInstanceId, remaining));
             timings.completionProjectionNanos =
                 positiveElapsedSince(projectionStartedAt);
+            if (outcome == REJECTED) {
+              scenarioOutcome = REJECTED;
+              break stimulusLoop;
+            }
+          }
+          case CompleteUserTaskInstanceStimulus complete -> {
+            requireStarted(engineInstanceId, stableInstanceId);
+            var completeStartedAt = System.nanoTime();
+            var outcome =
+                completeUserTaskInstance(engineInstanceId, stableInstanceId, complete);
+            timings.completeNanos = positiveElapsedSince(completeStartedAt);
+            trace.add(new CommandObservation(complete.commandId(), outcome));
+
+            var projectionStartedAt = System.nanoTime();
+            trace.add(observeState(scenario, engineInstanceId, stableInstanceId, remaining));
+            timings.completionProjectionNanos =
+                positiveElapsedSince(projectionStartedAt);
+            if (outcome == REJECTED) {
+              scenarioOutcome = REJECTED;
+              break stimulusLoop;
+            }
           }
         }
       }
@@ -203,9 +242,9 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     }
 
     return new ScenarioResult(
-        ScenarioProtocol.SCHEMA_VERSION,
+        scenario.schemaVersion(),
         scenario.id(),
-        new SemanticOutcome(COMMITTED),
+        new SemanticOutcome(scenarioOutcome),
         trace,
         new Diagnostics(
             CIBSEVEN_VERSION,
@@ -229,24 +268,36 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private void validateScenario(ScenarioDefinition scenario) {
     Objects.requireNonNull(scenario, "scenario");
-    if (!ScenarioProtocol.SCHEMA_VERSION.equals(scenario.schemaVersion())) {
+    var isMilestoneZero =
+        ScenarioProtocol.SCHEMA_VERSION.equals(scenario.schemaVersion())
+            && ScenarioProtocol.SUPPORTED_PROFILE.equals(scenario.profile());
+    var isUserTaskInteraction =
+        ScenarioProtocol.USER_TASK_INTERACTION_SCHEMA_VERSION.equals(
+                scenario.schemaVersion())
+            && ScenarioProtocol.USER_TASK_INTERACTION_PROFILE.equals(scenario.profile());
+    if (!isMilestoneZero && !isUserTaskInteraction) {
       throw new IllegalArgumentException(
-          "Unsupported scenario schema version: " + scenario.schemaVersion());
+          "Unsupported scenario/profile pair: "
+              + scenario.schemaVersion()
+              + "/"
+              + scenario.profile());
     }
-    if (!ScenarioProtocol.SUPPORTED_PROFILE.equals(scenario.profile())) {
+    var expectedObservations =
+        isMilestoneZero ? M0_OBSERVATIONS : USER_TASK_INTERACTION_OBSERVATIONS;
+    if (scenario.observations().size() != expectedObservations.size()
+        || !EnumSet.copyOf(scenario.observations()).equals(expectedObservations)) {
       throw new IllegalArgumentException(
-          "Unsupported semantic profile: " + scenario.profile());
-    }
-    if (scenario.observations().size() != M0_OBSERVATIONS.size()
-        || !EnumSet.copyOf(scenario.observations()).equals(M0_OBSERVATIONS)) {
-      throw new IllegalArgumentException(
-          "M0 requires all canonical observation kinds exactly once");
+          "Scenario requires its canonical observation kinds exactly once");
     }
     if (scenario.stimuli().size() != 2
         || !(scenario.stimuli().get(0) instanceof StartProcessStimulus)
-        || !(scenario.stimuli().get(1) instanceof CompleteUserTaskStimulus)) {
+        || (isMilestoneZero
+            && !(scenario.stimuli().get(1) instanceof CompleteUserTaskStimulus))
+        || (isUserTaskInteraction
+            && !(scenario.stimuli().get(1)
+                instanceof CompleteUserTaskInstanceStimulus))) {
       throw new IllegalArgumentException(
-          "M0 supports exactly startProcess followed by completeUserTask");
+          "Scenario supports exactly startProcess followed by its completion command");
     }
   }
 
@@ -254,7 +305,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     return (StartProcessStimulus) scenario.stimuli().getFirst();
   }
 
-  private void completeUserTask(
+  private CommandOutcome completeUserTask(
       String engineInstanceId, CompleteUserTaskStimulus complete) {
     var tasks =
         processEngine
@@ -264,16 +315,37 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             .taskDefinitionKey(complete.elementId())
             .list();
     if (tasks.size() != 1) {
-      throw new IllegalStateException(
-          "Expected exactly one active user task "
-              + complete.elementId()
-              + ", found "
-              + tasks.size());
+      return REJECTED;
     }
     processEngine.getTaskService().complete(tasks.getFirst().getId());
+    return COMMITTED;
+  }
+
+  private CommandOutcome completeUserTaskInstance(
+      String engineInstanceId,
+      String stableInstanceId,
+      CompleteUserTaskInstanceStimulus complete) {
+    var taskId = complete.taskId();
+    if (!taskId.processInstanceId().equals(stableInstanceId)
+        || taskId.activation() != 1) {
+      return REJECTED;
+    }
+    var tasks =
+        processEngine
+            .getTaskService()
+            .createTaskQuery()
+            .processInstanceId(engineInstanceId)
+            .taskDefinitionKey(taskId.elementId())
+            .list();
+    if (tasks.size() != 1) {
+      return REJECTED;
+    }
+    processEngine.getTaskService().complete(tasks.getFirst().getId());
+    return COMMITTED;
   }
 
   private StateObservation observeState(
+      ScenarioDefinition scenario,
       String engineInstanceId,
       String stableInstanceId,
       List<Stimulus> remainingStimuli) {
@@ -284,38 +356,80 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 .processInstanceId(engineInstanceId)
                 .count()
             == 1;
-    var activeWaits = isRunning ? observeActiveWaits(engineInstanceId) : List.<ActiveWait>of();
+    var tasks =
+        isRunning
+            ? processEngine
+                .getTaskService()
+                .createTaskQuery()
+                .processInstanceId(engineInstanceId)
+                .list()
+            : List.<Task>of();
+    var activeWaits = observeActiveWaits(tasks);
+    var openUserTasks =
+        usesTaskProjection(scenario)
+            ? observeOpenUserTasks(stableInstanceId, tasks)
+            : null;
     var activeElements =
         activeWaits.stream().map(ActiveWait::elementId).collect(Collectors.toSet());
+    var activeTaskIds =
+        openUserTasks == null
+            ? Set.<UserTaskInstanceId>of()
+            : openUserTasks.stream().map(OpenUserTask::id).collect(Collectors.toSet());
     var enabledStimuli =
         remainingStimuli.stream()
             .filter(
-                stimulus ->
-                    stimulus instanceof CompleteUserTaskStimulus complete
-                        && activeElements.contains(complete.elementId()))
+                stimulus -> switch (stimulus) {
+                  case CompleteUserTaskStimulus complete ->
+                      activeElements.contains(complete.elementId());
+                  case CompleteUserTaskInstanceStimulus complete ->
+                      activeTaskIds.contains(complete.taskId());
+                  case StartProcessStimulus ignored -> false;
+                })
             .toList();
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
     return new StateObservation(
         stableInstanceId,
         isRunning ? RUNNING : COMPLETED,
         activeWaits,
+        openUserTasks,
         enabledStimuli,
         logicalTimeMs);
   }
 
-  private List<ActiveWait> observeActiveWaits(String engineInstanceId) {
+  private List<ActiveWait> observeActiveWaits(
+      List<Task> tasks) {
     Map<String, Integer> multiplicities = new TreeMap<>();
-    for (var task :
-        processEngine
-            .getTaskService()
-            .createTaskQuery()
-            .processInstanceId(engineInstanceId)
-            .list()) {
+    for (var task : tasks) {
       multiplicities.merge(task.getTaskDefinitionKey(), 1, Integer::sum);
     }
     return multiplicities.entrySet().stream()
         .map(entry -> new ActiveWait(entry.getKey(), USER_TASK, entry.getValue()))
         .toList();
+  }
+
+  private List<OpenUserTask> observeOpenUserTasks(
+      String stableInstanceId,
+      List<Task> tasks) {
+    if (tasks.size() > 1) {
+      throw new IllegalStateException(
+          "The User Task interaction capsule supports at most one active task");
+    }
+    return tasks.stream()
+        .map(
+            task ->
+                new OpenUserTask(
+                    new UserTaskInstanceId(
+                        stableInstanceId,
+                        task.getTaskDefinitionKey(),
+                        1),
+                    task.getName(),
+                    ACTIVE))
+        .toList();
+  }
+
+  private static boolean usesTaskProjection(ScenarioDefinition scenario) {
+    return ScenarioProtocol.USER_TASK_INTERACTION_SCHEMA_VERSION.equals(
+        scenario.schemaVersion());
   }
 
   private CleanupProjection observeCleanup() {

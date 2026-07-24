@@ -1,8 +1,10 @@
 package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
+import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
+import static org.bpmnlean.cibseven.ScenarioProtocol.UserTaskLifecycleState.ACTIVE;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.USER_TASK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -11,6 +13,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
+import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmActivityProjection;
@@ -18,6 +21,8 @@ import org.bpmnlean.cibseven.ScenarioProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.TransitionProjection;
+import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
+import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskInstanceId;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.junit.Test;
 
@@ -28,6 +33,8 @@ public class CibSevenScenarioRunnerTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path SCENARIO_PATH =
       PROJECT_ROOT.resolve("scenarios/m0-sequential-user-task/scenario.json");
+  private static final Path INTERACTION_SCENARIO_PATH =
+      PROJECT_ROOT.resolve("scenarios/m1-user-task-discovery-completion/scenario.json");
 
   @Test
   public void calibratesSequentialUserTaskAndCleansEveryRun() throws Exception {
@@ -65,6 +72,77 @@ public class CibSevenScenarioRunnerTest {
       assertTrue(first.diagnostics().startupNanos() > 0);
       assertTrue(first.diagnostics().phases().totalNanos() > 0);
       assertTrue(second.diagnostics().phases().totalNanos() > 0);
+    }
+  }
+
+  @Test
+  public void calibratesTaskDiscoveryAndRejectsWrongActivationWithoutStateChange()
+      throws Exception {
+    var scenario = ScenarioJson.read(INTERACTION_SCENARIO_PATH);
+    var taskId = new UserTaskInstanceId(INSTANCE_ID, "UserTask_Approve", 1);
+    var openTask = new OpenUserTask(taskId, "Approve", ACTIVE);
+    var expectedTrace =
+        List.of(
+            new DeploymentObservation(COMMITTED),
+            new CommandObservation("start-process", COMMITTED),
+            new StateObservation(
+                INSTANCE_ID,
+                RUNNING,
+                List.of(new ActiveWait("UserTask_Approve", USER_TASK, 1)),
+                List.of(openTask),
+                List.of(
+                    new CompleteUserTaskInstanceStimulus(
+                        "complete-user-task-instance", taskId)),
+                0),
+            new CommandObservation("complete-user-task-instance", COMMITTED),
+            new StateObservation(
+                INSTANCE_ID, COMPLETED, List.of(), List.of(), List.of(), 0));
+    assertEquals(
+        expectedTrace,
+        ScenarioJson.readCanonicalTrace(scenario.calibration().expectedTrace()));
+
+    var wrongTaskId = new UserTaskInstanceId(INSTANCE_ID, "UserTask_Approve", 2);
+    var wrongCompletion =
+        new CompleteUserTaskInstanceStimulus("wrong-activation", wrongTaskId);
+    var wrongScenario =
+        new ScenarioProtocol.ScenarioDefinition(
+            scenario.schemaVersion(),
+            scenario.id(),
+            scenario.profile(),
+            scenario.bpmn(),
+            List.of(scenario.stimuli().getFirst(), wrongCompletion),
+            scenario.observations(),
+            scenario.provenance(),
+            scenario.calibration());
+
+    try (var runner = CibSevenScenarioRunner.create()) {
+      var calibrated = runner.run(scenario, PROJECT_ROOT);
+      var rejected = runner.run(wrongScenario, PROJECT_ROOT);
+
+      assertEquals(new SemanticOutcome(COMMITTED), calibrated.outcome());
+      assertEquals(expectedTrace, calibrated.trace());
+      assertEquals(new SemanticOutcome(REJECTED), rejected.outcome());
+      assertEquals(
+          List.of(
+              new DeploymentObservation(COMMITTED),
+              new CommandObservation("start-process", COMMITTED),
+              new StateObservation(
+                  INSTANCE_ID,
+                  RUNNING,
+                  List.of(new ActiveWait("UserTask_Approve", USER_TASK, 1)),
+                  List.of(openTask),
+                  List.of(),
+                  0),
+              new CommandObservation("wrong-activation", REJECTED),
+              new StateObservation(
+                  INSTANCE_ID,
+                  RUNNING,
+                  List.of(new ActiveWait("UserTask_Approve", USER_TASK, 1)),
+                  List.of(openTask),
+                  List.of(),
+                  0)),
+          rejected.trace());
+      assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
     }
   }
 

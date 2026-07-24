@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "0.2.0",
+  "id": "cibseven-2.2.0-spike.2",
+  "status": "draft",
+  "claim": "user-task-interaction-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": []
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "enabledStimuli",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "claiming",
+    "assignment",
+    "authorization",
+    "forms",
+    "variables",
+    "expressions",
+    "gateways",
+    "timers",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "compensation",
+    "listeners",
+    "history",
+    "search-attributes",
+    "global-task-inbox",
+    "external-services",
+    "vendor-extensions"
+  ]
+}

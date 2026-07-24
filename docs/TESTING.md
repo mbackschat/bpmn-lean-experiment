@@ -43,6 +43,12 @@ git status --short
 
 The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD and CMOF facts, Lean build, executable contract checks, the BPMN source/compiler boundary, the pure TypeScript semantic core, the embedded CIB Seven oracle tests, the pure comparator, the full exact-source M0 pipeline, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
 
+## User Task interaction contract and CIB evidence
+
+The approved contract and witnesses are in [USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md](USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md). The versioned draft profile and neutral scenario reuse the exact Milestone 0 BPMN bytes while adding a structured semantic task occurrence, BPMN task name, exact completion stimulus, and `openUserTasks` observation.
+
+The intended red CIB run failed at Java test compilation because `UserTaskInstanceId`, `OpenUserTask`, the lifecycle state, and the exact completion stimulus did not exist. The green runner uses public `TaskService` queries, never exposes the generated CIB task ID as a comparison key, completes the exact semantic occurrence, rejects the correct BPMN element with activation ordinal `2`, retains the active task unchanged after rejection, and cleans both runs. The focused CIB gate completed in 6.24 seconds after the new witness became green.
+
 ## BPMN source ingestion and CMOF facts
 
 The focused gate is:

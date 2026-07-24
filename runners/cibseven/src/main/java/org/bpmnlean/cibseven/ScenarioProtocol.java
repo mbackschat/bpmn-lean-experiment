@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -17,7 +18,9 @@ import java.util.Objects;
 public final class ScenarioProtocol {
 
   public static final String SCHEMA_VERSION = "0.1.0";
+  public static final String USER_TASK_INTERACTION_SCHEMA_VERSION = "0.2.0";
   public static final String SUPPORTED_PROFILE = "cibseven-2.2.0-spike.1";
+  public static final String USER_TASK_INTERACTION_PROFILE = "cibseven-2.2.0-spike.2";
 
   private ScenarioProtocol() {}
 
@@ -90,11 +93,33 @@ public final class ScenarioProtocol {
     }
   }
 
+  public enum UserTaskLifecycleState implements WireValue {
+    ACTIVE("active");
+
+    private final String wireValue;
+
+    UserTaskLifecycleState(String wireValue) {
+      this.wireValue = wireValue;
+    }
+
+    @Override
+    @JsonValue
+    public String wireValue() {
+      return wireValue;
+    }
+
+    @JsonCreator
+    public static UserTaskLifecycleState fromWireValue(String value) {
+      return WireValue.parse(UserTaskLifecycleState.class, value);
+    }
+  }
+
   public enum ObservationKind implements WireValue {
     DEPLOYMENT("deployment"),
     COMMAND_RESULTS("commandResults"),
     PROCESS_STATUS("processStatus"),
     ACTIVE_WAITS("activeWaits"),
+    OPEN_USER_TASKS("openUserTasks"),
     ENABLED_STIMULI("enabledStimuli"),
     LOGICAL_TIME("logicalTime");
 
@@ -177,9 +202,15 @@ public final class ScenarioProtocol {
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
     @JsonSubTypes.Type(value = StartProcessStimulus.class, name = "startProcess"),
-    @JsonSubTypes.Type(value = CompleteUserTaskStimulus.class, name = "completeUserTask")
+    @JsonSubTypes.Type(value = CompleteUserTaskStimulus.class, name = "completeUserTask"),
+    @JsonSubTypes.Type(
+        value = CompleteUserTaskInstanceStimulus.class,
+        name = "completeUserTaskInstance")
   })
-  public sealed interface Stimulus permits StartProcessStimulus, CompleteUserTaskStimulus {
+  public sealed interface Stimulus
+      permits StartProcessStimulus,
+          CompleteUserTaskStimulus,
+          CompleteUserTaskInstanceStimulus {
     String commandId();
   }
 
@@ -197,6 +228,33 @@ public final class ScenarioProtocol {
     public CompleteUserTaskStimulus {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(elementId, "elementId");
+    }
+  }
+
+  public record UserTaskInstanceId(
+      String processInstanceId, String elementId, int activation) {
+    public UserTaskInstanceId {
+      Objects.requireNonNull(processInstanceId, "processInstanceId");
+      Objects.requireNonNull(elementId, "elementId");
+      if (activation < 1) {
+        throw new IllegalArgumentException("activation must be positive");
+      }
+    }
+  }
+
+  public record CompleteUserTaskInstanceStimulus(
+      String commandId, UserTaskInstanceId taskId) implements Stimulus {
+    public CompleteUserTaskInstanceStimulus {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(taskId, "taskId");
+    }
+  }
+
+  public record OpenUserTask(
+      UserTaskInstanceId id, String name, UserTaskLifecycleState state) {
+    public OpenUserTask {
+      Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(state, "state");
     }
   }
 
@@ -227,6 +285,7 @@ public final class ScenarioProtocol {
       String instanceId,
       ProcessStatus status,
       List<ActiveWait> activeWaits,
+      @JsonInclude(JsonInclude.Include.NON_NULL) List<OpenUserTask> openUserTasks,
       List<Stimulus> enabledStimuli,
       long logicalTimeMs)
       implements CanonicalObservation {
@@ -234,10 +293,22 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(instanceId, "instanceId");
       Objects.requireNonNull(status, "status");
       activeWaits = List.copyOf(activeWaits);
+      if (openUserTasks != null) {
+        openUserTasks = List.copyOf(openUserTasks);
+      }
       enabledStimuli = List.copyOf(enabledStimuli);
       if (logicalTimeMs < 0) {
         throw new IllegalArgumentException("logicalTimeMs must not be negative");
       }
+    }
+
+    public StateObservation(
+        String instanceId,
+        ProcessStatus status,
+        List<ActiveWait> activeWaits,
+        List<Stimulus> enabledStimuli,
+        long logicalTimeMs) {
+      this(instanceId, status, activeWaits, null, enabledStimuli, logicalTimeMs);
     }
   }
 

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "0.2.0",
+  "id": "m1-user-task-discovery-completion",
+  "profile": "cibseven-2.2.0-spike.2",
+  "bpmn": {
+    "id": "m0-sequential-user-task-process",
+    "relativePath": "scenarios/m0-sequential-user-task/process.bpmn",
+    "sha256": "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_SequentialUserTask",
+      "instanceId": "Instance_1"
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-user-task-instance",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "enabledStimuli",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/UserTaskTest.java#testTaskPropertiesNotNull",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/TaskAssigneeTest.java#testTaskAssignee",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId"
+    ]
+  },
+  "calibration": {
+    "status": "calibrated",
+    "expectedTrace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Approve",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "name": "Approve",
+            "state": "active"
+          }
+        ],
+        "enabledStimuli": [
+          {
+            "kind": "completeUserTaskInstance",
+            "commandId": "complete-user-task-instance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-user-task-instance",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "enabledStimuli": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}
