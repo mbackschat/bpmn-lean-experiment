@@ -33,7 +33,7 @@ Raw CIB output never becomes Lean authority automatically, and differential mism
 | Semantic profile | Select reviewed meaning, compatibility target, configuration, feature surface, observation boundary, interpretations, extensions, and deviations | It is not an engine build or a generic document-format version |
 | BPMN source boundary | Preserve exact bytes, validate and admit source, and compile project-owned executable IR | Parser objects and CMOF facts do not define execution behavior |
 | Lean reference interpreter | Give the selected capsule executable operational meaning and prove reusable laws | It does not automatically prove CIB, XML parsing, TypeScript, Temporal, databases, or effects |
-| TypeScript semantic core | Implement production semantic transitions independently and deterministically | It performs no I/O and has no CIB or Temporal dependency |
+| TypeScript semantic core | Implement production semantic transitions as a separately written, deterministic realization of the reviewed account | It performs no I/O and has no CIB or Temporal dependency, and it is not an independent choice of operational account |
 | Temporal adapter | Persist semantic state, deliver inputs, and host declared effects and waits durably | Hidden Workflow work may not redefine BPMN-visible behavior |
 | Assurance pipeline | Compare canonical consequences, detect seeded disagreement, check isolation, and test Temporal refinement/replay | Finite evidence never implies universal conformance |
 
@@ -46,6 +46,14 @@ Lean is useful when it converts semantic risk into an executable definition, a r
 The first capsule’s `task_identity_mismatch_is_rejected` theorem quantifies over the model, active Process instance, activation, submitted occurrence, command identity, and logical time. If any semantic occurrence component differs, it proves rejection, exact state preservation, an empty internal microtrace, and no closure-bound involvement. The nearby element-only identity non-law demonstrates the realistic defect that this theorem prevents.
 
 That is stronger than replaying one serialized example, but it remains bounded to the Lean account. A CIB witness, a Lean theorem, TypeScript behavior, and Temporal refinement are separate claims even when they agree.
+
+### Two kinds of independence
+
+Lean and the TypeScript semantic core are independent **transcriptions** of one reviewed operational account. They are separately written, separately executable, and mutually check transcription defects such as an inverted guard or a mistyped identity field. They are not independent **accounts**: the capsule currently prescribes the microstate inventory and the internal closure bound, so both realizations share that decomposition and would reproduce an error in it identically.
+
+Account-level independence therefore comes only from the normative and profile review and from pinned CIB evidence, bounded by the oracle fidelity that the applicable capsule records. Claims must not present Lean-to-TypeScript agreement as independent confirmation of the selected account, and [TESTING.md](TESTING.md) owns the requirement that two evidence lanes count as two only when their failure modes are uncorrelated.
+
+A capsule may deliberately buy account-level independence by specifying only the observable contract and letting each realization choose its own runtime representation. That is a per-capsule decision with a real cost, and it must be recorded in the capsule rather than assumed.
 
 Lean also forces architectural distinctions to become explicit:
 

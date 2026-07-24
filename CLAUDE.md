@@ -50,7 +50,7 @@ Read the complete selected document before acting on it.
 2. An approved immutable semantic profile is the compatibility authority for one declared target.
 3. Lean is the formal semantic authority for that profile’s explicit operational meaning.
 4. The pinned complete CIB Seven engine is the executable behavioral oracle for its declared compatibility profile.
-5. The pure TypeScript semantic core independently implements the semantic contract and has no CIB Seven or Temporal dependency.
+5. The pure TypeScript semantic core is a separately written realization of the semantic contract and has no CIB Seven or Temporal dependency. It is an independent transcription of the reviewed account, not an independent choice of account; see [the two kinds of independence](docs/PROJECT-DESIGN.md#two-kinds-of-independence).
 6. The Temporal adapter provides durability and hidden orchestration work without defining BPMN behavior.
 
 CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or inconsistencies, and add explicit engine extensions. Greater specificity or extension is not a deviation. When sources appear to disagree, classify the relationship in [CIB-BPMN-RELATION.md](docs/CIB-BPMN-RELATION.md) against the standard, profile, configuration, observation boundary, and evidence. Do not use majority voting.
@@ -102,7 +102,7 @@ Prefer enum-based pattern matching or switch statements for semantic variants. K
 
 BPMN XML parsing and compilation run before Workflow start with an explicit byte limit and parser Promise-settlement deadline. The current timeout cannot preempt synchronous parser CPU; production untrusted uploads still require a bounded Worker or process. Every new Workflow execution must contain admitted current executable IR; no fallback constructor may invent it.
 
-Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim.
+Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim. [TESTING.md](docs/TESTING.md#evidence-lanes) owns the definition of an evidence lane, including the requirement that two lanes count as two only when their failure modes are uncorrelated.
 
 Give every material semantic rule a stable capsule-owned identifier and a rule-to-evidence row. An editorial correction may retain an identifier; a materially different proposition requires a new identifier and, when already used by evidence or running instances, the applicable profile or artifact version change. Rule identifiers are traceability labels and do not enter runtime wire contracts without a concrete consumer and versioning decision.
 

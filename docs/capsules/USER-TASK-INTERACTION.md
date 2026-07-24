@@ -56,6 +56,28 @@ The identifiers below name the bounded propositions established by this capsule.
 
 The matrix indexes evidence; it does not merge the claims. A Lean theorem proves the selected Lean account, a CIB witness records finite oracle behavior, and the TypeScript and Temporal lanes remain independent implementation and refinement evidence.
 
+## Oracle evidence fidelity
+
+A CIB cell in the matrix above is not automatically engine evidence. The oracle adapter owns the `CIB-OP-0001` identity mapping, so some recorded values are computed by project code rather than observed from the engine. Reading four-target agreement as four independent accounts requires knowing which is which.
+
+| Fidelity | Meaning |
+|---|---|
+| `engine-observed` | The recorded value is produced by pinned CIB Seven executing the admitted model through its public services |
+| `adapter-derived` | CIB state is observed, but the recorded value is computed from it by the oracle adapter |
+| `adapter-decided` | The recorded outcome is decided by the oracle adapter before or without consulting CIB |
+
+| Rule | Engine-observed | Adapter-derived | Adapter-decided |
+|---|---|---|---|
+| `UTASK-ACTIVATE-01` | Exactly one live task exists after start, and its task-definition key and name | The activation ordinal `1` and the semantic Process-instance identity | — |
+| `UTASK-DISCOVER-01` | Task presence, admitted name, and running Process status through `TaskService.createTaskQuery()` | Structured occurrence identity, wait multiplicity, and `enabledInteractions`, which are project projections rather than CIB concepts | — |
+| `UTASK-COMPLETE-01` | `TaskService.complete` on the live task, wait removal, and Process completion | The semantic Process-instance identity in the resulting observation | — |
+| `UTASK-REFUSE-01` | Element-ID mismatch, which reaches CIB as a task query returning no matching live task; state preservation after the refusal | — | Process-instance and **activation** mismatch, refused by the adapter before any CIB call |
+| `UTASK-REFUSE-02` | Absence of a live CIB task after real completion, which is why the stale completion is refused | — | — |
+
+The consequence is explicit: `UTASK-REFUSE-01` is the one rule whose activation clause the oracle lane cannot falsify, because the adapter implements the same ordinal rule that the capsule claims. Its wrong-activation agreement across CIB, Lean, the semantic core, and Temporal is therefore agreement with one project-authored rule, not four independent derivations of it. `UTASK-REFUSE-02` and `UTASK-COMPLETE-01` are engine-grounded, and `UTASK-ACTIVATE-01` is engine-grounded for task presence but not for ordinal allocation.
+
+Repeated or simultaneous activation will require deriving the ordinal from CIB state rather than stamping the constant `1`. That derivation needs its own `CIB-OP` entry, its own probe, and its own seeded mutation before any rule may claim engine-observed ordinal fidelity.
+
 ## Semantic task identity
 
 The capsule uses a structured semantic identity rather than encoding multiple identity components into one delimiter-sensitive string:
@@ -151,7 +173,9 @@ The exact claim established by this capsule is bounded: for the one content-addr
 
 The closest unsupported claim is repeated or simultaneous activation of the same BPMN User Task definition. The current model creates only activation `1`; the checked wrong-ordinal witness proves that element identity alone is insufficient, but it does not establish how ordinals are allocated across loops, multi-instance execution, nested scopes, migration, or Continue-As-New.
 
-The principal common-mode risk is a shared interpretation or observation defect. All semantic targets could agree because the capsule omitted a relevant BPMN fact or because the canonical projection hid it. Answer-free scenarios, independent live CIB execution, a checked non-law, source/profile identities, the task-projection mutation, and live Temporal replay reduce that risk but do not eliminate it. In particular, Lean currently executes content-identified capsule data compiled into its module rather than decoding the pipeline’s scenario and executable-IR JSON; this is a known correspondence gap, not a general input equivalence proof.
+The principal common-mode risk is a shared interpretation or observation defect. All semantic targets could agree because the capsule omitted a relevant BPMN fact or because the canonical projection hid it. Answer-free scenarios, independent live CIB execution, a checked non-law, source/profile identities, the task-projection mutation, and live Temporal replay reduce that risk but do not eliminate it.
+
+Two specific common-mode facts belong in this closure rather than in prose elsewhere. First, this capsule prescribes the synthetic control positions and the internal closure bound, so the Lean account and the TypeScript semantic core share that decomposition; they are independent transcriptions that check transcription defects, and they would reproduce an error in the prescribed decomposition identically. Account-level independence for this capsule comes only from the normative review and from CIB evidence at the fidelity recorded above. Second, Lean executes capsule data compiled into its module rather than decoding the pipeline’s executable-IR JSON; the emitter now echoes the exact scenario content it executed and the differential harness rejects any drift from the admitted scenario document, which closes the silent-drift channel but is still not IR consumption or a general input equivalence proof.
 
 The declarative relation and evaluator can also share the same incorrect transition account because they are authored in one Lean module. `internalStep_sound` rejects evaluator behavior outside the relation; it does not prove that the relation is complete, sufficiently restrictive, or faithful to BPMN and the selected CIB profile. The normative/profile analysis, checked non-law, independent implementations, CIB evidence, and future structurally distinct capsule remain necessary.
 

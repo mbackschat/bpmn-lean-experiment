@@ -156,6 +156,8 @@ The nearby checked non-law is equally important: matching the BPMN element ID al
 
 Lean does not prove that CIB, TypeScript, Temporal, XML parsing, or the network is correct. It proves properties of the explicit Lean semantics. Correspondence with the other systems remains separate evidence.
 
+Because Lean executes capsule data compiled into its module, the emitter also echoes the exact scenario content it executed. The harness compares that echo with the admitted scenario document and rejects any drift, so a matching scenario identity can no longer hide a changed stimulus, BPMN digest, or provenance reference.
+
 ## 5. Execute the production semantics in pure TypeScript
 
 The semantic core owns BPMN-visible state transitions. It has no CIB or Temporal dependency and performs no I/O. Temporal therefore cannot accidentally turn Workflow scheduling, retries, handler order, or replay mechanics into BPMN meaning.
@@ -332,7 +334,7 @@ For focused work, use the gate matrix in [TESTING.md](TESTING.md). The [semantic
 Within one content-addressed sequential User Task slice, the repository establishes:
 
 - exact-source admission into project-owned executable IR;
-- independent CIB, Lean, and TypeScript accounts with exact canonical agreement;
+- one reviewed operational account realized separately in Lean and TypeScript, agreeing exactly with pinned CIB observation at the fidelity recorded in the capsule;
 - a useful general Lean law plus an executable nearest non-law;
 - Temporal Query/Update hosting that refines the pure core for the tested cases;
 - duplicate-command stability, cleanup, and same-gate live replay;

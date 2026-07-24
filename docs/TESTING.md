@@ -123,16 +123,17 @@ The pipeline:
 3. compiles the exact BPMN bytes once per source/profile identity;
 4. starts one clean Temporal server and Worker;
 5. runs one three-case CIB batch, one three-result Lean emitter, the pure core, and six Temporal Workflows concurrently;
-6. compares CIB with Lean, the core, and Temporal exactly by scenario identity;
-7. compares fresh CIB output with retained CIB evidence;
-8. checks exact Query/Update evidence, duplicate delivery, isolated Workflow equality, and clean CIB state;
-9. mutates the observed activation ordinal and requires an exact disagreement path;
-10. replays all three primary live histories;
-11. shuts down the Worker/server and removes temporary files.
+6. requires Lean's echoed scenario to equal the admitted scenario document, rejecting a drifted stimulus, BPMN digest, or provenance at an exact structural path;
+7. compares CIB with Lean, the core, and Temporal exactly by scenario identity;
+8. compares fresh CIB output with retained CIB evidence;
+9. checks exact Query/Update evidence, duplicate delivery, isolated Workflow equality, and clean CIB state;
+10. mutates the observed activation ordinal and requires an exact disagreement path;
+11. replays all three primary live histories;
+12. shuts down the Worker/server and removes temporary files.
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 
-The final source-current repository verification on 2026-07-24 completed in 23.56 seconds and its prepared pipeline completed in 5.30 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+The final source-current repository verification on 2026-07-24 completed in 21.03 seconds and its prepared pipeline completed in 4.88 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
 
 ## Documentation-fragment gate
 
@@ -159,12 +160,22 @@ This guard intentionally applies to current source and executable tests, not pre
 
 ## Evidence lanes
 
+An **evidence lane** is one source of assurance about a claim, identified by three things:
+
+1. its producer — what actually generates the evidence;
+2. what passage of that lane can establish;
+3. what passage of that lane cannot establish.
+
+A fourth requirement decides whether two lanes are genuinely two: **two lanes are distinct only if their failure modes are uncorrelated.** Two producers that share an account, an internal representation, a fixture, or a projection cannot fail apart, so they count once regardless of how many artifacts they produce. Record that judgement per capsule rather than inferring it from the number of targets that agreed.
+
+This document owns the term. Related but different concepts keep their own names: a **work-stream** is an implementation activity that produces a lane's artifact, a **pinned baseline** is a reference checkout or execution configuration as defined in [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md), and individual propositions inside one lane are **rules**, owned by the applicable [capsule](capsules/README.md).
+
 | Lane | Passage can establish | Passage cannot establish |
 |---|---|---|
 | Normative BPMN/profile review | Selected requirement and interpretation are explicit | Any implementation performs them |
 | CIB compatibility | Pinned CIB behaves as observed under the declared profile | Universal BPMN correctness |
 | Lean | The explicit Lean account executes and its stated laws hold | Correctness of CIB, parser, TypeScript, Temporal, or effects |
-| TypeScript differential | The independent core agrees on maintained inputs | Universal Lean correspondence |
+| TypeScript differential | The independently written core agrees on maintained inputs | Universal Lean correspondence, or that the core chose its operational account independently |
 | Temporal refinement | The tested durable host preserves core-visible results and replays | Unsupported BPMN meaning |
 | MIWG interchange | Structural import/reference/encoding behavior for pinned models | Execution conformance |
 | Seeded mutation | The current projection/comparator detects one claimed distinction | Projection completeness |

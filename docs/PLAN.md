@@ -12,6 +12,9 @@ The bounded `None Start Event → User Task → None End Event` capsule is evide
 - Lean proves evaluator soundness for internal steps, exact completion, quantified full-occurrence mismatch rejection with state preservation, and the element-only identity non-law;
 - Temporal uses Query plus acknowledged Update, checks duplicate logical delivery, and replays all current live histories on a fresh in-memory server;
 - seeded task-activation disagreement, target isolation, CIB cleanup, process cleanup, and feedback budgets are executable;
+- Lean echoes the exact scenario content it executed and the harness rejects any drift from the admitted scenario document, so matching scenario identity can no longer hide changed scenario content;
+- each rule's CIB evidence carries an explicit `engine-observed`, `adapter-derived`, or `adapter-decided` fidelity, and the wrong-activation refusal is recorded as adapter-decided;
+- Lean and the TypeScript semantic core are recorded as independent transcriptions of one reviewed account rather than independent accounts;
 - pre-release prototype compatibility paths, embedded wire-format counters, old milestone artifacts, committed Temporal histories, Workflow patch branches, and legacy IR readers have been removed;
 - the central [CIB–BPMN register](CIB-BPMN-RELATION.md) records all reviewed relationships and currently contains no candidate or confirmed deviation.
 
@@ -19,7 +22,9 @@ The active implementation boundary is [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP
 
 ## Last verified baseline
 
-`/usr/bin/time -p env CI=true /opt/homebrew/bin/timeout 60 ./scripts/verify.sh` passed on 2026-07-24 in 23.56 seconds real time. Its prepared three-case four-target pipeline completed in 5.30 seconds warm and replayed three live histories. The separately gated representation experiment passed with `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike`.
+`/usr/bin/time -p env CI=true /opt/homebrew/bin/timeout 300 ./scripts/verify.sh` passed on 2026-07-24 in 21.03 seconds real time. Its prepared three-case four-target pipeline completed in 4.88 seconds warm and replayed three live histories. The separately gated representation experiment passed with `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike`.
+
+The Lean scenario binding was additionally verified by a positive control outside the gate: changing the wrong-activation scenario's submitted activation from `2` to `3` on disk left CIB, the semantic core, and Temporal in agreement, and the pipeline failed with `lean executed different scenario content for user-task-wrong-activation: scenario.stimuli[1].taskId.activation expected 3 but was 2`. The seeded change was reverted. Its retained regression equivalents are the content-mismatch and missing-echo cases in [scenario-binding.test.mjs](../packages/differential/test/scenario-binding.test.mjs).
 
 ## Next proposed semantic capsule
 
@@ -30,7 +35,7 @@ The capsule must separate at least these competing accounts:
 1. one count-only join state versus incoming-flow provenance;
 2. a single linear active-node state versus multiplicity-preserving concurrent tokens or activations;
 3. evaluator branch order versus semantic completion-order independence;
-4. scenario-identified compiled-in Lean inputs versus admitted executable-IR correspondence.
+4. echo-bound compiled-in Lean inputs versus admitted executable-IR correspondence.
 
 The smallest candidate model is:
 
@@ -55,7 +60,8 @@ Required draft outputs:
 - proposed source, executable-IR, runtime-token, scope, scheduler-choice, command, and observation distinctions;
 - proposed stable rule IDs, useful Lean laws, nearest non-law, and mutation points;
 - an explicit assessment of whether the provisional representation spike supplies useful candidate types or should be discarded;
-- a concrete plan to make Lean consume or content-bind the admitted definition without introducing a general semantic DSL.
+- a concrete plan to make Lean consume the admitted executable IR without introducing a general semantic DSL; scenario content is already echo-bound and verifier-checked, so the remaining gap is the compiled-in executable definition itself;
+- an explicit decision on whether the capsule specifies only its observable contract so that the Lean account and the TypeScript semantic core may choose different runtime representations, recorded per [the two kinds of independence](PROJECT-DESIGN.md#two-kinds-of-independence).
 
 ## Ordered work
 
@@ -89,6 +95,8 @@ Stop for owner direction if:
 - implementation would silently select CIB behavior over clear BPMN requirements or vice versa.
 
 ## Exact resume point
+
+The pre-capsule corrections from the strategic review are landed: the Lean scenario binding, the per-rule oracle-evidence fidelity, the transcription-versus-account independence wording, and the evidence-lane definition. No semantic behavior changed.
 
 Start with the parallel-capsule research draft. First read [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md), [CIB-BPMN-RELATION.md](CIB-BPMN-RELATION.md), [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md), [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md), and the current [User Task capsule](capsules/USER-TASK-INTERACTION.md). Then identify the normative parallel-gateway join rule and design the smallest CIB probe that distinguishes incoming-flow provenance from arrival count.
 
