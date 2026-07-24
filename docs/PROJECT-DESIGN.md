@@ -14,6 +14,27 @@ Build independent implementations that agree through a neutral profile, scenario
 
 Lean’s purpose is not merely to document an already finished adapter. It should accelerate implementation by making ambiguous rules, state distinctions, preservation obligations, counterexamples, generated traces, and refinement relations executable before they are duplicated in TypeScript and Temporal.
 
+## Assurance roles and Lean value
+
+Correctness is not one binary property in this architecture. Each component answers a different question, and no agreement vote can replace the missing lane:
+
+| Component | Strongest question it can answer | What it cannot establish alone |
+|---|---|---|
+| BPMN clauses and semantic profile | What behavior is required or deliberately selected? | That an implementation performs it |
+| Pinned CIB Seven | What did the selected compatibility oracle do under the declared environment and observation boundary? | Universal BPMN correctness or project semantics |
+| Lean reference interpreter | What does the selected operational account mean, and which laws hold for every represented state satisfying their hypotheses? | Correctness of CIB, XML parsing, TypeScript, Temporal, databases, or effects |
+| TypeScript semantic core | Does the production transition implementation independently realize the selected behavior for tested inputs? | Universal correspondence with Lean or durable-host correctness |
+| Temporal adapter | Does the tested durable host preserve core-visible behavior under Query, Update, duplicate delivery, and replay? | BPMN meaning that is absent from the semantic core |
+| Differential and refinement pipeline | Do the independent observable results and durable-host projections agree for the maintained evidence? | Universal equivalence outside the declared corpus and hypotheses |
+
+Lean is valuable when it converts a semantic risk into a reusable quantified law. The first interaction capsule’s [`task_identity_mismatch_is_rejected`](../BpmnSemantics/SequentialUserTask.lean) theorem quantifies over the model, active Process instance and activation, submitted task occurrence, command identity, and logical time. Given a mismatch in any semantic identity component, it proves rejection, exact state preservation, an empty semantic microtrace, and no closure-bound involvement. The narrower wrong-activation theorem is a corollary. Removing any identity check from command admission makes the general theorem fail, which guards the semantic mechanism rather than one fixture.
+
+Concrete `by decide` trace theorems remain useful executable witnesses, but they are not presented as general laws. Likewise, determinism merely inherited from implementing a transition as a function is not a substantive assurance result. A retained Lean law should quantify over a meaningful class of states or inputs, expose its exact hypotheses, rule out a realistic defect, survive reuse by another witness, and fail under a mutation of the protected semantic mechanism.
+
+Formalization also provides architectural value before a theorem is finished: it forces definition identity apart from runtime occurrence identity, external command admission apart from internal closure, committed outcomes apart from harness exhaustion, and semantic state apart from CIB and Temporal host identity. These distinctions are transferred into the executable IR, TypeScript core, observation contract, and adapter boundary.
+
+The current Lean account is intentionally bounded. It does not parse BPMN XML, prove the compiler, consume arbitrary executable IR, or machine-check TypeScript or Temporal refinement. Those gaps are maintained explicitly in the [implementation map](IMPLEMENTATION-MAP.md). A future correspondence bridge must be evidenced rather than inferred from matching names or serialized examples.
+
 ## BPMN ingestion and execution decision
 
 The production architecture is an **interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**.
@@ -34,6 +55,14 @@ This choice keeps one inspectable data representation aligned across Lean, TypeS
 Code generation is not prohibited. A generated TypeScript view may later serve debugging, static specialization, performance, or deployment packaging, but it remains a derived artifact. It may replace interpretation only after explicit equivalence and replay evidence and must never become the semantic authority by construction.
 
 Milestone 0 first exercised the hosting boundary with an explicit sequential model. The approved first ingestion slice now captures the actual BPMN XML bytes and hash, imports a private structural view with isolated `bpmn-moddle@10.0.0`, compiles only the sequential Process to source/profile/compiler-identified project IR, and supplies that data to both the pure core and Temporal. A general BPMN source model/compiler, full CMOF binding, and deployment store remain explicitly absent.
+
+## MVP feasibility conclusion
+
+The bounded sequential User Task slice demonstrates that the architecture is technically feasible as a fast development loop: exact BPMN bytes can be admitted once, CIB and Lean can remain independent semantic references, the production TypeScript transition system can stay pure, and one generic Temporal Workflow can host its state through replay-safe versioned IR. The maintained batch amortizes the expensive reference and host boundaries rather than multiplying their startup cost per witness.
+
+This result validates the separation of responsibilities, not the scalability of the semantic model to all BPMN. The current control state has no general token, scope, race, effect, or variable model; the compiler recognizes one topology; Lean’s batch emitter uses compiled-in capsule scenarios; and Temporal has not yet exercised Activities, timers, cancellation, Worker restart, or Continue-As-New. The evidence therefore supports advancing one separating semantic capsule at a time while retaining the same pipeline, not broadening the public claim.
+
+The next feature should be selected for the distinct semantic and representation risk it exposes. General infrastructure is introduced only when that feature provides a second real consumer and a mutation or counterexample capable of distinguishing competing designs. The current recommendation and exact resume point belong in the [plan](PLAN.md).
 
 ## Milestone 0 delivery boundary
 

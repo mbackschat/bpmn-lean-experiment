@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft; adopted for the bounded interaction spike on 2026-07-24.**
+**Evidence-closed draft for the bounded interaction slice on 2026-07-24; not an immutable compatibility profile.**
 
 This project-owned semantic specification closes only the interaction boundary around the existing sequential `None Start Event → User Task → None End Event` model. It does not approve general human-task lifecycle semantics, people assignment, authorization, forms, variables, Search Attributes, a task inbox, multi-instance execution, or a broader CIB compatibility claim.
 
@@ -100,7 +100,7 @@ Claiming, delegation, assignment, actor identity, authorization, completion vari
 
 ## IR and Lean consequence
 
-The XML compiler gains a second concrete consumer by preserving the optional BPMN User Task name in a new sequential executable-IR version. The prior IR version remains readable only where required for retained history and compatibility tests. This does not generalize the partial CMOF manifest or introduce a universal BPMN IR.
+The existing sequential XML compiler gains a second semantic use of the CMOF-derived `FlowElement.name` property by preserving the optional BPMN User Task name in a new executable-IR version. This is not a second structurally distinct compiler consumer. The prior IR version remains readable only where required for retained history and compatibility tests. The change does not generalize the partial CMOF manifest or introduce a universal BPMN IR.
 
 Lean keeps a small executable model separate from runtime instances. The model gains the reviewed User Task definition metadata; runtime state gains the semantic activation ordinal; observations gain the exact open-task projection for the new scenario.
 
@@ -108,10 +108,21 @@ The capsule must retain separate Lean claim lanes:
 
 1. starting creates the exact active task occurrence;
 2. matching full task-instance completion terminates the Process;
-3. a wrong activation ordinal is rejected with state unchanged;
-4. matching `elementId` alone is not sufficient, demonstrated by the same wrong-ordinal witness.
+3. any mismatch in Process instance, BPMN element, or activation ordinal is rejected with state unchanged;
+4. wrong activation is retained as a named corollary of that general identity law;
+5. matching `elementId` alone is not sufficient, demonstrated by the same wrong-ordinal witness.
 
 These theorems are properties of the Lean account. CIB correspondence and Temporal refinement remain separately tested.
+
+## Closure interpretation
+
+The exact claim established by this capsule is bounded: for the one content-addressed sequential model and draft CIB Seven profile, the semantic task occurrence `(Instance_1, UserTask_Approve, 1)` is discoverable from committed state; completing that exact occurrence commits and completes the Process; wrong-activation and stale completions are rejected without changing committed state; Lean, the independent TypeScript semantic core, and pinned CIB Seven produce the same canonical results for the retained witnesses; and Temporal Query/Update hosting preserves those results under the tested duplicate-delivery and replay histories.
+
+The closest unsupported claim is repeated or simultaneous activation of the same BPMN User Task definition. The current model creates only activation `1`; the checked wrong-ordinal witness proves that element identity alone is insufficient, but it does not establish how ordinals are allocated across loops, multi-instance execution, nested scopes, migration, or Continue-As-New.
+
+The principal common-mode risk is a shared interpretation or observation defect. All semantic targets could agree because the capsule omitted a relevant BPMN fact or because the canonical projection hid it. The answer-free scenarios, independent live CIB execution, checked non-law, source/profile identities, exact task-projection mutation, and retained Temporal histories reduce that risk but do not eliminate it. In particular, Lean currently executes content-identified capsule data compiled into its module rather than decoding the pipeline’s scenario and executable-IR JSON; this is a known correspondence gap, not a general input equivalence proof.
+
+The result supports continuing the architecture: Lean supplied a reusable full-occurrence rejection law and forced definition identity, runtime occurrence identity, command admission, and host identity apart; the TypeScript core remained independently executable; and Temporal added durable Query/Update transport without owning task semantics. It does not yet justify a general BPMN IR, a general Lean transport, a global task inbox, or any conformance claim.
 
 ## Separating witnesses
 

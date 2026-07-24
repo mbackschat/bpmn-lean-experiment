@@ -8,4 +8,4 @@ A capsule does not own implementation sequencing, live completion status, test p
 
 | Capsule | Status and scope |
 |---|---|
-| [User Task interaction](USER-TASK-INTERACTION.md) | Draft adopted spike for one structured User Task occurrence, exact discovery projection, and exact completion admission |
+| [User Task interaction](USER-TASK-INTERACTION.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |

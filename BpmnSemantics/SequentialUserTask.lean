@@ -468,6 +468,32 @@ theorem exact_task_completion_terminates :
         internalStepBoundExceeded := false } := by
   decide
 
+/-- A completion whose submitted task occurrence differs from the active occurrence is rejected without state change. -/
+theorem task_identity_mismatch_is_rejected
+    (definition : Model) (instanceId : SemanticId)
+    (activeActivation : Nat) (completionCommandId : SemanticId)
+    (submittedTaskId : UserTaskInstanceId) (logicalTimeMs : Nat)
+    (h :
+      submittedTaskId.processInstanceId ≠ instanceId ∨
+      submittedTaskId.elementId ≠ definition.userTaskId ∨
+      submittedTaskId.activation ≠ activeActivation) :
+    applyStimulus internalClosureLimit definition
+        { control := .waitingUserTask instanceId activeActivation
+          logicalTimeMs }
+        (.completeUserTaskInstance completionCommandId
+          submittedTaskId) =
+      { outcome := .rejected
+        state :=
+          { control := .waitingUserTask instanceId activeActivation
+            logicalTimeMs }
+        microtrace := []
+        internalStepBoundExceeded := false } := by
+  rcases h with processMismatch | remainingMismatch
+  · simp [applyStimulus, admit, processMismatch]
+  · rcases remainingMismatch with elementMismatch | activationMismatch
+    · simp [applyStimulus, admit, elementMismatch]
+    · simp [applyStimulus, admit, activationMismatch]
+
 /-- A command with the wrong activation ordinal is rejected for any identifiers and model. -/
 theorem wrong_activation_is_rejected
     (definition : Model) (instanceId : SemanticId)
@@ -486,8 +512,13 @@ theorem wrong_activation_is_rejected
           { control := .waitingUserTask instanceId activeActivation
             logicalTimeMs }
         microtrace := []
-        internalStepBoundExceeded := false } := by
-  simp [applyStimulus, admit, h]
+        internalStepBoundExceeded := false } :=
+  task_identity_mismatch_is_rejected
+    definition instanceId activeActivation completionCommandId
+      { processInstanceId := instanceId
+        elementId := definition.userTaskId
+        activation := submittedActivation }
+      logicalTimeMs (Or.inr (Or.inr h))
 
 /-- Matching the BPMN element ID alone is not sufficient task-instance identity. -/
 theorem element_id_alone_is_insufficient :

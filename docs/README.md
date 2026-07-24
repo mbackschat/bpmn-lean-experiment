@@ -12,6 +12,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Run or inspect BPMN XML ingestion | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md), [TESTING.md](TESTING.md), and the [source package guide](../packages/bpmn-source/README.md) |
 | Implement or review User Task interaction | [User Task interaction capsule](capsules/USER-TASK-INTERACTION.md), [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md), and [TESTING.md](TESTING.md) |
 | Run or inspect differential comparison | [TESTING.md](TESTING.md) and the [comparator guide](../packages/differential/README.md) |
+| Understand assurance roles, Lean’s value, or MVP feasibility | [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the [implementation map](IMPLEMENTATION-MAP.md), and the active [semantic capsule](capsules/README.md) |
 | Change a shared wire format | [Shared wire contracts](../contracts/README.md), the applicable [semantic capsule](capsules/README.md), and [TESTING.md](TESTING.md) |
 | Change project mission or semantic authority | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) and [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) |
 | Change BPMN import or semantic meaning | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) and the [research index](research/README.md) |
@@ -27,7 +28,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
 | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md) | Contributors and owner; adopted exact parser dependency, source-preservation contract, security boundary, bounded CMOF use, license graph, and first implementation slice |
 | [capsules/README.md](capsules/README.md) | Semantic contributors; registry and ownership boundary for project-authored semantic capsules |
-| [capsules/USER-TASK-INTERACTION.md](capsules/USER-TASK-INTERACTION.md) | Semantic contributors; adopted draft task identity, projection, exact completion admission, witnesses, laws, and exclusions |
+| [capsules/USER-TASK-INTERACTION.md](capsules/USER-TASK-INTERACTION.md) | Semantic contributors; evidence-closed draft task identity, projection, exact completion admission, witnesses, laws, closure interpretation, and exclusions |
 | [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md) | Adapter contributors and reviewers; Temporal replay, execution, messaging, failure, concurrency, versioning, and BPMN-boundary research |
 | [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) | Semantic and adapter assurance contributors; question-driven formal-methods toolbox, behavioral relations, candidate experiments, and evidence limits |
 | [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) | Researchers and performance contributors; pristine evidence lane, experimental source branches, execution profiles, acceleration limits, and shadow-equivalence gate |
@@ -37,7 +38,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [experiments/README.md](experiments/README.md) | Contributors running bounded risk spikes; experiment lifecycle, required evidence, and registry |
 | [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md) | Semantic architects; executable source/IR, scope, join-provenance, and command-closure discriminators |
 | [experiments/BPMN-XML-INGESTION-SPIKE.md](experiments/BPMN-XML-INGESTION-SPIKE.md) | Import contributors; read-only published-parser probe against the current fixture and 21 MIWG reference models |
-| [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, authority model, initial boundary, and success criteria |
+| [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, authority and assurance roles, Lean value and limits, interpreter architecture, MVP feasibility, initial boundary, and success criteria |
 | [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md) | Contributors and resuming agents; durable walking-skeleton scope, runner contracts, performance budgets, work packages, and resume protocol |
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
 | [PLAN.md](PLAN.md) | Resuming agents and owners; current checkpoint, candidate profile decisions, next steps, and stop conditions |

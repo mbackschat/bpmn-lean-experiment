@@ -3,7 +3,7 @@ import BpmnSemantics.SequentialUserTask
 
 /-! # BpmnSemantics.UserTaskInteractionConformance — task-occurrence interaction locks
 
-These checks close the structured User Task occurrence, exact completion, wrong-activation, stale-completion, and state-derived interaction projection lanes for the bounded interaction capsule.
+These checks close the structured User Task occurrence, exact completion, full-identity mismatch, wrong-activation, stale-completion, and state-derived interaction projection lanes for the bounded interaction capsule.
 -/
 
 namespace BpmnSemantics.UserTaskInteractionConformance
@@ -141,6 +141,24 @@ example :
         internalStepBoundExceeded := false } :=
   wrong_activation_is_rejected
     model ⟨"Instance_1"⟩ 1 2 ⟨"wrong-activation"⟩ 0 (by decide)
+
+example :
+    applyStimulus 4 model
+        { control := .waitingUserTask ⟨"Instance_1"⟩ 1
+          logicalTimeMs := 0 }
+        (.completeUserTaskInstance ⟨"wrong-process-instance"⟩
+          { exactTaskId with
+            processInstanceId := ⟨"Other_Instance"⟩ }) =
+      { outcome := .rejected
+        state :=
+          { control := .waitingUserTask ⟨"Instance_1"⟩ 1
+            logicalTimeMs := 0 }
+        microtrace := []
+        internalStepBoundExceeded := false } :=
+  task_identity_mismatch_is_rejected
+    model ⟨"Instance_1"⟩ 1 ⟨"wrong-process-instance"⟩
+      { exactTaskId with processInstanceId := ⟨"Other_Instance"⟩ } 0
+      (by simp [exactTaskId])
 
 example :
     let wrongTaskId := { exactTaskId with activation := 2 }
