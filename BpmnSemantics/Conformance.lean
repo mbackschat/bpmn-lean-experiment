@@ -47,7 +47,10 @@ def contractScenario : Scenario :=
       , .enabledInteractions
       , .logicalTime ]
     provenance :=
-      { normativeRefs := ["BPMN 2.0.2 §13.2", "BPMN 2.0.2 §13.3"]
+      { normativeRefs :=
+          [ "BPMN 2.0.2 §10.7.3"
+          , "BPMN 2.0.2 §13.3.2"
+          , "BPMN 2.0.2 §13.3.3" ]
         cibRevision := "834a9874760de8a0107f7c1b32806e37f17fb017"
         cibRefs :=
           [ "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/UserTaskTest.java#testTaskPropertiesNotNull"

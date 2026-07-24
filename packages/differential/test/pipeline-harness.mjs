@@ -21,6 +21,7 @@ import {
 import {
   DifferentialTarget,
   compareTargetResults,
+  requireScenarioBinding,
 } from "../dist/index.js";
 import { TemporalScenarioRunner } from "../../temporal-adapter/dist/index.js";
 import { runCommand } from "../../../scripts/run-command.mjs";
@@ -205,7 +206,7 @@ async function runCibTargets(scenarios, inputPath, outputPath) {
   };
 }
 
-async function runLeanTargets(expectedIds) {
+async function runLeanTargets(scenarios) {
   const started = performance.now();
   const execution = await runProcess(
     "lake",
@@ -218,18 +219,27 @@ async function runLeanTargets(expectedIds) {
     .map((line) => JSON.parse(line));
   const indexedRecords = indexExactRecords(
     records,
-    expectedIds,
+    scenarios.map(({ id }) => id),
     "Lean",
   );
   return {
     results: new Map(
-      [...indexedRecords].map(([scenarioId, record]) => {
+      scenarios.map((scenario) => {
+        const record = indexedRecords.get(scenario.id);
+        if (record === undefined) {
+          throw new TypeError(`Lean omitted scenario ${scenario.id}`);
+        }
+        requireScenarioBinding(
+          DifferentialTarget.Lean,
+          scenario,
+          record.scenario,
+        );
         if (record.result === undefined) {
           throw new TypeError(
-            `Lean result for ${scenarioId} has no canonical result`,
+            `Lean result for ${scenario.id} has no canonical result`,
           );
         }
-        return [scenarioId, record.result];
+        return [scenario.id, record.result];
       }),
     ),
     totalMs: elapsedMs(started),
@@ -597,7 +607,7 @@ export async function runPipelineCases(cases) {
         cibInputPath,
         cibOutputPath,
       ),
-      runLeanTargets(contexts.map(({ scenario }) => scenario.id)),
+      runLeanTargets(contexts.map(({ scenario }) => scenario)),
       runTemporalTargets(runner, contexts),
     ]);
     targets = { cib, lean, core, temporal };
