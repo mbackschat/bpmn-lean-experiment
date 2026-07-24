@@ -1,0 +1,654 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/scenario.schema.json",
+  "title": "BPMN Lean neutral scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "traceSchemaVersion",
+    "id",
+    "profile",
+    "bpmn",
+    "stimuli",
+    "observations",
+    "provenance",
+    "calibration"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        "0.1.0",
+        "0.2.0"
+      ]
+    },
+    "traceSchemaVersion": {
+      "enum": [
+        "0.1.0",
+        "0.2.0"
+      ]
+    },
+    "id": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "profile": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "bpmn": {
+      "$ref": "#/$defs/bpmnResource"
+    },
+    "stimuli": {
+      "type": "array",
+      "minItems": 2
+    },
+    "observations": {
+      "type": "array",
+      "uniqueItems": true
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "calibration": {
+      "$ref": "#/$defs/calibrationBase"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": "0.1.0"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "traceSchemaVersion": {
+            "const": "0.1.0"
+          },
+          "profile": {
+            "const": "cibseven-2.2.0-spike.1"
+          },
+          "stimuli": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/startProcess"
+              },
+              {
+                "$ref": "#/$defs/completeUserTask"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "observations": {
+            "const": [
+              "deployment",
+              "commandResults",
+              "processStatus",
+              "activeWaits",
+              "enabledStimuli",
+              "logicalTime"
+            ]
+          },
+          "calibration": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/calibrationBase"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "expectedTrace": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/canonicalObservationV1"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "traceSchemaVersion": {
+            "const": "0.2.0"
+          },
+          "profile": {
+            "const": "cibseven-2.2.0-spike.2"
+          },
+          "stimuli": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/startProcess"
+              }
+            ],
+            "items": {
+              "$ref": "#/$defs/completeUserTaskInstance"
+            },
+            "minItems": 1
+          },
+          "observations": {
+            "const": [
+              "deployment",
+              "commandResults",
+              "processStatus",
+              "activeWaits",
+              "openUserTasks",
+              "enabledInteractions",
+              "logicalTime"
+            ]
+          },
+          "calibration": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/calibrationBase"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "expectedTrace": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/canonicalObservationV2"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commandId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bpmnResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "relativePath",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "relativePath": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "normativeRefs",
+        "cibRevision",
+        "cibRefs"
+      ],
+      "properties": {
+        "normativeRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "cibRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "cibRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "semanticOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "outcome"
+      ],
+      "properties": {
+        "kind": {
+          "const": "semantic"
+        },
+        "outcome": {
+          "enum": [
+            "committed",
+            "rolledBack",
+            "rejected",
+            "semanticFailure",
+            "unsupported"
+          ]
+        }
+      }
+    },
+    "scenarioOutcome": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/semanticOutcome"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "harnessFailure"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "infrastructureFailure"
+            }
+          }
+        }
+      ]
+    },
+    "calibrationBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "expectedOutcome",
+        "expectedTrace"
+      ],
+      "properties": {
+        "status": {
+          "const": "calibrated"
+        },
+        "expectedOutcome": {
+          "$ref": "#/$defs/semanticOutcome"
+        },
+        "expectedTrace": {
+          "type": "array"
+        }
+      }
+    },
+    "startProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "processId",
+        "instanceId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "startProcess"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "processId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "completeUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "elementId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "completeUserTask"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "userTaskInstanceId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processInstanceId",
+        "elementId",
+        "activation"
+      ],
+      "properties": {
+        "processInstanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "activation": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "completeUserTaskInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "taskId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "completeUserTaskInstance"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "taskId": {
+          "$ref": "#/$defs/userTaskInstanceId"
+        }
+      }
+    },
+    "enabledCompleteUserTaskInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "taskId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "completeUserTaskInstance"
+        },
+        "taskId": {
+          "$ref": "#/$defs/userTaskInstanceId"
+        }
+      }
+    },
+    "activeWait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "kind",
+        "multiplicity"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "kind": {
+          "const": "userTask"
+        },
+        "multiplicity": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "openUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/userTaskInstanceId"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "const": "active"
+        }
+      }
+    },
+    "deploymentObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "outcome"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deployment"
+        },
+        "outcome": {
+          "enum": [
+            "committed",
+            "unsupported"
+          ]
+        }
+      }
+    },
+    "commandObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "outcome"
+      ],
+      "properties": {
+        "kind": {
+          "const": "command"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "outcome": {
+          "enum": [
+            "committed",
+            "rolledBack",
+            "rejected",
+            "semanticFailure",
+            "unsupported"
+          ]
+        }
+      }
+    },
+    "stateObservationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "instanceId",
+        "status",
+        "activeWaits",
+        "enabledStimuli",
+        "logicalTimeMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "state"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "status": {
+          "enum": [
+            "notStarted",
+            "running",
+            "completed"
+          ]
+        },
+        "activeWaits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/activeWait"
+          }
+        },
+        "enabledStimuli": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/completeUserTask"
+          }
+        },
+        "logicalTimeMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "stateObservationV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "instanceId",
+        "status",
+        "activeWaits",
+        "openUserTasks",
+        "enabledInteractions",
+        "logicalTimeMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "state"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "status": {
+          "enum": [
+            "notStarted",
+            "running",
+            "completed"
+          ]
+        },
+        "activeWaits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/activeWait"
+          }
+        },
+        "openUserTasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openUserTask"
+          }
+        },
+        "enabledInteractions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/enabledCompleteUserTaskInstance"
+          }
+        },
+        "logicalTimeMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "canonicalObservationV1": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/deploymentObservation"
+        },
+        {
+          "$ref": "#/$defs/commandObservation"
+        },
+        {
+          "$ref": "#/$defs/stateObservationV1"
+        }
+      ]
+    },
+    "canonicalObservationV2": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/deploymentObservation"
+        },
+        {
+          "$ref": "#/$defs/commandObservation"
+        },
+        {
+          "$ref": "#/$defs/stateObservationV2"
+        }
+      ]
+    },
+    "canonicalResultV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "trace"
+      ],
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/scenarioOutcome"
+        },
+        "trace": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/canonicalObservationV1"
+          }
+        }
+      }
+    },
+    "canonicalResultV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "trace"
+      ],
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/scenarioOutcome"
+        },
+        "trace": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/canonicalObservationV2"
+          }
+        }
+      }
+    }
+  }
+}

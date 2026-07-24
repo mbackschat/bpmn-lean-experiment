@@ -11,7 +11,8 @@ For each semantic capsule:
 3. implement the semantic root rather than a case-specific patch;
 4. rerun the focused target;
 5. run the complete applicable gate;
-6. update [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) with the exact semantic, proof, and external-evidence boundary.
+6. perform the epistemic-closure review required by [CLAUDE.md](../CLAUDE.md#milestone-and-capsule-reflection);
+7. update [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) with the exact semantic, proof, and external-evidence boundary.
 
 The first scaffold capsule followed this workflow: the conformance module imported an absent contract, the red run failed on that missing semantic owner, and the green run passed only after the outcome vocabulary was implemented.
 
@@ -41,13 +42,21 @@ Retained CIB observations and Temporal histories are immutable. When replay disa
 git status --short
 ```
 
-The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD and CMOF facts, Lean build, executable contract checks, the BPMN source/compiler boundary, the pure TypeScript semantic core, the embedded CIB Seven oracle tests, the pure comparator, the full exact-source M0 pipeline, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
+The verification script checks profile, scenario, and shared-schema JSON syntax; profile/scenario agreement; calibrated outcome/trace presence; BPMN content hash and XML; locally available official XSD and CMOF facts; Lean build, executable contract checks, and retained-result serialization; the BPMN source/compiler boundary; the pure TypeScript semantic core; the embedded CIB Seven oracle tests; the pure comparator; timeout process-group cleanup; the prepared exact-source M0 pipeline; and whitespace. Full Draft 2020-12 schema evaluation is not yet a mandatory gate. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
 
 ## User Task interaction contract and CIB evidence
 
-The approved contract and witnesses are in [USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md](USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md). The versioned draft profile and neutral scenario reuse the exact Milestone 0 BPMN bytes while adding a structured semantic task occurrence, BPMN task name, exact completion stimulus, and `openUserTasks` observation.
+The adopted draft contract and witnesses are in the [User Task interaction semantic capsule](capsules/USER-TASK-INTERACTION.md). The versioned draft profile and neutral scenario reuse the exact Milestone 0 BPMN bytes while adding a structured semantic task occurrence, BPMN task name, exact completion stimulus, and `openUserTasks` observation.
 
-The intended red CIB run failed at Java test compilation because `UserTaskInstanceId`, `OpenUserTask`, the lifecycle state, and the exact completion stimulus did not exist. The green runner uses public `TaskService` queries, never exposes the generated CIB task ID as a comparison key, completes the exact semantic occurrence, rejects the correct BPMN element with activation ordinal `2`, retains the active task unchanged after rejection, and cleans both runs. The focused CIB gate completed in 6.24 seconds after the new witness became green.
+The initial intended red CIB run failed at Java test compilation because `UserTaskInstanceId`, `OpenUserTask`, the lifecycle state, and the exact completion stimulus did not exist. A later red guard required the absent command-ID-free `CompleteUserTaskInstanceInteraction`; it exposed that the earlier `enabledStimuli` projection depended on the scenario’s future commands. The green runner now uses public `TaskService` queries, never exposes the generated CIB task ID as a comparison key, derives enabled interactions only from current open tasks, completes the exact semantic occurrence, rejects the correct BPMN element with activation ordinal `2`, rejects a stale occurrence after completion, preserves state after both rejections, and cleans all three runs. Equality of the successful and wrong-activation pre-command states is the executable common-mode-failure guard.
+
+The interaction Lean lane began red by importing absent exact-task and interaction types. The green account adds semantic activation ordinal, exact completion admission, state-derived open tasks and enabled interactions, and independent expected traces for successful, wrong-activation, and stale-completion scenarios. It proves exact completion for the bounded model, proves wrong-activation rejection and state preservation for arbitrary model/instance/activation inputs under the explicit unequal-activation hypothesis, and checks that matching only `elementId` is insufficient.
+
+The scenario artifacts now carry separate document and trace schema versions plus explicit expected outcomes. Draft 2020-12 schemas cover both profile documents, both scenario generations, and both canonical-result generations. The current gate checks JSON syntax and direct artifact invariants only; mandatory schema evaluation and its mutation guard await approval of an exact direct validator dependency.
+
+The differential harness now uses case-owned paths, Lean emitter identity, Workflow prefix, retained histories, wait-prefix length, and seeded mutation. Prepared mode removes duplicate builds from the full repository gate. The timeout helper owns a POSIX process group, sends `SIGTERM`, escalates to `SIGKILL` after a bounded grace period, waits for closure before returning, and has a negative witness whose descendant would otherwise escape and write a marker.
+
+Performance evidence must distinguish real time, aggregate user CPU, system time, build mode, and the harness-reported phases. Discard measurements taken under known unrelated resource saturation. Record the latest checkpoint numbers in [PLAN.md](PLAN.md), not in this stable testing guide.
 
 ## BPMN source ingestion and CMOF facts
 

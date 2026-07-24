@@ -57,9 +57,12 @@ async function buildPipeline() {
   ]);
 }
 
+const isPrebuilt = process.env.BPMN_PIPELINE_PREBUILT === "1";
 const buildStarted = performance.now();
-await buildPipeline();
-const buildMs = performance.now() - buildStarted;
+if (!isPrebuilt) {
+  await buildPipeline();
+}
+const buildMs = isPrebuilt ? 0 : performance.now() - buildStarted;
 
 const testRun = await runProjectCommand(
   process.execPath,
@@ -72,6 +75,7 @@ const testRun = await runProjectCommand(
     env: {
       ...process.env,
       BPMN_PIPELINE_BUILD_MS: buildMs.toFixed(3),
+      BPMN_PIPELINE_BUILD_MODE: isPrebuilt ? "prebuilt" : "measured",
       BPMN_JAVA_HOME: javaHome,
     },
     timeoutMs: 45_000,

@@ -6,4 +6,6 @@ The [Milestone 0 sequential User Task scenario](m0-sequential-user-task/README.m
 
 The [User Task discovery and completion scenario](m1-user-task-discovery-completion/README.md) reuses that exact BPMN resource and adds the first structured semantic task occurrence and exact completion command.
 
+A scenario declares both its document `schemaVersion` and independent `traceSchemaVersion`. The [shared wire contracts](../contracts/README.md) own serialization shape; the selected semantic profile owns meaning.
+
 A scenario must be consumable with the same meaning by the CIB Seven driver, Lean interpreter, and pure TypeScript semantic core. It must not expose CIB database entities, Lean constructors, Temporal histories, or other host-specific internals unless an approved profile explicitly makes them observable.

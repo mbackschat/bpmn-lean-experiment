@@ -102,6 +102,7 @@ export type BpmnResource = Readonly<{
 
 export type Scenario = Readonly<{
   schemaVersion: string;
+  traceSchemaVersion?: string;
   id: string;
   profile: string;
   bpmn: BpmnResource;

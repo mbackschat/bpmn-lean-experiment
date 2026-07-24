@@ -21,23 +21,41 @@ import { TemporalScenarioRunner } from "../../temporal-adapter/dist/index.js";
 import { runCommand } from "../../../scripts/run-command.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const scenarioPath = path.join(
-  projectRoot,
-  "scenarios/m0-sequential-user-task/scenario.json",
-);
-const bpmnPath = path.join(
-  projectRoot,
-  "scenarios/m0-sequential-user-task/process.bpmn",
-);
-const retainedHistoryPath = path.join(
-  projectRoot,
-  "packages/temporal-adapter/test/fixtures/m0-sequential-user-task.history.json",
-);
 const temporalCacheDirectory = path.join(
   projectRoot,
   ".cache/temporal-cli",
 );
 const buildMs = Number.parseFloat(process.env.BPMN_PIPELINE_BUILD_MS ?? "");
+const buildMode = process.env.BPMN_PIPELINE_BUILD_MODE;
+
+function mutateRunningStatus(result) {
+  const injectedObservation = result.trace.find(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Running,
+  );
+  if (injectedObservation === undefined) {
+    throw new Error("calibrated running state is required");
+  }
+  injectedObservation.status = ProcessStatus.Completed;
+}
+
+export const pipelineCases = Object.freeze([
+  Object.freeze({
+    id: "m0-sequential-user-task",
+    scenarioRelativePath:
+      "scenarios/m0-sequential-user-task/scenario.json",
+    bpmnRelativePath:
+      "scenarios/m0-sequential-user-task/process.bpmn",
+    retainedHistoryRelativePaths: Object.freeze([
+      "packages/temporal-adapter/test/fixtures/m0-sequential-user-task.history.json",
+    ]),
+    leanExecutable: "emitSequentialUserTaskResult",
+    workflowIdPrefix: "m0-pipeline",
+    expectedWaitTraceLength: 3,
+    injectMutation: mutateRunningStatus,
+  }),
+]);
 
 function elapsedMs(started) {
   return performance.now() - started;
@@ -62,7 +80,7 @@ function canonicalCibResult(cibResult) {
   };
 }
 
-async function runCibTarget(outputPath) {
+async function runCibTarget(scenarioPath, outputPath) {
   const started = performance.now();
   await runProcess(
     "runners/cibseven/mvnw",
@@ -85,11 +103,11 @@ async function runCibTarget(outputPath) {
   return { result, totalMs: elapsedMs(started) };
 }
 
-async function runLeanTarget() {
+async function runLeanTarget(executable) {
   const started = performance.now();
   const execution = await runProcess(
     "lake",
-    ["exe", "emitSequentialUserTaskResult"],
+    ["exe", executable],
     10_000,
   );
   return {
@@ -106,241 +124,270 @@ async function runCoreTarget(scenario, executableIr) {
   };
 }
 
-async function runTemporalTarget(runner, scenario, executableIr) {
+async function runTemporalTarget(
+  runner,
+  scenario,
+  executableIr,
+  workflowIdPrefix,
+) {
   const started = performance.now();
+  const workflowIds = [
+    `${workflowIdPrefix}-primary`,
+    `${workflowIdPrefix}-isolation`,
+  ];
   const [primary, isolation] = await Promise.all([
     runner.runScenario(
       scenario,
       executableIr,
       {
-        workflowId: "m0-pipeline-primary",
+        workflowId: workflowIds[0],
       },
     ),
     runner.runScenario(
       scenario,
       executableIr,
       {
-        workflowId: "m0-pipeline-isolation",
+        workflowId: workflowIds[1],
       },
     ),
   ]);
   return {
     primary,
     isolation,
+    workflowIds,
     totalMs: elapsedMs(started),
   };
 }
 
-export async function runMilestoneZeroPipeline() {
-    if (!Number.isFinite(buildMs)) {
-      throw new TypeError("pipeline build timing is required");
-    }
-    const scenario = await readJson(scenarioPath);
-    const ingestionStarted = performance.now();
-    const compilation = await compileSequentialUserTaskBpmn({
-      bytes: await readFile(bpmnPath),
-      sourceId: scenario.bpmn.id,
-      expectedSha256: scenario.bpmn.sha256,
-      semanticProfile: scenario.profile,
-      limits: {
-        maxBytes: 1024 * 1024,
-        parserDeadlineMs: 1_000,
-      },
-    });
-    if (compilation.status !== BpmnCompilationStatus.Accepted) {
-      throw new Error(
-        `BPMN compilation was rejected: ${JSON.stringify(compilation.diagnostics)}`,
-      );
-    }
-    const executableIr = compilation.executableIr;
-    const ingestionMs = elapsedMs(ingestionStarted);
-    const retainedHistory = await readJson(retainedHistoryPath);
-    const temporaryDirectory = await mkdtemp(
-      path.join(tmpdir(), "bpmn-differential-"),
+export async function runPipelineCase(pipelineCase) {
+  if (!Number.isFinite(buildMs)) {
+    throw new TypeError("pipeline build timing is required");
+  }
+  if (buildMode !== "measured" && buildMode !== "prebuilt") {
+    throw new TypeError("pipeline build mode is required");
+  }
+  const scenarioPath = path.join(
+    projectRoot,
+    pipelineCase.scenarioRelativePath,
+  );
+  const bpmnPath = path.join(
+    projectRoot,
+    pipelineCase.bpmnRelativePath,
+  );
+  const scenario = await readJson(scenarioPath);
+  const ingestionStarted = performance.now();
+  const compilation = await compileSequentialUserTaskBpmn({
+    bytes: await readFile(bpmnPath),
+    sourceId: scenario.bpmn.id,
+    expectedSha256: scenario.bpmn.sha256,
+    semanticProfile: scenario.profile,
+    limits: {
+      maxBytes: 1024 * 1024,
+      parserDeadlineMs: 1_000,
+    },
+  });
+  if (compilation.status !== BpmnCompilationStatus.Accepted) {
+    throw new Error(
+      `BPMN compilation was rejected: ${JSON.stringify(compilation.diagnostics)}`,
     );
-    const cibOutputPath = path.join(temporaryDirectory, "cib-result.json");
-    const warmStarted = performance.now();
-    let runner;
-    let startupMs = 0;
-    let scenarioExecutionMs = 0;
-    let observationProjectionMs = 0;
-    let comparisonMs = 0;
-    let replayMs = 0;
-    let cleanupMs = 0;
-    let cibTarget;
-    let leanTarget;
-    let coreTarget;
-    let temporalTarget;
-    let comparison;
-    let injectedComparison;
-    let revision;
+  }
+  const executableIr = compilation.executableIr;
+  const ingestionMs = elapsedMs(ingestionStarted);
+  const retainedHistories = await Promise.all(
+    pipelineCase.retainedHistoryRelativePaths.map(
+      (relativePath) => readJson(path.join(projectRoot, relativePath)),
+    ),
+  );
+  const temporaryDirectory = await mkdtemp(
+    path.join(tmpdir(), "bpmn-differential-"),
+  );
+  const cibOutputPath = path.join(temporaryDirectory, "cib-result.json");
+  const warmStarted = performance.now();
+  let runner;
+  let startupMs = 0;
+  let scenarioExecutionMs = 0;
+  let observationProjectionMs = 0;
+  let comparisonMs = 0;
+  let replayMs = 0;
+  let cleanupMs = 0;
+  let cibTarget;
+  let leanTarget;
+  let coreTarget;
+  let temporalTarget;
+  let comparison;
+  let injectedComparison;
+  let revision;
 
-    try {
-      const startupStarted = performance.now();
-      runner = await TemporalScenarioRunner.create({
-        cliVersion: "v1.8.1",
-        downloadDirectory: temporalCacheDirectory,
-      });
-      startupMs = elapsedMs(startupStarted);
+  try {
+    const startupStarted = performance.now();
+    runner = await TemporalScenarioRunner.create({
+      cliVersion: "v1.8.1",
+      downloadDirectory: temporalCacheDirectory,
+    });
+    startupMs = elapsedMs(startupStarted);
 
-      const scenarioStarted = performance.now();
-      [cibTarget, leanTarget, coreTarget, temporalTarget] = await Promise.all([
-        runCibTarget(cibOutputPath),
-        runLeanTarget(),
-        runCoreTarget(scenario, executableIr),
-        runTemporalTarget(runner, scenario, executableIr),
-      ]);
-      scenarioExecutionMs = elapsedMs(scenarioStarted);
+    const scenarioStarted = performance.now();
+    [cibTarget, leanTarget, coreTarget, temporalTarget] = await Promise.all([
+      runCibTarget(scenarioPath, cibOutputPath),
+      runLeanTarget(pipelineCase.leanExecutable),
+      runCoreTarget(scenario, executableIr),
+      runTemporalTarget(
+        runner,
+        scenario,
+        executableIr,
+        pipelineCase.workflowIdPrefix,
+      ),
+    ]);
+    scenarioExecutionMs = elapsedMs(scenarioStarted);
 
-      const projectionStarted = performance.now();
-      const targetResults = {
-        cibSeven: canonicalCibResult(cibTarget.result),
-        lean: leanTarget.result,
-        semanticCore: coreTarget.result,
-        temporal: temporalTarget.primary.result,
-      };
-      observationProjectionMs = elapsedMs(projectionStarted);
+    const projectionStarted = performance.now();
+    const targetResults = {
+      cibSeven: canonicalCibResult(cibTarget.result),
+      lean: leanTarget.result,
+      semanticCore: coreTarget.result,
+      temporal: temporalTarget.primary.result,
+    };
+    observationProjectionMs = elapsedMs(projectionStarted);
 
-      const comparisonStarted = performance.now();
-      comparison = compareTargetResults(
+    const comparisonStarted = performance.now();
+    comparison = compareTargetResults(
+      {
+        target: DifferentialTarget.CibSeven,
+        result: targetResults.cibSeven,
+      },
+      [
         {
-          target: DifferentialTarget.CibSeven,
-          result: targetResults.cibSeven,
+          target: DifferentialTarget.Lean,
+          result: targetResults.lean,
         },
-        [
-          {
-            target: DifferentialTarget.Lean,
-            result: targetResults.lean,
-          },
-          {
-            target: DifferentialTarget.SemanticCore,
-            result: targetResults.semanticCore,
-          },
-          {
-            target: DifferentialTarget.Temporal,
-            result: targetResults.temporal,
-          },
-        ],
-      );
-
-      const injectedResult = structuredClone(targetResults.semanticCore);
-      const injectedObservation = injectedResult.trace.find(
-        (observation) =>
-          observation.kind === CanonicalObservationKind.State &&
-          observation.status === ProcessStatus.Running,
-      );
-      if (injectedObservation === undefined) {
-        throw new Error("calibrated running state is required");
-      }
-      injectedObservation.status = ProcessStatus.Completed;
-      injectedComparison = compareTargetResults(
         {
-          target: DifferentialTarget.CibSeven,
-          result: targetResults.cibSeven,
+          target: DifferentialTarget.SemanticCore,
+          result: targetResults.semanticCore,
         },
-        [
-          {
-            target: DifferentialTarget.SemanticCore,
-            result: injectedResult,
-          },
-        ],
-      );
-      comparisonMs = elapsedMs(comparisonStarted);
+        {
+          target: DifferentialTarget.Temporal,
+          result: targetResults.temporal,
+        },
+      ],
+    );
 
-      const replayStarted = performance.now();
-      await runner.replayHistory(
-        temporalTarget.primary.history,
-        "m0-pipeline-live-replay",
-      );
+    const injectedResult = structuredClone(targetResults.semanticCore);
+    pipelineCase.injectMutation(injectedResult);
+    injectedComparison = compareTargetResults(
+      {
+        target: DifferentialTarget.CibSeven,
+        result: targetResults.cibSeven,
+      },
+      [
+        {
+          target: DifferentialTarget.SemanticCore,
+          result: injectedResult,
+        },
+      ],
+    );
+    comparisonMs = elapsedMs(comparisonStarted);
+
+    const replayStarted = performance.now();
+    await runner.replayHistory(
+      temporalTarget.primary.history,
+      `${pipelineCase.workflowIdPrefix}-live-replay`,
+    );
+    for (const [index, retainedHistory] of retainedHistories.entries()) {
       await runner.replayHistory(
         retainedHistory,
-        "m0-pipeline-retained-replay",
+        `${pipelineCase.workflowIdPrefix}-retained-replay-${index}`,
       );
-      replayMs = elapsedMs(replayStarted);
-
-      const revisionStarted = performance.now();
-      const [commit, status] = await Promise.all([
-        runProcess("git", ["rev-parse", "HEAD"], 5_000),
-        runProcess("git", ["status", "--porcelain"], 5_000),
-      ]);
-      revision = {
-        commit: commit.stdout.trim(),
-        dirty: status.stdout.trim().length > 0,
-        collectionMs: elapsedMs(revisionStarted),
-      };
-    } finally {
-      const cleanupStarted = performance.now();
-      if (runner !== undefined) {
-        await runner.shutdown();
-      }
-      await rm(temporaryDirectory, { recursive: true, force: true });
-      cleanupMs = elapsedMs(cleanupStarted);
     }
+    replayMs = elapsedMs(replayStarted);
 
-    const warmMs = elapsedMs(warmStarted);
-    const coldMs = buildMs + warmMs;
-
-    const cibPhases = cibTarget.result.diagnostics.phases;
-    const report = {
-      schemaVersion: "0.1.0",
-      scenario: {
-        id: scenario.id,
-        profile: scenario.profile,
-        bpmnSha256: scenario.bpmn.sha256,
-        executableIr: {
-          schemaVersion: executableIr.schemaVersion,
-          kind: executableIr.kind,
-          compiler: executableIr.identity.compiler,
-        },
-        normativeRefs: scenario.provenance.normativeRefs,
-        cibRevision: scenario.provenance.cibRevision,
-      },
-      implementationRevision: revision,
-      comparison,
-      injectedDisagreement: injectedComparison,
-      phaseMs: {
-        build: buildMs,
-        ingestion: ingestionMs,
-        startup: startupMs,
-        scenarioExecution: scenarioExecutionMs,
-        observationProjection: observationProjectionMs,
-        comparison: comparisonMs,
-        replay: replayMs,
-        cleanup: cleanupMs,
-        warmTotal: warmMs,
-        coldTotal: coldMs,
-      },
-      targetMs: {
-        cibSeven: {
-          total: cibTarget.totalMs,
-          engineStartup: cibTarget.result.diagnostics.startupNanos / 1e6,
-          scenario: cibPhases.totalNanos / 1e6,
-          observationProjection:
-            (cibPhases.waitProjectionNanos +
-              cibPhases.completionProjectionNanos) /
-            1e6,
-        },
-        lean: leanTarget.totalMs,
-        semanticCore: coreTarget.totalMs,
-        temporal: temporalTarget.totalMs,
-      },
-      isolation: {
-        cibCleanup: cibTarget.result.diagnostics.cleanup,
-        temporalWorkflowIds: [
-          "m0-pipeline-primary",
-          "m0-pipeline-isolation",
-        ],
-      },
+    const revisionStarted = performance.now();
+    const [commit, status] = await Promise.all([
+      runProcess("git", ["rev-parse", "HEAD"], 5_000),
+      runProcess("git", ["status", "--porcelain"], 5_000),
+    ]);
+    revision = {
+      commit: commit.stdout.trim(),
+      dirty: status.stdout.trim().length > 0,
+      collectionMs: elapsedMs(revisionStarted),
     };
+  } finally {
+    const cleanupStarted = performance.now();
+    if (runner !== undefined) {
+      await runner.shutdown();
+    }
+    await rm(temporaryDirectory, { recursive: true, force: true });
+    cleanupMs = elapsedMs(cleanupStarted);
+  }
 
-    return {
-      report,
-      evidence: {
-        expectedWaitTrace: scenario.calibration.expectedTrace.slice(0, 3),
-        actualWaitTrace: temporalTarget.primary.waitTrace,
-        primaryTemporalResult: temporalTarget.primary.result,
-        isolationTemporalResult: temporalTarget.isolation.result,
-        cibCleanup: cibTarget.result.diagnostics.cleanup,
+  const warmMs = elapsedMs(warmStarted);
+  const coldMs = buildMode === "measured" ? buildMs + warmMs : null;
+
+  const cibPhases = cibTarget.result.diagnostics.phases;
+  const report = {
+    schemaVersion: "0.1.0",
+    buildMode,
+    scenario: {
+      id: scenario.id,
+      profile: scenario.profile,
+      bpmnSha256: scenario.bpmn.sha256,
+      executableIr: {
+        schemaVersion: executableIr.schemaVersion,
+        kind: executableIr.kind,
+        compiler: executableIr.identity.compiler,
       },
-    };
+      normativeRefs: scenario.provenance.normativeRefs,
+      cibRevision: scenario.provenance.cibRevision,
+    },
+    implementationRevision: revision,
+    comparison,
+    injectedDisagreement: injectedComparison,
+    phaseMs: {
+      build: buildMs,
+      ingestion: ingestionMs,
+      startup: startupMs,
+      scenarioExecution: scenarioExecutionMs,
+      observationProjection: observationProjectionMs,
+      comparison: comparisonMs,
+      replay: replayMs,
+      cleanup: cleanupMs,
+      warmTotal: warmMs,
+      coldTotal: coldMs,
+    },
+    targetMs: {
+      cibSeven: {
+        total: cibTarget.totalMs,
+        engineStartup: cibTarget.result.diagnostics.startupNanos / 1e6,
+        scenario: cibPhases.totalNanos / 1e6,
+        observationProjection:
+          (cibPhases.waitProjectionNanos +
+            cibPhases.completionProjectionNanos) /
+          1e6,
+      },
+      lean: leanTarget.totalMs,
+      semanticCore: coreTarget.totalMs,
+      temporal: temporalTarget.totalMs,
+    },
+    isolation: {
+      cibCleanup: cibTarget.result.diagnostics.cleanup,
+      temporalWorkflowIds: temporalTarget.workflowIds,
+    },
+  };
+
+  return {
+    report,
+    evidence: {
+      expectedWaitTrace: scenario.calibration.expectedTrace.slice(
+        0,
+        pipelineCase.expectedWaitTraceLength,
+      ),
+      actualWaitTrace: temporalTarget.primary.waitTrace,
+      primaryTemporalResult: temporalTarget.primary.result,
+      isolationTemporalResult: temporalTarget.isolation.result,
+      cibCleanup: cibTarget.result.diagnostics.cleanup,
+    },
+  };
+}
+
+export function runMilestoneZeroPipeline() {
+  return runPipelineCase(pipelineCases[0]);
 }

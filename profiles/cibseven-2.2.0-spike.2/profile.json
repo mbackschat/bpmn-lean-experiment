@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "0.2.0",
+  "schemaVersion": "0.1.0",
   "id": "cibseven-2.2.0-spike.2",
   "status": "draft",
   "claim": "user-task-interaction-calibration-only",
@@ -36,7 +36,7 @@
     "processStatus",
     "activeWaits",
     "openUserTasks",
-    "enabledStimuli",
+    "enabledInteractions",
     "logicalTime"
   ],
   "comparison": {

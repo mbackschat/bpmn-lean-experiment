@@ -1,10 +1,10 @@
-# User Task discovery and completion capsule
+# User Task interaction semantic capsule
 
 ## Status
 
-**Approved for bounded implementation on 2026-07-24.**
+**Draft; adopted for the bounded interaction spike on 2026-07-24.**
 
-This decision closes only the interaction boundary around the existing sequential `None Start Event → User Task → None End Event` model. It does not approve general human-task lifecycle semantics, people assignment, authorization, forms, variables, Search Attributes, a task inbox, multi-instance execution, or a broader CIB compatibility claim.
+This project-owned semantic specification closes only the interaction boundary around the existing sequential `None Start Event → User Task → None End Event` model. It does not approve general human-task lifecycle semantics, people assignment, authorization, forms, variables, Search Attributes, a task inbox, multi-instance execution, or a broader CIB compatibility claim.
 
 ## Question
 
@@ -20,9 +20,9 @@ The pinned CIB Seven `v2.2.0` public API exposes active tasks through `TaskServi
 
 CIB’s task ID is generated host identity. It is retained only in oracle diagnostics and in the local mapping needed to invoke `TaskService.complete`; it is not a canonical identity shared with Lean, TypeScript, or Temporal.
 
-## Decision
+## Semantic decision
 
-The semantic core owns the User Task occurrence, its exact discoverable projection, and completion admission. Temporal owns durable delivery and request-response mechanics. A client that already knows the Workflow ID discovers exact open tasks through a Query and submits completion through an Update.
+The semantic core owns the User Task occurrence, its exact discoverable projection, and completion admission. Host transports expose that projection and deliver completion commands without becoming semantic authority.
 
 ```text
 BPMN source and profile
@@ -34,15 +34,11 @@ versioned User Task definition in executable IR
 semantic-core runtime creates one task occurrence
           │
           ├────────────► exact open-task projection
-          │                         │
-          │                         └── Temporal Query for known Workflow ID
           │
           ◄──────────── versioned completion command
-                                    │
-                                    └── Temporal Update with typed result
 ```
 
-Signal remains the retained Milestone 0 harness transport and the compatibility path for pre-Update histories. New discovery/completion histories use Update because Service acceptance alone is not the semantic result of a User Task completion command.
+The adopted Temporal Query/Update binding, replay path, and discovery boundary are owned by [the Temporal execution model](../TEMPORAL-EXECUTION-MODEL.md#initial-user-task-interaction-binding).
 
 ## Semantic task identity
 
@@ -82,6 +78,8 @@ The User Task name comes from the admitted BPMN source through a versioned execu
 
 The versioned canonical state observation adds `openUserTasks` for the new scenario schema. The Milestone 0 schema and retained Temporal history keep their original projection so replay does not reinterpret an old Workflow completion payload.
 
+The interaction schema reports state-derived, command-ID-free `enabledInteractions`. It must not filter a scenario’s future scripted commands: the same model and runtime state always produce the same canonical state projection.
+
 ## Completion command
 
 The new semantic stimulus is:
@@ -99,26 +97,6 @@ Completion commits only while that exact task occurrence is active. A wrong Proc
 The nearest checked non-law is: “matching the BPMN User Task element ID is sufficient for completion.” A witness with the correct element ID and wrong activation ordinal must be rejected.
 
 Claiming, delegation, assignment, actor identity, authorization, completion variables, form submission, and task output mapping are excluded. Carrying an actor or variables without those semantics would create a misleading contract.
-
-## Temporal interaction contract
-
-The exact-task Query is read-only and returns the semantic core’s current `openUserTasks` projection for one known Workflow ID. It is not recorded as an Event and is not canonical authority.
-
-The completion Update carries the semantic command and returns its typed `CommandOutcome`. Its handler validates only transport shape, enqueues the command, and waits for the single main Workflow loop to apply the semantic core. The handler does not mutate semantic state directly.
-
-The caller uses `commandId` as the Temporal Update ID. Temporal deduplicates the same Update ID within one Run, while the adapter retains an application result ledger so repeated delivery of the same semantic command returns the first result without a second transition. Cross-Run deduplication remains deferred until Continue-As-New exists.
-
-Two different command IDs targeting the same occurrence are distinct semantic attempts. At most one can commit; a later accepted attempt is rejected by the semantic core. An attempt delivered only after the Workflow has closed is a Temporal closed-Workflow transport outcome, not a fabricated BPMN rejection.
-
-## Discovery boundary
-
-The implemented discovery surface is exact Query by known Workflow ID. Global discovery is deliberately separate:
-
-- Temporal Search Attributes are Workflow-level, indexed, eventually consistent projections and create replay-relevant Commands.
-- A production task inbox is an external read model with its own delivery, deduplication, reconciliation, authorization, privacy, and consistency contract.
-- Neither surface may become the source of truth for task existence or completion admission.
-
-This capsule does not implement custom Search Attributes or an inbox. A later proposal must name the global-discovery consumer, data-access boundary, Search Attribute registry, staleness behavior, and rebuild/reconciliation evidence before adding either.
 
 ## IR and Lean consequence
 
@@ -143,19 +121,7 @@ These theorems are properties of the Lean account. CIB correspondence and Tempor
 | Complete that exact occurrence | Command committed; no open tasks; Process completed | Managed User Task completion |
 | Correct element, wrong activation `2` | Command rejected; state unchanged | Element ID alone is insufficient |
 | Correct task occurrence after completion under a new command ID | Command rejected; completed state unchanged | Stale task occurrence cannot reactivate control |
-| Repeat the same Temporal Update ID | First typed result returned; semantic command applied once | Transport deduplication versus semantic execution |
 | Mutate observed activation `1` to `2` | Differential comparison reports the exact task-projection disagreement | New evidence projection is mutation-sensitive |
-
-## Pipeline closure
-
-Implementation proceeds through the established fast lane:
-
-1. add the versioned neutral scenario/profile and retained CIB discovery/completion observations;
-2. add Lean task identity, projection, semantics, laws, and checked non-law;
-3. extend the bounded executable IR and independent TypeScript semantic core;
-4. add Temporal Query and Update mechanics with live and retained replay evidence;
-5. extend four-target differential comparison and seed a task-identity mutation;
-6. update the implementation map, testing record, contributor guide, README, and exact resume point.
 
 ## Explicit exclusions
 
@@ -166,4 +132,3 @@ Implementation proceeds through the established fast lane:
 - Search Attributes, Visibility-based discovery, and a production task inbox;
 - Continue-As-New and cross-Run command deduplication;
 - a general BPMN executable IR, general source compiler, or BPMN conformance claim.
-

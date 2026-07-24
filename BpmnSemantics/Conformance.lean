@@ -26,6 +26,7 @@ example : ScenarioOutcome.infrastructureFailure ≠ .harnessFailure := by
 
 def contractScenario : Scenario :=
   { schemaVersion := "0.1.0"
+    traceSchemaVersion := "0.1.0"
     id := ⟨"m0-sequential-user-task"⟩
     profile := ⟨"cibseven-2.2.0-spike.1"⟩
     bpmn :=

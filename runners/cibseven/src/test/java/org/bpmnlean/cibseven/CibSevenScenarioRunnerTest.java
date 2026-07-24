@@ -1,7 +1,6 @@
 package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
-import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
 import static org.bpmnlean.cibseven.ScenarioProtocol.UserTaskLifecycleState.ACTIVE;
@@ -13,7 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
+import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmActivityProjection;
@@ -35,6 +34,12 @@ public class CibSevenScenarioRunnerTest {
       PROJECT_ROOT.resolve("scenarios/m0-sequential-user-task/scenario.json");
   private static final Path INTERACTION_SCENARIO_PATH =
       PROJECT_ROOT.resolve("scenarios/m1-user-task-discovery-completion/scenario.json");
+  private static final Path WRONG_ACTIVATION_SCENARIO_PATH =
+      PROJECT_ROOT.resolve(
+          "scenarios/m1-user-task-discovery-completion/wrong-activation.scenario.json");
+  private static final Path STALE_COMPLETION_SCENARIO_PATH =
+      PROJECT_ROOT.resolve(
+          "scenarios/m1-user-task-discovery-completion/stale-completion.scenario.json");
 
   @Test
   public void calibratesSequentialUserTaskAndCleansEveryRun() throws Exception {
@@ -51,6 +56,8 @@ public class CibSevenScenarioRunnerTest {
         new CommandObservation("complete-user-task", COMMITTED),
         new StateObservation(INSTANCE_ID, COMPLETED, List.of(), List.of(), 0));
     assertEquals(expectedTrace, ScenarioJson.readCanonicalTrace(scenario.calibration().expectedTrace()));
+    assertEquals(new SemanticOutcome(COMMITTED), scenario.calibration().expectedOutcome());
+    assertEquals("0.1.0", scenario.traceSchemaVersion());
 
     try (var runner = CibSevenScenarioRunner.create()) {
       var first = runner.run(scenario, PROJECT_ROOT);
@@ -79,8 +86,14 @@ public class CibSevenScenarioRunnerTest {
   public void calibratesTaskDiscoveryAndRejectsWrongActivationWithoutStateChange()
       throws Exception {
     var scenario = ScenarioJson.read(INTERACTION_SCENARIO_PATH);
+    var wrongScenario = ScenarioJson.read(WRONG_ACTIVATION_SCENARIO_PATH);
+    var staleScenario = ScenarioJson.read(STALE_COMPLETION_SCENARIO_PATH);
+    assertEquals("0.2.0", scenario.traceSchemaVersion());
+    assertEquals(scenario.traceSchemaVersion(), wrongScenario.traceSchemaVersion());
+    assertEquals(scenario.traceSchemaVersion(), staleScenario.traceSchemaVersion());
     var taskId = new UserTaskInstanceId(INSTANCE_ID, "UserTask_Approve", 1);
     var openTask = new OpenUserTask(taskId, "Approve", ACTIVE);
+    var completionInteraction = new CompleteUserTaskInstanceInteraction(taskId);
     var expectedTrace =
         List.of(
             new DeploymentObservation(COMMITTED),
@@ -90,59 +103,36 @@ public class CibSevenScenarioRunnerTest {
                 RUNNING,
                 List.of(new ActiveWait("UserTask_Approve", USER_TASK, 1)),
                 List.of(openTask),
-                List.of(
-                    new CompleteUserTaskInstanceStimulus(
-                        "complete-user-task-instance", taskId)),
+                null,
+                List.of(completionInteraction),
                 0),
             new CommandObservation("complete-user-task-instance", COMMITTED),
             new StateObservation(
-                INSTANCE_ID, COMPLETED, List.of(), List.of(), List.of(), 0));
+                INSTANCE_ID, COMPLETED, List.of(), List.of(), null, List.of(), 0));
     assertEquals(
         expectedTrace,
         ScenarioJson.readCanonicalTrace(scenario.calibration().expectedTrace()));
-
-    var wrongTaskId = new UserTaskInstanceId(INSTANCE_ID, "UserTask_Approve", 2);
-    var wrongCompletion =
-        new CompleteUserTaskInstanceStimulus("wrong-activation", wrongTaskId);
-    var wrongScenario =
-        new ScenarioProtocol.ScenarioDefinition(
-            scenario.schemaVersion(),
-            scenario.id(),
-            scenario.profile(),
-            scenario.bpmn(),
-            List.of(scenario.stimuli().getFirst(), wrongCompletion),
-            scenario.observations(),
-            scenario.provenance(),
-            scenario.calibration());
+    var wrongExpectedTrace =
+        ScenarioJson.readCanonicalTrace(wrongScenario.calibration().expectedTrace());
+    var staleExpectedTrace =
+        ScenarioJson.readCanonicalTrace(staleScenario.calibration().expectedTrace());
 
     try (var runner = CibSevenScenarioRunner.create()) {
       var calibrated = runner.run(scenario, PROJECT_ROOT);
       var rejected = runner.run(wrongScenario, PROJECT_ROOT);
+      var stale = runner.run(staleScenario, PROJECT_ROOT);
 
-      assertEquals(new SemanticOutcome(COMMITTED), calibrated.outcome());
+      assertEquals(scenario.calibration().expectedOutcome(), calibrated.outcome());
       assertEquals(expectedTrace, calibrated.trace());
-      assertEquals(new SemanticOutcome(REJECTED), rejected.outcome());
-      assertEquals(
-          List.of(
-              new DeploymentObservation(COMMITTED),
-              new CommandObservation("start-process", COMMITTED),
-              new StateObservation(
-                  INSTANCE_ID,
-                  RUNNING,
-                  List.of(new ActiveWait("UserTask_Approve", USER_TASK, 1)),
-                  List.of(openTask),
-                  List.of(),
-                  0),
-              new CommandObservation("wrong-activation", REJECTED),
-              new StateObservation(
-                  INSTANCE_ID,
-                  RUNNING,
-                  List.of(new ActiveWait("UserTask_Approve", USER_TASK, 1)),
-                  List.of(openTask),
-                  List.of(),
-                  0)),
-          rejected.trace());
+      assertEquals(wrongScenario.calibration().expectedOutcome(), rejected.outcome());
+      assertEquals(wrongExpectedTrace, rejected.trace());
+      assertEquals(staleScenario.calibration().expectedOutcome(), stale.outcome());
+      assertEquals(staleExpectedTrace, stale.trace());
+      assertEquals(calibrated.trace().get(2), rejected.trace().get(2));
+      assertEquals(rejected.trace().get(2), rejected.trace().get(4));
+      assertEquals(stale.trace().get(4), stale.trace().get(6));
       assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
+      assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
     }
   }
 

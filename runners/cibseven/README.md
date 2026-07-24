@@ -41,9 +41,9 @@ Exact dependency versions, licenses, and removal boundaries are recorded in [Mil
 
 ## Boundary
 
-The canonical trace includes only stable deployment, command, Process-state, wait, open semantic User Task, enabled-stimulus, logical-time, model, and semantic-instance facts. The interaction profile maps the single CIB task to structured semantic identity `(Process instance, BPMN element, activation ordinal)` and retains its BPMN name. Generated deployment, Process-definition, Process-instance, execution, and task IDs never leave the runner as comparison keys.
+The canonical trace includes only stable deployment, command, Process-state, wait, open semantic User Task, enabled interaction, logical-time, model, and semantic-instance facts. The retained `0.1.0` trace keeps its scenario-suffix `enabledStimuli` field for compatibility; the interaction `0.2.0` trace instead derives command-ID-free `enabledInteractions` solely from current task state. The interaction profile maps the single CIB task to structured semantic identity `(Process instance, BPMN element, activation ordinal)` and retains its BPMN name. Generated deployment, Process-definition, Process-instance, execution, and task IDs never leave the runner as comparison keys.
 
-A wrong semantic task occurrence is rejected before CIB host-task completion and leaves the active task unchanged. The focused witness uses the correct BPMN element with the wrong activation ordinal, so matching only the task-definition key cannot accidentally pass.
+A wrong semantic task occurrence is rejected before CIB host-task completion and leaves the active task unchanged. The focused witness uses the correct BPMN element with the wrong activation ordinal, so matching only the task-definition key cannot accidentally pass. A separate stale-completion witness proves that a completed occurrence cannot advance the Process again.
 
 Diagnostics include engine/database versions, phase timings, the PVM definition projection, and post-run cleanup counts. The PVM projection currently contains activity identity and type, behavior class, flow scope, optional event scope, and ordered outgoing transitions for the sequential model.
 

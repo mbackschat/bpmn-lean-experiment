@@ -30,6 +30,12 @@ private def processStatusJson : ProcessStatus → Json
 private def waitKindJson : WaitKind → Json
   | .userTask => toJson "userTask"
 
+private def userTaskInstanceIdJson (taskId : UserTaskInstanceId) : Json :=
+  Json.mkObj
+    [ ("processInstanceId", toJson taskId.processInstanceId.value)
+    , ("elementId", toJson taskId.elementId.value)
+    , ("activation", toJson taskId.activation) ]
+
 private def stimulusJson : Stimulus → Json
   | .startProcess commandId processId instanceId =>
       Json.mkObj
@@ -42,6 +48,11 @@ private def stimulusJson : Stimulus → Json
         [ ("kind", toJson "completeUserTask")
         , ("commandId", toJson commandId.value)
         , ("elementId", toJson elementId.value) ]
+  | .completeUserTaskInstance commandId taskId =>
+      Json.mkObj
+        [ ("kind", toJson "completeUserTaskInstance")
+        , ("commandId", toJson commandId.value)
+        , ("taskId", userTaskInstanceIdJson taskId) ]
 
 private def activeWaitJson (wait : ActiveWait) : Json :=
   Json.mkObj
@@ -49,14 +60,37 @@ private def activeWaitJson (wait : ActiveWait) : Json :=
     , ("kind", waitKindJson wait.kind)
     , ("multiplicity", toJson wait.multiplicity) ]
 
+private def userTaskLifecycleStateJson : UserTaskLifecycleState → Json
+  | .active => toJson "active"
+
+private def openUserTaskJson (task : OpenUserTask) : Json :=
+  Json.mkObj
+    [ ("id", userTaskInstanceIdJson task.id)
+    , ("name", toJson task.name)
+    , ("state", userTaskLifecycleStateJson task.state) ]
+
+private def enabledInteractionJson : EnabledInteraction → Json
+  | .completeUserTaskInstance taskId =>
+      Json.mkObj
+        [ ("kind", toJson "completeUserTaskInstance")
+        , ("taskId", userTaskInstanceIdJson taskId) ]
+
+private def optionalArrayField (name : String) (encode : α → Json) :
+    Option (List α) → List (String × Json)
+  | none => []
+  | some values => [(name, jsonArray (values.map encode))]
+
 private def stateObservationJson (state : StateObservation) : Json :=
   Json.mkObj
-    [ ("kind", toJson "state")
-    , ("instanceId", toJson state.instanceId.value)
-    , ("status", processStatusJson state.status)
-    , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
-    , ("enabledStimuli", jsonArray (state.enabledStimuli.map stimulusJson))
-    , ("logicalTimeMs", toJson state.logicalTimeMs) ]
+    ([ ("kind", toJson "state")
+     , ("instanceId", toJson state.instanceId.value)
+     , ("status", processStatusJson state.status)
+     , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson)) ] ++
+    optionalArrayField "openUserTasks" openUserTaskJson state.openUserTasks ++
+    optionalArrayField "enabledStimuli" stimulusJson state.enabledStimuli ++
+    optionalArrayField "enabledInteractions" enabledInteractionJson
+      state.enabledInteractions ++
+    [("logicalTimeMs", toJson state.logicalTimeMs)])
 
 private def canonicalObservationJson : CanonicalObservation → Json
   | .deployment outcome =>

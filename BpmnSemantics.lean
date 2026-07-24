@@ -10,3 +10,4 @@ import BpmnSemantics.Scenario
 import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.Conformance
 import BpmnSemantics.SequentialUserTaskConformance
+import BpmnSemantics.UserTaskInteractionConformance

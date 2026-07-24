@@ -21,15 +21,21 @@ def expectedCalibratedTrace : List CanonicalObservation :=
           [ { elementId := ⟨"UserTask_Approve"⟩
               kind := .userTask
               multiplicity := 1 } ]
+        openUserTasks := none
         enabledStimuli :=
-          [ .completeUserTask ⟨"complete-user-task"⟩ ⟨"UserTask_Approve"⟩ ]
+          some
+            [ Stimulus.completeUserTask
+                ⟨"complete-user-task"⟩ ⟨"UserTask_Approve"⟩ ]
+        enabledInteractions := none
         logicalTimeMs := 0 }
   , .command ⟨"complete-user-task"⟩ .committed
   , .state
       { instanceId := ⟨"Instance_1"⟩
         status := .completed
         activeWaits := []
-        enabledStimuli := []
+        openUserTasks := none
+        enabledStimuli := some []
+        enabledInteractions := none
         logicalTimeMs := 0 } ]
 
 example :

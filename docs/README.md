@@ -10,8 +10,9 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Run or inspect the CIB oracle | [TESTING.md](TESTING.md) and the [CIB runner guide](../runners/cibseven/README.md) |
 | Run or inspect the Temporal adapter | [TESTING.md](TESTING.md), [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md), and the [adapter guide](../packages/temporal-adapter/README.md) |
 | Run or inspect BPMN XML ingestion | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md), [TESTING.md](TESTING.md), and the [source package guide](../packages/bpmn-source/README.md) |
-| Implement or review User Task interaction | [USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md](USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md), [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md), and [TESTING.md](TESTING.md) |
+| Implement or review User Task interaction | [User Task interaction capsule](capsules/USER-TASK-INTERACTION.md), [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md), and [TESTING.md](TESTING.md) |
 | Run or inspect differential comparison | [TESTING.md](TESTING.md) and the [comparator guide](../packages/differential/README.md) |
+| Change a shared wire format | [Shared wire contracts](../contracts/README.md), the applicable [semantic capsule](capsules/README.md), and [TESTING.md](TESTING.md) |
 | Change project mission or semantic authority | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) and [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) |
 | Change BPMN import or semantic meaning | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) and the [research index](research/README.md) |
 | Run or evaluate a bounded architecture spike | [experiments](experiments/README.md) |
@@ -25,7 +26,8 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
 | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md) | Contributors and owner; adopted exact parser dependency, source-preservation contract, security boundary, bounded CMOF use, license graph, and first implementation slice |
-| [USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md](USER-TASK-DISCOVERY-COMPLETION-CAPSULE.md) | Semantic, adapter, and UI-boundary contributors; approved exact task identity, projection, Query/Update completion contract, witnesses, and explicit exclusions |
+| [capsules/README.md](capsules/README.md) | Semantic contributors; registry and ownership boundary for project-authored semantic capsules |
+| [capsules/USER-TASK-INTERACTION.md](capsules/USER-TASK-INTERACTION.md) | Semantic contributors; adopted draft task identity, projection, exact completion admission, witnesses, laws, and exclusions |
 | [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md) | Adapter contributors and reviewers; Temporal replay, execution, messaging, failure, concurrency, versioning, and BPMN-boundary research |
 | [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) | Semantic and adapter assurance contributors; question-driven formal-methods toolbox, behavioral relations, candidate experiments, and evidence limits |
 | [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) | Researchers and performance contributors; pristine evidence lane, experimental source branches, execution profiles, acceleration limits, and shadow-equivalence gate |
@@ -42,6 +44,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [TESTING.md](TESTING.md) | Contributors; red/green workflow and verification gates |
 | [SOURCES.md](SOURCES.md) | Researchers; provenance and controlled reference-checkout navigation |
 | [reference/bpmn-2.0.2/README.md](reference/bpmn-2.0.2/README.md) | Researchers; local BPMN 2.0.2 corpus, conversion QA, license boundary, and reproducibility hashes |
+| [../contracts/README.md](../contracts/README.md) | Cross-language contributors; language-neutral schema ownership and independent version dimensions |
 | [../CLAUDE.md](../CLAUDE.md) | Contributors and agents; mandatory repository workflow and architecture boundaries |
 
 The [profile artifact root](../profiles/README.md) and [scenario artifact root](../scenarios/README.md) explain artifact lifecycle, the draft profile boundary, and the calibrated neutral scenario.
@@ -51,6 +54,7 @@ When a fact is useful elsewhere, link to its owner and add only the local conseq
 ## Placement rules
 
 - Put stable mission, authority, and approved boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
+- Put bounded project-owned semantic meaning, laws, witnesses, and exclusions under [capsules](capsules/README.md).
 - Put external-system and semantic-background analysis under [research](research/README.md).
 - Put bounded executable questions, red/green evidence, and provisional outcomes under [experiments](experiments/README.md).
 - Put exact implemented, proved, tested, and absent surfaces in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).

@@ -30,10 +30,35 @@ structure ResourceIdentity where
   sha256 : String
   deriving Repr, DecidableEq
 
+/-- Stable semantic identity of one active User Task occurrence. -/
+structure UserTaskInstanceId where
+  processInstanceId : SemanticId
+  elementId : SemanticId
+  activation : Nat
+  deriving Repr, DecidableEq
+
+/-- User Task lifecycle states exposed by the current bounded interaction capsule. -/
+inductive UserTaskLifecycleState where
+  | active
+  deriving Repr, DecidableEq
+
+/-- Public projection of one open semantic User Task occurrence. -/
+structure OpenUserTask where
+  id : UserTaskInstanceId
+  name : Option String
+  state : UserTaskLifecycleState
+  deriving Repr, DecidableEq
+
+/-- Command-ID-free capabilities derived solely from semantic runtime state. -/
+inductive EnabledInteraction where
+  | completeUserTaskInstance (taskId : UserTaskInstanceId)
+  deriving Repr, DecidableEq
+
 /-- External inputs currently admitted by the Milestone 0 scenario boundary. -/
 inductive Stimulus where
   | startProcess (commandId : SemanticId) (processId : SemanticId) (instanceId : SemanticId)
   | completeUserTask (commandId : SemanticId) (elementId : SemanticId)
+  | completeUserTaskInstance (commandId : SemanticId) (taskId : UserTaskInstanceId)
   deriving Repr, DecidableEq
 
 /-- Process status visible through the canonical observation boundary. -/
@@ -60,7 +85,9 @@ structure StateObservation where
   instanceId : SemanticId
   status : ProcessStatus
   activeWaits : List ActiveWait
-  enabledStimuli : List Stimulus
+  openUserTasks : Option (List OpenUserTask)
+  enabledStimuli : Option (List Stimulus)
+  enabledInteractions : Option (List EnabledInteraction)
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
 
@@ -77,7 +104,9 @@ inductive ObservationKind where
   | commandResults
   | processStatus
   | activeWaits
+  | openUserTasks
   | enabledStimuli
+  | enabledInteractions
   | logicalTime
   deriving Repr, DecidableEq
 
@@ -91,6 +120,7 @@ structure ScenarioProvenance where
 /-- Inputs shared by all Milestone 0 runners. -/
 structure Scenario where
   schemaVersion : String
+  traceSchemaVersion : String
   id : ScenarioId
   profile : ProfileId
   bpmn : ResourceIdentity

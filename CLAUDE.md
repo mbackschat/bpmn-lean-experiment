@@ -35,8 +35,9 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 | Change | Required context |
 |---|---|
 | Mission, authority, compatibility, or assurance | Complete [architecture and assurance handoff](docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) and [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
-| BPMN import, conformance, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), and applicable normative sources |
+| BPMN import, conformance, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), the applicable [semantic capsule](docs/capsules/README.md), and applicable normative sources |
 | Source model, normalization, executable IR, scope, runtime identity, token/activation state, or command closure | [Semantic representations research](docs/research/SEMANTIC-REPRESENTATIONS.md) and relevant [experiments](docs/experiments/README.md) |
+| Scenario, profile, stimulus, observation, result, or other cross-language wire format | [Shared wire contracts](contracts/README.md) and the applicable [semantic capsule](docs/capsules/README.md) |
 | Temporal adapter, interpreter hosting, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-MODEL.md](docs/TEMPORAL-EXECUTION-MODEL.md) |
 | Refinement, equivalence, liveness, fairness, TLA+, or auxiliary formal tools | [TLA-AND-BISIMULATION-RESEARCH.md](docs/TLA-AND-BISIMULATION-RESEARCH.md) |
 | CIB Seven or Temporal source instrumentation/acceleration | [REFERENCE-INSTRUMENTATION.md](docs/REFERENCE-INSTRUMENTATION.md) |
@@ -103,6 +104,22 @@ Close each approved semantic capsule across distinct claim lanes: normative or p
 
 Name a concrete adapter consumer or refinement risk before generalizing a representation or semantic mechanism. Preserve retained CIB observations and Temporal histories as immutable evidence, and require a meaningful seeded mutation for every new evidence projection. Investigate a mismatch at the semantic or projection boundary; never refresh expected evidence merely to make a gate green.
 
+### Milestone and capsule reflection
+
+After the technical gate is green but before marking a milestone or semantic capsule complete, perform a separate epistemic-closure review:
+
+1. state the exact claim established and the closest claim that remains unsupported;
+2. ask whether all targets could agree because they share one flawed assumption, fixture, projection, or calibration source;
+3. confirm every canonical observation depends only on admitted definition/runtime state and explicit semantic inputs, never on future scenario commands, host IDs, or expected output;
+4. identify the nearest realistic counterexample and require either a checked non-law or an executable negative witness;
+5. assess whether each Lean theorem has useful hypotheses and reusable semantic content rather than only proving one concrete serialized result;
+6. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
+7. confirm versioning and retained-history behavior, and require a meaningful mutation for every new evidence projection;
+8. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
+9. decide whether the result changes the next best step.
+
+Turn every escaped issue into either a reusable review question or an executable guard. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING.md](docs/TESTING.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
+
 ### Architecture experiments
 
 A bounded spike requires competing accounts and a witness capable of separating them. End it as:
@@ -128,6 +145,7 @@ Use one owner for each fact and link to it elsewhere:
 | Mission, authority, and approved durable boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | Exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
+| Bounded project-owned semantic meaning, laws, witnesses, and exclusions | [docs/capsules](docs/capsules/README.md) |
 | External-system and semantic-background findings | [docs/research](docs/research/README.md) |
 | Bounded executable questions and results | [docs/experiments](docs/experiments/README.md) |
 | Gates, evidence lanes, and test procedure | [TESTING.md](docs/TESTING.md) |

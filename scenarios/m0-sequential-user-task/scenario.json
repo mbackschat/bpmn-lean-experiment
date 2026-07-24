@@ -1,5 +1,6 @@
 {
   "schemaVersion": "0.1.0",
+  "traceSchemaVersion": "0.1.0",
   "id": "m0-sequential-user-task",
   "profile": "cibseven-2.2.0-spike.1",
   "bpmn": {
@@ -41,6 +42,10 @@
   },
   "calibration": {
     "status": "calibrated",
+    "expectedOutcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
     "expectedTrace": [
       {
         "kind": "deployment",

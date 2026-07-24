@@ -425,6 +425,7 @@ function supportsScenario(
 ): boolean {
   return (
     scenario.schemaVersion === "0.1.0" &&
+    (scenario.traceSchemaVersion ?? scenario.schemaVersion) === "0.1.0" &&
     scenario.profile === "cibseven-2.2.0-spike.1" &&
     isSupportedExecutableIr(executableIr) &&
     executableIr.identity.semanticProfile === scenario.profile &&

@@ -22,7 +22,6 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,10 +30,12 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
+import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Diagnostics;
+import org.bpmnlean.cibseven.ScenarioProtocol.EnabledInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.ObservationKind;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.PhaseTimings;
@@ -73,7 +74,14 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           ObservationKind.ENABLED_STIMULI,
           ObservationKind.LOGICAL_TIME);
   private static final EnumSet<ObservationKind> USER_TASK_INTERACTION_OBSERVATIONS =
-      EnumSet.allOf(ObservationKind.class);
+      EnumSet.of(
+          ObservationKind.DEPLOYMENT,
+          ObservationKind.COMMAND_RESULTS,
+          ObservationKind.PROCESS_STATUS,
+          ObservationKind.ACTIVE_WAITS,
+          ObservationKind.OPEN_USER_TASKS,
+          ObservationKind.ENABLED_INTERACTIONS,
+          ObservationKind.LOGICAL_TIME);
 
   private final ProcessEngine processEngine;
   private final ProcessEngineConfigurationImpl configuration;
@@ -242,7 +250,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     }
 
     return new ScenarioResult(
-        scenario.schemaVersion(),
+        scenario.traceSchemaVersion(),
         scenario.id(),
         new SemanticOutcome(scenarioOutcome),
         trace,
@@ -282,6 +290,14 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
               + "/"
               + scenario.profile());
     }
+    var expectedTraceSchemaVersion =
+        isMilestoneZero
+            ? ScenarioProtocol.TRACE_SCHEMA_VERSION
+            : ScenarioProtocol.USER_TASK_INTERACTION_TRACE_SCHEMA_VERSION;
+    if (!scenario.traceSchemaVersion().equals(expectedTraceSchemaVersion)) {
+      throw new IllegalArgumentException(
+          "Unsupported trace schema version: " + scenario.traceSchemaVersion());
+    }
     var expectedObservations =
         isMilestoneZero ? M0_OBSERVATIONS : USER_TASK_INTERACTION_OBSERVATIONS;
     if (scenario.observations().size() != expectedObservations.size()
@@ -289,15 +305,19 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       throw new IllegalArgumentException(
           "Scenario requires its canonical observation kinds exactly once");
     }
-    if (scenario.stimuli().size() != 2
-        || !(scenario.stimuli().get(0) instanceof StartProcessStimulus)
-        || (isMilestoneZero
-            && !(scenario.stimuli().get(1) instanceof CompleteUserTaskStimulus))
-        || (isUserTaskInteraction
-            && !(scenario.stimuli().get(1)
-                instanceof CompleteUserTaskInstanceStimulus))) {
+    var startsOnce =
+        !scenario.stimuli().isEmpty()
+            && scenario.stimuli().getFirst() instanceof StartProcessStimulus;
+    var hasExpectedCompletions =
+        isMilestoneZero
+            ? scenario.stimuli().size() == 2
+                && scenario.stimuli().get(1) instanceof CompleteUserTaskStimulus
+            : scenario.stimuli().size() >= 2
+                && scenario.stimuli().subList(1, scenario.stimuli().size()).stream()
+                    .allMatch(CompleteUserTaskInstanceStimulus.class::isInstance);
+    if (!startsOnce || !hasExpectedCompletions) {
       throw new IllegalArgumentException(
-          "Scenario supports exactly startProcess followed by its completion command");
+          "Scenario supports startProcess followed by its profile completion commands");
     }
   }
 
@@ -371,21 +391,25 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             : null;
     var activeElements =
         activeWaits.stream().map(ActiveWait::elementId).collect(Collectors.toSet());
-    var activeTaskIds =
-        openUserTasks == null
-            ? Set.<UserTaskInstanceId>of()
-            : openUserTasks.stream().map(OpenUserTask::id).collect(Collectors.toSet());
     var enabledStimuli =
-        remainingStimuli.stream()
-            .filter(
-                stimulus -> switch (stimulus) {
-                  case CompleteUserTaskStimulus complete ->
-                      activeElements.contains(complete.elementId());
-                  case CompleteUserTaskInstanceStimulus complete ->
-                      activeTaskIds.contains(complete.taskId());
-                  case StartProcessStimulus ignored -> false;
-                })
-            .toList();
+        usesTaskProjection(scenario)
+            ? null
+            : remainingStimuli.stream()
+                .filter(
+                    stimulus -> switch (stimulus) {
+                      case CompleteUserTaskStimulus complete ->
+                          activeElements.contains(complete.elementId());
+                      case CompleteUserTaskInstanceStimulus ignored -> false;
+                      case StartProcessStimulus ignored -> false;
+                    })
+                .toList();
+    var enabledInteractions =
+        openUserTasks == null
+            ? null
+            : openUserTasks.stream()
+                .<EnabledInteraction>map(
+                    task -> new CompleteUserTaskInstanceInteraction(task.id()))
+                .toList();
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
     return new StateObservation(
         stableInstanceId,
@@ -393,6 +417,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
         activeWaits,
         openUserTasks,
         enabledStimuli,
+        enabledInteractions,
         logicalTimeMs);
   }
 

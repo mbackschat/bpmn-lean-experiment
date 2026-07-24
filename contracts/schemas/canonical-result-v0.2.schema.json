@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/canonical-result-v0.2.schema.json",
+  "title": "BPMN Lean canonical result 0.2.0",
+  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/canonicalResultV2"
+}

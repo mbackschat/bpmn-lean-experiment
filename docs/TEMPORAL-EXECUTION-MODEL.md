@@ -332,7 +332,7 @@ Authentication and authorization remain outside Temporal’s BPMN semantics. The
 
 ### Initial user-task vertical slice
 
-The walking skeleton should add one User Task only after the generic runner exists, with this exact evidence chain:
+The following was the initial broad research sketch before the bounded interaction capsule was adopted:
 
 1. The semantic core opens one task instance and emits a canonical `user-task-opened` observation.
 2. The adapter upserts `BpmnHasOpenUserTasks = true` and a count of one.
@@ -343,6 +343,24 @@ The walking skeleton should add one User Task only after the generic runner exis
 7. On commit, the adapter upserts the derived open-task projection and emits the canonical semantic observation.
 8. Duplicate, stale, and wrong-task commands are separating tests.
 9. Cache eviction and retained-history replay produce the same result and Search Attribute Commands.
+
+The current bounded spike deliberately excludes Search Attributes, actor identity, completion variables, forms, and a global task inbox. Its narrower adopted binding follows.
+
+### Initial User Task interaction binding
+
+The exact-task Query is read-only and returns the semantic core’s current `openUserTasks` projection for one known Workflow ID. It is not recorded as an Event and is not canonical authority.
+
+The completion Update carries the semantic command and returns its typed `CommandOutcome`. Its handler validates only transport shape, enqueues the command, and waits for the single main Workflow loop to apply the semantic core. The handler does not mutate semantic state directly.
+
+The caller uses `commandId` as the Temporal Update ID. Temporal deduplicates the same Update ID within one Run, while the adapter retains an application result ledger so repeated delivery of the same semantic command returns the first result without a second transition. Cross-Run deduplication remains deferred until Continue-As-New exists.
+
+Two different command IDs targeting the same occurrence are distinct semantic attempts. At most one can commit; a later accepted attempt is rejected by the semantic core. An attempt delivered only after the Workflow has closed is a Temporal closed-Workflow transport outcome, not a fabricated BPMN rejection.
+
+Signal remains the retained Milestone 0 harness transport and compatibility path for pre-Update histories. New interaction histories use Update because Service acceptance alone is not the semantic result of a User Task completion command.
+
+The implemented discovery surface is exact Query by known Workflow ID. Search Attributes and a production task inbox remain separate eventually consistent projections and must not become the source of truth for task existence or completion admission. A later proposal must name the global-discovery consumer, data-access boundary, Search Attribute registry, staleness behavior, and rebuild or reconciliation evidence before adding either.
+
+The semantic meaning, exact task identity, observations, completion rule, witnesses, and exclusions are owned by the [User Task interaction semantic capsule](capsules/USER-TASK-INTERACTION.md).
 
 ## Decisions, concurrency, and parallelism
 

@@ -9,7 +9,10 @@ import {
   DisagreementKind,
 } from "../dist/index.js";
 
-import { runMilestoneZeroPipeline } from "./pipeline-harness.mjs";
+import {
+  pipelineCases,
+  runPipelineCase,
+} from "./pipeline-harness.mjs";
 
 const cleanCibProjection = {
   deployments: 0,
@@ -25,7 +28,9 @@ test(
   "runs and compares the complete Milestone 0 pipeline within budget",
   { timeout: 45_000 },
   async () => {
-    const { report, evidence } = await runMilestoneZeroPipeline();
+    assert.equal(pipelineCases.length, 1);
+    assert.equal(pipelineCases[0].id, "m0-sequential-user-task");
+    const { report, evidence } = await runPipelineCase(pipelineCases[0]);
 
     assert.equal(report.comparison.kind, ComparisonKind.Agreement);
     assert.deepEqual(report.scenario.executableIr, {
@@ -54,10 +59,15 @@ test(
       report.phaseMs.warmTotal < 15_000,
       `warm pipeline took ${report.phaseMs.warmTotal.toFixed(3)}ms`,
     );
-    assert.ok(
-      report.phaseMs.coldTotal < 45_000,
-      `cold pipeline took ${report.phaseMs.coldTotal.toFixed(3)}ms`,
-    );
+    if (report.buildMode === "measured") {
+      assert.ok(
+        report.phaseMs.coldTotal < 45_000,
+        `cold pipeline took ${report.phaseMs.coldTotal.toFixed(3)}ms`,
+      );
+    } else {
+      assert.equal(report.buildMode, "prebuilt");
+      assert.equal(report.phaseMs.coldTotal, null);
+    }
 
     console.log(`M0_PIPELINE_REPORT ${JSON.stringify(report)}`);
   },

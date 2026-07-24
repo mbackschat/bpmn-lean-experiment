@@ -1,7 +1,7 @@
 {
   "schemaVersion": "0.2.0",
   "traceSchemaVersion": "0.2.0",
-  "id": "m1-user-task-discovery-completion",
+  "id": "m1-user-task-wrong-activation",
   "profile": "cibseven-2.2.0-spike.2",
   "bpmn": {
     "id": "m0-sequential-user-task-process",
@@ -17,11 +17,11 @@
     },
     {
       "kind": "completeUserTaskInstance",
-      "commandId": "complete-user-task-instance",
+      "commandId": "wrong-activation",
       "taskId": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
-        "activation": 1
+        "activation": 2
       }
     }
   ],
@@ -51,7 +51,7 @@
     "status": "calibrated",
     "expectedOutcome": {
       "kind": "semantic",
-      "outcome": "committed"
+      "outcome": "rejected"
     },
     "expectedTrace": [
       {
@@ -99,16 +99,41 @@
       },
       {
         "kind": "command",
-        "commandId": "complete-user-task-instance",
-        "outcome": "committed"
+        "commandId": "wrong-activation",
+        "outcome": "rejected"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
-        "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "enabledInteractions": [],
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Approve",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "name": "Approve",
+            "state": "active"
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            }
+          }
+        ],
         "logicalTimeMs": 0
       }
     ]

@@ -14,7 +14,13 @@ verify_scenario_artifacts() {
 
   jq empty "$artifact_profile_path" "$artifact_scenario_path"
   jq -e '.status == "draft"' "$artifact_profile_path" >/dev/null
-  jq -e '.calibration.status == "calibrated" and (.calibration.expectedTrace | type == "array")' "$artifact_scenario_path" >/dev/null
+  jq -e '
+    .calibration.status == "calibrated" and
+    (.calibration.expectedOutcome.kind == "semantic") and
+    (.calibration.expectedOutcome.outcome | type == "string") and
+    (.calibration.expectedTrace | type == "array") and
+    (.traceSchemaVersion | type == "string")
+  ' "$artifact_scenario_path" >/dev/null
 
   artifact_profile_id=$(jq -r '.id' "$artifact_profile_path")
   artifact_scenario_profile=$(jq -r '.profile' "$artifact_scenario_path")
@@ -38,6 +44,14 @@ verify_scenario_artifacts \
 verify_scenario_artifacts \
   "profiles/cibseven-2.2.0-spike.2/profile.json" \
   "scenarios/m1-user-task-discovery-completion/scenario.json"
+verify_scenario_artifacts \
+  "profiles/cibseven-2.2.0-spike.2/profile.json" \
+  "scenarios/m1-user-task-discovery-completion/wrong-activation.scenario.json"
+verify_scenario_artifacts \
+  "profiles/cibseven-2.2.0-spike.2/profile.json" \
+  "scenarios/m1-user-task-discovery-completion/stale-completion.scenario.json"
+
+jq empty contracts/schemas/*.json
 
 if test -f "$xsd_path"; then
   xmllint --noout --schema "$xsd_path" "$bpmn_path"
@@ -47,9 +61,12 @@ fi
 
 lake build
 lake test
+lake build emitSequentialUserTaskResult
 ./scripts/pnpm.sh run test:semantic-core
 ./scripts/pnpm.sh run test:bpmn-source
 ./scripts/test-cibseven-oracle.sh
 ./scripts/pnpm.sh run test:differential
-./scripts/pnpm.sh run test:pipeline
+./scripts/pnpm.sh run test:infrastructure
+./scripts/pnpm.sh run build:temporal-adapter
+env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
 git diff --check

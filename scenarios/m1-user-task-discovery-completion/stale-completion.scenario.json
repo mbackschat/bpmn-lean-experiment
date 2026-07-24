@@ -1,7 +1,7 @@
 {
   "schemaVersion": "0.2.0",
   "traceSchemaVersion": "0.2.0",
-  "id": "m1-user-task-discovery-completion",
+  "id": "m1-user-task-stale-completion",
   "profile": "cibseven-2.2.0-spike.2",
   "bpmn": {
     "id": "m0-sequential-user-task-process",
@@ -18,6 +18,15 @@
     {
       "kind": "completeUserTaskInstance",
       "commandId": "complete-user-task-instance",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-stale-user-task-instance",
       "taskId": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
@@ -51,7 +60,7 @@
     "status": "calibrated",
     "expectedOutcome": {
       "kind": "semantic",
-      "outcome": "committed"
+      "outcome": "rejected"
     },
     "expectedTrace": [
       {
@@ -101,6 +110,20 @@
         "kind": "command",
         "commandId": "complete-user-task-instance",
         "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-stale-user-task-instance",
+        "outcome": "rejected"
       },
       {
         "kind": "state",

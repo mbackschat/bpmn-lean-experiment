@@ -6,7 +6,7 @@ This project is an experiment toward a Temporal-hosted BPMN 2.0.2 execution adap
 
 The ambition is deliberately high: not merely to translate BPMN shapes into Workflow code, but to build an auditable chain from the standard and observed engine behavior to production execution.
 
-> **Project status:** Milestone 0 walking skeleton and the first BPMN XML ingestion slice are complete. One content-addressed BPMN model is now parsed from exact source bytes, compiled into versioned executable IR, and evaluated across CIB, Lean, the TypeScript semantic core, and Temporal under a fast differential/refinement/replay gate with a seeded-disagreement guard. The repository does not yet contain a general BPMN engine and makes no BPMN-conformance or immutable CIB-compatibility claim.
+> **Project status:** Milestone 0 walking skeleton and the first BPMN XML ingestion slice are complete. One content-addressed BPMN model is parsed from exact source bytes, compiled into versioned executable IR, and evaluated across CIB, Lean, the TypeScript semantic core, and Temporal under a fast differential/refinement/replay gate. The next User Task interaction capsule now has state-derived discovery, exact and rejected-completion CIB evidence, and executable Lean laws; its TypeScript and Temporal lanes remain open. The repository does not yet contain a general BPMN engine and makes no BPMN-conformance or immutable CIB-compatibility claim.
 
 ## Why this project exists
 
@@ -111,11 +111,11 @@ none Start Event → User Task → none End Event
 |---|---|
 | Planning and contracts | M0.0 through M0.6 complete; profile, scenario, observation, runner, comparison, replay, provenance, and feedback-budget contracts are executable |
 | BPMN sources | Official BPMN 2.0.2 PDF and machine-readable corpus ingested locally; exact source capture, security/encoding preflight, private `bpmn-moddle@10.0.0` import, normalized diagnostics, a checked partial CMOF manifest, and the first sequential compiler are implemented |
-| Lean | The sequential User Task interpreter derives the calibrated trace and proves start-to-wait, matching-completion, and non-matching-completion invariants; broader BPMN semantics remain absent |
-| CIB Seven | Pinned `v2.2.0` embedded runner deploys, starts, observes, completes, cleans, emits the calibrated trace, and exposes a diagnostic PVM projection through a persistent JSON-lines boundary |
+| Lean | The sequential User Task interpreter derives the retained lifecycle trace and the interaction capsule’s successful, wrong-activation, and stale-completion traces; it proves exact completion, wrong-activation state preservation, and the element-only identity non-law |
+| CIB Seven | Pinned `v2.2.0` embedded runner deploys, starts, observes, completes, rejects wrong and stale task occurrences without state change, cleans every run, and exposes a diagnostic PVM projection through a persistent JSON-lines boundary |
 | TypeScript semantic core | The dependency-free sequential User Task semantic core consumes only validated project-owned IR, independently derives the calibrated trace, exposes one incremental transition boundary for durable hosts, and rejects identity or topology mismatch |
 | Temporal adapter | A full local Temporal server hosts one Workflow loop around the semantic core and receives compiled IR as immutable data; a version marker preserves new-history requirements while the committed pre-IR history still replays |
-| Evidence | One command compiles the exact BPMN source, runs CIB, Lean, the semantic core, and two isolated Temporal executions, establishes exact canonical agreement, detects an injected state disagreement, replays live and retained histories, proves cleanup, and meets the warm and cold budgets; an optional gate classifies all 21 pinned MIWG models without copying them |
+| Evidence | The M0 command compiles the exact BPMN source, runs CIB, Lean, the semantic core, and two isolated Temporal executions, establishes exact canonical agreement, detects an injected state disagreement, replays live and retained histories, proves cleanup, and meets the prepared warm budget; the interaction capsule currently closes CIB and Lean only |
 
 The authoritative live checkpoint and next task are in [PLAN.md](docs/PLAN.md); exact implemented and absent surfaces are in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -196,6 +196,7 @@ The spike is a bounded architecture experiment, not part of the approved BPMN se
 
 ```text
 BpmnSemantics/       Lean contracts, executable semantic capsules, and isolated experiments
+contracts/           Language-neutral profile, scenario, and canonical-result schemas
 docs/                Architecture, plans, research, testing, and source provenance
 packages/            BPMN source importer, TypeScript semantic core, differential comparator, and Temporal adapter
 profiles/            Versioned semantic-profile artifacts
@@ -211,6 +212,8 @@ Start with the [documentation registry](docs/README.md). Common routes are:
 | Understand the mission and authority boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | Resume implementation | [PLAN.md](docs/PLAN.md) and [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Understand the first full-pipeline milestone | [MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md) |
+| Review the active semantic contract | [User Task interaction capsule](docs/capsules/USER-TASK-INTERACTION.md) |
+| Change a shared wire format | [Shared wire contracts](contracts/README.md) |
 | Understand BPMN, CIB PVM, fUML/PSSM, or Temporal research | [Research index](docs/research/README.md) |
 | Review provisional architecture discriminators | [Experiment index](docs/experiments/README.md) |
 | Run the correct assurance gate | [TESTING.md](docs/TESTING.md) |

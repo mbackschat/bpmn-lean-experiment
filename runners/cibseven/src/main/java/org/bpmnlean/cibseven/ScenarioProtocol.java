@@ -18,7 +18,9 @@ import java.util.Objects;
 public final class ScenarioProtocol {
 
   public static final String SCHEMA_VERSION = "0.1.0";
+  public static final String TRACE_SCHEMA_VERSION = "0.1.0";
   public static final String USER_TASK_INTERACTION_SCHEMA_VERSION = "0.2.0";
+  public static final String USER_TASK_INTERACTION_TRACE_SCHEMA_VERSION = "0.2.0";
   public static final String SUPPORTED_PROFILE = "cibseven-2.2.0-spike.1";
   public static final String USER_TASK_INTERACTION_PROFILE = "cibseven-2.2.0-spike.2";
 
@@ -121,6 +123,7 @@ public final class ScenarioProtocol {
     ACTIVE_WAITS("activeWaits"),
     OPEN_USER_TASKS("openUserTasks"),
     ENABLED_STIMULI("enabledStimuli"),
+    ENABLED_INTERACTIONS("enabledInteractions"),
     LOGICAL_TIME("logicalTime");
 
     private final String wireValue;
@@ -156,6 +159,7 @@ public final class ScenarioProtocol {
 
   public record ScenarioDefinition(
       String schemaVersion,
+      String traceSchemaVersion,
       String id,
       String profile,
       BpmnResource bpmn,
@@ -166,6 +170,7 @@ public final class ScenarioProtocol {
 
     public ScenarioDefinition {
       Objects.requireNonNull(schemaVersion, "schemaVersion");
+      Objects.requireNonNull(traceSchemaVersion, "traceSchemaVersion");
       Objects.requireNonNull(id, "id");
       Objects.requireNonNull(profile, "profile");
       Objects.requireNonNull(bpmn, "bpmn");
@@ -193,9 +198,12 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record Calibration(String status, JsonNode expectedTrace) {
+  public record Calibration(
+      String status, ScenarioOutcome expectedOutcome, JsonNode expectedTrace) {
     public Calibration {
       Objects.requireNonNull(status, "status");
+      Objects.requireNonNull(expectedOutcome, "expectedOutcome");
+      Objects.requireNonNull(expectedTrace, "expectedTrace");
     }
   }
 
@@ -260,6 +268,22 @@ public final class ScenarioProtocol {
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
+    @JsonSubTypes.Type(
+        value = CompleteUserTaskInstanceInteraction.class,
+        name = "completeUserTaskInstance")
+  })
+  public sealed interface EnabledInteraction
+      permits CompleteUserTaskInstanceInteraction {}
+
+  public record CompleteUserTaskInstanceInteraction(UserTaskInstanceId taskId)
+      implements EnabledInteraction {
+    public CompleteUserTaskInstanceInteraction {
+      Objects.requireNonNull(taskId, "taskId");
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
     @JsonSubTypes.Type(value = DeploymentObservation.class, name = "deployment"),
     @JsonSubTypes.Type(value = CommandObservation.class, name = "command"),
     @JsonSubTypes.Type(value = StateObservation.class, name = "state")
@@ -286,7 +310,9 @@ public final class ScenarioProtocol {
       ProcessStatus status,
       List<ActiveWait> activeWaits,
       @JsonInclude(JsonInclude.Include.NON_NULL) List<OpenUserTask> openUserTasks,
-      List<Stimulus> enabledStimuli,
+      @JsonInclude(JsonInclude.Include.NON_NULL) List<Stimulus> enabledStimuli,
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          List<EnabledInteraction> enabledInteractions,
       long logicalTimeMs)
       implements CanonicalObservation {
     public StateObservation {
@@ -296,7 +322,12 @@ public final class ScenarioProtocol {
       if (openUserTasks != null) {
         openUserTasks = List.copyOf(openUserTasks);
       }
-      enabledStimuli = List.copyOf(enabledStimuli);
+      if (enabledStimuli != null) {
+        enabledStimuli = List.copyOf(enabledStimuli);
+      }
+      if (enabledInteractions != null) {
+        enabledInteractions = List.copyOf(enabledInteractions);
+      }
       if (logicalTimeMs < 0) {
         throw new IllegalArgumentException("logicalTimeMs must not be negative");
       }
@@ -308,7 +339,14 @@ public final class ScenarioProtocol {
         List<ActiveWait> activeWaits,
         List<Stimulus> enabledStimuli,
         long logicalTimeMs) {
-      this(instanceId, status, activeWaits, null, enabledStimuli, logicalTimeMs);
+      this(
+          instanceId,
+          status,
+          activeWaits,
+          null,
+          enabledStimuli,
+          null,
+          logicalTimeMs);
     }
   }
 
