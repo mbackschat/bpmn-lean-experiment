@@ -52,4 +52,9 @@ example :
         trace := [.deployment .committed] } := by
   decide
 
+example (definition : Model) (before after : RuntimeState) (event : MicroEvent)
+    (h : internalStep definition before = some (after, event)) :
+    InternalMicroStep definition before event after :=
+  internalStep_sound definition before after event h
+
 end BpmnSemantics.SequentialUserTaskConformance

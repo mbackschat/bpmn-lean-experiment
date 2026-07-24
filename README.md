@@ -8,6 +8,8 @@ The ambition is deliberately high: not merely to translate BPMN shapes into Work
 
 > **Project status:** The bounded end-to-end `None Start Event → User Task → None End Event` MVP is evidence-closed. One content-addressed BPMN model is executed from exact source by CIB Seven and compiled into versioned executable IR for the pure TypeScript semantic core and Temporal; Lean independently evaluates the same content-identified capsule for lifecycle, exact completion, wrong activation, and stale completion. The fast gate checks exact four-target agreement, Query/Update refinement, duplicate-command handling, live and retained replay, cleanup, and seeded disagreements. The next proposed capsule is a parallel fork/two waits/join discriminator and is not yet approved or implemented. The repository does not contain a general BPMN engine and makes no BPMN-conformance or immutable CIB-compatibility claim.
 
+**Start here:** [walk through the complete MVP](docs/MVP-WALKTHROUGH.md) from exact BPMN XML to executable IR, CIB evidence, Lean semantics and laws, the TypeScript semantic core, Temporal Query/Update hosting, differential comparison, and replay.
+
 ## Why this project exists
 
 BPMN, CIB Seven, and Temporal solve different problems:
@@ -209,6 +211,7 @@ Start with the [documentation registry](docs/README.md). Common routes are:
 
 | Need | Read |
 |---|---|
+| Follow the implemented system end to end | [End-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) |
 | Understand the mission and authority boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | Resume implementation | [PLAN.md](docs/PLAN.md) and [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Understand the first full-pipeline milestone | [MILESTONE-0-FAST-PIPELINE.md](docs/MILESTONE-0-FAST-PIPELINE.md) |

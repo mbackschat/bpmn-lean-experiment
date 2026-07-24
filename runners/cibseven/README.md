@@ -47,7 +47,7 @@ A wrong semantic task occurrence is rejected before CIB host-task completion and
 
 Diagnostics include engine/database versions, phase timings, the PVM definition projection, and post-run cleanup counts. The PVM projection currently contains activity identity and type, behavior class, flow scope, optional event scope, and ordered outgoing transitions for the sequential model.
 
-`CibSevenOracleMain` implements the provisional JSON-lines server contract. Its transport behavior is locked by sending two compact scenarios through one warm runner in `CibSevenOracleMainTest`; cross-runtime process launching is deferred until the common orchestrator is introduced.
+`CibSevenOracleMain` implements the compact JSON-lines server contract. `CibSevenOracleMainTest` sends the three interaction scenarios through one warm engine and locks request order, cleanup, and omission of generated engine identifiers. The Node pipeline launches the runner through the explicitly selected Surefire bridge and batches all four lifecycle and interaction cases through that same persistent boundary.
 
 ## Source guide
 

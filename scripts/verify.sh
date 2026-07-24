@@ -9,6 +9,7 @@ xsd_path="docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
 bpmn_path="scenarios/m0-sequential-user-task/process.bpmn"
 
 ./scripts/pnpm.sh run test:contracts
+./scripts/pnpm.sh run check:doc-fragments
 
 if test -f "$xsd_path"; then
   xmllint --noout --schema "$xsd_path" "$bpmn_path"

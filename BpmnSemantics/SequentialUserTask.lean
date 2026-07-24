@@ -67,6 +67,30 @@ inductive MicroEvent where
   | processCompleted
   deriving Repr, DecidableEq
 
+/-- Declarative account of the internal transitions permitted by this capsule. -/
+inductive InternalMicroStep (definition : Model) :
+    RuntimeState → MicroEvent → RuntimeState → Prop where
+  | takeStartFlow (instanceId : SemanticId) (logicalTimeMs : Nat) :
+      InternalMicroStep definition
+        { control := .enteringStart instanceId, logicalTimeMs }
+        (.flowTaken definition.startEventId definition.userTaskId)
+        { control := .enteringUserTask instanceId, logicalTimeMs }
+  | createUserTaskWait (instanceId : SemanticId) (logicalTimeMs : Nat) :
+      InternalMicroStep definition
+        { control := .enteringUserTask instanceId, logicalTimeMs }
+        (.userTaskWaitCreated definition.userTaskId)
+        { control := .waitingUserTask instanceId 1, logicalTimeMs }
+  | takeUserTaskFlow (instanceId : SemanticId) (activation logicalTimeMs : Nat) :
+      InternalMicroStep definition
+        { control := .leavingUserTask instanceId activation, logicalTimeMs }
+        (.flowTaken definition.userTaskId definition.endEventId)
+        { control := .enteringEnd instanceId, logicalTimeMs }
+  | completeProcess (instanceId : SemanticId) (logicalTimeMs : Nat) :
+      InternalMicroStep definition
+        { control := .enteringEnd instanceId, logicalTimeMs }
+        .processCompleted
+        { control := .completed instanceId, logicalTimeMs }
+
 /-- One admitted external command before internal closure. -/
 private structure CommandAdmission where
   outcome : CommandOutcome
@@ -105,6 +129,35 @@ def internalStep (definition : Model) (state : RuntimeState) :
   | .notStarted
   | .waitingUserTask _ _
   | .completed _ => none
+
+/-- Every transition selected by the executable evaluator is permitted by the declarative relation. -/
+theorem internalStep_sound (definition : Model) (before after : RuntimeState)
+    (event : MicroEvent)
+    (h : internalStep definition before = some (after, event)) :
+    InternalMicroStep definition before event after := by
+  cases before with
+  | mk control logicalTimeMs =>
+      cases control with
+      | notStarted => simp [internalStep] at h
+      | enteringStart instanceId =>
+          simp [internalStep] at h
+          rcases h with ⟨rfl, rfl⟩
+          exact .takeStartFlow instanceId logicalTimeMs
+      | enteringUserTask instanceId =>
+          simp [internalStep] at h
+          rcases h with ⟨rfl, rfl⟩
+          exact .createUserTaskWait instanceId logicalTimeMs
+      | waitingUserTask instanceId activation =>
+          simp [internalStep] at h
+      | leavingUserTask instanceId activation =>
+          simp [internalStep] at h
+          rcases h with ⟨rfl, rfl⟩
+          exact .takeUserTaskFlow instanceId activation logicalTimeMs
+      | enteringEnd instanceId =>
+          simp [internalStep] at h
+          rcases h with ⟨rfl, rfl⟩
+          exact .completeProcess instanceId logicalTimeMs
+      | completed instanceId => simp [internalStep] at h
 
 /-- Result of closing deterministic internal transitions to an external command boundary. -/
 private structure ClosureResult where
@@ -469,6 +522,7 @@ theorem exact_task_completion_terminates :
   decide
 
 /-- A completion whose submitted task occurrence differs from the active occurrence is rejected without state change. -/
+-- tag::task-identity-law[]
 theorem task_identity_mismatch_is_rejected
     (definition : Model) (instanceId : SemanticId)
     (activeActivation : Nat) (completionCommandId : SemanticId)
@@ -493,6 +547,7 @@ theorem task_identity_mismatch_is_rejected
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · simp [applyStimulus, admit, elementMismatch]
     · simp [applyStimulus, admit, activationMismatch]
+-- end::task-identity-law[]
 
 /-- A command with the wrong activation ordinal is rejected for any identifiers and model. -/
 theorem wrong_activation_is_rejected

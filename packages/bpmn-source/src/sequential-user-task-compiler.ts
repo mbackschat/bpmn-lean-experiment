@@ -157,6 +157,7 @@ export function compileSequentialUserTaskGraph(
     );
   }
 
+  // tag::sequential-user-task-ir[]
   return {
     executableIr: {
       schemaVersion: "0.2.0",
@@ -178,6 +179,7 @@ export function compileSequentialUserTaskGraph(
     },
     diagnostic: undefined,
   };
+  // end::sequential-user-task-ir[]
 }
 
 function asElement(value: unknown): ElementRecord | undefined {

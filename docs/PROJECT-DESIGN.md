@@ -35,6 +35,16 @@ Formalization also provides architectural value before a theorem is finished: it
 
 The current Lean account is intentionally bounded. It does not parse BPMN XML, prove the compiler, consume arbitrary executable IR, or machine-check TypeScript or Temporal refinement. Those gaps are maintained explicitly in the [implementation map](IMPLEMENTATION-MAP.md). A future correspondence bridge must be evidenced rather than inferred from matching names or serialized examples.
 
+## Semantic rule traceability
+
+Each semantic capsule owns stable identifiers for its material rules and maps them to distinct normative/profile, Lean, CIB, TypeScript, Temporal, negative-witness, and mutation lanes. An identifier names one proposition rather than a function or test, so ordinary implementation renaming does not change it and a material semantic change does not silently reuse it.
+
+For each newly adopted runtime-transition family, Lean keeps the permitted transition relation separate from the executable transition selector. Every transition produced by that selector must have a machine-checked soundness bridge into the relation. Completeness, determinism, and refinement are stronger independent claims and are required only when their exact scope and hypotheses are stated. The TypeScript semantic core remains independently implemented; it is not generated from the Lean relation or a shared semantic DSL.
+
+Runtime-only and synthetic constructs are legitimate when source syntax alone cannot express execution state, but each capsule must record their derivation, ownership, lifecycle invariants, and public projection. Host identifiers and hidden Temporal or CIB mechanics never become semantic facts through that inventory.
+
+Target scenarios contain only model, profile, and explicit semantic inputs. Expected outcomes and portable semantic assertions are bound verifier-side and never supplied to target runners. The current contract and the deliberately deferred machine-readable assertion vocabulary are owned by [the shared wire contracts](../contracts/README.md#portable-semantic-assertions).
+
 ## BPMN ingestion and execution decision
 
 The production architecture is an **interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**.

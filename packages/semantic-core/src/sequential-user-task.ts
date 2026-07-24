@@ -266,6 +266,7 @@ function admit(
   }
 }
 
+// tag::apply-stimulus[]
 export function applyStimulus(
   model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
@@ -294,6 +295,7 @@ export function applyStimulus(
       return assertNever(admission.outcome);
   }
 }
+// end::apply-stimulus[]
 
 function enabledCompletions(
   model: SequentialUserTaskExecutableIr,

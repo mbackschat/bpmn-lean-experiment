@@ -128,6 +128,7 @@ public class CibSevenScenarioRunnerTest {
                 INSTANCE_ID, COMPLETED, List.of(), List.of(), null, List.of(), 0));
     assertEquals(expectedTrace, evidence.trace());
 
+    // tag::cib-user-task-probe[]
     try (var runner = CibSevenScenarioRunner.create()) {
       var calibrated = runner.run(scenario, PROJECT_ROOT);
       var rejected = runner.run(wrongScenario, PROJECT_ROOT);
@@ -145,6 +146,7 @@ public class CibSevenScenarioRunnerTest {
       assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
       assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
     }
+    // end::cib-user-task-probe[]
   }
 
   private static PvmDefinitionProjection expectedProjection() {

@@ -6,6 +6,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 
 | Task | Read |
 |---|---|
+| Understand the implemented MVP end to end | [MVP-WALKTHROUGH.md](MVP-WALKTHROUGH.md) |
 | Resume implementation | [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the current gate in [TESTING.md](TESTING.md) |
 | Run or inspect the CIB oracle | [TESTING.md](TESTING.md) and the [CIB runner guide](../runners/cibseven/README.md) |
 | Run or inspect the Temporal adapter | [TESTING.md](TESTING.md), [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md), and the [adapter guide](../packages/temporal-adapter/README.md) |
@@ -24,6 +25,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Document | Audience and ownership |
 |---|---|
 | Top-level [README.md](../README.md) | New readers; concise purpose, honest status, quick start, and routes into this registry |
+| [MVP-WALKTHROUGH.md](MVP-WALKTHROUGH.md) | New readers and reviewers; source-synchronized tour through exact BPMN input, executable IR, CIB, Lean, the semantic core, Temporal, comparison, mutation, and replay |
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
 | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md) | Contributors and owner; adopted exact parser dependency, source-preservation contract, security boundary, bounded CMOF use, license graph, and first implementation slice |
@@ -34,6 +36,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) | Researchers and performance contributors; pristine evidence lane, experimental source branches, execution profiles, acceleration limits, and shadow-equivalence gate |
 | [research/README.md](research/README.md) | Researchers and semantic contributors; topic index and boundary between research input and approved decisions |
 | [research/SEMANTIC-REPRESENTATIONS.md](research/SEMANTIC-REPRESENTATIONS.md) | Semantic architects; CIB Model API/PVM, fUML/PSSM execution models, code examples, and provisional source/IR/runtime consequences |
+| [research/WEBASSEMBLY-SEMANTICS-TRANSFER.md](research/WEBASSEMBLY-SEMANTICS-TRANSFER.md) | Semantic architects; WebAssembly declarative rules, reference interpreters, SpecTec and experimental proof backends, portable conformance tests, proof boundary, and bounded transfer recommendations |
 | [research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md) | Semantic contributors; bounded transfer of Lean capsule, evidence, non-law, and specification-synchronization practices from the sibling experiment |
 | [experiments/README.md](experiments/README.md) | Contributors running bounded risk spikes; experiment lifecycle, required evidence, and registry |
 | [experiments/SEMANTIC-REPRESENTATION-SPIKES.md](experiments/SEMANTIC-REPRESENTATION-SPIKES.md) | Semantic architects; executable source/IR, scope, join-provenance, and command-closure discriminators |

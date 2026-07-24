@@ -21,19 +21,26 @@ The first scaffold capsule followed this workflow: the conformance module import
 After Milestone 0, a feature is not represented by one aggregate “supported” state. The applicable lanes close independently:
 
 1. normative BPMN pointer or approved CIB-profile interpretation;
-2. smallest separating example and its intended red result;
-3. executable Lean definition and static admission boundary;
-4. useful universal law with explicit hypotheses;
-5. nearest plausible stronger false claim as a checked non-law;
-6. retained CIB observation with exact environment and projection fidelity;
-7. independently derived TypeScript semantic-core result;
-8. Temporal refinement, replay, cleanup, and applicable fault evidence;
-9. meaningful mutation that proves the new evidence projection can detect a semantic disagreement;
-10. exact complete, pending, and excluded dimensions in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+2. stable semantic rule identifiers and a rule-to-evidence matrix;
+3. smallest separating example and its intended red result;
+4. executable Lean definition and static admission boundary;
+5. declarative transition relation plus evaluator soundness for every new runtime-transition family;
+6. useful universal law with explicit hypotheses;
+7. nearest plausible stronger false claim as a checked non-law;
+8. retained CIB observation with exact environment and projection fidelity;
+9. independently derived TypeScript semantic-core result;
+10. Temporal refinement, replay, cleanup, and applicable fault evidence;
+11. meaningful mutation that proves the new evidence projection can detect a semantic disagreement;
+12. runtime-only and synthetic construct inventory;
+13. exact complete, pending, and excluded dimensions in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 A proof establishes a property of the chosen Lean account, not correspondence with CIB Seven. A retained CIB trace establishes only finite empirical correspondence at its declared observation boundary and does not transfer Lean’s proofs to CIB, TypeScript, or Temporal. Parser acceptance, model admission, execution behavior, Temporal durability, and conformance are separate assertions.
 
 Retained CIB observations and Temporal histories are immutable. When replay disagrees, investigate the semantic definition, source identity, environment, or projection; never regenerate expected evidence merely to restore green. Batch new CIB probes by coherent semantic family after the separating examples identify the exact observation needed. The full rationale is in [the sibling process-transfer study](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md).
+
+The sequential User Task evaluator now has an independent inductive `InternalMicroStep` relation and the universal `internalStep_sound` bridge. Its red conformance check failed because both names were absent; the focused green gate proves every returned internal transition is permitted by the relation. This does not prove evaluator completeness, external command-admission correspondence, compiler correctness, TypeScript correspondence, or Temporal refinement.
+
+Rule identifiers and evidence matrices remain capsule-owned Markdown. The current gate compiles referenced Lean obligations and executes the independently linked evidence lanes, but no machine-readable rule registry or documentation parser is introduced. Add such infrastructure only after the parallel capsule demonstrates a concrete drift that it would have prevented.
 
 ## Current verification gate
 
@@ -42,7 +49,26 @@ Retained CIB observations and Temporal histories are immutable. When replay disa
 git status --short
 ```
 
-The verification script evaluates profile, answer-free scenario, canonical-result, and retained CIB evidence documents against the maintained Draft 2020-12 schemas; checks their cross-artifact identities and hashes; validates BPMN XML and locally available official XSD and CMOF facts; runs Lean, the BPMN source/compiler boundary, the pure TypeScript semantic core, the embedded CIB Seven oracle tests, the pure comparator, timeout process-group cleanup, the prepared four-case exact-source pipeline, replay, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
+The verification script evaluates profile, answer-free scenario, canonical-result, and retained CIB evidence documents against the maintained Draft 2020-12 schemas; checks their cross-artifact identities and hashes; checks source-synchronized walkthrough fragments; validates BPMN XML and locally available official XSD and CMOF facts; runs Lean, the BPMN source/compiler boundary, the pure TypeScript semantic core, the embedded CIB Seven oracle tests, the pure comparator, timeout process-group cleanup, the prepared four-case exact-source pipeline, replay, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
+
+## Source-synchronized walkthrough fragments
+
+The [MVP walkthrough](MVP-WALKTHROUGH.md) is ordinary Markdown, but its canonical code fences mirror tagged regions in the actual TypeScript, Java, Lean, and JavaScript sources. This follows the useful part of the sibling `a12-rulekit` documentation pattern without introducing Showboat or another dependency.
+
+Check fragment freshness:
+
+```sh
+./scripts/pnpm.sh run check:doc-fragments
+```
+
+After a tagged source region changes, synchronize and review the mirrors:
+
+```sh
+./scripts/pnpm.sh run sync:doc-fragments
+git diff -- docs/MVP-WALKTHROUGH.md
+```
+
+Normal verification is assert-only and never changes documentation. The infrastructure tests lock drift detection, deterministic rewriting, common-indentation normalization, and rejection of source paths outside the repository. Fix and test the canonical source before synchronizing; never edit a mirrored fence as an independent implementation.
 
 ## User Task interaction contract and CIB evidence
 

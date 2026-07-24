@@ -134,6 +134,33 @@ Primary sources inspected:
 
 The latest stable GitHub releases inspected on 2026-07-23 were TLA+ tools `v1.7.4` under MIT and Apalache `v0.58.3` under Apache-2.0. These are research observations, not approved dependencies or project pins. The alternatives have not been selected or installed. No first-party formal adapter model was located in the inspected Temporal documentation, TypeScript SDK, samples, or current server repository tree, so the project cannot inherit an official Temporal formal specification.
 
+## WebAssembly specification and semantics workbench
+
+Read-only checkout: [WebAssembly/spec at `dfa3f32`](https://github.com/WebAssembly/spec/tree/dfa3f32a881aecc60a8c792da3c25787ccb15572)
+
+- Remote: `https://github.com/WebAssembly/spec.git`
+- Inspected revision: `dfa3f32a881aecc60a8c792da3c25787ccb15572`
+- License: directory-specific; SpecTec, the OCaml interpreter, and tests are Apache-2.0, while specification documents use the W3C Software and Document Notice and License
+- Role: research reference for declarative operational semantics, generated prose and formal notation, reference interpreters, language-neutral conformance scripts, versioned specifications, and proof-claim boundaries
+
+Read-only checkout: [`Wasm-DSL/spectec` at `acc6e83`](https://github.com/Wasm-DSL/spectec/tree/acc6e834ff403c82554d081237f327346190ad96)
+
+- Remote: `https://github.com/Wasm-DSL/spectec.git`
+- Inspected main revision: `acc6e834ff403c82554d081237f327346190ad96`
+- Inspected experimental revisions: Lean 4 `16b70bde873d7ded498f9b81fd13ddcee95281fa`, Isabelle `9bcba3d1b8599b1c2cdff9f26e21a745949f85f2`, and Rocq `65187f939a83d3206f50813cd362592fc4ec0a62`
+- License: directory-specific; SpecTec, the OCaml interpreter, and tests are Apache-2.0, while specification documents use the W3C Software and Document Notice and License
+- Role: standalone SpecTec development incubator and research evidence for multi-backend mechanization; not an independent semantic oracle
+
+Read-only checkout: [`zilinc/spectec` at `6191426`](https://github.com/zilinc/spectec/tree/6191426aeaa1e9a30f2372526b5d1018eb34f0ac)
+
+- Remote: `https://github.com/zilinc/spectec.git`
+- Inspected main revision: `6191426aeaa1e9a30f2372526b5d1018eb34f0ac`
+- Inspected experimental revisions: Lean 4 `40077cfe8e5879d742462f915ca2e29e4c7574ed` and Isabelle proof-first `8c20098523514559add26233844e714bb53f314b`
+- License: directory-specific; the repository root delegates terms to top-level directories, with specification documents under the W3C Software and Document Notice and License, the interpreter and tests under Apache-2.0, and papers under CC BY 4.0
+- Role: fork and active experimental-branch evidence for generated Lean and Isabelle definitions and proof work; not an independent semantic oracle
+
+These repositories share lineage and periodically synchronized code, so agreement among them is not differential evidence. All remain external research inputs and contribute no dependency or copied source to this project. The [WebAssembly and SpecTec semantics transfer study](research/WEBASSEMBLY-SEMANTICS-TRANSFER.md) records which mechanisms fit this project and why a general SpecTec-like DSL, generated TypeScript semantic core, or current proof-assistant backend is not recommended now.
+
 ## BPMN XML/metamodel reference
 
 Read-only checkout: [bpmn-io/bpmn-moddle at `47d8f75`](https://github.com/bpmn-io/bpmn-moddle/tree/47d8f75eed773829f20537adbb7086b290096006)

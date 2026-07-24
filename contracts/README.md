@@ -20,6 +20,14 @@ Neutral scenario documents contain only target inputs. Retained CIB evidence is 
 
 Schema validation is a boundary guard, not correspondence evidence. The maintained Ajv Draft 2020-12 gate validates profiles, answer-free scenarios, canonical results, and retained CIB evidence; checks cross-artifact identities and content hashes; and includes mutations for answer smuggling, stale scenario evidence, and invalid task-instance projection. CIB calibration, Lean properties, TypeScript behavior, Temporal refinement, and differential comparison remain separate claim lanes.
 
+## Portable semantic assertions
+
+A target scenario contains only the admitted model/profile identity and explicit semantic inputs. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.
+
+Portable assertions are verifier-side claims over canonical results or relations between results. Each future assertion artifact must bind the exact scenario content digest, semantic profile, observation schema, and applicable stable rule identifiers. Assertions may express outcomes, state predicates, multiplicity, enabled or refused interactions, preservation, causal relations, or cross-run refinement, but may not inject semantic choices or expected state into a runner.
+
+The current retained CIB evidence envelopes are the first verifier-only expected-result artifacts, not a general assertion language. The next structurally distinct capsule may add only the minimum assertion forms needed by its separating witnesses. A general assertion schema, generator, rule manifest, and runner-side assertion execution remain deliberately absent until repeated use demonstrates their contract.
+
 ## Schemas
 
 - [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates draft profile artifacts.

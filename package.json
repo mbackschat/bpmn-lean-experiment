@@ -16,6 +16,8 @@
     "build:temporal-adapter": "tsc -p packages/temporal-adapter/tsconfig.json",
     "build:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json",
     "check:cmof-m0": "node scripts/check-bpmn-m0-metamodel.mjs",
+    "check:doc-fragments": "node scripts/markdown-code-fragments.mjs",
+    "sync:doc-fragments": "node scripts/markdown-code-fragments.mjs --write",
     "test:contracts": "node --test --test-concurrency=1 scripts/contract-artifacts.test.mjs",
     "test:differential": "tsc -p packages/differential/tsconfig.json && node --test --test-concurrency=1 packages/differential/test/comparator.test.mjs",
     "test:infrastructure": "node --test --test-concurrency=1 scripts/*.test.mjs",

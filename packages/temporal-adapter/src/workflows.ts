@@ -70,6 +70,7 @@ export async function runBpmnScenario(
   const commandResults: CommandResultLedgerEntry[] = [];
   let semanticLoopFinished = false;
 
+  // tag::temporal-semantic-boundary[]
   setHandler(bpmnStimulusSignal, (stimulus) => {
     enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
   });
@@ -97,6 +98,7 @@ export async function runBpmnScenario(
     },
     { validator: validateCompleteUserTaskUpdate },
   );
+  // end::temporal-semantic-boundary[]
 
   switch (deployment.outcome) {
     case CommandOutcome.Unsupported:

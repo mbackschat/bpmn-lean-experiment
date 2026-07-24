@@ -103,6 +103,12 @@ BPMN XML parsing and compilation run before Workflow start with an explicit byte
 
 Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim.
 
+Give every material semantic rule a stable capsule-owned identifier and a rule-to-evidence row. An editorial correction may retain an identifier; a materially different proposition requires a new identifier and, when already used by evidence or running instances, the applicable profile or artifact version change. Rule identifiers are traceability labels and do not enter runtime wire contracts without a concrete consumer and versioning decision.
+
+For each new runtime-transition family, keep a declarative Lean relation distinct from the executable evaluator and prove that every evaluator-produced transition is permitted by the relation. Claim completeness, determinism, or equivalence only with exact checked hypotheses; nondeterministic semantics must receive an explicit semantic choice rather than inherit evaluator order. Keep the TypeScript semantic core independently implemented.
+
+Each capsule must inventory runtime-only and synthetic constructs, their source or derivation, why they are necessary, which public projections may expose them, and their creation, ownership, and removal invariants. Keep neutral target scenarios answer-free; expected outcomes and portable assertions remain verifier-only artifacts bound to exact scenario and profile identity.
+
 Name a concrete adapter consumer or refinement risk before generalizing a representation or semantic mechanism. Preserve retained CIB observations and Temporal histories as immutable evidence, and require a meaningful seeded mutation for every new evidence projection. Investigate a mismatch at the semantic or projection boundary; never refresh expected evidence merely to make a gate green.
 
 ### Milestone and capsule reflection
@@ -154,6 +160,8 @@ Use one owner for each fact and link to it elsewhere:
 
 Write one Markdown paragraph per line without hard wrapping. Use regular relative Markdown links for other project documents. Update the owner in the same change and avoid copying live inventories.
 
+Keep the [MVP walkthrough](docs/MVP-WALKTHROUGH.md) as ordinary Markdown; do not introduce Showboat for code walkthroughs. Canonical walkthrough excerpts come from tagged regions in compiling or executable source. After changing a tagged region, run `./scripts/pnpm.sh run sync:doc-fragments`, review the resulting prose and diff, and leave `./scripts/pnpm.sh run check:doc-fragments` green. Never hand-edit a synchronized fence merely to satisfy the checker.
+
 The rationale and transfer limits for the semantic-capsule workflow are recorded in [the `a12-kernel-lean` process-transfer study](docs/research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md).
 
 ## Reference and source discipline
@@ -199,6 +207,12 @@ Focused shared-contract and retained-evidence gate:
 
 ```sh
 ./scripts/pnpm.sh run test:contracts
+```
+
+Source-synchronized walkthrough fragment gate:
+
+```sh
+./scripts/pnpm.sh run check:doc-fragments
 ```
 
 Optional local pinned MIWG observation gate:

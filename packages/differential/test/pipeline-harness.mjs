@@ -448,6 +448,7 @@ function compareCase(context, projectedTargets) {
     semanticCoreResult,
     temporalResult,
   } = projectedTargets;
+  // tag::four-target-comparison[]
   const comparison = compareTargetResults(
     {
       target: DifferentialTarget.CibSeven,
@@ -468,6 +469,7 @@ function compareCase(context, projectedTargets) {
       },
     ],
   );
+  // end::four-target-comparison[]
   const evidenceComparison = compareTargetResults(
     {
       target: DifferentialTarget.RetainedCibEvidence,
@@ -480,6 +482,7 @@ function compareCase(context, projectedTargets) {
       },
     ],
   );
+  // tag::seeded-disagreement[]
   const injectedResult = structuredClone(semanticCoreResult);
   pipelineCase.injectMutation(injectedResult);
   const injectedDisagreement = compareTargetResults(
@@ -494,6 +497,7 @@ function compareCase(context, projectedTargets) {
       },
     ],
   );
+  // end::seeded-disagreement[]
   const completionCommandIds = new Set(
     scenario.stimuli.slice(1).map(({ commandId }) => commandId),
   );
