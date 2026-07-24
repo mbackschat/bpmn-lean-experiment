@@ -33,9 +33,12 @@ Agreement with CIB Seven does not by itself prove BPMN conformance. BPMN conform
 | Clause 12, BPMN Notation and Diagrams | Supplies BPMN Diagram Interchange; accepted XML can retain or ignore presentation data according to the eventual import contract, but DI never defines execution behavior |
 | Clause 13, BPMN Execution Semantics | Supplies Process instantiation/completion, token-based semantic explanations, Activity lifecycle, Tasks, scopes, loops, multi-instance behavior, gateways, Events, compensation, and termination |
 | Clause 15, Exchange Formats | Supplies BPMN document roots, namespaces, imports, cross-file QName references, and the normative machine-readable artifact route |
-| Normative XSD/CMOF files | Supply the exact interchange and metamodel syntax that the ingestion layer must accept and normalize |
+| Normative CMOF files | Supply the abstract metamodel: packages, classes, inheritance, properties, associations, multiplicities, containment, and defaults |
+| Normative XSD/XSLT files | Supply the concrete XML representation and normative XMI-to-BPMN-XML transformation route |
 
 The requirement ledger must link every supported or rejected construct to the applicable normative clause, machine-readable element, profile interpretation, Lean owner, executable case, and evidence status.
+
+[The BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md#normative-artifacts-and-semantic-authority) owns the operational use of these artifact classes: CMOF-derived metamodel facts constrain structural admission, XSD/XSLT constrain interchange, and prose, figures, and issue dispositions constrain executable semantics. None of the machine-readable artifacts alone defines token behavior or Activity lifecycle.
 
 ## Process Execution boundary
 

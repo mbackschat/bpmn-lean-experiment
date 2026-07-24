@@ -39,6 +39,58 @@ Parsing and compilation happen outside Temporal Workflow execution. The Workflow
 
 `bpmn-moddle.toXML` is available for bounded interchange experiments but is not part of deployment or execution. Serializer output must never replace the original source bytes.
 
+## Normative artifacts and semantic authority
+
+The project targets [BPMN 2.0.2](https://www.omg.org/spec/BPMN/2.0.2), not the superseded BPMN 2.0 inventory. OMG’s 2.0.2 catalog points to the same normative machine-readable CMOF, XSD, and XSLT artifacts listed for 2.0. Their roles remain distinct:
+
+| Source | Normative content | Project use | Does not establish |
+|---|---|---|---|
+| BPMN20, BPMNDI, DC, DI, and Infrastructure CMOF | Abstract metamodel packages, classes, inheritance, properties, associations, multiplicities, containment, and defaults | Versioned metamodel facts, structural coverage, source-model checks, and Lean well-formedness boundaries | XML lexical form or operational execution behavior |
+| BPMN20, BPMNDI, DC, DI, and Semantic XSD | Concrete XML elements, attributes, namespaces, types, occurrence constraints, and schema composition | XML validation, negative import tests, and interchange qualification | Every cross-reference rule, deployment admission, or token semantics |
+| `BPMN20-FromXMI.xslt` | Normative XMI-to-BPMN-XML transformation route | Transformation reference and future exchange-format test input | Production parsing or execution meaning |
+| Specification prose, tables, figures, and issue dispositions | Static constraints, Process Execution Conformance obligations, Activity lifecycle, and operational behavior | Profile clauses, Lean transition semantics, CIB interpretation decisions, and semantic test witnesses | A directly executable formal model without project interpretation |
+
+The machine-readable artifacts constrain the source language. The prose and issue dispositions constrain its operational meaning:
+
+```text
+                         OMG BPMN 2.0.2
+                    ┌──────────┼────────────┐
+                    │          │            │
+                  CMOF      XSD/XSLT   prose/figures/issues
+                    │          │            │
+                    ▼          ▼            ▼
+          metamodel facts   XML checks   semantic clauses
+                    │          │            │
+                    ├──────────┴────┐       │
+                    ▼               ▼       ▼
+           structural source model ──► executable IR
+                                               │
+                               ┌───────────────┼──────────────┐
+                               ▼               ▼              ▼
+                         Lean semantics   TypeScript core   Temporal host
+```
+
+The CMOF path can justify facts such as type inheritance, reference targets, ownership, multiplicity, and defaults. It cannot generate the meaning of traversing a Sequence Flow, joining a gateway, interrupting an Activity, completing a scope, or handling compensation. Those definitions come from the operational sources and explicit profile decisions.
+
+### CMOF-derived metamodel facts
+
+The planned use of CMOF is a versioned, generated metamodel manifest rather than a second hand-written BPMN type hierarchy. The manifest should retain:
+
+- package and namespace identities;
+- classes and generalizations;
+- owned properties and value types;
+- lower and upper multiplicities;
+- containment versus cross-reference relationships;
+- association opposites;
+- enumerations and specified defaults;
+- source identity tying every fact to the exact BPMN 2.0.2 artifact set.
+
+That manifest can drive importer validation, supported/unsupported coverage, property-preservation tests, the TypeScript source projection, and the static well-formedness layer admitted into Lean. It remains build-time specification data; neither the pure semantic core nor a Temporal Workflow parses CMOF.
+
+Lean should formalize the smallest reviewed executable fragment over checked source facts. CMOF justifies the structural premises—for example that a Sequence Flow has admitted source and target Flow Nodes—while Lean defines and proves the operational consequences. A full generated CMOF mirror would add large amounts of diagram, interchange, and modeling structure without supplying the missing execution semantics.
+
+The first ingestion slice therefore does not generate complete TypeScript or Lean bindings. It extracts only the metamodel facts consumed by the sequential User Task compiler and records absent coverage. A second semantic consumer must demonstrate the reusable manifest shape before the project generalizes its generator.
+
 ## Why `bpmn-moddle`
 
 `bpmn-moddle` supplies the BPMN, BPMNDI, DI, and DC descriptors, metamodel-aware element construction, QName/namespace handling, ID indexing, reference resolution, generic extension-element representation, and import warnings. Rebuilding those mechanisms on a generic XML parser would add a second BPMN metamodel implementation before the project reaches operational semantics.
