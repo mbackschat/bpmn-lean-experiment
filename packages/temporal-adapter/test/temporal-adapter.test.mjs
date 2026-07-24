@@ -3,6 +3,10 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
+import {
+  BpmnCompilationStatus,
+  compileSequentialUserTaskBpmn,
+} from "@bpmn-lean/bpmn-source";
 import { runScenario } from "@bpmn-lean/semantic-core";
 
 import { TemporalScenarioRunner } from "../dist/index.js";
@@ -10,6 +14,10 @@ import { TemporalScenarioRunner } from "../dist/index.js";
 
 const scenarioUrl = new URL(
   "../../../scenarios/m0-sequential-user-task/scenario.json",
+  import.meta.url,
+);
+const bpmnUrl = new URL(
+  "../../../scenarios/m0-sequential-user-task/process.bpmn",
   import.meta.url,
 );
 const retainedHistoryUrl = new URL(
@@ -37,6 +45,25 @@ async function loadJson(url) {
   return JSON.parse(await readFile(url, "utf8"));
 }
 
+async function loadExecutionInput() {
+  const scenario = await loadJson(scenarioUrl);
+  const compilation = await compileSequentialUserTaskBpmn({
+    bytes: await readFile(bpmnUrl),
+    sourceId: scenario.bpmn.id,
+    expectedSha256: scenario.bpmn.sha256,
+    semanticProfile: scenario.profile,
+    limits: {
+      maxBytes: 1024 * 1024,
+      parserDeadlineMs: 1_000,
+    },
+  });
+  assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
+  return {
+    scenario,
+    executableIr: compilation.executableIr,
+  };
+}
+
 before(async () => {
   runner = await withDeadline(
     TemporalScenarioRunner.create({
@@ -55,12 +82,16 @@ after(async () => {
 });
 
 test("full server preserves the calibrated trace and replays its history", async () => {
-  const scenario = await loadJson(scenarioUrl);
+  const { scenario, executableIr } = await loadExecutionInput();
 
   const execution = await withDeadline(
-    runner.runScenario(scenario, {
-      workflowId: "m0-live-sequential-user-task",
-    }),
+    runner.runScenario(
+      scenario,
+      executableIr,
+      {
+        workflowId: "m0-live-sequential-user-task",
+      },
+    ),
     15_000,
     "Temporal scenario",
   );
@@ -69,7 +100,7 @@ test("full server preserves the calibrated trace and replays its history", async
     execution.waitTrace,
     scenario.calibration.expectedTrace.slice(0, 3),
   );
-  assert.deepEqual(execution.result, runScenario(scenario));
+  assert.deepEqual(execution.result, runScenario(scenario, executableIr));
   assert.ok(execution.history.events.length > 0);
 
   await withDeadline(

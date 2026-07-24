@@ -12,16 +12,12 @@ import type {
   ScenarioResult,
   Stimulus,
 } from "./contract.js";
-
-export type SequentialUserTaskModel = Readonly<{
-  processId: string;
-  userTaskId: string;
-}>;
-
-export const sequentialUserTaskModel: SequentialUserTaskModel = {
-  processId: "Process_SequentialUserTask",
-  userTaskId: "UserTask_Approve",
-};
+import {
+  BpmnExecutableIrKind,
+} from "./executable-ir.js";
+import type {
+  SequentialUserTaskExecutableIr,
+} from "./executable-ir.js";
 
 export enum ControlStateKind {
   NotStarted = "notStarted",
@@ -184,7 +180,7 @@ function validateClosureLimit(closureLimit: number): void {
 }
 
 function admit(
-  model: SequentialUserTaskModel,
+  model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
   stimulus: Stimulus,
 ): CommandAdmission {
@@ -223,7 +219,7 @@ function admit(
 }
 
 export function applyStimulus(
-  model: SequentialUserTaskModel,
+  model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
   stimulus: Stimulus,
   closureLimit: number = internalClosureLimit,
@@ -252,7 +248,7 @@ export function applyStimulus(
 }
 
 function enabledCompletions(
-  model: SequentialUserTaskModel,
+  model: SequentialUserTaskExecutableIr,
   remainingStimuli: ReadonlyArray<Stimulus>,
 ): ReadonlyArray<Stimulus> {
   return remainingStimuli.filter(
@@ -263,7 +259,7 @@ function enabledCompletions(
 }
 
 function observeStableState(
-  model: SequentialUserTaskModel,
+  model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
   remainingStimuli: ReadonlyArray<Stimulus>,
 ): CanonicalObservation | null {
@@ -314,7 +310,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
 }
 
 export function advanceScenario(
-  model: SequentialUserTaskModel,
+  model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
   stimulus: Stimulus,
   remainingStimuli: ReadonlyArray<Stimulus>,
@@ -383,7 +379,7 @@ type Execution = Readonly<{
 }>;
 
 function executeStimuli(
-  model: SequentialUserTaskModel,
+  model: SequentialUserTaskExecutableIr,
   stimuli: ReadonlyArray<Stimulus>,
   closureLimit: number,
 ): Execution {
@@ -423,21 +419,25 @@ function executeStimuli(
   };
 }
 
-function supportsScenario(scenario: Scenario): boolean {
+function supportsScenario(
+  scenario: Scenario,
+  executableIr: SequentialUserTaskExecutableIr,
+): boolean {
   return (
     scenario.schemaVersion === "0.1.0" &&
-    scenario.id === "m0-sequential-user-task" &&
     scenario.profile === "cibseven-2.2.0-spike.1" &&
-    scenario.bpmn.id === "m0-sequential-user-task-process" &&
-    scenario.bpmn.relativePath ===
-      "scenarios/m0-sequential-user-task/process.bpmn" &&
-    scenario.bpmn.sha256 ===
-      "537758345c021a30d3dcca2e8d18137fae151d6501b72b4b46a77e6125dee295"
+    isSupportedExecutableIr(executableIr) &&
+    executableIr.identity.semanticProfile === scenario.profile &&
+    executableIr.identity.sourceId === scenario.bpmn.id &&
+    executableIr.identity.sourceSha256 === scenario.bpmn.sha256
   );
 }
 
-export function deployScenario(scenario: Scenario): ScenarioDeployment {
-  const outcome = supportsScenario(scenario)
+export function deployScenario(
+  scenario: Scenario,
+  executableIr: SequentialUserTaskExecutableIr,
+): ScenarioDeployment {
+  const outcome = supportsScenario(scenario, executableIr)
     ? CommandOutcome.Committed
     : CommandOutcome.Unsupported;
   return {
@@ -452,10 +452,11 @@ export function deployScenario(scenario: Scenario): ScenarioDeployment {
 export function runScenarioWithClosureLimit(
   closureLimit: number,
   scenario: Scenario,
+  executableIr: SequentialUserTaskExecutableIr,
 ): ScenarioResult {
   validateClosureLimit(closureLimit);
 
-  const deployment = deployScenario(scenario);
+  const deployment = deployScenario(scenario, executableIr);
   switch (deployment.outcome) {
     case CommandOutcome.Unsupported:
       return {
@@ -467,7 +468,7 @@ export function runScenarioWithClosureLimit(
       };
     case CommandOutcome.Committed: {
       const execution = executeStimuli(
-        sequentialUserTaskModel,
+        executableIr,
         scenario.stimuli,
         closureLimit,
       );
@@ -481,6 +482,98 @@ export function runScenarioWithClosureLimit(
   }
 }
 
-export function runScenario(scenario: Scenario): ScenarioResult {
-  return runScenarioWithClosureLimit(internalClosureLimit, scenario);
+export function runScenario(
+  scenario: Scenario,
+  executableIr: SequentialUserTaskExecutableIr,
+): ScenarioResult {
+  return runScenarioWithClosureLimit(
+    internalClosureLimit,
+    scenario,
+    executableIr,
+  );
+}
+
+function isSupportedExecutableIr(
+  value: unknown,
+): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  const identity = isRecord(value.identity) ? value.identity : undefined;
+  const sequenceFlows = Array.isArray(value.sequenceFlows)
+    ? value.sequenceFlows
+    : undefined;
+  if (
+    value.schemaVersion !== "0.1.0" ||
+    value.kind !== BpmnExecutableIrKind.SequentialUserTask ||
+    identity === undefined ||
+    identity.compiler !==
+      "bpmn-source-sequential-user-task@0.1.0" ||
+    !isNonEmptyString(identity.semanticProfile) ||
+    !isNonEmptyString(identity.sourceId) ||
+    !isNonEmptyString(identity.sourceSha256) ||
+    sequenceFlows === undefined ||
+    sequenceFlows.length !== 2 ||
+    !sequenceFlows.every(isExecutableSequenceFlow)
+  ) {
+    return false;
+  }
+
+  const ids = [
+    value.processId,
+    value.startEventId,
+    value.userTaskId,
+    value.endEventId,
+    ...sequenceFlows.map(({ id }) => id),
+  ];
+  if (
+    ids.some((id) => !isNonEmptyString(id)) ||
+    new Set(ids).size !== 6
+  ) {
+    return false;
+  }
+
+  return (
+    hasExecutableFlow(
+      sequenceFlows,
+      value.startEventId,
+      value.userTaskId,
+    ) &&
+    hasExecutableFlow(
+      sequenceFlows,
+      value.userTaskId,
+      value.endEventId,
+    )
+  );
+}
+
+function hasExecutableFlow(
+  sequenceFlows: ReadonlyArray<Record<string, unknown>>,
+  sourceId: unknown,
+  targetId: unknown,
+): boolean {
+  return sequenceFlows.some(
+    (flow) =>
+      flow.sourceId === sourceId &&
+      flow.targetId === targetId,
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function isExecutableSequenceFlow(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.id) &&
+    isNonEmptyString(value.sourceId) &&
+    isNonEmptyString(value.targetId)
+  );
 }

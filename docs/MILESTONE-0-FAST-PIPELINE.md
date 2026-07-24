@@ -197,7 +197,7 @@ Known decisions still required:
 | Package manager | pnpm `11.17.0` | Approved and implemented for M0.4; MIT; requires Node `>=22.13`; replacing it requires lockfile and workspace migration but no semantic change |
 | TypeScript compiler | `typescript@7.0.2` | Approved M0.4 development dependency; Apache-2.0; the resolved platform graph contains only `typescript@7.0.2` and `@typescript/typescript-darwin-arm64@7.0.2`, both Apache-2.0; removable by replacing the compiler/toolchain, with no runtime semantic role |
 | TypeScript test harness | Node `node:test` | Implemented with the approved Node runtime; no package dependency or additional license graph |
-| BPMN ingestion | `bpmn-moddle` or a smaller standards-preserving XML front end | Dependency and preservation policy require approval |
+| BPMN ingestion | Exact `bpmn-moddle@10.0.0` isolated in deployment-time `@bpmn-lean/bpmn-source` | Approved after M0; exact bytes/hash, bounded preflight, warning-blocked private import, partial CMOF facts, and only the sequential compiler are implemented |
 | Temporal | `@temporalio/client@1.21.0`, `@temporalio/testing@1.21.0`, `@temporalio/worker@1.21.0`, `@temporalio/workflow@1.21.0`, and CLI `v1.8.1` through full-server `cached-download` | Approved and implemented for M0.5; direct packages and CLI are MIT, the graph audit is in [SOURCES.md](SOURCES.md), and the entire surface is removable with the private adapter package |
 | Cross-language schema validation | Prefer generated or dependency-free validation until a concrete gap exists | The shared schema must not become a semantic implementation |
 
@@ -216,7 +216,7 @@ Milestone 0 is complete only when:
 9. Lean and the semantic core remain free of CIB and Temporal dependencies;
 10. no BPMN or CIB compatibility claim exceeds the single calibrated slice.
 
-All ten criteria are satisfied for only the content-addressed sequential User Task capsule. The harness reads and hashes the actual XML, CIB parses and executes it, and the Lean, TypeScript, and Temporal boundaries admit the same recorded resource identity; general XML ingestion outside CIB remains absent. The first successful source-current pipeline measured 5.03 seconds warm and 6.19 seconds including its build phase, below the 15-second warm and 45-second cold budgets. This closes the walking skeleton without creating a broader BPMN or immutable CIB compatibility claim.
+All ten criteria are satisfied for only the content-addressed sequential User Task capsule. The post-M0 ingestion slice now reads, hashes, structurally imports, and compiles the actual XML before the TypeScript and Temporal targets; CIB independently parses and executes the same source, and Lean retains the same recorded resource identity. General XML compilation remains absent. The first successful pipeline after ingestion measured 4.90 seconds warm and 6.37 seconds including its build phase, with ingestion at approximately 6.5 milliseconds, below the 15-second warm and 45-second cold budgets. This closes the walking skeleton and first source boundary without creating a broader BPMN or immutable CIB compatibility claim.
 
 ## Resume protocol
 

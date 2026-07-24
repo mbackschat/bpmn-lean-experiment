@@ -9,6 +9,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Resume implementation | [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the current gate in [TESTING.md](TESTING.md) |
 | Run or inspect the CIB oracle | [TESTING.md](TESTING.md) and the [CIB runner guide](../runners/cibseven/README.md) |
 | Run or inspect the Temporal adapter | [TESTING.md](TESTING.md), [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md), and the [adapter guide](../packages/temporal-adapter/README.md) |
+| Run or inspect BPMN XML ingestion | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md), [TESTING.md](TESTING.md), and the [source package guide](../packages/bpmn-source/README.md) |
 | Run or inspect differential comparison | [TESTING.md](TESTING.md) and the [comparator guide](../packages/differential/README.md) |
 | Change project mission or semantic authority | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) and [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) |
 | Change BPMN import or semantic meaning | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) and the [research index](research/README.md) |
@@ -22,7 +23,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Top-level [README.md](../README.md) | New readers; concise purpose, honest status, quick start, and routes into this registry |
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
 | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) | Semantic contributors and stakeholders; exact OMG conformance goal, required normative clauses, and formalization risks |
-| [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md) | Contributors and owner; proposed exact parser dependency, source-preservation contract, security boundary, license graph, and first implementation slice |
+| [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md) | Contributors and owner; adopted exact parser dependency, source-preservation contract, security boundary, bounded CMOF use, license graph, and first implementation slice |
 | [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md) | Adapter contributors and reviewers; Temporal replay, execution, messaging, failure, concurrency, versioning, and BPMN-boundary research |
 | [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) | Semantic and adapter assurance contributors; question-driven formal-methods toolbox, behavioral relations, candidate experiments, and evidence limits |
 | [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) | Researchers and performance contributors; pristine evidence lane, experimental source branches, execution profiles, acceleration limits, and shadow-equivalence gate |

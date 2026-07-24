@@ -6,7 +6,7 @@ This project is an experiment toward a Temporal-hosted BPMN 2.0.2 execution adap
 
 The ambition is deliberately high: not merely to translate BPMN shapes into Workflow code, but to build an auditable chain from the standard and observed engine behavior to production execution.
 
-> **Project status:** Milestone 0 walking skeleton complete. One content-addressed BPMN model now crosses the CIB, Lean, TypeScript, and Temporal boundaries under a fast differential/refinement/replay gate with a seeded-disagreement guard. The repository does not yet contain a general BPMN engine and makes no BPMN-conformance or immutable CIB-compatibility claim.
+> **Project status:** Milestone 0 walking skeleton and the first BPMN XML ingestion slice are complete. One content-addressed BPMN model is now parsed from exact source bytes, compiled into versioned executable IR, and evaluated across CIB, Lean, the TypeScript semantic core, and Temporal under a fast differential/refinement/replay gate with a seeded-disagreement guard. The repository does not yet contain a general BPMN engine and makes no BPMN-conformance or immutable CIB-compatibility claim.
 
 ## Why this project exists
 
@@ -37,6 +37,9 @@ flowchart LR
   Standard[OMG BPMN 2.0.2] --> Profile[Versioned semantic profile]
   CIB[CIB Seven oracle] --> Profile
   Profile --> Lean[Lean reference semantics]
+  BPMN[BPMN XML] --> Source[Bounded source importer and executable IR]
+  Profile --> Source
+  Source --> SemanticCore
   Profile --> SemanticCore[Pure TypeScript semantic core]
   Lean --> Diff[Differential comparison]
   CIB --> Diff
@@ -49,6 +52,7 @@ flowchart LR
 | Component | Responsibility | Explicit boundary |
 |---|---|---|
 | Semantic profile | Pin the standard interpretation, CIB release/configuration, supported features, observations, and known deviations | A profile is not an engine build or an informal compatibility promise |
+| BPMN source ingestion | Preserve exact bytes and identity, perform bounded structural import, normalize diagnostics, and compile admitted source to versioned project-owned IR | The private parser graph and CMOF-derived facts do not define execution behavior |
 | Lean reference interpreter | Give the selected profile executable operational meaning and support machine-checked properties | Lean does not automatically verify CIB, TypeScript, Temporal, parsers, databases, or networks |
 | Pure TypeScript semantic core | Implement the production semantic state transition independently and deterministically | It performs no I/O and depends on neither CIB Seven nor Temporal |
 | Temporal adapter | Persist semantic state, deliver inputs, schedule declared effects/timers, and survive replay | It may add hidden durable work but may not redefine BPMN behavior |
@@ -71,7 +75,7 @@ BPMN 2 XML
 
 XML parsing and normalization happen outside deterministic Workflow execution. A generic Workflow hosts an immutable executable representation and the TypeScript semantic core advances its BPMN state. Generated TypeScript may later be useful as a derived diagnostic or optimization artifact, but it is not the semantic authority. The rationale and replay consequences are recorded in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md).
 
-Milestone 0 deliberately stops short of that general ingestion path: its sequential User Task model is explicit in the semantic core and admitted through a content-addressed scenario. Arbitrary BPMN XML parsing and the production executable IR remain future work.
+The first bounded ingestion slice now implements this path for exactly one executable `None Start Event → User Task → None End Event` Process. `bpmn-moddle@10.0.0` is isolated in `@bpmn-lean/bpmn-source`; exact bytes, hash, encoding, normalized diagnostics, and a partial CMOF-derived manifest stay outside the pure core and Temporal Workflow bundle. Unsupported elements, non-UTF-8 declarations, parser warnings, and DOCTYPE input fail closed. General BPMN compilation, source locations, extension semantics, full metamodel generation, and deployment storage remain future work.
 
 ## Assurance pipeline
 
@@ -106,12 +110,12 @@ none Start Event → User Task → none End Event
 | Surface | Current state |
 |---|---|
 | Planning and contracts | M0.0 through M0.6 complete; profile, scenario, observation, runner, comparison, replay, provenance, and feedback-budget contracts are executable |
-| BPMN sources | Official BPMN 2.0.2 PDF and machine-readable corpus ingested locally with project-authored conformance research |
+| BPMN sources | Official BPMN 2.0.2 PDF and machine-readable corpus ingested locally; exact source capture, security/encoding preflight, private `bpmn-moddle@10.0.0` import, normalized diagnostics, a checked partial CMOF manifest, and the first sequential compiler are implemented |
 | Lean | The sequential User Task interpreter derives the calibrated trace and proves start-to-wait, matching-completion, and non-matching-completion invariants; broader BPMN semantics remain absent |
 | CIB Seven | Pinned `v2.2.0` embedded runner deploys, starts, observes, completes, cleans, emits the calibrated trace, and exposes a diagnostic PVM projection through a persistent JSON-lines boundary |
-| TypeScript semantic core | The dependency-free sequential User Task semantic core independently derives the calibrated trace, exposes one incremental transition boundary for durable hosts, and passes lifecycle, poisoned-calibration, and speculative-commit guards |
-| Temporal adapter | A full local Temporal server hosts one Workflow loop around the semantic core; a synchronous Signal handler only queues stimuli, a Query exposes the current projection for testing, and both live and committed-history replay gates pass |
-| Evidence | One command runs CIB, Lean, the semantic core, and two isolated Temporal executions, establishes exact canonical agreement, detects an injected state disagreement, replays live and retained histories, proves cleanup, and meets the warm and cold budgets |
+| TypeScript semantic core | The dependency-free sequential User Task semantic core consumes only validated project-owned IR, independently derives the calibrated trace, exposes one incremental transition boundary for durable hosts, and rejects identity or topology mismatch |
+| Temporal adapter | A full local Temporal server hosts one Workflow loop around the semantic core and receives compiled IR as immutable data; a version marker preserves new-history requirements while the committed pre-IR history still replays |
+| Evidence | One command compiles the exact BPMN source, runs CIB, Lean, the semantic core, and two isolated Temporal executions, establishes exact canonical agreement, detects an injected state disagreement, replays live and retained histories, proves cleanup, and meets the warm and cold budgets; an optional gate classifies all 21 pinned MIWG models without copying them |
 
 The authoritative live checkpoint and next task are in [PLAN.md](docs/PLAN.md); exact implemented and absent surfaces are in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -155,6 +159,18 @@ Run the fast semantic gate (Lean plus TypeScript semantic core):
 ./scripts/pnpm.sh run test:semantic
 ```
 
+Run only the BPMN source/CMOF boundary:
+
+```sh
+./scripts/pnpm.sh run test:bpmn-source
+```
+
+Run the optional local MIWG import observation gate:
+
+```sh
+./scripts/pnpm.sh run test:miwg
+```
+
 Run the focused Temporal refinement and replay gate:
 
 ```sh
@@ -181,7 +197,7 @@ The spike is a bounded architecture experiment, not part of the approved BPMN se
 ```text
 BpmnSemantics/       Lean contracts, executable semantic capsules, and isolated experiments
 docs/                Architecture, plans, research, testing, and source provenance
-packages/            TypeScript semantic core, pure differential comparator, and Temporal adapter
+packages/            BPMN source importer, TypeScript semantic core, differential comparator, and Temporal adapter
 profiles/            Versioned semantic-profile artifacts
 runners/             Persistent external semantic-oracle runners
 scenarios/           Neutral BPMN models, stimuli, and observation requests
@@ -220,6 +236,7 @@ Start with the [documentation registry](docs/README.md). Common routes are:
 - [x] M0.4 — independent pure TypeScript semantic core
 - [x] M0.5 — Temporal adapter and retained-history replay
 - [x] M0.6 — fast differential/refinement gate with injected disagreement
+- [x] First ingestion slice — exact BPMN source → versioned sequential IR → core → Temporal → differential gate
 
 Later milestones expand BPMN coverage one semantic capsule at a time; they do not begin with a broad engine rewrite.
 

@@ -2,6 +2,7 @@ import type {
   CanonicalObservation,
   Scenario,
   ScenarioResult,
+  SequentialUserTaskExecutableIr,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 
@@ -12,6 +13,7 @@ export const bpmnSemanticTaskQueue = "bpmn-semantic-m0";
 
 export type BpmnScenarioWorkflow = (
   scenario: Scenario,
+  executableIr: SequentialUserTaskExecutableIr,
 ) => Promise<ScenarioResult>;
 
 export type TemporalScenarioRunnerOptions = Readonly<{

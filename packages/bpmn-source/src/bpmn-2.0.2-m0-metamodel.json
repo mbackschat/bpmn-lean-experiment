@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "0.1.0",
+  "extraction": "bounded-cmof-fact-extraction@0.1.0",
+  "source": {
+    "specification": "OMG BPMN 2.0.2",
+    "artifact": "BPMN20.cmof",
+    "sha256": "72f5bf035da7bea80dc53131a22e6ba466789abd7437532e64abd3a7cff20139"
+  },
+  "coverage": {
+    "status": "partial",
+    "consumer": "bpmn-source-sequential-user-task@0.1.0",
+    "included": [
+      "Definitions and executable Process identity",
+      "StartEvent, UserTask, EndEvent, and SequenceFlow type identity",
+      "direct generalizations needed by the first compiler",
+      "FlowElementsContainer.flowElements containment",
+      "SequenceFlow sourceRef and targetRef reference targets",
+      "CatchEvent and ThrowEvent event-definition containment",
+      "StartEvent.isInterrupting default"
+    ],
+    "absent": [
+      "complete BPMN20 metamodel",
+      "BPMNDI, DI, and DC metamodels",
+      "XML lexical mapping",
+      "operational execution semantics"
+    ]
+  },
+  "compilerProjection": {
+    "definitionsType": "bpmn:Definitions",
+    "processType": "bpmn:Process",
+    "startEventType": "bpmn:StartEvent",
+    "userTaskType": "bpmn:UserTask",
+    "endEventType": "bpmn:EndEvent",
+    "sequenceFlowType": "bpmn:SequenceFlow"
+  },
+  "classes": [
+    {
+      "name": "Definitions",
+      "directSuperClasses": [
+        "BaseElement"
+      ]
+    },
+    {
+      "name": "Process",
+      "directSuperClasses": [
+        "FlowElementsContainer",
+        "CallableElement"
+      ]
+    },
+    {
+      "name": "StartEvent",
+      "directSuperClasses": [
+        "CatchEvent"
+      ]
+    },
+    {
+      "name": "EndEvent",
+      "directSuperClasses": [
+        "ThrowEvent"
+      ]
+    },
+    {
+      "name": "UserTask",
+      "directSuperClasses": [
+        "Task"
+      ]
+    },
+    {
+      "name": "SequenceFlow",
+      "directSuperClasses": [
+        "FlowElement"
+      ]
+    },
+    {
+      "name": "FlowNode",
+      "directSuperClasses": [
+        "FlowElement"
+      ]
+    },
+    {
+      "name": "Event",
+      "directSuperClasses": [
+        "FlowNode",
+        "InteractionNode"
+      ]
+    },
+    {
+      "name": "CatchEvent",
+      "directSuperClasses": [
+        "Event"
+      ]
+    },
+    {
+      "name": "ThrowEvent",
+      "directSuperClasses": [
+        "Event"
+      ]
+    },
+    {
+      "name": "Activity",
+      "directSuperClasses": [
+        "FlowNode"
+      ]
+    },
+    {
+      "name": "Task",
+      "directSuperClasses": [
+        "Activity",
+        "InteractionNode"
+      ]
+    }
+  ],
+  "properties": [
+    {
+      "owner": "Process",
+      "name": "isExecutable",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "FlowElementsContainer",
+      "name": "flowElements",
+      "type": "FlowElement",
+      "lower": 0,
+      "upper": "*",
+      "containment": true
+    },
+    {
+      "owner": "SequenceFlow",
+      "name": "sourceRef",
+      "type": "FlowNode",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "SequenceFlow",
+      "name": "targetRef",
+      "type": "FlowNode",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "CatchEvent",
+      "name": "eventDefinitions",
+      "type": "EventDefinition",
+      "lower": 0,
+      "upper": "*",
+      "containment": true
+    },
+    {
+      "owner": "ThrowEvent",
+      "name": "eventDefinitions",
+      "type": "EventDefinition",
+      "lower": 0,
+      "upper": "*",
+      "containment": true
+    },
+    {
+      "owner": "StartEvent",
+      "name": "isInterrupting",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": true
+    }
+  ]
+}

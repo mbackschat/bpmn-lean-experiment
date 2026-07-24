@@ -13,6 +13,7 @@ Project-authored code and documentation are released under the root [MIT License
 | Shell verification tools | Git, `jq`, `xmllint`, and `shasum` are environment prerequisites | Invoked as external tools and not distributed by this repository |
 | Node and pnpm | Node `24.18.0` and pnpm `11.17.0`; Homebrew formulae report MIT | External runtime and package manager; exact nvm/asdf pins and a non-mutating Homebrew fallback are tracked |
 | TypeScript compiler graph | `typescript@7.0.2` and the resolved `@typescript/typescript-darwin-arm64@7.0.2` platform package are Apache-2.0 | Development-only compiler; exact integrities are locked, packages are not vendored, and no runtime dependency enters the semantic core |
+| BPMN source graph | Direct `bpmn-moddle@10.0.0` plus locked `moddle@8.2.0`, `moddle-xml@12.1.0`, `min-dash@5.1.0`, and `saxen@11.1.0` are MIT | External parser graph isolated to deployment-time `@bpmn-lean/bpmn-source`; no package is vendored and no parser type enters Lean, the semantic core, or Temporal Workflow code |
 | Temporal adapter graph | Direct `@temporalio/client`, `testing`, `worker`, and `workflow` packages at `1.21.0` are MIT; the locked non-vendored graph contains MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, Unlicense, `Apache-2.0 AND MIT`, and CC-BY-4.0 data | External adapter/runtime and test dependencies only; no Temporal dependency enters Lean or the semantic core |
 | Temporal CLI `v1.8.1` | MIT; downloaded from the official Temporal distribution endpoint and Git-ignored | Full local development server for M0.5 integration tests; exact binary is cached locally and not redistributed |
 | Maven wrapper and build plugins | Wrapper `3.2.0`, Maven `3.8.8`, Compiler Plugin `3.14.1`, and Surefire Plugin `3.5.4` are Apache-2.0 | The wrapper script/JAR is retained under its upstream license; build tooling is isolated to the Java oracle |
@@ -23,7 +24,7 @@ Project-authored code and documentation are released under the root [MIT License
 | Temporal, MIWG, Betsy, fUML, and other research trees | Separate checkouts under their own upstream terms | Evidence inputs only; they are not project dependencies and are not relicensed |
 | OMG BPMN corpus | Copyrighted external material retained only in ignored local paths | Excluded from the MIT-licensed tracked repository material |
 
-The approved M0.2 Java, M0.4 TypeScript compiler, and M0.5 Temporal graphs remain compatible with releasing project-authored source under MIT. `unionfs@4.6.0` omits a package-manifest license value, but its distributed `LICENSE` is the Unlicense/public-domain dedication. The CC-BY-4.0 entry is `caniuse-lite` browser-support data pulled transitively by the Worker bundler and is neither copied into project source nor separately redistributed by this repository. Before adopting any further Maven, pnpm, Lake, parser, Temporal, test, build, or runtime package, inspect its exact transitive license graph, preserve required notices, and update this record. An incompatible future dependency must be replaced, isolated behind a non-distributed research boundary, or explicitly reconsidered; it must never silently alter the project license.
+The approved M0.2 Java, M0.4 TypeScript compiler, BPMN source, and M0.5 Temporal graphs remain compatible with releasing project-authored source under MIT. `unionfs@4.6.0` omits a package-manifest license value, but its distributed `LICENSE` is the Unlicense/public-domain dedication. The CC-BY-4.0 entry is `caniuse-lite` browser-support data pulled transitively by the Worker bundler and is neither copied into project source nor separately redistributed by this repository. Before adopting any further Maven, pnpm, Lake, parser, Temporal, test, build, or runtime package, inspect its exact transitive license graph, preserve required notices, and update this record. An incompatible future dependency must be replaced, isolated behind a non-distributed research boundary, or explicitly reconsidered; it must never silently alter the project license.
 
 ## OMG BPMN 2.0.2
 
@@ -140,11 +141,11 @@ Read-only checkout: [bpmn-io/bpmn-moddle at `47d8f75`](https://github.com/bpmn-i
 - Inspected revision: `47d8f75eed773829f20537adbb7086b290096006`
 - Role: independent research reference for parsing, serializing, and representing BPMN 2.0 XML and its metamodel in JavaScript
 
-This project may teach ingestion techniques but is neither a normative semantic authority nor an adopted dependency.
+This checkout remains a research reference and is not a normative semantic authority. The adopted production dependency is the separately published package described below, not this mutable source checkout.
 
-The proposed production dependency is the separately published [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), whose `v10.0.0` tag resolves to `b72949eb6f7d0522f73cb723633ebdbcefd22762`. Its registry tarball integrity is `sha512-vXePD5jkatcILmM3zwJG/m6IIHIghTGB7WvgcdEraEw8E8VdJHrTgrvBUhbzqaXJpnsGQz15QS936xeBY6l9aA==`. The exact proposed runtime graph—`bpmn-moddle@10.0.0`, `moddle@8.2.0`, `moddle-xml@12.1.0`, `min-dash@5.1.0`, and `saxen@11.1.0`—is MIT-licensed and has no registry `preinstall`, `install`, or `postinstall` scripts. It remains unapproved and uninstalled.
+The adopted production dependency is the separately published [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), whose `v10.0.0` tag resolves to `b72949eb6f7d0522f73cb723633ebdbcefd22762`. Its registry tarball integrity is `sha512-vXePD5jkatcILmM3zwJG/m6IIHIghTGB7WvgcdEraEw8E8VdJHrTgrvBUhbzqaXJpnsGQz15QS936xeBY6l9aA==`. The exact locked runtime graph—`bpmn-moddle@10.0.0`, `moddle@8.2.0`, `moddle-xml@12.1.0`, `min-dash@5.1.0`, and `saxen@11.1.0`—is MIT-licensed and has no registry `preinstall`, `install`, or `postinstall` scripts. It is isolated in [`@bpmn-lean/bpmn-source`](../packages/bpmn-source/README.md); no parser dependency enters Lean, the semantic core, or the Temporal Workflow bundle.
 
-The read-only [ingestion spike](experiments/BPMN-XML-INGESTION-SPIKE.md) loaded the published UMD bundle from a temporary directory without changing this repository’s dependency graph. The exact tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are XML-canonical-identical to the official local BPMN 2.0.2 files, and its five published XSDs are content-identical after CRLF normalization. The inspected `main` revision has newer dependency ranges and unpublished generated-type work; it must not be conflated with the published `10.0.0` package.
+The pre-adoption [ingestion spike](experiments/BPMN-XML-INGESTION-SPIKE.md) loaded the published UMD bundle from a temporary directory without changing this repository’s dependency graph. The exact tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are XML-canonical-identical to the official local BPMN 2.0.2 files, and its five published XSDs are content-identical after CRLF normalization. The inspected `main` revision has newer dependency ranges and unpublished generated-type work; it must not be conflated with the installed `10.0.0` package.
 
 ## BPMN MIWG interchange corpus
 
@@ -155,7 +156,7 @@ Read-only checkout: [bpmn-miwg/bpmn-miwg-test-suite at `cb26295`](https://github
 - Role: OMG working-group BPMN XML import, export, round-trip, and cross-tool reference models
 - License: Creative Commons Attribution 3.0 Unported
 
-This suite can support ingestion and interchange qualification. It is not an execution-semantics oracle.
+This suite supports the optional local ingestion/interchange observation gate. It is not an execution-semantics oracle.
 
 The suite should be reused at three boundaries:
 
@@ -165,7 +166,7 @@ The suite should be reused at three boundaries:
 
 Passing these models demonstrates interchange coverage only. It does not establish token semantics, Activity lifecycle behavior, CIB compatibility, or Temporal refinement.
 
-At the pinned revision, `Reference/` contains 21 BPMN models and 25 reference images. `test-case-structure.json`, `BPMN 2.0 Attribute Coverage Matrix.xlsx`, and submitted vendor round-trip results provide additional interchange inputs.
+At the pinned revision, `Reference/` contains 21 BPMN models and 25 reference images. `test-case-structure.json`, `BPMN 2.0 Attribute Coverage Matrix.xlsx`, and submitted vendor round-trip results provide additional interchange inputs. `./scripts/pnpm.sh run test:miwg` reads the external checkout without copying it, retains exact source identity, and currently classifies fourteen models as structurally imported but outside the first compiler, six as unsupported encoding, and one as parser-warning-blocked. These are honest boundary results, not 21 execution passes.
 
 ## Betsy cross-engine execution benchmark
 

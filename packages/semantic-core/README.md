@@ -2,13 +2,13 @@
 
 `@bpmn-lean/semantic-core` is the production-oriented, dependency-free TypeScript implementation of the currently approved BPMN semantic capsules. It contains BPMN-visible command/state transitions and canonical observation projection, but no file I/O, XML parser, CIB Seven code, Temporal SDK code, or external effects.
 
-The current surface supports only the content-addressed `none Start Event → User Task → none End Event` scenario in [scenario.json](../../scenarios/m0-sequential-user-task/scenario.json). Its result is checked against the CIB-calibrated trace and the independent [Lean interpreter](../../BpmnSemantics/SequentialUserTask.lean).
+The current surface supports only the content-addressed `none Start Event → User Task → none End Event` scenario in [scenario.json](../../scenarios/m0-sequential-user-task/scenario.json). Its versioned executable IR is produced from the BPMN XML by the separate [source-ingestion package](../bpmn-source/README.md), and its result is checked against the CIB-calibrated trace and the independent [Lean interpreter](../../BpmnSemantics/SequentialUserTask.lean).
 
 ## Public boundary
 
 ```ts
 const started = applyStimulus(
-  sequentialUserTaskModel,
+  executableIr,
   initialState,
   {
     kind: StimulusKind.StartProcess,
@@ -18,10 +18,10 @@ const started = applyStimulus(
   },
 );
 
-const result = runScenario(scenario);
+const result = runScenario(scenario, executableIr);
 ```
 
-`applyStimulus` is pure: the same model, state, stimulus, and closure limit produce the same result. `runScenario` derives canonical observations without reading the scenario's calibration answer. Internal closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
+`applyStimulus` is pure: the same executable IR, state, stimulus, and closure limit produce the same result. `runScenario` validates the IR schema, compiler/source/profile identity, and sequential topology, then derives canonical observations without reading the scenario's calibration answer. Internal closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
 
 `deployScenario` and `advanceScenario` expose the same deployment, command, and stable-state observation logic incrementally for durable hosts. `runScenario` consumes those operations too, so an adapter does not need to copy observation semantics.
 

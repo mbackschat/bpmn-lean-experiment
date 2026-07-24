@@ -11,11 +11,11 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-Milestone 0 is complete for `none Start Event → User Task → none End Event`. One command runs CIB Seven, the Lean interpreter, the independent pure TypeScript semantic core, and isolated Temporal executions concurrently; exact canonical agreement, injected-disagreement classification, cleanup, live and retained replay, provenance, timings, and feedback budgets are executable. The next work is recorded in [PLAN.md](docs/PLAN.md). Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+Milestone 0 and the first BPMN XML ingestion slice are complete for `none Start Event → User Task → none End Event`. One command captures and compiles the exact BPMN source, then runs CIB Seven, the Lean interpreter, the independent pure TypeScript semantic core, and isolated Temporal executions concurrently; exact canonical agreement, injected-disagreement classification, cleanup, live and retained replay, provenance, timings, and feedback budgets are executable. The next work is recorded in [PLAN.md](docs/PLAN.md). Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
-The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**. The intended path is BPMN XML → source-preserving model → validated, content-addressed executable IR as data → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority. Milestone 0 still uses an explicit capsule model and does not yet implement arbitrary BPMN XML ingestion.
+The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**. The implemented first path is exact BPMN XML bytes → bounded private structural import → validated, content-addressed executable IR as data → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority. The production compiler remains deliberately bounded to the first sequential capsule and is not a general BPMN importer.
 
 Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -61,6 +61,8 @@ When sources disagree, classify the disagreement against the standard, profile, 
 - Never silently choose an oracle release, feature meaning, expression subset, observation boundary, scheduling rule, listener scope, history contract, or external-effect contract.
 - Do not transplant CIB PVM types, persistence entities, behavior classes, or engine algorithms into Lean or the semantic core.
 - Do not make generated TypeScript the authoritative representation of a BPMN model; preserve the admitted source identity and execute versioned IR data through the semantic core.
+- Keep `bpmn-moddle` and raw moddle objects inside `@bpmn-lean/bpmn-source`; Lean, the semantic core, and Temporal Workflow code consume only project-owned serializable contracts.
+- Treat every parser warning as admission-blocking until a profile rule explicitly proves it safe; preserve exact bytes and normalized evidence even when compilation is rejected.
 - Do not encode Temporal Workflow tasks, Activity attempts, retries, Run IDs, or Event History as BPMN semantic facts.
 - Keep BPMN import/admission, executable normalization, runtime execution, public observation, and host persistence conceptually separate.
 - Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
@@ -94,6 +96,8 @@ Use red/green TDD:
 6. update the owning research, experiment, implementation, and plan documents.
 
 Prefer enum-based pattern matching or switch statements for semantic variants. Keep executable IR and runtime state as serializable data; keep effects explicit and perform no I/O in the pure semantic core.
+
+BPMN XML parsing and compilation run before Workflow start with an explicit byte limit and parser Promise-settlement deadline. The current timeout cannot preempt synchronous parser CPU; production untrusted uploads still require a bounded Worker or process. A new Temporal history must contain admitted executable IR and the current version marker; the legacy IR constructor in the adapter exists only for replaying the committed pre-IR history and must not become a deployment fallback.
 
 Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim.
 
@@ -164,6 +168,18 @@ Focused Temporal refinement and replay gate:
 
 ```sh
 ./scripts/pnpm.sh run test:temporal
+```
+
+Focused BPMN source, CMOF-fact, and compiler gate:
+
+```sh
+./scripts/pnpm.sh run test:bpmn-source
+```
+
+Optional local pinned MIWG observation gate:
+
+```sh
+./scripts/pnpm.sh run test:miwg
 ```
 
 Complete fast differential/refinement gate:

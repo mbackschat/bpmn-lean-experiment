@@ -1,11 +1,11 @@
 import {
+  BpmnExecutableIrKind,
   CommandOutcome,
   ScenarioOutcomeKind,
   ScenarioStepKind,
   advanceScenario,
   deployScenario,
   initialState,
-  sequentialUserTaskModel,
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -14,6 +14,7 @@ import type {
   Scenario,
   ScenarioOutcome,
   ScenarioResult,
+  SequentialUserTaskExecutableIr,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -21,6 +22,7 @@ import {
   condition,
   defineQuery,
   defineSignal,
+  patched,
   setHandler,
 } from "@temporalio/workflow";
 
@@ -37,8 +39,10 @@ export const bpmnTraceQuery =
 
 export async function runBpmnScenario(
   scenario: Scenario,
+  executableIrInput?: SequentialUserTaskExecutableIr,
 ): Promise<ScenarioResult> {
-  const deployment = deployScenario(scenario);
+  const executableIr = resolveExecutableIr(scenario, executableIrInput);
+  const deployment = deployScenario(scenario, executableIr);
   const trace: CanonicalObservation[] = [deployment.observation];
   const pendingStimuli: Stimulus[] = [];
   const acceptedCommandIds: string[] = [];
@@ -90,7 +94,7 @@ export async function runBpmnScenario(
     }
 
     const step = advanceScenario(
-      sequentialUserTaskModel,
+      executableIr,
       state,
       stimulus,
       scenario.stimuli.slice(stimulusIndex + 1),
@@ -117,4 +121,49 @@ export async function runBpmnScenario(
 
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported Temporal adapter variant: ${String(value)}`);
+}
+
+function resolveExecutableIr(
+  scenario: Scenario,
+  executableIr: SequentialUserTaskExecutableIr | undefined,
+): SequentialUserTaskExecutableIr {
+  const requiresExecutableIr = patched("bpmn-source-executable-ir-v1");
+  if (executableIr !== undefined) {
+    return executableIr;
+  }
+  if (requiresExecutableIr) {
+    throw new TypeError("Executable IR is required for new Workflow histories");
+  }
+  return retainedM0ExecutableIr(scenario);
+}
+
+function retainedM0ExecutableIr(
+  scenario: Scenario,
+): SequentialUserTaskExecutableIr {
+  return {
+    schemaVersion: "0.1.0",
+    kind: BpmnExecutableIrKind.SequentialUserTask,
+    identity: {
+      compiler: "bpmn-source-sequential-user-task@0.1.0",
+      semanticProfile: scenario.profile,
+      sourceId: scenario.bpmn.id,
+      sourceSha256: scenario.bpmn.sha256,
+    },
+    processId: "Process_SequentialUserTask",
+    startEventId: "StartEvent_1",
+    userTaskId: "UserTask_Approve",
+    endEventId: "EndEvent_1",
+    sequenceFlows: [
+      {
+        id: "Flow_StartToTask",
+        sourceId: "StartEvent_1",
+        targetId: "UserTask_Approve",
+      },
+      {
+        id: "Flow_TaskToEnd",
+        sourceId: "UserTask_Approve",
+        targetId: "EndEvent_1",
+      },
+    ],
+  };
 }

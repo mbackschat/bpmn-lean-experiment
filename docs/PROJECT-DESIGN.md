@@ -33,7 +33,7 @@ This choice keeps one inspectable data representation aligned across Lean, TypeS
 
 Code generation is not prohibited. A generated TypeScript view may later serve debugging, static specialization, performance, or deployment packaging, but it remains a derived artifact. It may replace interpretation only after explicit equivalence and replay evidence and must never become the semantic authority by construction.
 
-Milestone 0 exercises the hosting boundary before general ingestion exists. Its content-addressed scenario names actual BPMN XML, while the tiny sequential executable model remains explicit in Lean and TypeScript. A source-preserving parser, general executable IR, and deployment store are explicitly absent until their own approved dependency and representation decisions.
+Milestone 0 first exercised the hosting boundary with an explicit sequential model. The approved first ingestion slice now captures the actual BPMN XML bytes and hash, imports a private structural view with isolated `bpmn-moddle@10.0.0`, compiles only the sequential Process to source/profile/compiler-identified project IR, and supplies that data to both the pure core and Temporal. A general BPMN source model/compiler, full CMOF binding, and deployment store remain explicitly absent.
 
 ## Milestone 0 delivery boundary
 
@@ -42,6 +42,7 @@ Required now:
 - retain the verified foundation and source boundaries;
 - establish the complete fast walking-skeleton pipeline defined in [MILESTONE-0-FAST-PIPELINE.md](MILESTONE-0-FAST-PIPELINE.md);
 - use actual BPMN XML for the none-start → User Task → none-end slice;
+- capture and compile that exact XML outside Workflow execution without exposing parser objects;
 - calibrate pinned CIB Seven behavior through public APIs;
 - execute the same neutral scenario in Lean and a pure TypeScript semantic core;
 - host the semantic core through a Temporal adapter without moving semantics into Temporal;

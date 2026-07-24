@@ -28,6 +28,11 @@ test(
     const { report, evidence } = await runMilestoneZeroPipeline();
 
     assert.equal(report.comparison.kind, ComparisonKind.Agreement);
+    assert.deepEqual(report.scenario.executableIr, {
+      schemaVersion: "0.1.0",
+      kind: "sequentialUserTask",
+      compiler: "bpmn-source-sequential-user-task@0.1.0",
+    });
     assert.deepEqual(evidence.actualWaitTrace, evidence.expectedWaitTrace);
     assert.deepEqual(
       evidence.isolationTemporalResult,

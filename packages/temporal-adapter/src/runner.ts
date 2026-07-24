@@ -7,6 +7,7 @@ import type {
   CanonicalObservation,
   Scenario,
   ScenarioResult,
+  SequentialUserTaskExecutableIr,
 } from "@bpmn-lean/semantic-core";
 import type { WorkflowHandle } from "@temporalio/client";
 import { TestWorkflowEnvironment } from "@temporalio/testing";
@@ -98,6 +99,7 @@ export class TemporalScenarioRunner {
 
   async runScenario(
     scenario: Scenario,
+    executableIr: SequentialUserTaskExecutableIr,
     options: TemporalScenarioExecutionOptions,
   ): Promise<TemporalScenarioExecution> {
     this.assertAvailable();
@@ -107,7 +109,7 @@ export class TemporalScenarioRunner {
         {
           taskQueue: bpmnSemanticTaskQueue,
           workflowId: options.workflowId,
-          args: [scenario],
+          args: [scenario, executableIr],
         },
       ),
       operationDeadlineMs,

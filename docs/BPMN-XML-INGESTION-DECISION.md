@@ -2,11 +2,11 @@
 
 ## Status
 
-**Proposed on 2026-07-24; dependency approval required before implementation.**
+**Accepted and implemented on 2026-07-24.**
 
-The proposed direct runtime dependency is [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), isolated in a new `@bpmn-lean/bpmn-source` workspace package. Lean, the pure TypeScript semantic core, and the Temporal Workflow package remain independent of the parser.
+The approved direct runtime dependency is [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), isolated in the new [`@bpmn-lean/bpmn-source`](../packages/bpmn-source/README.md) workspace package. Lean, the pure TypeScript semantic core, and the Temporal Workflow package remain independent of the parser.
 
-The bounded evidence behind this proposal is recorded in [the BPMN XML ingestion spike](experiments/BPMN-XML-INGESTION-SPIKE.md). Approval changes only the source-ingestion boundary; it does not approve a general executable IR, new BPMN behavior, CIB extensions, export, or a conformance claim.
+The bounded evidence behind this decision is recorded in [the BPMN XML ingestion spike](experiments/BPMN-XML-INGESTION-SPIKE.md). Adoption changes only the source-ingestion boundary and the existing sequential capsule’s executable input; it does not approve a general executable IR, new BPMN behavior, CIB extensions, export, or a conformance claim.
 
 ## Decision
 
@@ -74,22 +74,24 @@ The CMOF path can justify facts such as type inheritance, reference targets, own
 
 ### CMOF-derived metamodel facts
 
-The planned use of CMOF is a versioned, generated metamodel manifest rather than a second hand-written BPMN type hierarchy. The manifest should retain:
+The implemented use of CMOF is a versioned, bounded metamodel manifest rather than a second hand-written BPMN type hierarchy. The first [tracked manifest](../packages/bpmn-source/src/bpmn-2.0.2-m0-metamodel.json) retains:
 
-- package and namespace identities;
-- classes and generalizations;
-- owned properties and value types;
+- exact BPMN 2.0.2 artifact identity;
+- the qualified moddle type names consumed by the compiler;
+- twelve classes and their direct generalizations;
+- seven properties and their value types;
 - lower and upper multiplicities;
-- containment versus cross-reference relationships;
-- association opposites;
-- enumerations and specified defaults;
-- source identity tying every fact to the exact BPMN 2.0.2 artifact set.
+- containment versus cross-reference distinctions;
+- the specified Start Event default;
+- explicit included and absent coverage.
+
+A future reusable manifest may additionally need complete package/namespace identity, association opposites, enumerations, and the rest of the metamodel. Those fields are not claimed by this first slice.
 
 That manifest can drive importer validation, supported/unsupported coverage, property-preservation tests, the TypeScript source projection, and the static well-formedness layer admitted into Lean. It remains build-time specification data; neither the pure semantic core nor a Temporal Workflow parses CMOF.
 
 Lean should formalize the smallest reviewed executable fragment over checked source facts. CMOF justifies the structural premises—for example that a Sequence Flow has admitted source and target Flow Nodes—while Lean defines and proves the operational consequences. A full generated CMOF mirror would add large amounts of diagram, interchange, and modeling structure without supplying the missing execution semantics.
 
-The first ingestion slice therefore does not generate complete TypeScript or Lean bindings. It extracts only the metamodel facts consumed by the sequential User Task compiler and records absent coverage. A second semantic consumer must demonstrate the reusable manifest shape before the project generalizes its generator.
+The first ingestion slice therefore does not generate complete TypeScript or Lean bindings. It records only the twelve class/generalization facts and seven property facts consumed by the sequential User Task compiler, including reference targets, multiplicities, containment, and the Start Event default, and explicitly records absent coverage. The maintained checker compares the manifest’s exact source digest and every recorded fact with the ignored normative `BPMN20.cmof` when that corpus is locally available. A second semantic consumer must demonstrate the reusable manifest shape before the project generalizes its extraction machinery.
 
 ## Why `bpmn-moddle`
 
@@ -97,11 +99,11 @@ The first ingestion slice therefore does not generate complete TypeScript or Lea
 
 The library does not define BPMN execution behavior. It therefore fits the architecture better than importing another JavaScript workflow engine or CIB Seven’s Java model/PVM types. Its output still requires project-owned validation and compilation.
 
-The exact `v10.0.0` source tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are XML-canonical-identical to the project’s official BPMN 2.0.2 machine-readable corpus. The five XSD resources shipped in the npm package are content-identical to the official BPMN20, BPMNDI, DC, DI, and Semantic XSDs after CRLF normalization. This is strong metamodel-input evidence, but the official artifacts remain normative and the generated JSON/runtime mapping still needs project tests.
+The exact `v10.0.0` source tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are XML-canonical-identical to the project’s official BPMN 2.0.2 machine-readable corpus. The five XSD resources shipped in the npm package are content-identical to the official BPMN20, BPMNDI, DC, DI, and Semantic XSDs after CRLF normalization. This is strong metamodel-input evidence, but the official artifacts remain normative; the first runtime mapping is covered only by the bounded manifest and compiler tests and must be extended with each new consumer.
 
 | Candidate | Decision | Reason |
 |---|---|---|
-| `bpmn-moddle@10.0.0` | Propose | BPMN-specific structural import and round-trip support with a small MIT graph; widely exercised namespace, reference, DI, and extension behavior |
+| `bpmn-moddle@10.0.0` | Adopt | BPMN-specific structural import and round-trip support with a small MIT graph; widely exercised namespace, reference, DI, and extension behavior |
 | Generic XML parser plus project-owned BPMN binding | Reject for the first ingestion slice | Would require early reimplementation of descriptors, type inheritance, QName handling, reference resolution, defaults, extensions, and DI |
 | CIB Seven Java Model API as production importer | Reject | Couples deployment to the compatibility oracle, leaks external types across the language boundary, and makes CIB’s model account accidental authority |
 | Generated TypeScript bindings from XSD/CMOF | Defer | Generation, schema mapping, reference resolution, extension policy, and generated-code maintenance are larger than the first concrete consumer |
@@ -122,7 +124,7 @@ The exact `v10.0.0` source tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are
 | Source locations | The library exposes line/column mainly in warning text, not a general stable location map; do not invent locations or claim source-range preservation |
 | Temporal history | Store only content-addressed admitted IR and required identities in Workflow input/history; archive source bytes outside Workflow history |
 
-The initial package must not export raw moddle objects as a public cross-package contract. It exposes project-owned source identity, diagnostics, and the smallest query/compilation boundary needed by the sequential User Task capsule. The external object graph remains private to the ingestion package.
+The package does not export raw moddle objects as a public cross-package contract. It exposes project-owned source identity, defensive exact-byte copies, normalized diagnostics, and the smallest compilation boundary needed by the sequential User Task capsule. The external object graph remains private to the ingestion package.
 
 ## Admission and security policy
 
@@ -136,13 +138,13 @@ The initial package must not export raw moddle objects as a public cross-package
 
 Any parser warning blocks static admission until a project rule explicitly classifies that warning as safe for the declared profile. The first implementation uses one stable `parserWarning` diagnostic code with the upstream message as evidence rather than a growing set of message-string special cases.
 
-The importer accepts bytes plus a required caller-provided byte limit. It rejects a DTD/DOCTYPE before structural parsing. The published parser probe did not resolve internal or external entities, but it accepted a bare DOCTYPE without warning; the explicit preflight avoids relying on that incidental behavior. Parsing untrusted large models is synchronous inside the library, so a production upload boundary must eventually isolate it in a bounded worker or process if CPU deadlines are required.
+The importer accepts bytes plus a required caller-provided byte limit and parser Promise-settlement deadline. It rejects a DTD/DOCTYPE before structural parsing. The published parser probe did not resolve internal or external entities, but it accepted a bare DOCTYPE without warning; the explicit preflight avoids relying on that incidental behavior. Parsing untrusted large models is synchronous inside the library, so the current deadline cannot preempt blocked CPU work and a production upload boundary must eventually isolate parsing in a bounded Worker or process.
 
 Encoding support remains an explicit open compatibility boundary. Six pinned MIWG files declare ISO-8859-1, while `bpmn-moddle` reports that encoding as unsupported and falls back to UTF-8. The ingestion package must not hide that warning. A later capsule can add a reviewed byte decoder and feed a derived UTF-8 parse buffer while retaining original bytes, declared encoding, and transformation provenance.
 
 ## Exact dependency and license audit
 
-The official registry metadata on 2026-07-24 resolves the proposed production graph as follows:
+The lockfile and installed package manifests on 2026-07-24 resolve the adopted production graph as follows:
 
 | Package | Role | License | Published unpacked size |
 |---|---|---|---:|
@@ -152,13 +154,13 @@ The official registry metadata on 2026-07-24 resolves the proposed production gr
 | `min-dash@5.1.0` | Shared small utilities | MIT | 29,119 bytes |
 | `saxen@11.1.0` | Streaming XML tokenizer | MIT | 159,671 bytes |
 
-The five-package production graph totals 1,099,349 published unpacked bytes. None is deprecated. Registry manifests contain no `preinstall`, `install`, or `postinstall` script. pnpm’s script policy and the final lockfile still require inspection after approval.
+The five-package production graph totals 1,099,349 published unpacked bytes. None is deprecated. Registry manifests contain no `preinstall`, `install`, or `postinstall` script. The final lockfile retains the exact approved direct version and tarball integrity; installation passed the repository supply-chain policy.
 
 The exact `bpmn-moddle@10.0.0` tarball integrity is `sha512-vXePD5jkatcILmM3zwJG/m6IIHIghTGB7WvgcdEraEw8E8VdJHrTgrvBUhbzqaXJpnsGQz15QS936xeBY6l9aA==`.
 
-The published package has no TypeScript declarations. `@types/bpmn-moddle@10.0.0` exists under MIT, but its `warnings` declaration is `string[]` while the runtime returns warning objects with `message` and sometimes reference metadata. Do not add that known-inaccurate declaration package. The ingestion package should own a narrow declaration for only the imported constructor and parse boundary, then validate/project returned values before they cross into project-owned types. The inspected upstream `main` tree is adding generated declarations, so a future published upgrade can remove this local seam after its actual runtime types are audited.
+The published package has no TypeScript declarations. `@types/bpmn-moddle@10.0.0` exists under MIT, but its `warnings` declaration is `string[]` while the runtime returns warning objects with `message` and sometimes reference metadata. The project did not add that known-inaccurate declaration package. The ingestion package owns a narrow declaration for only the imported constructor and parse boundary, then validates and projects returned values before they cross into project-owned types. The inspected upstream `main` tree is adding generated declarations, so a future published upgrade can remove this local seam after its actual runtime types are audited.
 
-All proposed packages are compatible with the repository’s MIT license. They remain external packages and are not vendored or relicensed.
+All adopted packages are compatible with the repository’s MIT license. They remain external packages and are not vendored or relicensed.
 
 ## Removal and upgrade cost
 
@@ -166,9 +168,9 @@ The dependency is isolated to one workspace package. Removing it deletes that pa
 
 Upgrades require rerunning the warning, preservation, security, MIWG, and structural-projection gates. A changed serializer output alone is not a semantic-core change. A changed element graph, reference outcome, warning set, default value, or extension projection is an ingestion compatibility change and must receive a new compiler/importer identity.
 
-## First implementation slice after approval
+## Implemented first slice
 
-The first red/green slice is intentionally smaller than a general BPMN compiler:
+The completed red/green slice is intentionally smaller than a general BPMN compiler:
 
 1. create `@bpmn-lean/bpmn-source` with no dependency leak into the semantic core or Temporal adapter;
 2. add red tests for exact byte/hash identity, the current sequential fixture, warning-blocked admission, DOCTYPE rejection, and a meaningful lost-reference mutation;
@@ -178,7 +180,7 @@ The first red/green slice is intentionally smaller than a general BPMN compiler:
 6. reject every unsupported BPMN element or extension at compile time rather than dropping it;
 7. compile a versioned, serializable IR carrying source/profile/compiler identity;
 8. make the current TypeScript and Temporal paths consume that IR without changing the canonical behavior;
-9. add the 21 MIWG models to an optional local interchange gate without copying their CC-BY files into the MIT repository;
-10. run the complete differential/refinement pipeline and retain the existing performance budgets.
+9. the optional local interchange gate inspects all 21 models at pinned MIWG revision `cb2629519cee6280ab521f99dc46a9815a221a35` without copying their CC-BY files: fourteen reach `unsupportedModel`, six are explicitly blocked as `unsupportedEncoding`, and one is blocked by `parserWarning`;
+10. the complete differential/refinement pipeline now compiles the exact source before the core and Temporal targets, reports the IR identity, preserves four-target agreement and the seeded disagreement, replays new and retained histories, and remains within the existing performance budgets.
 
 This slice does not add BPMN export, a general metamodel schema, all encoding support, CIB extension semantics, or any new executable BPMN feature.

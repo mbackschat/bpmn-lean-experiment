@@ -45,6 +45,9 @@ async function buildPipeline() {
     ),
   ]);
   await Promise.all([
+    runProjectCommand("tsc", ["-p", "packages/bpmn-source/tsconfig.json"], {
+      timeoutMs: 120_000,
+    }),
     runProjectCommand("tsc", ["-p", "packages/differential/tsconfig.json"], {
       timeoutMs: 120_000,
     }),

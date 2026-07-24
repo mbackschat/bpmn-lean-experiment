@@ -1,10 +1,13 @@
-import { createHash } from "node:crypto";
 import { readFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
+import {
+  BpmnCompilationStatus,
+  compileSequentialUserTaskBpmn,
+} from "@bpmn-lean/bpmn-source";
 import {
   CanonicalObservationKind,
   ProcessStatus,
@@ -95,23 +98,31 @@ async function runLeanTarget() {
   };
 }
 
-async function runCoreTarget(scenario) {
+async function runCoreTarget(scenario, executableIr) {
   const started = performance.now();
   return {
-    result: runScenario(scenario),
+    result: runScenario(scenario, executableIr),
     totalMs: elapsedMs(started),
   };
 }
 
-async function runTemporalTarget(runner, scenario) {
+async function runTemporalTarget(runner, scenario, executableIr) {
   const started = performance.now();
   const [primary, isolation] = await Promise.all([
-    runner.runScenario(scenario, {
-      workflowId: "m0-pipeline-primary",
-    }),
-    runner.runScenario(scenario, {
-      workflowId: "m0-pipeline-isolation",
-    }),
+    runner.runScenario(
+      scenario,
+      executableIr,
+      {
+        workflowId: "m0-pipeline-primary",
+      },
+    ),
+    runner.runScenario(
+      scenario,
+      executableIr,
+      {
+        workflowId: "m0-pipeline-isolation",
+      },
+    ),
   ]);
   return {
     primary,
@@ -125,14 +136,24 @@ export async function runMilestoneZeroPipeline() {
       throw new TypeError("pipeline build timing is required");
     }
     const scenario = await readJson(scenarioPath);
-    const bpmnSha256 = createHash("sha256")
-      .update(await readFile(bpmnPath))
-      .digest("hex");
-    if (bpmnSha256 !== scenario.bpmn.sha256) {
+    const ingestionStarted = performance.now();
+    const compilation = await compileSequentialUserTaskBpmn({
+      bytes: await readFile(bpmnPath),
+      sourceId: scenario.bpmn.id,
+      expectedSha256: scenario.bpmn.sha256,
+      semanticProfile: scenario.profile,
+      limits: {
+        maxBytes: 1024 * 1024,
+        parserDeadlineMs: 1_000,
+      },
+    });
+    if (compilation.status !== BpmnCompilationStatus.Accepted) {
       throw new Error(
-        "BPMN content does not match the scenario resource identity",
+        `BPMN compilation was rejected: ${JSON.stringify(compilation.diagnostics)}`,
       );
     }
+    const executableIr = compilation.executableIr;
+    const ingestionMs = elapsedMs(ingestionStarted);
     const retainedHistory = await readJson(retainedHistoryPath);
     const temporaryDirectory = await mkdtemp(
       path.join(tmpdir(), "bpmn-differential-"),
@@ -166,8 +187,8 @@ export async function runMilestoneZeroPipeline() {
       [cibTarget, leanTarget, coreTarget, temporalTarget] = await Promise.all([
         runCibTarget(cibOutputPath),
         runLeanTarget(),
-        runCoreTarget(scenario),
-        runTemporalTarget(runner, scenario),
+        runCoreTarget(scenario, executableIr),
+        runTemporalTarget(runner, scenario, executableIr),
       ]);
       scenarioExecutionMs = elapsedMs(scenarioStarted);
 
@@ -266,6 +287,11 @@ export async function runMilestoneZeroPipeline() {
         id: scenario.id,
         profile: scenario.profile,
         bpmnSha256: scenario.bpmn.sha256,
+        executableIr: {
+          schemaVersion: executableIr.schemaVersion,
+          kind: executableIr.kind,
+          compiler: executableIr.identity.compiler,
+        },
         normativeRefs: scenario.provenance.normativeRefs,
         cibRevision: scenario.provenance.cibRevision,
       },
@@ -274,6 +300,7 @@ export async function runMilestoneZeroPipeline() {
       injectedDisagreement: injectedComparison,
       phaseMs: {
         build: buildMs,
+        ingestion: ingestionMs,
         startup: startupMs,
         scenarioExecution: scenarioExecutionMs,
         observationProjection: observationProjectionMs,

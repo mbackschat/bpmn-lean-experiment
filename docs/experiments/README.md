@@ -26,4 +26,4 @@ Keep experiments out of the default semantic authority until they are adopted. P
 | Experiment | State | Focused gate |
 |---|---|---|
 | [Semantic representation spikes](SEMANTIC-REPRESENTATION-SPIKES.md) | Executed; provisional candidates retained | `lake exe checkSemanticRepresentationSpike` |
-| [BPMN XML ingestion spike](BPMN-XML-INGESTION-SPIKE.md) | Executed read-only; dependency decision proposed | One-off published-bundle probe; project gate awaits dependency approval |
+| [BPMN XML ingestion spike](BPMN-XML-INGESTION-SPIKE.md) | Closed; bounded source boundary adopted | `./scripts/pnpm.sh run test:bpmn-source` and optional `test:miwg` |

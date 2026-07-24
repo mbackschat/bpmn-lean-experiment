@@ -84,8 +84,8 @@ The structural importer is a good candidate when wrapped behind exact byte ident
 
 Confidence is deliberately low for lexical round-trip preservation, non-UTF-8 handling, stable source locations, warning-free foreign-reference handling, or accepting untrusted large XML in-process. Those are explicit boundaries, not inferred capabilities.
 
-## Remaining decision and stop condition
+## Adoption result and retained stop condition
 
-The exact dependency proposal is in [BPMN-XML-INGESTION-DECISION.md](../BPMN-XML-INGESTION-DECISION.md). Stop before adding it to `package.json` or `pnpm-lock.yaml` until the owner approves `bpmn-moddle@10.0.0` for the isolated `@bpmn-lean/bpmn-source` package.
+The owner approved the exact dependency and first slice. The adopted result is in [BPMN-XML-INGESTION-DECISION.md](../BPMN-XML-INGESTION-DECISION.md), and the implementation is isolated in [`@bpmn-lean/bpmn-source`](../../packages/bpmn-source/README.md) with the exact lockfile graph.
 
-After approval, the next discriminator is a red test that requires exact byte/hash retention while a warning-producing unresolved reference blocks executable admission. A parser adapter that silently drops the reference, regenerates source bytes, exposes moddle objects outside the package, or permits the semantic core/Temporal Workflow to import the parser fails the experiment’s conclusion.
+The required discriminator is now retained: exact byte/hash identity survives while a warning-producing unresolved reference blocks executable admission. A future parser change that silently drops the reference, regenerates source bytes, exposes moddle objects outside the package, or permits the semantic core/Temporal Workflow to import the parser fails the experiment’s conclusion.
