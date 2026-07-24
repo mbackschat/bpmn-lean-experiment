@@ -25,6 +25,12 @@ export type TemporalScenarioExecutionOptions = Readonly<{
   workflowId: string;
 }>;
 
+export type TemporalScenarioBatchItem = Readonly<{
+  scenario: Scenario;
+  executableIr: SequentialUserTaskExecutableIr;
+  options: TemporalScenarioExecutionOptions;
+}>;
+
 export type TemporalHistory = Readonly<{
   events: ReadonlyArray<unknown>;
 }>;

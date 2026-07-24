@@ -58,6 +58,8 @@ The scenario artifacts carry separate document and trace schema versions but no 
 
 The differential harness now uses case-owned paths, Lean emitter identity, Workflow prefix, retained histories, wait-prefix length, and seeded mutation. Prepared mode removes duplicate builds from the full repository gate. The timeout helper owns a POSIX process group, sends `SIGTERM`, escalates to `SIGKILL` after a bounded grace period, waits for closure before returning, and has a negative witness whose descendant would otherwise escape and write a marker.
 
+The batching red tests called an absent Temporal batch API and changed the Surefire bridge to an absent JSON-lines input contract. The green runner executes all three interaction scenarios concurrently through one server and Worker, rejects duplicate Workflow IDs before start, waits for every started execution before propagating a batch error, and exactly matches the pure core. The CIB bridge now delegates a JSON-lines request batch to the existing persistent oracle process; a three-scenario test proves request-order results and clean state after every case through one engine. The complete differential gate consumes that batch-capable bridge but remains a single M0 case until the interaction Lean emitter and Query/Update path join it.
+
 Performance evidence must distinguish real time, aggregate user CPU, system time, build mode, and the harness-reported phases. Record the latest checkpoint numbers in [PLAN.md](PLAN.md), not in this stable testing guide.
 
 ## BPMN source ingestion and CMOF facts

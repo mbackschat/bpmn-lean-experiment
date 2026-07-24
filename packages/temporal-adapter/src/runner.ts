@@ -22,6 +22,7 @@ import {
 import type {
   BpmnScenarioWorkflow,
   TemporalHistory,
+  TemporalScenarioBatchItem,
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
   TemporalScenarioRunnerOptions,
@@ -151,6 +152,41 @@ export class TemporalScenarioRunner {
       result,
       history: history as TemporalHistory,
     };
+  }
+
+  async runScenarios(
+    items: ReadonlyArray<TemporalScenarioBatchItem>,
+  ): Promise<ReadonlyArray<TemporalScenarioExecution>> {
+    this.assertAvailable();
+    const workflowIds = items.map(({ options }) => options.workflowId);
+    if (workflowIds.some((workflowId) => workflowId.length === 0)) {
+      throw new TypeError("Workflow IDs must be non-empty");
+    }
+    if (new Set(workflowIds).size !== workflowIds.length) {
+      throw new TypeError("Workflow IDs must be unique within one batch");
+    }
+    const settled = await Promise.allSettled(
+      items.map(({ scenario, executableIr, options }) =>
+        this.runScenario(scenario, executableIr, options),
+      ),
+    );
+    const failures = settled.flatMap((result) =>
+      result.status === "rejected" ? [result.reason] : [],
+    );
+    if (failures.length > 0) {
+      throw new AggregateError(
+        failures,
+        "Temporal scenario batch did not complete",
+      );
+    }
+    return settled.map((result) => {
+      switch (result.status) {
+        case "fulfilled":
+          return result.value;
+        case "rejected":
+          throw new Error("Rejected batch result escaped failure handling");
+      }
+    });
   }
 
   async replayHistory(history: unknown, workflowId: string): Promise<void> {

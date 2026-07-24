@@ -16,6 +16,17 @@ const scenarioUrl = new URL(
   "../../../scenarios/m0-sequential-user-task/scenario.json",
   import.meta.url,
 );
+const interactionScenarioUrls = [
+  "scenario.json",
+  "wrong-activation.scenario.json",
+  "stale-completion.scenario.json",
+].map(
+  (relativePath) =>
+    new URL(
+      `../../../scenarios/m1-user-task-discovery-completion/${relativePath}`,
+      import.meta.url,
+    ),
+);
 const bpmnUrl = new URL(
   "../../../scenarios/m0-sequential-user-task/process.bpmn",
   import.meta.url,
@@ -45,8 +56,8 @@ async function loadJson(url) {
   return JSON.parse(await readFile(url, "utf8"));
 }
 
-async function loadExecutionInput() {
-  const scenario = await loadJson(scenarioUrl);
+async function loadExecutionInput(selectedScenarioUrl = scenarioUrl) {
+  const scenario = await loadJson(selectedScenarioUrl);
   const compilation = await compileSequentialUserTaskBpmn({
     bytes: await readFile(bpmnUrl),
     sourceId: scenario.bpmn.id,
@@ -121,5 +132,53 @@ test("retained history replays independently of a live execution", async () => {
     runner.replayHistory(history, "m0-retained-sequential-user-task"),
     10_000,
     "retained history replay",
+  );
+});
+
+test("one server and Worker execute the complete User Task interaction batch", async () => {
+  const inputs = await Promise.all(
+    interactionScenarioUrls.map(loadExecutionInput),
+  );
+  const batchItems = inputs.map(
+    ({ scenario, executableIr }, index) => ({
+      scenario,
+      executableIr,
+      options: {
+        workflowId: `m1-user-task-batch-${index}`,
+      },
+    }),
+  );
+
+  const executions = await withDeadline(
+    runner.runScenarios(batchItems),
+    15_000,
+    "Temporal interaction batch",
+  );
+
+  assert.equal(executions.length, inputs.length);
+  for (const [index, execution] of executions.entries()) {
+    const input = inputs[index];
+    assert.deepEqual(
+      execution.waitTrace,
+      runScenario(input.scenario, input.executableIr).trace.slice(0, 3),
+    );
+    assert.deepEqual(
+      execution.result,
+      runScenario(input.scenario, input.executableIr),
+    );
+    assert.ok(execution.history.events.length > 0);
+  }
+});
+
+test("batch execution rejects duplicate Workflow identities before start", async () => {
+  const input = await loadExecutionInput(interactionScenarioUrls[0]);
+  const duplicate = {
+    ...input,
+    options: { workflowId: "m1-duplicate-workflow-id" },
+  };
+
+  await assert.rejects(
+    runner.runScenarios([duplicate, duplicate]),
+    /Workflow IDs must be unique/u,
   );
 });

@@ -10,21 +10,20 @@ import org.junit.Test;
  * Test-scope bridge used by the dependency-free Node differential harness.
  *
  * <p>Surefire already owns the approved CIB runtime classpath. This bridge keeps that classpath
- * concern outside the canonical comparator and exports one ordinary public-service runner result
- * without adding another Maven plugin or bundled runtime artifact.
+ * concern outside the canonical comparator and exports one JSON-lines batch through the persistent
+ * public-service runner without adding another Maven plugin or bundled runtime artifact.
  */
 public final class CibSevenPipelineExportBridge {
 
   @Test
-  public void exportsCanonicalScenarioResult() throws Exception {
+  public void exportsCanonicalScenarioBatch() throws Exception {
     var projectRoot = requiredPath("bpmn.pipeline.projectRoot");
-    var scenarioPath = requiredPath("bpmn.pipeline.scenario");
+    var inputPath = requiredPath("bpmn.pipeline.input");
     var outputPath = requiredPath("bpmn.pipeline.output");
-    var scenario = ScenarioJson.read(scenarioPath);
 
-    try (var runner = CibSevenScenarioRunner.create()) {
-      var result = runner.run(scenario, projectRoot);
-      Files.writeString(outputPath, ScenarioJson.write(result), UTF_8);
+    try (var input = Files.newBufferedReader(inputPath, UTF_8);
+        var output = Files.newBufferedWriter(outputPath, UTF_8)) {
+      CibSevenOracleMain.serve(input, output, projectRoot);
     }
   }
 

@@ -1,4 +1,9 @@
-import { readFile, mkdtemp, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
@@ -82,8 +87,17 @@ function canonicalCibResult(cibResult) {
   };
 }
 
-async function runCibTarget(scenarioPath, outputPath) {
+async function runCibTargets(
+  scenarios,
+  inputPath,
+  outputPath,
+) {
   const started = performance.now();
+  await writeFile(
+    inputPath,
+    `${scenarios.map((scenario) => JSON.stringify(scenario)).join("\n")}\n`,
+    "utf8",
+  );
   await runProcess(
     "runners/cibseven/mvnw",
     [
@@ -95,14 +109,22 @@ async function runCibTarget(scenarioPath, outputPath) {
       "-Dstyle.color=never",
       "-Dtest=CibSevenPipelineExportBridge",
       `-Dbpmn.pipeline.projectRoot=${projectRoot}`,
-      `-Dbpmn.pipeline.scenario=${scenarioPath}`,
+      `-Dbpmn.pipeline.input=${inputPath}`,
       `-Dbpmn.pipeline.output=${outputPath}`,
       "test",
     ],
     30_000,
   );
-  const result = await readJson(outputPath);
-  return { result, totalMs: elapsedMs(started) };
+  const results = (await readFile(outputPath, "utf8"))
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line));
+  if (results.length !== scenarios.length) {
+    throw new Error(
+      `CIB batch returned ${results.length} results for ${scenarios.length} scenarios`,
+    );
+  }
+  return { results, totalMs: elapsedMs(started) };
 }
 
 async function runLeanTarget(executable) {
@@ -210,7 +232,8 @@ export async function runPipelineCase(pipelineCase) {
   const temporaryDirectory = await mkdtemp(
     path.join(tmpdir(), "bpmn-differential-"),
   );
-  const cibOutputPath = path.join(temporaryDirectory, "cib-result.json");
+  const cibInputPath = path.join(temporaryDirectory, "cib-input.jsonl");
+  const cibOutputPath = path.join(temporaryDirectory, "cib-output.jsonl");
   const warmStarted = performance.now();
   let runner;
   let startupMs = 0;
@@ -238,7 +261,7 @@ export async function runPipelineCase(pipelineCase) {
 
     const scenarioStarted = performance.now();
     [cibTarget, leanTarget, coreTarget, temporalTarget] = await Promise.all([
-      runCibTarget(scenarioPath, cibOutputPath),
+      runCibTargets([scenario], cibInputPath, cibOutputPath),
       runLeanTarget(pipelineCase.leanExecutable),
       runCoreTarget(scenario, executableIr),
       runTemporalTarget(
@@ -248,6 +271,10 @@ export async function runPipelineCase(pipelineCase) {
         pipelineCase.workflowIdPrefix,
       ),
     ]);
+    cibTarget = {
+      result: cibTarget.results[0],
+      totalMs: cibTarget.totalMs,
+    };
     scenarioExecutionMs = elapsedMs(scenarioStarted);
 
     const projectionStarted = performance.now();
