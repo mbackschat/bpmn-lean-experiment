@@ -56,7 +56,7 @@ The scenario artifacts now carry separate document and trace schema versions plu
 
 The differential harness now uses case-owned paths, Lean emitter identity, Workflow prefix, retained histories, wait-prefix length, and seeded mutation. Prepared mode removes duplicate builds from the full repository gate. The timeout helper owns a POSIX process group, sends `SIGTERM`, escalates to `SIGKILL` after a bounded grace period, waits for closure before returning, and has a negative witness whose descendant would otherwise escape and write a marker.
 
-Performance evidence must distinguish real time, aggregate user CPU, system time, build mode, and the harness-reported phases. Discard measurements taken under known unrelated resource saturation. Record the latest checkpoint numbers in [PLAN.md](PLAN.md), not in this stable testing guide.
+Performance evidence must distinguish real time, aggregate user CPU, system time, build mode, and the harness-reported phases. Record the latest checkpoint numbers in [PLAN.md](PLAN.md), not in this stable testing guide.
 
 ## BPMN source ingestion and CMOF facts
 
