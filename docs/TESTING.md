@@ -1,6 +1,6 @@
 # Testing
 
-The current test estate covers the Phase 0 Lean contract vocabulary, the M0.2 CIB Seven calibration runner, the M0.3 Lean sequential User Task capsule, the M0.4 pure TypeScript semantic core, and the M0.5 Temporal refinement/replay adapter. It supplies one draft-profile behavioral calibration, two matching independent semantic accounts, one matching durable host, and one retained replay fixture, but no BPMN conformance or immutable CIB compatibility claim.
+The current test estate covers the Phase 0 Lean contract vocabulary and the complete Milestone 0 pipeline: CIB Seven calibration, the Lean sequential User Task capsule, the pure TypeScript semantic core, the Temporal refinement/replay adapter, and the pure differential comparator. It supplies one draft-profile behavioral calibration, two matching independent semantic accounts, one matching durable host, a retained replay fixture, and a fast direct four-target comparison, but no BPMN conformance or immutable CIB compatibility claim.
 
 ## Red/green workflow
 
@@ -22,7 +22,7 @@ The first scaffold capsule followed this workflow: the conformance module import
 git status --short
 ```
 
-The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD, Lean build, executable contract checks, the pure TypeScript semantic core, the embedded CIB Seven oracle tests, the full-server Temporal refinement/replay gate, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
+The verification script checks the profile and scenario JSON, profile reference, BPMN content hash, BPMN XML, locally available official XSD, Lean build, executable contract checks, the pure TypeScript semantic core, the embedded CIB Seven oracle tests, the pure comparator, the full M0 pipeline, and whitespace. `lake test` elaborates the separating examples through the `checkConformance` executable; [pnpm.sh](../scripts/pnpm.sh) selects exact active nvm/asdf tools or the Homebrew fallback without changing shell configuration; [test-cibseven-oracle.sh](../scripts/test-cibseven-oracle.sh) selects Java 21 and the repository-local Maven wrapper.
 
 The M0.1 red run imported the intentionally absent `BpmnSemantics.Scenario` module and failed. The first implementation run then exposed Lean’s requirement that imports precede module documentation; moving the import to the module beginning fixed that structural error. The green run passes with the implementation-neutral scenario, stimulus, observation, result, and runner types.
 
@@ -38,7 +38,19 @@ The focused comparator gate is:
 
 The first intended red run failed with `TS18003` because the new package had no comparator source. Before that run, adding the workspace package caused pnpm to request a workspace synchronization; that setup failure was corrected and was not counted as semantic red evidence.
 
-The green pure comparator accepts exact canonical agreement and classifies the first disagreement as scenario outcome, trace length, observation kind, or observation value with an exact structural path. Its separating example changes the active-wait state observation from `running` to `completed` and requires an `observationValue` disagreement at `trace[1].status`. External runner orchestration and full-pipeline timings remain incomplete.
+The green pure comparator accepts exact canonical agreement and classifies the first disagreement as scenario outcome, trace length, observation kind, or observation value with an exact structural path. Its focused separating example changes an active-wait state observation from `running` to `completed` and requires an `observationValue` disagreement at `trace[1].status`.
+
+The full gate is:
+
+```sh
+./scripts/pnpm.sh run test:pipeline
+```
+
+The orchestrator’s intended red run failed because `scripts/test-pipeline.mjs` did not exist. The first sandboxed green attempt reached the implementation but could not bind the ephemeral Temporal server ports; the same source passed in the authorized local-server environment.
+
+The green gate builds the TypeScript, Lean emitter, and CIB test boundary; verifies the BPMN content hash; starts a full Temporal server; then concurrently runs CIB Seven, the Lean emitter, the pure semantic core, and two isolated Temporal Workflows. It requires exact four-target canonical agreement, the calibrated wait prefix, equal isolated Temporal results, a clean CIB database, and a classified seeded mutation at `trace[2].status`. It replays the live and committed histories, records scenario/profile/BPMN/CIB/implementation provenance, reports build, startup, scenario, projection, comparison, replay, cleanup, and per-target timings, and enforces the 15-second warm and 45-second cold budgets.
+
+The first successful source-current run measured 1.16 seconds build, 1.25 seconds startup, 3.33 seconds concurrent scenario execution, 0.06 milliseconds projection, 1.59 milliseconds comparison, 0.42 seconds replay, and 0.01 seconds cleanup. Its warm total was 5.03 seconds and build-plus-warm total was 6.19 seconds. The subsequent complete verification pass measured 4.55 seconds warm and 5.78 seconds build-plus-warm.
 
 ## M0.5 Temporal refinement and replay
 
@@ -129,14 +141,13 @@ The implemented semantic gate is:
 ./scripts/pnpm.sh run test:semantic
 ```
 
-The later public gates remain planned:
+The public fast gates are:
 
 ```sh
 ./scripts/pnpm.sh run test:pipeline
-./scripts/pnpm.sh run test:assurance
 ```
 
-`test:pipeline` must run the walking skeleton through CIB, Lean, the semantic core, Temporal, differential comparison, replay, and cleanup below fifteen warm seconds and forty-five cold seconds. `test:assurance` owns larger selective suites and may take minutes. These two scripts do not exist yet; `./scripts/verify.sh` remains the complete implemented gate and now includes the focused Temporal test.
+`test:pipeline` runs the walking skeleton through CIB, Lean, the semantic core, Temporal, differential comparison, replay, and cleanup below fifteen warm seconds and forty-five cold seconds. A future `test:assurance` command will own larger selective suites and may take minutes. `./scripts/verify.sh` includes the focused semantic, CIB, comparator, and complete pipeline gates.
 
 ## Evidence lanes
 

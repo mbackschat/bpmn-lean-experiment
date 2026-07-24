@@ -11,7 +11,7 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The project is in Milestone 0: create a fast full-pipeline walking skeleton for `none Start Event → User Task → none End Event`. CIB Seven calibrated the trace, the Lean interpreter and independent pure TypeScript semantic core derive it, and the Temporal adapter preserves it through live execution and retained-history replay. M0.6, the fast multi-target differential/refinement gate with an injected disagreement, is next. Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+Milestone 0 is complete for `none Start Event → User Task → none End Event`. One command runs CIB Seven, the Lean interpreter, the independent pure TypeScript semantic core, and isolated Temporal executions concurrently; exact canonical agreement, injected-disagreement classification, cleanup, live and retained replay, provenance, timings, and feedback budgets are executable. The next work is recorded in [PLAN.md](docs/PLAN.md). Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
@@ -65,7 +65,7 @@ When sources disagree, classify the disagreement against the standard, profile, 
 - Keep BPMN import/admission, executable normalization, runtime execution, public observation, and host persistence conceptually separate.
 - Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
 - An experiment is not semantic authority merely because it compiles or passes a finite witness.
-- Do not broaden Milestone 0 beyond the approved sequential User Task slice without explicit approval.
+- Do not broaden any semantic capsule beyond its approved feature, interpretation, and observation boundary.
 
 ## Semantic invariants
 
@@ -158,6 +158,12 @@ Focused Temporal refinement and replay gate:
 
 ```sh
 ./scripts/pnpm.sh run test:temporal
+```
+
+Complete fast differential/refinement gate:
+
+```sh
+./scripts/pnpm.sh run test:pipeline
 ```
 
 Focused CIB calibration gate:

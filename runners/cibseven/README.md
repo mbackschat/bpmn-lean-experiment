@@ -54,5 +54,6 @@ Diagnostics include engine/database versions, phase timings, the PVM definition 
 | [ScenarioProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | Versioned typed scenario, trace, outcome, diagnostics, and PVM projection vocabulary |
 | [ScenarioJson.java](src/main/java/org/bpmnlean/cibseven/ScenarioJson.java) | Strict Jackson codec for scenarios, traces, and results |
 | [CibSevenScenarioRunner.java](src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | Public-service deploy/start/query/complete runner, clock control, canonical projection, timing, and cleanup |
+| [CibSevenPipelineExportBridge.java](src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | Explicitly selected test-scope result bridge that reuses Surefire’s approved runtime classpath for the dependency-free Node pipeline harness without entering ordinary test discovery |
 | [PvmDefinitionProjector.java](src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) | Read-only diagnostic projection executed inside a CIB command context |
 | [CibSevenOracleMain.java](src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | Persistent compact JSON-lines boundary |

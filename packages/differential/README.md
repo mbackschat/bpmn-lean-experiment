@@ -16,3 +16,5 @@ Run the focused gate from the repository root:
 ```sh
 ./scripts/pnpm.sh run test:differential
 ```
+
+The complete `./scripts/pnpm.sh run test:pipeline` gate builds the target boundaries, runs CIB Seven, Lean, the semantic core, and two isolated Temporal executions concurrently, compares the four canonical results, requires the seeded disagreement to be classified, replays live and retained histories, records provenance and phase timings, proves cleanup, and enforces the Milestone 0 budgets.

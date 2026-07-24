@@ -9,6 +9,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Resume implementation | [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the current gate in [TESTING.md](TESTING.md) |
 | Run or inspect the CIB oracle | [TESTING.md](TESTING.md) and the [CIB runner guide](../runners/cibseven/README.md) |
 | Run or inspect the Temporal adapter | [TESTING.md](TESTING.md), [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md), and the [adapter guide](../packages/temporal-adapter/README.md) |
+| Run or inspect differential comparison | [TESTING.md](TESTING.md) and the [comparator guide](../packages/differential/README.md) |
 | Change project mission or semantic authority | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) and [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) |
 | Change BPMN import or semantic meaning | [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md) and the [research index](research/README.md) |
 | Run or evaluate a bounded architecture spike | [experiments](experiments/README.md) |

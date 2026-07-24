@@ -1,6 +1,6 @@
 # Milestone 0: fast full-pipeline walking skeleton
 
-**Status:** In progress
+**Status:** Complete
 
 This document owns the durable design, work breakdown, acceptance criteria, and resume protocol for the first end-to-end milestone. Immediate sequencing and the exact resume point belong in [PLAN.md](PLAN.md); implemented facts belong in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
@@ -177,7 +177,7 @@ Each completed package ends with updated [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP
 
 Package order protects calibration and independence. The repository should still gain the runner skeleton early: M0.1 defines it, M0.2 exercises one external runner, and every following package plugs into the same orchestrator boundary.
 
-M0.0 through M0.5 are complete. M0.6 is the next package: assemble the multi-target gate, classify one injected disagreement, record phase timings, and enforce the feedback budgets.
+M0.0 through M0.6 are complete. The public `test:pipeline` gate builds the target boundaries, concurrently runs CIB Seven, Lean, the semantic core, and two isolated Temporal executions, compares canonical results, classifies a seeded disagreement, replays live and retained histories, records provenance and phase timings, proves cleanup, and enforces the budgets.
 
 ## Dependency decisions
 
@@ -216,6 +216,8 @@ Milestone 0 is complete only when:
 9. Lean and the semantic core remain free of CIB and Temporal dependencies;
 10. no BPMN or CIB compatibility claim exceeds the single calibrated slice.
 
+All ten criteria are satisfied for only the content-addressed sequential User Task capsule. The harness reads and hashes the actual XML, CIB parses and executes it, and the Lean, TypeScript, and Temporal boundaries admit the same recorded resource identity; general XML ingestion outside CIB remains absent. The first successful source-current pipeline measured 5.03 seconds warm and 6.19 seconds including its build phase, below the 15-second warm and 45-second cold budgets. This closes the walking skeleton without creating a broader BPMN or immutable CIB compatibility claim.
+
 ## Resume protocol
 
 At the start of every session:
@@ -249,3 +251,5 @@ The exact resume point must name the current package, last verified command, nex
 | 2026-07-24 | Interpret/evaluate versioned executable BPMN IR data in TypeScript rather than generate authoritative TypeScript from each BPMN model | Approved as the production architecture; generated source may be a derived diagnostic or optimization only after equivalence and replay evidence |
 | 2026-07-24 | Adopt the exact Temporal SDK `1.21.0` package set and CLI `v1.8.1` full local server for M0.5 | Approved and implemented; one Workflow loop owns semantic mutation, Signal is only the bounded runner transport, Query is diagnostic, and live plus retained histories replay |
 | 2026-07-24 | Deny optional `@swc/core` and protobufjs install scripts and isolate Temporal’s TypeScript 7 declaration incompatibility with adapter-only `skipLibCheck` | Implemented; the native SWC binding works without its fallback script, project source remains strict, and the semantic core retains full library checking |
+| 2026-07-24 | Keep the differential comparator pure and classify the first exact-result divergence without target-specific repairs or majority voting | Implemented; the CIB result is the declared reference only for the draft compatibility profile, and a seeded `trace[2].status` mutation is rejected |
+| 2026-07-24 | Reuse Lean’s built-in JSON support and Surefire’s approved CIB classpath instead of adding pipeline dependencies | Implemented; the Lean boundary is a capsule-specific one-way emitter and the CIB bridge remains test scope |
