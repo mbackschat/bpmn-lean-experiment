@@ -9,6 +9,7 @@ import type {
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
   FireTimerStimulus,
+  OpenEffect,
   OpenTimer,
   OpenUserTask,
   Scenario,
@@ -19,13 +20,20 @@ import type {
 import {
   CanonicalObservationKind,
   ProcessStatus,
+  ScenarioStepKind,
   ScenarioOutcomeKind,
   SemanticProcessCompilerId,
   StimulusKind,
+  advanceScenario,
+  initialState,
   isWellFormedStimulus,
+  projectEffectTransportMaterial,
+  projectOpenEffects,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import {
+  ApplicationFailure,
+  WorkflowFailedError,
   WorkflowNotFoundError,
   WorkflowUpdateStage,
 } from "@temporalio/client";
@@ -50,18 +58,33 @@ import type {
   CompletedProcessReceipt,
   ProcessCommandResult,
   TemporalHistory,
+  TemporalEffectBypassMutationExecution,
+  TemporalEffectFailureExecution,
   TemporalReplayItem,
   TemporalScenarioBatchItem,
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
   TemporalScenarioRunnerOptions,
   TemporalTimerBypassMutationExecution,
+  TemporalSharedEffectExecutions,
   TemporalTimeSkippingRunnerOptions,
   TemporalInteractionEvidence,
 } from "./contracts.js";
 import {
   contentBoundUpdateId,
 } from "./command-identity.js";
+import {
+  EffectExecutionSchedule,
+  EffectProbeActivityRegistry,
+  EffectProbeStore,
+} from "./effect-probe.js";
+import type {
+  EffectRequest,
+} from "./effect-probe.js";
+import {
+  completeEffectCommandId,
+  effectTransportKey,
+} from "./effect-transport.js";
 import {
   requireDurableTimerHistory,
   reconcileHarnessTraceEvidence,
@@ -77,11 +100,18 @@ const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
 const timerBypassMutationWorkflowsPath = fileURLToPath(
   new URL("./timer-bypass-mutation-workflows.js", import.meta.url),
 );
+const effectBypassMutationWorkflowsPath = fileURLToPath(
+  new URL("./effect-bypass-mutation-workflows.js", import.meta.url),
+);
 
 const temporalTestIdentity = "bpmn-lean-test-runtime";
 const timerBypassMutationTaskQueue = "bpmn-timer-bypass-mutation";
 const timerBypassMutationWorkflowType =
   "runBpmnProcessTimerBypassMutation";
+const effectBypassMutationTaskQueue = "bpmn-effect-bypass-mutation";
+const effectBypassMutationWorkflowType =
+  "runBpmnProcessEffectBypassMutation";
+const workerLossActivityDelayMs = 2_500;
 const operationDeadlineMs = 5_000;
 const environmentStartupDeadlineMs = 40_000;
 const workerStartupDeadlineMs = 20_000;
@@ -92,9 +122,21 @@ const shutdownDeadlineMs = 10_000;
 
 type CompletionDeliveryEvidence = Omit<
   TemporalInteractionEvidence,
-  "openUserTasksAtWait" | "openTimersAtWait"
+  "openUserTasksAtWait" | "openTimersAtWait" | "openEffectsAtWait"
 > & Readonly<{
   completedReceipt?: CompletedProcessReceipt;
+}>;
+
+type PreparedEffectExecution = Readonly<{
+  request: EffectRequest;
+  schedule: EffectExecutionSchedule;
+}>;
+
+type BypassMutationConfiguration = Readonly<{
+  taskQueue: string;
+  workflowType: string;
+  workflowsPath: string;
+  description: string;
 }>;
 
 export class TemporalScenarioRunner {
@@ -105,6 +147,7 @@ export class TemporalScenarioRunner {
 
   private constructor(
     private readonly environment: TestWorkflowEnvironment,
+    private readonly effectProbeRegistry: EffectProbeActivityRegistry,
     worker: Worker,
     workerRun: Promise<void>,
   ) {
@@ -170,12 +213,14 @@ export class TemporalScenarioRunner {
     environment: TestWorkflowEnvironment,
   ): Promise<TemporalScenarioRunner> {
     try {
+      const effectProbeRegistry = new EffectProbeActivityRegistry();
       const worker = await withDeadline(
         Worker.create({
           connection: environment.nativeConnection,
           identity: temporalTestIdentity,
           taskQueue: bpmnSemanticTaskQueue,
           workflowsPath,
+          activities: effectProbeRegistry.activities,
         }),
         workerStartupDeadlineMs,
         "Temporal Worker startup",
@@ -184,7 +229,12 @@ export class TemporalScenarioRunner {
       const workerRun = worker.run().catch((error: unknown) => {
         runner.workerError = error;
       });
-      runner = new TemporalScenarioRunner(environment, worker, workerRun);
+      runner = new TemporalScenarioRunner(
+        environment,
+        effectProbeRegistry,
+        worker,
+        workerRun,
+      );
       await delay(0);
       runner.assertWorkerHealthy();
       return runner;
@@ -202,6 +252,65 @@ export class TemporalScenarioRunner {
     scenario: Scenario,
     semanticProcess: SemanticProcessProgram,
     options: TemporalScenarioExecutionOptions,
+  ): Promise<TemporalScenarioExecution> {
+    const effectExecution = requireOptionalEffectExecution(
+      scenario,
+      semanticProcess,
+      options,
+    );
+    if (effectExecution === undefined) {
+      return this.runRegisteredScenario(
+        scenario,
+        semanticProcess,
+        options,
+      );
+    }
+
+    const store = new EffectProbeStore();
+    store.requireEmpty();
+    let firstInvocation = true;
+    this.effectProbeRegistry.register(
+      effectExecution.request,
+      async (request) => {
+        const result = await store.execute(
+          request,
+          effectExecution.schedule,
+        );
+        if (
+          options.workerDownAtEffectPending === true &&
+          firstInvocation
+        ) {
+          firstInvocation = false;
+          // The first attempt has performed the external mutation but remains unacknowledged past
+          // start-to-close. The replacement Worker must reconcile the same transport key.
+          await delay(workerLossActivityDelayMs);
+        }
+        return result;
+      },
+    );
+    try {
+      const execution = await this.runRegisteredScenario(
+        scenario,
+        semanticProcess,
+        options,
+        store,
+      );
+      return {
+        ...execution,
+        effectProbeEvidence: store.evidence(),
+      };
+    } finally {
+      this.effectProbeRegistry.unregister(
+        effectExecution.request.idempotencyKey,
+      );
+    }
+  }
+
+  private async runRegisteredScenario(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    options: TemporalScenarioExecutionOptions,
+    effectProbeStore?: EffectProbeStore,
   ): Promise<TemporalScenarioExecution> {
     this.assertAvailable();
     validateExecutionOptions(scenario, options);
@@ -234,6 +343,15 @@ export class TemporalScenarioRunner {
       "Workflow open User Tasks Query",
     );
     const openTimersAtWait = openTimersInTrace(waitTrace);
+    const openEffectsAtWait = openEffectsInTrace(waitTrace);
+    if (options.workerDownAtEffectPending === true) {
+      if (effectProbeStore === undefined) {
+        throw new TypeError(
+          "Worker-down effect scheduling has no probe store",
+        );
+      }
+      await this.restartWorkerDuringEffect(handle, effectProbeStore);
+    }
     const completions = requireCompletionStimuli(scenario);
     const delivery = await this.deliverCompletions(
       handle,
@@ -259,6 +377,16 @@ export class TemporalScenarioRunner {
         ),
       );
     }
+    let effectReceipt: CompletedProcessReceipt | undefined;
+    if (options.effectExecutionSchedule !== undefined) {
+      effectReceipt = requireCompletedProcessReceipt(
+        await withDeadline(
+          handle.result(),
+          workflowResultDeadlineMs,
+          "effect Workflow completed receipt",
+        ),
+      );
+    }
 
     const trace = await withDeadline(
       handle.query<ReadonlyArray<CanonicalObservation>>(
@@ -268,7 +396,7 @@ export class TemporalScenarioRunner {
       "Workflow final trace Query",
     );
     const result = scenarioResultFromTrace(trace);
-    const receipt = completedReceipt ?? timerReceipt ??
+    const receipt = completedReceipt ?? timerReceipt ?? effectReceipt ??
       (completedState(trace)
         ? requireCompletedProcessReceipt(
           await withDeadline(
@@ -311,11 +439,13 @@ export class TemporalScenarioRunner {
       interactionEvidence: {
         openUserTasksAtWait,
         openTimersAtWait,
+        openEffectsAtWait,
         ...interaction,
       },
       result,
       receipt,
       history: history as TemporalHistory,
+      effectProbeEvidence: null,
     };
   }
 
@@ -367,15 +497,226 @@ export class TemporalScenarioRunner {
         "Timer-bypass mutation requires one Fire Timer stimulus",
       );
     }
+    return this.runBypassMutation(
+      scenario,
+      semanticProcess,
+      workflowId,
+      {
+        taskQueue: timerBypassMutationTaskQueue,
+        workflowType: timerBypassMutationWorkflowType,
+        workflowsPath: timerBypassMutationWorkflowsPath,
+        description: "timer-bypass mutation",
+      },
+    );
+  }
+
+  async runEffectBypassMutation(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalEffectBypassMutationExecution> {
+    requireOptionalEffectExecution(scenario, semanticProcess, {
+      workflowId,
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
+    });
+    return this.runBypassMutation(
+      scenario,
+      semanticProcess,
+      workflowId,
+      {
+        taskQueue: effectBypassMutationTaskQueue,
+        workflowType: effectBypassMutationWorkflowType,
+        workflowsPath: effectBypassMutationWorkflowsPath,
+        description: "effect-bypass mutation",
+      },
+    );
+  }
+
+  async runEffectExhaustion(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalEffectFailureExecution> {
+    this.assertAvailable();
+    const options: TemporalScenarioExecutionOptions = {
+      workflowId,
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
+    };
+    const effectExecution = requireOptionalEffectExecution(
+      scenario,
+      semanticProcess,
+      options,
+    );
+    if (effectExecution === undefined) {
+      throw new TypeError(
+        "Effect exhaustion requires one committed effect intent",
+      );
+    }
+    let invocations = 0;
+    this.effectProbeRegistry.register(
+      effectExecution.request,
+      async () => {
+        invocations += 1;
+        await delay(25);
+        throw new Error("scripted effect execution failure");
+      },
+    );
+    try {
+      const handle = await withDeadline(
+        this.environment.client.workflow.start<BpmnProcessWorkflow>(
+          bpmnProcessWorkflowType,
+          {
+            taskQueue: bpmnSemanticTaskQueue,
+            workflowId,
+            workflowIdReusePolicy: "REJECT_DUPLICATE",
+            args: [requireStartStimulus(scenario), semanticProcess],
+          },
+        ),
+        operationDeadlineMs,
+        "exhausted effect Workflow start",
+      );
+      const lastCommittedTrace = await withDeadline(
+        this.waitForTrace(handle, 3),
+        waitTraceDeadlineMs,
+        "exhausted effect committed-intent observation",
+      );
+      let failureType: string | undefined;
+      try {
+        await withDeadline(
+          handle.result(),
+          workflowResultDeadlineMs,
+          "exhausted effect Workflow failure",
+        );
+        throw new Error(
+          "Exhausted effect Workflow unexpectedly completed",
+        );
+      } catch (error: unknown) {
+        if (
+          error instanceof WorkflowFailedError &&
+          error.cause instanceof ApplicationFailure
+        ) {
+          failureType = error.cause.type ?? undefined;
+        } else {
+          throw error;
+        }
+      }
+      if (failureType !== "BPMN_EFFECT_EXECUTION_EXHAUSTED") {
+        throw new TypeError(
+          `Exhausted effect Workflow failed as ${String(failureType)}`,
+        );
+      }
+      const history = await withDeadline(
+        handle.fetchHistory(),
+        operationDeadlineMs,
+        "exhausted effect Workflow history",
+      );
+      if (!Array.isArray(history.events)) {
+        throw new TypeError(
+          "Exhausted effect history did not contain an events array",
+        );
+      }
+      reconcileHarnessTraceEvidence(
+        lastCommittedTrace,
+        null,
+        history as TemporalHistory,
+      );
+      return {
+        failureType,
+        lastCommittedTrace,
+        history: history as TemporalHistory,
+        effectProbeEvidence: {
+          invocations,
+          mutations: 0,
+          keys: [],
+        },
+      };
+    } finally {
+      this.effectProbeRegistry.unregister(
+        effectExecution.request.idempotencyKey,
+      );
+    }
+  }
+
+  async runEffectScenariosWithSharedStore(
+    items: ReadonlyArray<TemporalScenarioBatchItem>,
+  ): Promise<TemporalSharedEffectExecutions> {
+    this.assertAvailable();
+    if (items.length !== 2) {
+      throw new TypeError(
+        "The cross-instance discriminator requires exactly two executions",
+      );
+    }
+    const store = new EffectProbeStore();
+    store.requireEmpty();
+    const executions: TemporalScenarioExecution[] = [];
+    const keys = new Set<string>();
+    for (const item of items) {
+      const effectExecution = requireOptionalEffectExecution(
+        item.scenario,
+        item.semanticProcess,
+        item.options,
+      );
+      if (
+        effectExecution === undefined ||
+        effectExecution.schedule !== EffectExecutionSchedule.PlainSuccess
+      ) {
+        throw new TypeError(
+          "Shared-store discrimination requires plain-success effect executions",
+        );
+      }
+      if (keys.has(effectExecution.request.idempotencyKey)) {
+        throw new TypeError(
+          "Shared-store semantic instances produced the same transport key",
+        );
+      }
+      keys.add(effectExecution.request.idempotencyKey);
+      this.effectProbeRegistry.register(
+        effectExecution.request,
+        (request) =>
+          store.execute(request, EffectExecutionSchedule.PlainSuccess),
+      );
+      try {
+        const execution = await this.runRegisteredScenario(
+          item.scenario,
+          item.semanticProcess,
+          item.options,
+          store,
+        );
+        executions.push({
+          ...execution,
+          effectProbeEvidence: store.evidence(),
+        });
+      } finally {
+        this.effectProbeRegistry.unregister(
+          effectExecution.request.idempotencyKey,
+        );
+      }
+    }
+    return {
+      executions,
+      effectProbeEvidence: store.evidence(),
+    };
+  }
+
+  private async runBypassMutation(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+    configuration: BypassMutationConfiguration,
+  ): Promise<TemporalTimerBypassMutationExecution> {
+    this.assertAvailable();
+    const start = requireStartStimulus(scenario);
     const mutationWorker = await withDeadline(
       Worker.create({
         connection: this.environment.nativeConnection,
         identity: temporalTestIdentity,
-        taskQueue: timerBypassMutationTaskQueue,
-        workflowsPath: timerBypassMutationWorkflowsPath,
+        taskQueue: configuration.taskQueue,
+        workflowsPath: configuration.workflowsPath,
       }),
       workerStartupDeadlineMs,
-      "timer-bypass mutation Worker startup",
+      `${configuration.description} Worker startup`,
     );
     let mutationWorkerError: unknown;
     const mutationWorkerRun = mutationWorker.run().catch((error: unknown) => {
@@ -385,22 +726,22 @@ export class TemporalScenarioRunner {
     try {
       const handle = await withDeadline(
         this.environment.client.workflow.start(
-          timerBypassMutationWorkflowType,
+          configuration.workflowType,
           {
-            taskQueue: timerBypassMutationTaskQueue,
+            taskQueue: configuration.taskQueue,
             workflowId,
             workflowIdReusePolicy: "REJECT_DUPLICATE",
             args: [start, semanticProcess],
           },
         ),
         operationDeadlineMs,
-        "timer-bypass mutation Workflow start",
+        `${configuration.description} Workflow start`,
       );
       const receipt = requireCompletedProcessReceipt(
         await withDeadline(
           handle.result(),
           workflowResultDeadlineMs,
-          "timer-bypass mutation Workflow result",
+          `${configuration.description} Workflow result`,
         ),
       );
       const trace = await withDeadline(
@@ -408,16 +749,16 @@ export class TemporalScenarioRunner {
           bpmnTraceQueryName,
         ),
         operationDeadlineMs,
-        "timer-bypass mutation trace Query",
+        `${configuration.description} trace Query`,
       );
       const history = await withDeadline(
         handle.fetchHistory(),
         operationDeadlineMs,
-        "timer-bypass mutation history fetch",
+        `${configuration.description} history fetch`,
       );
       if (!Array.isArray(history.events)) {
         throw new TypeError(
-          "Timer-bypass mutation history did not contain an events array",
+          `${configuration.description} history did not contain an events array`,
         );
       }
       reconcileHarnessTraceEvidence(
@@ -435,12 +776,12 @@ export class TemporalScenarioRunner {
       await withDeadline(
         mutationWorkerRun,
         shutdownDeadlineMs,
-        "timer-bypass mutation Worker shutdown",
+        `${configuration.description} Worker shutdown`,
       );
       if (mutationWorkerError !== undefined) {
         throw normalizeError(
           mutationWorkerError,
-          "Timer-bypass mutation Worker failed",
+          `${configuration.description} Worker failed`,
         );
       }
     }
@@ -556,6 +897,7 @@ export class TemporalScenarioRunner {
         identity: temporalTestIdentity,
         taskQueue: bpmnSemanticTaskQueue,
         workflowsPath,
+        activities: this.effectProbeRegistry.activities,
       }),
       workerStartupDeadlineMs,
       "replacement Temporal Worker startup",
@@ -567,6 +909,67 @@ export class TemporalScenarioRunner {
     });
     await delay(0);
     this.assertWorkerHealthy();
+  }
+
+  private async restartWorkerDuringEffect(
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    store: EffectProbeStore,
+  ): Promise<void> {
+    await withDeadline(
+      this.waitForEffectAttemptStart(handle, store),
+      operationDeadlineMs,
+      "effect Activity start",
+    );
+    this.worker.shutdown();
+    await withDeadline(
+      this.workerRun,
+      workflowResultDeadlineMs,
+      "in-flight effect Worker shutdown",
+    );
+    this.assertWorkerHealthy();
+
+    const replacement = await withDeadline(
+      Worker.create({
+        connection: this.environment.nativeConnection,
+        identity: temporalTestIdentity,
+        taskQueue: bpmnSemanticTaskQueue,
+        workflowsPath,
+        activities: this.effectProbeRegistry.activities,
+      }),
+      workerStartupDeadlineMs,
+      "replacement effect Worker startup",
+    );
+    this.worker = replacement;
+    this.workerError = undefined;
+    this.workerRun = replacement.run().catch((error: unknown) => {
+      this.workerError = error;
+    });
+    await delay(0);
+    this.assertWorkerHealthy();
+  }
+
+  private async waitForEffectAttemptStart(
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    store: EffectProbeStore,
+  ): Promise<void> {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const history = await handle.fetchHistory();
+      if (
+        history.events?.some((event) =>
+          isRecord(event) &&
+          isRecord(event.activityTaskScheduledEventAttributes) &&
+          Object.keys(event.activityTaskScheduledEventAttributes).length > 0
+        ) === true &&
+        store.evidence().invocations === 1 &&
+        store.evidence().mutations === 1
+      ) {
+        return;
+      }
+      await delay(25);
+    }
+    throw new Error(
+      "Workflow history did not record an effect Activity start",
+    );
   }
 
   private async waitForTimerStarted(
@@ -1013,6 +1416,15 @@ function validateExecutionOptions(
       "Worker-down-at-due scheduling requires one timer stimulus",
     );
   }
+  if (
+    options.workerDownAtEffectPending === true &&
+    options.effectExecutionSchedule !==
+      EffectExecutionSchedule.PlainSuccess
+  ) {
+    throw new TypeError(
+      "Worker-down effect scheduling requires the plain-success effect schedule",
+    );
+  }
   switch (options.completionDelivery) {
     case TemporalCompletionDelivery.Ordered:
     case TemporalCompletionDelivery.AcceptedBatch:
@@ -1112,6 +1524,98 @@ function requireOptionalTimerStimulus(
   return timer;
 }
 
+function requireOptionalEffectExecution(
+  scenario: Scenario,
+  semanticProcess: SemanticProcessProgram,
+  options: TemporalScenarioExecutionOptions,
+): PreparedEffectExecution | undefined {
+  const effects = scenario.stimuli.slice(1).flatMap((stimulus) => {
+    switch (stimulus.kind) {
+      case StimulusKind.CompleteEffect:
+        return [stimulus];
+      case StimulusKind.CompleteUserTaskInstance:
+      case StimulusKind.FireTimer:
+        return [];
+      case StimulusKind.StartProcess:
+        throw new TypeError(
+          "Only the first scenario stimulus may start the Process",
+        );
+      default:
+        return assertNever(stimulus);
+    }
+  });
+  if (effects.length === 0) {
+    if (options.effectExecutionSchedule !== undefined) {
+      throw new TypeError(
+        "An effect execution schedule requires one completeEffect stimulus",
+      );
+    }
+    return undefined;
+  }
+  if (effects.length !== 1) {
+    throw new TypeError(
+      "The admitted Temporal effect capsule requires one completeEffect stimulus",
+    );
+  }
+  const schedule = options.effectExecutionSchedule;
+  switch (schedule) {
+    case EffectExecutionSchedule.PlainSuccess:
+    case EffectExecutionSchedule.FailAfterMutationOnce:
+      break;
+    case undefined:
+      throw new TypeError(
+        "Effect scenarios require an explicit host execution schedule",
+      );
+    default:
+      throw new TypeError(
+        `Unsupported effect execution schedule: ${String(schedule)}`,
+      );
+  }
+  const start = requireStartStimulus(scenario);
+  const started = advanceScenario(
+    semanticProcess,
+    initialState,
+    start,
+  );
+  if (started.kind !== ScenarioStepKind.Committed) {
+    throw new TypeError(
+      "Effect harness could not derive one committed start-prefix intent",
+    );
+  }
+  const openEffects = projectOpenEffects(started.state);
+  if (openEffects.length !== 1) {
+    throw new TypeError(
+      "Effect harness requires exactly one committed start-prefix intent",
+    );
+  }
+  const openEffect = openEffects[0];
+  const completion = effects[0];
+  if (openEffect === undefined || completion === undefined) {
+    throw new TypeError(
+      "Effect harness lost its committed intent or completion input",
+    );
+  }
+  if (
+    !isDeepStrictEqual(openEffect.id, completion.effectId) ||
+    completion.commandId !== completeEffectCommandId(openEffect.id)
+  ) {
+    throw new TypeError(
+      "Scenario effect completion is not content-bound to the committed intent",
+    );
+  }
+  const material = projectEffectTransportMaterial(
+    semanticProcess,
+    openEffect,
+  );
+  return {
+    request: {
+      ...material.descriptor,
+      idempotencyKey: effectTransportKey(material),
+    },
+    schedule,
+  };
+}
+
 function requireStartStimulus(scenario: Scenario): StartProcessStimulus {
   const start = scenario.stimuli[0];
   if (
@@ -1169,6 +1673,19 @@ function openTimersInTrace(
   );
   return waiting?.kind === CanonicalObservationKind.State
     ? waiting.openTimers
+    : [];
+}
+
+function openEffectsInTrace(
+  trace: ReadonlyArray<CanonicalObservation>,
+): ReadonlyArray<OpenEffect> {
+  const waiting = trace.findLast(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Running,
+  );
+  return waiting?.kind === CanonicalObservationKind.State
+    ? waiting.openEffects
     : [];
 }
 

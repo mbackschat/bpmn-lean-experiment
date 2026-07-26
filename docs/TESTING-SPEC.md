@@ -141,6 +141,8 @@ For the timer capsule, the runner validates but never delivers the scenario's ex
 
 The optional `test:timer-time-skipping` command runs the same exact timer result and durable-history assertion on Temporal's time-skipping test server. It is calibration only and is excluded from `verify.sh`; it cannot replace or weaken the full-server duration, Worker absence, history, replay, or cleanup evidence.
 
+The focused Service Task refinement witnesses derive the Activity request and content-bound completion only from committed `openEffects` state. They lock the exact two-attempt timeout/retry policy, one-invocation plain success, two-invocation/one-mutation fail-after-mutation reconciliation, two-instance shared-store separation, field omission and host-over-inclusion mutations, typed exhaustion with unchanged committed intent, Worker replacement after start-to-close expiry, live replay, and a separately bundled inline-bypass mutation that preserves the pure trace but lacks Activity history. The pinned server summarizes a successful retry as one final `ActivityTaskStarted` with `attempt: 2` and `lastFailure`; probe-service invocation evidence independently observes both attempts.
+
 No Event History fixture is committed. No legacy IR reader, Workflow patch branch, or format migration path exists during pre-release. The pre-release infrastructure guard locks this policy.
 
 When the owner approves the first immutable deployment/history baseline, retained histories and compatibility paths must be introduced through red replay tests with explicit provenance, version markers, support windows, and removal criteria.
@@ -172,7 +174,7 @@ The pipeline:
 
 ### Conditional Service Task schedule substitution
 
-If the unapproved [Service Task effect proposal](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md) is approved, its pipeline change must retain one answer-free semantic scenario while substituting the Service Task's ordinary second plain Temporal isolation execution with `FailAfterMutationOnce`. The two executions still use separate stores that are asserted empty and must produce identical canonical results, so isolation remains checked while the substituted run adds retry/reconciliation evidence.
+The approved [Service Task effect proposal](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md) requires its pending pipeline change to retain one answer-free semantic scenario while substituting the Service Task's ordinary second plain Temporal isolation execution with `FailAfterMutationOnce`. The two executions still use separate stores that are asserted empty and must produce identical canonical results, so isolation remains checked while the substituted run adds retry/reconciliation evidence.
 
 The resulting conditional matrix is eight scenarios, sixteen Temporal executions, and nine replayed histories: eight primary histories plus the Service Task failure-schedule history. Lean and the core execute the semantic scenario once. CIB executes `PlainSuccess` for content-bound retained evidence and `FailAfterMutationOnce` separately for raw retry/re-execution facts; each uses fresh test-local state and CIB computes no project transport key. The adapter-local two-semantic-instance/shared-store key discriminator is not a ninth scenario.
 

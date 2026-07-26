@@ -2,6 +2,7 @@ import type {
   CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  OpenEffect,
   OpenTimer,
   OpenUserTask,
   ProcessStatus,
@@ -12,6 +13,10 @@ import type {
   StartProcessStimulus,
   StateObservation,
 } from "@bpmn-lean/semantic-core";
+import type {
+  EffectExecutionSchedule,
+  EffectProbeEvidence,
+} from "./effect-probe.js";
 
 export const bpmnProcessWorkflowType = "runBpmnProcess";
 export const bpmnTraceQueryName = "bpmn-trace";
@@ -77,6 +82,8 @@ export type TemporalScenarioExecutionOptions = Readonly<{
   completionDelivery: TemporalCompletionDelivery;
   duplicateFirstCompletion?: boolean;
   workerDownAtTimerDue?: boolean;
+  workerDownAtEffectPending?: boolean;
+  effectExecutionSchedule?: EffectExecutionSchedule;
 }>;
 
 export type TemporalScenarioBatchItem = Readonly<{
@@ -100,6 +107,7 @@ export type TemporalScenarioExecution = Readonly<{
   result: ScenarioResult;
   receipt: CompletedProcessReceipt | null;
   history: TemporalHistory;
+  effectProbeEvidence: EffectProbeEvidence | null;
 }>;
 
 export type TemporalTimerBypassMutationExecution = Readonly<{
@@ -108,9 +116,25 @@ export type TemporalTimerBypassMutationExecution = Readonly<{
   history: TemporalHistory;
 }>;
 
+export type TemporalEffectBypassMutationExecution =
+  TemporalTimerBypassMutationExecution;
+
+export type TemporalEffectFailureExecution = Readonly<{
+  failureType: "BPMN_EFFECT_EXECUTION_EXHAUSTED";
+  lastCommittedTrace: ReadonlyArray<CanonicalObservation>;
+  history: TemporalHistory;
+  effectProbeEvidence: EffectProbeEvidence;
+}>;
+
+export type TemporalSharedEffectExecutions = Readonly<{
+  executions: ReadonlyArray<TemporalScenarioExecution>;
+  effectProbeEvidence: EffectProbeEvidence;
+}>;
+
 export type TemporalInteractionEvidence = Readonly<{
   openUserTasksAtWait: ReadonlyArray<OpenUserTask>;
   openTimersAtWait: ReadonlyArray<OpenTimer>;
+  openEffectsAtWait: ReadonlyArray<OpenEffect>;
   openUserTasksAfterCompletions: ReadonlyArray<
     ReadonlyArray<OpenUserTask>
   >;

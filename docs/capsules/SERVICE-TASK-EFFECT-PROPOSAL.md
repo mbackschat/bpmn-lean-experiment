@@ -2,11 +2,11 @@
 
 ## Status
 
-This semantic-capsule proposal was owner-approved on 2026-07-26 with the four implementation corrections recorded below. Its authorized phase-zero source/oracle probe and first checked-source/Lean/TypeScript semantic checkpoint are green, and the semantic account passed independent review on 2026-07-27 after the non-law, intent-claim boundary, admission witnesses, and occurrence comparator were corrected. Temporal Activity implementation has not begun. No dependency was added; the atomic empty-`openEffects` evolution of the seven existing scenarios and retained CIB envelopes used only the explicit evidence-replacement command required by this proposal.
+This semantic-capsule proposal was owner-approved on 2026-07-26 with the four implementation corrections recorded below. Its authorized phase-zero source/oracle probe, checked-source/Lean/TypeScript semantic checkpoint, transport-identity checkpoint, and focused Temporal Activity/refinement checkpoint are green. The semantic account passed independent review on 2026-07-27 after the non-law, intent-claim boundary, admission witnesses, and occurrence comparator were corrected. The eighth answer-free scenario, retained Service Task CIB evidence, complete differential matrix, capsule reflection, and graduation remain open. No dependency was added; the atomic empty-`openEffects` evolution of the seven existing scenarios and retained CIB envelopes used only the explicit evidence-replacement command required by this proposal.
 
 The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. The green [phase-zero probe](#phase-zero-cib-seven-probe) removes the packaged-engine uncertainty.
 
-The first implementation checkpoint is the green Lean and TypeScript semantic account before Temporal Activity work begins. This preserves independent review of semantic meaning before refinement evidence is added.
+The first implementation checkpoint was the green Lean and TypeScript semantic account before Temporal Activity work began. This preserved independent review of semantic meaning before refinement evidence was added.
 
 ## Question
 
@@ -368,6 +368,8 @@ Transport-key evidence includes both over-inclusion and under-inclusion discrimi
 
 The Workflow-safe digest implementation is already guarded before the key carries semantic weight: fixed SHA-256 vectors cover empty input, `abc`, 55/56/57/63/64/65-byte padding boundaries, and a supplementary-plane character; an exact multi-block effect-transport tuple is cross-checked against `node:crypto` outside Workflow code. Existing literal locks preserve the current Process-address, Update-stimulus, and timer-firing encodings and digests during the shared-encoder extraction.
 
+The pinned Temporal server retains one final `ActivityTaskStarted` event for a successful retried Activity. Its `attempt` field is `2` and its `lastFailure` binds the hidden first failure; it does not append one durable started/failed pair per transient attempt. The focused evidence therefore combines this durable retry summary with the independently observed probe invocation count `2` and mutation count `1`.
+
 ## Phase zero CIB Seven probe
 
 Before checked-source, IL, Lean, TypeScript, or Temporal production work:
@@ -415,6 +417,14 @@ Lean independently validates and lowers the checked graph, relates executable `a
 The shared wire contract now uses one occurrence-ID shape for User Tasks, timers, and effects and includes the separate `openEffects` projection. The seven pre-existing scenarios and retained CIB envelopes contain only empty `openEffects`; they were regenerated through `replace:cib-evidence` because the current pre-release observation shape changed, not because any prior semantic result changed.
 
 This checkpoint establishes `EFFECT-WAIT-01`, `EFFECT-RESULT-01`, `EFFECT-REFUSE-01`, and `EFFECT-OBSERVE-01` in Lean and the pure TypeScript core and establishes the exact checked-source lowering boundary. For `EFFECT-INTENT-01`, it establishes one structured intent at the committed start prefix; replay and host-attempt stability remain unclosed. It does not establish transport-key rendering, Activity execution, retry reconciliation, typed adapter exhaustion, Worker replacement, replay, Activity-history evidence, the eight-scenario matrix, or retained Service Task CIB evidence. Those remain the Temporal/refinement half of this proposal.
+
+## Focused Temporal refinement result
+
+The Workflow now projects the complete transport material from the admitted program and one committed `openEffects` entry, renders the exact transport request, and schedules one non-local Activity under the approved two-attempt policy. Plain success and fail-after-mutation-once produce identical canonical traces; the latter records two probe invocations, one external mutation, one derived `completeEffect`, the durable final-attempt retry summary, and replay-equivalent output.
+
+The focused gate also establishes the two-instance shared-store discriminator, every field-variation and retained omission mutation, host-identity over-inclusion failure, Worker replacement after the first mutation remains unacknowledged past start-to-close, typed `BPMN_EFFECT_EXECUTION_EXHAUSTED` Workflow failure with the committed intent unchanged, and the Activity-bypass history failure. The focused Temporal gate passed thirty-three tests in 14.216 seconds, within its unchanged repository-wide 60-second bound; the Worker-replacement witness completed inside the ten-second schedule-to-close envelope.
+
+This checkpoint closes the adapter-local and focused Temporal items only. The answer-free Service Task scenario, ordinary CIB runner path, content-bound retained CIB evidence, eight-scenario/sixteen-execution/nine-replay pipeline, rule/register updates, epistemic-closure review, and proposal-to-spec graduation remain open.
 
 ## Smallest separating witnesses
 

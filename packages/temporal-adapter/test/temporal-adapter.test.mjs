@@ -14,15 +14,24 @@ import {
   CommandOutcome,
   ObservationRequestKind,
   ScenarioDocumentKind,
+  SemanticOperationKind,
+  SemanticOriginKind,
+  SemanticProcessCompilerId,
+  SemanticProcessKind,
   StimulusKind,
   runScenario,
 } from "@bpmn-lean/semantic-core";
 
 import {
+  EffectExecutionSchedule,
   ProcessCommandResultKind,
   TemporalCompletionDelivery,
   TemporalScenarioRunner,
+  completeEffectCommandId,
+  effectTransportKey,
   isCompletedProcessReceipt,
+  requireDurableEffectActivityHistory,
+  requireExhaustedEffectActivityHistory,
   requireDurableTimerHistory,
 } from "../dist/index.js";
 
@@ -748,3 +757,338 @@ test("batch execution rejects duplicate Workflow identities before start", async
     /Workflow IDs must be unique/u,
   );
 });
+
+test("effect Activity retries one lost completion without changing canonical semantics", async () => {
+  const input = serviceTaskEffectInput();
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const plain = await withDeadline(
+    runner.runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "service-task-effect-plain",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
+    }),
+    15_000,
+    "Service Task plain Activity execution",
+  );
+  const retried = await withDeadline(
+    runner.runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "service-task-effect-retried",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      effectExecutionSchedule:
+        EffectExecutionSchedule.FailAfterMutationOnce,
+    }),
+    15_000,
+    "Service Task retried Activity execution",
+  );
+
+  assert.deepEqual(plain.result, expected);
+  assert.deepEqual(retried.result, expected);
+  assert.deepEqual(plain.result, retried.result);
+  assert.deepEqual(plain.effectProbeEvidence, {
+    invocations: 1,
+    mutations: 1,
+    keys: [serviceTaskEffectKey(input)],
+  });
+  assert.deepEqual(retried.effectProbeEvidence, {
+    invocations: 2,
+    mutations: 1,
+    keys: [serviceTaskEffectKey(input)],
+  });
+  requireDurableEffectActivityHistory(
+    plain.history,
+    serviceTaskEffectRequest(input),
+    1,
+  );
+  requireDurableEffectActivityHistory(
+    retried.history,
+    serviceTaskEffectRequest(input),
+    2,
+  );
+  await withDeadline(
+    runner.replayHistories([
+      {
+        history: plain.history,
+        workflowId: "service-task-effect-plain-replay",
+      },
+      {
+        history: retried.history,
+        workflowId: "service-task-effect-retried-replay",
+      },
+    ]),
+    10_000,
+    "Service Task Activity history replay",
+  );
+});
+
+test("effect Activity survives Worker replacement with one external mutation", async () => {
+  const input = serviceTaskEffectInput();
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    runner.runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "service-task-effect-worker-replacement",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
+      workerDownAtEffectPending: true,
+    }),
+    15_000,
+    "Service Task Worker-replacement execution",
+  );
+
+  assert.deepEqual(execution.result, expected);
+  assert.deepEqual(execution.effectProbeEvidence, {
+    invocations: 2,
+    mutations: 1,
+    keys: [serviceTaskEffectKey(input)],
+  });
+  requireDurableEffectActivityHistory(
+    execution.history,
+    serviceTaskEffectRequest(input),
+    2,
+  );
+  await withDeadline(
+    runner.replayHistory(
+      execution.history,
+      "service-task-effect-worker-replacement-replay",
+    ),
+    10_000,
+    "Service Task Worker-replacement replay",
+  );
+});
+
+test("exhausted effect Activity fails with a typed adapter reason and unchanged intent", async () => {
+  const input = serviceTaskEffectInput();
+  const expectedWaitingTrace = runScenario(
+    {
+      ...input.scenario,
+      stimuli: input.scenario.stimuli.slice(0, 1),
+    },
+    input.semanticProcess,
+  ).trace;
+  const execution = await withDeadline(
+    runner.runEffectExhaustion(
+      input.scenario,
+      input.semanticProcess,
+      "service-task-effect-exhausted",
+    ),
+    15_000,
+    "Service Task exhausted Activity execution",
+  );
+
+  assert.equal(
+    execution.failureType,
+    "BPMN_EFFECT_EXECUTION_EXHAUSTED",
+  );
+  assert.deepEqual(execution.lastCommittedTrace, expectedWaitingTrace);
+  assert.deepEqual(execution.effectProbeEvidence, {
+    invocations: 2,
+    mutations: 0,
+    keys: [],
+  });
+  requireExhaustedEffectActivityHistory(
+    execution.history,
+    serviceTaskEffectRequest(input),
+  );
+});
+
+test("effect Activity bypass preserves pure output but fails durable evidence", async () => {
+  const input = serviceTaskEffectInput();
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    runner.runEffectBypassMutation(
+      input.scenario,
+      input.semanticProcess,
+      "service-task-effect-bypass",
+    ),
+    15_000,
+    "Service Task Activity-bypass mutation",
+  );
+
+  assert.deepEqual(execution.result, expected);
+  assert.throws(
+    () =>
+      requireDurableEffectActivityHistory(
+        execution.history,
+        serviceTaskEffectRequest(input),
+        1,
+      ),
+    /scheduled\/attempt\/completed effect Activity shape/u,
+  );
+});
+
+test("two semantic Process instances execute with distinct keys in one shared store", async () => {
+  const first = serviceTaskEffectInput("Instance_1");
+  const second = serviceTaskEffectInput("Instance_2");
+  const result = await withDeadline(
+    runner.runEffectScenariosWithSharedStore([
+      {
+        ...first,
+        options: {
+          workflowId: "service-task-effect-shared-store-1",
+          completionDelivery: TemporalCompletionDelivery.Ordered,
+          effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
+        },
+      },
+      {
+        ...second,
+        options: {
+          workflowId: "service-task-effect-shared-store-2",
+          completionDelivery: TemporalCompletionDelivery.Ordered,
+          effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
+        },
+      },
+    ]),
+    15_000,
+    "Service Task shared-store executions",
+  );
+
+  assert.deepEqual(
+    result.executions.map(({ result: executionResult }) => executionResult),
+    [
+      runScenario(first.scenario, first.semanticProcess),
+      runScenario(second.scenario, second.semanticProcess),
+    ],
+  );
+  assert.deepEqual(result.effectProbeEvidence, {
+    invocations: 2,
+    mutations: 2,
+    keys: [
+      serviceTaskEffectKey(first),
+      serviceTaskEffectKey(second),
+    ].sort(),
+  });
+});
+
+function serviceTaskEffectInput(instanceId = "Instance_1") {
+  const descriptor = {
+    protocol: "urn:bpmn-lean:effect:probe-v1",
+    handler: "bpmnLeanEffectHandler",
+  };
+  const semanticProcess = {
+    kind: SemanticProcessKind.SemanticProcess,
+    identity: {
+      compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+      semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
+      sourceId: "service-task-effect-process",
+      sourceSha256:
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    },
+    processId: "Process_ServiceTaskEffect",
+    controlPlaces: [
+      serviceTaskControlPlace("Flow_ServiceToEnd"),
+      serviceTaskControlPlace("Flow_StartToService"),
+    ],
+    operations: [
+      {
+        ...serviceTaskOperationBase("EndEvent_1"),
+        kind: SemanticOperationKind.Terminate,
+        input: "place:Flow_ServiceToEnd",
+      },
+      {
+        ...serviceTaskOperationBase("ServiceTask_Record"),
+        kind: SemanticOperationKind.AwaitEffect,
+        input: "place:Flow_StartToService",
+        output: "place:Flow_ServiceToEnd",
+        effect: {
+          elementId: "ServiceTask_Record",
+          descriptor,
+        },
+      },
+      {
+        ...serviceTaskOperationBase("StartEvent_1"),
+        kind: SemanticOperationKind.Initiate,
+        output: "place:Flow_StartToService",
+      },
+    ],
+  };
+  const effectId = {
+    processInstanceId: instanceId,
+    elementId: "ServiceTask_Record",
+    activation: 1,
+  };
+  return {
+    semanticProcess,
+    scenario: {
+      kind: ScenarioDocumentKind.Scenario,
+      id: "service-task-effect-success",
+      profile: semanticProcess.identity.semanticProfile,
+      bpmn: {
+        id: semanticProcess.identity.sourceId,
+        relativePath: "scenarios/service-task-effect/process.bpmn",
+        sha256: semanticProcess.identity.sourceSha256,
+      },
+      stimuli: [
+        {
+          kind: StimulusKind.StartProcess,
+          commandId: "start-process",
+          processId: semanticProcess.processId,
+          instanceId,
+        },
+        {
+          kind: StimulusKind.CompleteEffect,
+          commandId: completeEffectCommandId(effectId),
+          effectId,
+        },
+      ],
+      observations: [
+        ObservationRequestKind.Deployment,
+        ObservationRequestKind.CommandResults,
+        ObservationRequestKind.ProcessStatus,
+        ObservationRequestKind.ActiveWaits,
+        ObservationRequestKind.OpenUserTasks,
+        ObservationRequestKind.OpenTimers,
+        ObservationRequestKind.OpenEffects,
+        ObservationRequestKind.EnabledInteractions,
+        ObservationRequestKind.LogicalTime,
+      ],
+      provenance: {
+        normativeRefs: ["BPMN 2.0.2 §13.3.3"],
+        cibRevision: "834a9874760de8a0107f7c1b32806e37f17fb017",
+        cibRefs: ["ServiceTaskActivityBehavior.java"],
+      },
+    },
+  };
+}
+
+function serviceTaskEffectRequest({ scenario, semanticProcess }) {
+  const effectId = scenario.stimuli[1].effectId;
+  const descriptor = semanticProcess.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitEffect,
+  ).effect.descriptor;
+  return {
+    ...descriptor,
+    idempotencyKey: effectTransportKey({
+      definition: {
+        semanticProfile: semanticProcess.identity.semanticProfile,
+        sourceId: semanticProcess.identity.sourceId,
+        sourceSha256: semanticProcess.identity.sourceSha256,
+        processId: semanticProcess.processId,
+      },
+      occurrence: effectId,
+      descriptor,
+    }),
+  };
+}
+
+function serviceTaskEffectKey(input) {
+  return serviceTaskEffectRequest(input).idempotencyKey;
+}
+
+function serviceTaskControlPlace(elementId) {
+  return {
+    id: `place:${elementId}`,
+    origin: {
+      kind: SemanticOriginKind.BpmnSequenceFlow,
+      elementId,
+    },
+  };
+}
+
+function serviceTaskOperationBase(elementId) {
+  return {
+    id: `operation:${elementId}`,
+    origin: {
+      kind: SemanticOriginKind.BpmnElement,
+      elementId,
+    },
+  };
+}

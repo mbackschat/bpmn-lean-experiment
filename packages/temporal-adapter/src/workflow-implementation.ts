@@ -9,6 +9,8 @@ import {
   deployProcess,
   initialState,
   isWellFormedStimulus,
+  projectEffectTransportMaterial,
+  projectOpenEffects,
   projectOpenTimers,
   projectOpenUserTasks,
   sameStimulus,
@@ -25,7 +27,9 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  ActivityFailure,
   ApplicationFailure,
+  CancelledFailure,
   allHandlersFinished,
   condition,
   defineQuery,
@@ -42,6 +46,17 @@ import type {
   BpmnCompleteUserTaskUpdateArguments,
   CompletedProcessReceipt,
 } from "./contracts.js";
+import type {
+  EffectExecutionResult,
+  EffectRequest,
+} from "./effect-probe.js";
+import {
+  EffectExecutionResultKind,
+} from "./effect-probe.js";
+import {
+  completeEffectStimulus,
+  effectTransportKey,
+} from "./effect-transport.js";
 import {
   timerFiringStimulus,
 } from "./timer-command.js";
@@ -60,10 +75,13 @@ type CommandResultLedgerEntry = Readonly<{
   outcome: CommandOutcome;
 }>;
 
-export async function runBpmnProcessWithTimerWait(
+export async function runBpmnProcessWithHostEffects(
   start: StartProcessStimulus,
   semanticProcess: SemanticProcessProgram,
   waitForTimer: (durationMs: number) => Promise<void>,
+  executeEffect: (
+    request: EffectRequest,
+  ) => Promise<EffectExecutionResult>,
 ): Promise<CompletedProcessReceipt> {
   const deployment = deployProcess(start, semanticProcess);
   if (deployment.outcome !== CommandOutcome.Committed) {
@@ -118,13 +136,20 @@ export async function runBpmnProcessWithTimerWait(
       state.control.kind !== ControlStateKind.Completed
     ) {
       const timers = projectOpenTimers(state);
-      if (timers.length === 0) {
+      const effects = projectOpenEffects(state);
+      if (timers.length > 0 && effects.length > 0) {
+        throw ApplicationFailure.nonRetryable(
+          "The admitted Temporal capsules do not compose timer and effect waits",
+          "BpmnHostWaitAmbiguity",
+        );
+      }
+      if (timers.length === 0 && effects.length === 0) {
         await condition(
           () =>
             pendingStimuli.length > 0 ||
             state.control.kind === ControlStateKind.Completed,
         );
-      } else {
+      } else if (timers.length > 0) {
         if (timers.length !== 1) {
           throw ApplicationFailure.nonRetryable(
             "The admitted Temporal timer capsule requires exactly one committed timer wait",
@@ -152,6 +177,58 @@ export async function runBpmnProcessWithTimerWait(
           acceptedStimuli,
           pendingStimuli,
           timerFiringStimulus(timer),
+        );
+      } else {
+        if (effects.length !== 1) {
+          throw ApplicationFailure.nonRetryable(
+            "The admitted Temporal effect capsule requires exactly one committed effect intent",
+            "BpmnEffectCardinalityFailure",
+          );
+        }
+        const effect = effects[0];
+        if (effect === undefined) {
+          throw ApplicationFailure.nonRetryable(
+            "Committed effect projection lost its only occurrence",
+            "BpmnEffectProjectionFailure",
+          );
+        }
+        const material = projectEffectTransportMaterial(
+          semanticProcess,
+          effect,
+        );
+        const request: EffectRequest = {
+          ...material.descriptor,
+          idempotencyKey: effectTransportKey(material),
+        };
+        let result: EffectExecutionResult;
+        try {
+          result = await executeEffect(request);
+        } catch (error: unknown) {
+          // Cancellation recovery is unmodeled and must retain its host classification. Only an
+          // exhausted non-cancelled Activity execution becomes this capsule's typed adapter failure.
+          if (
+            !(error instanceof ActivityFailure) ||
+            error.cause instanceof CancelledFailure
+          ) {
+            throw error;
+          }
+          throw ApplicationFailure.nonRetryable(
+            "Effect Activity exhausted its bounded execution policy",
+            "BPMN_EFFECT_EXECUTION_EXHAUSTED",
+            undefined,
+            error,
+          );
+        }
+        if (!isEffectExecutionSuccess(result)) {
+          throw ApplicationFailure.nonRetryable(
+            "Effect Activity returned an invalid result",
+            "BpmnEffectExecutionResultInvalid",
+          );
+        }
+        enqueueStimulus(
+          acceptedStimuli,
+          pendingStimuli,
+          completeEffectStimulus(effect.id),
         );
       }
     }
@@ -196,6 +273,18 @@ export async function runBpmnProcessWithTimerWait(
     processInstanceId: start.instanceId,
     finalState: requireCompletedState(trace, start.instanceId),
   };
+}
+
+function isEffectExecutionSuccess(
+  value: unknown,
+): value is EffectExecutionResult {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Object.keys(value).length === 1 &&
+    "kind" in value &&
+    value.kind === EffectExecutionResultKind.Success
+  );
 }
 
 function enqueueStimulus(

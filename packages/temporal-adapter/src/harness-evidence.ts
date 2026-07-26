@@ -18,6 +18,12 @@ import type {
   CompletedProcessReceipt,
   TemporalHistory,
 } from "./contracts.js";
+import {
+  EffectExecutionResultKind,
+} from "./effect-probe.js";
+import type {
+  EffectRequest,
+} from "./effect-probe.js";
 
 class HarnessEvidenceInfrastructureError extends Error {
   public override readonly name = "HarnessEvidenceInfrastructureError";
@@ -141,6 +147,297 @@ export function requireDurableTimerHistory(
       "Temporal timer-fired event does not identify its timer-started event",
     );
   }
+}
+
+/**
+ * Binds canonical Service Task completion to one exact non-local Activity execution policy.
+ *
+ * The request must be the committed-intent rendering, retries remain raw history evidence, and
+ * only the closed success result may authorize the semantic completion derived by the Workflow.
+ */
+export function requireDurableEffectActivityHistory(
+  history: TemporalHistory,
+  expectedRequest: EffectRequest,
+  expectedAttempts: number,
+): void {
+  if (
+    !Number.isSafeInteger(expectedAttempts) ||
+    expectedAttempts < 1 ||
+    expectedAttempts > 2
+  ) {
+    throw new TypeError(
+      "Effect Activity evidence requires one or two attempts",
+    );
+  }
+  const scheduled = historyEvents(
+    history,
+    "activityTaskScheduledEventAttributes",
+  );
+  const started = historyEvents(
+    history,
+    "activityTaskStartedEventAttributes",
+  );
+  const failed = historyEvents(
+    history,
+    "activityTaskFailedEventAttributes",
+  );
+  const completed = historyEvents(
+    history,
+    "activityTaskCompletedEventAttributes",
+  );
+  if (
+    scheduled.length !== 1 ||
+    started.length !== 1 ||
+    failed.length !== 0 ||
+    completed.length !== 1
+  ) {
+    throw new TypeError(
+      `Temporal history does not contain the exact scheduled/attempt/completed effect Activity shape: scheduled=${scheduled.length}, started=${started.length}, failed=${failed.length}, completed=${completed.length}`,
+    );
+  }
+
+  const scheduledEvent = scheduled[0];
+  const completedEvent = completed[0];
+  if (scheduledEvent === undefined || completedEvent === undefined) {
+    throw new TypeError("Temporal history lost its effect Activity events");
+  }
+  const scheduledEventId = requireEffectActivitySchedule(
+    scheduledEvent,
+    expectedRequest,
+  );
+  requireFinalEffectAttempt(
+    started[0],
+    scheduledEventId,
+    expectedAttempts,
+  );
+  if (
+    requiredEventId(
+      completedEvent.attributes.scheduledEventId,
+      "Effect Activity completed scheduled-event ID",
+    ) !== scheduledEventId
+  ) {
+    throw new TypeError(
+      "Effect Activity completion does not identify its schedule",
+    );
+  }
+  const result = asRecord(
+    completedEvent.attributes.result,
+    "Effect Activity completed result",
+  );
+  const resultPayloads = asArray(
+    result.payloads,
+    "Effect Activity completed result payloads",
+  );
+  if (
+    resultPayloads.length !== 1 ||
+    !isDeepStrictEqual(
+      decodeJsonPayload(
+        resultPayloads[0],
+        "Effect Activity completed result",
+      ),
+      { kind: EffectExecutionResultKind.Success },
+    )
+  ) {
+    throw new TypeError(
+      "Effect Activity history has no exact typed success result",
+    );
+  }
+}
+
+export function requireExhaustedEffectActivityHistory(
+  history: TemporalHistory,
+  expectedRequest: EffectRequest,
+): void {
+  const scheduled = historyEvents(
+    history,
+    "activityTaskScheduledEventAttributes",
+  );
+  const started = historyEvents(
+    history,
+    "activityTaskStartedEventAttributes",
+  );
+  const failed = historyEvents(
+    history,
+    "activityTaskFailedEventAttributes",
+  );
+  const completed = historyEvents(
+    history,
+    "activityTaskCompletedEventAttributes",
+  );
+  const workflowFailed = historyEvents(
+    history,
+    "workflowExecutionFailedEventAttributes",
+  );
+  if (
+    scheduled.length !== 1 ||
+    started.length !== 1 ||
+    failed.length !== 1 ||
+    completed.length !== 0 ||
+    workflowFailed.length !== 1
+  ) {
+    throw new TypeError(
+      "Temporal history does not contain one exhausted effect Activity and failed Workflow",
+    );
+  }
+  const scheduledEvent = scheduled[0];
+  const failedEvent = failed[0];
+  if (scheduledEvent === undefined || failedEvent === undefined) {
+    throw new TypeError(
+      "Temporal history lost its exhausted effect Activity events",
+    );
+  }
+  const scheduledEventId = requireEffectActivitySchedule(
+    scheduledEvent,
+    expectedRequest,
+  );
+  requireFinalEffectAttempt(started[0], scheduledEventId, 2);
+  if (
+    requiredEventId(
+      failedEvent.attributes.scheduledEventId,
+      "Effect Activity failed scheduled-event ID",
+    ) !== scheduledEventId
+  ) {
+    throw new TypeError(
+      "Exhausted effect Activity failure does not identify its schedule",
+    );
+  }
+}
+
+type HistoryEvent = Readonly<{
+  event: Readonly<Record<string, unknown>>;
+  attributes: Readonly<Record<string, unknown>>;
+}>;
+
+function requireEffectActivitySchedule(
+  scheduledEvent: HistoryEvent,
+  expectedRequest: EffectRequest,
+): string {
+  const activityType = asRecord(
+    scheduledEvent.attributes.activityType,
+    "Effect Activity type",
+  );
+  if (activityType.name !== "executeBpmnEffect") {
+    throw new TypeError(
+      "Temporal history scheduled an unexpected effect Activity type",
+    );
+  }
+  const input = asRecord(
+    scheduledEvent.attributes.input,
+    "Effect Activity input",
+  );
+  const payloads = asArray(
+    input.payloads,
+    "Effect Activity input payloads",
+  );
+  if (
+    payloads.length !== 1 ||
+    !isDeepStrictEqual(
+      decodeJsonPayload(payloads[0], "Effect Activity request"),
+      expectedRequest,
+    )
+  ) {
+    throw new TypeError(
+      "Temporal history Activity request differs from committed effect intent",
+    );
+  }
+  if (
+    durationMilliseconds(
+      scheduledEvent.attributes.startToCloseTimeout,
+      "Effect Activity start-to-close timeout",
+    ) !== 2_000n ||
+    durationMilliseconds(
+      scheduledEvent.attributes.scheduleToCloseTimeout,
+      "Effect Activity schedule-to-close timeout",
+    ) !== 10_000n
+  ) {
+    throw new TypeError(
+      "Temporal history does not carry the exact effect Activity timeout policy",
+    );
+  }
+  const heartbeat = optionalRecord(
+    scheduledEvent.attributes.heartbeatTimeout,
+  );
+  if (
+    heartbeat !== undefined &&
+    durationMilliseconds(
+        heartbeat,
+        "Effect Activity heartbeat timeout",
+      ) !== 0n
+  ) {
+    throw new TypeError(
+      "Effect Activity history unexpectedly configures a heartbeat",
+    );
+  }
+  const retryPolicy = asRecord(
+    scheduledEvent.attributes.retryPolicy,
+    "Effect Activity retry policy",
+  );
+  if (
+    integerToBigInt(retryPolicy.maximumAttempts) !== 2n ||
+    durationMilliseconds(
+      retryPolicy.initialInterval,
+      "Effect Activity initial retry interval",
+    ) !== 100n ||
+    retryPolicy.backoffCoefficient !== 1
+  ) {
+    throw new TypeError(
+      "Temporal history does not carry the exact effect Activity retry policy",
+    );
+  }
+  return requiredEventId(
+    scheduledEvent.event.eventId,
+    "Effect Activity scheduled event ID",
+  );
+}
+
+function requireFinalEffectAttempt(
+  finalStarted: HistoryEvent | undefined,
+  scheduledEventId: string,
+  expectedAttempts: number,
+): void {
+  if (
+    finalStarted === undefined ||
+    requiredEventId(
+      finalStarted.attributes.scheduledEventId,
+      "Effect Activity started scheduled-event ID",
+    ) !== scheduledEventId ||
+    integerToBigInt(finalStarted.attributes.attempt) !==
+      BigInt(expectedAttempts) ||
+    (
+      expectedAttempts > 1 &&
+      optionalRecord(finalStarted.attributes.lastFailure) === undefined
+    )
+  ) {
+    throw new TypeError(
+      "Effect Activity final durable attempt does not match its retry evidence",
+    );
+  }
+}
+
+function historyEvents(
+  history: TemporalHistory,
+  attributesName: string,
+): ReadonlyArray<HistoryEvent> {
+  return history.events.flatMap((rawEvent) => {
+    const event = asRecord(rawEvent, "Temporal history event");
+    const attributes = optionalRecord(event[attributesName]);
+    return attributes === undefined ? [] : [{ event, attributes }];
+  });
+}
+
+function durationMilliseconds(
+  value: unknown,
+  description: string,
+): bigint {
+  const duration = asRecord(value, description);
+  const nanos = integerToBigInt(duration.nanos ?? 0);
+  if (nanos < 0n || nanos % 1_000_000n !== 0n) {
+    throw new TypeError(
+      `${description} must have a non-negative whole-millisecond nanos component`,
+    );
+  }
+  return integerToBigInt(duration.seconds ?? 0) * 1_000n +
+    nanos / 1_000_000n;
 }
 
 function durableUpdateOutcomes(
