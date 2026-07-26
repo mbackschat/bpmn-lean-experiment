@@ -105,6 +105,18 @@ The Temporal preflight is an early feasibility and information-preservation revi
 
 Prefer enum-based pattern matching or switch statements for semantic variants. Keep the Semantic Process program immutable and runtime state separate and serializable; keep effects explicit and perform no I/O in the pure semantic core.
 
+### Comments — document semantic surplus
+
+Comments explain information that cannot be recovered reliably from names, types, and control flow. There is no target comment density; comment according to the source's role.
+
+- Public API: Javadoc or TSDoc states the contract, defaults, failure behavior, ownership or mutability, portability constraints, and any non-obvious example. Do not expose implementation history.
+- Semantic and evaluator code: document observable behavior, legal domain, ordering, degradation behavior, and the evidence or oracle behind surprising semantics. Comment a branch when its correct interpretation is not evident from the code or when a tempting alternative would be wrong.
+- Boundary and infrastructure code: document trust boundaries, normalization, resource limits, deterministic ordering, cache lifetime and invalidation, concurrency, and host-specific behavior. Do not narrate ordinary plumbing.
+- Algorithms and data structures: document representation invariants and material complexity or performance constraints. Do not restate the type declaration or loop.
+- Tests: class-level documentation names the contract and oracle. Test names describe cases. Inline comments are reserved for a discriminating fixture, intentional perturbation, provenance constraint, or otherwise invisible setup fact.
+- Keep comments durable: release-set identifiers, chronology, implementation status, and “currently” claims belong in proposals, gap ledgers, or Git. Stable finding or specification identifiers are welcome when they provide traceable evidence.
+- Delete or shorten a comment when refactoring makes it redundant. A stale or broader-than-evidence comment is a defect.
+
 BPMN XML parsing, admission, and lowering run before Workflow start with an explicit byte limit and parser Promise-settlement deadline. The current timeout cannot preempt synchronous parser CPU; production untrusted uploads still require a bounded Worker or process. Every new Workflow execution must contain the admitted current executable definition; no fallback constructor may invent it.
 
 Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim. [TESTING-SPEC.md](docs/TESTING-SPEC.md#evidence-lanes) owns the definition of an evidence lane, including the requirement that two lanes count as two only when their failure modes are uncorrelated.
