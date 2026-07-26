@@ -25,6 +25,6 @@ lake build emitSequentialUserTaskResults
 ./scripts/test-cibseven-oracle.sh
 ./scripts/pnpm.sh run test:differential
 ./scripts/pnpm.sh run test:infrastructure
-./scripts/pnpm.sh run build:temporal-adapter
+./scripts/pnpm.sh run test:temporal
 env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
 git diff --check

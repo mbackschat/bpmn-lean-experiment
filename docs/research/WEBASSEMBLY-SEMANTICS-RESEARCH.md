@@ -1,4 +1,4 @@
-# WebAssembly semantics architecture and BPMN transfer
+# WebAssembly semantics architecture research and BPMN transfer
 
 **Status:** Research result and bounded recommendation; no new project architecture, dependency, generator, or semantic DSL is adopted by this document
 

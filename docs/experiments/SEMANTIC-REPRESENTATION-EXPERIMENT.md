@@ -1,4 +1,4 @@
-# Semantic representation spikes
+# Semantic representation experiment
 
 **Status:** Executed, provisional candidates retained
 
@@ -6,7 +6,7 @@
 
 **Non-claim:** These experiments do not implement BPMN semantics, establish CIB Seven compatibility, select a parser, or change the approved Milestone 0 feature profile.
 
-The source research and architectural assessment are in [Semantic representations and execution models](../research/SEMANTIC-REPRESENTATIONS.md). The executable candidates are in [SemanticRepresentations.lean](../../BpmnSemantics/Experiments/SemanticRepresentations.lean), and the focused gate is [SemanticRepresentationsMain.lean](../../BpmnSemantics/Experiments/SemanticRepresentationsMain.lean).
+The source research and architectural assessment are in [Semantic representations and execution models](../research/SEMANTIC-REPRESENTATIONS-RESEARCH.md). The executable candidates are in [SemanticRepresentations.lean](../../BpmnSemantics/Experiments/SemanticRepresentations.lean), and the focused gate is [SemanticRepresentationsMain.lean](../../BpmnSemantics/Experiments/SemanticRepresentationsMain.lean).
 
 ## Method
 
@@ -89,7 +89,7 @@ The deliberately weak count-only account returns ready. The edge-provenance acco
 
 ### Consequence
 
-An arrival count cannot be the sole normative join state when readiness depends on incoming-flow identity. CIB Seven’s execution-count implementation remains relevant compatibility evidence because it can differ on this witness. The project has not yet selected a universal token or offer representation.
+An arrival count cannot be the sole normative join state when readiness depends on incoming-flow identity. The later schema-valid [bounded CIB probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.java) reproduced that public difference at pinned CIB Seven `2.2.0`: two executions from one incoming Sequence Flow activated downstream work while the other branch remained at a User Task. The relationship register records this as candidate deviation [`CIB-DEV-0001`](../CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001--parallel-join-activates-from-duplicate-arrivals-through-one-incoming-flow). The project has not selected a universal token or offer representation, and the experiment types remain provisional.
 
 ## Experiment 4: command closure over microsteps
 

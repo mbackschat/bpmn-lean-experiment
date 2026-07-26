@@ -1,8 +1,8 @@
-# User Task interaction semantic capsule
+# User Task interaction semantic specification
 
 ## Status
 
-**Evidence-closed draft for the bounded interaction slice on 2026-07-24; not an immutable compatibility profile.**
+**Implemented and evidence-closed draft specification for the bounded interaction slice on 2026-07-24; not an immutable compatibility profile.**
 
 This project-owned semantic specification closes only the interaction boundary around the existing sequential `None Start Event → User Task → None End Event` model. It does not approve general human-task lifecycle semantics, people assignment, authorization, forms, variables, Search Attributes, a task inbox, multi-instance execution, or a broader CIB compatibility claim.
 
@@ -16,11 +16,11 @@ BPMN 2.0.2 Clause 10.7.3 defines a User Task as human work assisted by software 
 
 Those clauses require an execution-conforming runtime to manage the task and its completion, but they do not prescribe Temporal messaging, a global task-inbox consistency model, an authorization protocol, or a portable string encoding for a task occurrence.
 
-The pinned CIB Seven `v2.2.0` public API exposes active tasks through `TaskService.createTaskQuery()`. The inherited `UserTaskTest.testTaskPropertiesNotNull` witness observes a non-null generated task ID, name, Process-instance ID, execution ID, Process-definition ID, task-definition key, and creation time. `TaskAssigneeTest.testTaskAssignee` discovers an assigned task, completes it through `TaskService.complete(task.getId())`, and observes Process completion. `TaskServiceTest.testCompleteTaskUnexistingTaskId` establishes that completing an unknown CIB task ID fails rather than advancing execution.
+The pinned CIB Seven `v2.2.0` public API exposes active tasks through `TaskService.createTaskQuery()`. The inherited `UserTaskTest.testTaskPropertiesNotNull` witness observes a non-null generated task ID, name, Process-instance ID, execution ID, Process-definition ID, task-definition key, and creation time. `TaskAssigneeTest.testTaskAssignee` discovers an assigned task, completes it through `TaskService.complete(task.getId())`, and observes Process completion. `TaskServiceTest.testCompleteTaskUnexistingTaskId` establishes that completing an unknown CIB task ID fails rather than advancing execution. The project-owned [bounded consistency probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConsistencyProbeTest.java) repeats that property at the project pin with a real generated ID after its task has completed.
 
 CIB’s task ID is generated host identity. It is retained only in oracle diagnostics and in the local mapping needed to invoke `TaskService.complete`; it is not a canonical identity shared with Lean, TypeScript, or Temporal.
 
-The [CIB–BPMN relationship register](../CIB-BPMN-RELATION.md) classifies the sequential lifecycle as `CIB-AGR-0001`, basic active-task discovery and completion as `CIB-AGR-0002`, host-task-to-semantic-task mapping as `CIB-OP-0001`, and the pinned oracle environment as `CIB-CFG-0001`. The current capsule has no candidate or confirmed CIB deviation.
+The [CIB–BPMN relationship register](../CIB-BPMN-RELATION-REGISTER.md) classifies the sequential lifecycle as `CIB-AGR-0001`, basic active-task discovery and completion as `CIB-AGR-0002`, host-task-to-semantic-task mapping as `CIB-OP-0001`, and the pinned oracle environment as `CIB-CFG-0001`. The current capsule has no candidate or confirmed CIB deviation.
 
 ## Semantic decision
 
@@ -40,7 +40,7 @@ semantic-core runtime creates one task occurrence
           ◄──────────── structured completion command
 ```
 
-The adopted Temporal Query/Update binding, replay path, and discovery boundary are owned by [the Temporal execution model](../TEMPORAL-EXECUTION-MODEL.md#initial-user-task-interaction-binding).
+The adopted Temporal Query/Update binding, replay path, and discovery boundary are owned by [the Temporal execution model](../TEMPORAL-EXECUTION-RESEARCH.md#initial-user-task-interaction-binding).
 
 ## Stable semantic rules and evidence
 
@@ -52,7 +52,7 @@ The identifiers below name the bounded propositions established by this capsule.
 | `UTASK-DISCOVER-01` | Committed waiting state projects the exact open task, admitted name, active lifecycle state, and command-ID-free enabled completion independently of future scenario commands | [Public task projection](#public-task-projection) | `waitingObservation` and the equal-pre-command-state witness in [UserTaskInteractionConformance.lean](../../BpmnSemantics/UserTaskInteractionConformance.lean) | Public `TaskService` query in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | State-derived-interaction case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Exact open-task Query in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Contract mutation changes observed activation `1` to `2`; successful and wrong-activation cases must have equal waiting projections |
 | `UTASK-COMPLETE-01` | Completing the exact active occurrence commits, removes the open task, and completes the admitted Process | [Completion command](#completion-command) | `exact_task_completion_terminates` in [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) | Exact completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Exact retained-result case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Acknowledged completion Update plus live-history replay in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | The live-history guard requires Update acceptance/completion and excludes Signal delivery |
 | `UTASK-REFUSE-01` | A completion whose Process instance, element, or activation differs from the active occurrence is rejected with exact state preservation | [Completion command](#completion-command) and `CIB-OP-0001` | `task_identity_mismatch_is_rejected`, its wrong-activation corollary, and `element_id_alone_is_insufficient` in [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) | Oracle mapping rejects the mismatch before CIB host completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Wrong-activation and full-occurrence cases in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Rejected wrong-activation Update in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Matching only the BPMN element ID is the checked non-law |
-| `UTASK-REFUSE-02` | Repeating completion for an already completed occurrence under a distinct semantic command ID is rejected without reactivation | [Completion command](#completion-command) and `CIB-OP-0001` | `expectedStaleCompletionTrace` in [UserTaskInteractionConformance.lean](../../BpmnSemantics/UserTaskInteractionConformance.lean) | Oracle mapping finds no corresponding live CIB task and refuses before host completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java) | Stale-completion case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Duplicate-delivery ledger plus distinct stale Update in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Completed-state projection before and after rejection must be identical |
+| `UTASK-REFUSE-02` | Repeating completion for an already completed occurrence under a distinct semantic command ID is rejected without reactivation | [Completion command](#completion-command) and `CIB-OP-0001` | `expectedStaleCompletionTrace` in [UserTaskInteractionConformance.lean](../../BpmnSemantics/UserTaskInteractionConformance.lean) | Oracle mapping finds no corresponding live CIB task and refuses before host completion in [CibSevenScenarioRunnerTest.java](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java); the adjacent consistency probe confirms CIB itself rejects a generated host task ID after completion | Stale-completion case in [user-task-interaction.test.mjs](../../packages/semantic-core/test/user-task-interaction.test.mjs) | Duplicate-delivery ledger plus distinct stale Update in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Completed-state projection before and after rejection must be identical |
 
 The matrix indexes evidence; it does not merge the claims. A Lean theorem proves the selected Lean account, a CIB witness records finite oracle behavior, and the TypeScript and Temporal lanes remain independent implementation and refinement evidence.
 
@@ -76,7 +76,11 @@ A CIB cell in the matrix above is not automatically engine evidence. The oracle 
 
 The consequence is explicit: `UTASK-REFUSE-01` is the one rule whose activation clause the oracle lane cannot falsify, because the adapter implements the same ordinal rule that the capsule claims. Its wrong-activation agreement across CIB, Lean, the semantic core, and Temporal is therefore agreement with one project-authored rule, not four independent derivations of it. `UTASK-REFUSE-02` and `UTASK-COMPLETE-01` are engine-grounded, and `UTASK-ACTIVATE-01` is engine-grounded for task presence but not for ordinal allocation.
 
-Repeated or simultaneous activation will require deriving the ordinal from CIB state rather than stamping the constant `1`. That derivation needs its own `CIB-OP` entry, its own probe, and its own seeded mutation before any rule may claim engine-observed ordinal fidelity.
+The generated-ID consistency probe strengthens only the adjacent host-identity premise used by `CIB-OP-0001`: pinned CIB refuses an ID that was genuine but is no longer live. It does not raise the activation clause of `UTASK-REFUSE-01` above `adapter-decided`, because no activation ordinal reaches CIB.
+
+Repeated or simultaneous activation will require deriving the ordinal from CIB state rather than stamping the constant `1`; a history-count derivation is a candidate mechanism, not an approved one. That derivation needs its own `CIB-OP` entry, its own probe, and its own seeded mutation before any rule may claim engine-observed ordinal fidelity.
+
+Fidelity labels remain owned by this capsule and are not duplicated into the internal pipeline report. The report is a gate input rather than a published claim artifact, and duplicating the classification there would create a second owner without strengthening the evidence. If pipeline results later become a public dashboard, paper artifact, or external compliance deliverable, machine-checkable per-cell provenance gains a concrete consumer and this decision must be revisited.
 
 ## Semantic task identity
 

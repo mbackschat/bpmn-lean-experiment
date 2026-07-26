@@ -1,4 +1,4 @@
-# BPMN XML ingestion spike
+# BPMN XML ingestion experiment
 
 ## Question and accounts
 

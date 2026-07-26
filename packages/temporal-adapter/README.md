@@ -30,4 +30,4 @@ Run the focused gate:
 ./scripts/pnpm.sh run test:temporal
 ```
 
-The first run downloads the pinned CLI into ignored `.cache/temporal-cli/`. The broader boundary and research are in [TEMPORAL-EXECUTION-MODEL.md](../../docs/TEMPORAL-EXECUTION-MODEL.md) and [SOURCES.md](../../docs/SOURCES.md).
+The first run downloads the pinned CLI into ignored `.cache/temporal-cli/`. The broader boundary and research are in [TEMPORAL-EXECUTION-RESEARCH.md](../../docs/TEMPORAL-EXECUTION-RESEARCH.md) and [SOURCES.md](../../docs/SOURCES.md).

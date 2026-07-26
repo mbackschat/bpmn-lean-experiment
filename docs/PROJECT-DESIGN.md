@@ -11,7 +11,7 @@ The project pursues that goal through four independent components:
 3. an independently implemented pure TypeScript semantic core;
 4. a Temporal durability adapter continuously checked through differential, refinement, and replay testing.
 
-The complete supplied architecture contract is the [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md). The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the prominent [CIB–BPMN register](CIB-BPMN-RELATION.md). This document owns the project-local constitution.
+The complete supplied architecture contract is the [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md). The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the prominent [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md). This document owns the project-local constitution.
 
 ## Authority model
 
@@ -31,7 +31,8 @@ Raw CIB output never becomes Lean authority automatically, and differential mism
 | Component | Responsibility | Explicit limit |
 |---|---|---|
 | Semantic profile | Select reviewed meaning, compatibility target, configuration, feature surface, observation boundary, interpretations, extensions, and deviations | It is not an engine build or a generic document-format version |
-| BPMN source boundary | Preserve exact bytes, validate and admit source, and compile project-owned executable IR | Parser objects and CMOF facts do not define execution behavior |
+| BPMN source boundary | Preserve exact bytes, validate and admit source, and produce a checked project-owned BPMN graph | Parser objects and CMOF facts do not define execution behavior |
+| Semantic Process IL | Lower the checked graph into a bounded language of typed semantic mechanisms with source provenance | It is not a mirror of the BPMN metamodel, a universal BPMN language, or mutable runtime state |
 | Lean reference interpreter | Give the selected capsule executable operational meaning and prove reusable laws | It does not automatically prove CIB, XML parsing, TypeScript, Temporal, databases, or effects |
 | TypeScript semantic core | Implement production semantic transitions as a separately written, deterministic realization of the reviewed account | It performs no I/O and has no CIB or Temporal dependency, and it is not an independent choice of operational account |
 | Temporal adapter | Persist semantic state, deliver inputs, and host declared effects and waits durably | Hidden Workflow work may not redefine BPMN-visible behavior |
@@ -51,7 +52,7 @@ That is stronger than replaying one serialized example, but it remains bounded t
 
 Lean and the TypeScript semantic core are independent **transcriptions** of one reviewed operational account. They are separately written, separately executable, and mutually check transcription defects such as an inverted guard or a mistyped identity field. They are not independent **accounts**: the capsule currently prescribes the microstate inventory and the internal closure bound, so both realizations share that decomposition and would reproduce an error in it identically.
 
-Account-level independence therefore comes only from the normative and profile review and from pinned CIB evidence, bounded by the oracle fidelity that the applicable capsule records. Claims must not present Lean-to-TypeScript agreement as independent confirmation of the selected account, and [TESTING.md](TESTING.md) owns the requirement that two evidence lanes count as two only when their failure modes are uncorrelated.
+Account-level independence therefore comes only from the normative and profile review and from pinned CIB evidence, bounded by the oracle fidelity that the applicable capsule records. Claims must not present Lean-to-TypeScript agreement as independent confirmation of the selected account, and [TESTING-SPEC.md](TESTING-SPEC.md) owns the requirement that two evidence lanes count as two only when their failure modes are uncorrelated.
 
 A capsule may deliberately buy account-level independence by specifying only the observable contract and letting each realization choose its own runtime representation. That is a per-capsule decision with a real cost, and it must be recorded in the capsule rather than assumed.
 
@@ -65,7 +66,7 @@ Lean also forces architectural distinctions to become explicit:
 
 Every new transition family should have a declarative Lean relation and an executable evaluator with a soundness bridge. Completeness, determinism, compiler correspondence, TypeScript correspondence, liveness, and refinement remain separate obligations and must not be implied by evaluator soundness.
 
-The current Lean implementation does not parse BPMN XML, consume arbitrary executable IR, prove the compiler, or machine-check the TypeScript or Temporal implementation. Those are explicit gaps, not hidden assumptions.
+The current Lean implementation does not parse BPMN XML, consume the approved checked BPMN graph or Semantic Process IL, check lowering equality, prove source-to-program preservation, or machine-check the TypeScript or Temporal implementation. Those are explicit gaps, not hidden assumptions.
 
 ## Interpreter architecture
 
@@ -73,13 +74,16 @@ The production architecture is an **interpreter/evaluator in TypeScript, not a B
 
 ```text
 BPMN 2 XML
-  → exact source identity and bounded structural import
-  → profile admission and normalized executable IR data
+  → exact source identity, bounded structural import, and profile admission
+  → checked project-owned BPMN graph
+  → bounded Semantic Process IL data
   → pure TypeScript semantic-core transitions
   → Temporal durability, delivery, timers, and effects
 ```
 
-Parsing and admission occur outside deterministic Workflow execution. A generic Workflow receives admitted executable IR and serializes semantic inputs through the core. Temporal Activities, timers, messages, and child operations implement declared effects only after the core assigns their BPMN meaning.
+Parsing, admission, and lowering occur outside deterministic Workflow execution. A generic Workflow receives an admitted Semantic Process program and serializes semantic inputs through the core. Temporal Activities, timers, messages, and child operations implement declared effects only after the core assigns their BPMN meaning.
+
+[SEMANTIC-PROCESS-IL-PROPOSAL.md](SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the approved future checked-source contract, operation meanings, lowering and Lean preservation obligations, event-growth policy, and stop criteria until implementation graduates that contract to `SEMANTIC-PROCESS-IL-SPEC.md`. The first language slice is bounded to the implemented sequential spec and approved parallel proposal. The current topology-specific executable IR is transitional and must be replaced atomically rather than retained as a legacy path.
 
 This choice preserves one inspectable model representation, avoids generating a new Workflow Definition for every diagram, and keeps SDK calls, Workflow deployment, and replay mechanics from becoming accidental BPMN semantics. It also keeps parser evolution, profile evolution, semantic-core evolution, and Worker deployment conceptually separate.
 
@@ -100,7 +104,7 @@ The project is far from a production compatibility boundary and expects substant
 - each wire artifact has a stable structural `kind`;
 - JSON Schema `$id` owns schema-document identity;
 - a semantic profile `id` owns reviewed semantic and compatibility meaning;
-- executable IR carries stable compiler, exact source, and selected profile identity;
+- checked BPMN graphs and Semantic Process programs carry stable exact-source and selected-profile identity, and programs also carry compiler identity;
 - a breaking shape change replaces all current producers, consumers, schemas, examples, and tests atomically;
 - no parallel legacy format, embedded format counter, compatibility switch, migration reader, or fallback constructor is retained before a durable release baseline exists;
 - local Temporal tests use a fresh in-memory server, replay the histories created in that same gate, and then discard all server state.
@@ -131,7 +135,7 @@ The bounded `None Start Event → User Task → None End Event` slice demonstrat
 
 This validates the separation of responsibilities, not scalability to all BPMN. The current runtime has no general token, scope, race, effect, or variable model; the compiler recognizes one topology; Lean emits compiled-in capsule scenarios rather than consuming the pipeline IR; and Temporal has not exercised Activities, timers, cancellation, Worker restart, or Continue-As-New.
 
-The next feature must expose a distinct semantic or representation risk. Infrastructure is generalized only when a second real consumer and a separating mutation justify it.
+The approved parallel fork/join proposal supplies the next distinct semantic and representation risk and the second topology that justifies the bounded Semantic Process IL. This approval does not generalize the language beyond its named consumers and separating witnesses.
 
 ## Success criteria for every capsule
 

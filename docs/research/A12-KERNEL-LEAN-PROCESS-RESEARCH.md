@@ -1,4 +1,4 @@
-# Process transfer from `a12-kernel-lean`
+# Process-transfer research from `a12-kernel-lean`
 
 ## Purpose and conclusion
 

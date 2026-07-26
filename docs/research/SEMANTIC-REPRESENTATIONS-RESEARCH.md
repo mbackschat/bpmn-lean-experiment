@@ -1,10 +1,10 @@
-# Semantic representations and execution models
+# Semantic representations and execution-model research
 
-**Status:** Research result; source-model → data-IR → interpreter direction adopted, exact representations provisional
+**Status:** Research result; source-model → data-IR → interpreter direction adopted; the bounded checked-graph and Semantic Process IL definition contract is now selected, while runtime representations remain implementation-specific
 
 **Scope:** CIB Seven BPMN Model API, deployment parser, PVM definition and runtime representations, fUML Activity execution, PSSM State Machine execution, and candidate consequences for the project’s BPMN source model, Lean semantics, pure TypeScript semantic core, and Temporal adapter.
 
-**Decision status:** No production parser, IR schema, token model, scope algebra, or scheduling semantics is selected by this document. Executable discriminators are recorded separately in [Semantic representation spikes](../experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
+**Decision status:** This research document selects no production parser, token model, scope algebra, or scheduling semantics. The later [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the approved but unimplemented bounded checked graph, IL contract, lowering, and growth rules. Executable discriminators remain recorded separately in [the semantic representation experiment](../experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md).
 
 ## Executive result
 
@@ -25,7 +25,7 @@ The strongest provisional project conclusion is:
 
 > Use a source-preserving model for import and diagnostics, compile it into a versioned immutable data-only executable IR, and execute that IR against separate explicit runtime state through a transition relation and bounded executable closure. Preserve provenance, multiplicity, edge-arrival identity, and ownership relations until evidence justifies projection.
 
-On 2026-07-24, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) adopted this boundary and explicitly chose a TypeScript interpreter/evaluator over authoritative BPMN-to-TypeScript generation. The decision does not adopt the experiment’s candidate IR types, parser, scope algebra, token model, or compiler schema; those remain evidence-driven design questions.
+On 2026-07-24, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) adopted this boundary and explicitly chose a TypeScript interpreter/evaluator over authoritative BPMN-to-TypeScript generation. The later [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) adopts a new bounded checked graph and operation language for the sequential and parallel capsules without adopting the experiment’s general node, scope, token, or wait types.
 
 ## Representation pipeline in CIB Seven
 
@@ -239,9 +239,9 @@ List<PvmNodeProjection> projection =
         });
 ```
 
-A real projector must recurse through nested flow scopes, enumerate event activities, retain outgoing order, identify defaults and synthetic nodes, and execute wholly inside the command context. It belongs to the diagnostic lane described in [Reference instrumentation](../REFERENCE-INSTRUMENTATION.md).
+A real projector must recurse through nested flow scopes, enumerate event activities, retain outgoing order, identify defaults and synthetic nodes, and execute wholly inside the command context. It belongs to the diagnostic lane described in [Reference instrumentation](../REFERENCE-INSTRUMENTATION-POLICY.md).
 
-The first bounded implementation now exists as [PvmDefinitionProjector.java](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java). Its M0.2 result confirms the sequential topology and behavior strategies, while also showing that ordinary flow activities have `null` PVM event scope and that CIB normalizes a None End Event’s type to `noneEndEvent`. Those internal facts are retained only in diagnostics; the corresponding public deploy/start/task/complete observations remain the compatibility evidence. The executable result and remaining limits are recorded in [Semantic representation spikes](../experiments/SEMANTIC-REPRESENTATION-SPIKES.md).
+The first bounded implementation now exists as [PvmDefinitionProjector.java](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java). Its M0.2 result confirms the sequential topology and behavior strategies, while also showing that ordinary flow activities have `null` PVM event scope and that CIB normalizes a None End Event’s type to `noneEndEvent`. Those internal facts are retained only in diagnostics; the corresponding public deploy/start/task/complete observations remain the compatibility evidence. The executable result and remaining limits are recorded in [the semantic representation experiment](../experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md).
 
 ## CIB Seven runtime representation
 
@@ -638,16 +638,20 @@ The durable identity chain likely needs:
 
 The exact scheme is undecided. The design must prevent an old Temporal history or persisted runtime state from being silently interpreted by a different compiler or semantic profile.
 
-## Adopted direction with provisional representations
+## Adopted direction and later bounded selection
+
+The diagram below records the research direction updated with the later bounded selection in [the Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md). Checked definition contracts are selected for the sequential and parallel capsules; internal Lean and TypeScript runtime representations remain asymmetric and implementation-specific.
 
 ```mermaid
 flowchart TB
   XML[BPMN XML and imports] --> Source[Source-preserving model]
   Source --> Validate[Profile-aware validation]
-  Validate --> Compile[Versioned normalization compiler]
-  Compile --> IR[Immutable executable semantic IR]
-  IR --> Lean[Lean relation and interpreter]
-  IR --> SemanticCore[Pure TypeScript semantic core]
+  Validate --> Checked[Checked BPMN graph]
+  Checked --> Lower[Bounded lowering]
+  Lower --> IL[Semantic Process IL]
+  Checked --> Lean[Lean lowering check, relation, and interpreter]
+  IL --> Lean
+  IL --> SemanticCore[Pure TypeScript semantic core]
   State[Explicit semantic runtime state] --> Lean
   State --> SemanticCore
   Stimulus[Versioned stimulus and semantic choice] --> Lean
@@ -685,7 +689,7 @@ Required properties of an initial candidate:
 - PSSM-style run-to-completion beyond command closure
 - behavior of constructs outside the approved Milestone 0 profile
 
-These choices need the discriminating experiments in [Semantic representation spikes](../experiments/SEMANTIC-REPRESENTATION-SPIKES.md), not architectural intuition alone.
+These choices need the discriminating [semantic representation experiment](../experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md), not architectural intuition alone.
 
 ## Source basis
 
@@ -696,6 +700,6 @@ Primary project and source evidence:
 - [OMG fUML 1.5 catalog](https://www.omg.org/spec/FUML/1.5) and [normative PDF](https://www.omg.org/spec/FUML/1.5/PDF)
 - [OMG PSSM 1.0 catalog](https://www.omg.org/spec/PSSM/) and [normative PDF](https://www.omg.org/spec/PSSM/1.0/PDF)
 - [BPMN conformance target](../BPMN-CONFORMANCE-TARGET.md)
-- [Reference instrumentation policy](../REFERENCE-INSTRUMENTATION.md)
+- [Reference instrumentation policy](../REFERENCE-INSTRUMENTATION-POLICY.md)
 
 The CIB and fUML code links point to the immutable upstream revisions recorded in [Sources](../SOURCES.md). PSSM API-like code in this document is explanatory pseudocode over its normative execution model.

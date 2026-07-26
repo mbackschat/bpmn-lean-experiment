@@ -1,15 +1,15 @@
 # Semantic capsules
 
-This directory contains bounded project-owned semantic specifications. A capsule states one semantic question, its normative and oracle basis, admitted model and runtime distinctions, public observations, commands, laws, checked non-laws, separating witnesses, and explicit exclusions.
+This directory contains bounded project-owned semantic proposals and specifications. A capsule states one semantic question, its normative and oracle basis, admitted model and runtime distinctions, public observations, commands, laws, checked non-laws, separating witnesses, and explicit exclusions. An unimplemented capsule remains `-PROPOSAL`; it graduates to `-SPEC` only with its implemented current contract under [the documentation discipline](../DOC-DISCIPLINE.md#proposal-graduation).
 
-A capsule does not own implementation sequencing, live completion status, test procedures, or host-specific transport mechanics. Those belong respectively to [the plan](../PLAN.md), [the implementation map](../IMPLEMENTATION-MAP.md), [the testing guide](../TESTING.md), and the relevant adapter decision or research document.
+A capsule does not own implementation sequencing, live completion status, test procedures, or host-specific transport mechanics. Those belong respectively to [the plan](../PLAN.md), [the implementation map](../IMPLEMENTATION-MAP.md), [the testing guide](../TESTING-SPEC.md), and the relevant adapter decision or research document.
 
 ## Required capsule structure
 
 Every new capsule records:
 
 1. its exact question, status, normative clauses, profile decisions, and exclusions;
-2. the applicable normative-agreement, permitted-operational-detail, interpretation, extension, configuration, limitation, or deviation classification from the [CIB–BPMN relationship register](../CIB-BPMN-RELATION.md);
+2. the applicable normative-agreement, permitted-operational-detail, interpretation, extension, configuration, limitation, or deviation classification from the [CIB–BPMN relationship register](../CIB-BPMN-RELATION-REGISTER.md);
 3. stable identifiers for each material semantic rule;
 4. the smallest separating positive and negative witnesses;
 5. source/admission, definition, runtime, command, stable-state, and observation distinctions;
@@ -28,10 +28,11 @@ A rule identifier uses a capsule-specific uppercase prefix, a semantic topic, an
 
 Editorial clarification and evidence-link maintenance retain the identifier. A materially changed proposition receives a new identifier; do not renumber or reuse retired identifiers. Rule identifiers remain documentation traceability unless a concrete consumer justifies a separately versioned wire representation.
 
-Start with a Markdown evidence matrix inside the owning capsule. Do not introduce a manifest, generator, or semantic DSL until at least a second structurally distinct capsule demonstrates measurable drift that such infrastructure would prevent.
+Start with a Markdown evidence matrix inside the owning capsule. Do not introduce a manifest, generator, or universal semantic language without named consumers and evidence that the boundary replaces repeated semantic structure. The approved bounded [Semantic Process IL](../SEMANTIC-PROCESS-IL-PROPOSAL.md) is justified by the sequential and parallel topologies and remains governed by its stop criteria.
 
 ## Registry
 
 | Capsule | Status and scope |
 |---|---|
-| [User Task interaction](USER-TASK-INTERACTION.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |
+| [User Task interaction](USER-TASK-INTERACTION-SPEC.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |
+| [Parallel fork/join](PARALLEL-FORK-JOIN-PROPOSAL.md) | Owner-approved semantic proposal for two concurrent distinct User Tasks and normative per-incoming-flow synchronization; implementation and confirmation evidence remain pending, and `CIB-DEV-0001` remains candidate |

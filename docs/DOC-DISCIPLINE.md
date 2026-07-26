@@ -1,0 +1,146 @@
+# Documentation discipline
+
+## Purpose and alignment
+
+This document owns the repository’s documentation roles, filename contracts, lifecycle, placement, and same-change update rules. `CLAUDE.md` keeps the short triggers that contributors must see before acting; this document owns the rationale and procedure behind them.
+
+The convention deliberately aligns with the sibling `a12-rulekit` documentation discipline inspected at the revision recorded in [SOURCES.md](SOURCES.md). The central shared rule is lifecycle-sensitive: `-SPEC` means an implemented current contract, while approved intent that is not implemented remains `-PROPOSAL`.
+
+This project retains two deliberate assurance-specific living surfaces that `a12-rulekit` does not use in the same way: [PLAN.md](PLAN.md) owns immediate execution order and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact current claim boundary across semantics, proof, evidence, and adapters. Neither is a feature-history board.
+
+## Filename grammar
+
+Use uppercase kebab case:
+
+```text
+<SUBJECT>-<ROLE>.md
+```
+
+The role suffix is a contract, not decoration. Do not encode approval state, dates, semantic-profile versions, or release versions in a filename. Put exact status and identity inside the document or artifact.
+
+Do not stack roles such as `-APPROVED-SPEC`, `-DRAFT-PROPOSAL`, or `-RESEARCH-DECISION`. Choose the role that owns the document’s content.
+
+## Lifecycle roles
+
+| Suffix | Contract |
+|---|---|
+| `-SPEC.md` | Stable current contract that is implemented and maintained with its producers, consumers, tests, and evidence |
+| `-PROPOSAL.md` | Intent, rationale, proposed contract, and acceptance conditions that are not fully implemented |
+| `-GAPS.md` | Only open, deferred, or explicitly out-of-scope work; shipped gaps are removed |
+| `-LEDGER.md` | Durable row-by-row classification of a defined external or normative inventory; rows are retained |
+
+An approved proposal remains a proposal until its contract is implemented. “Approved” answers whether implementation may proceed; `-SPEC` answers whether the maintained contract already describes the implemented surface.
+
+## Evidence and governance roles
+
+| Suffix | Contract |
+|---|---|
+| `-RESEARCH.md` | Read-only source study, external findings, alternatives, and bounded recommendations; not semantic authority |
+| `-EXPERIMENT.md` | Bounded executable question with competing accounts, a separating witness, result, and disposition |
+| `-DECISION.md` | Adopted choice, alternatives, rationale, consequences, and re-open conditions |
+| `-POLICY.md` | Mandatory project procedure or governance boundary |
+| `-REGISTER.md` | Living classified collection whose denominator is the set of items reviewed or registered, not necessarily an external complete corpus |
+| `-MAP.md` | Current derived or maintained correspondence between claims and another live surface |
+| `-TARGET.md` | Durable declared objective and its exact boundary, without implying implementation |
+| `-GUIDE.md` or `-WALKTHROUGH.md` | Reader-facing use or explanation organized around a task or path |
+| `-HANDOFF.md` | Preserved supplied or transferred context with an explicit authority boundary |
+
+`-LEDGER` and `-REGISTER` are intentionally different. A ledger classifies a defined denominator and retains its rows. A register records every relationship that has entered review but does not imply that the unreviewed external universe has been enumerated.
+
+## Reserved singleton names
+
+The following names identify repository-wide owners and do not require another suffix:
+
+- `README.md` — navigation and project front door;
+- `PROJECT-DESIGN.md` — the durable architectural argument and decision model;
+- `PLAN.md` — current ordered work, blockers, and exact resume point;
+- `SOURCES.md` — source provenance and controlled reference navigation;
+- `IMPLEMENTATION-MAP.md` — exact live implementation, proof, evidence, and absence boundary;
+- `DOC-DISCIPLINE.md` — this documentation workflow;
+- `CLAUDE.md` and `AGENTS.md` — mandatory contributor triggers and workflow.
+
+Directory `README.md` files are registries or local entry points, not independent policy owners.
+
+## Status is separate from role
+
+Every proposal, spec, research result, experiment, decision, policy, target, and handoff must state its status near the beginning when the filename alone cannot communicate current maturity.
+
+Use plain status language such as:
+
+- Draft;
+- Owner-approved;
+- Implemented;
+- Evidence-closed draft;
+- Superseded;
+- Archived.
+
+A status never changes the suffix contract. An owner-approved but unimplemented document is still a proposal. An implemented spec may remain a draft compatibility contract when immutability or release approval is still absent.
+
+## Proposal graduation
+
+When a proposal is implemented:
+
+1. move the stable implemented contract into the corresponding `-SPEC.md`;
+2. update every current producer, consumer, schema, test, evidence lane, and documentation owner in the same change;
+3. remove implementation sequencing and completed-work narration from the spec;
+4. move the resolved proposal to `docs/archived/` when its rationale or measurement record remains useful, or delete it when it has no durable information beyond Git history;
+5. update the documentation registry and all inbound links atomically.
+
+Do not leave a `-PROPOSAL.md` describing a shipped current surface. Do not create a `-SPEC.md` merely because a design has been approved.
+
+## Specs and moving results
+
+Specs own stable method, contracts, invariants, exclusions, and acceptance criteria. They do not own a chronological run diary.
+
+Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Stable gate definitions and evidence requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md). Exact implemented or absent claims belong in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+
+## Project document homes
+
+| Information | Owner role |
+|---|---|
+| Project mission, authority, and durable architecture | `PROJECT-DESIGN.md` |
+| Implemented semantic feature contract | capsule `-SPEC.md` |
+| Approved but unimplemented semantic feature | capsule `-PROPOSAL.md` |
+| Checked graph and Semantic Process IL before implementation | `SEMANTIC-PROCESS-IL-PROPOSAL.md` |
+| Checked graph and Semantic Process IL after implementation | future `SEMANTIC-PROCESS-IL-SPEC.md` |
+| CIB behavior relative to BPMN | `CIB-BPMN-RELATION-REGISTER.md` |
+| Reviewed BPMN requirement dispositions | `BPMN-REQUIREMENT-LEDGER.md` |
+| External-system findings | `research/*-RESEARCH.md` |
+| Bounded executable questions | `experiments/*-EXPERIMENT.md` |
+| Adopted one-time architecture or dependency choice | `*-DECISION.md` |
+| Mandatory research-lane procedure | `*-POLICY.md` |
+| Exact implementation and assurance status | `IMPLEMENTATION-MAP.md` |
+| Immediate work order | `PLAN.md` |
+| Test method and gates | `TESTING-SPEC.md` |
+| External revisions and licenses | `SOURCES.md` |
+
+## Same-change triggers
+
+- Adding, renaming, moving, graduating, archiving, or deleting a document requires updating [the documentation registry](README.md), every inbound relative link, `CLAUDE.md` routing when applicable, and the repository link guard in the same change.
+- A semantic implementation changes its capsule spec or graduates its proposal in the same change.
+- A structural architecture change updates [PROJECT-DESIGN.md](PROJECT-DESIGN.md) without adding roadmap or transient status there.
+- A new external finding updates its owning research document and [SOURCES.md](SOURCES.md) when provenance changes.
+- A new experiment records its question, competing accounts, separating witness, result, and disposition; an experiment never becomes semantic authority merely by passing.
+- A changed gate updates [TESTING-SPEC.md](TESTING-SPEC.md); the last verified command and exact next action update [PLAN.md](PLAN.md).
+- A changed implemented or absent surface updates [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+- A directory index changes in the same change as the contents it indexes.
+
+## Writing and linking
+
+Write one Markdown paragraph per line without fixed-column hard wrapping. Prefer a small table or diagram when it makes a comparison, ownership split, data flow, or lifecycle easier to scan.
+
+Use regular relative Markdown links for project documents. Do not duplicate an owned fact merely to avoid a link.
+
+Write documents as current contracts or arguments, not changelogs. Preserve historical rationale only where it remains useful; keep volatile disposition in [PLAN.md](PLAN.md), a `-GAPS` document, or an archived proposal.
+
+## Verification
+
+After a documentation change, run:
+
+```sh
+./scripts/pnpm.sh run check:doc-fragments
+./scripts/verify.sh
+git diff --check
+```
+
+The infrastructure gate enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names above, and fails if a project-authored local Markdown link is stale. A rename is incomplete until that guard and every applicable focused gate are green.

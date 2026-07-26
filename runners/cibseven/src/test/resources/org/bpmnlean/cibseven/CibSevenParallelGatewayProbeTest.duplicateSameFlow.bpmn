@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    id="Definitions_DuplicateSameFlowArrival"
+    targetNamespace="https://bpmn-lean.local/cibseven-probes">
+  <bpmn:process id="Process_DuplicateSameFlowArrival" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start_Fork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Fork">
+      <bpmn:incoming>Flow_Start_Fork</bpmn:incoming>
+      <bpmn:outgoing>Flow_Fork_Left_A</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fork_Left_B</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fork_Right</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="User_Left_A">
+      <bpmn:incoming>Flow_Fork_Left_A</bpmn:incoming>
+      <bpmn:outgoing>Flow_Left_A_Merge</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="User_Left_B">
+      <bpmn:incoming>Flow_Fork_Left_B</bpmn:incoming>
+      <bpmn:outgoing>Flow_Left_B_Merge</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="User_Left_Merge">
+      <bpmn:incoming>Flow_Left_A_Merge</bpmn:incoming>
+      <bpmn:incoming>Flow_Left_B_Merge</bpmn:incoming>
+      <bpmn:outgoing>Flow_Left_Join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="User_Right">
+      <bpmn:incoming>Flow_Fork_Right</bpmn:incoming>
+      <bpmn:outgoing>Flow_Right_Join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="Join">
+      <bpmn:incoming>Flow_Left_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_Right_Join</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join_After</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="User_After_Join">
+      <bpmn:incoming>Flow_Join_After</bpmn:incoming>
+      <bpmn:outgoing>Flow_After_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End">
+      <bpmn:incoming>Flow_After_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="Start" targetRef="Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Left_A" sourceRef="Fork" targetRef="User_Left_A" />
+    <bpmn:sequenceFlow id="Flow_Fork_Left_B" sourceRef="Fork" targetRef="User_Left_B" />
+    <bpmn:sequenceFlow id="Flow_Fork_Right" sourceRef="Fork" targetRef="User_Right" />
+    <bpmn:sequenceFlow id="Flow_Left_A_Merge" sourceRef="User_Left_A" targetRef="User_Left_Merge" />
+    <bpmn:sequenceFlow id="Flow_Left_B_Merge" sourceRef="User_Left_B" targetRef="User_Left_Merge" />
+    <bpmn:sequenceFlow id="Flow_Left_Join" sourceRef="User_Left_Merge" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_Right_Join" sourceRef="User_Right" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_Join_After" sourceRef="Join" targetRef="User_After_Join" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="User_After_Join" targetRef="End" />
+  </bpmn:process>
+</bpmn:definitions>

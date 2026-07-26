@@ -1,4 +1,4 @@
-# Temporal execution model and TypeScript SDK research
+# Temporal execution and TypeScript SDK research
 
 ## Status and purpose
 
@@ -362,7 +362,7 @@ The implemented interaction uses Update because Service acceptance alone is not 
 
 The implemented discovery surface is exact Query by known Workflow ID. Search Attributes and a production task inbox remain separate eventually consistent projections and must not become the source of truth for task existence or completion admission. A later proposal must name the global-discovery consumer, data-access boundary, Search Attribute registry, staleness behavior, and rebuild or reconciliation evidence before adding either.
 
-The semantic meaning, exact task identity, observations, completion rule, witnesses, and exclusions are owned by the [User Task interaction semantic capsule](capsules/USER-TASK-INTERACTION.md).
+The semantic meaning, exact task identity, observations, completion rule, witnesses, and exclusions are owned by the [User Task interaction semantic capsule](capsules/USER-TASK-INTERACTION-SPEC.md).
 
 ## Decisions, concurrency, and parallelism
 

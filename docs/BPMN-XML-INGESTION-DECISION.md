@@ -6,11 +6,15 @@
 
 The approved direct runtime dependency is [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), isolated in the new [`@bpmn-lean/bpmn-source`](../packages/bpmn-source/README.md) workspace package. Lean, the pure TypeScript semantic core, and the Temporal Workflow package remain independent of the parser.
 
-The bounded evidence behind this decision is recorded in [the BPMN XML ingestion spike](experiments/BPMN-XML-INGESTION-SPIKE.md). Adoption changes only the source-ingestion boundary and the existing sequential capsule’s executable input; it does not approve a general executable IR, new BPMN behavior, CIB extensions, export, or a conformance claim.
+The bounded evidence behind this decision is recorded in [the BPMN XML ingestion experiment](experiments/BPMN-XML-INGESTION-EXPERIMENT.md). Adoption changes only the source-ingestion boundary and the existing sequential capsule’s executable input; it does not approve a general executable IR, new BPMN behavior, CIB extensions, export, or a conformance claim.
+
+The later [Semantic Process IL proposal](SEMANTIC-PROCESS-IL-PROPOSAL.md) approves a bounded successor to the initial topology-specific executable IR for the sequential and parallel capsules. That successor preserves this document's parser isolation, exact-source, admission, security, and license decisions.
 
 ## Decision
 
 Use `bpmn-moddle@10.0.0` to construct a BPMN-metamodel-aware structural view during deployment. Preserve the exact original bytes and their SHA-256 digest as the source identity. Treat the moddle object graph as a derived structural view, never as the source of record or as executable semantic authority.
+
+The approved target boundary is shown below. The implemented sequential path still uses the transitional topology-specific executable IR until the atomic replacement recorded in [the plan](PLAN.md).
 
 ```text
 untrusted BPMN bytes
@@ -29,13 +33,16 @@ bpmn-moddle structural import
 profile-independent static admission
         │
         ▼
-versioned project-owned executable IR
+checked project-owned BPMN graph
+        │
+        ▼
+bounded Semantic Process IL
         │
         ├──────────────► Lean / TypeScript differential semantics
         └──────────────► Temporal Workflow input by content identity
 ```
 
-Parsing and compilation happen outside Temporal Workflow execution. The Workflow receives immutable executable IR plus source/profile/compiler identities, not raw XML or moddle objects. The semantic core consumes only project-owned serializable IR and remains dependency-free.
+Parsing, admission, and lowering happen outside Temporal Workflow execution. The Workflow receives an immutable Semantic Process program plus source/profile/compiler identities, not raw XML, the checked graph, or moddle objects. The semantic core consumes only project-owned serializable contracts and remains dependency-free.
 
 `bpmn-moddle.toXML` is available for bounded interchange experiments but is not part of deployment or execution. Serializer output must never replace the original source bytes.
 
@@ -63,7 +70,7 @@ The machine-readable artifacts constrain the source language. The prose and issu
                     │          │            │
                     ├──────────┴────┐       │
                     ▼               ▼       ▼
-           structural source model ──► executable IR
+           checked structural graph ──► Semantic Process IL
                                                │
                                ┌───────────────┼──────────────┐
                                ▼               ▼              ▼
@@ -122,7 +129,7 @@ The exact `v10.0.0` source tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are
 | Parser warnings | Normalize and retain every warning; source capture may succeed, but executable admission is blocked by default |
 | Round trip | Compare project-owned structural projections and explicitly declared preservation properties; never require or claim byte identity |
 | Source locations | The library exposes line/column mainly in warning text, not a general stable location map; do not invent locations or claim source-range preservation |
-| Temporal history | Store only content-addressed admitted IR and required identities in Workflow input/history; archive source bytes outside Workflow history |
+| Temporal history | Store only the content-addressed admitted Semantic Process program and required identities in Workflow input/history; archive source bytes and the checked graph outside Workflow history |
 
 The package does not export raw moddle objects as a public cross-package contract. It exposes project-owned source identity, defensive exact-byte copies, normalized diagnostics, and the smallest compilation boundary needed by the sequential User Task capsule. The external object graph remains private to the ingestion package.
 
@@ -134,7 +141,8 @@ The package does not export raw moddle objects as a public cross-package contrac
 2. **structural import** — a BPMN definitions graph was produced;
 3. **static admission** — all required references and supported constructs passed project checks;
 4. **profile admission** — the selected semantic profile defines every behavior needed for execution;
-5. **execution** — admitted current IR was accepted by the semantic core.
+5. **lowering** — the checked graph produced a valid current Semantic Process program;
+6. **execution** — the admitted program was accepted by the semantic core.
 
 Any parser warning blocks static admission until a project rule explicitly classifies that warning as safe for the declared profile. The first implementation uses one stable `parserWarning` diagnostic code with the upstream message as evidence rather than a growing set of message-string special cases.
 
@@ -164,7 +172,7 @@ All adopted packages are compatible with the repository’s MIT license. They re
 
 ## Removal and upgrade cost
 
-The dependency is isolated to one workspace package. Removing it deletes that package’s parser adapter and lockfile entries; the semantic core, Lean theory, scenario contract, comparator, and Temporal Workflow remain unchanged. Project-owned source identity, diagnostics, and executable IR contracts prevent moddle objects from becoming persistence or public API types.
+The dependency is isolated to one workspace package. Removing it deletes that package’s parser adapter and lockfile entries; the semantic core, Lean theory, scenario contract, comparator, and Temporal Workflow remain unchanged. Project-owned source identity, diagnostics, checked-graph, and Semantic Process contracts prevent moddle objects from becoming persistence or public API types.
 
 Upgrades require rerunning the warning, preservation, security, MIWG, and structural-projection gates. A changed serializer output alone is not a semantic-core change. A changed element graph, reference outcome, warning set, default value, or extension projection is an ingestion compatibility change and must receive a new compiler/importer identity.
 

@@ -1,6 +1,8 @@
 # Sources
 
-This document owns source provenance and controlled reference navigation. Reference checkouts are not project dependencies. Recorded baseline revisions remain pristine evidence anchors; separately named local branches or worktrees may be instrumented under [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md).
+This document owns source provenance and controlled reference navigation. Reference checkouts are not project dependencies. Recorded baseline revisions remain pristine evidence anchors; separately named local branches or worktrees may be instrumented under [REFERENCE-INSTRUMENTATION-POLICY.md](REFERENCE-INSTRUMENTATION-POLICY.md).
+
+Local external reference trees are checked out under `~/Projects/oss`. Treat that location as a portable workspace convention rather than source identity: the repository and revision recorded for each source below remain authoritative, and the checkouts remain read-only research inputs unless an explicitly named experiment follows the instrumentation policy.
 
 ## Project license audit
 
@@ -47,7 +49,7 @@ The handoff reports an investigation of CIB Seven source revision `5a45b47ea2268
 
 The CIB Seven and Temporal source checkouts may host local experimental branches for profiling, deterministic fault points, tracing, batching, or reduced harness overhead. The exact pinned revision remains the evidence lane. A modified build is a diagnostic surrogate until the same neutral scenarios have been shadow-compared against that lane.
 
-Every such experiment must record its base revision, patch or branch revision, build and runtime configuration, question, measurements, and shadow scenarios. See [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md) for permitted acceleration, candidate probe locations, and the shadow-equivalence gate.
+Every such experiment must record its base revision, patch or branch revision, build and runtime configuration, question, measurements, and shadow scenarios. See [REFERENCE-INSTRUMENTATION-POLICY.md](REFERENCE-INSTRUMENTATION-POLICY.md) for permitted acceleration, candidate probe locations, and the shadow-equivalence gate.
 
 ## CIB Seven
 
@@ -99,7 +101,7 @@ Pinned baseline checkout: [temporalio/samples-typescript at `fb0aa23`](https://g
 - License: MIT
 - Role: concrete Workflow, Activity, signal, update, timer, cancellation, testing, replay, and data-driven DSL-interpreter research
 
-The [`dsl-interpreter`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0/dsl-interpreter) sample parses YAML into a data AST and recursively interprets sequence, parallel, and Activity nodes inside one Workflow rather than generating TypeScript. It supports the project’s hosting direction but cannot define BPMN behavior; its lessons and limitations are recorded in [TEMPORAL-EXECUTION-MODEL.md](TEMPORAL-EXECUTION-MODEL.md).
+The [`dsl-interpreter`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0/dsl-interpreter) sample parses YAML into a data AST and recursively interprets sequence, parallel, and Activity nodes inside one Workflow rather than generating TypeScript. It supports the project’s hosting direction but cannot define BPMN behavior; its lessons and limitations are recorded in [TEMPORAL-EXECUTION-RESEARCH.md](TEMPORAL-EXECUTION-RESEARCH.md).
 
 ## Temporal documentation
 
@@ -109,7 +111,7 @@ Pinned baseline checkout: [temporalio/documentation at `16c1899`](https://github
 - Inspected revision: `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`
 - Role: authoritative current documentation for Workflow execution, Event History, Commands, messaging, retries, concurrency, Continue-As-New, versioning, testing, and operational features
 
-The project-authored [Temporal execution-model research](TEMPORAL-EXECUTION-MODEL.md) combines this documentation with pinned TypeScript SDK implementation evidence and records the consequences for the BPMN adapter boundary. Current documentation can describe features newer than the eventual project dependency, so every implemented feature still requires an exact SDK and server version pin.
+The project-authored [Temporal execution-model research](TEMPORAL-EXECUTION-RESEARCH.md) combines this documentation with pinned TypeScript SDK implementation evidence and records the consequences for the BPMN adapter boundary. Current documentation can describe features newer than the eventual project dependency, so every implemented feature still requires an exact SDK and server version pin.
 
 ## Formal methods and behavioral refinement
 
@@ -159,7 +161,7 @@ Read-only checkout: [`zilinc/spectec` at `6191426`](https://github.com/zilinc/sp
 - License: directory-specific; the repository root delegates terms to top-level directories, with specification documents under the W3C Software and Document Notice and License, the interpreter and tests under Apache-2.0, and papers under CC BY 4.0
 - Role: fork and active experimental-branch evidence for generated Lean and Isabelle definitions and proof work; not an independent semantic oracle
 
-These repositories share lineage and periodically synchronized code, so agreement among them is not differential evidence. All remain external research inputs and contribute no dependency or copied source to this project. The [WebAssembly and SpecTec semantics transfer study](research/WEBASSEMBLY-SEMANTICS-TRANSFER.md) records which mechanisms fit this project and why a general SpecTec-like DSL, generated TypeScript semantic core, or current proof-assistant backend is not recommended now.
+These repositories share lineage and periodically synchronized code, so agreement among them is not differential evidence. All remain external research inputs and contribute no dependency or copied source to this project. The [WebAssembly and SpecTec semantics transfer study](research/WEBASSEMBLY-SEMANTICS-RESEARCH.md) records which mechanisms fit this project and why a general SpecTec-like DSL, generated TypeScript semantic core, or current proof-assistant backend is not recommended now.
 
 ## BPMN XML/metamodel reference
 
@@ -173,7 +175,7 @@ This checkout remains a research reference and is not a normative semantic autho
 
 The adopted production dependency is the separately published [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), whose `v10.0.0` tag resolves to `b72949eb6f7d0522f73cb723633ebdbcefd22762`. Its registry tarball integrity is `sha512-vXePD5jkatcILmM3zwJG/m6IIHIghTGB7WvgcdEraEw8E8VdJHrTgrvBUhbzqaXJpnsGQz15QS936xeBY6l9aA==`. The exact locked runtime graph—`bpmn-moddle@10.0.0`, `moddle@8.2.0`, `moddle-xml@12.1.0`, `min-dash@5.1.0`, and `saxen@11.1.0`—is MIT-licensed and has no registry `preinstall`, `install`, or `postinstall` scripts. It is isolated in [`@bpmn-lean/bpmn-source`](../packages/bpmn-source/README.md); no parser dependency enters Lean, the semantic core, or the Temporal Workflow bundle.
 
-The pre-adoption [ingestion spike](experiments/BPMN-XML-INGESTION-SPIKE.md) loaded the published UMD bundle from a temporary directory without changing this repository’s dependency graph. The exact tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are XML-canonical-identical to the official local BPMN 2.0.2 files, and its five published XSDs are content-identical after CRLF normalization. The inspected `main` revision has newer dependency ranges and unpublished generated-type work; it must not be conflated with the installed `10.0.0` package.
+The pre-adoption [ingestion spike](experiments/BPMN-XML-INGESTION-EXPERIMENT.md) loaded the published UMD bundle from a temporary directory without changing this repository’s dependency graph. The exact tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are XML-canonical-identical to the official local BPMN 2.0.2 files, and its five published XSDs are content-identical after CRLF normalization. The inspected `main` revision has newer dependency ranges and unpublished generated-type work; it must not be conflated with the installed `10.0.0` package.
 
 ## BPMN MIWG interchange corpus
 
@@ -218,6 +220,18 @@ The public evidence pattern across Camunda 7, Camunda 8, Flowable, Activiti, jBP
 
 These engines are useful for discovering ambiguity and constructing hostile separating cases. They cannot vote on the standard, override the pinned CIB oracle, or substitute for the Lean and Temporal assurance lanes. Additional large checkouts are deferred until a requirement needs one that CIB, MIWG, or Betsy does not already supply.
 
+## Documentation-discipline precedent
+
+Read-only checkout: [mbackschat/a12-dmkits at `446e668`](https://github.com/mbackschat/a12-dmkits/tree/446e668de19e86447458f89a89ee201affce1ee0)
+
+- Remote: `https://github.com/mbackschat/a12-dmkits.git`
+- Inspected revision: `446e668de19e86447458f89a89ee201affce1ee0`
+- Inspected artifact: [`docs/DOC-DISCIPLINE.md`](https://github.com/mbackschat/a12-dmkits/blob/446e668de19e86447458f89a89ee201affce1ee0/docs/DOC-DISCIPLINE.md)
+- License: MIT
+- Role: owner-authored precedent for lifecycle-sensitive `-SPEC`, `-PROPOSAL`, `-GAPS`, and `-LEDGER` naming, proposal graduation, documentation indexing, same-change updates, and the separation of stable contracts from moving results
+
+The checkout’s `DOC-DISCIPLINE.md` matched its committed revision when inspected on 2026-07-26; unrelated files in the worktree had uncommitted owner changes and were ignored. This project applies the shared lifecycle rules in its own words in [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md). It deliberately retains [PLAN.md](PLAN.md) and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) as assurance-specific living owners rather than copying `a12-dmkits`’ no-status-surface architecture.
+
 ## Lean sibling experiment
 
 Read-only checkout: [mbackschat/a12-kernel-lean at `6f9bbf6`](https://github.com/mbackschat/a12-kernel-lean/tree/6f9bbf64489c3eee9ffebf72b70116f7e02e36b5)
@@ -227,7 +241,9 @@ Read-only checkout: [mbackschat/a12-kernel-lean at `6f9bbf6`](https://github.com
 
 This project adopts those working conventions where they fit, but it does not copy A12 domain semantics, evidence, or project-specific governance.
 
-The bounded process-transfer study in [research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md](research/A12-KERNEL-LEAN-PROCESS-TRANSFER.md) also inspected the sibling’s ongoing worktree on 2026-07-24 at committed base [`d25a0ce`](https://github.com/mbackschat/a12-kernel-lean/tree/d25a0ce2fcd61e4b3df50b054adc07d490331875). That worktree contained uncommitted owner changes and was treated as read-only evolving process evidence, not as a replacement pinned semantic source. The stable reference revision above remains unchanged.
+The bounded process-transfer study in [research/A12-KERNEL-LEAN-PROCESS-RESEARCH.md](research/A12-KERNEL-LEAN-PROCESS-RESEARCH.md) also inspected the sibling’s ongoing worktree on 2026-07-24 at committed base [`d25a0ce`](https://github.com/mbackschat/a12-kernel-lean/tree/d25a0ce2fcd61e4b3df50b054adc07d490331875). That worktree contained uncommitted owner changes and was treated as read-only evolving process evidence, not as a replacement pinned semantic source. The stable reference revision above remains unchanged.
+
+On 2026-07-26 the later read-only worktree at committed base [`a225157`](https://github.com/mbackschat/a12-kernel-lean/tree/a2251579e2205a6b051ccabb0291285abb8406c4) supplied the archived [`SEMANTIC-CORE-IL-PROPOSAL.md`](https://github.com/mbackschat/a12-kernel-lean/blob/a2251579e2205a6b051ccabb0291285abb8406c4/docs/archived/SEMANTIC-CORE-IL-PROPOSAL.md) as negative design evidence. A12 rejected its universal Core IL because material domain semantics preceded the boundary, typed structure was erased, legacy family evaluators remained underneath it, malformed structure was conflated with semantic uncertainty, and preservation obligations were not fixed before implementation. The BPMN project’s bounded [Semantic Process IL](SEMANTIC-PROCESS-IL-PROPOSAL.md) adopts those rejection criteria rather than transferring the rejected architecture. The evolving sibling worktree had unrelated uncommitted changes and remained a read-only research input.
 
 ## fUML reference implementation
 
@@ -237,6 +253,6 @@ Read-only checkout: [ModelDriven/fUML-Reference-Implementation at `45e5063`](htt
 - Inspected revision: `45e506336d4cd56965d4ad3b684149245f899f3a`
 - Role: concrete Java companion for understanding fUML 1.5 syntax, Locus/Executor setup, semantic visitors, Activity node activations, edge instances, offers, and tokens
 
-The repository describes itself as an open-source reference implementation of fUML and accepts conforming UML XMI for execution. It is a research reference, not a project dependency, BPMN authority, or proof that its implementation satisfies every fUML requirement. Its architecture and transfer limits are recorded in [semantic-representation research](research/SEMANTIC-REPRESENTATIONS.md).
+The repository describes itself as an open-source reference implementation of fUML and accepts conforming UML XMI for execution. It is a research reference, not a project dependency, BPMN authority, or proof that its implementation satisfies every fUML requirement. Its architecture and transfer limits are recorded in [semantic-representation research](research/SEMANTIC-REPRESENTATIONS-RESEARCH.md).
 
 Normative authority remains the [OMG fUML 1.5 specification catalog](https://www.omg.org/spec/FUML/1.5) and its syntax, semantics, library, and PDF artifacts.

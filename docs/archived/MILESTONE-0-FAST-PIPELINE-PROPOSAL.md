@@ -1,8 +1,8 @@
 # Milestone 0: fast full-pipeline walking skeleton
 
-**Status:** Complete
+**Status:** Archived after completion
 
-This document preserves the design, work breakdown, acceptance criteria, and decisions of the first end-to-end milestone. Its prototype-era artifact/history compatibility details are historical and have been superseded by the scalable pre-release policy in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#pre-release-evolution-policy). Immediate sequencing belongs in [PLAN.md](PLAN.md); current implemented facts belong in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This proposal preserves the design, work breakdown, acceptance criteria, and decisions of the completed first end-to-end milestone. Its stable contracts graduated into active project owners; its prototype-era artifact/history compatibility details are historical and have been superseded by the scalable pre-release policy in [PROJECT-DESIGN.md](../PROJECT-DESIGN.md#pre-release-evolution-policy). Immediate sequencing belongs in [PLAN.md](../PLAN.md); current implemented facts belong in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
 
 ## Objective
 
@@ -163,7 +163,7 @@ The harness must record at least build, startup, scenario execution, observation
 
 ## Work packages and checkpoints
 
-Each completed package ends with updated [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), applicable verification, and a Conventional Commit.
+Each completed package ended with updated [PLAN.md](../PLAN.md), [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), applicable verification, and a Conventional Commit.
 
 | Package | Deliverable | Exit condition | Suggested commit |
 |---|---|---|---|
@@ -198,7 +198,7 @@ Known decisions still required:
 | TypeScript compiler | `typescript@7.0.2` | Approved M0.4 development dependency; Apache-2.0; the resolved platform graph contains only `typescript@7.0.2` and `@typescript/typescript-darwin-arm64@7.0.2`, both Apache-2.0; removable by replacing the compiler/toolchain, with no runtime semantic role |
 | TypeScript test harness | Node `node:test` | Implemented with the approved Node runtime; no package dependency or additional license graph |
 | BPMN ingestion | Exact `bpmn-moddle@10.0.0` isolated in deployment-time `@bpmn-lean/bpmn-source` | Approved after M0; exact bytes/hash, bounded preflight, warning-blocked private import, partial CMOF facts, and only the sequential compiler are implemented |
-| Temporal | `@temporalio/client@1.21.0`, `@temporalio/testing@1.21.0`, `@temporalio/worker@1.21.0`, `@temporalio/workflow@1.21.0`, and CLI `v1.8.1` through full-server `cached-download` | Approved and implemented for M0.5; direct packages and CLI are MIT, the graph audit is in [SOURCES.md](SOURCES.md), and the entire surface is removable with the private adapter package |
+| Temporal | `@temporalio/client@1.21.0`, `@temporalio/testing@1.21.0`, `@temporalio/worker@1.21.0`, `@temporalio/workflow@1.21.0`, and CLI `v1.8.1` through full-server `cached-download` | Approved and implemented for M0.5; direct packages and CLI are MIT, the graph audit is in [SOURCES.md](../SOURCES.md), and the entire surface is removable with the private adapter package |
 | Cross-language schema validation | Prefer generated or dependency-free validation until a concrete gap exists | The shared schema must not become a semantic implementation |
 
 ## Acceptance criteria
@@ -222,9 +222,9 @@ All ten criteria are satisfied for only the content-addressed sequential User Ta
 
 At the start of every session:
 
-1. read [CLAUDE.md](../CLAUDE.md), [PLAN.md](PLAN.md), this milestone, and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md);
+1. read [CLAUDE.md](../../CLAUDE.md), [PLAN.md](../PLAN.md), this milestone, and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md);
 2. inspect `git status --short --branch` and `git log -5 --oneline`;
-3. run the current gate in [TESTING.md](TESTING.md);
+3. run the current gate in [TESTING-SPEC.md](../TESTING-SPEC.md);
 4. take only the first incomplete work package and its first incomplete task;
 5. preserve red/green evidence for semantic changes;
 6. update implemented facts and the exact resume point before committing;

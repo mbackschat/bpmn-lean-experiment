@@ -327,7 +327,7 @@ Keep walkthrough excerpts synchronized after changing a tagged source region:
 
 The normal gate only checks; it never rewrites documentation. If a fragment is wrong, fix and test the source first, then synchronize the Markdown mirror.
 
-For focused work, use the gate matrix in [TESTING.md](TESTING.md). The [semantic capsule](capsules/USER-TASK-INTERACTION.md) owns the bounded meaning and evidence lanes; [PROJECT-DESIGN.md](PROJECT-DESIGN.md) explains the durable architecture and Lean’s assurance role.
+For focused work, use the gate matrix in [TESTING-SPEC.md](TESTING-SPEC.md). The [semantic capsule](capsules/USER-TASK-INTERACTION-SPEC.md) owns the bounded meaning and evidence lanes; [PROJECT-DESIGN.md](PROJECT-DESIGN.md) explains the durable architecture and Lean’s assurance role.
 
 ## What the MVP establishes
 
@@ -344,6 +344,6 @@ It does not establish general BPMN parsing or execution, OMG conformance, immuta
 
 ## What comes next
 
-The next proposed capsule is a parallel fork with two User Task waits and a parallel join. It is intentionally structurally different: it will force the executable IR, Lean input binding, token multiplicity, incoming-flow provenance, completion ordering, and Temporal hosting boundaries to demonstrate that they generalize beyond a linear state machine.
+The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. It is intentionally structurally different: it will force the checked BPMN graph, bounded Semantic Process IL, Lean lowering check, token multiplicity, incoming-flow provenance, completion ordering, and Temporal hosting boundaries to demonstrate that they generalize beyond a linear state machine.
 
-That capsule still requires explicit approval before semantic implementation. The exact resume point and separating witnesses are in [PLAN.md](PLAN.md).
+Its semantic contract is approved, while implementation and closure evidence remain open. The exact resume point and separating witnesses are in [PLAN.md](PLAN.md).

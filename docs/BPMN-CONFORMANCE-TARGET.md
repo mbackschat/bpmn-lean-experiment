@@ -22,7 +22,7 @@ If the project later grows a graphical modeler, exporter, BPEL mapper, or choreo
 
 Agreement with CIB Seven does not by itself prove BPMN conformance. BPMN conformance does not imply CIB-specific jobs, retries, incidents, extensions, or listener behavior. Passing Temporal replay does not establish either semantic claim.
 
-The working presumption is that CIB Seven implements BPMN faithfully, operationalizes underspecified or inconsistent areas, and adds explicit engine extensions. The [CIB–BPMN relationship register](CIB-BPMN-RELATION.md) records those categories separately and keeps any evidence-backed candidate or confirmed normative deviation prominent; CIB specificity or extension is never classified as deviation by default.
+The working presumption is that CIB Seven implements BPMN faithfully, operationalizes underspecified or inconsistent areas, and adds explicit engine extensions. The [CIB–BPMN relationship register](CIB-BPMN-RELATION-REGISTER.md) records those categories separately and keeps any evidence-backed candidate or confirmed normative deviation prominent; CIB specificity or extension is never classified as deviation by default.
 
 ## Normative route
 
@@ -38,7 +38,7 @@ The working presumption is that CIB Seven implements BPMN faithfully, operationa
 | Normative CMOF files | Supply the abstract metamodel: packages, classes, inheritance, properties, associations, multiplicities, containment, and defaults |
 | Normative XSD/XSLT files | Supply the concrete XML representation and normative XMI-to-BPMN-XML transformation route |
 
-The requirement ledger must link every supported or rejected construct to the applicable normative clause, machine-readable element, profile interpretation, Lean owner, executable case, and evidence status.
+The [requirement-disposition ledger](BPMN-REQUIREMENT-LEDGER.md) must link every reviewed construct to the applicable normative clause, machine-readable element, profile interpretation, capsule or Lean owner, executable case, and evidence status. It is seeded incrementally and must not claim a complete conformance denominator until the applicable corpus has been exhaustively classified.
 
 [The BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md#normative-artifacts-and-semantic-authority) owns the operational use of these artifact classes: CMOF-derived metamodel facts constrain structural admission, XSD/XSLT constrain interchange, and prose, figures, and issue dispositions constrain executable semantics. None of the machine-readable artifacts alone defines token behavior or Activity lifecycle.
 

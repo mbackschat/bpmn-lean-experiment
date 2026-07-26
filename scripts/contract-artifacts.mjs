@@ -84,7 +84,7 @@ async function createValidator(projectRoot) {
 }
 
 async function readRegisteredRelationshipIds(projectRoot) {
-  const registerPath = resolveInside(projectRoot, "docs/CIB-BPMN-RELATION.md");
+  const registerPath = resolveInside(projectRoot, "docs/CIB-BPMN-RELATION-REGISTER.md");
   const register = await readFile(registerPath, "utf8");
   return new Set(
     Array.from(

@@ -22,7 +22,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 |---|---:|---:|---|
 | Reviewed normative agreements | 2 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 1 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 0 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 0 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | Selected CIB extensions | 0 | 1 research hint | Project profile deliberately includes behavior beyond bare BPMN execution |
 | Configuration-specific realizations | 1 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
@@ -38,11 +38,41 @@ None recorded.
 
 ### Candidate deviations requiring classification
 
-None recorded.
+### CIB-DEV-0001 — parallel join activates from duplicate arrivals through one incoming flow
+
+**Status:** Candidate deviation; owner decision recorded, confirmation evidence incomplete
+
+**Summary:** Pinned CIB Seven `2.2.0` activates a Parallel Gateway join after two executions arrive through `Flow_Left_Join` while no execution has arrived through the other incoming `Flow_Right_Join`.
+
+**BPMN requirement:** BPMN 2.0.2 Clause 10.6.4 requires a converging Parallel Gateway to wait for all incoming flows. Clause 13.4.1 and Table 13.1 require at least one offered token on every incoming Sequence Flow, consume exactly one from each incoming Sequence Flow, retain excess offered tokens, and produce exactly one on each outgoing Sequence Flow. The CMOF/XSD model preserves incoming `SequenceFlow` references; no Parallel Gateway attribute weakens that condition.
+
+**BPMN sources and issues:** Clauses 10.6.4 and 13.4.1, Figure 13.3, Table 13.1, CMOF `ParallelGateway`/`Gateway`/`FlowNode`/`SequenceFlow`, XSD `tParallelGateway`, and open issues [BPMN21-268](https://issues.omg.org/issues/BPMN21-268) and [BPMN21-429](https://issues.omg.org/issues/BPMN21-429). The first supplies the uncontrolled-merge mechanism used to create two same-flow arrivals; the second cautions against treating incidental outgoing-flow order as a portable semantic order. Neither changes the per-incoming-flow join condition.
+
+**CIB release and configuration:** CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017`, Java 21, H2 `2.3.232`, disabled job executor, audit history with `P180D` default TTL, and an isolated in-memory engine created by the project test harness.
+
+**Separating model and scenario:** The schema-valid [duplicate-same-flow BPMN model](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn) forks into two left User Tasks and one right User Task. The two left paths activate two instances of an uncontrolled-merge User Task; completing those instances sends two executions through the join's left incoming Sequence Flow while the right User Task remains active.
+
+**CIB observation:** The [bounded pristine-lane probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.java) observes one live `User_Right` and, at the same time, one live `User_After_Join`. The pinned [`ParallelGatewayActivityBehavior`](https://github.com/cibseven/cibseven/blob/834a9874760de8a0107f7c1b32806e37f17fb017/engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java) explains the observation by comparing the number of inactive concurrent executions at the gateway with the number of incoming transitions, without checking which incoming transition supplied each execution.
+
+**Expected normative behavior:** The join remains inactive while `Flow_Right_Join` has offered no token. Two offers on `Flow_Left_Join` cannot substitute for the missing right-flow offer.
+
+**Alternative explanations excluded:** The exact model validates against the pinned BPMN 2.0.2 `BPMN20.xsd`; CIB deploys and executes it without parser warning; the probe observes public task existence rather than internal PVM state; `User_Right` proves the right branch has not traversed `Flow_Right_Join`; and neither task-query order nor project canonicalization can create `User_After_Join`. The result agrees with the pinned engine source. Full immutable-evidence and mutation thresholds remain open.
+
+**Classification rationale:** This is more than a representation difference because it changes the publicly observable point at which downstream BPMN work becomes active. It remains a candidate rather than a confirmed deviation until the project has answer-free content-bound evidence, a mutation-sensitive canonical projection, and complete Lean, TypeScript, Temporal, and compatibility impact evidence.
+
+**Profile decision:** The approved parallel proposal follows normative per-incoming-Sequence-Flow behavior. The current `cibseven-2.2.0-user-task-draft` profile is not expanded to claim parallel compatibility. Pinned CIB count-based behavior may be retained later only in an explicitly separate compatibility profile; one behavior cannot be claimed as both exact CIB compatibility and BPMN conformance.
+
+**Capsule and semantic rule IDs:** The approved [parallel fork/join proposal](capsules/PARALLEL-FORK-JOIN-PROPOSAL.md) owns `PAR-JOIN-READY-01` and `PAR-JOIN-CONSUME-01`. Production implementation, proposal graduation, and confirmation evidence remain pending.
+
+**Lean, TypeScript, Temporal, and compatibility impact:** Production lanes are intentionally absent. Any normative implementation needs incoming-flow provenance and excess-token retention. A CIB-compatible implementation would instead need an explicitly named deviation profile. Temporal must refine whichever selected semantic account is approved and may not hide the difference as scheduling.
+
+**Owner decision:** Approved normative BPMN behavior for the next capsule on 2026-07-26, with no parallel compatibility claim for the current CIB profile and no production implementation of the observed count-based behavior.
+
+**Last reviewed:** 2026-07-26.
 
 A candidate must appear here immediately when evidence suggests conflict with a clear BPMN requirement. It remains a candidate until the evidence threshold below is satisfied. Implementation of the disputed profile-dependent behavior pauses unless the capsule explicitly preserves competing accounts as an unresolved experiment.
 
-The repository-wide audit on 2026-07-24 found no previously visited observation that satisfies the candidate or confirmed-deviation threshold. The recorded PVM facts, generated IDs, history-TTL requirement, task-service mapping, and provisional join-representation question are classified below instead of being silently left open or mislabeled.
+The repository-wide audit on 2026-07-24 found no previously visited observation that satisfied the candidate or confirmed-deviation threshold. The later bounded parallel probe established `CIB-DEV-0001`; the other recorded PVM facts, generated IDs, history-TTL requirement, and task-service mapping remain classified below instead of being silently left open or mislabeled.
 
 ## Normative agreement register
 
@@ -66,7 +96,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** The public CIB task query exposes the active task and its BPMN definition key and name; completing the corresponding live host task removes the wait and completes the admitted Process.
 
-**Evidence:** [User Task interaction capsule](capsules/USER-TASK-INTERACTION.md), [exact-completion evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [interaction scenarios](../scenarios/user-task-discovery-completion/README.md), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-draft/README.md).
+**Evidence:** [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [exact-completion evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [interaction scenarios](../scenarios/user-task-discovery-completion/README.md), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-draft/README.md).
 
 **Boundary:** People assignment, ownership, authorization, forms, input/output data, and general User Task lifecycle are excluded. The project’s structured activation ordinal and refusal of a mismatched semantic occurrence are an operational mapping under `CIB-OP-0001`, not a claim that BPMN prescribes that identity representation.
 
@@ -98,9 +128,9 @@ The research queue is not evidence and does not authorize implementation. It pre
 
 CIB creates a generated task ID and addresses completion through `TaskService.complete(taskId)`. BPMN does not prescribe that database identity, Java API, or a portable encoding for one task occurrence.
 
-The oracle adapter therefore maps the one live CIB task to project-owned identity `(Process instance, BPMN element, activation ordinal)` and keeps the generated CIB ID local to the query/complete call. A wrong activation is rejected by this mapping before calling CIB; after completion, absence of a matching live CIB task supports stale-occurrence rejection. The upstream CIB unknown-task-ID test is a behavioral precedent, but it does not turn the project activation ordinal into a raw CIB engine concept.
+The oracle adapter therefore maps the one live CIB task to project-owned identity `(Process instance, BPMN element, activation ordinal)` and keeps the generated CIB ID local to the query/complete call. A wrong activation is rejected by this mapping before calling CIB; after completion, absence of a matching live CIB task supports stale-occurrence rejection. The bounded project consistency probe starts the exact sequential fixture, captures its generated CIB task ID, completes that task, and then observes pinned CIB Seven reject a second `TaskService.complete` call for the now-non-live generated ID. This confirms that the adapter's “no matching live host task means refuse” assumption agrees with the pinned engine, but it does not turn the project activation ordinal into a raw CIB engine concept or close the adapter-decided activation cell.
 
-This mapping preserves the BPMN-visible lifecycle under `CIB-AGR-0002` while avoiding false identity equivalence across CIB, Lean, TypeScript, and Temporal. Evidence and exact exclusions are in the [User Task interaction capsule](capsules/USER-TASK-INTERACTION.md) and [CIB runner documentation](../runners/cibseven/README.md).
+This mapping preserves the BPMN-visible lifecycle under `CIB-AGR-0002` while avoiding false identity equivalence across CIB, Lean, TypeScript, and Temporal. Evidence and exact exclusions are in the [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [the consistency probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConsistencyProbeTest.java), and [CIB runner documentation](../runners/cibseven/README.md).
 
 ## Configuration-specific register
 
@@ -122,7 +152,7 @@ This is a profile constraint, not evidence that CIB differs from BPMN. It does n
 | Java/H2/history-TTL/job-executor/clock settings | `CIB-CFG-0001` | Required reproducibility and admission configuration, with non-semantic history excluded from comparison |
 | PVM ordered topology, `null` event scope on ordinary flow nodes, and internal `noneEndEvent` type | Diagnostic internal representation; no relationship entry | These are implementation diagnostics, not public BPMN behavior or compatibility keys |
 | Model API DOM, deployment parse tree, PVM definition graph, and runtime execution tree differ | Diagnostic architecture; no relationship entry | Separate authoring, compilation, and runtime representations do not imply a semantic difference |
-| Count-only versus incoming-edge-provenance join state | Unresolved representation experiment; no deviation candidate | The project has a separating abstract witness but has not yet run the feature-specific normative analysis and pristine CIB probe needed to classify CIB behavior |
+| Count-only versus incoming-edge-provenance join state | `CIB-DEV-0001` candidate deviation | The normative per-incoming-flow requirement, schema-valid separating model, pinned source mechanism, bounded pristine-lane probe, and owner-approved profile meaning establish a public conflict; immutable evidence and cross-lane impact remain open |
 | External-worker execution | Extension research hint only | The exact CIB BPMN attributes and worker lifecycle have not yet been researched or selected |
 
 ## Classification order
@@ -152,7 +182,7 @@ A confirmed deviation record requires:
 - immutable raw or recoverable producer evidence plus a mutation-sensitive canonical projection;
 - reproduction through the pristine pinned oracle lane;
 - exclusion of parser, harness, configuration, scheduling, projection, and instrumentation explanations;
-- impact on BPMN conformance, CIB compatibility, executable IR, Lean, TypeScript, Temporal, replay, and public claims;
+- impact on BPMN conformance, CIB compatibility, checked source, Semantic Process IL, Lean, TypeScript, Temporal, replay, and public claims;
 - the applicable capsule and stable semantic rule identifiers;
 - an explicit owner decision and review status.
 
@@ -216,4 +246,4 @@ One conflicting behavior cannot honestly be advertised as both exact CIB compati
 
 This register is complete only relative to reviewed requirements, supported features, pinned CIB environments, maintained scenarios, and declared observation boundaries. Unknown or unreviewed areas remain unknown; absence from the register is not proof of agreement.
 
-The [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md) owns the normative goal, [semantic capsules](capsules/README.md) own bounded project meaning, [profiles](../profiles/README.md) own selected compatibility contracts, [the implementation map](IMPLEMENTATION-MAP.md) owns current coverage, and [the testing guide](TESTING.md) owns evidence procedure.
+The [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md) owns the normative goal, [semantic capsules](capsules/README.md) own bounded project meaning, [profiles](../profiles/README.md) own selected compatibility contracts, [the implementation map](IMPLEMENTATION-MAP.md) owns current coverage, and [the testing guide](TESTING-SPEC.md) owns evidence procedure.

@@ -1,4 +1,4 @@
-# Testing and evidence
+# Testing and evidence specification
 
 This document owns maintained gates, test procedure, evidence separation, mutation requirements, cleanup, and feedback budgets. It is not a chronological test diary.
 
@@ -11,7 +11,9 @@ Run from the repository root:
 git status --short
 ```
 
-`verify.sh` validates contract artifacts and synchronized documentation fragments, checks the BPMN XML, builds and tests Lean, emits Lean results, tests the TypeScript core and BPMN importer, runs the pinned CIB oracle, tests the differential comparator and infrastructure guards, builds the Temporal adapter, and runs the prepared complete pipeline.
+`verify.sh` validates contract artifacts and synchronized documentation fragments, checks the BPMN XML, builds and tests Lean, emits Lean results, tests the TypeScript core and BPMN importer, runs the pinned CIB oracle, tests the differential comparator and infrastructure guards, runs the focused Temporal refinement/history/replay gate, and runs the prepared complete pipeline.
+
+The infrastructure guard enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names from [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), and resolves every project-authored local Markdown link.
 
 Always finish with:
 
@@ -66,7 +68,7 @@ The gate:
 - validates the current profile, three answer-free scenarios, canonical results, and CIB evidence with Ajv Draft 2020-12;
 - requires stable document kinds and no embedded format counters;
 - verifies scenario/profile SHA-256 bindings in retained CIB evidence;
-- requires every profile relationship ID to exist in [CIB-BPMN-RELATION.md](CIB-BPMN-RELATION.md);
+- requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
 - rejects answer smuggling, stale evidence, unknown relationships, and invalid task activation.
 
 Retained CIB evidence is verifier-only. Target runners never receive it, and ordinary green runs never regenerate it.
@@ -94,9 +96,9 @@ The semantic core tests structural IR/scenario admission, pure state transitions
 ./scripts/test-cibseven-oracle.sh
 ```
 
-The Java 21 runner deploys exact BPMN, starts a Process, queries the active task, completes or refuses the requested semantic occurrence, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, and stale-completion cases share one warm engine through the persistent JSON-lines boundary.
+The Java 21 runner deploys exact BPMN, starts a Process, queries the active task, completes or refuses the requested semantic occurrence, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, and stale-completion cases share one warm engine through the persistent JSON-lines boundary. A bounded consistency probe captures a generated task ID, completes it, and requires pinned CIB Seven to reject that same host ID after it ceases to be live. A separate schema-valid research probe sends two executions through one Parallel Gateway incoming flow while the other incoming branch remains at a User Task and requires the observed downstream activation recorded by candidate `CIB-DEV-0001`.
 
-PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Every scenario must report a clean projection after teardown.
+PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The parallel probe is calibration evidence only: it does not enter the current profile, canonical pipeline, or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated engine cleanup.
 
 ## Current Temporal gate
 
@@ -168,7 +170,7 @@ An **evidence lane** is one source of assurance about a claim, identified by thr
 
 A fourth requirement decides whether two lanes are genuinely two: **two lanes are distinct only if their failure modes are uncorrelated.** Two producers that share an account, an internal representation, a fixture, or a projection cannot fail apart, so they count once regardless of how many artifacts they produce. Record that judgement per capsule rather than inferring it from the number of targets that agreed.
 
-This document owns the term. Related but different concepts keep their own names: a **work-stream** is an implementation activity that produces a lane's artifact, a **pinned baseline** is a reference checkout or execution configuration as defined in [REFERENCE-INSTRUMENTATION.md](REFERENCE-INSTRUMENTATION.md), and individual propositions inside one lane are **rules**, owned by the applicable [capsule](capsules/README.md).
+This document owns the term. Related but different concepts keep their own names: a **work-stream** is an implementation activity that produces a lane's artifact, a **pinned baseline** is a reference checkout or execution configuration as defined in [REFERENCE-INSTRUMENTATION-POLICY.md](REFERENCE-INSTRUMENTATION-POLICY.md), and individual propositions inside one lane are **rules**, owned by the applicable [capsule](capsules/README.md).
 
 | Lane | Passage can establish | Passage cannot establish |
 |---|---|---|

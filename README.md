@@ -4,7 +4,7 @@ Making BPMN execution durable, explainable, and continuously checkable.
 
 This project explores a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. The ultimate goal is OMG BPMN Process Execution Conformance for imported executable Process diagrams—not merely translating BPMN shapes into Workflow code.
 
-> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
+> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. The next normative parallel fork/join and bounded Semantic Process IL proposals are approved but not implemented. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, executable IR, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
@@ -28,8 +28,11 @@ flowchart LR
   Profile --> Lean[Lean reference interpreter]
 
   XML[Exact BPMN XML] --> Import[Bounded source admission]
-  Import --> IR[Project-owned executable IR]
-  IR --> Core[Pure TypeScript semantic core]
+  Import --> Checked[Checked BPMN graph]
+  Checked --> IL[Semantic Process IL]
+  IL --> Core[Pure TypeScript semantic core]
+  Checked --> Lean
+  IL --> Lean
   Profile --> Core
   Core --> Temporal[Temporal durability adapter]
 
@@ -40,11 +43,11 @@ flowchart LR
   Temporal --> Replay[Refinement and live replay]
 ```
 
-CIB contributes twice: first as classified empirical input to the profile, then as the pinned behavioral oracle in differential tests. BPMN remains normative. CIB specificity and extensions are not mislabeled as deviations; every reviewed relationship is recorded in the prominent [CIB–BPMN register](docs/CIB-BPMN-RELATION.md).
+CIB contributes twice: first as classified empirical input to the profile, then as the pinned behavioral oracle in differential tests. BPMN remains normative. CIB specificity and extensions are not mislabeled as deviations; every reviewed relationship is recorded in the prominent [CIB–BPMN register](docs/CIB-BPMN-RELATION-REGISTER.md).
 
 The strongest parts of the approach are:
 
-- explicit separation of BPMN source, executable IR, semantic runtime state, and Temporal hosting;
+- explicit separation of exact BPMN source, checked source graph, Semantic Process program, semantic runtime state, and Temporal hosting;
 - Lean as an executable semantic reference with reusable laws—not merely a model checker;
 - an independently implemented TypeScript semantic core;
 - CIB Seven as a pinned compatibility oracle, without copying its implementation;
@@ -57,15 +60,16 @@ The primary execution architecture is a TypeScript interpreter/evaluator:
 
 ```text
 BPMN XML
-  → exact source identity and bounded structural import
-  → profile admission and executable IR data
+  → exact source identity, bounded structural import, and profile admission
+  → checked project-owned BPMN graph
+  → bounded Semantic Process IL data
   → pure semantic-core transitions
   → Temporal durability and effect hosting
 ```
 
-One generic Workflow hosts admitted IR. The project does not generate an authoritative Workflow class for each BPMN model. This keeps source/profile identity inspectable, prevents generated SDK control flow from becoming semantics, and separates parser, semantic-core, and Worker evolution.
+One generic Workflow hosts an admitted Semantic Process program. The project does not generate an authoritative Workflow class for each BPMN model. This keeps source/profile identity inspectable, prevents generated SDK control flow from becoming semantics, and separates parser, semantic-core, and Worker evolution.
 
-Generated TypeScript may later be useful for diagnostics or optimization after equivalence evidence, but it is never the semantic authority by construction. The complete rationale is in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#interpreter-architecture).
+Generated TypeScript may later be useful for diagnostics or optimization after equivalence evidence, but it is never the semantic authority by construction. The complete rationale is in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#interpreter-architecture), and the bounded definition contract is in [SEMANTIC-PROCESS-IL-PROPOSAL.md](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md).
 
 ## Why Lean
 
@@ -128,7 +132,7 @@ Useful focused gates:
 ./scripts/pnpm.sh run test:pipeline
 ```
 
-The complete gate matrix and evidence boundaries are in [TESTING.md](docs/TESTING.md).
+The complete gate matrix and evidence boundaries are in [TESTING-SPEC.md](docs/TESTING-SPEC.md).
 
 ## Repository guide
 
@@ -149,15 +153,15 @@ scripts/             Maintained verification and infrastructure guards
 | Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Resume the next work | [PLAN.md](docs/PLAN.md) |
-| Review the active semantic meaning | [User Task interaction capsule](docs/capsules/USER-TASK-INTERACTION.md) |
-| Understand CIB relative to BPMN | [CIB-BPMN-RELATION.md](docs/CIB-BPMN-RELATION.md) |
+| Review the active semantic meaning | [Parallel fork/join proposal](docs/capsules/PARALLEL-FORK-JOIN-PROPOSAL.md) and [Semantic Process IL proposal](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md) |
+| Understand CIB relative to BPMN | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Navigate all maintained documentation | [Documentation registry](docs/README.md) |
 
 ## Next
 
-The next proposed capsule is a parallel fork with two User Task waits and a parallel join. It is intentionally structurally different: it must distinguish incoming-flow provenance from arrival count, preserve token multiplicity, demonstrate completion-order independence, and close the current Lean input-binding gap before any general IR is adopted.
+The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. It is intentionally structurally different: it must distinguish incoming-flow provenance from arrival count, preserve token multiplicity, demonstrate completion-order independence, and close the current Lean definition-binding gap through the bounded Semantic Process IL proposal.
 
-The capsule is not yet approved for implementation. Its required research, CIB probe, competing accounts, witnesses, and exact resume point are in [PLAN.md](docs/PLAN.md).
+The semantic contract and definition architecture are approved; implementation and evidence remain open. The exact red/green sequence and resume point are in [PLAN.md](docs/PLAN.md).
 
 ## Contributing
 

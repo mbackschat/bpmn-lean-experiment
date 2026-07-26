@@ -1,4 +1,4 @@
-# Reference-engine instrumentation and fast research lanes
+# Reference-engine instrumentation policy
 
 ## Status
 

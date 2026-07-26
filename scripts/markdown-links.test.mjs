@@ -72,3 +72,42 @@ test("keeps project-authored local Markdown links resolvable", async () => {
 
   assert.deepEqual(missing, []);
 });
+
+test("keeps maintained documentation indexed and role-named", async () => {
+  const documentationFiles = await markdownFiles("docs");
+  const registryPath = path.join(projectRoot, "docs/README.md");
+  const registry = await readFile(registryPath, "utf8");
+  const indexedFiles = new Set(
+    localLinkTargets(registry).map((target) =>
+      path.relative(
+        projectRoot,
+        path.resolve(path.dirname(registryPath), target),
+      ),
+    ),
+  );
+  const unindexedFiles = documentationFiles
+    .filter((relativePath) => relativePath !== "docs/README.md")
+    .filter((relativePath) => !indexedFiles.has(relativePath))
+    .sort();
+
+  assert.deepEqual(unindexedFiles, []);
+
+  const reservedSingletons = new Set([
+    "DOC-DISCIPLINE.md",
+    "PLAN.md",
+    "PROJECT-DESIGN.md",
+    "README.md",
+    "SOURCES.md",
+  ]);
+  const roleSuffix =
+    /-(?:DECISION|EXPERIMENT|GAPS|GUIDE|HANDOFF|LEDGER|MAP|POLICY|PROPOSAL|REGISTER|RESEARCH|SPEC|TARGET|WALKTHROUGH)\.md$/u;
+  const roleViolations = documentationFiles
+    .filter(
+      (relativePath) =>
+        !reservedSingletons.has(path.basename(relativePath)) &&
+        !roleSuffix.test(path.basename(relativePath)),
+    )
+    .sort();
+
+  assert.deepEqual(roleViolations, []);
+});
