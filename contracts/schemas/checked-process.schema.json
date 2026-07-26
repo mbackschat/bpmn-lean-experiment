@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/checked-process.schema.json",
+  "title": "Checked BPMN process",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "identity",
+    "processId",
+    "nodes",
+    "sequenceFlows"
+  ],
+  "properties": {
+    "kind": {
+      "const": "checkedProcess"
+    },
+    "identity": {
+      "$ref": "#/$defs/sourceIdentity"
+    },
+    "processId": {
+      "$ref": "#/$defs/nonemptyString"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "sequenceFlows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/sequenceFlow"
+      }
+    }
+  },
+  "$defs": {
+    "nonemptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semanticProfile",
+        "sourceId",
+        "sourceSha256"
+      ],
+      "properties": {
+        "semanticProfile": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "node": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "noneStartEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "const": "userTask"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "direction"
+          ],
+          "properties": {
+            "kind": {
+              "const": "parallelGateway"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "direction": {
+              "enum": [
+                "diverging",
+                "converging"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "noneEndEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        }
+      ]
+    },
+    "sequenceFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sourceId",
+        "targetId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "targetId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    }
+  }
+}

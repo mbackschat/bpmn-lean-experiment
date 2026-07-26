@@ -27,13 +27,14 @@ Preparation and owner decisions for the next slice are complete:
 - candidate deviation `CIB-DEV-0001` remains candidate until immutable content-bound evidence, mutation, and cross-lane impact evidence close it;
 - the bounded [Semantic Process IL proposal](SEMANTIC-PROCESS-IL-PROPOSAL.md) is owner-approved as the future definition boundary for the sequential and parallel capsules;
 - the repository now follows the [documentation discipline](DOC-DISCIPLINE.md): implemented current contracts use `-SPEC`, unimplemented intent uses `-PROPOSAL`, research and experiments carry explicit roles, and completed milestone intent is archived;
-- no checked BPMN graph, Semantic Process program, parallel production semantics, or cross-lane parallel evidence is implemented.
+- current schemas and boundary guards freeze the checked BPMN graph and Semantic Process program wire shapes, and Lean freezes the reviewed proof proposition signatures without supplying a lowerer, evaluator, or proof;
+- no checked BPMN graph or Semantic Process program is produced or executed, and no parallel production semantics or cross-lane parallel evidence is implemented.
 
 The active implementation boundary is [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 ## Last verified baseline
 
-`env CI=true /opt/homebrew/bin/timeout 60 ./scripts/verify.sh` passed on 2026-07-26 after the A12-aligned document-role migration. The full command completed in 19.92 seconds, validated both bounded BPMN fixtures, passed five CIB tests and fourteen infrastructure guards including documentation index and role enforcement, ran the mandatory focused Temporal gate in 1.72 seconds with live replay, and completed the prepared three-case four-target pipeline in 4.52 seconds with three replayed histories. The separately gated representation experiment previously passed with `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike`.
+`env CI=true /opt/homebrew/bin/timeout 60 ./scripts/verify.sh` passed on 2026-07-26 after the checked-process and Semantic Process wire contracts, boundary mutations, and Lean proof proposition signatures were added. The full command completed in 24.12 seconds, passed eleven focused contract tests, validated both bounded BPMN fixtures, passed five CIB tests and nineteen infrastructure guards, ran the mandatory focused Temporal gate in 1.81 seconds with live replay, and completed the prepared three-case four-target pipeline in 4.71 seconds with three replayed histories. The separately gated representation experiment previously passed with `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike`.
 
 The Lean scenario binding was additionally verified by a positive control outside the gate: changing the wrong-activation scenario's submitted activation from `2` to `3` on disk left CIB, the semantic core, and Temporal in agreement, and the pipeline failed with `lean executed different scenario content for user-task-wrong-activation: scenario.stimuli[1].taskId.activation expected 3 but was 2`. The seeded change was reverted. Its retained regression equivalents are the content-mismatch and missing-echo cases in [scenario-binding.test.mjs](../packages/differential/test/scenario-binding.test.mjs).
 
@@ -70,8 +71,8 @@ The [parallel proposal](capsules/PARALLEL-FORK-JOIN-PROPOSAL.md) owns the approv
 ## Ordered work
 
 1. **Completed — consolidate decisions and documentation roles:** record the approved parallel meaning, CIB profile boundary, asymmetric representation decision, bounded Semantic Process IL proposal, implementation absence, A12-aligned document lifecycle, and documentation ownership.
-2. **Next — freeze executable obligations before code:** add red contract tests for `checkedProcess` and `semanticProcess`, add adversarial invalid-reference/arity/identity/order mutations, and state the reviewed Lean `lower_preserves_supported_run` obligation and evaluator-soundness signatures before implementing the lowerer.
-3. **Move R5 into the semantic core:** add semantic-core-owned current-state projection, stimulus well-formedness, and same-stimulus identity operations behind red tests; make the current Temporal Workflow delegate to them without changing sequential canonical results.
+2. **Completed — freeze executable obligations before code:** current `checkedProcess` and `semanticProcess` schemas and boundary validation reject invalid references, gateway arity, cross-artifact identity, and canonical order; Lean domain types state the reviewed observational lowering-preservation and evaluator-soundness propositions without implementing or proving them.
+3. **Next — move R5 into the semantic core:** add semantic-core-owned current-state projection, stimulus well-formedness, and same-stimulus identity operations behind red tests; make the current Temporal Workflow delegate to them without changing sequential canonical results.
 4. **Implement checked source and lowering:** add the bounded checked BPMN graph and deterministic lowerer for both the existing sequential and approved balanced parallel models; preserve exact source/profile/compiler identity and source origins; replace the topology-specific executable IR and all current producers and consumers atomically.
 5. **Implement the Lean definition lane:** decode the checked graph and Semantic Process program, recompute and require exact lowering equality, define the declarative program relation and executable evaluator, prove evaluator soundness, pursue the reviewed source-to-program preservation statement, and add the parallel laws and duplicate-left/no-right non-law.
 6. **Implement the independent TypeScript lane:** add the generic Semantic Process evaluator with explicit flow-identified token multiplicity and semantic task occurrences; retain enum-based operation dispatch; pass sequential behavior, A-then-B, B-then-A, duplicate-left/no-right, excess-token, projection-permutation, and invalid-program tests.
@@ -111,8 +112,8 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-The semantic decisions and bounded Semantic Process IL proposal are recorded, but production code remains on the verified sequential executable-IR baseline.
+The semantic decisions, bounded Semantic Process IL proposal, current wire contracts, contract mutations, and reviewed Lean proof signatures are recorded, but production code remains on the verified sequential executable-IR baseline.
 
-Resume at ordered work item 2. Read [SEMANTIC-PROCESS-IL-PROPOSAL.md](SEMANTIC-PROCESS-IL-PROPOSAL.md), the [parallel proposal](capsules/PARALLEL-FORK-JOIN-PROPOSAL.md), the current [shared contracts](../contracts/README.md), and the applicable Lean and TypeScript package guides. Add failing schema/contract mutations and write the Lean preservation and evaluator-soundness signatures before implementing lowering or production parallel semantics.
+Resume at ordered work item 3. Read the semantic-core and Temporal package guides and the R5 prerequisite in [the parallel proposal](capsules/PARALLEL-FORK-JOIN-PROPOSAL.md). Add failing semantic-core tests for current-state task projection, stimulus well-formedness, and same-stimulus identity, then make the current Temporal Workflow delegate to those operations without changing sequential canonical results.
 
 Before beginning, run the applicable baseline in [TESTING-SPEC.md](TESTING-SPEC.md) and confirm `git status --short --branch`.

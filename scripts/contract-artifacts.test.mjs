@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   readAndVerifyArtifactSets,
   verifyArtifactSet,
+  verifyDefinitionArtifacts,
 } from "./contract-artifacts.mjs";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -36,6 +37,128 @@ function collectPropertyNames(value, names = new Set()) {
     }
   }
   return names;
+}
+
+function parallelDefinitionArtifacts() {
+  const identity = {
+    semanticProfile: "parallel-fork-join-draft",
+    sourceId: "parallel-two-user-tasks.bpmn",
+    sourceSha256:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  };
+  return {
+    checkedProcess: {
+      kind: "checkedProcess",
+      identity,
+      processId: "Process_ParallelUserTasks",
+      nodes: [
+        { kind: "noneEndEvent", id: "End_None" },
+        {
+          kind: "parallelGateway",
+          id: "Gateway_Fork",
+          direction: "diverging",
+        },
+        {
+          kind: "parallelGateway",
+          id: "Gateway_Join",
+          direction: "converging",
+        },
+        { kind: "noneStartEvent", id: "Start_None" },
+        { kind: "userTask", id: "UserTask_A", name: "A" },
+        { kind: "userTask", id: "UserTask_B", name: "B" },
+      ],
+      sequenceFlows: [
+        {
+          id: "Flow_Fork_A",
+          sourceId: "Gateway_Fork",
+          targetId: "UserTask_A",
+        },
+        {
+          id: "Flow_Fork_B",
+          sourceId: "Gateway_Fork",
+          targetId: "UserTask_B",
+        },
+        {
+          id: "Flow_Join_End",
+          sourceId: "Gateway_Join",
+          targetId: "End_None",
+        },
+        {
+          id: "Flow_Start_Fork",
+          sourceId: "Start_None",
+          targetId: "Gateway_Fork",
+        },
+        {
+          id: "Flow_Task_A_Join",
+          sourceId: "UserTask_A",
+          targetId: "Gateway_Join",
+        },
+        {
+          id: "Flow_Task_B_Join",
+          sourceId: "UserTask_B",
+          targetId: "Gateway_Join",
+        },
+      ],
+    },
+    semanticProcess: {
+      kind: "semanticProcess",
+      identity: {
+        compiler: "bpmn-source-semantic-process",
+        ...identity,
+      },
+      processId: "Process_ParallelUserTasks",
+      controlPlaces: [
+        controlPlace("Flow_Fork_A"),
+        controlPlace("Flow_Fork_B"),
+        controlPlace("Flow_Join_End"),
+        controlPlace("Flow_Start_Fork"),
+        controlPlace("Flow_Task_A_Join"),
+        controlPlace("Flow_Task_B_Join"),
+      ],
+      operations: [
+        operation("End_None", "terminate", {
+          input: "place:Flow_Join_End",
+        }),
+        operation("Gateway_Fork", "duplicate", {
+          input: "place:Flow_Start_Fork",
+          outputs: ["place:Flow_Fork_A", "place:Flow_Fork_B"],
+        }),
+        operation("Gateway_Join", "synchronize", {
+          inputs: ["place:Flow_Task_A_Join", "place:Flow_Task_B_Join"],
+          output: "place:Flow_Join_End",
+        }),
+        operation("Start_None", "initiate", {
+          output: "place:Flow_Start_Fork",
+        }),
+        operation("UserTask_A", "awaitUserTask", {
+          input: "place:Flow_Fork_A",
+          output: "place:Flow_Task_A_Join",
+          task: { elementId: "UserTask_A", name: "A" },
+        }),
+        operation("UserTask_B", "awaitUserTask", {
+          input: "place:Flow_Fork_B",
+          output: "place:Flow_Task_B_Join",
+          task: { elementId: "UserTask_B", name: "B" },
+        }),
+      ],
+    },
+  };
+}
+
+function controlPlace(flowId) {
+  return {
+    id: `place:${flowId}`,
+    origin: { kind: "bpmnSequenceFlow", elementId: flowId },
+  };
+}
+
+function operation(elementId, kind, fields) {
+  return {
+    id: `operation:${elementId}`,
+    kind,
+    origin: { kind: "bpmnElement", elementId },
+    ...fields,
+  };
 }
 
 test("uses structural document kinds without embedded schema counters", async () => {
@@ -142,5 +265,85 @@ test("requires every semantic profile to identify its reviewed CIB-BPMN relation
   assert.throws(
     () => verifyArtifactSet(unknownRelationship),
     /profile references unknown CIB-BPMN relationship/,
+  );
+});
+
+test("accepts the canonical checked-process and Semantic Process contract shapes", async () => {
+  const artifacts = parallelDefinitionArtifacts();
+
+  assert.equal(
+    await verifyDefinitionArtifacts(projectRoot, artifacts),
+    artifacts,
+  );
+});
+
+test("rejects checked and Semantic Process references outside their definition domains", async () => {
+  const checkedMutation = parallelDefinitionArtifacts();
+  checkedMutation.checkedProcess.sequenceFlows[0].targetId = "Missing_Task";
+
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, checkedMutation),
+    /checked process flow Flow_Fork_A references unknown target node Missing_Task/,
+  );
+
+  const programMutation = parallelDefinitionArtifacts();
+  programMutation.semanticProcess.operations[1].outputs[0] =
+    "place:Flow_Fork_A0";
+
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, programMutation),
+    /operation operation:Gateway_Fork references unknown control place place:Flow_Fork_A0/,
+  );
+});
+
+test("rejects duplicate and synchronize operations below their semantic arity", async () => {
+  for (const operationId of [
+    "operation:Gateway_Fork",
+    "operation:Gateway_Join",
+  ]) {
+    const artifacts = parallelDefinitionArtifacts();
+    const operation = artifacts.semanticProcess.operations.find(
+      ({ id }) => id === operationId,
+    );
+    assert.notEqual(operation, undefined);
+    if (operation.kind === "duplicate") {
+      operation.outputs = [operation.outputs[0]];
+    } else {
+      operation.inputs = [operation.inputs[0]];
+    }
+
+    await assert.rejects(
+      verifyDefinitionArtifacts(projectRoot, artifacts),
+      /semantic process schema validation failed/,
+    );
+  }
+});
+
+test("rejects source identity drift between checked and Semantic Process artifacts", async () => {
+  const artifacts = parallelDefinitionArtifacts();
+  artifacts.semanticProcess.identity.sourceSha256 =
+    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, artifacts),
+    /checked process and semantic process identities differ/,
+  );
+});
+
+test("rejects non-canonical definition and unordered-reference order", async () => {
+  const definitionOrderMutation = parallelDefinitionArtifacts();
+  definitionOrderMutation.semanticProcess.operations.reverse();
+
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, definitionOrderMutation),
+    /semantic process operations must be sorted by id/,
+  );
+
+  const referenceOrderMutation = parallelDefinitionArtifacts();
+  referenceOrderMutation.semanticProcess.operations[1].outputs.reverse();
+
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, referenceOrderMutation),
+    /operation operation:Gateway_Fork outputs must be sorted/,
   );
 });

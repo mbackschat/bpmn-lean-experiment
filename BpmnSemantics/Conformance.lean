@@ -1,5 +1,6 @@
 import BpmnSemantics.Contract
 import BpmnSemantics.Scenario
+import BpmnSemantics.SemanticProcessContract
 
 /-! # BpmnSemantics.Conformance — profile-independent contract locks
 
@@ -65,5 +66,8 @@ def emptyRunner : ScenarioRunner :=
       trace := [] }
 
 example : (emptyRunner contractScenario).trace = [] := rfl
+
+#check SemanticProcess.Obligations.evaluator_sound
+#check SemanticProcess.Obligations.lower_preserves_supported_run
 
 end BpmnSemantics

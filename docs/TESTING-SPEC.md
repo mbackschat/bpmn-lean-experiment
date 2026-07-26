@@ -65,11 +65,12 @@ A pile of feature/profile/format switches is evidence of an unsound boundary. Du
 
 The gate:
 
-- validates the current profile, three answer-free scenarios, canonical results, and CIB evidence with Ajv Draft 2020-12;
+- validates the current profile, three answer-free scenarios, canonical results, CIB evidence, checked BPMN graph, and Semantic Process program shapes with Ajv Draft 2020-12;
 - requires stable document kinds and no embedded format counters;
 - verifies scenario/profile SHA-256 bindings in retained CIB evidence;
 - requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
-- rejects answer smuggling, stale evidence, unknown relationships, and invalid task activation.
+- checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, and canonical unordered-array order;
+- rejects answer smuggling, stale evidence, unknown relationships, invalid task activation, dangling graph/program references, invalid gateway arity, definition identity drift, and order-dependent definitions.
 
 Retained CIB evidence is verifier-only. Target runners never receive it, and ordinary green runs never regenerate it.
 

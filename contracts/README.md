@@ -19,8 +19,8 @@ This separation avoids routing every consumer through document-version switches 
 | Canonical result | Outcome plus canonical observation trace; no target-specific host data |
 | CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; canonical result |
 | Current executable IR | Transitional current `kind` and compiler identity; exact BPMN source and semantic-profile identity; one bounded executable topology |
-| Checked BPMN graph | Approved but not yet implemented `checkedProcess` artifact; source-facing admitted graph with exact source/profile identity and no runtime semantics |
-| Semantic Process program | Approved but not yet implemented `semanticProcess` artifact; compiler/source/profile identity, typed control places and operations, and no mutable runtime state |
+| Checked BPMN graph | Current `checkedProcess` contract; source-facing admitted graph with exact source/profile identity and no runtime semantics |
+| Semantic Process program | Current `semanticProcess` contract; compiler/source/profile identity, typed control places and operations, and no mutable runtime state |
 | Pipeline report | Stable `kind`; ephemeral verification report, provenance, comparisons, replay count, isolation, and timings |
 
 Neutral scenarios contain no expected answer. CIB evidence is a separate immutable verifier input bound to the exact scenario and profile bytes. Target runners never receive it, and ordinary verification never regenerates it.
@@ -39,5 +39,7 @@ Portable assertions are verifier-side claims over canonical results or relations
 - [scenario.schema.json](schemas/scenario.schema.json) validates the three current answer-free User Task scenarios.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.
+- [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.
+- [semantic-process.schema.json](schemas/semantic-process.schema.json) validates the immutable Semantic Process definition contract.
 
-The checked BPMN graph and Semantic Process schemas are specified in [the Semantic Process IL](../docs/SEMANTIC-PROCESS-IL-PROPOSAL.md) but do not exist yet. Until their atomic implementation, the current executable-IR schema and consumers remain authoritative for the implemented sequential path.
+The checked BPMN graph and Semantic Process schemas freeze the approved artifact boundaries from [the Semantic Process IL proposal](../docs/SEMANTIC-PROCESS-IL-PROPOSAL.md). They do not make the proposed lowerer or semantics implemented. Until their later atomic replacement, the current executable-IR schema and consumers remain authoritative for the production sequential path.

@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/semantic-process.schema.json",
+  "title": "Semantic Process program",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "identity",
+    "processId",
+    "controlPlaces",
+    "operations"
+  ],
+  "properties": {
+    "kind": {
+      "const": "semanticProcess"
+    },
+    "identity": {
+      "$ref": "#/$defs/programIdentity"
+    },
+    "processId": {
+      "$ref": "#/$defs/nonemptyString"
+    },
+    "controlPlaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/controlPlace"
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/operation"
+      }
+    }
+  },
+  "$defs": {
+    "nonemptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "programIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compiler",
+        "semanticProfile",
+        "sourceId",
+        "sourceSha256"
+      ],
+      "properties": {
+        "compiler": {
+          "const": "bpmn-source-semantic-process"
+        },
+        "semanticProfile": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "bpmnSequenceFlowOrigin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "elementId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "bpmnSequenceFlow"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "bpmnElementOrigin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "elementId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "bpmnElement"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "controlPlace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "origin"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        }
+      }
+    },
+    "taskDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "name"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "initiate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "initiate"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "awaitUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "task"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/taskDefinition"
+        }
+      }
+    },
+    "duplicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "outputs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "duplicate"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonemptyString"
+          }
+        }
+      }
+    },
+    "synchronize": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "inputs",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "synchronize"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonemptyString"
+          }
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "terminate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "terminate"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "operation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/initiate"
+        },
+        {
+          "$ref": "#/$defs/awaitUserTask"
+        },
+        {
+          "$ref": "#/$defs/duplicate"
+        },
+        {
+          "$ref": "#/$defs/synchronize"
+        },
+        {
+          "$ref": "#/$defs/terminate"
+        }
+      ]
+    }
+  }
+}

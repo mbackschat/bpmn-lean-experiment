@@ -10,6 +10,8 @@ const schemaBaseId = "https://bpmn-lean.local/schemas";
 const scenarioSchemaId = `${schemaBaseId}/scenario.schema.json`;
 const evidenceSchemaId = `${schemaBaseId}/cibseven-evidence.schema.json`;
 const profileSchemaId = `${schemaBaseId}/semantic-profile.schema.json`;
+const checkedProcessSchemaId = `${schemaBaseId}/checked-process.schema.json`;
+const semanticProcessSchemaId = `${schemaBaseId}/semantic-process.schema.json`;
 
 export const artifactCases = Object.freeze([
   Object.freeze({
@@ -65,6 +67,8 @@ async function createValidator(projectRoot) {
     "canonical-result.schema.json",
     "semantic-profile.schema.json",
     "cibseven-evidence.schema.json",
+    "checked-process.schema.json",
+    "semantic-process.schema.json",
   ];
   const schemas = await Promise.all(
     schemaNames.map(async (name) => {
@@ -116,6 +120,183 @@ function validateWith(validator, schemaId, label, value) {
       `${label} schema validation failed: ${JSON.stringify(validate.errors)}`,
     );
   }
+}
+
+function compareIds(left, right) {
+  if (left.id < right.id) {
+    return -1;
+  }
+  if (left.id > right.id) {
+    return 1;
+  }
+  return 0;
+}
+
+function requireSortedById(label, values) {
+  const sorted = [...values].sort(compareIds);
+  if (!isDeepStrictEqual(values, sorted)) {
+    throw new Error(`${label} must be sorted by id`);
+  }
+}
+
+function requireSortedStrings(label, values) {
+  const sorted = [...values].sort();
+  if (!isDeepStrictEqual(values, sorted)) {
+    throw new Error(`${label} must be sorted`);
+  }
+}
+
+function requireUniqueIds(label, values) {
+  const ids = new Set();
+  for (const value of values) {
+    if (ids.has(value.id)) {
+      throw new Error(`${label} contains duplicate id ${value.id}`);
+    }
+    ids.add(value.id);
+  }
+  return ids;
+}
+
+function referencedControlPlaces(operation) {
+  switch (operation.kind) {
+    case "initiate":
+      return [operation.output];
+    case "awaitUserTask":
+      return [operation.input, operation.output];
+    case "duplicate":
+      return [operation.input, ...operation.outputs];
+    case "synchronize":
+      return [...operation.inputs, operation.output];
+    case "terminate":
+      return [operation.input];
+    default:
+      throw new Error(`unsupported semantic operation: ${operation.kind}`);
+  }
+}
+
+function verifyCanonicalDefinitionOrder(checkedProcess, semanticProcess) {
+  requireSortedById("checked process nodes", checkedProcess.nodes);
+  requireSortedById(
+    "checked process sequence flows",
+    checkedProcess.sequenceFlows,
+  );
+  requireSortedById(
+    "semantic process control places",
+    semanticProcess.controlPlaces,
+  );
+  requireSortedById(
+    "semantic process operations",
+    semanticProcess.operations,
+  );
+  for (const operation of semanticProcess.operations) {
+    switch (operation.kind) {
+      case "duplicate":
+        requireSortedStrings(
+          `operation ${operation.id} outputs`,
+          operation.outputs,
+        );
+        break;
+      case "synchronize":
+        requireSortedStrings(`operation ${operation.id} inputs`, operation.inputs);
+        break;
+      case "initiate":
+      case "awaitUserTask":
+      case "terminate":
+        break;
+      default:
+        throw new Error(`unsupported semantic operation: ${operation.kind}`);
+    }
+  }
+}
+
+function verifyDefinitionReferences(checkedProcess, semanticProcess) {
+  const nodeIds = requireUniqueIds("checked process nodes", checkedProcess.nodes);
+  const flowIds = requireUniqueIds(
+    "checked process sequence flows",
+    checkedProcess.sequenceFlows,
+  );
+  for (const flow of checkedProcess.sequenceFlows) {
+    if (!nodeIds.has(flow.sourceId)) {
+      throw new Error(
+        `checked process flow ${flow.id} references unknown source node ${flow.sourceId}`,
+      );
+    }
+    if (!nodeIds.has(flow.targetId)) {
+      throw new Error(
+        `checked process flow ${flow.id} references unknown target node ${flow.targetId}`,
+      );
+    }
+  }
+
+  const placeIds = requireUniqueIds(
+    "semantic process control places",
+    semanticProcess.controlPlaces,
+  );
+  requireUniqueIds("semantic process operations", semanticProcess.operations);
+  for (const place of semanticProcess.controlPlaces) {
+    if (!flowIds.has(place.origin.elementId)) {
+      throw new Error(
+        `control place ${place.id} references unknown Sequence Flow origin ${place.origin.elementId}`,
+      );
+    }
+  }
+  for (const operation of semanticProcess.operations) {
+    if (!nodeIds.has(operation.origin.elementId)) {
+      throw new Error(
+        `operation ${operation.id} references unknown BPMN element origin ${operation.origin.elementId}`,
+      );
+    }
+    for (const placeId of referencedControlPlaces(operation)) {
+      if (!placeIds.has(placeId)) {
+        throw new Error(
+          `operation ${operation.id} references unknown control place ${placeId}`,
+        );
+      }
+    }
+    if (
+      operation.kind === "awaitUserTask" &&
+      operation.task.elementId !== operation.origin.elementId
+    ) {
+      throw new Error(
+        `operation ${operation.id} task identity differs from its BPMN origin`,
+      );
+    }
+  }
+}
+
+export async function verifyDefinitionArtifacts(projectRoot, artifacts) {
+  const validator = await validatorFor(projectRoot);
+  const { checkedProcess, semanticProcess } = artifacts;
+  validateWith(
+    validator,
+    checkedProcessSchemaId,
+    "checked process",
+    checkedProcess,
+  );
+  validateWith(
+    validator,
+    semanticProcessSchemaId,
+    "semantic process",
+    semanticProcess,
+  );
+
+  const checkedIdentity = {
+    ...checkedProcess.identity,
+    processId: checkedProcess.processId,
+  };
+  const programIdentity = {
+    semanticProfile: semanticProcess.identity.semanticProfile,
+    sourceId: semanticProcess.identity.sourceId,
+    sourceSha256: semanticProcess.identity.sourceSha256,
+    processId: semanticProcess.processId,
+  };
+  if (!isDeepStrictEqual(checkedIdentity, programIdentity)) {
+    throw new Error("checked process and semantic process identities differ");
+  }
+
+  verifyCanonicalDefinitionOrder(checkedProcess, semanticProcess);
+  verifyDefinitionReferences(checkedProcess, semanticProcess);
+  return artifacts;
 }
 
 export function verifyArtifactSet(artifactSet) {
