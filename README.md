@@ -4,9 +4,9 @@ Making BPMN execution durable, explainable, and continuously checkable.
 
 This project explores a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. The ultimate goal is OMG BPMN Process Execution Conformance for imported executable Process diagrams—not merely translating BPMN shapes into Workflow code.
 
-> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. The next normative parallel fork/join and bounded Semantic Process IL proposals are approved but not implemented. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
+> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. Exact BPMN now lowers through a checked project-owned graph to the bounded Semantic Process program consumed by the sequential production path. The approved parallel structure also lowers to `duplicate` and `synchronize`, but its Lean account, TypeScript execution, CIB evidence, and Temporal refinement remain open. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
 
-Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, executable IR, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
+Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
 ## Why this project exists
 
@@ -89,7 +89,7 @@ The implemented capsule owns one exact BPMN model and three answer-free scenario
 
 One pipeline command:
 
-- admits and compiles the exact BPMN source;
+- admits the exact BPMN source, projects its checked graph, and lowers its Semantic Process program;
 - runs all three scenarios through one pinned CIB Seven engine;
 - obtains all three results from the Lean interpreter;
 - evaluates the independent TypeScript semantic core;
@@ -159,9 +159,9 @@ scripts/             Maintained verification and infrastructure guards
 
 ## Next
 
-The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. It is intentionally structurally different: it must distinguish incoming-flow provenance from arrival count, preserve token multiplicity, demonstrate completion-order independence, and close the current Lean definition-binding gap through the bounded Semantic Process IL proposal.
+The next implementation lane closes the Lean definition boundary for the checked graph and Semantic Process program: decode both artifacts, recompute exact lowering, define the declarative relation and executable evaluator, and prove evaluator soundness with exact preservation status. The following parallel lane must then distinguish incoming-flow provenance from arrival count, preserve token multiplicity, and demonstrate completion-order independence.
 
-The semantic contract and definition architecture are approved; implementation and evidence remain open. The exact red/green sequence and resume point are in [PLAN.md](docs/PLAN.md).
+The source contract, deterministic lowerer, and sequential consumers are implemented. Lean definition binding and parallel execution/evidence remain open. The exact red/green sequence and resume point are in [PLAN.md](docs/PLAN.md).
 
 ## Contributing
 
