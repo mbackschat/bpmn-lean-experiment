@@ -23,7 +23,7 @@ async function buildPipeline() {
   );
   await Promise.all([
     coreBuild,
-    runProjectCommand("lake", ["build", "emitSequentialUserTaskResults"], {
+    runProjectCommand("lake", ["build", "emitSemanticProcessResults"], {
       timeoutMs: 120_000,
     }),
     runProjectCommand(

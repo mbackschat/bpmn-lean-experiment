@@ -107,7 +107,7 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 
 The reviewed full observational checked-source-to-program-run preservation proposition is not claimed: there is no independent checked-source operational relation from which to establish it without assuming the program account. Structural lowering preservation and exact artifact equality are the current proved boundary.
 
-The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. The CIB and Temporal gates now cover the bounded parallel adapter projections independently; the parallel four-target comparison remains open.
+The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. Lean's scenario closure additionally admits only the exact distinct two-task activation pair among multiple-enabled states, with checked activation-order observation equivalence and exact waiting-state closure. The five-case differential gate now connects the independent CIB, Lean, TypeScript, and Temporal lanes.
 
 ## Current CIB gate
 
@@ -142,24 +142,25 @@ When the owner approves the first immutable deployment/history baseline, retaine
 The pipeline:
 
 1. builds the source importer, Lean emitter, CIB test boundary, TypeScript core/comparator, and Temporal adapter;
-2. loads three answer-free scenarios and content-bound CIB evidence;
+2. loads five answer-free scenarios and content-bound CIB evidence;
 3. compiles the exact BPMN bytes once per source/profile identity;
 4. starts one clean Temporal server and Worker;
 5. writes the actual checked graph and Semantic Process program for each retained scenario to a private definition-input batch;
-6. runs one three-case CIB batch, one three-result Lean emitter over that definition batch, the pure core, and six Temporal Workflows concurrently;
+6. runs one five-case CIB batch, one five-result Lean emitter over that definition batch, the pure core, and ten Temporal Workflows concurrently;
 7. requires Lean's echoed scenario to equal the admitted scenario document, rejecting a drifted stimulus, BPMN digest, or provenance at an exact structural path;
 8. requires Lean's echoed definition identity and lowering-equality result to match the admitted artifacts;
 9. mutates one operation origin without making the program structurally invalid and requires Lean to reject the program as unequal to its lowering;
-10. compares CIB with Lean, the core, and Temporal exactly by scenario identity;
+10. compares CIB with Lean, the core, and Temporal exactly by scenario identity, including both parallel completion orders and their intermediate remaining-task projections;
 11. compares fresh CIB output with retained CIB evidence;
 12. checks exact Query/Update evidence, duplicate delivery, isolated Workflow equality, and clean CIB state;
-13. mutates the observed activation ordinal and requires an exact disagreement path;
-14. replays all three primary live histories;
-15. shuts down the Worker/server and removes temporary files.
+13. mutates the observed activation ordinal in sequential cases, omits one parallel open task in parallel cases, and requires exact disagreement paths;
+14. erases the parallel control-place Sequence-Flow provenance while preserving structural validity and requires Lean's lowering-equality gate to reject it;
+15. replays all five primary live histories;
+16. shuts down the Worker/server and removes temporary files.
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 
-The source-current repository verification on 2026-07-26 completed in 27.86 seconds after adding canonical balanced-parallel CIB evidence and its raw-projection guards, and its retained three-case prepared pipeline completed in 6.63 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+The source-current repository verification on 2026-07-26 completed in approximately 30 seconds after extending the differential lane to five cases and correcting the bounded Lean parallel closure, and its five-case prepared pipeline completed in 4.59 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
 
 ## Documentation-fragment gate
 

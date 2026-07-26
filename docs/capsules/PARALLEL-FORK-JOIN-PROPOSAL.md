@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved semantic proposal on 2026-07-26; the draft profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced CIB observations, and focused Temporal refinement/replay witnesses are complete, while the parallel four-target differential and epistemic closure remain pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
+**Owner-approved semantic proposal on 2026-07-26; the draft profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced CIB observations, focused Temporal refinement/replay witnesses, and parallel five-case four-target differential are complete, while epistemic closure remains pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
@@ -135,6 +135,8 @@ The current Lean laws and independent TypeScript witnesses establish:
 - exact completion removes only the named active occurrence;
 - A-then-B and B-then-A terminate in equivalent final stable state under exact distinct-task hypotheses;
 - canonical projection is invariant under permutation of internal task/token storage.
+
+The executable Lean scenario closure resolves the only admitted multiple-enabled internal state after the fork by selecting the canonical first operation only when the enabled pair consists of distinct User Task operations with distinct inputs, outputs, and task identities. A checked theorem requires both activation orders to have the same stable public observation, and the exact start-closure theorem locks the resulting two-task waiting state. Every other multiple-enabled state remains a harness failure requiring an explicit semantic choice.
 
 Required negative and mutation evidence includes:
 

@@ -8,7 +8,6 @@ import {
 import {
   ComparisonKind,
   DifferentialTarget,
-  DisagreementKind,
 } from "../dist/index.js";
 
 import {
@@ -27,7 +26,7 @@ const cleanCibProjection = {
 };
 
 test(
-  "runs the current User Task witnesses through one four-target batch",
+  "runs the sequential and parallel witnesses through one four-target batch",
   { timeout: 45_000 },
   async () => {
     assert.deepEqual(
@@ -36,6 +35,8 @@ test(
         "user-task-discovery-completion",
         "user-task-wrong-activation",
         "user-task-stale-completion",
+        "parallel-fork-join-a-then-b",
+        "parallel-fork-join-b-then-a",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
@@ -47,7 +48,11 @@ test(
       const caseEvidence = evidence[index];
       assert.equal(caseReport.scenario.id, pipelineCases[index].id);
       assert.equal(caseEvidence.scenarioId, pipelineCases[index].id);
-      assert.equal(caseReport.comparison.kind, ComparisonKind.Agreement);
+      assert.equal(
+        caseReport.comparison.kind,
+        ComparisonKind.Agreement,
+        JSON.stringify(caseReport.comparison),
+      );
       assert.deepEqual(caseReport.evidenceComparison, {
         kind: ComparisonKind.Agreement,
         targets: [
@@ -76,12 +81,7 @@ test(
         kind: ComparisonKind.Disagreement,
         referenceTarget: DifferentialTarget.CibSeven,
         candidateTarget: DifferentialTarget.SemanticCore,
-        disagreement: {
-          kind: DisagreementKind.ObservationValue,
-          path: "trace[2].openUserTasks[0].id.activation",
-          expected: 1,
-          actual: 2,
-        },
+        disagreement: pipelineCases[index].expectedInjectedDisagreement,
       });
 
       assert.notEqual(caseEvidence.temporalInteractionEvidence, null);
@@ -93,6 +93,11 @@ test(
         caseEvidence.temporalInteractionEvidence.completionOutcomes,
         caseEvidence.expectedCompletionOutcomes,
       );
+      assert.deepEqual(
+        caseEvidence.temporalInteractionEvidence
+          .openUserTasksAfterCompletions,
+        caseEvidence.expectedOpenUserTasksAfterCompletions,
+      );
       assert.equal(
         caseEvidence.temporalInteractionEvidence
           .duplicateCompletionOutcome,
@@ -102,13 +107,17 @@ test(
       );
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 3,
+      liveHistories: 5,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
       mutation: "operationOrigin",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 6);
+    assert.deepEqual(report.leanProvenanceMutation, {
+      kind: "rejected",
+      mutation: "parallelControlPlaceProvenanceErasure",
+    });
+    assert.equal(report.isolation.temporalWorkflowIds.length, 10);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,

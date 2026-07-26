@@ -19,7 +19,7 @@ fi
 
 lake build
 lake test
-lake build emitSequentialUserTaskResults
+lake build emitSemanticProcessResults
 ./scripts/pnpm.sh run test:semantic-core
 ./scripts/pnpm.sh run test:bpmn-source
 ./scripts/test-cibseven-oracle.sh

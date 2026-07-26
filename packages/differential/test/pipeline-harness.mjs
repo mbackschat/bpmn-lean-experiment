@@ -19,6 +19,7 @@ import {
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import {
+  DisagreementKind,
   DifferentialTarget,
   compareTargetResults,
   requireScenarioBinding,
@@ -34,7 +35,7 @@ const temporalCacheDirectory = path.join(
   projectRoot,
   ".cache/temporal-cli",
 );
-const leanExecutable = "emitSequentialUserTaskResults";
+const leanExecutable = "emitSemanticProcessResults";
 const buildMs = Number.parseFloat(process.env.BPMN_PIPELINE_BUILD_MS ?? "");
 const buildMode = process.env.BPMN_PIPELINE_BUILD_MODE;
 
@@ -51,6 +52,14 @@ function mutateOpenTaskActivation(result) {
       activation: 2,
     },
   };
+}
+
+function omitOneParallelOpenTask(result) {
+  const running = runningObservation(result);
+  if (running.openUserTasks?.length !== 2) {
+    throw new Error("two calibrated parallel User Tasks are required");
+  }
+  running.openUserTasks = running.openUserTasks.slice(0, 1);
 }
 
 function runningObservation(result) {
@@ -84,6 +93,32 @@ function interactionCase(
     duplicateFirstCompletionUpdateId:
       options.duplicateFirstCompletionUpdateId,
     injectMutation: mutateOpenTaskActivation,
+    expectedInjectedDisagreement: {
+      kind: DisagreementKind.ObservationValue,
+      path: "trace[2].openUserTasks[0].id.activation",
+      expected: 1,
+      actual: 2,
+    },
+  });
+}
+
+function parallelCase(id, scenarioFile, evidenceFile) {
+  return Object.freeze({
+    id,
+    scenarioRelativePath:
+      `scenarios/parallel-fork-join/${scenarioFile}`,
+    evidenceRelativePath:
+      `scenarios/parallel-fork-join/${evidenceFile}`,
+    bpmnRelativePath: "scenarios/parallel-fork-join/process.bpmn",
+    workflowIdPrefix: id,
+    expectedWaitTraceLength: 3,
+    injectMutation: omitOneParallelOpenTask,
+    expectedInjectedDisagreement: {
+      kind: DisagreementKind.ObservationValue,
+      path: "trace[2].openUserTasks.length",
+      expected: 2,
+      actual: 1,
+    },
   });
 }
 
@@ -106,6 +141,16 @@ export const pipelineCases = Object.freeze([
       duplicateFirstCompletionUpdateId:
         "pipeline-duplicate-first-completion",
     },
+  ),
+  parallelCase(
+    "parallel-fork-join-a-then-b",
+    "a-then-b.scenario.json",
+    "a-then-b.cibseven-evidence.json",
+  ),
+  parallelCase(
+    "parallel-fork-join-b-then-a",
+    "b-then-a.scenario.json",
+    "b-then-a.cibseven-evidence.json",
   ),
 ]);
 
@@ -313,6 +358,50 @@ async function requireLeanDefinitionMutationRejection(contexts, inputPath) {
   }
   throw new Error(
     "Lean accepted a Semantic Process that differs from its lowering",
+  );
+}
+
+async function requireLeanProvenanceErasureRejection(
+  contexts,
+  inputPath,
+) {
+  const records = structuredClone(leanDefinitionRecords(contexts));
+  const parallelRecord = records.find(
+    ({ semanticProcess }) =>
+      semanticProcess.identity.semanticProfile ===
+      "parallel-fork-join-draft",
+  );
+  if (parallelRecord === undefined) {
+    throw new TypeError(
+      "Lean provenance mutation requires one parallel definition",
+    );
+  }
+  for (const place of parallelRecord.semanticProcess.controlPlaces) {
+    place.origin.elementId = "erased-sequence-flow-provenance";
+  }
+  await writeJsonLines(inputPath, records);
+  try {
+    await runProcess(
+      "lake",
+      ["exe", leanExecutable, inputPath],
+      10_000,
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes(
+        "Semantic Process does not equal Lean lowering",
+      )
+    ) {
+      return {
+        kind: "rejected",
+        mutation: "parallelControlPlaceProvenanceErasure",
+      };
+    }
+    throw error;
+  }
+  throw new Error(
+    "Lean accepted erased Sequence Flow provenance",
   );
 }
 
@@ -559,6 +648,27 @@ function compareCase(context, projectedTargets) {
         ? [observation.outcome]
         : [],
   );
+  const intermediateCompletionCommandIds = scenario.stimuli
+    .slice(1, -1)
+    .map(({ commandId }) => commandId);
+  const expectedOpenUserTasksAfterCompletions =
+    intermediateCompletionCommandIds.map((commandId) => {
+      const commandIndex = semanticCoreResult.trace.findIndex(
+        (observation) =>
+          observation.kind === CanonicalObservationKind.Command &&
+          observation.commandId === commandId,
+      );
+      const state = semanticCoreResult.trace[commandIndex + 1];
+      if (
+        commandIndex < 0 ||
+        state?.kind !== CanonicalObservationKind.State
+      ) {
+        throw new Error(
+          `No stable state follows completion ${commandId}`,
+        );
+      }
+      return state.openUserTasks;
+    });
 
   return {
     report: {
@@ -592,6 +702,7 @@ function compareCase(context, projectedTargets) {
       temporalInteractionEvidence:
         temporalResult.primary.interactionEvidence,
       expectedCompletionOutcomes,
+      expectedOpenUserTasksAfterCompletions,
       cibCleanup: cibResult.diagnostics.cleanup,
     },
   };
@@ -667,6 +778,10 @@ export async function runPipelineCases(cases) {
     temporaryDirectory,
     "lean-definition-mutation.jsonl",
   );
+  const leanProvenanceMutationInputPath = path.join(
+    temporaryDirectory,
+    "lean-provenance-mutation.jsonl",
+  );
   const warmStarted = performance.now();
   let runner;
   let startupMs = 0;
@@ -690,7 +805,13 @@ export async function runPipelineCases(cases) {
 
     const scenarioStarted = performance.now();
     const core = runCoreTargets(contexts);
-    const [cib, lean, leanDefinitionMutation, temporal] = await Promise.all([
+    const [
+      cib,
+      lean,
+      leanDefinitionMutation,
+      leanProvenanceMutation,
+      temporal,
+    ] = await Promise.all([
       runCibTargets(
         contexts.map(({ scenario }) => scenario),
         cibInputPath,
@@ -701,12 +822,17 @@ export async function runPipelineCases(cases) {
         contexts,
         leanMutationInputPath,
       ),
+      requireLeanProvenanceErasureRejection(
+        contexts,
+        leanProvenanceMutationInputPath,
+      ),
       runTemporalTargets(runner, contexts),
     ]);
     targets = {
       cib,
       lean,
       leanDefinitionMutation,
+      leanProvenanceMutation,
       core,
       temporal,
     };
@@ -763,6 +889,7 @@ export async function runPipelineCases(cases) {
     implementationRevision: revision,
     cases: caseResults.map(({ report: caseReport }) => caseReport),
     leanDefinitionMutation: targets.leanDefinitionMutation,
+    leanProvenanceMutation: targets.leanProvenanceMutation,
     replay,
     phaseMs: {
       build: buildMs,

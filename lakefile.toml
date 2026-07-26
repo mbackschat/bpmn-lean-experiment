@@ -16,5 +16,5 @@ name = "checkSemanticRepresentationSpike"
 root = "BpmnSemantics.Experiments.SemanticRepresentationsMain"
 
 [[lean_exe]]
-name = "emitSequentialUserTaskResults"
-root = "BpmnSemantics.SequentialUserTaskJsonMain"
+name = "emitSemanticProcessResults"
+root = "BpmnSemantics.SemanticProcessJsonMain"

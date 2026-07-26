@@ -1,15 +1,16 @@
 import BpmnSemantics.Conformance
+import BpmnSemantics.ParallelForkJoinConformance
 import BpmnSemantics.SemanticProcessJson
 import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.UserTaskInteractionConformance
 import Lean.Data.Json
 
-/-! One-way canonical JSON-lines emitter for the sequential User Task results.
+/-! One-way canonical JSON-lines emitter for the admitted Semantic Process scenarios.
 
-This is deliberately not a general scenario parser or transport. It exposes the results derived by the executable Lean interpreter for the content-addressed User Task interaction capsule so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
+This is deliberately not a general scenario parser or transport. It exposes results derived by the executable Lean interpreter for the exact content-addressed scenarios so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
 -/
 
-namespace BpmnSemantics.SequentialUserTaskJsonMain
+namespace BpmnSemantics.SemanticProcessJsonMain
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcessJson
@@ -172,7 +173,9 @@ private def resultRecordJson (scenario : Scenario)
 private def emittedScenarios : List Scenario :=
   [ BpmnSemantics.UserTaskInteractionConformance.successfulScenario
   , BpmnSemantics.UserTaskInteractionConformance.wrongActivationScenario
-  , BpmnSemantics.UserTaskInteractionConformance.staleCompletionScenario ]
+  , BpmnSemantics.UserTaskInteractionConformance.staleCompletionScenario
+  , BpmnSemantics.ParallelForkJoinConformance.aThenBScenario
+  , BpmnSemantics.ParallelForkJoinConformance.bThenAScenario ]
 
 private def readDefinitionInputs (path : System.FilePath) :
     IO (List DefinitionInput) := do
@@ -212,13 +215,13 @@ def emit (definitionInputPath : System.FilePath) : IO Unit := do
     let input ← definitionForScenario inputs scenario
     IO.println (resultRecordJson scenario input).compress
 
-end BpmnSemantics.SequentialUserTaskJsonMain
+end BpmnSemantics.SemanticProcessJsonMain
 
 def main (arguments : List String) : IO Unit :=
   do
     match arguments with
     | [definitionInputPath] =>
-        BpmnSemantics.SequentialUserTaskJsonMain.emit definitionInputPath
+        BpmnSemantics.SemanticProcessJsonMain.emit definitionInputPath
     | _ =>
         throw (IO.userError
-          "usage: emitSequentialUserTaskResults <definition-input.jsonl>")
+          "usage: emitSemanticProcessResults <definition-input.jsonl>")

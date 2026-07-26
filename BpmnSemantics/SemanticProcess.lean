@@ -618,29 +618,46 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
       | .notStarted
       | .completed _ => { outcome := .rejected, state }
 
-private def enabledSuccessors (program : Program) (state : RuntimeState) :
-    List RuntimeState :=
-  program.operations.filterMap fun operation => fire? operation state
+private def enabledTransitions (program : Program) (state : RuntimeState) :
+    List (SemanticOperation × RuntimeState) :=
+  program.operations.filterMap fun operation =>
+    match fire? operation state with
+    | none => none
+    | some successor => some (operation, successor)
+
+private def independentParallelTaskChoices :
+    List (SemanticOperation × RuntimeState) → Bool
+  | [ (.awaitUserTask _ _ inputA outputA taskA, _)
+    , (.awaitUserTask _ _ inputB outputB taskB, _) ] =>
+      decide (
+        inputA ≠ inputB ∧
+          outputA ≠ outputB ∧
+          taskA.id ≠ taskB.id)
+  | _ => false
 
 private structure ClosureResult where
   state : RuntimeState
   hitBound : Bool
   ambiguousChoice : Bool
 
-/-- Close internal steps only while exactly one operation is enabled. Multiple enabled operations require an explicit semantic choice and are not resolved by collection order. -/
-private def closeUnique : Nat → Program → RuntimeState → ClosureResult
+/-- Close one enabled operation, or the admitted two-task activation pair whose distinct inputs, outputs, and task identities make its public stable result order-independent. Every other multiple-enabled state still requires an explicit semantic choice. -/
+private def closeSupported : Nat → Program → RuntimeState → ClosureResult
   | 0, program, state =>
-      match enabledSuccessors program state with
+      match enabledTransitions program state with
       | [] => { state, hitBound := false, ambiguousChoice := false }
       | [_]
       | _ :: _ :: _ =>
           { state, hitBound := true, ambiguousChoice := false }
   | fuel + 1, program, state =>
-      match enabledSuccessors program state with
+      match enabledTransitions program state with
       | [] => { state, hitBound := false, ambiguousChoice := false }
-      | [successor] => closeUnique fuel program successor
-      | _ :: _ :: _ =>
-          { state, hitBound := false, ambiguousChoice := true }
+      | [(_, successor)] => closeSupported fuel program successor
+      | first :: second :: remaining =>
+          let transitions := first :: second :: remaining
+          if independentParallelTaskChoices transitions then
+            closeSupported fuel program first.2
+          else
+            { state, hitBound := false, ambiguousChoice := true }
 
 structure StimulusResult where
   outcome : CommandOutcome
@@ -656,7 +673,7 @@ def applyStimulus (closureLimit : Nat) (program : Program)
   let admission := admitStimulus program state stimulus
   match admission.outcome with
   | .committed =>
-      let closure := closeUnique closureLimit program admission.state
+      let closure := closeSupported closureLimit program admission.state
       { outcome := .committed
         state := closure.state
         internalStepBoundExceeded := closure.hitBound
@@ -988,6 +1005,13 @@ def parallelWaitingState : RuntimeState :=
     , parallelTaskAOperation
     , parallelTaskBOperation ]).getD initialState
 
+def parallelWaitingStateBThenA : RuntimeState :=
+  (runChoices parallelProgram parallelStartState
+    [ parallelStartOperation
+    , parallelForkOperation
+    , parallelTaskBOperation
+    , parallelTaskAOperation ]).getD initialState
+
 def parallelJoinInputs : List ControlPlaceId :=
   [⟨"place:Flow_AToJoin"⟩, ⟨"place:Flow_BToJoin"⟩]
 
@@ -1036,6 +1060,25 @@ theorem parallel_start_creates_exact_branch_waits :
     waitMultiplicity parallelWaitingState ⟨"UserTask_A"⟩ = 1 ∧
       waitMultiplicity parallelWaitingState ⟨"UserTask_B"⟩ = 1 ∧
       parallelWaitingState.tokens = [] := by
+  decide
+
+theorem parallel_task_activation_order_has_same_observation :
+    observeStableState parallelProgram parallelWaitingState =
+      observeStableState parallelProgram parallelWaitingStateBThenA := by
+  decide
+
+theorem parallel_supported_closure_reaches_exact_waiting_state :
+    (applyStimulus scenarioClosureLimit parallelProgram initialState
+      (.startProcess ⟨"start-process"⟩
+        ⟨"Process_ParallelForkJoin"⟩ ⟨"Instance_1"⟩)) =
+      { outcome := .committed
+        state :=
+          { parallelWaitingState with
+            control := .running ⟨"Instance_1"⟩
+            waits := parallelWaitingState.waits.map fun wait =>
+              { wait with processInstanceId := ⟨"Instance_1"⟩ } }
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
   decide
 
 theorem exact_completion_removes_only_named_occurrence :
