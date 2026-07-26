@@ -252,11 +252,14 @@ setHandler(
     }
     return outcome;
   },
-  { validator: validateCompleteUserTaskUpdate },
+  {
+    validator: (stimulus) =>
+      validateCompleteUserTaskUpdate(acceptedStimuli, stimulus),
+  },
 );
 ```
 
-The Workflow loop calls the same semantic-core boundary used outside Temporal. A repeated semantic command is transition-free; reusing its command ID with a different payload is rejected. Temporal Update IDs, Workflow IDs, Run IDs, Workflow Tasks, and Event History remain hosting facts rather than BPMN facts.
+The Workflow loop calls the same semantic-core boundary used outside Temporal. A repeated exact semantic command under another Update ID is transition-free; reusing its command ID with a different payload under another Update ID is rejected as a non-retryable application failure without failing the Workflow Task. The lifecycle experiment demonstrates that Temporal’s reuse of the same Update ID is payload-blind, so the current command-ID-only Update key remains a conformance-harness mechanism rather than the proposed production identity. Temporal Update IDs, Workflow IDs, Run IDs, Workflow Tasks, and Event History remain hosting facts rather than BPMN facts.
 
 Every primary live history is replayed in one Worker before the clean in-memory server shuts down. The exact-completion history is also inspected to require Update acceptance and completion and to exclude Signal delivery. No prototype Event History fixture or Workflow patch branch is retained.
 

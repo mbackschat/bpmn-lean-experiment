@@ -24,6 +24,7 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  ApplicationFailure,
   allHandlersFinished,
   condition,
   defineQuery,
@@ -98,7 +99,10 @@ export async function runBpmnScenario(
       }
       return outcome;
     },
-    { validator: validateCompleteUserTaskUpdate },
+    {
+      validator: (stimulus) =>
+        validateCompleteUserTaskUpdate(acceptedStimuli, stimulus),
+    },
   );
   // end::temporal-semantic-boundary[]
 
@@ -166,19 +170,13 @@ function enqueueStimulus(
   stimulus: Stimulus,
 ): void {
   const commandId = stimulusCommandId(stimulus);
-  const accepted = acceptedStimuli.find(
-    (candidate) => stimulusCommandId(candidate) === commandId,
-  );
+  const accepted = acceptedStimulus(acceptedStimuli, commandId);
   if (accepted === undefined) {
     acceptedStimuli.push(stimulus);
     pendingStimuli.push(stimulus);
     return;
   }
-  if (!sameStimulus(accepted, stimulus)) {
-    throw new TypeError(
-      `Command ID ${commandId} was reused with a different stimulus`,
-    );
-  }
+  requireSameCommandStimulus(accepted, stimulus);
 }
 
 function recordCommandOutcome(
@@ -215,6 +213,7 @@ function commandOutcome(
 }
 
 function validateCompleteUserTaskUpdate(
+  acceptedStimuli: ReadonlyArray<Stimulus>,
   stimulus: CompleteUserTaskInstanceStimulus,
 ): void {
   const value = stimulus as unknown;
@@ -224,6 +223,32 @@ function validateCompleteUserTaskUpdate(
   ) {
     throw new TypeError(
       "Completion Update must contain one well-formed task-instance stimulus",
+    );
+  }
+  const commandId = stimulusCommandId(value);
+  const accepted = acceptedStimulus(acceptedStimuli, commandId);
+  if (accepted !== undefined) {
+    requireSameCommandStimulus(accepted, value);
+  }
+}
+
+function acceptedStimulus(
+  acceptedStimuli: ReadonlyArray<Stimulus>,
+  commandId: string,
+): Stimulus | undefined {
+  return acceptedStimuli.find(
+    (candidate) => stimulusCommandId(candidate) === commandId,
+  );
+}
+
+function requireSameCommandStimulus(
+  accepted: Stimulus,
+  stimulus: Stimulus,
+): void {
+  if (!sameStimulus(accepted, stimulus)) {
+    throw ApplicationFailure.nonRetryable(
+      `Command ID ${stimulusCommandId(stimulus)} was reused with a different stimulus`,
+      "BpmnCommandIdentityConflict",
     );
   }
 }

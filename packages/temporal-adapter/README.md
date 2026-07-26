@@ -4,7 +4,7 @@
 
 Deployment-time code parses BPMN XML outside Workflow execution and passes the admitted Semantic Process program plus the neutral scenario to one generic Workflow. The Workflow applies the start stimulus and completion commands through the core. The `bpmn-open-user-tasks` Query invokes the core's current-state projection rather than scanning diagnostic trace history. The `bpmn-complete-user-task` Update delegates structural validation to the core, queues one completion, and returns the core-owned command outcome. Handlers never advance semantic state directly; one Workflow loop alone calls the core.
 
-A Workflow-local result ledger returns the first outcome when the same semantic command is delivered again under another Temporal Update ID. Core-owned exact stimulus comparison prevents conflicting reuse of a semantic command ID from entering the queue. Workflow IDs, Run IDs, Update IDs, Workflow Tasks, and Event History remain hosting facts rather than BPMN facts.
+A Workflow-local result ledger returns the first outcome when the same semantic command is delivered again under another Temporal Update ID. Core-owned exact stimulus comparison rejects conflicting reuse of a semantic command ID as `BpmnCommandIdentityConflict`, a non-retryable application failure that does not fail the Workflow Task. The lifecycle experiment also proves that Temporal returns the first result when the same Update ID carries a different payload, so the current command-ID-only Update key is not approved for production. Workflow IDs, Run IDs, Update IDs, Workflow Tasks, and Event History remain hosting facts rather than BPMN facts.
 
 ## Pre-release replay policy
 
@@ -26,6 +26,7 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - duplicate Workflow identities are rejected before start.
 - replacing a Worker at the semantic wait preserves start-before-completion ordering and the final result;
 - one accepted Update result remains retrievable after Workflow closure, while a distinct late Update and Workflow-ID reuse are refused;
+- same-Update-ID payload aliasing is visible, while a conflicting command ID under a distinct Update ID fails explicitly without wedging the Workflow;
 - semantic results do not contain the Temporal Workflow ID.
 
 The restart and closed-result checks are a bounded architecture experiment, not the production lifecycle. The adapter does not yet implement a production lifecycle independent of future scenario stimuli, public typed post-closure command handling, retained results beyond Temporal retention, Activities, timers, Search Attributes, Continue-As-New, general Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the current sequential and balanced two-branch parallel execution surfaces.

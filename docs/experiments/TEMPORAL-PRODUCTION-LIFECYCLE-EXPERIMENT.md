@@ -35,10 +35,11 @@ The test:
 3. stops the first Worker, starts a second Worker on the same Task Queue, and completes the task;
 4. fetches the completed result and history, then stops the Worker;
 5. retrieves the accepted completion result by its durable Update ID;
-6. requires a distinct completion Update after Workflow closure to fail as `WorkflowNotFoundError` with the pinned server’s completed-execution classification;
-7. requires `describe()` to report `COMPLETED`;
-8. requires a second Workflow start under the same Workflow ID to fail rather than resurrect the semantic Process;
-9. replays the captured history and tears down the server.
+6. reuses that Update ID with a different semantic command and observes that Temporal returns the first result without invoking the Workflow handler;
+7. requires a distinct completion Update with a distinct Update ID after Workflow closure to fail as `WorkflowNotFoundError` with the pinned server’s completed-execution classification;
+8. requires `describe()` to report `COMPLETED`;
+9. requires a second Workflow start under the same Workflow ID to fail rather than resurrect the semantic Process;
+10. replays the captured history and tears down the server.
 
 The result object is also checked not to contain the Temporal Workflow ID. Semantic Process-instance identity and host Workflow identity remain distinct.
 
@@ -48,6 +49,8 @@ The first run failed after Worker restart. The original Workflow registered the 
 
 The correction queues the admitted start stimulus before registering externally addressable handlers. The invariant is now explicit: no external completion can precede semantic Process start in the single semantic input queue, regardless of Worker cache state.
 
+The content-bound identity review exposed a second failure. A completion that reused the already accepted start command ID under a distinct Update ID reached the handler, whose ordinary `TypeError` failed and retried the Workflow Task instead of returning a stable request failure. The validator and handler now report non-retryable `BpmnCommandIdentityConflict`; the Workflow remains waiting and accepts the subsequent exact completion.
+
 ## Green result
 
 The focused gate now passes the restart witness and all existing sequential, parallel, concurrent-delivery, duplicate-delivery, Update-before-completion, and replay checks.
@@ -56,6 +59,8 @@ The pinned platform establishes these bounded facts:
 
 - Workflow state reconstructs across Worker shutdown and replacement;
 - a completed accepted Update remains addressable through its Update ID after Workflow completion;
+- Update-ID deduplication is payload-blind at the project boundary, so the Update ID must be bound to exact stimulus content rather than the command ID alone;
+- a conflicting semantic command identity that reaches the Workflow fails as an explicit non-retryable application failure without corrupting state or wedging the Workflow Task;
 - a genuinely new Update is not accepted after Workflow completion;
 - the completed execution remains describable during retention;
 - explicit Workflow-ID non-reuse prevents accidental Process resurrection;
@@ -67,7 +72,7 @@ The pinned platform establishes these bounded facts:
 The experiment recommends the closed-Workflow account as the smallest initial production boundary:
 
 - derive Workflow completion from terminal semantic state after draining accepted handlers;
-- use the semantic command ID as the Temporal Update ID;
+- derive the Temporal Update ID from the semantic command ID and exact canonical stimulus content;
 - on an uncertain client retry, recover the existing Update result before classifying the Workflow as closed;
 - classify a distinct command addressed after closure as an adapter lifecycle result, never as an invented BPMN command outcome;
 - reject Workflow-ID reuse for one semantic Process-instance address;

@@ -160,7 +160,7 @@ scripts/             Maintained verification and infrastructure guards
 
 ## Next
 
-The next lane is the production Temporal lifecycle decision. It must define Workflow lifetime from semantic state rather than future scripted command count, specify the typed result for commands addressed after semantic completion or Workflow closure, and preserve deduplication, replay, and host/semantic identity separation before any new BPMN feature is admitted.
+The next lane is owner review of the [production Temporal lifecycle proposal](docs/TEMPORAL-PROCESS-LIFECYCLE-PROPOSAL.md). It recommends deriving Workflow lifetime from semantic state, binding Update identity to exact command content, recovering accepted results during Temporal retention, and returning typed adapter `processClosed` or `processUnknown` results without inventing BPMN outcomes.
 
 The source contract, deterministic TypeScript and Lean lowerers, exact Lean definition binding, generic Lean relation/evaluator, independent TypeScript parallel evaluator, multiple-task CIB projection with content-bound balanced evidence, focused Temporal parallel refinement/replay witnesses, and five-case four-target differential are implemented. The exact next research boundary and resume point are in [PLAN.md](docs/PLAN.md).
 

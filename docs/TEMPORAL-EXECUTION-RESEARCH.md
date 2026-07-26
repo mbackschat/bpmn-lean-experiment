@@ -371,7 +371,7 @@ The exact-task Query is read-only and returns the semantic core’s current `ope
 
 The completion Update carries the semantic command and returns its typed `CommandOutcome`. Its handler validates only transport shape, enqueues the command, and waits for the single main Workflow loop to apply the semantic core. The handler does not mutate semantic state directly.
 
-The caller uses `commandId` as the Temporal Update ID. Temporal deduplicates the same Update ID within one Run, while the adapter retains an application result ledger so repeated delivery of the same semantic command returns the first result without a second transition. Cross-Run deduplication remains deferred until Continue-As-New exists.
+The current conformance runner uses `commandId` as the Temporal Update ID. Temporal deduplicates the same Update ID within one Run, while the adapter retains an application result ledger so repeated delivery of the same semantic command under a distinct Update ID returns the first result without a second transition. The lifecycle experiment proves that reusing the same Temporal Update ID with a different payload returns the first result without invoking the handler, so command-ID-only transport identity is not safe for the production API. The [production lifecycle proposal](TEMPORAL-PROCESS-LIFECYCLE-PROPOSAL.md) requires an exact-stimulus-bound Update ID. Cross-Run deduplication remains deferred until Continue-As-New exists.
 
 Two different command IDs targeting the same occurrence are distinct semantic attempts. At most one can commit; a later accepted attempt is rejected by the semantic core. An attempt delivered only after the Workflow has closed is a Temporal closed-Workflow transport outcome, not a fabricated BPMN rejection.
 
@@ -679,7 +679,7 @@ The semantic core should never import the Temporal SDK. The adapter should never
 
 The adapter implements this shape for only the sequential User Task capsule. The Workflow receives the neutral scenario, performs semantic deployment admission through the core, queues the start stimulus, and exposes the diagnostic `bpmn-trace` Query plus the exact `bpmn-open-user-tasks` Query. The `bpmn-complete-user-task` Update validates transport shape, queues the exact task-instance stimulus, and waits for a command-result ledger entry. One main loop alone calls the core’s incremental `advanceScenario` operation and mutates semantic state and trace.
 
-The application command ID is the ordinary Temporal Update ID. The Workflow also records the accepted stimulus and first semantic outcome, so delivery of the same semantic command under a different Update ID returns the original result without a second transition. Reusing one command ID for a different payload fails at the adapter boundary instead of silently aliasing two commands. This ledger is Workflow-local; cross-Run deduplication remains absent until Continue-As-New is designed.
+The current harness uses the application command ID as the ordinary Temporal Update ID. The Workflow also records the accepted stimulus and first semantic outcome, so delivery of the same semantic command under a different Update ID returns the original result without a second transition, and reuse of one command ID for a different payload under a different Update ID fails at the adapter boundary. The pinned server’s same-Update-ID deduplication is payload-blind at this boundary and can bypass that handler check; the production proposal therefore binds transport Update identity to both command identity and exact stimulus content. The Workflow ledger remains Run-local, and cross-Run deduplication remains absent until Continue-As-New is designed.
 
 The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait and exact open task through Queries, delivers completion through Update, and compares every Workflow result with the pure core. One clean server/Worker executes exact, wrong-activation, and stale-completion cases; duplicate delivery uses a distinct Update ID. The gate fetches and inspects the exact Update history, replays every current live history, and then discards the in-memory server. Activities, timers, Search Attributes, Continue-As-New, retained history baselines, and general BPMN model ingestion remain absent.
 
@@ -733,7 +733,7 @@ The following decisions remain unapproved:
 7. The policy for operator cancellation, termination, reset, pause, and Activity Operations in conformance runs.
 8. The production task-discovery architecture beyond exact Query by known Workflow ID.
 9. The global command-envelope, identity, authorization, form, variable, and Search Attribute registry boundaries beyond the bounded completion command.
-10. The production Workflow lifecycle and typed result for a command addressed after semantic Process completion, without using future scenario input as a lifetime oracle.
+10. Owner approval of the [production Workflow lifecycle proposal](TEMPORAL-PROCESS-LIFECYCLE-PROPOSAL.md), including its typed post-closure result and content-bound Update identity.
 
 ## Architectural invariants derived from Temporal
 

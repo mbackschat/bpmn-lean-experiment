@@ -18,6 +18,7 @@ import {
   CommandOutcome,
 } from "@bpmn-lean/semantic-core";
 import {
+  ApplicationFailure,
   WorkflowExecutionAlreadyStartedError,
   WorkflowNotFoundError,
 } from "@temporalio/client";
@@ -94,10 +95,29 @@ test("closed Workflow retains accepted command result without accepting a new co
     assert.equal(openTasks.length, 1);
     assert.equal(openTasks[0].id.processInstanceId, "Instance_1");
 
+    const completion = scenario.stimuli[1];
+    const conflictingCompletion = {
+      ...completion,
+      commandId: scenario.stimuli[0].commandId,
+    };
+    await assert.rejects(
+      withDeadline(
+        handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
+          args: [conflictingCompletion],
+          updateId: "conflicting-command-identity-probe",
+        }),
+        2_000,
+        "conflicting command identity",
+      ),
+      (error) =>
+        error?.cause instanceof ApplicationFailure &&
+        error.cause.type === "BpmnCommandIdentityConflict",
+    );
+    assert.equal((await waitForOpenTasks(handle)).length, 1);
+
     await stopWorker(workerLease);
     workerLease = await startWorker(environment);
 
-    const completion = scenario.stimuli[1];
     const completionOutcome = await withDeadline(
       handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
         args: [completion],
@@ -134,6 +154,17 @@ test("closed Workflow retains accepted command result without accepting a new co
       ...completion,
       commandId: "complete-user-task-after-workflow-closure",
     };
+    // The same transport Update ID intentionally carries a different semantic command. Temporal returns the first result without invoking the Workflow handler.
+    const reusedUpdateIdOutcome = await withDeadline(
+      handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
+        args: [lateCompletion],
+        updateId: completion.commandId,
+      }),
+      operationDeadlineMs,
+      "payload-conflicting Update-ID retry",
+    );
+    assert.equal(reusedUpdateIdOutcome, CommandOutcome.Committed);
+
     await assert.rejects(
       withDeadline(
         handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
