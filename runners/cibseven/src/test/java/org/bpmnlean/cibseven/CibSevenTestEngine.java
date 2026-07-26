@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -10,6 +11,12 @@ final class CibSevenTestEngine {
   private CibSevenTestEngine() {}
 
   static ProcessEngine create(String name) {
+    return create(name, configuration -> {});
+  }
+
+  static ProcessEngine create(
+      String name,
+      Consumer<ProcessEngineConfigurationImpl> customize) {
     var databaseName =
         "bpmn_lean_"
             + name.replace("-", "_")
@@ -28,6 +35,7 @@ final class CibSevenTestEngine {
     configuration.setHistory(ProcessEngineConfiguration.HISTORY_AUDIT);
     configuration.setHistoryTimeToLive("P180D");
     configuration.setEnforceHistoryTimeToLive(true);
+    customize.accept(configuration);
     return configuration.buildProcessEngine();
   }
 }

@@ -1,6 +1,6 @@
 # CIB Seven BPMN extensions and execution-API research
 
-**Status:** Research result; family-level inventory complete for the pinned CIB Seven source, compatibility dispositions remain proposed rather than approved
+**Status:** Research result; family-level inventory complete for the pinned CIB Seven source, durable compatibility scope approved, individual behavioral lanes selected only by approved capsules
 
 **Scope:** The Camunda BPMN extension namespace retained by CIB Seven, Service Task execution bindings, Java delegates and beans, expressions, Script Tasks, FEEL, external tasks, and the compatibility claims each mechanism would require.
 
@@ -17,6 +17,8 @@ The most important compatibility finding is:
 > XML recognition, source-model admission, behavioral compatibility, handler registration, Java binary compatibility, and CIB engine API compatibility are separate claims.
 
 `camunda:class` is small only as XML. Executing an existing class with CIB semantics brings class loading, construction or dependency injection, field injection, the `JavaDelegate` interface, the broad `DelegateExecution` object, variables and scopes, model access, incidents, engine services, transaction behavior, and failure translation. That surface cannot be represented honestly as one Service Task effect callback.
+
+The bounded packaged-engine probe linked from the [Service Task effect proposal](../capsules/SERVICE-TASK-EFFECT-PROPOSAL.md#result) confirms the exact narrower candidate: CIB Seven resolves `${bpmnLeanEffectHandler}` from the legacy Camunda namespace, recognizes `asyncBefore` by expanded QName under a different lexical prefix, creates an immediately executable continuation job with three retries and no due date, decrements retries to two after a public failed execution, and cleanly re-executes the same durable job. These are source/oracle feasibility facts, not selection of general JUEL, bean, or Java-delegate compatibility.
 
 ## Namespace and ownership
 
@@ -132,4 +134,4 @@ The exact project probe class originally proposed is adequate as a CIB oracle fi
 
 That candidate proves only L1–L3 for one exact binding. General JUEL, arbitrary bean names, field injection, Java delegate loading, variables, and the production handler registry remain separate decisions.
 
-The extension and API scope recommendation is recorded in [CIB Seven compatibility scope proposal](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md). The [Service Task effect proposal](../capsules/SERVICE-TASK-EFFECT-PROPOSAL.md) must not be approved or implemented until that prior decision selects its binding and claim level.
+The durable extension and API boundary is owner-approved in the [CIB Seven compatibility scope proposal](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md). The exact handler pair and phase-zero engine facts are ready for the separate semantic decision in the [Service Task effect proposal](../capsules/SERVICE-TASK-EFFECT-PROPOSAL.md); no broader expression, bean, Java API, or engine API claim follows.

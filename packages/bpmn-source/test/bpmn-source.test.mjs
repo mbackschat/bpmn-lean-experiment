@@ -19,6 +19,10 @@ const bpmnUrl = new URL(
   "../../../scenarios/user-task-discovery-completion/process.bpmn",
   import.meta.url,
 );
+const serviceTaskProbeUrl = new URL(
+  "../../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn",
+  import.meta.url,
+);
 const scenario = JSON.parse(await readFile(scenarioUrl, "utf8"));
 const canonicalBytes = await readFile(bpmnUrl);
 
@@ -228,6 +232,45 @@ test("rejects BPMN behavior outside the first executable profile", async () => {
       ({ code }) => code === BpmnSourceDiagnosticCode.UnsupportedModel,
     ),
   );
+});
+
+test("retains the exact Service Task probe source and foreign attributes without parser warnings", async () => {
+  const probeBytes = await readFile(serviceTaskProbeUrl);
+  const result = await compileBpmnToSemanticProcess({
+    bytes: probeBytes,
+    sourceId: "service-task-effect-phase-zero-probe",
+    semanticProfile: scenario.profile,
+    limits,
+  });
+
+  assert.deepEqual([...result.copyExactBytes()], [...probeBytes]);
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  assert.deepEqual(
+    result.diagnostics.map(({ code }) => code),
+    [BpmnSourceDiagnosticCode.UnsupportedModel],
+  );
+
+  const { importBpmnGraph } = await import("../dist/moddle-adapter.js");
+  const imported = await importBpmnGraph(
+    new TextDecoder().decode(probeBytes),
+    limits.parserDeadlineMs,
+  );
+  assert.deepEqual(imported.warnings, []);
+  const process = imported.rootElement.rootElements.find(
+    ({ $type }) => $type === "bpmn:Process",
+  );
+  const serviceTask = process.flowElements.find(
+    ({ id }) => id === "ServiceTask_Record",
+  );
+  assert.equal(
+    serviceTask.implementation,
+    "urn:bpmn-lean:effect:probe-v1",
+  );
+  assert.equal(
+    serviceTask.$attrs["camunda:delegateExpression"],
+    "${bpmnLeanEffectHandler}",
+  );
+  assert.equal(serviceTask.$attrs["camunda:asyncBefore"], "true");
 });
 
 test("enforces the caller-provided byte limit before parsing", async () => {

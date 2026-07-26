@@ -2,9 +2,9 @@
 
 ## Status
 
-This is an unapproved semantic-capsule proposal. It defines the smallest Service Task and Temporal Activity account that would test the remaining external-effect feasibility risk. It authorizes no production implementation, profile extension, dependency, or retained-evidence replacement.
+This is an unapproved semantic-capsule proposal. It defines the smallest Service Task and Temporal Activity account that would test the remaining external-effect feasibility risk. Its authorized phase-zero source/oracle probe is green; it authorizes no production implementation, profile extension, dependency, or retained-evidence replacement.
 
-The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. This capsule still requires its own semantic approval. Before that decision, implementation begins only with the authorized packaged CIB Seven probe in [Phase zero](#phase-zero-cib-seven-probe) and stops before Lean or TypeScript formalization if that probe fails.
+The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. This capsule still requires its own semantic approval. The green [phase-zero probe](#phase-zero-cib-seven-probe) removes the packaged-engine uncertainty but does not authorize checked-source, Lean, TypeScript, or Temporal production work.
 
 ## Question
 
@@ -60,7 +60,7 @@ The pinned CIB Seven checkout and revision are recorded in [SOURCES.md](../SOURC
 
 The last fact means `asyncBefore` does not provide timer-like eligibility. Automatic job execution is disabled, and the harness makes the decision to release the already-executable job as an explicit scheduling input.
 
-Pinned `bpmn-moddle@10.0.0` was probed with the Camunda namespace and foreign Service Task attributes. It produced no warning and retained the namespace declaration and attributes through raw `$attrs`. The phase-zero source-admission test must repeat this check for the exact `delegateExpression` binding; the source compiler is expected to validate and normalize these QNames without a Camunda descriptor package or any new dependency.
+Pinned `bpmn-moddle@10.0.0` imports the exact phase-zero source without a parser warning, retains the exact standard implementation URI and the two Camunda-namespace attributes through raw `$attrs`, and preserves the exact bytes through rejected executable admission. The bounded compiler still rejects the Service Task as unsupported; namespace-aware normalization remains production work for an approved capsule and requires no Camunda descriptor package.
 
 ## Competing CIB execution bindings
 
@@ -311,6 +311,14 @@ Before checked-source, IL, Lean, TypeScript, or Temporal production work:
 6. retain a negative assertion that no timer-like due-date eligibility transition is claimed.
 
 The red test is the exact fail-once/re-execute probe. If the packaged engine differs from the pinned-source account, if public manual execution does not perform the retry transition, or if the probe requires setting retries administratively, stop for owner direction and do not formalize the proposed semantics.
+
+### Result
+
+The phase-zero probe is green against packaged CIB Seven `2.2.0`. [The exact source fixture](../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn) deploys with no engine parser warning under the shared disabled-executor configuration. Start creates exactly one immediately executable async-continuation job at `ServiceTask_Record`, with three retries, a null due date, and no timer classification. A test-local adapter projection maps that one host wait to the proposed element, activation, implementation, and handler identity while keeping the mapping explicitly adapter-derived.
+
+[The engine probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.java) registers only the exact `bpmnLeanEffectHandler` bean. Its first public `executeJob` invocation performs one probe mutation and throws; the same durable job remains executable with retries decremented from three to two. Its second public execution invokes the delegate again, observes the prior mutation, performs no second mutation, removes the job, and completes the Process. No call edits retries administratively, and no incident is created.
+
+The same test deploys an equivalent source whose lexical prefix is `probe` and whose expanded attribute names remain `{http://camunda.org/schema/1.0/bpmn}delegateExpression` and `{http://camunda.org/schema/1.0/bpmn}asyncBefore`; exact bean resolution and async-before job creation still succeed. [The source-import guard](../../packages/bpmn-source/test/bpmn-source.test.mjs) independently requires warning-free `bpmn-moddle` import, exact-byte retention, the standard implementation URI, and the two raw foreign attributes. These results satisfy the compatibility-scope phase-zero obligations without selecting the proposed extension into a profile.
 
 ## CIB fidelity labels
 

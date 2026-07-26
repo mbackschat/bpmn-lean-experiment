@@ -11,11 +11,12 @@ sequential_bpmn_path="$project_root/scenarios/user-task-discovery-completion/pro
 parallel_bpmn_path="$project_root/scenarios/parallel-fork-join/process.bpmn"
 timer_bpmn_path="$project_root/scenarios/intermediate-catch-timer/process.bpmn"
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
+service_task_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn"
 
 test -x "$java_home/bin/java"
 test -f "$maven_settings"
 
-for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$parallel_probe_path"; do
+for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$parallel_probe_path" "$service_task_probe_path"; do
   if test -f "$xsd_path"; then
     xmllint --noout --schema "$xsd_path" "$bpmn_path"
   else

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ServiceTaskEffectProbe"
+  targetNamespace="https://bpmn-lean.local/cibseven-probes/service-task-effect">
+  <bpmn:process id="Process_ServiceTaskEffectProbe" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToService</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask
+      id="ServiceTask_Record"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true">
+      <bpmn:incoming>Flow_StartToService</bpmn:incoming>
+      <bpmn:outgoing>Flow_ServiceToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_ServiceToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToService" sourceRef="StartEvent_1" targetRef="ServiceTask_Record"/>
+    <bpmn:sequenceFlow id="Flow_ServiceToEnd" sourceRef="ServiceTask_Record" targetRef="EndEvent_1"/>
+  </bpmn:process>
+</bpmn:definitions>
