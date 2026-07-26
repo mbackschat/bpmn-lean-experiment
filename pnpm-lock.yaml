@@ -33,6 +33,9 @@ importers:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
         version: link:../bpmn-source
+      '@bpmn-lean/temporal-adapter':
+        specifier: workspace:*
+        version: link:../temporal-adapter
 
   packages/semantic-core: {}
 

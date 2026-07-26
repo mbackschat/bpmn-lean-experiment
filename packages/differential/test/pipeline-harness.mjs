@@ -27,7 +27,7 @@ import {
 import {
   TemporalCompletionDelivery,
   TemporalScenarioRunner,
-} from "../../temporal-adapter/dist/index.js";
+} from "@bpmn-lean/temporal-adapter";
 import { runCommand } from "../../../scripts/run-command.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));

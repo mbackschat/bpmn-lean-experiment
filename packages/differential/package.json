@@ -15,6 +15,7 @@
     "@bpmn-lean/semantic-core": "workspace:*"
   },
   "devDependencies": {
-    "@bpmn-lean/bpmn-source": "workspace:*"
+    "@bpmn-lean/bpmn-source": "workspace:*",
+    "@bpmn-lean/temporal-adapter": "workspace:*"
   }
 }
