@@ -1,4 +1,5 @@
 import BpmnSemantics.Conformance
+import BpmnSemantics.SemanticProcess
 import BpmnSemantics.SequentialUserTask
 
 /-! # BpmnSemantics.UserTaskInteractionConformance — task-occurrence interaction locks
@@ -128,44 +129,41 @@ example :
   decide
 
 example :
-    applyStimulus 4 model
-        { control := .waitingUserTask ⟨"Instance_1"⟩ 1
-          logicalTimeMs := 0 }
+    BpmnSemantics.SemanticProcess.applyStimulus
+        BpmnSemantics.SemanticProcess.scenarioClosureLimit
+        program afterStartState
         (.completeUserTaskInstance ⟨"wrong-activation"⟩
           { processInstanceId := ⟨"Instance_1"⟩
-            elementId := model.userTaskId
+            elementId := ⟨"UserTask_Approve"⟩
             activation := 2 }) =
       { outcome := .rejected
-        state :=
-          { control := .waitingUserTask ⟨"Instance_1"⟩ 1
-            logicalTimeMs := 0 }
-        microtrace := []
-        internalStepBoundExceeded := false } :=
-  wrong_activation_is_rejected
-    model ⟨"Instance_1"⟩ 1 2 ⟨"wrong-activation"⟩ 0 (by decide)
+        state := afterStartState
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } :=
+  wrong_activation_is_rejected 2 (by decide)
 
 example :
-    applyStimulus 4 model
-        { control := .waitingUserTask ⟨"Instance_1"⟩ 1
-          logicalTimeMs := 0 }
+    BpmnSemantics.SemanticProcess.applyStimulus
+        BpmnSemantics.SemanticProcess.scenarioClosureLimit
+        program afterStartState
         (.completeUserTaskInstance ⟨"wrong-process-instance"⟩
           { exactTaskId with
             processInstanceId := ⟨"Other_Instance"⟩ }) =
       { outcome := .rejected
-        state :=
-          { control := .waitingUserTask ⟨"Instance_1"⟩ 1
-            logicalTimeMs := 0 }
-        microtrace := []
-        internalStepBoundExceeded := false } :=
-  task_identity_mismatch_is_rejected
-    model ⟨"Instance_1"⟩ 1 ⟨"wrong-process-instance"⟩
-      { exactTaskId with processInstanceId := ⟨"Other_Instance"⟩ } 0
-      (by simp [exactTaskId])
+        state := afterStartState
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } :=
+  BpmnSemantics.SemanticProcess.task_identity_mismatch_is_rejected
+    program exactWait ⟨"wrong-process-instance"⟩
+      { exactTaskId with processInstanceId := ⟨"Other_Instance"⟩ }
+      0 (by simp [exactTaskId, exactWait])
 
 example :
     let wrongTaskId := { exactTaskId with activation := 2 }
     wrongTaskId.elementId = exactTaskId.elementId ∧
-      (applyStimulus 4 model afterStartState
+      (BpmnSemantics.SemanticProcess.applyStimulus
+        BpmnSemantics.SemanticProcess.scenarioClosureLimit
+        program afterStartState
         (.completeUserTaskInstance ⟨"wrong-activation"⟩ wrongTaskId)).outcome =
           .rejected :=
   element_id_alone_is_insufficient

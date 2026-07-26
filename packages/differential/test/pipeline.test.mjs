@@ -104,6 +104,10 @@ test(
     assert.deepEqual(report.replay, {
       liveHistories: 3,
     });
+    assert.deepEqual(report.leanDefinitionMutation, {
+      kind: "rejected",
+      mutation: "operationOrigin",
+    });
     assert.equal(report.isolation.temporalWorkflowIds.length, 6);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,

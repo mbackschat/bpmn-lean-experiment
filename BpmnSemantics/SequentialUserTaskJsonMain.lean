@@ -1,4 +1,5 @@
 import BpmnSemantics.Conformance
+import BpmnSemantics.SemanticProcessJson
 import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.UserTaskInteractionConformance
 import Lean.Data.Json
@@ -11,6 +12,7 @@ This is deliberately not a general scenario parser or transport. It exposes the 
 namespace BpmnSemantics.SequentialUserTaskJsonMain
 
 open BpmnSemantics
+open BpmnSemantics.SemanticProcessJson
 open Lean
 
 private def jsonArray (values : List Json) : Json :=
@@ -148,23 +150,75 @@ private def scenarioJson (scenario : Scenario) : Json :=
         jsonArray (scenario.observations.map observationKindJson))
     , ("provenance", scenarioProvenanceJson scenario.provenance) ]
 
-private def resultRecordJson (scenario : Scenario) : Json :=
+private def definitionBindingJson (input : DefinitionInput) : Json :=
+  Json.mkObj
+    [ ("kind", toJson "leanDefinitionBinding")
+    , ("sourceSha256",
+        toJson input.checkedProcess.identity.sourceSha256)
+    , ("semanticProfile",
+        toJson input.checkedProcess.identity.semanticProfile.value)
+    , ("programMatchesLeanLowering", toJson true) ]
+
+private def resultRecordJson (scenario : Scenario)
+    (input : DefinitionInput) : Json :=
   Json.mkObj
     [ ("scenarioId", toJson scenario.id.value)
     , ("scenario", scenarioJson scenario)
+    , ("definitionBinding", definitionBindingJson input)
     , ("result", scenarioResultJson
-        (BpmnSemantics.SequentialUserTask.run scenario)) ]
+        (BpmnSemantics.SemanticProcess.runScenario
+          input.semanticProcess scenario)) ]
 
 private def emittedScenarios : List Scenario :=
   [ BpmnSemantics.UserTaskInteractionConformance.successfulScenario
   , BpmnSemantics.UserTaskInteractionConformance.wrongActivationScenario
   , BpmnSemantics.UserTaskInteractionConformance.staleCompletionScenario ]
 
-def emit : IO Unit :=
+private def readDefinitionInputs (path : System.FilePath) :
+    IO (List DefinitionInput) := do
+  let contents ← IO.FS.readFile path
+  let lines := (contents.splitOn "\n").filter fun line => !line.isEmpty
+  lines.mapM fun line =>
+    match decodeAndValidateDefinitionInput line with
+    | .ok input => pure input
+    | .error message => throw (IO.userError message)
+
+private def definitionForScenario (inputs : List DefinitionInput)
+    (scenario : Scenario) : IO DefinitionInput := do
+  let matchingInputs := inputs.filter fun input =>
+    decide (input.scenarioId = scenario.id)
+  let input ←
+    match matchingInputs with
+    | [input] => pure input
+    | _ =>
+        throw (IO.userError
+          s!"expected exactly one definition for {scenario.id.value}")
+  if input.checkedProcess.identity.semanticProfile ≠ scenario.profile ||
+      input.checkedProcess.identity.sourceId ≠ scenario.bpmn.id ||
+      input.checkedProcess.identity.sourceSha256 ≠ scenario.bpmn.sha256 ||
+      input.checkedProcess.processId ≠
+        match scenario.stimuli.head? with
+        | some (.startProcess _ processId _) => ⟨processId.value⟩
+        | _ => ⟨""⟩ then
+    throw (IO.userError
+      s!"definition identity does not match scenario {scenario.id.value}")
+  pure input
+
+def emit (definitionInputPath : System.FilePath) : IO Unit := do
+  let inputs ← readDefinitionInputs definitionInputPath
+  if inputs.length ≠ emittedScenarios.length then
+    throw (IO.userError "definition input count does not match Lean scenarios")
   for scenario in emittedScenarios do
-    IO.println (resultRecordJson scenario).compress
+    let input ← definitionForScenario inputs scenario
+    IO.println (resultRecordJson scenario input).compress
 
 end BpmnSemantics.SequentialUserTaskJsonMain
 
-def main : IO Unit :=
-  BpmnSemantics.SequentialUserTaskJsonMain.emit
+def main (arguments : List String) : IO Unit :=
+  do
+    match arguments with
+    | [definitionInputPath] =>
+        BpmnSemantics.SequentialUserTaskJsonMain.emit definitionInputPath
+    | _ =>
+        throw (IO.userError
+          "usage: emitSequentialUserTaskResults <definition-input.jsonl>")

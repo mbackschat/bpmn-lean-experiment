@@ -206,11 +206,30 @@ async function runCibTargets(scenarios, inputPath, outputPath) {
   };
 }
 
-async function runLeanTargets(scenarios) {
+function leanDefinitionRecords(contexts) {
+  return contexts.map(
+    ({ scenario, checkedProcess, semanticProcess }) => ({
+      scenarioId: scenario.id,
+      checkedProcess,
+      semanticProcess,
+    }),
+  );
+}
+
+async function writeJsonLines(filePath, records) {
+  await writeFile(
+    filePath,
+    `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
+    "utf8",
+  );
+}
+
+async function runLeanTargets(contexts, inputPath) {
   const started = performance.now();
+  await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
   const execution = await runProcess(
     "lake",
-    ["exe", leanExecutable],
+    ["exe", leanExecutable, inputPath],
     10_000,
   );
   const records = execution.stdout
@@ -219,12 +238,12 @@ async function runLeanTargets(scenarios) {
     .map((line) => JSON.parse(line));
   const indexedRecords = indexExactRecords(
     records,
-    scenarios.map(({ id }) => id),
+    contexts.map(({ scenario }) => scenario.id),
     "Lean",
   );
   return {
     results: new Map(
-      scenarios.map((scenario) => {
+      contexts.map(({ scenario, checkedProcess }) => {
         const record = indexedRecords.get(scenario.id);
         if (record === undefined) {
           throw new TypeError(`Lean omitted scenario ${scenario.id}`);
@@ -239,11 +258,59 @@ async function runLeanTargets(scenarios) {
             `Lean result for ${scenario.id} has no canonical result`,
           );
         }
+        const binding = record.definitionBinding;
+        if (
+          binding?.kind !== "leanDefinitionBinding" ||
+          binding.sourceSha256 !==
+            checkedProcess.identity.sourceSha256 ||
+          binding.semanticProfile !==
+            checkedProcess.identity.semanticProfile ||
+          binding.programMatchesLeanLowering !== true
+        ) {
+          throw new TypeError(
+            `Lean definition binding does not match ${scenario.id}`,
+          );
+        }
         return [scenario.id, record.result];
       }),
     ),
     totalMs: elapsedMs(started),
   };
+}
+
+async function requireLeanDefinitionMutationRejection(contexts, inputPath) {
+  const records = structuredClone(leanDefinitionRecords(contexts));
+  const firstOperation =
+    records[0]?.semanticProcess?.operations?.[0];
+  if (firstOperation?.origin?.elementId === undefined) {
+    throw new TypeError("Lean definition mutation requires one operation");
+  }
+  firstOperation.origin.elementId =
+    `${firstOperation.origin.elementId}_mutated`;
+  await writeJsonLines(inputPath, records);
+  try {
+    await runProcess(
+      "lake",
+      ["exe", leanExecutable, inputPath],
+      10_000,
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes(
+        "Semantic Process does not equal Lean lowering",
+      )
+    ) {
+      return {
+        kind: "rejected",
+        mutation: "operationOrigin",
+      };
+    }
+    throw error;
+  }
+  throw new Error(
+    "Lean accepted a Semantic Process that differs from its lowering",
+  );
 }
 
 function runCoreTargets(contexts) {
@@ -588,6 +655,14 @@ export async function runPipelineCases(cases) {
   );
   const cibInputPath = path.join(temporaryDirectory, "cib-input.jsonl");
   const cibOutputPath = path.join(temporaryDirectory, "cib-output.jsonl");
+  const leanInputPath = path.join(
+    temporaryDirectory,
+    "lean-definition-input.jsonl",
+  );
+  const leanMutationInputPath = path.join(
+    temporaryDirectory,
+    "lean-definition-mutation.jsonl",
+  );
   const warmStarted = performance.now();
   let runner;
   let startupMs = 0;
@@ -611,16 +686,26 @@ export async function runPipelineCases(cases) {
 
     const scenarioStarted = performance.now();
     const core = runCoreTargets(contexts);
-    const [cib, lean, temporal] = await Promise.all([
+    const [cib, lean, leanDefinitionMutation, temporal] = await Promise.all([
       runCibTargets(
         contexts.map(({ scenario }) => scenario),
         cibInputPath,
         cibOutputPath,
       ),
-      runLeanTargets(contexts.map(({ scenario }) => scenario)),
+      runLeanTargets(contexts, leanInputPath),
+      requireLeanDefinitionMutationRejection(
+        contexts,
+        leanMutationInputPath,
+      ),
       runTemporalTargets(runner, contexts),
     ]);
-    targets = { cib, lean, core, temporal };
+    targets = {
+      cib,
+      lean,
+      leanDefinitionMutation,
+      core,
+      temporal,
+    };
     scenarioExecutionMs = elapsedMs(scenarioStarted);
 
     const projectionStarted = performance.now();
@@ -673,6 +758,7 @@ export async function runPipelineCases(cases) {
     buildMode,
     implementationRevision: revision,
     cases: caseResults.map(({ report: caseReport }) => caseReport),
+    leanDefinitionMutation: targets.leanDefinitionMutation,
     replay,
     phaseMs: {
       build: buildMs,

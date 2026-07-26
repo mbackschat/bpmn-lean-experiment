@@ -2,7 +2,7 @@ import BpmnSemantics.Scenario
 
 /-! # BpmnSemantics.SemanticProcessContract — reviewed definition and proof boundaries
 
-This module freezes the approved checked-process and Semantic Process definition types and the propositions that future lowering and evaluation must establish. It deliberately contains no lowerer, runtime semantics, decoder, or proof that an implementation satisfies either obligation.
+This module owns the approved checked-process and Semantic Process definition types and the generic proof propositions. The implementations and achieved proof status live in `SemanticProcess` and `SemanticProcessJson` so the reviewed obligation statements remain separately visible.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -131,7 +131,7 @@ structure Program where
 
 namespace Obligations
 
-/-- Proposition every future executable evaluator must satisfy relative to the separately defined declarative relation. This definition states the proof signature; it does not supply a relation, evaluator, or proof. -/
+/-- Proposition every executable evaluator must satisfy relative to the separately defined declarative relation. -/
 def evaluator_sound
     {RuntimeState SemanticInput : Type}
     (programStep : Program → RuntimeState → SemanticInput → RuntimeState → Prop)
@@ -140,7 +140,7 @@ def evaluator_sound
     step program state input = some successor →
       programStep program state input successor
 
-/-- Reviewed observational preservation proposition for the checked-source lowering boundary. This definition states the proof signature; it does not implement `lower` or claim the proposition has been proved. -/
+/-- Reviewed observational preservation proposition for the checked-source lowering boundary. The signature does not itself claim that a particular source semantics has been supplied or the proposition proved. -/
 def lower_preserves_supported_run
     {ProgramTrace Observation : Type}
     (wellFormed : CheckedProcess → Prop)

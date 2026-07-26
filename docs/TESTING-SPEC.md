@@ -80,14 +80,21 @@ Retained CIB evidence is verifier-only. Target runners never receive it, and ord
 ./scripts/pnpm.sh run test:semantic
 ```
 
-Lean and TypeScript independently derive exact completion, wrong activation, and stale completion. Lean additionally checks:
+Lean and TypeScript independently derive exact completion, wrong activation, and stale completion. Before evaluation, Lean strictly decodes the actual checked graph and Semantic Process program, independently validates both, recomputes canonical lowering, and rejects any inequality. Lean additionally checks:
 
-- the executable internal-step selector is sound with respect to the declared internal microstep relation;
+- the executable operation-identified `step` is universally sound with respect to the declarative `OperationStep`/`ProgramStep` relation;
+- lowering preserves definition identity and Sequence-Flow origins;
 - exact active-occurrence completion terminates the Process;
 - any Process-instance, BPMN-element, or activation mismatch is rejected with exact state preservation;
 - wrong activation is a corollary of the general mismatch law;
 - element identity alone is insufficient;
-- closure-bound exhaustion remains a harness failure and never exposes a committed semantic command.
+- bounded parallel duplication creates exactly two task waits;
+- exact completion removes only the named occurrence and both completion orders reach the same final state;
+- synchronization requires every incoming flow, consumes one token from each, and retains excess multiplicity;
+- token projection is independent of storage order and duplicate-left/no-right is a checked non-law;
+- closure-bound exhaustion or ambiguous internal choice remains a harness failure and never exposes a committed semantic command.
+
+The reviewed full observational checked-source-to-program-run preservation proposition is not claimed: there is no independent checked-source operational relation from which to establish it without assuming the program account. Structural lowering preservation and exact artifact equality are the current proved boundary.
 
 The semantic core tests structural IR/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. The Temporal gate demonstrates that Query projection, Update admission, logical deduplication, and replay remain unchanged when the Workflow delegates these policies to the core.
 
@@ -125,14 +132,17 @@ The pipeline:
 2. loads three answer-free scenarios and content-bound CIB evidence;
 3. compiles the exact BPMN bytes once per source/profile identity;
 4. starts one clean Temporal server and Worker;
-5. runs one three-case CIB batch, one three-result Lean emitter, the pure core, and six Temporal Workflows concurrently;
-6. requires Lean's echoed scenario to equal the admitted scenario document, rejecting a drifted stimulus, BPMN digest, or provenance at an exact structural path;
-7. compares CIB with Lean, the core, and Temporal exactly by scenario identity;
-8. compares fresh CIB output with retained CIB evidence;
-9. checks exact Query/Update evidence, duplicate delivery, isolated Workflow equality, and clean CIB state;
-10. mutates the observed activation ordinal and requires an exact disagreement path;
-11. replays all three primary live histories;
-12. shuts down the Worker/server and removes temporary files.
+5. writes the actual checked graph and Semantic Process program for each retained scenario to a private definition-input batch;
+6. runs one three-case CIB batch, one three-result Lean emitter over that definition batch, the pure core, and six Temporal Workflows concurrently;
+7. requires Lean's echoed scenario to equal the admitted scenario document, rejecting a drifted stimulus, BPMN digest, or provenance at an exact structural path;
+8. requires Lean's echoed definition identity and lowering-equality result to match the admitted artifacts;
+9. mutates one operation origin without making the program structurally invalid and requires Lean to reject the program as unequal to its lowering;
+10. compares CIB with Lean, the core, and Temporal exactly by scenario identity;
+11. compares fresh CIB output with retained CIB evidence;
+12. checks exact Query/Update evidence, duplicate delivery, isolated Workflow equality, and clean CIB state;
+13. mutates the observed activation ordinal and requires an exact disagreement path;
+14. replays all three primary live histories;
+15. shuts down the Worker/server and removes temporary files.
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 

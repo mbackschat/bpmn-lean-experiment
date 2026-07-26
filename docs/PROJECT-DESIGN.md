@@ -66,7 +66,7 @@ Lean also forces architectural distinctions to become explicit:
 
 Every new transition family should have a declarative Lean relation and an executable evaluator with a soundness bridge. Completeness, determinism, compiler correspondence, TypeScript correspondence, liveness, and refinement remain separate obligations and must not be implied by evaluator soundness.
 
-The current Lean implementation does not parse BPMN XML, consume the approved checked BPMN graph or Semantic Process IL, check lowering equality, prove source-to-program preservation, or machine-check the TypeScript or Temporal implementation. Those are explicit gaps, not hidden assumptions.
+The current Lean implementation does not parse BPMN XML, prove the arbitrary XML parser correct, prove full checked-source-to-public-run preservation, or machine-check the TypeScript or Temporal implementation. It does strictly decode the pipeline-provided checked BPMN graph and Semantic Process program, validate both independently, recompute canonical lowering, reject inequality before evaluation, and execute the received program. Structural definition identity and source-origin preservation are proved; the stronger reviewed observational preservation proposition remains open because the project has no independent checked-source operational relation to instantiate without assuming the desired result.
 
 ## Interpreter architecture
 

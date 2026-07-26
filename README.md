@@ -4,7 +4,7 @@ Making BPMN execution durable, explainable, and continuously checkable.
 
 This project explores a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. The ultimate goal is OMG BPMN Process Execution Conformance for imported executable Process diagrams—not merely translating BPMN shapes into Workflow code.
 
-> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. Exact BPMN now lowers through a checked project-owned graph to the bounded Semantic Process program consumed by the sequential production path. The approved parallel structure also lowers to `duplicate` and `synchronize`, but its Lean account, TypeScript execution, CIB evidence, and Temporal refinement remain open. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
+> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. Exact BPMN lowers through a checked project-owned graph to the bounded Semantic Process program consumed by the sequential production path. Lean now independently lowers, validates, and evaluates those exact admitted definitions and checks the parallel fork/join laws. Independent TypeScript parallel execution, canonical CIB evidence, and Temporal refinement remain open. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
@@ -77,7 +77,7 @@ Lean makes the selected operational meaning executable before it is duplicated i
 
 The current capsule proves that any mismatch in Process instance, BPMN element, or activation ordinal rejects User Task completion with exact state preservation. A nearby executable non-law demonstrates why matching only the BPMN element ID is insufficient. These results guard the identity mechanism rather than one serialized fixture.
 
-Lean does not automatically prove the parser, CIB, TypeScript, Temporal, database, or network. Those remain distinct evidence lanes. The current Lean emitter is content-identified but does not yet consume arbitrary pipeline IR; that correspondence gap is explicit in the [implementation map](docs/IMPLEMENTATION-MAP.md).
+Lean does not automatically prove the parser, CIB, TypeScript, Temporal, database, or network. Those remain distinct evidence lanes. The pipeline gives Lean the actual checked BPMN graph and Semantic Process program for every retained scenario; Lean strictly decodes both, independently recomputes lowering, rejects inequality, and only then evaluates the received program. This closes definition drift without proving parser correctness or full source-to-run preservation.
 
 ## Current evidence
 
@@ -98,6 +98,7 @@ One pipeline command:
 - compares fresh CIB output with content-bound retained CIB evidence;
 - validates Query projections, Update outcomes, duplicate logical delivery, and cleanup;
 - injects activation `2` into an observed task and requires the comparator to identify the exact disagreement;
+- mutates one Semantic Process operation origin and requires Lean to reject the program as unequal to its lowering;
 - replays all three live Temporal histories before the clean in-memory server shuts down.
 
 The current pre-release contracts have one scalable representation each. Stable document kinds identify artifact roles, JSON Schema `$id` identifies the current wire schema, and semantic profile `id` identifies reviewed behavioral meaning. Prototype format branches and committed Temporal histories are deliberately absent until a durable release baseline is approved.
@@ -159,9 +160,9 @@ scripts/             Maintained verification and infrastructure guards
 
 ## Next
 
-The next implementation lane closes the Lean definition boundary for the checked graph and Semantic Process program: decode both artifacts, recompute exact lowering, define the declarative relation and executable evaluator, and prove evaluator soundness with exact preservation status. The following parallel lane must then distinguish incoming-flow provenance from arrival count, preserve token multiplicity, and demonstrate completion-order independence.
+The next implementation lane is the independent TypeScript parallel evaluator. It must execute `duplicate` and per-incoming-flow `synchronize`, preserve token multiplicity, keep semantic task occurrences explicit, avoid collection order as an undeclared scheduler, and pass both completion orders plus the separating non-law and excess-token witnesses.
 
-The source contract, deterministic lowerer, and sequential consumers are implemented. Lean definition binding and parallel execution/evidence remain open. The exact red/green sequence and resume point are in [PLAN.md](docs/PLAN.md).
+The source contract, deterministic TypeScript and Lean lowerers, exact Lean definition binding, generic Lean relation/evaluator, and Lean parallel laws are implemented. Independent TypeScript parallel execution and the CIB, Temporal, and differential evidence remain open. The exact red/green sequence and resume point are in [PLAN.md](docs/PLAN.md).
 
 ## Contributing
 

@@ -2,7 +2,7 @@
 
 `@bpmn-lean/semantic-core` is the production-oriented, dependency-free TypeScript implementation of the approved semantic capsule. It owns BPMN-visible command/state transitions and canonical observations, but no file I/O, XML parser, CIB Seven code, Temporal SDK code, or external effects.
 
-The current execution surface supports only the content-addressed `None Start Event → User Task → None End Event` model and the three [User Task witnesses](../../scenarios/user-task-discovery-completion/README.md). The current Semantic Process program comes from the separate [source-ingestion package](../bpmn-source/README.md), and results are checked independently against retained CIB evidence and the [Lean interpreter](../../BpmnSemantics/SequentialUserTask.lean). The contract admits the approved parallel operation shapes, but parallel execution remains gated until its independent evaluator and witnesses are complete.
+The current execution surface supports only the content-addressed `None Start Event → User Task → None End Event` model and the three [User Task witnesses](../../scenarios/user-task-discovery-completion/README.md). The current Semantic Process program comes from the separate [source-ingestion package](../bpmn-source/README.md), and results are checked independently against retained CIB evidence and the generic [Lean Semantic Process interpreter](../../BpmnSemantics/SemanticProcess.lean). The contract admits the approved parallel operation shapes, but TypeScript parallel execution remains gated until its independent evaluator and witnesses are complete.
 
 ## Public boundary
 

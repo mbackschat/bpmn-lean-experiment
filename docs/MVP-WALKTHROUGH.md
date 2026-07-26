@@ -118,36 +118,54 @@ Retained evidence binds the exact scenario bytes, profile bytes, CIB revision, p
 
 ## 4. Give the profile an executable Lean meaning
 
-Lean holds an independent operational account: immutable model definition, runtime control state, external command admission, deterministic internal closure, and stable observations. It is executable, so the same definition emits the traces compared by the pipeline.
+Lean holds an independent operational account: immutable model definition, runtime control state, external command admission, explicit internal-operation choice, bounded unique closure for the sequential capsule, and stable observations. The pipeline supplies the actual checked BPMN graph and Semantic Process program for each retained scenario. Lean strictly decodes and validates them, recomputes canonical lowering, rejects inequality, and executes the received program to emit the compared traces.
 
 Lean also turns semantic review questions into general checked laws. The central User Task identity law is pulled directly from the compiling Lean module:
 
-<!-- source-fragment: BpmnSemantics/SequentialUserTask.lean#task-identity-law -->
+<!-- source-fragment: BpmnSemantics/SemanticProcess.lean#task-identity-law -->
 ```lean
 theorem task_identity_mismatch_is_rejected
-    (definition : Model) (instanceId : SemanticId)
-    (activeActivation : Nat) (completionCommandId : SemanticId)
+    (program : Program) (wait : UserTaskWait)
+    (completionCommandId : SemanticId)
     (submittedTaskId : UserTaskInstanceId) (logicalTimeMs : Nat)
-    (h :
-      submittedTaskId.processInstanceId ≠ instanceId ∨
-      submittedTaskId.elementId ≠ definition.userTaskId ∨
-      submittedTaskId.activation ≠ activeActivation) :
-    applyStimulus internalClosureLimit definition
-        { control := .waitingUserTask instanceId activeActivation
-          logicalTimeMs }
-        (.completeUserTaskInstance completionCommandId
-          submittedTaskId) =
+    (mismatch :
+      submittedTaskId.processInstanceId ≠ wait.processInstanceId ∨
+      submittedTaskId.elementId.value ≠ wait.task.id.value ∨
+      submittedTaskId.activation ≠ wait.activation) :
+    applyStimulus scenarioClosureLimit program
+        (singletonWaitingState wait logicalTimeMs)
+        (.completeUserTaskInstance completionCommandId submittedTaskId) =
       { outcome := .rejected
-        state :=
-          { control := .waitingUserTask instanceId activeActivation
-            logicalTimeMs }
-        microtrace := []
-        internalStepBoundExceeded := false } := by
-  rcases h with processMismatch | remainingMismatch
-  · simp [applyStimulus, admit, processMismatch]
+        state := singletonWaitingState wait logicalTimeMs
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  rcases mismatch with processMismatch | remainingMismatch
+  · have noMatch : ¬ (
+        (wait.processInstanceId = submittedTaskId.processInstanceId ∧
+          wait.task.id = ⟨submittedTaskId.elementId.value⟩) ∧
+        wait.activation = submittedTaskId.activation) := by
+      intro exactMatch
+      exact processMismatch exactMatch.1.1.symm
+    simp [applyStimulus, admitStimulus, completeUserTask,
+      singletonWaitingState, noMatch]
   · rcases remainingMismatch with elementMismatch | activationMismatch
-    · simp [applyStimulus, admit, elementMismatch]
-    · simp [applyStimulus, admit, activationMismatch]
+    · have noMatch : ¬ (
+          (wait.processInstanceId = submittedTaskId.processInstanceId ∧
+            wait.task.id = ⟨submittedTaskId.elementId.value⟩) ∧
+          wait.activation = submittedTaskId.activation) := by
+        intro exactMatch
+        exact elementMismatch
+          (congrArg TaskDefinitionId.value exactMatch.1.2).symm
+      simp [applyStimulus, admitStimulus, completeUserTask,
+        singletonWaitingState, noMatch]
+    · have noMatch : ¬ (
+          (wait.processInstanceId = submittedTaskId.processInstanceId ∧
+            wait.task.id = ⟨submittedTaskId.elementId.value⟩) ∧
+          wait.activation = submittedTaskId.activation) := by
+        intro exactMatch
+        exact activationMismatch exactMatch.2.symm
+      simp [applyStimulus, admitStimulus, completeUserTask,
+        singletonWaitingState, noMatch]
 ```
 
 The theorem is stronger than replaying one fixture. For any model, active Process instance, activation ordinal, command ID, and logical time, a mismatch in any task-occurrence identity component is rejected and preserves the waiting state.
@@ -156,7 +174,7 @@ The nearby checked non-law is equally important: matching the BPMN element ID al
 
 Lean does not prove that CIB, TypeScript, Temporal, XML parsing, or the network is correct. It proves properties of the explicit Lean semantics. Correspondence with the other systems remains separate evidence.
 
-Because Lean executes capsule data compiled into its module, the emitter also echoes the exact scenario content it executed. The harness compares that echo with the admitted scenario document and rejects any drift, so a matching scenario identity can no longer hide a changed stimulus, BPMN digest, or provenance reference.
+The emitter echoes the exact scenario content it executed and the exact definition binding it accepted. The harness compares the scenario echo with the admitted scenario document, requires the definition identity and lowering-equality echo, and separately mutates an operation origin to prove that a schema-valid definition drift is rejected before evaluation.
 
 ## 5. Execute the production semantics in pure TypeScript
 
@@ -339,7 +357,7 @@ Within one content-addressed sequential User Task slice, the repository establis
 
 - exact-source admission through a checked BPMN graph into a project-owned Semantic Process program;
 - one reviewed operational account realized separately in Lean and TypeScript, agreeing exactly with pinned CIB observation at the fidelity recorded in the capsule;
-- a useful general Lean law plus an executable nearest non-law;
+- strict Lean decoding, independent lowering equality, generic evaluator soundness, useful general Lean laws, and executable nearest non-laws;
 - Temporal Query/Update hosting that refines the pure core for the tested cases;
 - duplicate-command stability, cleanup, and same-gate live replay;
 - mutation-sensitive differential evidence within the feedback budgets.
@@ -348,6 +366,6 @@ It does not establish general BPMN parsing or execution, OMG conformance, immuta
 
 ## What comes next
 
-The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. It is intentionally structurally different: it will force the checked BPMN graph, bounded Semantic Process IL, Lean lowering check, token multiplicity, incoming-flow provenance, completion ordering, and Temporal hosting boundaries to demonstrate that they generalize beyond a linear state machine.
+The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable, and Lean now checks the admitted definition, token multiplicity, per-incoming-flow synchronization, completion-order independence, and duplicate-left/no-right non-law. The next lane must establish the same observable contract through an independently implemented TypeScript evaluator before CIB and Temporal closure.
 
-Its semantic contract is approved, while implementation and closure evidence remain open. The exact resume point and separating witnesses are in [PLAN.md](PLAN.md).
+Its semantic contract is approved and partially implemented, while independent production execution and cross-lane closure evidence remain open. The exact resume point and separating witnesses are in [PLAN.md](PLAN.md).

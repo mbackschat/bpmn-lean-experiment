@@ -4,7 +4,7 @@
 
 **Scope:** CIB Seven BPMN Model API, deployment parser, PVM definition and runtime representations, fUML Activity execution, PSSM State Machine execution, and candidate consequences for the project’s BPMN source model, Lean semantics, pure TypeScript semantic core, and Temporal adapter.
 
-**Decision status:** This research document selects no production parser, token model, scope algebra, or scheduling semantics. The later [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the approved but unimplemented bounded checked graph, IL contract, lowering, and growth rules. Executable discriminators remain recorded separately in [the semantic representation experiment](../experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md).
+**Decision status:** This research document selects no production parser, token model, scope algebra, or scheduling semantics. The later [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the approved and partially implemented bounded checked graph, IL contract, lowering, and growth rules. Executable discriminators remain recorded separately in [the semantic representation experiment](../experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md).
 
 ## Executive result
 

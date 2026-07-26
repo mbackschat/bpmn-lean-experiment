@@ -2,7 +2,7 @@
 
 ## Status
 
-This document is the owner-approved proposal for the project-owned Semantic Process intermediate language. The wire schemas, adversarial boundary validation, bounded checked-graph producer, canonical TypeScript lowerer, sequential program consumer, Lean domain types, and reviewed proof proposition signatures are implemented. Lean decoding and lowering equality, generic parallel execution semantics, correspondence, and proofs remain pending. Under [the documentation lifecycle](DOC-DISCIPLINE.md#proposal-graduation), the complete stable implemented contract will graduate to `SEMANTIC-PROCESS-IL-SPEC.md`; partial implementation does not make the current document a spec.
+This document is the owner-approved proposal for the project-owned Semantic Process intermediate language. The wire schemas, adversarial boundary validation, bounded checked-graph producer, canonical TypeScript lowerer, sequential TypeScript consumer, strict Lean decoders and validators, independent Lean lowerer, exact per-artifact lowering check, generic Lean program relation and evaluator, evaluator-soundness theorem, structural lowering laws, and bounded parallel laws and non-law are implemented. The stronger reviewed observational source-to-program preservation proposition is not proved because no independent checked-source operational relation exists yet; independent TypeScript parallel execution, canonical CIB evidence, Temporal refinement, and complete correspondence remain pending. Under [the documentation lifecycle](DOC-DISCIPLINE.md#proposal-graduation), the complete stable implemented contract will graduate to `SEMANTIC-PROCESS-IL-SPEC.md`; partial implementation does not make the current document a spec.
 
 The first proposed language slice is deliberately bounded to the approved none Start Event, User Task, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This proposal does not claim a universal lowering for BPMN 2.0.2.
 
@@ -283,6 +283,8 @@ The implemented statement may use a state relation rather than identical source 
 
 For each retained program emitted by TypeScript, Lean must decode both the checked graph and emitted program, recompute `lower source`, reject inequality, and only then evaluate or prove program properties. A scenario identifier or fixture name is not a substitute for this content equality.
 
+The current Lean lane implements items 1 through 7 and the exact per-artifact requirement above. It proves structural definition-identity and Sequence-Flow-origin preservation, but it does not claim `lower_preserves_supported_run`: the repository has no independent checked-source operational relation, so instantiating `projectSource` with the program semantics would assume the result being pursued. This is an explicit proof boundary rather than an admitted or circular theorem.
+
 These obligations establish bounded interpretation and execution claims. They do not prove the correctness of an arbitrary XML parser, arbitrary BPMN documents, CIB Seven, Temporal, or the independent TypeScript implementation. Those remain separate evidence lanes.
 
 ## Independence
@@ -315,7 +317,7 @@ The project must not create a universal `event` operation with a bag of flags, d
 
 ## Required first slice
 
-The first implementation must support exactly:
+The complete first implementation must support exactly:
 
 - one none Start Event;
 - one or more User Tasks permitted by the two approved capsules;
