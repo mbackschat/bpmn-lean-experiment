@@ -11,6 +11,8 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
+The driving CIB Seven solution-replacement goal and its inventory-based migration measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#mission). Use the actual target solution’s models, Java delegates, expressions, and API consumers to prioritize compatibility work; do not optimize only for abstract feature coverage.
+
 The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and active sequencing and decisions belong in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
@@ -38,8 +40,8 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 | BPMN import, conformance, CIB relationship, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), the applicable [semantic capsule](docs/capsules/README.md), and applicable normative sources |
 | Source model, normalization, checked BPMN graph, Semantic Process IL, scope, runtime identity, token/activation state, or command closure | [Semantic Process IL](docs/SEMANTIC-PROCESS-IL-SPEC.md), [semantic representations research](docs/research/SEMANTIC-REPRESENTATIONS-RESEARCH.md), and relevant [experiments](docs/experiments/README.md) |
 | Scenario, profile, stimulus, observation, result, or other cross-language wire format | [Shared wire contracts](contracts/README.md) and the applicable [semantic capsule](docs/capsules/README.md) |
-| Temporal adapter, interpreter hosting, production lifecycle, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-RESEARCH.md](docs/TEMPORAL-EXECUTION-RESEARCH.md) and the [production lifecycle specification](docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) |
-| Refinement, equivalence, liveness, fairness, TLA+, or auxiliary formal tools | [TLA-AND-BISIMULATION-RESEARCH.md](docs/TLA-AND-BISIMULATION-RESEARCH.md) |
+| Temporal adapter, interpreter hosting, production lifecycle, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-RESEARCH.md](docs/research/TEMPORAL-EXECUTION-RESEARCH.md) and the [production lifecycle specification](docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) |
+| Refinement, equivalence, liveness, fairness, TLA+, or auxiliary formal tools | [TLA-AND-BISIMULATION-RESEARCH.md](docs/research/TLA-AND-BISIMULATION-RESEARCH.md) |
 | CIB Seven or Temporal source instrumentation/acceleration | [REFERENCE-INSTRUMENTATION-POLICY.md](docs/REFERENCE-INSTRUMENTATION-POLICY.md) |
 | External checkout or fixture provenance | [SOURCES.md](docs/SOURCES.md) |
 
@@ -161,6 +163,8 @@ A bounded spike requires competing accounts and a witness capable of separating 
 - an adopted capsule through the normal profile/evidence process;
 - a precisely recorded unresolved boundary;
 - or a representation correction with affected semantics, proofs, serializers, and adapters re-audited.
+
+An architecture experiment may measure an implementation choice only after a named consumer or standing proof/refinement obligation forces that choice. The existence of a product consumer is an input to the experiment, not an outcome that implementation can discover. Do not interpose a speculative architecture experiment ahead of approved capsule work when its deciding fact is an unmade product decision.
 
 Do not generalize after one consumer. Retain a provisional implementation only while it remains a useful discriminator.
 

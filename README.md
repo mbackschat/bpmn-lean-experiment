@@ -2,7 +2,7 @@
 
 Making BPMN execution durable, explainable, and continuously checkable.
 
-This project explores a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. The ultimate goal is OMG BPMN Process Execution Conformance for imported executable Process diagrams—not merely translating BPMN shapes into Workflow code.
+This project builds a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. Its driving product goal is evidence-backed migration of an existing CIB Seven solution—its used BPMN Processes, selected Java delegates, expressions, and integration code—with unchanged source or bounded adapters where feasible and explicit migration steps elsewhere. OMG BPMN Process Execution Conformance remains the ultimate semantic target. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#mission) owns the exact mission and migration measures.
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 

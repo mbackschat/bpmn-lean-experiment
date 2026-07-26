@@ -142,7 +142,11 @@ No CIB extension has yet been selected into an approved project profile.
 
 | Hint | Status | Required investigation |
 |---|---|---|
-| External-worker execution associated with a BPMN Service Task | Owner-supplied research hint; not yet an adopted extension record | Identify the exact CIB Seven BPMN extension attributes and worker protocol at the pinned revision, distinguish standard Service Task meaning from topic/fetch-lock/complete/fail/retry/incident behavior, and add separating evidence before profile selection |
+| Exact delegate-expression bean plus async-before execution associated with a BPMN Service Task | Recommended by the unapproved [compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) and [Service Task effect capsule](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md); not an adopted extension record | The pinned source uses `{http://camunda.org/schema/1.0/bpmn}delegateExpression` and `{http://camunda.org/schema/1.0/bpmn}asyncBefore`. Before selection, prove exact bean resolution and packaged-engine retry/re-execution without claiming general JUEL or Java API compatibility. |
+| Java class, delegate-expression, expression, field-injection, and bean execution | Family inventoried in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); disposition pending | Separate namespace-aware source recognition, project handler binding, general JUEL, Java class loading, dependency injection, `JavaDelegate`, and `DelegateExecution` compatibility. |
+| Script Task and script-bearing extensions | Family inventoried; disposition pending | Separate pure deterministic expressions, effectful scripts, and versioned engine-compatible scripts. Pin language, runtime, security, variables, results, limits, and dependencies before selection. |
+| FEEL | Candidate project expression language, not a Service Task delegate-expression mechanism | The pinned CIB FEEL integrations belong to DMN. Reopen after typed variables for an exact project subset and separate CIB calibration. |
+| External-task execution associated with a BPMN Service Task | Deferred alternative; not an adopted extension record | Reopen only for a concrete consumer of the topic, fetch-and-lock, lease, completion, failure, retry, and incident protocol. |
 
 The research queue is not evidence and does not authorize implementation. It prevents a useful extension candidate from being conflated with a deviation or silently entering the semantic core.
 
@@ -181,7 +185,9 @@ This is a profile constraint, not evidence that CIB differs from BPMN. It does n
 | Balanced two-branch Parallel Gateway fork/join | `CIB-AGR-0003` | Both branches become active, either completion order leaves the symmetric wait, and both arrivals complete the Process; the balanced witness does not distinguish join algorithms |
 | Count-only versus incoming-edge-provenance join state | `CIB-DEV-0001` candidate deviation | The normative per-incoming-flow requirement, schema-valid separating model, pinned source mechanism, bounded pristine-lane probe, owner-approved profile meaning, and balanced four-target impact establish a public conflict; immutable negative-probe evidence remains open |
 | Literal `PT1S` normal-flow Intermediate Catch Timer | `CIB-AGR-0004` under `CIB-CFG-0001` | Controlled-clock evidence observes wait creation, ineligibility before due time, eligibility at the due date, due transition, and completion; logical deadline projection remains adapter-derived |
-| External-worker execution | Extension research hint only | The exact CIB BPMN attributes and worker lifecycle have not yet been researched or selected |
+| Exact delegate-expression bean plus async-before Service Task execution | Extension proposal only | The exact Camunda namespace and source mechanisms are source-verified, but compatibility-scope approval, bean-resolution and packaged-engine retry/re-execution probes, and owner profile selection remain pending |
+| Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
+| External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |
 
 ## Classification order
 

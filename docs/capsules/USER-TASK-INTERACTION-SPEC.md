@@ -40,7 +40,7 @@ semantic-core runtime creates one task occurrence
           ◄──────────── structured completion command
 ```
 
-The adopted Temporal Query/Update binding, replay path, and discovery boundary are owned by [the Temporal execution model](../TEMPORAL-EXECUTION-RESEARCH.md#initial-user-task-interaction-binding).
+The adopted Temporal Query/Update binding, replay path, and discovery boundary are owned by [the Temporal execution model](../research/TEMPORAL-EXECUTION-RESEARCH.md#initial-user-task-interaction-binding).
 
 ## Stable semantic rules and evidence
 

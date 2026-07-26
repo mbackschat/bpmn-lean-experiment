@@ -10,9 +10,9 @@ The central conclusion is:
 
 Temporal can durably remember inputs, wakeups, external-operation outcomes, and the ordered Commands produced by Workflow code. It does not supply BPMN token semantics, CIB Seven compatibility, or an automatically correct mapping from Temporal primitives to BPMN concepts.
 
-This research inspected the official documentation at revision `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`, the TypeScript SDK at revision `2595d1b62cf5c3ff1748df0df2f9b303902bb31c`, and the TypeScript samples at revision `fb0aa23d75394a132646de883842dfacdacd5aa0`. Their provenance is recorded in [SOURCES.md](SOURCES.md).
+This research inspected the official documentation at revision `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`, the TypeScript SDK at revision `2595d1b62cf5c3ff1748df0df2f9b303902bb31c`, and the TypeScript samples at revision `fb0aa23d75394a132646de883842dfacdacd5aa0`. Their provenance is recorded in [SOURCES.md](../SOURCES.md).
 
-**Current implementation note:** the pre-release adapter implements the [production Process lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) with exact Query plus acknowledged Update, semantic-state-derived completion, content-bound Workflow, Update, and timer-command identities, retained-result-first closure recovery, and typed adapter lifecycle results. The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) adds one race-free durable timer composition derived exclusively from committed semantic state. Focused gates start fresh in-memory servers, reconcile Query-derived evidence with durable Update results, timer history, and terminal receipts, replay histories created during those gates, and then discard all server state. The [production-lifecycle experiment](experiments/TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md) records the Worker-restart, accepted-result, closed-command, payload-alias, handler-order, and race separators. The adapter has no Signal compatibility path, committed history fixture, patch branch, or legacy IR reader. General production history/versioning research below remains valid future guidance; [PROJECT-DESIGN.md](PROJECT-DESIGN.md#pre-release-evolution-policy) owns the current evolution policy.
+**Current implementation note:** the pre-release adapter implements the [production Process lifecycle](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) with exact Query plus acknowledged Update, semantic-state-derived completion, content-bound Workflow, Update, and timer-command identities, retained-result-first closure recovery, and typed adapter lifecycle results. The [Intermediate Catch Timer spec](../capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) adds one race-free durable timer composition derived exclusively from committed semantic state. Focused gates start fresh in-memory servers, reconcile Query-derived evidence with durable Update results, timer history, and terminal receipts, replay histories created during those gates, and then discard all server state. The [production-lifecycle experiment](../experiments/TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md) records the Worker-restart, accepted-result, closed-command, payload-alias, handler-order, and race separators. The adapter has no Signal compatibility path, committed history fixture, patch branch, or legacy IR reader. General production history/versioning research below remains valid future guidance; [PROJECT-DESIGN.md](../PROJECT-DESIGN.md#pre-release-evolution-policy) owns the current evolution policy.
 
 ## Executive model
 
@@ -371,7 +371,7 @@ The exact-task Query is read-only and returns the semantic core’s current `ope
 
 The completion Update carries the semantic command and returns its typed `CommandOutcome`. Its handler validates only transport shape, enqueues the command, and waits for the single main Workflow loop to apply the semantic core. The handler does not mutate semantic state directly.
 
-The production adapter derives the Temporal Update ID from a canonical typed encoding of every stimulus field and a SHA-256 digest. Temporal deduplicates the same Update ID within one Run, while the adapter retains an application result ledger so repeated delivery of the same semantic command returns the first result without a second transition. The lifecycle experiment proves that reusing the same Temporal Update ID with a different payload returns the first result without invoking the handler, which is why the [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) forbids a command-ID-only transport key. Cross-Run deduplication remains deferred until Continue-As-New exists.
+The production adapter derives the Temporal Update ID from a canonical typed encoding of every stimulus field and a SHA-256 digest. Temporal deduplicates the same Update ID within one Run, while the adapter retains an application result ledger so repeated delivery of the same semantic command returns the first result without a second transition. The lifecycle experiment proves that reusing the same Temporal Update ID with a different payload returns the first result without invoking the handler, which is why the [production lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) forbids a command-ID-only transport key. Cross-Run deduplication remains deferred until Continue-As-New exists.
 
 Two different command IDs targeting the same occurrence are distinct semantic attempts. At most one can commit; a later accepted attempt is rejected by the semantic core. An attempt delivered only after the Workflow has closed is a Temporal closed-Workflow transport outcome, not a fabricated BPMN rejection.
 
@@ -379,7 +379,7 @@ The implemented interaction uses Update because Service acceptance alone is not 
 
 The implemented discovery surface is exact Query by known Workflow ID. Search Attributes and a production task inbox remain separate eventually consistent projections and must not become the source of truth for task existence or completion admission. A later proposal must name the global-discovery consumer, data-access boundary, Search Attribute registry, staleness behavior, and rebuild or reconciliation evidence before adding either.
 
-The semantic meaning, exact task identity, observations, completion rule, witnesses, and exclusions are owned by the [User Task interaction semantic capsule](capsules/USER-TASK-INTERACTION-SPEC.md).
+The semantic meaning, exact task identity, observations, completion rule, witnesses, and exclusions are owned by the [User Task interaction semantic capsule](../capsules/USER-TASK-INTERACTION-SPEC.md).
 
 ## Decisions, concurrency, and parallelism
 
@@ -403,7 +403,7 @@ Timers consume history Events but not a dedicated sleeping thread or Worker slot
 
 Timer precision and Event delivery order are platform facts, not automatically BPMN timer semantics. The semantic core must own timer definition interpretation, boundary attachment behavior, interruption, repetition, and the semantic winner of any allowed race.
 
-The bounded [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) applies this account: the semantic core calculates and projects a typed logical deadline, the Temporal adapter implements the physical wakeup, and the Workflow derives the exact typed timer-firing stimulus from committed core state. Any competing input or timer race reopens the mapping.
+The bounded [Intermediate Catch Timer spec](../capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) applies this account: the semantic core calculates and projects a typed logical deadline, the Temporal adapter implements the physical wakeup, and the Workflow derives the exact typed timer-firing stimulus from committed core state. Any competing input or timer race reopens the mapping.
 
 Temporal Schedules, Cron, and Start Delay are Workflow-start automation features. They are not substitutes for BPMN timer Start Events, Intermediate Catch Events, or Boundary Events.
 
@@ -612,7 +612,7 @@ The pinned official TypeScript samples include [`dsl-interpreter`](https://githu
 
 This sample supports the project’s interpreter/evaluator decision but does not define the BPMN design. It demonstrates that Temporal can durably host data-driven control flow and place external work behind Activities. It does not supply a source-preserving model, schema/profile admission, an explicit semantic state transition system, canonical observations, command outcomes, retained replay fixtures, or a safe BPMN parallel-state account; its parallel branches share and mutate one bindings object.
 
-The project therefore adopts the sample’s broad hosting pattern while strengthening every semantic boundary: BPMN XML is compiled outside Workflow execution into immutable, source/profile-identified project IR, the pure semantic core alone assigns BPMN meaning, one Workflow loop alone mutates semantic state, effects remain typed, and differential plus replay gates remain independent. The durable decision and generator exclusion are owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
+The project therefore adopts the sample’s broad hosting pattern while strengthening every semantic boundary: BPMN XML is compiled outside Workflow execution into immutable, source/profile-identified project IR, the pure semantic core alone assigns BPMN meaning, one Workflow loop alone mutates semantic state, effects remain typed, and differential plus replay gates remain independent. The durable decision and generator exclusion are owned by [PROJECT-DESIGN.md](../PROJECT-DESIGN.md).
 
 ## Camunda/CIB-to-Temporal mapping audit
 
@@ -733,7 +733,7 @@ The following decisions remain unapproved:
 7. The policy for operator cancellation, termination, reset, pause, and Activity Operations in conformance runs.
 8. The production task-discovery architecture beyond exact Query by known Workflow ID.
 9. The global command-envelope, identity, authorization, form, variable, and Search Attribute registry boundaries beyond the bounded completion command.
-10. The production canonical-observation API beyond the harness-only extraction contract in the [production Workflow lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
+10. The production canonical-observation API beyond the harness-only extraction contract in the [production Workflow lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
 
 ## Architectural invariants derived from Temporal
 

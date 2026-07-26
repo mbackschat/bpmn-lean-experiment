@@ -104,7 +104,7 @@ Pinned baseline checkout: [temporalio/samples-typescript at `fb0aa23`](https://g
 - License: MIT
 - Role: concrete Workflow, Activity, signal, update, timer, cancellation, testing, replay, and data-driven DSL-interpreter research
 
-The [`dsl-interpreter`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0/dsl-interpreter) sample parses YAML into a data AST and recursively interprets sequence, parallel, and Activity nodes inside one Workflow rather than generating TypeScript. It supports the project’s hosting direction but cannot define BPMN behavior; its lessons and limitations are recorded in [TEMPORAL-EXECUTION-RESEARCH.md](TEMPORAL-EXECUTION-RESEARCH.md).
+The [`dsl-interpreter`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0/dsl-interpreter) sample parses YAML into a data AST and recursively interprets sequence, parallel, and Activity nodes inside one Workflow rather than generating TypeScript. It supports the project’s hosting direction but cannot define BPMN behavior; its lessons and limitations are recorded in [TEMPORAL-EXECUTION-RESEARCH.md](research/TEMPORAL-EXECUTION-RESEARCH.md).
 
 ## Temporal documentation
 
@@ -114,11 +114,11 @@ Pinned baseline checkout: [temporalio/documentation at `16c1899`](https://github
 - Inspected revision: `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`
 - Role: authoritative current documentation for Workflow execution, Event History, Commands, messaging, retries, concurrency, Continue-As-New, versioning, testing, and operational features
 
-The project-authored [Temporal execution-model research](TEMPORAL-EXECUTION-RESEARCH.md) combines this documentation with pinned TypeScript SDK implementation evidence and records the consequences for the BPMN adapter boundary. Current documentation can describe features newer than the eventual project dependency, so every implemented feature still requires an exact SDK and server version pin.
+The project-authored [Temporal execution-model research](research/TEMPORAL-EXECUTION-RESEARCH.md) combines this documentation with pinned TypeScript SDK implementation evidence and records the consequences for the BPMN adapter boundary. Current documentation can describe features newer than the eventual project dependency, so every implemented feature still requires an exact SDK and server version pin.
 
 ## Formal methods and behavioral refinement
 
-The project-authored [formal-methods toolbox](TLA-AND-BISIMULATION-RESEARCH.md) evaluates temporal specification, model checking, process algebra, behavioral relations, relational modeling, and Petri-net analysis against this project’s existing Lean, differential, Temporal-refinement, and replay boundaries.
+The project-authored [formal-methods toolbox](research/TLA-AND-BISIMULATION-RESEARCH.md) evaluates temporal specification, model checking, process algebra, behavioral relations, relational modeling, and Petri-net analysis against this project’s existing Lean, differential, Temporal-refinement, and replay boundaries.
 
 Primary sources inspected:
 

@@ -4,6 +4,10 @@
 
 Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ultimately satisfies OMG Process Execution Conformance.
 
+The driving product goal is to replace an existing CIB Seven solution—its BPMN Processes plus selected Java delegates, expressions, and integration code—with a Temporal-hosted, Lean-assured implementation. Migration should preserve admitted model source where feasible, run supported Java business logic behind explicit adapters, and provide classified migration steps for every unsupported remainder. The target is easy, evidence-backed migration, not an unqualified Process Engine drop-in claim.
+
+Migration ease is measured against a defined inventory of the actual target solution: unchanged model-admission coverage, unmodified delegate coverage through the bounded Java bridge, supported Java/REST façade calls, and a classified migration disposition for the remainder. Do not publish percentages before that inventory defines the denominator.
+
 The project pursues that goal through four independent components:
 
 1. a versioned CIB Seven semantic profile;
@@ -107,6 +111,20 @@ Parsing, admission, and lowering occur outside deterministic Workflow execution.
 This choice preserves one inspectable model representation, avoids generating a new Workflow Definition for every diagram, and keeps SDK calls, Workflow deployment, and replay mechanics from becoming accidental BPMN semantics. It also keeps parser evolution, profile evolution, semantic-core evolution, and Worker deployment conceptually separate.
 
 Generated TypeScript is not prohibited. It may later serve as a derived diagnostic, specialization, optimization, or packaging artifact after explicit equivalence and replay evidence. It is never the semantic authority by construction.
+
+## CIB compatibility and polyglot effect execution
+
+The project targets explicitly selected source and behavioral compatibility with versioned CIB Seven profiles. It does not target drop-in replacement of the Process Engine Java, REST, plugin, persistence, deployment, or administration APIs. Every compatibility claim names its source syntax, feature surface, behavior, configuration, observation boundary, and evidence; an unqualified “CIB-compatible” claim is prohibited.
+
+Camunda/CIB extension syntax is admitted only through exact profile-selected BPMN contexts, expanded namespace QNames, and value shapes. An admitted binding normalizes to a project-owned descriptor before Semantic Process IL. Java classes, JUEL objects, engine jobs, retries, and host identities never become semantic authority merely because the source or oracle uses them. The approved family dispositions and reopen conditions remain in [the CIB Seven compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md).
+
+The TypeScript semantic core and TypeScript Temporal Workflow remain the single production interpreter account. Committed effect intents cross a versioned language-neutral Activity protocol that may be executed by TypeScript or JVM Workers. A Worker performs external computation; it never mutates Process state directly or independently chooses semantic identity. It returns a typed result or future typed variable patch for validation and commitment by the semantic core.
+
+Supporting Java handlers therefore does not justify rewriting the semantic core in Java or Kotlin, maintaining a second JVM interpreter, or moving semantic decisions to a remote service. A JVM Worker may expose a project-owned Java handler API and, under separately reviewed compatibility profiles, bounded adapters for CIB Seven or Camunda 7 delegates. Unsupported delegate operations fail explicitly. Full `DelegateExecution`, internal `ActivityBehavior`, Process Engine service, and plugin compatibility remain outside the architecture unless the owner funds a separate compatibility program.
+
+Workflow and Worker implementations must agree through explicit Activity type, task queue, request/result schema, payload encoding, idempotency identity, timeout, retry, cancellation, and failure contracts. Cross-SDK compatibility is an executable evidence obligation rather than an assumption about default payload converters. A JVM Worker may be implemented in Kotlin behind Java-friendly public interfaces, but neither a Kotlin toolchain nor any Java runtime dependency follows automatically from this architecture.
+
+The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected. The TypeScript SDK’s deterministic Workflow sandbox, event-loop fit, structural wire types, existing replay evidence, and language separation from the Java CIB oracle make TypeScript the selected interpreter host. Java remains the preferred language for a future JVM compatibility Worker when the migration inventory supplies that consumer. Reopen the semantic-core language only for a named non-Temporal embedded JVM product mode that must own and advance semantic Process state in-process; a Worker, Java client façade, or Spring preference does not qualify.
 
 ## Semantic rule traceability
 
