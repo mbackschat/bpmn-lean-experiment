@@ -6,18 +6,27 @@
  * `"\u0069d"` are the same key. Strings must contain Unicode scalar values;
  * JavaScript's otherwise-permitted unpaired UTF-16 surrogates are rejected.
  */
-export function parseStrictJson(text, label = "JSON document") {
-  const value = JSON.parse(text);
+export function parseStrictJson<T = unknown>(
+  text: string,
+  label = "JSON document",
+): T {
+  const value: unknown = JSON.parse(text);
   scanForDuplicateObjectKeys(text, label);
   requireWellFormedUnicode(value, label);
-  return value;
+  return value as T;
 }
 
-export function requireWellFormedUnicode(value, label = "wire value") {
+export function requireWellFormedUnicode(
+  value: unknown,
+  label = "wire value",
+): void {
   visitStrings(value, (text) => requireUnicodeScalarString(text, label));
 }
 
-export function requireUnicodeScalarString(value, label = "wire string") {
+export function requireUnicodeScalarString(
+  value: string,
+  label = "wire string",
+): void {
   for (let index = 0; index < value.length; index += 1) {
     const unit = value.charCodeAt(index);
     if (unit >= 0xd800 && unit <= 0xdbff) {
@@ -32,7 +41,10 @@ export function requireUnicodeScalarString(value, label = "wire string") {
   }
 }
 
-function visitStrings(value, visit) {
+function visitStrings(
+  value: unknown,
+  visit: (text: string) => void,
+): void {
   if (typeof value === "string") {
     visit(value);
     return;
@@ -51,10 +63,10 @@ function visitStrings(value, visit) {
   }
 }
 
-function scanForDuplicateObjectKeys(text, label) {
+function scanForDuplicateObjectKeys(text: string, label: string): void {
   let index = 0;
 
-  function skipWhitespace() {
+  function skipWhitespace(): void {
     while (
       text[index] === " " ||
       text[index] === "\n" ||
@@ -65,7 +77,7 @@ function scanForDuplicateObjectKeys(text, label) {
     }
   }
 
-  function scanString() {
+  function scanString(): string {
     const start = index;
     index += 1;
     while (index < text.length) {
@@ -81,7 +93,7 @@ function scanForDuplicateObjectKeys(text, label) {
     throw new SyntaxError(`${label} contains an unterminated JSON string`);
   }
 
-  function scanArray() {
+  function scanArray(): void {
     index += 1;
     skipWhitespace();
     if (text[index] === "]") {
@@ -100,17 +112,17 @@ function scanForDuplicateObjectKeys(text, label) {
     }
   }
 
-  function scanObject() {
+  function scanObject(): void {
     index += 1;
     skipWhitespace();
     if (text[index] === "}") {
       index += 1;
       return;
     }
-    const keys = new Set();
+    const keys = new Set<string>();
     while (true) {
       const encodedKey = scanString();
-      const key = JSON.parse(encodedKey);
+      const key = JSON.parse(encodedKey) as string;
       if (keys.has(key)) {
         throw new SyntaxError(`duplicate JSON object key: ${key}`);
       }
@@ -129,7 +141,7 @@ function scanForDuplicateObjectKeys(text, label) {
     }
   }
 
-  function scanValue() {
+  function scanValue(): void {
     skipWhitespace();
     switch (text[index]) {
       case "{":
@@ -143,9 +155,15 @@ function scanForDuplicateObjectKeys(text, label) {
         return;
       default:
         while (
-          index < text.length &&
-          !/[,\]}\s]/u.test(text[index])
+          index < text.length
         ) {
+          const character = text[index];
+          if (
+            character === undefined ||
+            /[,\]}\s]/u.test(character)
+          ) {
+            break;
+          }
           index += 1;
         }
     }

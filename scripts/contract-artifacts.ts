@@ -4,12 +4,28 @@ import { isDeepStrictEqual } from "node:util";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import Ajv2020 from "ajv/dist/2020.js";
+import { Ajv2020 } from "ajv/dist/2020.js";
+import type {
+  AnySchema,
+  ValidateFunction,
+} from "ajv/dist/2020.js";
+
+import type {
+  CanonicalObservation,
+  CheckedProcess,
+  EffectDescriptor,
+  OccurrenceId,
+  Scenario,
+  ScenarioResult,
+  SemanticOperation,
+  SemanticProcessProgram,
+  StateObservation,
+} from "../packages/semantic-core/src/index.ts";
 
 import {
   parseStrictJson,
   requireUnicodeScalarString,
-} from "./strict-json.mjs";
+} from "./strict-json.ts";
 
 const schemaBaseId = "https://bpmn-lean.local/schemas";
 const scenarioSchemaId = `${schemaBaseId}/scenario.schema.json`;
@@ -69,13 +85,123 @@ export const artifactCases = Object.freeze([
   }),
 ]);
 
-const validatorsByRoot = new Map();
+export type ArtifactCase = Readonly<{
+  scenarioRelativePath: string;
+  evidenceRelativePath: string;
+}>;
 
-function sha256(bytes) {
+type JsonDocument<Value> = Readonly<{
+  bytes: Buffer;
+  value: Value;
+}>;
+
+type ContentIdentity = Readonly<{
+  id: string;
+  sha256: string;
+}>;
+
+type SemanticProfile = Readonly<{
+  kind: "semanticProfile";
+  id: string;
+  oracle: Readonly<{
+    revision: string;
+  }>;
+  bpmn: Readonly<{
+    relationships: ReadonlyArray<string>;
+  }>;
+  observations: ReadonlyArray<string>;
+}>;
+
+type TaskQueryTask = Readonly<{
+  elementId: string;
+  name: string | null;
+}>;
+
+type TaskQuerySnapshot = Readonly<{
+  afterCommandId: string;
+  tasks: ReadonlyArray<TaskQueryTask>;
+}>;
+
+type TimerJob = Readonly<{
+  elementId: string;
+  dueDateDeltaMs: number;
+  executable: boolean;
+}>;
+
+type TimerJobSnapshot = Readonly<{
+  afterCommandId: string;
+  jobs: ReadonlyArray<TimerJob>;
+}>;
+
+type EffectJob = Readonly<{
+  elementId: string;
+  activation: number;
+  protocol: EffectDescriptor["protocol"];
+  handler: EffectDescriptor["handler"];
+  retries: number;
+  executable: boolean;
+  dueDatePresent: boolean;
+}>;
+
+type EffectJobSnapshot = Readonly<{
+  afterCommandId: string;
+  jobs: ReadonlyArray<EffectJob>;
+}>;
+
+type EffectExecutionSnapshot = Readonly<{
+  afterCommandId: string;
+  schedule: string;
+  invocations: number;
+  mutations: number;
+  initialRetries: number;
+  retriesAfterFirstFailure: number | null;
+}>;
+
+type CibSevenEvidence = Readonly<{
+  kind: "cibSevenScenarioEvidence";
+  scenario: ContentIdentity;
+  profile: ContentIdentity;
+  producer: Readonly<{
+    engineRevision: string;
+  }>;
+  producerObservations: Readonly<{
+    taskQueries: ReadonlyArray<TaskQuerySnapshot>;
+    timerJobs: ReadonlyArray<TimerJobSnapshot>;
+    effectJobs?: ReadonlyArray<EffectJobSnapshot>;
+    effectExecutions?: ReadonlyArray<EffectExecutionSnapshot>;
+  }>;
+  result: ScenarioResult;
+}>;
+
+export type DefinitionArtifacts = Readonly<{
+  checkedProcess: CheckedProcess;
+  semanticProcess: SemanticProcessProgram;
+}>;
+
+export type ArtifactSet = ArtifactCase & Readonly<{
+  validator: Ajv2020;
+  registeredRelationshipIds: ReadonlySet<string>;
+  profile: SemanticProfile;
+  profileBytes: Buffer;
+  scenario: Scenario;
+  scenarioBytes: Buffer;
+  evidence: CibSevenEvidence;
+  bpmnBytes: Buffer;
+}>;
+
+type ArtifactContext = Readonly<{
+  validator: Ajv2020;
+  registeredRelationshipIds: ReadonlySet<string>;
+}>;
+
+const validatorsByRoot =
+  new Map<string, Promise<Ajv2020>>();
+
+function sha256(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function resolveInside(projectRoot, relativePath) {
+function resolveInside(projectRoot: string, relativePath: string): string {
   const resolvedRoot = path.resolve(projectRoot);
   const resolvedPath = path.resolve(resolvedRoot, relativePath);
   if (
@@ -87,15 +213,17 @@ function resolveInside(projectRoot, relativePath) {
   return resolvedPath;
 }
 
-async function readJsonDocument(filePath) {
+async function readJsonDocument<Value>(
+  filePath: string,
+): Promise<JsonDocument<Value>> {
   const bytes = await readFile(filePath);
   return {
     bytes,
-    value: parseStrictJson(bytes.toString("utf8"), filePath),
+    value: parseStrictJson<Value>(bytes.toString("utf8"), filePath),
   };
 }
 
-async function createValidator(projectRoot) {
+async function createValidator(projectRoot: string): Promise<Ajv2020> {
   const schemaDirectory = resolveInside(projectRoot, "contracts/schemas");
   const schemaNames = [
     "scenario.schema.json",
@@ -107,7 +235,9 @@ async function createValidator(projectRoot) {
   ];
   const schemas = await Promise.all(
     schemaNames.map(async (name) => {
-      const document = await readJsonDocument(path.join(schemaDirectory, name));
+      const document = await readJsonDocument<AnySchema>(
+        path.join(schemaDirectory, name),
+      );
       return document.value;
     }),
   );
@@ -122,7 +252,9 @@ async function createValidator(projectRoot) {
   return validator;
 }
 
-async function readRegisteredRelationshipIds(projectRoot) {
+async function readRegisteredRelationshipIds(
+  projectRoot: string,
+): Promise<ReadonlySet<string>> {
   const registerPath = resolveInside(projectRoot, "docs/CIB-BPMN-RELATION-REGISTER.md");
   const register = await readFile(registerPath, "utf8");
   return new Set(
@@ -130,12 +262,12 @@ async function readRegisteredRelationshipIds(projectRoot) {
       register.matchAll(
         /^### (CIB-(?:AGR|OP|INT|EXT|CFG|LIM|DEV)-[0-9]{4})\b/gm,
       ),
-      (match) => match[1],
+      (match) => match[1] as string,
     ),
   );
 }
 
-async function validatorFor(projectRoot) {
+async function validatorFor(projectRoot: string): Promise<Ajv2020> {
   const resolvedRoot = path.resolve(projectRoot);
   let validatorPromise = validatorsByRoot.get(resolvedRoot);
   if (validatorPromise === undefined) {
@@ -145,7 +277,12 @@ async function validatorFor(projectRoot) {
   return validatorPromise;
 }
 
-function validateWith(validator, schemaId, label, value) {
+function validateWith(
+  validator: Ajv2020,
+  schemaId: string,
+  label: string,
+  value: unknown,
+): void {
   const validate = validator.getSchema(schemaId);
   if (validate === undefined) {
     throw new Error(`schema is not registered: ${schemaId}`);
@@ -157,26 +294,38 @@ function validateWith(validator, schemaId, label, value) {
   }
 }
 
-function compareIds(left, right) {
+function compareIds(
+  left: Readonly<{ id: string }>,
+  right: Readonly<{ id: string }>,
+): number {
   return compareCanonicalStrings(left.id, right.id);
 }
 
-function requireSortedById(label, values) {
+function requireSortedById<Value extends Readonly<{ id: string }>>(
+  label: string,
+  values: ReadonlyArray<Value>,
+): void {
   const sorted = [...values].sort(compareIds);
   if (!isDeepStrictEqual(values, sorted)) {
     throw new Error(`${label} must be sorted by id`);
   }
 }
 
-function requireSortedStrings(label, values) {
+function requireSortedStrings(
+  label: string,
+  values: ReadonlyArray<string>,
+): void {
   const sorted = [...values].sort(compareCanonicalStrings);
   if (!isDeepStrictEqual(values, sorted)) {
     throw new Error(`${label} must be sorted`);
   }
 }
 
-function requireUniqueIds(label, values) {
-  const ids = new Set();
+function requireUniqueIds<Value extends Readonly<{ id: string }>>(
+  label: string,
+  values: ReadonlyArray<Value>,
+): ReadonlySet<string> {
+  const ids = new Set<string>();
   for (const value of values) {
     if (ids.has(value.id)) {
       throw new Error(`${label} contains duplicate id ${value.id}`);
@@ -186,7 +335,9 @@ function requireUniqueIds(label, values) {
   return ids;
 }
 
-function referencedControlPlaces(operation) {
+function referencedControlPlaces(
+  operation: SemanticOperation,
+): ReadonlyArray<string> {
   switch (operation.kind) {
     case "initiate":
       return [operation.output];
@@ -201,11 +352,14 @@ function referencedControlPlaces(operation) {
     case "terminate":
       return [operation.input];
     default:
-      throw new Error(`unsupported semantic operation: ${operation.kind}`);
+      throw new Error("unsupported semantic operation");
   }
 }
 
-function verifyCanonicalDefinitionOrder(checkedProcess, semanticProcess) {
+function verifyCanonicalDefinitionOrder(
+  checkedProcess: CheckedProcess,
+  semanticProcess: SemanticProcessProgram,
+): void {
   requireSortedById("checked process nodes", checkedProcess.nodes);
   requireSortedById(
     "checked process sequence flows",
@@ -237,12 +391,15 @@ function verifyCanonicalDefinitionOrder(checkedProcess, semanticProcess) {
       case "terminate":
         break;
       default:
-        throw new Error(`unsupported semantic operation: ${operation.kind}`);
+        throw new Error("unsupported semantic operation");
     }
   }
 }
 
-function verifyDefinitionReferences(checkedProcess, semanticProcess) {
+function verifyDefinitionReferences(
+  checkedProcess: CheckedProcess,
+  semanticProcess: SemanticProcessProgram,
+): void {
   const nodeIds = requireUniqueIds("checked process nodes", checkedProcess.nodes);
   const flowIds = requireUniqueIds(
     "checked process sequence flows",
@@ -313,14 +470,17 @@ function verifyDefinitionReferences(checkedProcess, semanticProcess) {
   }
 }
 
-function verifyProducerProjection(evidence) {
+function verifyProducerProjection(evidence: CibSevenEvidence): void {
   const taskSnapshots = evidence.producerObservations.taskQueries;
   const timerSnapshots = evidence.producerObservations.timerJobs;
   const effectSnapshots =
     evidence.producerObservations.effectJobs ??
     statesWithEmptyEffectSnapshots(evidence.result.trace);
-  const states = [];
-  let afterCommandId;
+  const states: Array<Readonly<{
+    afterCommandId: string;
+    observation: StateObservation;
+  }>> = [];
+  let afterCommandId: string | undefined;
   for (const observation of evidence.result.trace) {
     switch (observation.kind) {
       case "deployment":
@@ -339,7 +499,7 @@ function verifyProducerProjection(evidence) {
         break;
       default:
         throw new Error(
-          `unsupported canonical observation: ${observation.kind}`,
+          "unsupported canonical observation",
         );
     }
   }
@@ -357,6 +517,13 @@ function verifyProducerProjection(evidence) {
     const taskSnapshot = taskSnapshots[index];
     const timerSnapshot = timerSnapshots[index];
     const effectSnapshot = effectSnapshots[index];
+    if (
+      taskSnapshot === undefined ||
+      timerSnapshot === undefined ||
+      effectSnapshot === undefined
+    ) {
+      throw new Error("producer observation omitted one state snapshot");
+    }
     if (
       taskSnapshot.afterCommandId !== state.afterCommandId ||
       timerSnapshot.afterCommandId !== state.afterCommandId ||
@@ -384,14 +551,26 @@ function verifyProducerProjection(evidence) {
       ...effectProjection.activeWaits,
     ].sort((left, right) =>
       compareStrings(left.elementId, right.elementId));
-    const expectedByField = {
+    const expectedByField: Pick<
+      StateObservation,
+      | "activeWaits"
+      | "openUserTasks"
+      | "openTimers"
+      | "openEffects"
+      | "enabledInteractions"
+    > = {
       activeWaits,
       openUserTasks: taskProjection.openUserTasks,
       openTimers: timerProjection.openTimers,
       openEffects: effectProjection.openEffects,
       enabledInteractions: taskProjection.enabledInteractions,
     };
-    for (const [field, expected] of Object.entries(expectedByField)) {
+    for (
+      const field of Object.keys(expectedByField) as Array<
+        keyof typeof expectedByField
+      >
+    ) {
+      const expected = expectedByField[field];
       if (!isDeepStrictEqual(state.observation[field], expected)) {
         throw new Error(
           `producer observation projection does not match canonical ${field}`,
@@ -403,13 +582,15 @@ function verifyProducerProjection(evidence) {
   const effectExecutions =
     evidence.producerObservations.effectExecutions ?? [];
   if (effectExecutions.length > 0) {
+    const execution = effectExecutions[0];
     if (
       effectExecutions.length !== 1 ||
-      effectExecutions[0].schedule !== "plainSuccess" ||
-      effectExecutions[0].invocations !== 1 ||
-      effectExecutions[0].mutations !== 1 ||
-      effectExecutions[0].initialRetries !== 3 ||
-      effectExecutions[0].retriesAfterFirstFailure !== null
+      execution === undefined ||
+      execution.schedule !== "plainSuccess" ||
+      execution.invocations !== 1 ||
+      execution.mutations !== 1 ||
+      execution.initialRetries !== 3 ||
+      execution.retriesAfterFirstFailure !== null
     ) {
       throw new Error(
         "retained CIB effect evidence must bind to plain success",
@@ -418,9 +599,11 @@ function verifyProducerProjection(evidence) {
   }
 }
 
-function statesWithEmptyEffectSnapshots(trace) {
-  const snapshots = [];
-  let afterCommandId;
+function statesWithEmptyEffectSnapshots(
+  trace: ReadonlyArray<CanonicalObservation>,
+): ReadonlyArray<EffectJobSnapshot> {
+  const snapshots: Array<EffectJobSnapshot> = [];
+  let afterCommandId: string | undefined;
   for (const observation of trace) {
     if (observation.kind === "command") {
       afterCommandId = observation.commandId;
@@ -435,10 +618,14 @@ function statesWithEmptyEffectSnapshots(trace) {
   return snapshots;
 }
 
-function projectEffectJobs(instanceId, jobs) {
-  const activeWaits = jobs.map((job) => ({
+function projectEffectJobs(
+  instanceId: string,
+  jobs: ReadonlyArray<EffectJob>,
+): Pick<StateObservation, "activeWaits" | "openEffects"> {
+  const activeWaits: Array<StateObservation["activeWaits"][number]> =
+    jobs.map((job) => ({
     elementId: job.elementId,
-    kind: "effect",
+    kind: "effect" as StateObservation["activeWaits"][number]["kind"],
     multiplicity: 1,
   }));
   const openEffects = jobs.map((job) => ({
@@ -455,11 +642,15 @@ function projectEffectJobs(instanceId, jobs) {
   return { activeWaits, openEffects };
 }
 
-function projectTimerJobs(instanceId, jobs) {
-  const activeWaits = jobs
+function projectTimerJobs(
+  instanceId: string,
+  jobs: ReadonlyArray<TimerJob>,
+): Pick<StateObservation, "activeWaits" | "openTimers"> {
+  const activeWaits: Array<StateObservation["activeWaits"][number]> =
+    jobs
     .map((job) => ({
       elementId: job.elementId,
-      kind: "timer",
+      kind: "timer" as StateObservation["activeWaits"][number]["kind"],
       multiplicity: 1,
     }))
     .sort((left, right) =>
@@ -478,9 +669,15 @@ function projectTimerJobs(instanceId, jobs) {
   return { activeWaits, openTimers };
 }
 
-function projectTaskQuery(instanceId, tasks) {
-  const multiplicities = new Map();
-  const byElement = new Map();
+function projectTaskQuery(
+  instanceId: string,
+  tasks: ReadonlyArray<TaskQueryTask>,
+): Pick<
+  StateObservation,
+  "activeWaits" | "openUserTasks" | "enabledInteractions"
+> {
+  const multiplicities = new Map<string, number>();
+  const byElement = new Map<string, TaskQueryTask>();
   for (const task of tasks) {
     multiplicities.set(
       task.elementId,
@@ -493,14 +690,17 @@ function projectTaskQuery(instanceId, tasks) {
     }
     byElement.set(task.elementId, task);
   }
-  const activeWaits = [...multiplicities.entries()]
+  const activeWaits: Array<StateObservation["activeWaits"][number]> =
+    [...multiplicities.entries()]
     .sort(([left], [right]) => compareStrings(left, right))
     .map(([elementId, multiplicity]) => ({
       elementId,
-      kind: "userTask",
+      kind:
+        "userTask" as StateObservation["activeWaits"][number]["kind"],
       multiplicity,
     }));
-  const openUserTasks = [...byElement.values()]
+  const openUserTasks: Array<StateObservation["openUserTasks"][number]> =
+    [...byElement.values()]
     .map((task) => ({
       id: {
         processInstanceId: instanceId,
@@ -508,7 +708,8 @@ function projectTaskQuery(instanceId, tasks) {
         activation: 1,
       },
       name: task.name,
-      state: "active",
+      state:
+        "active" as StateObservation["openUserTasks"][number]["state"],
     }))
     .sort((left, right) =>
       compareTaskIdentities(left.id, right.id)
@@ -517,14 +718,25 @@ function projectTaskQuery(instanceId, tasks) {
     activeWaits,
     openUserTasks,
     enabledInteractions: openUserTasks.map((task) => ({
-      kind: "completeUserTaskInstance",
+      kind:
+        "completeUserTaskInstance" as StateObservation[
+          "enabledInteractions"
+        ][number]["kind"],
       taskId: task.id,
     })),
   };
 }
 
-function compareTaskIdentities(left, right) {
-  for (const field of ["processInstanceId", "elementId"]) {
+function compareTaskIdentities(
+  left: OccurrenceId,
+  right: OccurrenceId,
+): number {
+  for (
+    const field of [
+      "processInstanceId",
+      "elementId",
+    ] as const
+  ) {
     const comparison = compareStrings(left[field], right[field]);
     if (comparison !== 0) {
       return comparison;
@@ -533,19 +745,30 @@ function compareTaskIdentities(left, right) {
   return left.activation - right.activation;
 }
 
-function compareStrings(left, right) {
+function compareStrings(left: string, right: string): number {
   return compareCanonicalStrings(left, right);
 }
 
-export function compareCanonicalStrings(left, right) {
+export function compareCanonicalStrings(
+  left: string,
+  right: string,
+): number {
   requireUnicodeScalarString(left, "canonical string");
   requireUnicodeScalarString(right, "canonical string");
   const leftScalars = [...left];
   const rightScalars = [...right];
   const sharedLength = Math.min(leftScalars.length, rightScalars.length);
   for (let index = 0; index < sharedLength; index += 1) {
-    const leftScalar = leftScalars[index].codePointAt(0);
-    const rightScalar = rightScalars[index].codePointAt(0);
+    const leftValue = leftScalars[index];
+    const rightValue = rightScalars[index];
+    if (leftValue === undefined || rightValue === undefined) {
+      throw new Error("canonical scalar iteration lost an indexed value");
+    }
+    const leftScalar = leftValue.codePointAt(0);
+    const rightScalar = rightValue.codePointAt(0);
+    if (leftScalar === undefined || rightScalar === undefined) {
+      throw new Error("canonical scalar has no code point");
+    }
     if (leftScalar !== rightScalar) {
       return leftScalar < rightScalar ? -1 : 1;
     }
@@ -553,7 +776,10 @@ export function compareCanonicalStrings(left, right) {
   return Math.sign(leftScalars.length - rightScalars.length);
 }
 
-export async function verifyDefinitionArtifacts(projectRoot, artifacts) {
+export async function verifyDefinitionArtifacts(
+  projectRoot: string,
+  artifacts: DefinitionArtifacts,
+): Promise<DefinitionArtifacts> {
   const validator = await validatorFor(projectRoot);
   const { checkedProcess, semanticProcess } = artifacts;
   validateWith(
@@ -588,7 +814,7 @@ export async function verifyDefinitionArtifacts(projectRoot, artifacts) {
   return artifacts;
 }
 
-export function verifyArtifactSet(artifactSet) {
+export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
   const {
     validator,
     profile,
@@ -605,7 +831,7 @@ export function verifyArtifactSet(artifactSet) {
 
   if (
     !isDeepStrictEqual(
-      parseStrictJson(
+      parseStrictJson<Scenario>(
         scenarioBytes.toString("utf8"),
         "scenario source bytes",
       ),
@@ -656,7 +882,11 @@ export function verifyArtifactSet(artifactSet) {
   return artifactSet;
 }
 
-async function readArtifactSet(projectRoot, artifactCase, context) {
+async function readArtifactSet(
+  projectRoot: string,
+  artifactCase: ArtifactCase,
+  context: ArtifactContext,
+): Promise<ArtifactSet> {
   const scenarioPath = resolveInside(
     projectRoot,
     artifactCase.scenarioRelativePath,
@@ -665,8 +895,12 @@ async function readArtifactSet(projectRoot, artifactCase, context) {
     projectRoot,
     artifactCase.evidenceRelativePath,
   );
-  const scenarioDocument = await readJsonDocument(scenarioPath);
-  const evidenceDocument = await readJsonDocument(evidencePath);
+  const scenarioDocument = await readJsonDocument<Scenario>(
+    scenarioPath,
+  );
+  const evidenceDocument = await readJsonDocument<CibSevenEvidence>(
+    evidencePath,
+  );
   const profilePath = resolveInside(
     projectRoot,
     `profiles/${scenarioDocument.value.profile}/profile.json`,
@@ -676,7 +910,7 @@ async function readArtifactSet(projectRoot, artifactCase, context) {
     scenarioDocument.value.bpmn.relativePath,
   );
   const [profileDocument, bpmnBytes] = await Promise.all([
-    readJsonDocument(profilePath),
+    readJsonDocument<SemanticProfile>(profilePath),
     readFile(bpmnPath),
   ]);
   return verifyArtifactSet({
@@ -692,7 +926,9 @@ async function readArtifactSet(projectRoot, artifactCase, context) {
   });
 }
 
-export async function readAndVerifyArtifactSets(projectRoot) {
+export async function readAndVerifyArtifactSets(
+  projectRoot: string,
+): Promise<ReadonlyArray<ArtifactSet>> {
   const [validator, registeredRelationshipIds] = await Promise.all([
     validatorFor(projectRoot),
     readRegisteredRelationshipIds(projectRoot),

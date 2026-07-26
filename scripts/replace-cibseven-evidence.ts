@@ -9,14 +9,54 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { artifactCases } from "./contract-artifacts.mjs";
-import { resolveJavaHome } from "./java-home.mjs";
-import { runCommand } from "./run-command.mjs";
-import { parseStrictJson } from "./strict-json.mjs";
+import { artifactCases } from "./contract-artifacts.ts";
+import { resolveJavaHome } from "./java-home.ts";
+import { runCommand } from "./run-command.ts";
+import { parseStrictJson } from "./strict-json.ts";
+import type {
+  Scenario,
+  ScenarioResult,
+} from "../packages/semantic-core/src/index.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-export function requireReplacementAuthorization(args) {
+type JsonDocument<Value> = Readonly<{
+  bytes: Buffer;
+  value: Value;
+}>;
+
+type SemanticProfile = Readonly<{
+  id: string;
+  oracle: Readonly<{
+    version: string;
+    revision: string;
+  }>;
+  environment: Readonly<{
+    java: string;
+    database: string;
+  }>;
+}>;
+
+type CibRunnerResult = Readonly<{
+  scenarioId: string;
+  outcome: ScenarioResult["outcome"];
+  trace: ScenarioResult["trace"];
+  diagnostics: Readonly<{
+    engineVersion: string;
+    databaseVersion: string;
+    cleanup: Readonly<Record<string, number>>;
+    taskQueries: ReadonlyArray<unknown>;
+    timerJobs: ReadonlyArray<unknown>;
+    effectJobs: ReadonlyArray<Readonly<{
+      jobs: ReadonlyArray<unknown>;
+    }>>;
+    effectExecutions: ReadonlyArray<unknown>;
+  }>;
+}>;
+
+export function requireReplacementAuthorization(
+  args: ReadonlyArray<string>,
+): void {
   if (
     args.length !== 1 ||
     args[0] !== "--replace"
@@ -27,26 +67,36 @@ export function requireReplacementAuthorization(args) {
   }
 }
 
-async function readJsonWithBytes(relativePath) {
+async function readJsonWithBytes<Value>(
+  relativePath: string,
+): Promise<JsonDocument<Value>> {
   const bytes = await readFile(path.join(projectRoot, relativePath));
   return {
     bytes,
-    value: parseStrictJson(bytes.toString("utf8"), relativePath),
+    value: parseStrictJson<Value>(
+      bytes.toString("utf8"),
+      relativePath,
+    ),
   };
 }
 
-function sha256(bytes) {
+function sha256(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function requireCleanDiagnostics(result) {
-  const cleanup = result?.diagnostics?.cleanup;
+function requireCleanDiagnostics(
+  result: CibRunnerResult | undefined,
+): asserts result is CibRunnerResult {
+  if (result === undefined) {
+    throw new Error("CIB evidence batch omitted one scenario");
+  }
+  const cleanup = result.diagnostics.cleanup;
   if (
     cleanup === undefined ||
     Object.values(cleanup).some((count) => count !== 0)
   ) {
     throw new Error(
-      `CIB scenario ${result?.scenarioId ?? "<unknown>"} did not clean up`,
+      `CIB scenario ${result.scenarioId} did not clean up`,
     );
   }
   if (!Array.isArray(result.diagnostics.taskQueries)) {
@@ -69,7 +119,10 @@ function requireCleanDiagnostics(result) {
   }
 }
 
-async function runCibBatch(scenarios, temporaryDirectory) {
+async function runCibBatch(
+  scenarios: ReadonlyArray<Scenario>,
+  temporaryDirectory: string,
+): Promise<ReadonlyArray<CibRunnerResult>> {
   const inputPath = path.join(temporaryDirectory, "scenarios.jsonl");
   const outputPath = path.join(temporaryDirectory, "results.jsonl");
   await writeFile(
@@ -113,16 +166,19 @@ async function runCibBatch(scenarios, temporaryDirectory) {
     .split("\n")
     .filter((line) => line.length > 0)
     .map((line, index) =>
-      parseStrictJson(line, `CIB result line ${index + 1}`));
+      parseStrictJson<CibRunnerResult>(
+        line,
+        `CIB result line ${index + 1}`,
+      ));
 }
 
 async function replaceEvidence() {
   const sources = await Promise.all(
     artifactCases.map(async (artifactCase) => {
-      const scenario = await readJsonWithBytes(
+      const scenario = await readJsonWithBytes<Scenario>(
         artifactCase.scenarioRelativePath,
       );
-      const profile = await readJsonWithBytes(
+      const profile = await readJsonWithBytes<SemanticProfile>(
         `profiles/${scenario.value.profile}/profile.json`,
       );
       return { artifactCase, scenario, profile };
@@ -136,8 +192,10 @@ async function replaceEvidence() {
       sources.map(({ scenario }) => scenario.value),
       temporaryDirectory,
     );
-    const byScenario = new Map(
-      results.map((result) => [result.scenarioId, result]),
+    const byScenario = new Map<string, CibRunnerResult>(
+      results.map(
+        (result) => [result.scenarioId, result] as const,
+      ),
     );
     if (
       byScenario.size !== sources.length ||

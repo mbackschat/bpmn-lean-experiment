@@ -1,13 +1,20 @@
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
-import { runCommand } from "./run-command.mjs";
-import { resolveJavaHome } from "./java-home.mjs";
+import { runCommand } from "./run-command.ts";
+import { resolveJavaHome } from "./java-home.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const javaHome = resolveJavaHome();
 
-function runProjectCommand(command, args, options) {
+function runProjectCommand(
+  command: string,
+  args: ReadonlyArray<string>,
+  options: Readonly<{
+    env?: NodeJS.ProcessEnv;
+    timeoutMs: number;
+  }>,
+) {
   return runCommand(command, args, {
     cwd: projectRoot,
     env: options.env ?? process.env,
@@ -69,7 +76,7 @@ const testRun = await runProjectCommand(
   [
     "--test",
     "--test-concurrency=1",
-    "packages/differential/test/pipeline.test.mjs",
+    "packages/differential/test/pipeline.test.ts",
   ],
   {
     env: {

@@ -9,6 +9,7 @@ xsd_path="docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
 bpmn_path="scenarios/user-task-discovery-completion/process.bpmn"
 
 ./scripts/pnpm.sh run test:contracts
+./scripts/pnpm.sh run check:harness-types
 ./scripts/pnpm.sh run check:doc-fragments
 
 if test -f "$xsd_path"; then

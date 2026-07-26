@@ -65,4 +65,4 @@ The package script supplies the exact replacement opt-in. The command executes a
 | [CibSevenTestEngine.java](src/test/java/org/bpmnlean/cibseven/CibSevenTestEngine.java) | Shared isolated test-engine configuration for the bounded probes |
 | [PvmDefinitionProjector.java](src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) | Read-only diagnostic definition projection |
 | [CibSevenOracleMain.java](src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | Persistent JSON-lines boundary |
-| [replace-cibseven-evidence.mjs](../../scripts/replace-cibseven-evidence.mjs) | Explicit verifier-checked replacement of retained CIB evidence |
+| [replace-cibseven-evidence.ts](../../scripts/replace-cibseven-evidence.ts) | Explicit verifier-checked replacement of retained CIB evidence |

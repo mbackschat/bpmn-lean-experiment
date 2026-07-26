@@ -267,7 +267,7 @@ Every primary live history is replayed in one Worker before the clean in-memory 
 
 Each target returns the same language-neutral canonical result shape. The comparator uses CIB Seven as the declared profile reference and compares Lean, the semantic core, and Temporal without majority voting:
 
-<!-- source-fragment: packages/differential/test/pipeline-harness.mjs#four-target-comparison -->
+<!-- source-fragment: packages/differential/test/pipeline-harness.ts#four-target-comparison -->
 ```js
 const comparison = compareTargetResults(
   {
@@ -280,9 +280,9 @@ const comparison = compareTargetResults(
 
 Agreement alone is weak if the projection or comparator cannot notice the semantic distinction being claimed. Every new evidence projection therefore needs a meaningful seeded mutation:
 
-<!-- source-fragment: packages/differential/test/pipeline-harness.mjs#seeded-disagreement -->
+<!-- source-fragment: packages/differential/test/pipeline-harness.ts#seeded-disagreement -->
 ```js
-const injectedResult = structuredClone(semanticCoreResult);
+const injectedResult = mutableClone(semanticCoreResult);
 pipelineCase.injectMutation(injectedResult);
 const injectedDisagreement = compareTargetResults(
   {

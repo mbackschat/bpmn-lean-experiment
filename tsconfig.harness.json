@@ -1,0 +1,51 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "ES2024"
+    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "@bpmn-lean/bpmn-source": [
+        "./packages/bpmn-source/src/index.ts"
+      ],
+      "@bpmn-lean/differential": [
+        "./packages/differential/src/index.ts"
+      ],
+      "@bpmn-lean/semantic-core": [
+        "./packages/semantic-core/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-adapter": [
+        "./packages/temporal-adapter/src/index.ts"
+      ]
+    },
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2024",
+    "types": [
+      "node"
+    ],
+    "verbatimModuleSyntax": true
+  },
+  "include": [
+    "packages/bpmn-source/src/bpmn-moddle.d.ts",
+    "packages/differential/test/pipeline-harness.ts",
+    "packages/differential/test/pipeline.test.ts",
+    "scripts/contract-artifacts.ts",
+    "scripts/contract-artifacts.test.ts",
+    "scripts/java-home.ts",
+    "scripts/java-home.test.ts",
+    "scripts/replace-cibseven-evidence.ts",
+    "scripts/replace-cibseven-evidence.test.ts",
+    "scripts/run-command.ts",
+    "scripts/run-command.test.ts",
+    "scripts/strict-json.ts",
+    "scripts/test-pipeline.ts"
+  ]
+}

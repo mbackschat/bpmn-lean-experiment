@@ -11,7 +11,7 @@ Run from the repository root:
 git status --short
 ```
 
-`verify.sh` validates contract artifacts and synchronized documentation fragments, checks the BPMN XML, builds and tests Lean, emits Lean results, tests the TypeScript core and BPMN importer, runs the pinned CIB oracle, tests the differential comparator and infrastructure guards, runs the focused Temporal refinement/history/replay gate, and runs the prepared complete pipeline.
+`verify.sh` validates contract artifacts, strictly type-checks the directly executed TypeScript harnesses without emitting JavaScript, checks synchronized documentation fragments and the BPMN XML, builds and tests Lean, emits Lean results, tests the TypeScript core and BPMN importer, runs the pinned CIB oracle, tests the differential comparator and infrastructure guards, runs the focused Temporal refinement/history/replay gate, and runs the prepared complete pipeline.
 
 The infrastructure guard enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names from [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), and resolves every project-authored local Markdown link.
 
@@ -36,11 +36,22 @@ git diff --check
 | Temporal Workflow/runner/refinement/replay | `./scripts/pnpm.sh run test:temporal` |
 | Optional timer time-skipping calibration | `./scripts/pnpm.sh run test:timer-time-skipping` |
 | Pipeline orchestration or any cross-target contract | `./scripts/pnpm.sh run test:pipeline` |
+| Directly executed TypeScript harness or utility | `./scripts/pnpm.sh run check:harness-types` plus its applicable runtime gate |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` |
 | Provisional representation experiment | `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike` |
 | Checked-source relation experiment | `lake build checkCheckedSourceRelationExperiment && lake exe checkCheckedSourceRelationExperiment` |
 
 For JavaScript and TypeScript tests use the global long-running-command policy: pnpm, `CI=true`, tests bounded to 60 seconds, builds bounded to 120 seconds, and no indefinite watch process.
+
+## Direct TypeScript harnesses
+
+Node 24 executes the substantial pipeline, artifact, evidence-replacement, Java-resolution, strict-JSON, and bounded-process harnesses directly from `.ts` source through its built-in erasable-type stripping. Runtime execution does not perform type checking, so `./scripts/pnpm.sh run check:harness-types` is a separate mandatory no-emit gate over the exact migrated entry points and tests in `tsconfig.harness.json`.
+
+The harness configuration keeps `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and NodeNext module resolution enabled. It permits `.ts` import suffixes because Node executes those paths directly. `skipLibCheck` applies only to imported declarations—including the pinned Temporal SDK declarations that do not type-check under TypeScript 7.0.2—while every included project source file remains strictly checked. The direct `@types/node` dependency supplies the Node 24 host API surface; its `undici-types` dependency supplies type declarations for Node's Fetch-compatible APIs and adds no runtime code.
+
+The no-emit configuration resolves workspace package names to checked source entry points, so a clean checkout does not need ignored `dist/` output for type coverage. Runtime package self-references still use each package's ordinary built output after the applicable gate builds it.
+
+Small package tests and calibration or documentation utilities may remain `.mjs` when they are straightforward JavaScript callers of already compiled packages. A file must move into the direct TypeScript gate when it becomes substantial orchestration, owns a decoded external boundary, or benefits materially from reusable typed contracts; file-extension churn alone is not a verification claim.
 
 The Temporal focused and pipeline gates start a local server and may need authorization to bind ports in a managed sandbox. They use pinned CLI `v1.8.1` cached under ignored `.cache/temporal-cli/`.
 

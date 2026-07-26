@@ -5,7 +5,7 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 
-import { runCommand } from "./run-command.mjs";
+import { runCommand } from "./run-command.ts";
 
 test(
   "terminates a timed-out process group before descendants can escape",

@@ -247,6 +247,12 @@ Focused shared-contract and retained-evidence gate:
 ./scripts/pnpm.sh run test:contracts
 ```
 
+Strict no-emit gate for directly executed TypeScript harnesses:
+
+```sh
+./scripts/pnpm.sh run check:harness-types
+```
+
 Source-synchronized walkthrough fragment gate:
 
 ```sh

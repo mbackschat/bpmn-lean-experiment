@@ -7,15 +7,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { resolveJavaHome } from "./java-home.mjs";
+import { resolveJavaHome } from "./java-home.ts";
 
 const validHomes = new Set([
   "/approved/bpmn-java",
   "/approved/java",
   "/usr/lib/jvm/java-21-openjdk-amd64",
 ].map((home) => `${home}/bin/java`));
-const exists = (candidate) => validHomes.has(candidate);
-const javaMajorVersion = (home) =>
+const exists = (candidate: string): boolean => validHomes.has(candidate);
+const javaMajorVersion = (home: string): number =>
   home === "/wrong/java" ? 25 : 21;
 
 test("prefers explicit BPMN Java configuration", () => {

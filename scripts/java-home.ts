@@ -9,7 +9,21 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export function resolveJavaHome(options = {}) {
+type Exists = (candidate: string) => boolean;
+type JavaMajorVersion = (home: string) => number | undefined;
+
+export type ResolveJavaHomeOptions = Readonly<{
+  environment?: NodeJS.ProcessEnv;
+  platform?: NodeJS.Platform;
+  exists?: Exists;
+  javaMajorVersion?: JavaMajorVersion;
+  resolveMacJavaHome?: () => string | undefined;
+  resolvePathJava?: () => string | undefined;
+}>;
+
+export function resolveJavaHome(
+  options: ResolveJavaHomeOptions = {},
+): string {
   const environment = options.environment ?? process.env;
   const platform = options.platform ?? process.platform;
   const exists = options.exists ?? existsSync;
@@ -81,11 +95,11 @@ export function resolveJavaHome(options = {}) {
 }
 
 function requireJavaHome(
-  home,
-  variable,
-  exists,
-  javaMajorVersion,
-) {
+  home: string,
+  variable: string,
+  exists: Exists,
+  javaMajorVersion: JavaMajorVersion,
+): void {
   if (!exists(path.join(home, "bin", "java"))) {
     throw new Error(`${variable} does not contain bin/java: ${home}`);
   }
@@ -97,14 +111,18 @@ function requireJavaHome(
   }
 }
 
-function isJava21Home(home, exists, javaMajorVersion) {
+function isJava21Home(
+  home: string,
+  exists: Exists,
+  javaMajorVersion: JavaMajorVersion,
+): boolean {
   return (
     exists(path.join(home, "bin", "java")) &&
     javaMajorVersion(home) === 21
   );
 }
 
-function defaultMacJavaHome() {
+function defaultMacJavaHome(): string | undefined {
   try {
     return execFileSync(
       "/usr/libexec/java_home",
@@ -116,7 +134,7 @@ function defaultMacJavaHome() {
   }
 }
 
-function defaultPathJava() {
+function defaultPathJava(): string | undefined {
   try {
     const executable = execFileSync(
       "/usr/bin/env",
@@ -131,7 +149,7 @@ function defaultPathJava() {
   }
 }
 
-function defaultJavaMajorVersion(home) {
+function defaultJavaMajorVersion(home: string): number | undefined {
   const result = spawnSync(
     path.join(home, "bin", "java"),
     ["-version"],
@@ -141,9 +159,12 @@ function defaultJavaMajorVersion(home) {
   const match = /version "(?:1\.)?(\d+)/u.exec(output);
   return match === null
     ? undefined
-    : Number.parseInt(match[1], 10);
+    : Number.parseInt(match[1]!, 10);
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] !== undefined &&
+  process.argv[1] === fileURLToPath(import.meta.url)
+) {
   process.stdout.write(`${resolveJavaHome()}\n`);
 }

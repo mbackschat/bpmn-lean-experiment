@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import {
   requireReplacementAuthorization,
-} from "./replace-cibseven-evidence.mjs";
+} from "./replace-cibseven-evidence.ts";
 
 test("requires explicit authorization before replacing CIB evidence", () => {
   assert.throws(

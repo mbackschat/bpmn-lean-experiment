@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  CanonicalObservationKind,
   CommandOutcome,
+} from "@bpmn-lean/semantic-core";
+import type {
+  CanonicalObservation,
+  StateObservation,
 } from "@bpmn-lean/semantic-core";
 import {
   ProcessCommandResultKind,
@@ -11,12 +16,12 @@ import {
 import {
   ComparisonKind,
   DifferentialTarget,
-} from "../dist/index.js";
+} from "@bpmn-lean/differential";
 
 import {
   pipelineCases,
   runPipelineCases,
-} from "./pipeline-harness.mjs";
+} from "./pipeline-harness.ts";
 
 const cleanCibProjection = {
   deployments: 0,
@@ -27,6 +32,27 @@ const cleanCibProjection = {
   incidents: 0,
   historicProcessInstances: 0,
 };
+
+function requiredAt<Value>(
+  values: ReadonlyArray<Value>,
+  index: number,
+  label: string,
+): Value {
+  const value = values[index];
+  if (value === undefined) {
+    throw new Error(`${label} omitted index ${index}`);
+  }
+  return value;
+}
+
+function requireStateObservation(
+  observation: CanonicalObservation,
+): StateObservation {
+  if (observation.kind !== CanonicalObservationKind.State) {
+    throw new Error("expected one canonical state observation");
+  }
+  return observation;
+}
 
 test(
   "runs the User Task, parallel, Timer, and Service Task witnesses through one batch",
@@ -51,9 +77,21 @@ test(
     assert.equal(report.cases.length, pipelineCases.length);
     assert.equal(evidence.length, pipelineCases.length);
     for (const [index, caseReport] of report.cases.entries()) {
-      const caseEvidence = evidence[index];
-      assert.equal(caseReport.scenario.id, pipelineCases[index].id);
-      assert.equal(caseEvidence.scenarioId, pipelineCases[index].id);
+      const pipelineCase = requiredAt(
+        pipelineCases,
+        index,
+        "pipeline cases",
+      );
+      const caseEvidence = requiredAt(evidence, index, "case evidence");
+      const expectedWaitState = requireStateObservation(
+        requiredAt(
+          caseEvidence.expectedWaitTrace,
+          2,
+          "expected wait trace",
+        ),
+      );
+      assert.equal(caseReport.scenario.id, pipelineCase.id);
+      assert.equal(caseEvidence.scenarioId, pipelineCase.id);
       assert.equal(
         caseReport.comparison.kind,
         ComparisonKind.Agreement,
@@ -106,21 +144,21 @@ test(
         kind: ComparisonKind.Disagreement,
         referenceTarget: DifferentialTarget.CibSeven,
         candidateTarget: DifferentialTarget.SemanticCore,
-        disagreement: pipelineCases[index].expectedInjectedDisagreement,
+        disagreement: pipelineCase.expectedInjectedDisagreement,
       });
 
       assert.notEqual(caseEvidence.temporalInteractionEvidence, null);
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.openUserTasksAtWait,
-        caseEvidence.expectedWaitTrace[2].openUserTasks,
+        expectedWaitState.openUserTasks,
       );
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.openTimersAtWait,
-        caseEvidence.expectedWaitTrace[2].openTimers,
+        expectedWaitState.openTimers,
       );
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.openEffectsAtWait,
-        caseEvidence.expectedWaitTrace[2].openEffects,
+        expectedWaitState.openEffects,
       );
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.completionOutcomes,
@@ -178,6 +216,16 @@ test(
           initialRetries: 3,
           retriesAfterFirstFailure: 2,
         });
+        assert.notEqual(caseEvidence.primaryEffectProbeEvidence, null);
+        assert.notEqual(caseEvidence.isolationEffectProbeEvidence, null);
+        if (
+          caseEvidence.primaryEffectProbeEvidence === null ||
+          caseEvidence.isolationEffectProbeEvidence === null
+        ) {
+          throw new Error(
+            "Service Task evidence omitted effect probe results",
+          );
+        }
         assert.equal(
           caseEvidence.primaryEffectProbeEvidence.invocations,
           1,
@@ -225,9 +273,14 @@ test(
       `warm pipeline took ${report.phaseMs.warmTotal.toFixed(3)}ms`,
     );
     if (report.buildMode === "measured") {
+      const coldTotal = report.phaseMs.coldTotal;
+      assert.notEqual(coldTotal, null);
+      if (coldTotal === null) {
+        throw new Error("measured pipeline omitted cold timing");
+      }
       assert.ok(
-        report.phaseMs.coldTotal < 45_000,
-        `cold pipeline took ${report.phaseMs.coldTotal.toFixed(3)}ms`,
+        coldTotal < 45_000,
+        `cold pipeline took ${coldTotal.toFixed(3)}ms`,
       );
     } else {
       assert.equal(report.buildMode, "prebuilt");

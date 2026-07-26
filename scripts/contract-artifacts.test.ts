@@ -10,11 +10,66 @@ import {
   readAndVerifyArtifactSets,
   verifyArtifactSet,
   verifyDefinitionArtifacts,
-} from "./contract-artifacts.mjs";
+} from "./contract-artifacts.ts";
+import type {
+  ArtifactSet,
+  DefinitionArtifacts,
+} from "./contract-artifacts.ts";
+import type {
+  CanonicalObservation,
+  CheckedNode,
+  CompleteUserTaskInstanceStimulus,
+  ControlPlace,
+  SemanticOperation,
+  SemanticOperationKind,
+  StateObservation,
+  Stimulus,
+  CheckedNodeKind,
+} from "../packages/semantic-core/src/index.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-function cloneArtifactSet(artifactSet) {
+type DeepMutable<Value> =
+  Value extends (...args: never[]) => unknown
+    ? Value
+    : Value extends ReadonlyArray<infer Item>
+      ? Array<DeepMutable<Item>>
+      : Value extends object
+        ? { -readonly [Key in keyof Value]: DeepMutable<Value[Key]> }
+        : Value;
+
+type MutableArtifactSet =
+  Pick<ArtifactSet, "validator" | "registeredRelationshipIds"> &
+  DeepMutable<
+    Omit<ArtifactSet, "validator" | "registeredRelationshipIds">
+  >;
+
+type MutableDefinitionArtifacts = DeepMutable<DefinitionArtifacts>;
+
+type IntegerSchemaLocation = Readonly<{
+  path: string;
+  schema: Readonly<{
+    maximum?: unknown;
+  }>;
+}>;
+
+const checkedNodeKind = Object.freeze({
+  UserTask: "userTask" as CheckedNodeKind.UserTask,
+  ServiceTask: "serviceTask" as CheckedNodeKind.ServiceTask,
+});
+
+const semanticOperationKind = Object.freeze({
+  AwaitUserTask:
+    "awaitUserTask" as SemanticOperationKind.AwaitUserTask,
+  AwaitEffect: "awaitEffect" as SemanticOperationKind.AwaitEffect,
+  Duplicate: "duplicate" as SemanticOperationKind.Duplicate,
+  Synchronize:
+    "synchronize" as SemanticOperationKind.Synchronize,
+});
+
+function cloneArtifactSet(
+  artifactSet: ArtifactSet,
+): MutableArtifactSet {
   return {
     ...artifactSet,
     profile: structuredClone(artifactSet.profile),
@@ -23,23 +78,34 @@ function cloneArtifactSet(artifactSet) {
     scenarioBytes: Buffer.from(artifactSet.scenarioBytes),
     evidence: structuredClone(artifactSet.evidence),
     bpmnBytes: Buffer.from(artifactSet.bpmnBytes),
-  };
+  } as MutableArtifactSet;
 }
 
-function bindScenarioBytes(artifactSet, scenarioBytes) {
+function bindScenarioBytes(
+  artifactSet: MutableArtifactSet,
+  scenarioBytes: string | Uint8Array,
+): void {
   artifactSet.scenarioBytes = Buffer.from(scenarioBytes);
   artifactSet.evidence.scenario.sha256 = createHash("sha256")
     .update(artifactSet.scenarioBytes)
     .digest("hex");
 }
 
-function collectIntegerSchemas(value, locations = [], path = "$") {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
+function collectIntegerSchemas(
+  value: unknown,
+  locations: Array<IntegerSchemaLocation> = [],
+  path = "$",
+): Array<IntegerSchemaLocation> {
   if (Array.isArray(value)) {
     value.forEach((item, index) =>
       collectIntegerSchemas(item, locations, `${path}[${index}]`));
     return locations;
   }
-  if (value !== null && typeof value === "object") {
+  if (isRecord(value)) {
     if (value.type === "integer") {
       locations.push({ path, schema: value });
     }
@@ -50,14 +116,17 @@ function collectIntegerSchemas(value, locations = [], path = "$") {
   return locations;
 }
 
-function collectPropertyNames(value, names = new Set()) {
+function collectPropertyNames(
+  value: unknown,
+  names = new Set<string>(),
+): Set<string> {
   if (Array.isArray(value)) {
     for (const item of value) {
       collectPropertyNames(item, names);
     }
     return names;
   }
-  if (value !== null && typeof value === "object") {
+  if (isRecord(value)) {
     for (const [name, item] of Object.entries(value)) {
       names.add(name);
       collectPropertyNames(item, names);
@@ -66,7 +135,7 @@ function collectPropertyNames(value, names = new Set()) {
   return names;
 }
 
-function parallelDefinitionArtifacts() {
+function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
   const identity = {
     semanticProfile: "parallel-fork-join-draft",
     sourceId: "parallel-two-user-tasks.bpmn",
@@ -169,10 +238,10 @@ function parallelDefinitionArtifacts() {
         }),
       ],
     },
-  };
+  } as unknown as MutableDefinitionArtifacts;
 }
 
-function serviceTaskDefinitionArtifacts() {
+function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
   const identity = {
     semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
     sourceId: "service-task-effect-phase-zero-probe",
@@ -248,23 +317,129 @@ function serviceTaskDefinitionArtifacts() {
         }),
       ],
     },
-  };
+  } as unknown as MutableDefinitionArtifacts;
 }
 
-function controlPlace(flowId) {
+function controlPlace(flowId: string): ControlPlace {
   return {
     id: `place:${flowId}`,
     origin: { kind: "bpmnSequenceFlow", elementId: flowId },
-  };
+  } as unknown as ControlPlace;
 }
 
-function operation(elementId, kind, fields) {
+function operation(
+  elementId: string,
+  kind: string,
+  fields: Readonly<Record<string, unknown>>,
+): SemanticOperation {
   return {
     id: `operation:${elementId}`,
     kind,
     origin: { kind: "bpmnElement", elementId },
     ...fields,
-  };
+  } as unknown as SemanticOperation;
+}
+
+function required<Value>(
+  value: Value | undefined,
+  label: string,
+): Value {
+  if (value === undefined) {
+    throw new Error(`${label} is required`);
+  }
+  return value;
+}
+
+function requiredAt<Value>(
+  values: ReadonlyArray<Value>,
+  index: number,
+  label: string,
+): Value {
+  return required(values[index], `${label}[${index}]`);
+}
+
+function requireUserTaskCompletion(
+  stimulus: DeepMutable<Stimulus> | undefined,
+): DeepMutable<CompleteUserTaskInstanceStimulus> {
+  if (stimulus?.kind !== "completeUserTaskInstance") {
+    throw new Error("expected a User Task completion stimulus");
+  }
+  return stimulus;
+}
+
+function requireState(
+  observation: CanonicalObservation | undefined,
+): StateObservation {
+  if (observation?.kind !== "state") {
+    throw new Error("expected a canonical state observation");
+  }
+  return observation;
+}
+
+function requireMutableState(
+  observation: DeepMutable<CanonicalObservation> | undefined,
+): DeepMutable<StateObservation> {
+  if (observation?.kind !== "state") {
+    throw new Error("expected a mutable canonical state observation");
+  }
+  return observation;
+}
+
+type MutableCheckedUserTask = DeepMutable<
+  Extract<CheckedNode, { kind: CheckedNodeKind.UserTask }>
+>;
+type MutableAwaitUserTask = DeepMutable<
+  Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitUserTask }
+  >
+>;
+type MutableServiceTask = DeepMutable<
+  Extract<CheckedNode, { kind: CheckedNodeKind.ServiceTask }>
+>;
+type MutableAwaitEffect = DeepMutable<
+  Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitEffect }
+  >
+>;
+
+function requireCheckedUserTask(
+  node: DeepMutable<CheckedNode> | undefined,
+): MutableCheckedUserTask {
+  if (node?.kind !== checkedNodeKind.UserTask) {
+    throw new Error("expected a checked User Task");
+  }
+  return node;
+}
+
+function requireAwaitUserTask(
+  operationValue: DeepMutable<SemanticOperation> | undefined,
+): MutableAwaitUserTask {
+  if (
+    operationValue?.kind !== semanticOperationKind.AwaitUserTask
+  ) {
+    throw new Error("expected an awaitUserTask operation");
+  }
+  return operationValue;
+}
+
+function requireServiceTask(
+  node: DeepMutable<CheckedNode> | undefined,
+): MutableServiceTask {
+  if (node?.kind !== checkedNodeKind.ServiceTask) {
+    throw new Error("expected a checked Service Task");
+  }
+  return node;
+}
+
+function requireAwaitEffect(
+  operationValue: DeepMutable<SemanticOperation> | undefined,
+): MutableAwaitEffect {
+  if (operationValue?.kind !== semanticOperationKind.AwaitEffect) {
+    throw new Error("expected an awaitEffect operation");
+  }
+  return operationValue;
 }
 
 test("uses structural document kinds without embedded schema counters", async () => {
@@ -303,9 +478,15 @@ test("keeps every target scenario answer-free and binds retained CIB evidence by
 });
 
 test("rejects a semantic answer smuggled into target input", async () => {
-  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+  const artifactSet = requiredAt(
+    await readAndVerifyArtifactSets(projectRoot),
+    0,
+    "artifact sets",
+  );
   const mutated = cloneArtifactSet(artifactSet);
-  mutated.scenario.calibration = {
+  (
+    mutated.scenario as unknown as Record<string, unknown>
+  ).calibration = {
     status: "calibrated",
     expectedOutcome: mutated.evidence.result.outcome,
     expectedTrace: mutated.evidence.result.trace,
@@ -341,9 +522,13 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
     }
   }
 
-  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+  const artifactSet = requiredAt(
+    await readAndVerifyArtifactSets(projectRoot),
+    0,
+    "artifact sets",
+  );
   const unsafe = cloneArtifactSet(artifactSet);
-  unsafe.scenario.stimuli[1].taskId.activation =
+  requireUserTaskCompletion(unsafe.scenario.stimuli[1]).taskId.activation =
     Number.MAX_SAFE_INTEGER + 1;
   bindScenarioBytes(
     unsafe,
@@ -355,7 +540,9 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
   );
 
   const fractional = cloneArtifactSet(artifactSet);
-  fractional.scenario.stimuli[1].taskId.activation = 1.5;
+  requireUserTaskCompletion(
+    fractional.scenario.stimuli[1],
+  ).taskId.activation = 1.5;
   bindScenarioBytes(
     fractional,
     `${JSON.stringify(fractional.scenario, null, 2)}\n`,
@@ -377,7 +564,11 @@ test("uses Unicode scalar-value order without normalization", () => {
 });
 
 test("rejects duplicate keys and unpaired surrogates in exact JSON bytes", async () => {
-  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+  const artifactSet = requiredAt(
+    await readAndVerifyArtifactSets(projectRoot),
+    0,
+    "artifact sets",
+  );
 
   const duplicate = cloneArtifactSet(artifactSet);
   const duplicateBytes = JSON.stringify(duplicate.scenario, null, 2).replace(
@@ -404,10 +595,16 @@ test("rejects duplicate keys and unpaired surrogates in exact JSON bytes", async
 });
 
 test("distinguishes unknown, missing, closed-enum, null, and absent fields", async () => {
-  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+  const artifactSet = requiredAt(
+    await readAndVerifyArtifactSets(projectRoot),
+    0,
+    "artifact sets",
+  );
 
   const missing = cloneArtifactSet(artifactSet);
-  delete missing.scenario.provenance;
+  delete (
+    missing.scenario as unknown as Partial<{ provenance: unknown }>
+  ).provenance;
   bindScenarioBytes(missing, `${JSON.stringify(missing.scenario)}\n`);
   assert.throws(
     () => verifyArtifactSet(missing),
@@ -415,7 +612,13 @@ test("distinguishes unknown, missing, closed-enum, null, and absent fields", asy
   );
 
   const closedEnum = cloneArtifactSet(artifactSet);
-  closedEnum.scenario.stimuli[1].kind = "completeAnyTask";
+  (
+    requiredAt(
+      closedEnum.scenario.stimuli,
+      1,
+      "closed-enum stimuli",
+    ) as unknown as { kind: string }
+  ).kind = "completeAnyTask";
   bindScenarioBytes(closedEnum, `${JSON.stringify(closedEnum.scenario)}\n`);
   assert.throws(
     () => verifyArtifactSet(closedEnum),
@@ -423,11 +626,15 @@ test("distinguishes unknown, missing, closed-enum, null, and absent fields", asy
   );
 
   const nullName = parallelDefinitionArtifacts();
-  const checkedTask = nullName.checkedProcess.nodes.find(
-    ({ kind }) => kind === "userTask",
+  const checkedTask = requireCheckedUserTask(
+    nullName.checkedProcess.nodes.find(
+      ({ kind }) => kind === checkedNodeKind.UserTask,
+    ),
   );
-  const programTask = nullName.semanticProcess.operations.find(
-    ({ kind }) => kind === "awaitUserTask",
+  const programTask = requireAwaitUserTask(
+    nullName.semanticProcess.operations.find(
+      ({ kind }) => kind === semanticOperationKind.AwaitUserTask,
+    ),
   );
   checkedTask.name = null;
   programTask.task.name = null;
@@ -436,8 +643,13 @@ test("distinguishes unknown, missing, closed-enum, null, and absent fields", asy
   );
 
   const absentName = parallelDefinitionArtifacts();
-  delete absentName.checkedProcess.nodes.find(
-    ({ kind }) => kind === "userTask",
+  const absentCheckedTask = requireCheckedUserTask(
+    absentName.checkedProcess.nodes.find(
+      ({ kind }) => kind === checkedNodeKind.UserTask,
+    ),
+  );
+  delete (
+    absentCheckedTask as Partial<{ name: string | null }>
   ).name;
   await assert.rejects(
     verifyDefinitionArtifacts(projectRoot, absentName),
@@ -446,9 +658,17 @@ test("distinguishes unknown, missing, closed-enum, null, and absent fields", asy
 });
 
 test("rejects retained evidence after its neutral scenario changes", async () => {
-  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+  const artifactSet = requiredAt(
+    await readAndVerifyArtifactSets(projectRoot),
+    0,
+    "artifact sets",
+  );
   const mutated = cloneArtifactSet(artifactSet);
-  mutated.scenario.stimuli[0].commandId = "changed-start-command";
+  requiredAt(
+    mutated.scenario.stimuli,
+    0,
+    "scenario stimuli",
+  ).commandId = "changed-start-command";
   mutated.scenarioBytes = Buffer.from(
     `${JSON.stringify(mutated.scenario, null, 2)}\n`,
   );
@@ -461,13 +681,20 @@ test("rejects retained evidence after its neutral scenario changes", async () =>
 
 test("rejects a meaningful invalid task-projection mutation", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
-  const interaction = artifactSets.find(
-    ({ scenario }) =>
-      scenario.id === "user-task-discovery-completion",
+  const interaction = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "user-task-discovery-completion",
+    ),
+    "User Task artifact set",
   );
-  assert.notEqual(interaction, undefined);
   const mutated = cloneArtifactSet(interaction);
-  mutated.evidence.result.trace[2].openUserTasks[0].id.activation = 0;
+  const state = requireMutableState(mutated.evidence.result.trace[2]);
+  requiredAt(
+    state.openUserTasks,
+    0,
+    "open User Tasks",
+  ).id.activation = 0;
 
   assert.throws(
     () => verifyArtifactSet(mutated),
@@ -477,18 +704,28 @@ test("rejects a meaningful invalid task-projection mutation", async () => {
 
 test("derives canonical parallel tasks independently of producer query order", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
-  const parallel = artifactSets.find(
-    ({ scenario }) =>
-      scenario.id === "parallel-fork-join-a-then-b",
+  const parallel = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "parallel-fork-join-a-then-b",
+    ),
+    "parallel artifact set",
   );
-  assert.notEqual(parallel, undefined);
   const reordered = cloneArtifactSet(parallel);
-  reordered.evidence.producerObservations.taskQueries[0].tasks.reverse();
+  requiredAt(
+    reordered.evidence.producerObservations.taskQueries,
+    0,
+    "task query snapshots",
+  ).tasks.reverse();
 
   assert.doesNotThrow(() => verifyArtifactSet(reordered));
 
   const dropped = cloneArtifactSet(parallel);
-  dropped.evidence.producerObservations.taskQueries[0].tasks.pop();
+  requiredAt(
+    dropped.evidence.producerObservations.taskQueries,
+    0,
+    "task query snapshots",
+  ).tasks.pop();
   assert.throws(
     () => verifyArtifactSet(dropped),
     /producer observation projection does not match canonical/,
@@ -497,18 +734,19 @@ test("derives canonical parallel tasks independently of producer query order", a
 
 test("detects a missing live sibling after stale parallel completion", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
-  const stale = artifactSets.find(
-    ({ scenario }) =>
-      scenario.id === "parallel-fork-join-stale-a-while-b-active",
+  const stale = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "parallel-fork-join-stale-a-while-b-active",
+    ),
+    "stale parallel artifact set",
   );
-  assert.notEqual(stale, undefined);
   const mutated = cloneArtifactSet(stale);
   const afterStale = mutated.evidence.producerObservations.taskQueries.find(
     ({ afterCommandId }) =>
       afterCommandId === "complete-stale-user-task-a",
   );
-  assert.notEqual(afterStale, undefined);
-  afterStale.tasks.pop();
+  required(afterStale, "post-stale task snapshot").tasks.pop();
 
   assert.throws(
     () => verifyArtifactSet(mutated),
@@ -518,14 +756,23 @@ test("detects a missing live sibling after stale parallel completion", async () 
 
 test("detects a timer deadline projection mutation", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
-  const timer = artifactSets.find(
-    ({ scenario }) =>
-      scenario.id === "intermediate-catch-timer-pt1s",
+  const timer = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "intermediate-catch-timer-pt1s",
+    ),
+    "timer artifact set",
   );
-  assert.notEqual(timer, undefined);
   const mutated = cloneArtifactSet(timer);
-  mutated.evidence.producerObservations.timerJobs[0].jobs[0]
-    .dueDateDeltaMs = 999;
+  requiredAt(
+    requiredAt(
+      mutated.evidence.producerObservations.timerJobs,
+      0,
+      "timer snapshots",
+    ).jobs,
+    0,
+    "timer jobs",
+  ).dueDateDeltaMs = 999;
 
   assert.throws(
     () => verifyArtifactSet(mutated),
@@ -535,12 +782,23 @@ test("detects a timer deadline projection mutation", async () => {
 
 test("detects a Service Task effect-binding projection mutation", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
-  const effect = artifactSets.find(
-    ({ scenario }) => scenario.id === "service-task-effect-success",
+  const effect = required(
+    artifactSets.find(
+      ({ scenario }) => scenario.id === "service-task-effect-success",
+    ),
+    "Service Task artifact set",
   );
-  assert.notEqual(effect, undefined);
   const mutated = cloneArtifactSet(effect);
-  mutated.evidence.producerObservations.effectJobs[0].jobs[0].handler =
+  const effectJobs = required(
+    mutated.evidence.producerObservations.effectJobs,
+    "effect job snapshots",
+  );
+  const effectJob = requiredAt(
+    requiredAt(effectJobs, 0, "effect snapshots").jobs,
+    0,
+    "effect jobs",
+  );
+  (effectJob as unknown as { handler: string }).handler =
     "unexpectedEffectHandler";
 
   assert.throws(
@@ -559,16 +817,26 @@ test("requires every semantic profile to identify its reviewed CIB-BPMN relation
     }
   }
 
-  const mutated = cloneArtifactSet(artifactSets[0]);
-  delete mutated.profile.bpmn.relationships;
+  const firstArtifactSet = requiredAt(
+    artifactSets,
+    0,
+    "artifact sets",
+  );
+  const mutated = cloneArtifactSet(firstArtifactSet);
+  delete (
+    mutated.profile.bpmn as Partial<{
+      relationships: Array<string>;
+    }>
+  ).relationships;
 
   assert.throws(
     () => verifyArtifactSet(mutated),
     /profile schema validation failed/,
   );
 
-  const unknownRelationship = cloneArtifactSet(artifactSets[0]);
-  unknownRelationship.profile.bpmn.relationships[0] = "CIB-AGR-9999";
+  const unknownRelationship = cloneArtifactSet(firstArtifactSet);
+  unknownRelationship.profile.bpmn.relationships[0] =
+    "CIB-AGR-9999";
 
   assert.throws(
     () => verifyArtifactSet(unknownRelationship),
@@ -589,20 +857,37 @@ test("accepts the canonical checked-process and Semantic Process contract shapes
 });
 
 test("rejects drift in either exact Service Task binding identity", async () => {
-  for (const mutate of [
+  const mutations: ReadonlyArray<
+    (artifacts: MutableDefinitionArtifacts) => void
+  > = [
     (artifacts) => {
-      artifacts.checkedProcess.nodes[1].implementation =
+      const serviceTask = requireServiceTask(
+        artifacts.checkedProcess.nodes[1],
+      );
+      (
+        serviceTask as unknown as { implementation: string }
+      ).implementation =
         "urn:bpmn-lean:effect:other";
     },
     (artifacts) => {
-      artifacts.checkedProcess.nodes[1].sourceBinding
-        .delegateExpressionAttribute.value = "${otherHandler}";
+      const serviceTask = requireServiceTask(
+        artifacts.checkedProcess.nodes[1],
+      );
+      (
+        serviceTask.sourceBinding.delegateExpressionAttribute as unknown as {
+          value: string;
+        }
+      ).value = "${otherHandler}";
     },
     (artifacts) => {
-      artifacts.semanticProcess.operations[1].effect.elementId =
+      const effectOperation = requireAwaitEffect(
+        artifacts.semanticProcess.operations[1],
+      );
+      effectOperation.effect.elementId =
         "Other_ServiceTask";
     },
-  ]) {
+  ];
+  for (const mutate of mutations) {
     const artifacts = serviceTaskDefinitionArtifacts();
     mutate(artifacts);
     await assert.rejects(
@@ -614,7 +899,11 @@ test("rejects drift in either exact Service Task binding identity", async () => 
 
 test("rejects checked and Semantic Process references outside their definition domains", async () => {
   const checkedMutation = parallelDefinitionArtifacts();
-  checkedMutation.checkedProcess.sequenceFlows[0].targetId = "Missing_Task";
+  requiredAt(
+    checkedMutation.checkedProcess.sequenceFlows,
+    0,
+    "checked Sequence Flows",
+  ).targetId = "Missing_Task";
 
   await assert.rejects(
     verifyDefinitionArtifacts(projectRoot, checkedMutation),
@@ -622,8 +911,16 @@ test("rejects checked and Semantic Process references outside their definition d
   );
 
   const programMutation = parallelDefinitionArtifacts();
-  programMutation.semanticProcess.operations[1].outputs[0] =
-    "place:Flow_Fork_A0";
+  const duplicate = required(
+    programMutation.semanticProcess.operations.find(
+      ({ kind }) => kind === semanticOperationKind.Duplicate,
+    ),
+    "duplicate operation",
+  );
+  if (duplicate.kind !== semanticOperationKind.Duplicate) {
+    throw new Error("expected a duplicate operation");
+  }
+  duplicate.outputs[0] = "place:Flow_Fork_A0";
 
   await assert.rejects(
     verifyDefinitionArtifacts(projectRoot, programMutation),
@@ -637,14 +934,26 @@ test("rejects duplicate and synchronize operations below their semantic arity", 
     "operation:Gateway_Join",
   ]) {
     const artifacts = parallelDefinitionArtifacts();
-    const operation = artifacts.semanticProcess.operations.find(
-      ({ id }) => id === operationId,
+    const operationValue = required(
+      artifacts.semanticProcess.operations.find(
+        ({ id }) => id === operationId,
+      ),
+      `operation ${operationId}`,
     );
-    assert.notEqual(operation, undefined);
-    if (operation.kind === "duplicate") {
-      operation.outputs = [operation.outputs[0]];
+    if (operationValue.kind === semanticOperationKind.Duplicate) {
+      operationValue.outputs = [
+        requiredAt(operationValue.outputs, 0, "duplicate outputs"),
+      ];
+    } else if (
+      operationValue.kind === semanticOperationKind.Synchronize
+    ) {
+      operationValue.inputs = [
+        requiredAt(operationValue.inputs, 0, "synchronize inputs"),
+      ];
     } else {
-      operation.inputs = [operation.inputs[0]];
+      throw new Error(
+        `${operationId} is not a duplicate or synchronize operation`,
+      );
     }
 
     await assert.rejects(
@@ -675,7 +984,16 @@ test("rejects non-canonical definition and unordered-reference order", async () 
   );
 
   const referenceOrderMutation = parallelDefinitionArtifacts();
-  referenceOrderMutation.semanticProcess.operations[1].outputs.reverse();
+  const duplicateOperation = required(
+    referenceOrderMutation.semanticProcess.operations.find(
+      ({ kind }) => kind === semanticOperationKind.Duplicate,
+    ),
+    "duplicate operation",
+  );
+  if (duplicateOperation.kind !== semanticOperationKind.Duplicate) {
+    throw new Error("expected duplicate operation");
+  }
+  duplicateOperation.outputs.reverse();
 
   await assert.rejects(
     verifyDefinitionArtifacts(projectRoot, referenceOrderMutation),

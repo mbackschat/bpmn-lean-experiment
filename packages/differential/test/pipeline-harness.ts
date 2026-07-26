@@ -14,27 +14,48 @@ import {
   BpmnCompilationStatus,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
+import type {
+  AcceptedBpmnCompilation,
+  BpmnCompilationResult,
+} from "@bpmn-lean/bpmn-source";
 import {
   CanonicalObservationKind,
   ProcessStatus,
+  ScenarioOutcomeKind,
   StimulusKind,
   compareCanonicalStrings,
   runScenario,
+} from "@bpmn-lean/semantic-core";
+import type {
+  CanonicalObservation,
+  Scenario,
+  ScenarioResult,
+  SemanticProcessProgram,
+  StateObservation,
 } from "@bpmn-lean/semantic-core";
 import {
   DisagreementKind,
   DifferentialTarget,
   compareTargetResults,
   requireScenarioBinding,
-} from "../dist/index.js";
+} from "@bpmn-lean/differential";
+import type {
+  ScenarioDisagreement,
+  TargetScenarioResult,
+} from "@bpmn-lean/differential";
 import {
   EffectExecutionSchedule,
   ProcessCommandResultKind,
   TemporalCompletionDelivery,
   TemporalScenarioRunner,
 } from "@bpmn-lean/temporal-adapter";
-import { runCommand } from "../../../scripts/run-command.mjs";
-import { parseStrictJson } from "../../../scripts/strict-json.mjs";
+import type {
+  TemporalScenarioBatchItem,
+  TemporalScenarioExecution,
+  TemporalScenarioExecutionOptions,
+} from "@bpmn-lean/temporal-adapter";
+import { runCommand } from "../../../scripts/run-command.ts";
+import { parseStrictJson } from "../../../scripts/strict-json.ts";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const temporalCacheDirectory = path.join(
@@ -50,7 +71,171 @@ const TemporalCaseRelation = Object.freeze({
   PostTerminalClosed: "postTerminalClosed",
 });
 
-function mutateOpenTaskActivation(result) {
+type TemporalCaseRelation =
+  typeof TemporalCaseRelation[keyof typeof TemporalCaseRelation];
+
+type DeepMutable<T> =
+  T extends (...args: never[]) => unknown
+    ? T
+    : T extends ReadonlyArray<infer Item>
+      ? Array<DeepMutable<Item>>
+      : T extends object
+        ? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
+        : T;
+
+type MutableScenarioResult = DeepMutable<ScenarioResult>;
+type MutableStateObservation = Extract<
+  DeepMutable<CanonicalObservation>,
+  { kind: CanonicalObservationKind.State }
+>;
+type ObservationValueDisagreement = Extract<
+  ScenarioDisagreement,
+  { kind: DisagreementKind.ObservationValue }
+>;
+
+export type PipelineCase = Readonly<{
+  id: string;
+  scenarioRelativePath: string;
+  evidenceRelativePath: string;
+  bpmnRelativePath: string;
+  workflowIdPrefix: string;
+  expectedWaitTraceLength: number;
+  completionDelivery: TemporalCompletionDelivery;
+  temporalRelation: TemporalCaseRelation;
+  duplicateFirstCompletion?: boolean;
+  effectScheduleSubstitution?: boolean;
+  replayIsolation?: boolean;
+  injectMutation: (result: MutableScenarioResult) => void;
+  expectedInjectedDisagreement: ObservationValueDisagreement;
+}>;
+
+type InteractionCaseOptions = Readonly<{
+  completionDelivery?: TemporalCompletionDelivery;
+  temporalRelation?: TemporalCaseRelation;
+  duplicateFirstCompletion?: boolean;
+}>;
+
+type ParallelCaseOptions = Readonly<{
+  injectMutation?: PipelineCase["injectMutation"];
+  expectedInjectedDisagreement?: ObservationValueDisagreement;
+}>;
+
+type RetainedEvidence = Readonly<{
+  result: ScenarioResult;
+}>;
+
+type PipelineContext = Readonly<{
+  pipelineCase: PipelineCase;
+  scenario: Scenario;
+  retainedEvidence: RetainedEvidence;
+  checkedProcess: AcceptedBpmnCompilation["checkedProcess"];
+  semanticProcess: SemanticProcessProgram;
+}>;
+
+type LeanDefinitionRecord = Readonly<{
+  scenarioId: string;
+  checkedProcess: AcceptedBpmnCompilation["checkedProcess"];
+  semanticProcess: SemanticProcessProgram;
+}>;
+
+type LeanResultRecord = Readonly<{
+  scenarioId: string;
+  scenario: Scenario;
+  definitionBinding: Readonly<{
+    kind: "leanDefinitionBinding";
+    sourceSha256: string;
+    semanticProfile: string;
+    programMatchesLeanLowering: boolean;
+  }>;
+  result: ScenarioResult;
+}>;
+
+type CibEffectExecution = Readonly<{
+  afterCommandId: string;
+  schedule: string;
+  invocations: number;
+  mutations: number;
+  initialRetries: number;
+  retriesAfterFirstFailure: number | null;
+}>;
+
+type CibPipelineResult = Readonly<{
+  scenarioId: string;
+  outcome: ScenarioResult["outcome"];
+  trace: ScenarioResult["trace"];
+  diagnostics: Readonly<{
+    startupNanos: number;
+    phases: Readonly<{
+      waitProjectionNanos: number;
+      completionProjectionNanos: number;
+      totalNanos: number;
+    }>;
+    effectExecutions?: ReadonlyArray<CibEffectExecution>;
+    cleanup: Readonly<Record<string, number>>;
+  }>;
+}>;
+
+type TargetBatch<Result> = Readonly<{
+  results: ReadonlyMap<string, Result>;
+  totalMs: number;
+}>;
+
+type TemporalCaseExecution = Readonly<{
+  primary: TemporalScenarioExecution;
+  isolation: TemporalScenarioExecution;
+}>;
+
+type TemporalTargetBatch = TargetBatch<TemporalCaseExecution> & Readonly<{
+  workflowIds: ReadonlyArray<string>;
+}>;
+
+type PipelineTargets = Readonly<{
+  cib: TargetBatch<CibPipelineResult>;
+  lean: TargetBatch<ScenarioResult>;
+  leanDefinitionMutation: Readonly<{
+    kind: "rejected";
+    mutation: "operationOrigin";
+  }>;
+  leanScenarioMutation: Readonly<{
+    kind: "rejected";
+    mutation: "scenarioExtraField";
+  }>;
+  leanProvenanceMutation: Readonly<{
+    kind: "rejected";
+    mutation: "parallelControlPlaceProvenanceErasure";
+  }>;
+  core: TargetBatch<ScenarioResult>;
+  temporal: TemporalTargetBatch;
+  cibEffectRetry: TargetBatch<CibPipelineResult> | null;
+}>;
+
+type ProjectedTargets = Readonly<{
+  cibResult: CibPipelineResult;
+  canonicalCib: ScenarioResult;
+  leanResult: ScenarioResult;
+  semanticCoreResult: ScenarioResult;
+  temporalResult: TemporalCaseExecution;
+  cibEffectRetryResult: CibPipelineResult | null;
+}>;
+
+function mutableClone<T>(value: T): DeepMutable<T> {
+  return structuredClone(value) as DeepMutable<T>;
+}
+
+function observationValueDisagreement(
+  path: string,
+  expected: unknown,
+  actual: unknown,
+): ObservationValueDisagreement {
+  return {
+    kind: DisagreementKind.ObservationValue,
+    path,
+    expected,
+    actual,
+  };
+}
+
+function mutateOpenTaskActivation(result: MutableScenarioResult): void {
   const running = runningObservation(result);
   const openTask = running.openUserTasks?.[0];
   if (openTask === undefined) {
@@ -65,7 +250,7 @@ function mutateOpenTaskActivation(result) {
   };
 }
 
-function omitOneParallelOpenTask(result) {
+function omitOneParallelOpenTask(result: MutableScenarioResult): void {
   const running = runningObservation(result);
   if (running.openUserTasks?.length !== 2) {
     throw new Error("two calibrated parallel User Tasks are required");
@@ -73,7 +258,9 @@ function omitOneParallelOpenTask(result) {
   running.openUserTasks = running.openUserTasks.slice(0, 1);
 }
 
-function omitLiveSiblingAfterStaleRejection(result) {
+function omitLiveSiblingAfterStaleRejection(
+  result: MutableScenarioResult,
+): void {
   const staleCommandIndex = result.trace.findIndex(
     (observation) =>
       observation.kind === CanonicalObservationKind.Command &&
@@ -92,7 +279,7 @@ function omitLiveSiblingAfterStaleRejection(result) {
   state.openUserTasks = [];
 }
 
-function mutateOpenTimerDeadline(result) {
+function mutateOpenTimerDeadline(result: MutableScenarioResult): void {
   const running = runningObservation(result);
   const openTimer = running.openTimers?.[0];
   if (openTimer === undefined) {
@@ -104,7 +291,7 @@ function mutateOpenTimerDeadline(result) {
   };
 }
 
-function mutateOpenEffectHandler(result) {
+function mutateOpenEffectHandler(result: MutableScenarioResult): void {
   const running = runningObservation(result);
   const openEffect = running.openEffects?.[0];
   if (openEffect === undefined) {
@@ -116,12 +303,14 @@ function mutateOpenEffectHandler(result) {
       ...openEffect.descriptor,
       handler: `${openEffect.descriptor.handler}-mutated`,
     },
-  };
+  } as unknown as typeof openEffect;
 }
 
-function runningObservation(result) {
+function runningObservation(
+  result: MutableScenarioResult,
+): MutableStateObservation {
   const observation = result.trace.find(
-    (candidate) =>
+    (candidate): candidate is MutableStateObservation =>
       candidate.kind === CanonicalObservationKind.State &&
       candidate.status === ProcessStatus.Running,
   );
@@ -132,11 +321,11 @@ function runningObservation(result) {
 }
 
 function interactionCase(
-  id,
-  scenarioFile,
-  evidenceFile,
-  options = {},
-) {
+  id: string,
+  scenarioFile: string,
+  evidenceFile: string,
+  options: InteractionCaseOptions = {},
+): PipelineCase {
   return Object.freeze({
     id,
     scenarioRelativePath:
@@ -156,16 +345,20 @@ function interactionCase(
     duplicateFirstCompletion:
       options.duplicateFirstCompletion === true,
     injectMutation: mutateOpenTaskActivation,
-    expectedInjectedDisagreement: {
-      kind: DisagreementKind.ObservationValue,
-      path: "trace[2].openUserTasks[0].id.activation",
-      expected: 1,
-      actual: 2,
-    },
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[2].openUserTasks[0].id.activation",
+      1,
+      2,
+    ),
   });
 }
 
-function parallelCase(id, scenarioFile, evidenceFile, options = {}) {
+function parallelCase(
+  id: string,
+  scenarioFile: string,
+  evidenceFile: string,
+  options: ParallelCaseOptions = {},
+): PipelineCase {
   return Object.freeze({
     id,
     scenarioRelativePath:
@@ -180,16 +373,16 @@ function parallelCase(id, scenarioFile, evidenceFile, options = {}) {
     injectMutation:
       options.injectMutation ?? omitOneParallelOpenTask,
     expectedInjectedDisagreement:
-      options.expectedInjectedDisagreement ?? {
-        kind: DisagreementKind.ObservationValue,
-        path: "trace[2].openUserTasks.length",
-        expected: 2,
-        actual: 1,
-      },
+      options.expectedInjectedDisagreement ??
+      observationValueDisagreement(
+        "trace[2].openUserTasks.length",
+        2,
+        1,
+      ),
   });
 }
 
-function timerCase() {
+function timerCase(): PipelineCase {
   return Object.freeze({
     id: "intermediate-catch-timer-pt1s",
     scenarioRelativePath:
@@ -203,16 +396,15 @@ function timerCase() {
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
     injectMutation: mutateOpenTimerDeadline,
-    expectedInjectedDisagreement: {
-      kind: DisagreementKind.ObservationValue,
-      path: "trace[2].openTimers[0].deadlineMs",
-      expected: 1000,
-      actual: 1001,
-    },
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[2].openTimers[0].deadlineMs",
+      1000,
+      1001,
+    ),
   });
 }
 
-function effectCase() {
+function effectCase(): PipelineCase {
   return Object.freeze({
     id: "service-task-effect-success",
     scenarioRelativePath:
@@ -227,12 +419,11 @@ function effectCase() {
     effectScheduleSubstitution: true,
     replayIsolation: true,
     injectMutation: mutateOpenEffectHandler,
-    expectedInjectedDisagreement: {
-      kind: DisagreementKind.ObservationValue,
-      path: "trace[2].openEffects[0].descriptor.handler",
-      expected: "bpmnLeanEffectHandler",
-      actual: "bpmnLeanEffectHandler-mutated",
-    },
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[2].openEffects[0].descriptor.handler",
+      "bpmnLeanEffectHandler",
+      "bpmnLeanEffectHandler-mutated",
+    ),
   });
 }
 
@@ -273,27 +464,33 @@ export const pipelineCases = Object.freeze([
     "stale-a-while-b-active.cibseven-evidence.json",
     {
       injectMutation: omitLiveSiblingAfterStaleRejection,
-      expectedInjectedDisagreement: {
-        kind: DisagreementKind.ObservationValue,
-        path: "trace[6].openUserTasks.length",
-        expected: 1,
-        actual: 0,
-      },
+      expectedInjectedDisagreement: observationValueDisagreement(
+        "trace[6].openUserTasks.length",
+        1,
+        0,
+      ),
     },
   ),
   timerCase(),
   effectCase(),
 ]);
 
-function elapsedMs(started) {
+function elapsedMs(started: number): number {
   return performance.now() - started;
 }
 
-async function readJson(filePath) {
-  return parseStrictJson(await readFile(filePath, "utf8"), filePath);
+async function readJson<Value>(filePath: string): Promise<Value> {
+  return parseStrictJson<Value>(
+    await readFile(filePath, "utf8"),
+    filePath,
+  );
 }
 
-function runProcess(command, args, timeoutMs) {
+function runProcess(
+  command: string,
+  args: ReadonlyArray<string>,
+  timeoutMs: number,
+) {
   return runCommand(command, args, {
     cwd: projectRoot,
     env: process.env,
@@ -301,14 +498,16 @@ function runProcess(command, args, timeoutMs) {
   });
 }
 
-function canonicalCibResult(cibResult) {
+function canonicalCibResult(
+  cibResult: CibPipelineResult,
+): ScenarioResult {
   return {
     outcome: cibResult.outcome,
     trace: cibResult.trace,
   };
 }
 
-function requireUniqueCaseIds(cases) {
+function requireUniqueCaseIds(cases: ReadonlyArray<PipelineCase>): void {
   if (cases.length === 0) {
     throw new TypeError("At least one pipeline case is required");
   }
@@ -318,13 +517,17 @@ function requireUniqueCaseIds(cases) {
   }
 }
 
-function indexExactRecords(records, expectedIds, targetName) {
+function indexExactRecords<Record extends Readonly<{ scenarioId: string }>>(
+  records: ReadonlyArray<Record>,
+  expectedIds: ReadonlyArray<string>,
+  targetName: string,
+): ReadonlyMap<string, Record> {
   if (records.length !== expectedIds.length) {
     throw new Error(
       `${targetName} returned ${records.length} results for ${expectedIds.length} scenarios`,
     );
   }
-  const indexed = new Map();
+  const indexed = new Map<string, Record>();
   for (const record of records) {
     const scenarioId = record?.scenarioId;
     if (typeof scenarioId !== "string" || scenarioId.length === 0) {
@@ -348,11 +551,11 @@ function indexExactRecords(records, expectedIds, targetName) {
 }
 
 async function runCibTargets(
-  scenarios,
-  inputPath,
-  outputPath,
+  scenarios: ReadonlyArray<Scenario>,
+  inputPath: string,
+  outputPath: string,
   effectSchedule = EffectExecutionSchedule.PlainSuccess,
-) {
+): Promise<TargetBatch<CibPipelineResult>> {
   const started = performance.now();
   await writeFile(
     inputPath,
@@ -381,7 +584,10 @@ async function runCibTargets(
     .split("\n")
     .filter((line) => line.length > 0)
     .map((line, index) =>
-      parseStrictJson(line, `CIB result line ${index + 1}`));
+      parseStrictJson<CibPipelineResult>(
+        line,
+        `CIB result line ${index + 1}`,
+      ));
   return {
     results: indexExactRecords(
       records,
@@ -392,7 +598,9 @@ async function runCibTargets(
   };
 }
 
-function leanDefinitionRecords(contexts) {
+function leanDefinitionRecords(
+  contexts: ReadonlyArray<PipelineContext>,
+): ReadonlyArray<LeanDefinitionRecord> {
   return contexts.map(
     ({ scenario, checkedProcess, semanticProcess }) => ({
       scenarioId: scenario.id,
@@ -402,13 +610,18 @@ function leanDefinitionRecords(contexts) {
   );
 }
 
-function leanScenarioPaths(contexts) {
+function leanScenarioPaths(
+  contexts: ReadonlyArray<PipelineContext>,
+): Array<string> {
   return contexts.map(({ pipelineCase }) =>
     path.join(projectRoot, pipelineCase.scenarioRelativePath)
   );
 }
 
-async function writeJsonLines(filePath, records) {
+async function writeJsonLines(
+  filePath: string,
+  records: ReadonlyArray<unknown>,
+): Promise<void> {
   await writeFile(
     filePath,
     `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
@@ -416,7 +629,10 @@ async function writeJsonLines(filePath, records) {
   );
 }
 
-async function runLeanTargets(contexts, inputPath) {
+async function runLeanTargets(
+  contexts: ReadonlyArray<PipelineContext>,
+  inputPath: string,
+): Promise<TargetBatch<ScenarioResult>> {
   const started = performance.now();
   await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
   const execution = await runProcess(
@@ -433,7 +649,10 @@ async function runLeanTargets(contexts, inputPath) {
     .split("\n")
     .filter((line) => line.length > 0)
     .map((line, index) =>
-      parseStrictJson(line, `Lean result line ${index + 1}`));
+      parseStrictJson<LeanResultRecord>(
+        line,
+        `Lean result line ${index + 1}`,
+      ));
   const indexedRecords = indexExactRecords(
     records,
     contexts.map(({ scenario }) => scenario.id),
@@ -469,15 +688,18 @@ async function runLeanTargets(contexts, inputPath) {
             `Lean definition binding does not match ${scenario.id}`,
           );
         }
-        return [scenario.id, record.result];
+        return [scenario.id, record.result] as const;
       }),
     ),
     totalMs: elapsedMs(started),
   };
 }
 
-async function requireLeanDefinitionMutationRejection(contexts, inputPath) {
-  const records = structuredClone(leanDefinitionRecords(contexts));
+async function requireLeanDefinitionMutationRejection(
+  contexts: ReadonlyArray<PipelineContext>,
+  inputPath: string,
+): Promise<PipelineTargets["leanDefinitionMutation"]> {
+  const records = mutableClone(leanDefinitionRecords(contexts));
   const firstOperation =
     records[0]?.semanticProcess?.operations?.[0];
   if (firstOperation?.origin?.elementId === undefined) {
@@ -517,15 +739,19 @@ async function requireLeanDefinitionMutationRejection(contexts, inputPath) {
 }
 
 async function requireLeanScenarioMutationRejection(
-  contexts,
-  inputPath,
-  scenarioPath,
-) {
+  contexts: ReadonlyArray<PipelineContext>,
+  inputPath: string,
+  scenarioPath: string,
+): Promise<PipelineTargets["leanScenarioMutation"]> {
+  const firstContext = contexts[0];
+  if (firstContext === undefined) {
+    throw new TypeError("Lean scenario mutation requires one context");
+  }
   await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
   await writeFile(
     scenarioPath,
     JSON.stringify({
-      ...contexts[0].scenario,
+      ...firstContext.scenario,
       unexpectedSemanticAnswer: "committed",
     }),
     "utf8",
@@ -554,10 +780,10 @@ async function requireLeanScenarioMutationRejection(
 }
 
 async function requireLeanProvenanceErasureRejection(
-  contexts,
-  inputPath,
-) {
-  const records = structuredClone(leanDefinitionRecords(contexts));
+  contexts: ReadonlyArray<PipelineContext>,
+  inputPath: string,
+): Promise<PipelineTargets["leanProvenanceMutation"]> {
+  const records = mutableClone(leanDefinitionRecords(contexts));
   const parallelRecord = records.find(
     ({ semanticProcess }) =>
       semanticProcess.identity.semanticProfile ===
@@ -602,51 +828,65 @@ async function requireLeanProvenanceErasureRejection(
   );
 }
 
-function runCoreTargets(contexts) {
+function runCoreTargets(
+  contexts: ReadonlyArray<PipelineContext>,
+): TargetBatch<ScenarioResult> {
   const started = performance.now();
   return {
     results: new Map(
       contexts.map(({ scenario, semanticProcess }) => [
         scenario.id,
         runScenario(scenario, semanticProcess),
-      ]),
+      ] as const),
     ),
     totalMs: elapsedMs(started),
   };
 }
 
-function temporalOptions(pipelineCase, suffix) {
-  const options = {
+function temporalOptions(
+  pipelineCase: PipelineCase,
+  suffix: "primary" | "isolation",
+): TemporalScenarioExecutionOptions {
+  return {
     workflowId: `${pipelineCase.workflowIdPrefix}-${suffix}`,
     completionDelivery: pipelineCase.completionDelivery,
+    ...(pipelineCase.duplicateFirstCompletion === true
+      ? { duplicateFirstCompletion: true }
+      : {}),
+    ...(pipelineCase.effectScheduleSubstitution === true
+      ? {
+          effectExecutionSchedule:
+            suffix === "isolation"
+              ? EffectExecutionSchedule.FailAfterMutationOnce
+              : EffectExecutionSchedule.PlainSuccess,
+        }
+      : {}),
   };
-  if (pipelineCase.duplicateFirstCompletion) {
-    options.duplicateFirstCompletion = true;
-  }
-  if (pipelineCase.effectScheduleSubstitution === true) {
-    options.effectExecutionSchedule =
-      suffix === "isolation"
-        ? EffectExecutionSchedule.FailAfterMutationOnce
-        : EffectExecutionSchedule.PlainSuccess;
-  }
-  return options;
 }
 
-async function runTemporalTargets(runner, contexts) {
+async function runTemporalTargets(
+  runner: TemporalScenarioRunner,
+  contexts: ReadonlyArray<PipelineContext>,
+): Promise<TemporalTargetBatch> {
   const started = performance.now();
-  const items = contexts.flatMap(({ pipelineCase, scenario, semanticProcess }) => [
-    {
-      scenario,
-      semanticProcess,
-      options: temporalOptions(pipelineCase, "primary"),
-    },
-    {
-      scenario,
-      semanticProcess,
-      options: temporalOptions(pipelineCase, "isolation"),
-    },
-  ]);
-  const executions = new Array(items.length);
+  const items: ReadonlyArray<TemporalScenarioBatchItem> =
+    contexts.flatMap(
+      ({ pipelineCase, scenario, semanticProcess }) => [
+        {
+          scenario,
+          semanticProcess,
+          options: temporalOptions(pipelineCase, "primary"),
+        },
+        {
+          scenario,
+          semanticProcess,
+          options: temporalOptions(pipelineCase, "isolation"),
+        },
+      ],
+    );
+  const executions = new Array<
+    TemporalScenarioExecution | undefined
+  >(items.length);
   const ordinaryEntries = items
     .map((item, index) => ({ item, index }))
     .filter(
@@ -676,7 +916,7 @@ async function runTemporalTargets(runner, contexts) {
   for (const [ordinaryIndex, { index }] of ordinaryEntries.entries()) {
     executions[index] = ordinaryExecutions[ordinaryIndex];
   }
-  const results = new Map();
+  const results = new Map<string, TemporalCaseExecution>();
   for (const [index, { pipelineCase }] of contexts.entries()) {
     const primary = executions[index * 2];
     const isolation = executions[index * 2 + 1];
@@ -694,9 +934,12 @@ async function runTemporalTargets(runner, contexts) {
   };
 }
 
-async function loadAndCompileCases(cases) {
-  const sourceBytes = new Map();
-  const compilations = new Map();
+async function loadAndCompileCases(
+  cases: ReadonlyArray<PipelineCase>,
+): Promise<ReadonlyArray<PipelineContext>> {
+  const sourceBytes = new Map<string, Promise<Buffer>>();
+  const compilations =
+    new Map<string, Promise<BpmnCompilationResult>>();
   const loaded = await Promise.all(
     cases.map(async (pipelineCase) => {
       const scenarioPath = path.join(
@@ -708,8 +951,8 @@ async function loadAndCompileCases(cases) {
         pipelineCase.evidenceRelativePath,
       );
       const [scenario, retainedEvidence] = await Promise.all([
-        readJson(scenarioPath),
-        readJson(evidencePath),
+        readJson<Scenario>(scenarioPath),
+        readJson<RetainedEvidence>(evidencePath),
       ]);
       return {
         pipelineCase,
@@ -768,7 +1011,11 @@ async function loadAndCompileCases(cases) {
   );
 }
 
-function requiredResult(results, scenarioId, targetName) {
+function requiredResult<Result>(
+  results: ReadonlyMap<string, Result>,
+  scenarioId: string,
+  targetName: string,
+): Result {
   const result = results.get(scenarioId);
   if (result === undefined) {
     throw new Error(`${targetName} omitted scenario ${scenarioId}`);
@@ -776,7 +1023,10 @@ function requiredResult(results, scenarioId, targetName) {
   return result;
 }
 
-function projectCaseTargets(context, targets) {
+function projectCaseTargets(
+  context: PipelineContext,
+  targets: PipelineTargets,
+): ProjectedTargets {
   const scenarioId = context.scenario.id;
   const cibResult = requiredResult(
     targets.cib.results,
@@ -808,7 +1058,10 @@ function projectCaseTargets(context, targets) {
   };
 }
 
-function compareCase(context, projectedTargets) {
+function compareCase(
+  context: PipelineContext,
+  projectedTargets: ProjectedTargets,
+) {
   const {
     pipelineCase,
     scenario,
@@ -824,7 +1077,7 @@ function compareCase(context, projectedTargets) {
     temporalResult,
     cibEffectRetryResult,
   } = projectedTargets;
-  const semanticCandidates = [
+  const semanticCandidates: Array<TargetScenarioResult> = [
     {
       target: DifferentialTarget.Lean,
       result: leanResult,
@@ -876,6 +1129,7 @@ function compareCase(context, projectedTargets) {
     pipelineCase.temporalRelation ===
       TemporalCaseRelation.PostTerminalClosed
       ? scenario.stimuli.at(-1)
+        ?? null
       : null;
   const postTerminalResult =
     temporalResult.primary.interactionEvidence.postTerminalResult;
@@ -945,7 +1199,7 @@ function compareCase(context, projectedTargets) {
     );
   }
   // tag::seeded-disagreement[]
-  const injectedResult = structuredClone(semanticCoreResult);
+  const injectedResult = mutableClone(semanticCoreResult);
   pipelineCase.injectMutation(injectedResult);
   const injectedDisagreement = compareTargetResults(
     {
@@ -1060,7 +1314,9 @@ function compareCase(context, projectedTargets) {
   };
 }
 
-function semanticPrefixThroughCompletion(result) {
+function semanticPrefixThroughCompletion(
+  result: ScenarioResult,
+): ScenarioResult {
   const completedStateIndex = result.trace.findIndex(
     (observation) =>
       observation.kind === CanonicalObservationKind.State &&
@@ -1079,14 +1335,18 @@ function semanticPrefixThroughCompletion(result) {
   }
   return {
     outcome: {
-      kind: "semantic",
+      kind: ScenarioOutcomeKind.Semantic,
       outcome: finalCommand.outcome,
     },
     trace: result.trace.slice(0, completedStateIndex + 1),
   };
 }
 
-async function replayEvidence(runner, contexts, temporalResults) {
+async function replayEvidence(
+  runner: TemporalScenarioRunner,
+  contexts: ReadonlyArray<PipelineContext>,
+  temporalResults: ReadonlyMap<string, TemporalCaseExecution>,
+): Promise<Readonly<{ liveHistories: number }>> {
   const items = contexts.flatMap((context) => {
     const temporal = requiredResult(
       temporalResults,
@@ -1111,7 +1371,10 @@ async function replayEvidence(runner, contexts, temporalResults) {
   return { liveHistories: items.length };
 }
 
-function cibTiming(cibTarget, contexts) {
+function cibTiming(
+  cibTarget: TargetBatch<CibPipelineResult>,
+  contexts: ReadonlyArray<PipelineContext>,
+) {
   const cases = contexts.map(({ scenario }) => {
     const result = requiredResult(
       cibTarget.results,
@@ -1128,9 +1391,13 @@ function cibTiming(cibTarget, contexts) {
         1e6,
     };
   });
+  const firstContext = contexts[0];
+  if (firstContext === undefined) {
+    throw new TypeError("CIB timing requires one pipeline context");
+  }
   const firstResult = requiredResult(
     cibTarget.results,
-    contexts[0].scenario.id,
+    firstContext.scenario.id,
     "CIB Seven",
   );
   return {
@@ -1140,7 +1407,9 @@ function cibTiming(cibTarget, contexts) {
   };
 }
 
-export async function runPipelineCases(cases) {
+export async function runPipelineCases(
+  cases: ReadonlyArray<PipelineCase>,
+) {
   requireUniqueCaseIds(cases);
   if (!Number.isFinite(buildMs)) {
     throw new TypeError("pipeline build timing is required");
@@ -1186,17 +1455,25 @@ export async function runPipelineCases(cases) {
     "lean-scenario-mutation.json",
   );
   const warmStarted = performance.now();
-  let runner;
+  let runner: TemporalScenarioRunner | undefined;
   let startupMs = 0;
   let scenarioExecutionMs = 0;
   let observationProjectionMs = 0;
   let comparisonMs = 0;
   let replayMs = 0;
   let cleanupMs = 0;
-  let targets;
-  let caseResults;
-  let replay;
-  let revision;
+  let targets: PipelineTargets | undefined;
+  let caseResults:
+    | ReadonlyArray<ReturnType<typeof compareCase>>
+    | undefined;
+  let replay: Readonly<{ liveHistories: number }> | undefined;
+  let revision:
+    | Readonly<{
+        commit: string;
+        dirty: boolean;
+        collectionMs: number;
+      }>
+    | undefined;
 
   try {
     const startupStarted = performance.now();
@@ -1250,7 +1527,7 @@ export async function runPipelineCases(cases) {
             EffectExecutionSchedule.FailAfterMutationOnce,
           ),
     ]);
-    targets = {
+    const completedTargets: PipelineTargets = {
       cib,
       lean,
       leanDefinitionMutation,
@@ -1260,11 +1537,12 @@ export async function runPipelineCases(cases) {
       temporal,
       cibEffectRetry,
     };
+    targets = completedTargets;
     scenarioExecutionMs = elapsedMs(scenarioStarted);
 
     const projectionStarted = performance.now();
     const projectedTargets = contexts.map((context) =>
-      projectCaseTargets(context, targets),
+      projectCaseTargets(context, completedTargets),
     );
     observationProjectionMs = elapsedMs(projectionStarted);
 
@@ -1303,6 +1581,15 @@ export async function runPipelineCases(cases) {
     }
     await rm(temporaryDirectory, { recursive: true, force: true });
     cleanupMs = elapsedMs(cleanupStarted);
+  }
+
+  if (
+    targets === undefined ||
+    caseResults === undefined ||
+    replay === undefined ||
+    revision === undefined
+  ) {
+    throw new Error("pipeline completed without required evidence");
   }
 
   const warmMs = elapsedMs(warmStarted);
