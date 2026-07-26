@@ -699,7 +699,7 @@ The approved two-branch parallel capsule needs no Temporal Parallel Gateway or U
 | Join state | Temporal stores but never projects or independently interprets core token and partial-join state | No Workflow branch, `Promise.all`, or host counter decides join readiness |
 | Workflow completion | The loop drains accepted handlers through `allHandlersFinished()` before return | Both ordered histories contain completed Updates before Workflow completion and replay |
 
-This bounded mapping is feasible. It leaves the general post-completion command API and production lifecycle unresolved, and it does not authorize Activities, timers, cancellation, Continue-As-New, or a task-inbox design.
+This bounded mapping is feasible and now has focused live evidence: both ordered completion histories produce the exact intermediate Query state, duplicate delivery is stable, concurrent client submission realizes one permitted order recorded in history, every completion Update finishes before Workflow completion, and all produced histories replay. It leaves the general post-completion command API and production lifecycle unresolved, and it does not authorize Activities, timers, cancellation, Continue-As-New, or a task-inbox design.
 
 ## Production-baseline replay and refinement matrix
 

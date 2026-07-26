@@ -24,8 +24,14 @@ export type TemporalScenarioRunnerOptions = Readonly<{
   downloadDirectory: string;
 }>;
 
+export enum TemporalCompletionDelivery {
+  Ordered = "ordered",
+  Concurrent = "concurrent",
+}
+
 export type TemporalScenarioExecutionOptions = Readonly<{
   workflowId: string;
+  completionDelivery: TemporalCompletionDelivery;
   duplicateFirstCompletionUpdateId?: string;
 }>;
 
@@ -53,6 +59,9 @@ export type TemporalScenarioExecution = Readonly<{
 
 export type TemporalUserTaskInteractionEvidence = Readonly<{
   openUserTasksAtWait: ReadonlyArray<OpenUserTask>;
+  openUserTasksAfterCompletions: ReadonlyArray<
+    ReadonlyArray<OpenUserTask>
+  >;
   completionOutcomes: ReadonlyArray<CommandOutcome>;
   duplicateCompletionOutcome: CommandOutcome | null;
 }>;

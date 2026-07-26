@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
+import { isDeepStrictEqual } from "node:util";
 
 import {
   BpmnCompilationStatus,
@@ -11,10 +12,16 @@ import {
 import {
   CanonicalObservationKind,
   CommandOutcome,
+  ObservationRequestKind,
+  ScenarioDocumentKind,
+  StimulusKind,
   runScenario,
 } from "@bpmn-lean/semantic-core";
 
-import { TemporalScenarioRunner } from "../dist/index.js";
+import {
+  TemporalCompletionDelivery,
+  TemporalScenarioRunner,
+} from "../dist/index.js";
 
 const capsuleUrl = new URL(
   "../../../scenarios/user-task-discovery-completion/",
@@ -26,6 +33,12 @@ const scenarioUrls = [
   "stale-completion.scenario.json",
 ].map((relativePath) => new URL(relativePath, capsuleUrl));
 const bpmnUrl = new URL("process.bpmn", capsuleUrl);
+const parallelBpmnUrl = new URL(
+  "../../../scenarios/parallel-fork-join/process.bpmn",
+  import.meta.url,
+);
+const parallelSourceSha256 =
+  "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6";
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -69,7 +82,17 @@ function collectTemporalIdentities(value, identities = new Set()) {
 }
 
 function requiredHistoryEvent(history, attributesName) {
-  const matches = history.events.filter(
+  const matches = historyEvents(history, attributesName);
+  assert.equal(
+    matches.length,
+    1,
+    `expected exactly one history event with ${attributesName}`,
+  );
+  return matches[0];
+}
+
+function historyEvents(history, attributesName) {
+  return history.events.filter(
     (event) => {
       const attributes = event[attributesName];
       return (
@@ -79,12 +102,6 @@ function requiredHistoryEvent(history, attributesName) {
       );
     },
   );
-  assert.equal(
-    matches.length,
-    1,
-    `expected exactly one history event with ${attributesName}`,
-  );
-  return matches[0];
 }
 
 function decodeJsonPayload(payload) {
@@ -193,8 +210,12 @@ function assertExactCompletionUpdateHistory(
 
 async function loadExecutionInput(selectedScenarioUrl) {
   const scenario = await loadJson(selectedScenarioUrl);
+  return compileExecutionInput(scenario, bpmnUrl);
+}
+
+async function compileExecutionInput(scenario, selectedBpmnUrl) {
   const compilation = await compileBpmnToSemanticProcess({
-    bytes: await readFile(bpmnUrl),
+    bytes: await readFile(selectedBpmnUrl),
     sourceId: scenario.bpmn.id,
     expectedSha256: scenario.bpmn.sha256,
     semanticProfile: scenario.profile,
@@ -208,6 +229,124 @@ async function loadExecutionInput(selectedScenarioUrl) {
     scenario,
     semanticProcess: compilation.semanticProcess,
   };
+}
+
+function parallelScenario(firstElementId, secondElementId) {
+  return {
+    kind: ScenarioDocumentKind.Scenario,
+    id: `parallel-fork-join-${firstElementId}-then-${secondElementId}`,
+    profile: "parallel-fork-join-draft",
+    bpmn: {
+      id: "parallel-two-user-tasks-process",
+      relativePath: "scenarios/parallel-fork-join/process.bpmn",
+      sha256: parallelSourceSha256,
+    },
+    stimuli: [
+      {
+        kind: StimulusKind.StartProcess,
+        commandId: "start-process",
+        processId: "Process_ParallelForkJoin",
+        instanceId: "Instance_1",
+      },
+      completionStimulus(firstElementId),
+      completionStimulus(secondElementId),
+    ],
+    observations: [
+      ObservationRequestKind.Deployment,
+      ObservationRequestKind.CommandResults,
+      ObservationRequestKind.ProcessStatus,
+      ObservationRequestKind.ActiveWaits,
+      ObservationRequestKind.OpenUserTasks,
+      ObservationRequestKind.EnabledInteractions,
+      ObservationRequestKind.LogicalTime,
+    ],
+    provenance: {
+      normativeRefs: [
+        "BPMN 2.0.2 §10.6.4",
+        "BPMN 2.0.2 §13.4.1",
+      ],
+      cibRevision: "834a9874760de8a0107f7c1b32806e37f17fb017",
+      cibRefs: [
+        "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java",
+      ],
+    },
+  };
+}
+
+function completionStimulus(elementId) {
+  return {
+    kind: StimulusKind.CompleteUserTaskInstance,
+    commandId: `complete-${elementId}`,
+    taskId: {
+      processInstanceId: "Instance_1",
+      elementId,
+      activation: 1,
+    },
+  };
+}
+
+function stateObservations(result) {
+  return result.trace.filter(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State,
+  );
+}
+
+function completionCommandOrder(result) {
+  return result.trace.flatMap((observation) =>
+    observation.kind === CanonicalObservationKind.Command &&
+    observation.commandId !== "start-process"
+      ? [observation.commandId]
+      : [],
+  );
+}
+
+function acceptedCompletionOrder(history) {
+  return historyEvents(
+    history,
+    "workflowExecutionUpdateAcceptedEventAttributes",
+  ).map((event) => {
+    const attributes =
+      event.workflowExecutionUpdateAcceptedEventAttributes;
+    return decodeJsonPayload(
+      attributes.acceptedRequest.input.args.payloads[0],
+    ).commandId;
+  });
+}
+
+function assertUpdatesCompleteBeforeWorkflow(history, expectedCount) {
+  const accepted = historyEvents(
+    history,
+    "workflowExecutionUpdateAcceptedEventAttributes",
+  );
+  const completed = historyEvents(
+    history,
+    "workflowExecutionUpdateCompletedEventAttributes",
+  );
+  const workflowCompleted = requiredHistoryEvent(
+    history,
+    "workflowExecutionCompletedEventAttributes",
+  );
+  assert.equal(accepted.length, expectedCount);
+  assert.equal(completed.length, expectedCount);
+  const acceptedIds = new Set(
+    accepted.map((event) => temporalInt64ToBigInt(event.eventId)),
+  );
+  for (const event of completed) {
+    const attributes =
+      event.workflowExecutionUpdateCompletedEventAttributes;
+    assert.equal(
+      acceptedIds.has(
+        temporalInt64ToBigInt(attributes.acceptedEventId),
+      ),
+      true,
+    );
+    assert.equal(
+      temporalInt64ToBigInt(event.eventId) <
+        temporalInt64ToBigInt(workflowCompleted.eventId),
+      true,
+    );
+  }
 }
 
 before(async () => {
@@ -235,6 +374,7 @@ test("one clean server executes, captures, and replays the current capsule", asy
       semanticProcess,
       options: {
         workflowId: `user-task-batch-${index}`,
+        completionDelivery: TemporalCompletionDelivery.Ordered,
         duplicateFirstCompletionUpdateId:
           index === 2 ? "duplicate-first-completion-transport" : undefined,
       },
@@ -307,11 +447,128 @@ test("one clean server executes, captures, and replays the current capsule", asy
   );
 });
 
+test("parallel waits and both completion orders refine through Query, Update, and replay", async () => {
+  const scenarios = [
+    parallelScenario("UserTask_A", "UserTask_B"),
+    parallelScenario("UserTask_B", "UserTask_A"),
+  ];
+  const inputs = await Promise.all(
+    scenarios.map((scenario) =>
+      compileExecutionInput(scenario, parallelBpmnUrl),
+    ),
+  );
+  const executions = await withDeadline(
+    runner.runScenarios(
+      inputs.map(({ scenario, semanticProcess }, index) => ({
+        scenario,
+        semanticProcess,
+        options: {
+          workflowId: `parallel-ordered-${index}`,
+          completionDelivery: TemporalCompletionDelivery.Ordered,
+          duplicateFirstCompletionUpdateId:
+            index === 0 ? "duplicate-first-parallel-completion" : undefined,
+        },
+      })),
+    ),
+    15_000,
+    "parallel ordered interaction batch",
+  );
+
+  assert.equal(executions.length, 2);
+  for (const [index, execution] of executions.entries()) {
+    const expected = runScenario(
+      inputs[index].scenario,
+      inputs[index].semanticProcess,
+    );
+    const states = stateObservations(expected);
+    assert.equal(states.length, 3);
+    assert.deepEqual(
+      execution.interactionEvidence.openUserTasksAtWait,
+      states[0].openUserTasks,
+    );
+    assert.deepEqual(
+      execution.interactionEvidence.openUserTasksAfterCompletions,
+      [states[1].openUserTasks],
+    );
+    assert.deepEqual(
+      execution.interactionEvidence.completionOutcomes,
+      [CommandOutcome.Committed, CommandOutcome.Committed],
+    );
+    assert.equal(
+      execution.interactionEvidence.duplicateCompletionOutcome,
+      index === 0 ? CommandOutcome.Committed : null,
+    );
+    assert.deepEqual(execution.result, expected);
+    assertUpdatesCompleteBeforeWorkflow(
+      execution.history,
+      index === 0 ? 3 : 2,
+    );
+  }
+
+  await withDeadline(
+    runner.replayHistories(
+      executions.map((execution, index) => ({
+        history: execution.history,
+        workflowId: `parallel-ordered-${index}`,
+      })),
+    ),
+    10_000,
+    "parallel ordered history replay",
+  );
+});
+
+test("concurrent parallel completion submission realizes and replays one permitted order", async () => {
+  const aThenB = parallelScenario("UserTask_A", "UserTask_B");
+  const bThenA = parallelScenario("UserTask_B", "UserTask_A");
+  const input = await compileExecutionInput(aThenB, parallelBpmnUrl);
+  const expectedResults = [
+    runScenario(aThenB, input.semanticProcess),
+    runScenario(bThenA, input.semanticProcess),
+  ];
+  const execution = await withDeadline(
+    runner.runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "parallel-concurrent",
+      completionDelivery: TemporalCompletionDelivery.Concurrent,
+    }),
+    15_000,
+    "parallel concurrent interaction",
+  );
+
+  assert.deepEqual(
+    execution.interactionEvidence.openUserTasksAfterCompletions,
+    [],
+  );
+  assert.deepEqual(
+    execution.interactionEvidence.completionOutcomes,
+    [CommandOutcome.Committed, CommandOutcome.Committed],
+  );
+  assert.equal(
+    expectedResults.some((expected) =>
+      isDeepStrictEqual(execution.result, expected)
+    ),
+    true,
+  );
+  assert.deepEqual(
+    acceptedCompletionOrder(execution.history),
+    completionCommandOrder(execution.result),
+  );
+  assertUpdatesCompleteBeforeWorkflow(execution.history, 2);
+
+  await withDeadline(
+    runner.replayHistory(execution.history, "parallel-concurrent"),
+    10_000,
+    "parallel concurrent history replay",
+  );
+});
+
 test("batch execution rejects duplicate Workflow identities before start", async () => {
   const input = await loadExecutionInput(scenarioUrls[0]);
   const duplicate = {
     ...input,
-    options: { workflowId: "duplicate-workflow-id" },
+    options: {
+      workflowId: "duplicate-workflow-id",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+    },
   };
 
   await assert.rejects(

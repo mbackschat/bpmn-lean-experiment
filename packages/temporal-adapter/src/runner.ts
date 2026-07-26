@@ -23,6 +23,7 @@ import {
   bpmnOpenUserTasksQueryName,
   bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
+  TemporalCompletionDelivery,
 } from "./contracts.js";
 import type {
   BpmnScenarioWorkflow,
@@ -32,6 +33,7 @@ import type {
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
   TemporalScenarioRunnerOptions,
+  TemporalUserTaskInteractionEvidence,
 } from "./contracts.js";
 
 const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
@@ -44,6 +46,11 @@ const workflowResultDeadlineMs = 10_000;
 const waitTraceDeadlineMs = 10_000;
 const replayDeadlineMs = 10_000;
 const shutdownDeadlineMs = 10_000;
+
+type CompletionDeliveryEvidence = Omit<
+  TemporalUserTaskInteractionEvidence,
+  "openUserTasksAtWait"
+>;
 
 export class TemporalScenarioRunner {
   private workerError: unknown;
@@ -142,41 +149,12 @@ export class TemporalScenarioRunner {
       operationDeadlineMs,
       "Workflow open User Tasks Query",
     );
-    const completionOutcomes: CommandOutcome[] = [];
-    let duplicateCompletionOutcome: CommandOutcome | null = null;
-    let duplicatedFirstCompletion = false;
-
-    for (const stimulus of scenario.stimuli.slice(1)) {
-      this.assertWorkerHealthy();
-      switch (stimulus.kind) {
-        case StimulusKind.CompleteUserTaskInstance: {
-          const outcome = await executeCompletionUpdate(
-            handle,
-            stimulus,
-            stimulus.commandId,
-          );
-          completionOutcomes.push(outcome);
-          if (
-            !duplicatedFirstCompletion &&
-            options.duplicateFirstCompletionUpdateId !== undefined
-          ) {
-            duplicateCompletionOutcome = await executeCompletionUpdate(
-              handle,
-              stimulus,
-              options.duplicateFirstCompletionUpdateId,
-            );
-            duplicatedFirstCompletion = true;
-          }
-          break;
-        }
-        case StimulusKind.StartProcess:
-          throw new TypeError(
-            "Only the first scenario stimulus may start the Process",
-          );
-        default:
-          assertNever(stimulus);
-      }
-    }
+    const completions = requireCompletionStimuli(scenario);
+    const interaction = await this.deliverCompletions(
+      handle,
+      completions,
+      options,
+    );
 
     const result = await withDeadline(
       handle.result(),
@@ -197,8 +175,7 @@ export class TemporalScenarioRunner {
       waitTrace,
       interactionEvidence: {
         openUserTasksAtWait,
-        completionOutcomes,
-        duplicateCompletionOutcome,
+        ...interaction,
       },
       result,
       history: history as TemporalHistory,
@@ -323,6 +300,95 @@ export class TemporalScenarioRunner {
     );
   }
 
+  private async deliverCompletions(
+    handle: WorkflowHandle<BpmnScenarioWorkflow>,
+    completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+    options: TemporalScenarioExecutionOptions,
+  ): Promise<CompletionDeliveryEvidence> {
+    switch (options.completionDelivery) {
+      case TemporalCompletionDelivery.Ordered:
+        return this.deliverOrderedCompletions(
+          handle,
+          completions,
+          options.duplicateFirstCompletionUpdateId,
+        );
+      case TemporalCompletionDelivery.Concurrent:
+        return this.deliverConcurrentCompletions(handle, completions);
+      default:
+        return assertNever(options.completionDelivery);
+    }
+  }
+
+  private async deliverOrderedCompletions(
+    handle: WorkflowHandle<BpmnScenarioWorkflow>,
+    completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+    duplicateFirstCompletionUpdateId: string | undefined,
+  ): Promise<CompletionDeliveryEvidence> {
+    const completionOutcomes: CommandOutcome[] = [];
+    const openUserTasksAfterCompletions:
+      Array<ReadonlyArray<OpenUserTask>> = [];
+    let duplicateCompletionOutcome: CommandOutcome | null = null;
+
+    for (const [index, stimulus] of completions.entries()) {
+      this.assertWorkerHealthy();
+      completionOutcomes.push(
+        await executeCompletionUpdate(
+          handle,
+          stimulus,
+          stimulus.commandId,
+        ),
+      );
+      if (
+        index === 0 &&
+        duplicateFirstCompletionUpdateId !== undefined
+      ) {
+        duplicateCompletionOutcome = await executeCompletionUpdate(
+          handle,
+          stimulus,
+          duplicateFirstCompletionUpdateId,
+        );
+      }
+      if (index < completions.length - 1) {
+        openUserTasksAfterCompletions.push(
+          await withDeadline(
+            handle.query<ReadonlyArray<OpenUserTask>>(
+              bpmnOpenUserTasksQueryName,
+            ),
+            operationDeadlineMs,
+            "Workflow intermediate open User Tasks Query",
+          ),
+        );
+      }
+    }
+
+    return {
+      openUserTasksAfterCompletions,
+      completionOutcomes,
+      duplicateCompletionOutcome,
+    };
+  }
+
+  private async deliverConcurrentCompletions(
+    handle: WorkflowHandle<BpmnScenarioWorkflow>,
+    completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+  ): Promise<CompletionDeliveryEvidence> {
+    const completionOutcomes = await Promise.all(
+      completions.map((stimulus) => {
+        this.assertWorkerHealthy();
+        return executeCompletionUpdate(
+          handle,
+          stimulus,
+          stimulus.commandId,
+        );
+      }),
+    );
+    return {
+      openUserTasksAfterCompletions: [],
+      completionOutcomes,
+      duplicateCompletionOutcome: null,
+    };
+  }
+
   private assertAvailable(): void {
     if (this.shutdownStarted) {
       throw new Error("Temporal scenario runner is already shut down");
@@ -388,6 +454,21 @@ function validateExecutionOptions(
   scenario: Scenario,
   options: TemporalScenarioExecutionOptions,
 ): void {
+  switch (options.completionDelivery) {
+    case TemporalCompletionDelivery.Ordered:
+      break;
+    case TemporalCompletionDelivery.Concurrent:
+      if (options.duplicateFirstCompletionUpdateId !== undefined) {
+        throw new TypeError(
+          "Concurrent completion delivery cannot also duplicate one completion",
+        );
+      }
+      break;
+    default:
+      throw new TypeError(
+        `Unsupported completion delivery: ${String(options.completionDelivery)}`,
+      );
+  }
   const duplicateUpdateId = options.duplicateFirstCompletionUpdateId;
   if (duplicateUpdateId === undefined) {
     return;
@@ -411,6 +492,23 @@ function validateExecutionOptions(
       "Duplicate completion probe requires a distinct Temporal Update ID",
     );
   }
+}
+
+function requireCompletionStimuli(
+  scenario: Scenario,
+): ReadonlyArray<CompleteUserTaskInstanceStimulus> {
+  return scenario.stimuli.slice(1).map((stimulus) => {
+    switch (stimulus.kind) {
+      case StimulusKind.CompleteUserTaskInstance:
+        return stimulus;
+      case StimulusKind.StartProcess:
+        throw new TypeError(
+          "Only the first scenario stimulus may start the Process",
+        );
+      default:
+        return assertNever(stimulus);
+    }
+  });
 }
 
 function assertNever(value: never): never {

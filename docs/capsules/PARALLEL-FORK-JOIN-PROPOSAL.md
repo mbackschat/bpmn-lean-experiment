@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved semantic proposal on 2026-07-26; checked source/lowering plus Lean and independent TypeScript semantic implementations are complete, while immutable profile, canonical CIB, Temporal, differential, and closure evidence remain pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
+**Owner-approved semantic proposal on 2026-07-26; checked source/lowering, Lean and independent TypeScript semantic implementations, and focused Temporal refinement/replay witnesses are complete, while immutable profile, canonical CIB, four-target differential, and closure evidence remain pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
@@ -177,7 +177,7 @@ The bounded mapping is feasible without a Temporal analogue for either User Task
 
 The current Workflow is still a finite conformance-scenario host whose lifetime uses the scenario stimulus count. That is sufficient for the bounded parallel witnesses because both completion orders end at the final scripted command. It is not the production lifecycle contract and does not resolve how a typed stale-command result is returned after a Temporal Workflow has closed. That general User Task lifecycle boundary remains explicit research rather than being hidden inside this capsule.
 
-This preflight establishes a plausible preserving host composition. It does not fill the Temporal evidence lane; graduation still requires live ordered and concurrent Update witnesses, exact intermediate Query projections, duplicate-command behavior, history inspection, and replay.
+The focused Temporal gate now fills the bounded adapter evidence cells for this mapping: it compiles the exact parallel source, queries both initial waits, executes both ordered completion sequences, queries the exact remaining task after the first completion, checks a duplicate command, submits both completions concurrently in a host-level probe, requires the realized history order to be one permitted semantic order, requires Update completion before Workflow completion, and replays all three histories. This establishes the conformance-host refinement claim only; the production lifecycle limitation above remains open.
 
 ## R5 and R6 prerequisites
 
@@ -186,7 +186,7 @@ The observable contract resolves the questions that previously blocked the two i
 - **R5 — completed:** current-state task projection, stimulus well-formedness, command identity, and same-stimulus comparison are semantic-core-owned operations. The current Workflow invokes them directly and no longer infers open tasks from diagnostic trace history or maintains validation and identity-policy copies.
 - **R6:** before the CIB runner emits canonical parallel evidence, remove its single-active-task guard only together with deterministic semantic task sorting and per-element wait multiplicity. Distinct active elements produce distinct entries; repeated instances of one element require derived activation ordinals and remain out of scope here.
 
-These corrections and semantic implementations are prerequisites, not evidence that this capsule is already closed across its required CIB, Temporal, differential, mutation, and profile lanes.
+These corrections and semantic implementations are prerequisites, not evidence that this capsule is already closed across its required CIB, differential, mutation, and profile lanes.
 
 ## Owner decisions
 

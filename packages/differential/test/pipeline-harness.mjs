@@ -23,7 +23,10 @@ import {
   compareTargetResults,
   requireScenarioBinding,
 } from "../dist/index.js";
-import { TemporalScenarioRunner } from "../../temporal-adapter/dist/index.js";
+import {
+  TemporalCompletionDelivery,
+  TemporalScenarioRunner,
+} from "../../temporal-adapter/dist/index.js";
 import { runCommand } from "../../../scripts/run-command.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -329,6 +332,7 @@ function runCoreTargets(contexts) {
 function temporalOptions(pipelineCase, suffix) {
   const options = {
     workflowId: `${pipelineCase.workflowIdPrefix}-${suffix}`,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
   };
   if (pipelineCase.duplicateFirstCompletionUpdateId !== undefined) {
     options.duplicateFirstCompletionUpdateId =

@@ -8,7 +8,7 @@ A Workflow-local result ledger returns the first outcome when the same semantic 
 
 ## Pre-release replay policy
 
-Tests start a clean in-memory Temporal server, execute the three current witnesses, fetch their live histories, replay those histories through the current Workflow bundle, and shut the server down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
+Tests start a clean in-memory Temporal server, execute the three retained sequential witnesses plus focused parallel adapter probes, fetch their live histories, replay those histories through the current Workflow bundle, and shut the server down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
 
 This is deliberate, not an abandonment of replay compatibility. Before the first immutable deployment baseline, speculative history compatibility would preserve prototype accidents and multiply branches. Once a durable history baseline is explicitly approved, retained histories, Worker/version markers, compatibility code, and migration/deprecation rules become mandatory evidence.
 
@@ -19,10 +19,13 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - Query projections, Update outcomes, and final results equal the pure core;
 - duplicate logical delivery does not cause a second semantic transition;
 - each fetched live history contains the exact completion Update rather than Signal delivery;
+- the balanced parallel Process exposes both User Tasks and both ordered completion sequences expose the exact remaining-task Query projection;
+- concurrent client submission realizes one of the two permitted completion orders recorded in history;
+- every completion Update finishes before Workflow completion;
 - all fetched live histories replay before shutdown;
 - duplicate Workflow identities are rejected before start.
 
-The adapter does not yet implement parallel execution, Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the current sequential execution surface.
+The adapter does not yet implement a production lifecycle independent of future scenario stimuli, typed post-closure command handling, Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the current sequential and balanced two-branch parallel execution surfaces.
 
 Run the focused gate:
 

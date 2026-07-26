@@ -99,7 +99,7 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 
 The reviewed full observational checked-source-to-program-run preservation proposition is not claimed: there is no independent checked-source operational relation from which to establish it without assuming the program account. Structural lowering preservation and exact artifact equality are the current proved boundary.
 
-The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. The Temporal gate still covers only the sequential capsule and demonstrates that Query projection, Update admission, logical deduplication, and replay remain unchanged when the Workflow delegates these policies to the core.
+The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. The Temporal gate covers the sequential capsule and focused parallel adapter probes while the retained CIB and four-target parallel lanes remain open.
 
 ## Current CIB gate
 
@@ -117,7 +117,7 @@ PVM definition data remains diagnostic. Generated engine IDs are excluded from c
 ./scripts/pnpm.sh run test:temporal
 ```
 
-The gate starts one fresh in-memory Temporal server, compiles exact BPMN before Workflow start, runs all three current scenarios through one Worker, compares Query projections, Update outcomes, and final results with the pure core, checks duplicate logical delivery, inspects the exact completion Update in live history, replays every fetched history, and shuts the server down.
+The gate starts one fresh in-memory Temporal server, compiles exact BPMN before Workflow start, runs all three retained sequential scenarios plus focused parallel probes through one Worker, compares Query projections, Update outcomes, and final results with the pure core, checks duplicate logical delivery, and shuts the server down after replaying every fetched history. The parallel probes require both simultaneous waits, A-then-B and B-then-A with exact intermediate Query projections, duplicate stability, concurrent client submission realizing one permitted history order, and every Update completion event before Workflow completion.
 
 The current Workflow is a finite conformance-scenario host: it receives the answer-free scenario and uses the scripted stimulus count as a harness lifetime bound. This lets the stale-completion case reach the semantic core after semantic Process completion. It does not establish how a production adapter returns a typed semantic outcome for a command addressed after the hosting Workflow has closed. That lifecycle mapping remains an explicit preflight blocker rather than an implicit production claim.
 
@@ -151,7 +151,7 @@ The pipeline:
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 
-The final source-current repository verification on 2026-07-24 completed in 21.03 seconds and its prepared pipeline completed in 4.88 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+The source-current repository verification on 2026-07-26 completed in 24.20 seconds after adding focused parallel Temporal evidence, and its retained three-case prepared pipeline completed in 5.58 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
 
 ## Documentation-fragment gate
 
