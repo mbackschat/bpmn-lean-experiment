@@ -162,6 +162,23 @@ The observable contract requires hidden runtime state to preserve token multipli
 
 The TypeScript realization uses a sorted array of `{ placeId, multiplicity }` entries for flow-identified tokens, sorted semantic User Task waits carrying their continuation place, and sorted per-element activation counters. Enum-based operation dispatch implements all current mechanisms. Internal closure selects the lowest semantic operation ID among enabled operations, and an operation-array permutation witness requires the same result; for the only simultaneous internal choice in the bounded graph, the two distinct task activations commute and stable projection is checked independently of wait storage order. These are TypeScript-owned runtime choices, not additions to the public capsule contract.
 
+## Temporal hosting/refinement preflight
+
+The bounded mapping is feasible without a Temporal analogue for either User Tasks or Parallel Gateways:
+
+| Semantic requirement | Temporal host composition | Principal risk and separating evidence |
+|---|---|---|
+| Two simultaneous task waits | Both waits remain in committed semantic-core state; the exact Query projects both sorted occurrences | Query after start must equal the two-task core projection regardless of evaluator or engine order |
+| Exact task completion | One acknowledged Update enqueues one exact task-instance stimulus; only the main loop applies it | A-then-B and B-then-A must both commit and expose the symmetric intermediate state |
+| Permitted arrival order | Each handler enqueues synchronously before awaiting its result; one semantic loop consumes the queue | Ordered histories plus one concurrent-submission history must realize one of the two permitted semantic orders |
+| Duplicate delivery | Core-owned command identity and the Workflow result ledger return one semantic result | Duplicate either completion without duplicating the transition |
+| Partial join and readiness | Incoming-flow offers remain opaque semantic-core state | No Workflow counter, `Promise.all`, or handler order may trigger the join |
+| Completion and replay | Workflow return follows semantic completion only after all accepted handlers finish | Update completion precedes Workflow completion and every produced history replays |
+
+The current Workflow is still a finite conformance-scenario host whose lifetime uses the scenario stimulus count. That is sufficient for the bounded parallel witnesses because both completion orders end at the final scripted command. It is not the production lifecycle contract and does not resolve how a typed stale-command result is returned after a Temporal Workflow has closed. That general User Task lifecycle boundary remains explicit research rather than being hidden inside this capsule.
+
+This preflight establishes a plausible preserving host composition. It does not fill the Temporal evidence lane; graduation still requires live ordered and concurrent Update witnesses, exact intermediate Query projections, duplicate-command behavior, history inspection, and replay.
+
 ## R5 and R6 prerequisites
 
 The observable contract resolves the questions that previously blocked the two implementation corrections:

@@ -40,6 +40,25 @@ Raw CIB output never becomes Lean authority automatically, and differential mism
 
 The preserved handoff calls the TypeScript component a “reducer.” This project calls it the **semantic core** and names its public transition operation `applyStimulus`. The boundary is a semantic transition system; the terminology avoids an unnecessary Redux association.
 
+## Temporal hosting/refinement preflight
+
+Lean-to-TypeScript correspondence and TypeScript-to-Temporal refinement are independent obligations. A Lean definition can be sound and the pure semantic core can transcribe it correctly while the durable adapter still loses an input, applies a duplicate, exposes an intermediate state, leaks transport retries, closes before a command outcome is delivered, or lacks a hosting mechanism for a semantic wait or effect.
+
+Every capsule must therefore complete a Temporal hosting/refinement preflight after selecting its semantic account and separating witnesses but before implementing that transition family in production Lean or TypeScript. The preflight must record:
+
+- the Temporal ingress and acknowledgement mechanism for every external semantic stimulus;
+- how semantic waits, timers, subscriptions, effects, and cancellations remain core-owned state while Temporal provides durable wakeup or I/O;
+- the relation between committed core state and Workflow state, including which host steps are hidden;
+- command serialization, permitted semantic order, handler interleaving, duplicate delivery, idempotency, and retry boundaries;
+- completion, failure, cancellation, Continue-As-New, and post-completion command behavior;
+- Query, Visibility, external read-model, and canonical-observation responsibilities;
+- replay and versioning risks;
+- the smallest live-history refinement witness and nearest realistic adapter counterexample.
+
+A preflight may conclude that Temporal has no native BPMN analogue and still find a sound composition of Workflow state, Update or Signal ingress, Query, timers, Activities, and child operations. It may not turn one of those mechanisms into semantic authority. If a required public outcome cannot yet be preserved, that is an explicit research or profile blocker; it is not deferred silently until adapter implementation.
+
+The preflight is a feasibility review, not a passed evidence lane. Capsule closure still requires executable Temporal refinement and replay evidence.
+
 ## Why Lean
 
 Lean is useful when it converts semantic risk into an executable definition, a reusable quantified law, or a checked counterexample before the same choice spreads through TypeScript and Temporal.
@@ -137,16 +156,19 @@ This validates the separation of responsibilities, not scalability to all BPMN. 
 
 The approved parallel fork/join proposal supplies the next distinct semantic and representation risk and the second topology that justifies the bounded Semantic Process IL. This approval does not generalize the language beyond its named consumers and separating witnesses.
 
+The current Temporal implementation is deliberately a finite conformance-scenario host. It receives the answer-free scenario and uses the scripted stimulus count to keep the Workflow open long enough to observe post-completion refusal. That establishes the current bounded differential result but is not the production process-lifecycle contract. A production host must derive its lifecycle from semantic state and explicitly decide how commands addressed after semantic completion receive a typed outcome when Temporal no longer accepts Updates for a closed Workflow.
+
 ## Success criteria for every capsule
 
 A semantic capsule is closed only when:
 
 1. its normative/profile question and CIB relationship are explicit;
 2. answer-free positive and negative witnesses separate a realistic wrong account;
-3. Lean defines executable meaning and at least one useful law or checked non-law where appropriate;
-4. the TypeScript semantic core independently realizes the selected behavior;
-5. CIB evidence is pinned, content-bound, and mutation-sensitive;
-6. Temporal’s observable behavior refines the core and live histories replay;
-7. harness, semantic, and infrastructure outcomes remain separate;
-8. all public claims and exclusions match [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md);
-9. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed.
+3. its Temporal hosting/refinement preflight identifies every required host mechanism, lifecycle risk, and smallest refinement witness without making Temporal semantic authority;
+4. Lean defines executable meaning and at least one useful law or checked non-law where appropriate;
+5. the TypeScript semantic core independently realizes the selected behavior;
+6. CIB evidence is pinned, content-bound, and mutation-sensitive;
+7. Temporal’s observable behavior refines the core and live histories replay;
+8. harness, semantic, and infrastructure outcomes remain separate;
+9. all public claims and exclusions match [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md);
+10. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed.

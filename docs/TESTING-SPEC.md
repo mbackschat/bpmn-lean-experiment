@@ -48,14 +48,17 @@ For every new semantic mechanism:
 
 1. identify the normative clause, reviewed profile choice, or explicit competing interpretation;
 2. add the smallest positive or negative witness that separates the intended account from a realistic wrong one;
-3. confirm the focused gate fails because the mechanism is absent or wrong;
-4. implement the semantic root, not a fixture-specific branch;
-5. make the focused gate green;
-6. add or retain a mutation that demonstrates the observation/comparison boundary notices the claimed distinction;
-7. run the complete applicable gate;
-8. update the capsule, implementation map, plan, and this procedure only where each owns the changed fact.
+3. record the Temporal hosting/refinement preflight before production Lean or semantic-core implementation;
+4. confirm the focused gate fails because the mechanism is absent or wrong;
+5. implement the semantic root, not a fixture-specific branch;
+6. make the focused gate green;
+7. add or retain a mutation that demonstrates the observation/comparison boundary notices the claimed distinction;
+8. run the complete applicable gate;
+9. update the capsule, implementation map, plan, and this procedure only where each owns the changed fact.
 
 A pile of feature/profile/format switches is evidence of an unsound boundary. During pre-release, replace the current contract atomically rather than adding compatibility branches.
+
+The preflight must identify each semantic stimulus, wait, timer, subscription, effect, cancellation, and lifecycle boundary introduced by the mechanism; map it to a durable Temporal transport or host composition; state command ordering, handler-interleaving, duplicate-delivery, idempotency, retry, closure, projection, and replay risks; and name the smallest live-history witness plus the nearest adapter counterexample. The review passes only when every required public semantic outcome has a plausible host realization. It does not count as Temporal evidence until the focused live gate exercises the mapping and replays its history.
 
 ## Current contract and artifact gate
 
@@ -115,6 +118,8 @@ PVM definition data remains diagnostic. Generated engine IDs are excluded from c
 ```
 
 The gate starts one fresh in-memory Temporal server, compiles exact BPMN before Workflow start, runs all three current scenarios through one Worker, compares Query projections, Update outcomes, and final results with the pure core, checks duplicate logical delivery, inspects the exact completion Update in live history, replays every fetched history, and shuts the server down.
+
+The current Workflow is a finite conformance-scenario host: it receives the answer-free scenario and uses the scripted stimulus count as a harness lifetime bound. This lets the stale-completion case reach the semantic core after semantic Process completion. It does not establish how a production adapter returns a typed semantic outcome for a command addressed after the hosting Workflow has closed. That lifecycle mapping remains an explicit preflight blocker rather than an implicit production claim.
 
 No Event History fixture is committed. No legacy IR reader, Workflow patch branch, or format migration path exists during pre-release. The pre-release infrastructure guard locks this policy.
 

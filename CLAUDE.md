@@ -72,6 +72,7 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 - Keep the pinned reference baseline pristine. Modified source belongs to an explicit experimental branch or worktree and is diagnostic until shadow-compared.
 - An experiment is not semantic authority merely because it compiles or passes a finite witness.
 - Do not broaden any semantic capsule beyond its approved feature, interpretation, and observation boundary.
+- Do not implement a new semantic transition family in Lean or the production semantic core until its capsule records a Temporal hosting/refinement preflight. The preflight must name the durable ingress, wait, timer, effect, cancellation, lifecycle, and projection mechanisms needed by that family; the state relation they preserve; delivery, ordering, concurrency, deduplication, retry, and replay risks; and the smallest executable refinement witness. “Temporal has no matching concept” is not itself a blocker, but an unclassified gap in preserving a public semantic outcome is.
 
 ## Semantic invariants
 
@@ -94,10 +95,13 @@ Use red/green TDD:
 
 1. identify the normative requirement, CIB probe, or explicit open interpretation;
 2. add the smallest separating executable example;
-3. confirm failure for the intended missing mechanism;
-4. implement the semantic root rather than a case-specific patch;
-5. run the focused gate and then the complete applicable gate;
-6. update the owning research, experiment, implementation, and plan documents.
+3. complete the capsule's Temporal hosting/refinement preflight before production Lean or semantic-core implementation;
+4. confirm failure for the intended missing mechanism;
+5. implement the semantic root rather than a case-specific patch;
+6. run the focused gate and then the complete applicable gate;
+7. update the owning research, experiment, implementation, and plan documents.
+
+The Temporal preflight is an early feasibility and information-preservation review, not evidence that the adapter already refines the core. It must distinguish a finite conformance-scenario host from the intended production lifecycle and must send unresolved mappings back to research or profile review before they become implicit adapter policy.
 
 Prefer enum-based pattern matching or switch statements for semantic variants. Keep the Semantic Process program immutable and runtime state separate and serializable; keep effects explicit and perform no I/O in the pure semantic core.
 

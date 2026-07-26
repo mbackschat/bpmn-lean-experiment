@@ -244,6 +244,23 @@ Synchronous handlers are atomic with respect to Workflow code execution. The saf
 
 Before Workflow completion or Continue-As-New, the main loop must wait for `allHandlersFinished()` so accepted handler work is not silently abandoned.
 
+### Required per-capsule hosting/refinement preflight
+
+Lean-to-TypeScript correspondence does not imply that Temporal can durably host the selected account without adding or losing visible behavior. Before a new transition family enters production Lean or semantic-core code, its capsule must inventory the Temporal mapping at the level of semantic capabilities rather than BPMN syntax.
+
+The required review asks:
+
+1. Which external stimuli arrive, through which Signal, Update, Workflow start, Activity result, timer firing, or child result, and what does caller acknowledgement mean?
+2. Which waits, subscriptions, tasks, races, timers, effects, and cancellation relationships remain semantic-core-owned state?
+3. Which Workflow state represents the committed core state, which host steps stutter, and which component alone may mutate semantic state?
+4. Which orderings are semantically allowed, how are concurrent handlers serialized, and where are command IDs and deduplication state durable?
+5. Which Temporal retries are hidden delivery attempts, which retries are semantic, and how are external effects made idempotent or reconcilable?
+6. When does the Workflow complete, fail, cancel, or Continue-As-New, how are accepted handlers drained, and what happens to a later command addressed after semantic completion?
+7. Which exact projection comes from Query, Visibility, an external read model, or retained semantic observations, and which one is authoritative?
+8. Which same-gate history and nearest counterexample prove the intended refinement and replay boundary?
+
+No direct Temporal analogue is required. A User Task can remain core state while Query exposes it and Update transports completion; a timer can remain semantic state while a durable timer provides wakeup. The review fails only when a required public semantic consequence has no explicit preserving host composition. A passed review establishes feasibility, not refinement evidence.
+
 ## Human and user tasks
 
 Temporal’s official [Approval pattern](https://docs.temporal.io/design-patterns/approval) demonstrates the generic human-in-the-loop mechanism: a Workflow records pending approval state, waits on a deterministic condition, and a Signal supplies a decision. That pattern is useful infrastructure evidence, but a BPMN User Task has a richer lifecycle than one approval variable.
@@ -666,6 +683,24 @@ The application command ID is the ordinary Temporal Update ID. The Workflow also
 
 The runner starts a full local Temporal development server through CLI `v1.8.1`, starts one Worker using SDK `1.21.0`, receives deployment-time compiled project IR, observes the stable wait and exact open task through Queries, delivers completion through Update, and compares every Workflow result with the pure core. One clean server/Worker executes exact, wrong-activation, and stale-completion cases; duplicate delivery uses a distinct Update ID. The gate fetches and inspects the exact Update history, replays every current live history, and then discards the in-memory server. Activities, timers, Search Attributes, Continue-As-New, retained history baselines, and general BPMN model ingestion remain absent.
 
+This implementation is a finite conformance-scenario host, not yet the production lifecycle. `runBpmnScenario` receives the answer-free scenario and uses its stimulus count to keep the Workflow alive long enough to feed a stale completion after semantic Process completion. A production Workflow should derive its lifetime from semantic state, but Temporal rejects new Updates after Workflow closure. Returning the capsule's typed stale-command outcome after closure therefore needs an approved API/lifecycle design, such as a still-live semantic entity host or a separately justified terminal-command adapter. The current harness must not be cited as resolving that production boundary.
+
+### Parallel fork/join preflight
+
+The approved two-branch parallel capsule needs no Temporal Parallel Gateway or User Task primitive. Both User Task occurrences, the partial join offer, incoming-flow provenance, and join readiness remain entirely in the semantic core. The Workflow persists that core state and uses the existing exact Query and Update protocol around it.
+
+| Concern | Bounded hosting decision | Required evidence |
+|---|---|---|
+| Two simultaneous User Tasks | Query projects both sorted semantic occurrences from committed core state | Post-start Query equals the two-task core projection |
+| Completion ingress | One Update carries one exact task-instance stimulus and waits for the core's typed outcome | A-then-B and B-then-A Updates both commit |
+| Ordering and concurrency | The synchronous pre-`await` handler segment enqueues atomically; one Workflow loop consumes FIFO; either external arrival order is permitted by the capsule | Separate ordered histories plus a concurrent-submission history whose realized order is one permitted order |
+| Intermediate state | The first Update completes only after the loop commits one core transition | Query after the first completion exposes only the other task |
+| Duplicate delivery | Core-owned command identity plus the Workflow command-result ledger prevents a second semantic application | Duplicate either branch command without changing the final result |
+| Join state | Temporal stores but never projects or independently interprets core token and partial-join state | No Workflow branch, `Promise.all`, or host counter decides join readiness |
+| Workflow completion | The loop drains accepted handlers through `allHandlersFinished()` before return | Both ordered histories contain completed Updates before Workflow completion and replay |
+
+This bounded mapping is feasible. It leaves the general post-completion command API and production lifecycle unresolved, and it does not authorize Activities, timers, cancellation, Continue-As-New, or a task-inbox design.
+
 ## Production-baseline replay and refinement matrix
 
 The current pre-release gate already establishes same-run execution and live replay. The following is the stronger matrix required when the project approves an immutable history baseline; it is not a reason to preserve prototype histories now.
@@ -698,6 +733,7 @@ The following decisions remain unapproved:
 7. The policy for operator cancellation, termination, reset, pause, and Activity Operations in conformance runs.
 8. The production task-discovery architecture beyond exact Query by known Workflow ID.
 9. The global command-envelope, identity, authorization, form, variable, and Search Attribute registry boundaries beyond the bounded completion command.
+10. The production Workflow lifecycle and typed result for a command addressed after semantic Process completion, without using future scenario input as a lifetime oracle.
 
 ## Architectural invariants derived from Temporal
 
