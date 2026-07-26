@@ -2,10 +2,10 @@ import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 import { runCommand } from "./run-command.mjs";
+import { resolveJavaHome } from "./java-home.mjs";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const javaHome =
-  process.env.BPMN_JAVA_HOME ?? "/opt/homebrew/opt/openjdk@21";
+const javaHome = resolveJavaHome();
 
 function runProjectCommand(command, args, options) {
   return runCommand(command, args, {

@@ -10,6 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { artifactCases } from "./contract-artifacts.mjs";
+import { resolveJavaHome } from "./java-home.mjs";
 import { runCommand } from "./run-command.mjs";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -89,9 +90,7 @@ async function runCibBatch(scenarios, temporaryDirectory) {
       cwd: projectRoot,
       env: {
         ...process.env,
-        JAVA_HOME:
-          process.env.BPMN_JAVA_HOME ??
-          "/opt/homebrew/opt/openjdk@21",
+        JAVA_HOME: resolveJavaHome(),
       },
       timeoutMs: 30_000,
     },
