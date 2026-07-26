@@ -8,7 +8,7 @@ The approved direct runtime dependency is [`bpmn-moddle@10.0.0`](https://www.npm
 
 The bounded evidence behind this decision is recorded in [the BPMN XML ingestion experiment](experiments/BPMN-XML-INGESTION-EXPERIMENT.md). Adoption changes only the source-ingestion boundary and the existing sequential capsule’s executable input; it does not approve a general executable IR, new BPMN behavior, CIB extensions, export, or a conformance claim.
 
-The later [Semantic Process IL proposal](SEMANTIC-PROCESS-IL-PROPOSAL.md) approved the bounded successor to the initial topology-specific executable representation for the sequential and parallel capsules. The implemented checked graph and lowerer preserve this document's parser isolation, exact-source, admission, security, and license decisions.
+The [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md) owns the bounded successor to the initial topology-specific executable representation for the sequential and parallel capsules. The implemented checked graph and lowerer preserve this document's parser isolation, exact-source, admission, security, and license decisions.
 
 ## Decision
 

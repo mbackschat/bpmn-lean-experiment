@@ -4,7 +4,7 @@
 
 **Scope:** CIB Seven BPMN Model API, deployment parser, PVM definition and runtime representations, fUML Activity execution, PSSM State Machine execution, and candidate consequences for the project’s BPMN source model, Lean semantics, pure TypeScript semantic core, and Temporal adapter.
 
-**Decision status:** This research document selects no production parser, token model, scope algebra, or scheduling semantics. The later [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the approved and partially implemented bounded checked graph, IL contract, lowering, and growth rules. Executable discriminators remain recorded separately in [the semantic representation experiment](../experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md).
+**Decision status:** This research document selects no production parser, token model, scope algebra, or scheduling semantics. The [Semantic Process IL spec](../SEMANTIC-PROCESS-IL-SPEC.md) owns the implemented bounded checked graph, IL contract, lowering, and growth rules. Executable discriminators remain recorded separately in [the semantic representation experiment](../experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md).
 
 ## Executive result
 
@@ -25,7 +25,7 @@ The strongest provisional project conclusion is:
 
 > Use a source-preserving model for import and diagnostics, compile it into a versioned immutable data-only executable IR, and execute that IR against separate explicit runtime state through a transition relation and bounded executable closure. Preserve provenance, multiplicity, edge-arrival identity, and ownership relations until evidence justifies projection.
 
-On 2026-07-24, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) adopted this boundary and explicitly chose a TypeScript interpreter/evaluator over authoritative BPMN-to-TypeScript generation. The later [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) adopts a new bounded checked graph and operation language for the sequential and parallel capsules without adopting the experiment’s general node, scope, token, or wait types.
+On 2026-07-24, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) adopted this boundary and explicitly chose a TypeScript interpreter/evaluator over authoritative BPMN-to-TypeScript generation. The [Semantic Process IL spec](../SEMANTIC-PROCESS-IL-SPEC.md) owns the bounded checked graph and operation language for the sequential and parallel capsules without adopting the experiment’s general node, scope, token, or wait types.
 
 ## Representation pipeline in CIB Seven
 
@@ -640,7 +640,7 @@ The exact scheme is undecided. The design must prevent an old Temporal history o
 
 ## Adopted direction and later bounded selection
 
-The diagram below records the research direction updated with the later bounded selection in [the Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md). Checked definition contracts are selected for the sequential and parallel capsules; internal Lean and TypeScript runtime representations remain asymmetric and implementation-specific.
+The diagram below records the research direction updated with the bounded selection in [the Semantic Process IL spec](../SEMANTIC-PROCESS-IL-SPEC.md). Checked definition contracts are selected for the sequential and parallel capsules; internal Lean and TypeScript runtime representations remain asymmetric and implementation-specific.
 
 ```mermaid
 flowchart TB

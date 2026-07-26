@@ -1,8 +1,8 @@
-# Parallel fork/join observable-contract proposal
+# Parallel fork/join observable contract
 
 ## Status
 
-**Owner-approved semantic proposal on 2026-07-26; the draft profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced CIB observations, focused Temporal refinement/replay witnesses, and parallel five-case four-target differential are complete, while epistemic closure remains pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
+**Evidence-closed draft contract.** The bounded normative profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced CIB observations, focused Temporal refinement/replay witnesses, and five-case four-target differential implement this capsule. The status is draft because no immutable compatibility profile or production Temporal lifecycle is approved.
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
@@ -28,7 +28,7 @@ The balanced A-then-B and B-then-A scenarios now have immutable content-bound ra
 
 ## Approved semantic rules
 
-The identifiers below are stable traceability labels for the approved propositions. Approval records meaning and scope; it does not claim implementation or evidence closure.
+The identifiers below are stable traceability labels for the maintained propositions.
 
 | Rule | Approved proposition |
 |---|---|
@@ -93,11 +93,11 @@ The checked nearest non-law is: “a Parallel Gateway with two incoming Sequence
 
 ## Approved representation decision
 
-The contract is precise without fixing internal microstep count, explicit versus implied tokens, stored versus recomputed join readiness, internal closure bound, or evaluator branch visit order. The project therefore adopts asymmetric representation independence:
+The contract is precise without fixing internal microstep count, explicit versus implied tokens, stored versus recomputed join readiness, internal closure bound, or evaluator branch visit order. The project therefore uses asymmetric representation independence:
 
-- the TypeScript semantic core should use explicit flow-identified tokens or offers because it makes multiplicity, provenance, and mutation points direct;
-- Lean should retain a declarative relation plus an executable evaluator, with a flow-indexed or relational state chosen for proof usefulness rather than copied from TypeScript;
-- the capsule should continue to prescribe only observable behavior and the information-preservation invariants needed to prove it.
+- the TypeScript semantic core uses explicit flow-identified tokens or offers because they make multiplicity, provenance, and mutation points direct;
+- Lean retains a declarative relation plus an executable evaluator, with a flow-indexed runtime chosen for proof usefulness rather than copied from TypeScript;
+- this capsule prescribes observable behavior and the information-preservation invariants needed to prove it, not one shared runtime representation.
 
 Different representations reduce common-mode representation mistakes; they do not create an independent semantic account. Both remain transcriptions of the same approved capsule. A Lean relation and evaluator are also not two representations: they are a permitted-transition account and one executable selector over that account.
 
@@ -107,9 +107,9 @@ Reconsider this decision if a material rule cannot be stated or proved without p
 
 ## Source and Semantic Process IL boundary
 
-The bounded source compiler expansion admits exactly the reviewed fork/join topology with two distinct User Tasks and resolved Sequence Flows. The approved [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the proposed checked source graph, `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, and `terminate` operations, lowering rules, well-formedness, and growth constraints.
+The bounded source compiler admits exactly the reviewed fork/join topology with two distinct User Tasks and resolved Sequence Flows. The [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source graph, `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, and `terminate` operations, lowering rules, well-formedness, and growth constraints.
 
-The sequential topology-specific executable representation and evaluator path were replaced atomically by the checked graph, Semantic Process program, and generic program-driven evaluator. The independent TypeScript semantic core now admits exactly the sequential graph or the balanced two-task parallel graph and executes every current operation without delegating to topology-specific logic. This does not authorize a general BPMN compiler, universal semantic language, general scope algebra, or arbitrary graph execution.
+No topology-specific executable representation or evaluator path remains. The independent TypeScript semantic core admits exactly the sequential graph or the balanced two-task parallel graph and executes every supported operation without delegating to topology-specific logic. This does not authorize a general BPMN compiler, universal semantic language, general scope algebra, or arbitrary graph execution.
 
 Lean consumes the exact admitted checked graph and Semantic Process program produced once for the scenario rather than compiling a second definition into its module. The bounded obligations are:
 
@@ -125,9 +125,9 @@ The same Semantic Process program must be supplied to the TypeScript semantic co
 
 ## Lean laws and evidence plan
 
-The new runtime-transition family needs a declarative relation separate from the executable evaluator and a theorem that every evaluator-produced transition is admitted by that relation. That soundness bridge does not establish completeness, determinism, BPMN fidelity, TypeScript correspondence, or CIB compatibility.
+This runtime-transition family maintains a declarative relation separate from the executable evaluator and a theorem that every evaluator-produced transition is admitted by that relation. That soundness bridge does not establish completeness, determinism, BPMN fidelity, TypeScript correspondence, or CIB compatibility.
 
-The current Lean laws and independent TypeScript witnesses establish:
+The checked Lean laws and independent TypeScript witnesses establish:
 
 - start closure creates exactly the two branch waits and no other public wait;
 - before both incoming-flow conditions hold, no evaluator step crosses the join;
@@ -138,16 +138,44 @@ The current Lean laws and independent TypeScript witnesses establish:
 
 The executable Lean scenario closure resolves the only admitted multiple-enabled internal state after the fork by selecting the canonical first operation only when the enabled pair consists of distinct User Task operations with distinct inputs, outputs, and task identities. A checked theorem requires both activation orders to have the same stable public observation, and the exact start-closure theorem locks the resulting two-task waiting state. Every other multiple-enabled state remains a harness failure requiring an explicit semantic choice.
 
-Required negative and mutation evidence includes:
+Maintained negative and mutation evidence includes:
 
 - the duplicate-left/no-right non-law witness;
-- erasing incoming-flow provenance makes the negative witness fail;
+- erasing parallel control-place incoming-flow provenance is rejected by Lean's lowering-equality gate;
 - reversing CIB task-query order leaves the canonical result unchanged;
-- aggregating distinct `activeWaits` entries makes the start projection fail;
-- exposing a partial join offer changes canonical state and is rejected;
+- omitting one of the distinct projected tasks makes the CIB evidence projection and four-target comparison fail;
+- the stable intermediate observations demonstrate that a partial join offer does not enter canonical state;
 - changing the admitted executable topology without changing the scenario is detected by the Lean input binding.
 
-The graduation rule-to-evidence matrix must keep normative/profile, Lean relation/law, pristine CIB observation, independent TypeScript behavior, Temporal refinement/replay, negative-witness, and mutation claims in separate cells. The canonical balanced CIB evidence fills only the positive oracle-calibration cells; the candidate duplicate-left/no-right CIB probe fills only the bounded negative research-observation cell.
+## Rule-to-evidence matrix
+
+The cells below remain distinct claims. CIB's balanced positive cases do not establish the per-incoming-flow negative rule, and Temporal is a refinement lane over the TypeScript core rather than a second semantic implementation.
+
+| Rule | Normative/profile | Lean | Pinned CIB Seven | Independent TypeScript | Temporal refinement | Negative or mutation guard |
+|---|---|---|---|---|---|---|
+| `PAR-FORK-01` | [Source basis](#source-basis) and [parallel draft profile](../../profiles/parallel-fork-join-draft/README.md) | `duplicate` relation/evaluator and `parallel_start_creates_exact_branch_waits` in [SemanticProcess.lean](../../BpmnSemantics/SemanticProcess.lean) | Both retained [A-then-B](../../scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json) and [B-then-A](../../scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json) observations expose two waits | Fork and exact-wait witnesses in [parallel-fork-join.test.mjs](../../packages/semantic-core/test/parallel-fork-join.test.mjs) | Exact initial Query and replay in [temporal-adapter.test.mjs](../../packages/temporal-adapter/test/temporal-adapter.test.mjs) | Omitted-task comparator mutation in [pipeline.test.mjs](../../packages/differential/test/pipeline.test.mjs) |
+| `PAR-WAIT-01` | [Observable start contract](#stable-state-after-start) | Exact wait multiplicities, activation-order observation equality, and bounded closure in [SemanticProcess.lean](../../BpmnSemantics/SemanticProcess.lean) | Raw task queries are independently projected into two sorted semantic tasks | Exact two-wait state and projection tests | Query returns both waits without Workflow-owned task semantics | Dropped raw CIB task and omitted four-target task both fail |
+| `PAR-JOIN-READY-01` | BPMN per-incoming-flow rule in [source basis](#source-basis) | `duplicate_left_no_right_non_law` | Balanced evidence is positive calibration only; the separate [bounded negative probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.java) records candidate `CIB-DEV-0001` | Duplicate-left/no-right test rejects count-only readiness | No host counter or handler order triggers the join | Parallel provenance erasure is rejected; the CIB negative probe separates the pinned engine |
+| `PAR-JOIN-CONSUME-01` | Exact consumption and excess-retention rule in [source basis](#source-basis) | `synchronize_consumes_per_incoming_and_preserves_excess` | Balanced cases establish one completed join only, not the excess-token law | Excess-token test consumes one per input and retains the extra token | Both completions are required before Workflow completion | Duplicate-left/no-right and excess-token witnesses guard the nearest wrong accounts |
+| `PAR-ORDER-01` | [Observable completion-order contract](#stable-state-after-completing-both) | `completion_order_independent_at_final_state` | Separate content-bound A-then-B and B-then-A evidence | Both orders have equivalent final state and exact symmetric intermediate observations | Both ordered histories plus one concurrent-submission history replay | Five-case pipeline compares both orders and their exact intermediate Queries |
+| `PAR-PROJECT-01` | [Canonical projection contract](#observable-contract) | Storage-permutation and activation-order observation laws | Raw query order is non-semantic; independent projection sorts and preserves per-element multiplicity | Task-storage and operation-order permutations preserve canonical projection | Query exposes core-owned semantic order before and between Updates | Raw-order reversal passes, while dropped raw task and omitted canonical task fail |
+
+## Assurance boundary
+
+The exact established claim is: for the admitted content-addressed balanced two-branch Process and the two answer-free completion orders, the reviewed normative program reaches two simultaneous distinct User Task waits, exposes the specified stable intermediate observations, synchronizes only after both branch completions, and reaches the same completed observation across the definition-bound Lean interpreter, pinned CIB positive calibration, independent TypeScript core, and replayed Temporal conformance host.
+
+The closest unsupported claims are a production Temporal lifecycle independent of future scripted command count, a typed command result after Workflow closure, repeated live occurrences of one User Task element, immutable negative CIB evidence for `CIB-DEV-0001`, and full observational checked-source-to-program-run preservation. None is implied by this capsule's draft closure.
+
+The material common-mode risks remain explicit:
+
+- Lean, TypeScript, and Temporal consume the same checked graph and Semantic Process wire contract; Lean independently lowers the checked graph, but no independent checked-source operational relation or second BPMN XML parser proves the complete translation.
+- Temporal executes the TypeScript semantic core, so agreement between those two targets establishes host refinement, not independent semantic selection.
+- Balanced CIB cases cannot distinguish per-incoming-flow readiness from arrival counting; the duplicate-left/no-right Lean/TypeScript non-law and isolated pinned-CIB probe supply the separator.
+- Every target shares the canonical observation vocabulary and verifier. Answer-free scenarios, exact scenario echoes, raw CIB producer observations, definition/provenance mutations, and projection mutations guard that boundary without making it independent.
+
+The nearest realistic semantic counterexample is two arrivals through one join input and none through the other. Lean and TypeScript reject readiness under that state, while the pinned-CIB research probe creates downstream work; the relationship remains candidate until that negative CIB observation has immutable answer-free evidence. The nearest admitted-shape counterexample is two live instances of the same User Task element, which remains rejected rather than assigned host-order-derived activation ordinals.
+
+This is a pre-release contract. A breaking shape or meaning change replaces every current producer, consumer, fixture, schema, test, and disposable Temporal history atomically. The first durable deployment baseline will require explicit compatibility and replay policy before this contract can become immutable.
 
 ## Runtime-only and synthetic construct constraints
 
@@ -181,18 +209,12 @@ The current Workflow is still a finite conformance-scenario host whose lifetime 
 
 The focused Temporal gate now fills the bounded adapter evidence cells for this mapping: it compiles the exact parallel source, queries both initial waits, executes both ordered completion sequences, queries the exact remaining task after the first completion, checks a duplicate command, submits both completions concurrently in a host-level probe, requires the realized history order to be one permitted semantic order, requires Update completion before Workflow completion, and replays all three histories. This establishes the conformance-host refinement claim only; the production lifecycle limitation above remains open.
 
-## R5 and R6 prerequisites
+## Boundary ownership
 
-The observable contract resolves the questions that previously blocked the two implementation corrections:
+- Current-state task projection, stimulus well-formedness, command identity, and same-stimulus comparison are semantic-core-owned operations. The Temporal Workflow delegates them and may not infer open tasks from diagnostic trace history or maintain policy copies.
+- The CIB runner projects multiple distinct active elements as distinct semantic occurrences, sorts them by semantic identity independently of engine query order, and preserves per-element wait multiplicity. Repeated live instances of one element remain rejected because derived activation ordinals are out of scope.
 
-- **R5 — completed:** current-state task projection, stimulus well-formedness, command identity, and same-stimulus comparison are semantic-core-owned operations. The current Workflow invokes them directly and no longer infers open tasks from diagnostic trace history or maintains validation and identity-policy copies.
-- **R6 — completed:** the CIB runner projects multiple distinct active elements as distinct semantic occurrences, sorts them by semantic identity independently of engine query order, and preserves per-element wait multiplicity. Repeated live instances of one element remain rejected because derived activation ordinals are out of scope.
-
-These corrections and semantic implementations are prerequisites, not evidence that this capsule is already closed across its differential, mutation, and epistemic-review lanes.
-
-## Owner decisions
-
-The owner approved:
+## Contract decisions
 
 1. normative per-incoming-flow semantics for this capsule;
 2. the observable contract and stable rule propositions above;
@@ -202,7 +224,7 @@ The owner approved:
 6. a later separate compatibility profile only if the observed pinned-CIB behavior gains a concrete consumer;
 7. lowering through the bounded Semantic Process IL rather than expanding the topology-specific executable IR.
 
-Implementation may now cross the semantic decision boundary only in the order and under the stop criteria in [the plan](../PLAN.md) and [the Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md).
+Any extension must follow the stop criteria in [the Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) and the evidence workflow in [the testing specification](../TESTING-SPEC.md).
 
 ## Explicit exclusions
 

@@ -4,7 +4,7 @@ Making BPMN execution durable, explainable, and continuously checkable.
 
 This project explores a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. The ultimate goal is OMG BPMN Process Execution Conformance for imported executable Process diagrams—not merely translating BPMN shapes into Workflow code.
 
-> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. Exact BPMN lowers through a checked project-owned graph to the bounded Semantic Process program. Lean and TypeScript independently implement the approved parallel fork/join behavior; canonical pinned-CIB evidence covers both balanced completion orders; focused Temporal evidence covers two simultaneous waits, ordered and concurrent completion delivery, exact intermediate Query state, Update-before-Workflow completion, and live replay; and the five-case prepared pipeline now establishes exact four-target agreement with projection and provenance mutations. Epistemic closure and proposal-to-spec graduation remain. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
+> **Status:** The bounded sequential User Task and balanced two-branch parallel fork/join capsules are evidence-closed drafts. Exact BPMN lowers through a checked project-owned graph to the bounded Semantic Process program. Lean, pinned CIB Seven, the independent pure TypeScript semantic core, and the Temporal conformance host agree on five answer-free scenarios; focused Temporal evidence covers ordered and concurrent completion delivery, exact intermediate Query state, Update-before-Workflow completion, and replay; and projection plus provenance mutations guard the comparison. The Temporal Workflow is still a finite scenario host, not a production process lifecycle. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
@@ -69,7 +69,7 @@ BPMN XML
 
 One generic Workflow hosts an admitted Semantic Process program. The project does not generate an authoritative Workflow class for each BPMN model. This keeps source/profile identity inspectable, prevents generated SDK control flow from becoming semantics, and separates parser, semantic-core, and Worker evolution.
 
-Generated TypeScript may later be useful for diagnostics or optimization after equivalence evidence, but it is never the semantic authority by construction. The complete rationale is in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#interpreter-architecture), and the bounded definition contract is in [SEMANTIC-PROCESS-IL-PROPOSAL.md](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md).
+Generated TypeScript may later be useful for diagnostics or optimization after equivalence evidence, but it is never the semantic authority by construction. The complete rationale is in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#interpreter-architecture), and the bounded definition contract is in [SEMANTIC-PROCESS-IL-SPEC.md](docs/SEMANTIC-PROCESS-IL-SPEC.md).
 
 ## Why Lean
 
@@ -154,15 +154,15 @@ scripts/             Maintained verification and infrastructure guards
 | Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Resume the next work | [PLAN.md](docs/PLAN.md) |
-| Review the active semantic meaning | [Parallel fork/join proposal](docs/capsules/PARALLEL-FORK-JOIN-PROPOSAL.md) and [Semantic Process IL proposal](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md) |
+| Review the active semantic meaning | [Parallel fork/join spec](docs/capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Semantic Process IL spec](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
 | Understand CIB relative to BPMN | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Navigate all maintained documentation | [Documentation registry](docs/README.md) |
 
 ## Next
 
-The next lane is epistemic closure and proposal-to-spec graduation. It must fill the parallel rule-to-evidence matrix, state the exact established and unsupported claims, review common-mode assumptions and the nearest counterexample, preserve the unresolved production Temporal lifecycle and full observational lowering proof, and atomically rename the implemented Semantic Process IL and parallel contracts to `-SPEC`.
+The next lane is the production Temporal lifecycle decision. It must define Workflow lifetime from semantic state rather than future scripted command count, specify the typed result for commands addressed after semantic completion or Workflow closure, and preserve deduplication, replay, and host/semantic identity separation before any new BPMN feature is admitted.
 
-The source contract, deterministic TypeScript and Lean lowerers, exact Lean definition binding, generic Lean relation/evaluator, independent TypeScript parallel evaluator, multiple-task CIB projection with content-bound balanced evidence, focused Temporal parallel refinement/replay witnesses, and five-case four-target differential are implemented. The exact closure sequence and resume point are in [PLAN.md](docs/PLAN.md).
+The source contract, deterministic TypeScript and Lean lowerers, exact Lean definition binding, generic Lean relation/evaluator, independent TypeScript parallel evaluator, multiple-task CIB projection with content-bound balanced evidence, focused Temporal parallel refinement/replay witnesses, and five-case four-target differential are implemented. The exact next research boundary and resume point are in [PLAN.md](docs/PLAN.md).
 
 ## Contributing
 

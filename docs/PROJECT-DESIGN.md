@@ -102,7 +102,7 @@ BPMN 2 XML
 
 Parsing, admission, and lowering occur outside deterministic Workflow execution. A generic Workflow receives an admitted Semantic Process program and serializes semantic inputs through the core. Temporal Activities, timers, messages, and child operations implement declared effects only after the core assigns their BPMN meaning.
 
-[SEMANTIC-PROCESS-IL-PROPOSAL.md](SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the implemented checked-source contract and lowering plus the remaining operation meanings, Lean preservation obligations, event-growth policy, and stop criteria until the complete stable contract graduates to `SEMANTIC-PROCESS-IL-SPEC.md`. The first language slice is bounded to the implemented sequential spec and approved parallel proposal. The topology-specific executable representation was removed atomically and is not retained as a legacy path.
+[SEMANTIC-PROCESS-IL-SPEC.md](SEMANTIC-PROCESS-IL-SPEC.md) owns the implemented checked-source contract, bounded lowering, operation meanings, exact Lean preservation boundary, event-growth policy, and stop criteria. The language slice is bounded to the sequential and balanced parallel capsule specs. No topology-specific executable representation or legacy reader is retained.
 
 This choice preserves one inspectable model representation, avoids generating a new Workflow Definition for every diagram, and keeps SDK calls, Workflow deployment, and replay mechanics from becoming accidental BPMN semantics. It also keeps parser evolution, profile evolution, semantic-core evolution, and Worker deployment conceptually separate.
 
@@ -148,13 +148,13 @@ The bounded `None Start Event → User Task → None End Event` slice demonstrat
 - CIB and Lean remain independent semantic references;
 - the production TypeScript transition system stays pure;
 - one generic Temporal Workflow hosts the core through Query and acknowledged Update;
-- CIB, Lean, the core, and Temporal agree for exact completion, wrong activation, and stale completion;
+- CIB, Lean, the core, and Temporal agree for exact completion, wrong activation, stale completion, and both balanced parallel completion orders;
 - live Event Histories replay before the disposable server shuts down;
-- a seeded task-activation mutation proves that the observation/comparison boundary can detect the claimed distinction.
+- seeded task-activation, omitted-parallel-task, operation-origin, and Sequence-Flow-provenance mutations prove that the observation, definition-binding, and comparison boundaries detect the claimed distinctions.
 
-This validates the separation of responsibilities, not scalability to all BPMN. The current runtime has no general token, scope, race, effect, or variable model; the compiler recognizes one topology; Lean emits compiled-in capsule scenarios rather than consuming the pipeline IR; and Temporal has not exercised Activities, timers, cancellation, Worker restart, or Continue-As-New.
+This validates the separation of responsibilities, not scalability to all BPMN. The bounded runtime has no general scope, race, effect, or variable model; the compiler recognizes only the sequential and balanced two-branch parallel topologies; Lean consumes the exact checked graph and Semantic Process program but has no independent checked-source operational relation; and Temporal has not exercised Activities, timers, cancellation, Worker restart, or Continue-As-New.
 
-The approved parallel fork/join proposal supplies the next distinct semantic and representation risk and the second topology that justifies the bounded Semantic Process IL. This approval does not generalize the language beyond its named consumers and separating witnesses.
+The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) supplies the second distinct topology and representation risk that justifies the bounded Semantic Process IL. Its closure does not generalize the language beyond its named consumers and separating witnesses.
 
 The current Temporal implementation is deliberately a finite conformance-scenario host. It receives the answer-free scenario and uses the scripted stimulus count to keep the Workflow open long enough to observe post-completion refusal. That establishes the current bounded differential result but is not the production process-lifecycle contract. A production host must derive its lifecycle from semantic state and explicitly decide how commands addressed after semantic completion receive a typed outcome when Temporal no longer accepts Updates for a closed Workflow.
 

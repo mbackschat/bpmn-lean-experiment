@@ -28,11 +28,11 @@ A rule identifier uses a capsule-specific uppercase prefix, a semantic topic, an
 
 Editorial clarification and evidence-link maintenance retain the identifier. A materially changed proposition receives a new identifier; do not renumber or reuse retired identifiers. Rule identifiers remain documentation traceability unless a concrete consumer justifies a separately versioned wire representation.
 
-Start with a Markdown evidence matrix inside the owning capsule. Do not introduce a manifest, generator, or universal semantic language without named consumers and evidence that the boundary replaces repeated semantic structure. The approved bounded [Semantic Process IL](../SEMANTIC-PROCESS-IL-PROPOSAL.md) is justified by the sequential and parallel topologies and remains governed by its stop criteria.
+Start with a Markdown evidence matrix inside the owning capsule. Do not introduce a manifest, generator, or universal semantic language without named consumers and evidence that the boundary replaces repeated semantic structure. The bounded [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md) is justified by the sequential and parallel topologies and remains governed by its stop criteria.
 
 ## Registry
 
 | Capsule | Status and scope |
 |---|---|
 | [User Task interaction](USER-TASK-INTERACTION-SPEC.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |
-| [Parallel fork/join](PARALLEL-FORK-JOIN-PROPOSAL.md) | Owner-approved, partially implemented semantic proposal for two concurrent distinct User Tasks and normative per-incoming-flow synchronization; checked source/lowering plus Lean and TypeScript semantics are implemented, CIB/Temporal/closure evidence remains pending, and `CIB-DEV-0001` remains candidate |
+| [Parallel fork/join](PARALLEL-FORK-JOIN-SPEC.md) | Evidence-closed draft contract for two concurrent distinct User Tasks and normative per-incoming-flow synchronization; the production Temporal lifecycle and immutable negative evidence for candidate `CIB-DEV-0001` remain outside its claim |

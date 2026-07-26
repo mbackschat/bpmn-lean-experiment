@@ -1,12 +1,12 @@
-# Semantic Process IL proposal
+# Semantic Process IL specification
 
 ## Status
 
-This document is the owner-approved proposal for the project-owned Semantic Process intermediate language. The wire schemas, adversarial boundary validation, bounded checked-graph producer, canonical TypeScript lowerer, strict Lean decoders and validators, independent Lean lowerer, exact per-artifact lowering check, generic Lean program relation and evaluator, evaluator-soundness theorem, structural lowering laws, and independent TypeScript evaluator for the sequential and bounded parallel structures are implemented. Both semantic implementations check the bounded parallel laws and non-law. The stronger reviewed observational source-to-program preservation proposition is not proved because no independent checked-source operational relation exists yet; canonical CIB evidence, Temporal refinement, and complete correspondence remain pending. Under [the documentation lifecycle](DOC-DISCIPLINE.md#proposal-graduation), the complete stable implemented contract will graduate to `SEMANTIC-PROCESS-IL-SPEC.md`; partial implementation does not make the current document a spec.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential and balanced two-branch parallel capsules.
 
-The first proposed language slice is deliberately bounded to the approved none Start Event, User Task, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This proposal does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, User Task, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
-The topology-specific executable representation and evaluator path were removed atomically when the first Semantic Process implementation was admitted. They do not remain as a parallel production representation, compatibility reader, or delegated evaluator.
+The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
 ## Decision
 
@@ -43,10 +43,10 @@ This design does not transfer that rejected architecture. It applies its decisio
 - the IL evaluator replaces topology-specific evaluators instead of delegating to them;
 - structural rejection is distinct from semantic execution outcomes;
 - every current consumer is named;
-- source-to-IL preservation obligations are stated before implementation;
+- source-to-IL preservation obligations are stated before the corresponding lowering mechanism is admitted;
 - the language grows only through approved semantic capsules with separating witnesses.
 
-If implementation violates one of these conditions, the project must stop and reconsider the boundary rather than preserve the name “IL” around an unsuitable representation.
+If the maintained implementation violates one of these conditions, the project must stop and reconsider the boundary rather than preserve the name “IL” around an unsuitable representation.
 
 ## Boundaries
 
@@ -264,7 +264,7 @@ Lean is the formal semantic authority for the approved profile. The Lean lane mu
 5. a separately executable `step` evaluator;
 6. a soundness theorem showing that every evaluator-produced transition is permitted by `ProgramStep`;
 7. useful capsule laws and checked non-laws with exact hypotheses;
-8. a source-to-program preservation result whose statement is reviewed before the lowerer is implemented.
+8. a source-to-program preservation result whose statement begins at the checked BPMN graph and does not assume the program account it is intended to justify.
 
 The initial preservation obligation is observational:
 
@@ -283,7 +283,7 @@ The implemented statement may use a state relation rather than identical source 
 
 For each retained program emitted by TypeScript, Lean must decode both the checked graph and emitted program, recompute `lower source`, reject inequality, and only then evaluate or prove program properties. A scenario identifier or fixture name is not a substitute for this content equality.
 
-The current Lean lane implements items 1 through 7 and the exact per-artifact requirement above. It proves structural definition-identity and Sequence-Flow-origin preservation, but it does not claim `lower_preserves_supported_run`: the repository has no independent checked-source operational relation, so instantiating `projectSource` with the program semantics would assume the result being pursued. This is an explicit proof boundary rather than an admitted or circular theorem.
+Lean implements items 1 through 7 and the exact per-artifact requirement above. It proves structural definition-identity and Sequence-Flow-origin preservation, but it does not claim `lower_preserves_supported_run`: the repository has no independent checked-source operational relation, so instantiating `projectSource` with the program semantics would assume the result being pursued. This is an explicit proof boundary rather than an admitted or circular theorem.
 
 These obligations establish bounded interpretation and execution claims. They do not prove the correctness of an arbitrary XML parser, arbitrary BPMN documents, CIB Seven, Temporal, or the independent TypeScript implementation. Those remain separate evidence lanes.
 
@@ -300,7 +300,7 @@ Agreement between Lean and TypeScript is useful correspondence evidence, not evi
 
 ## Growth across BPMN event diversity
 
-BPMN’s large event surface is not a reason to add one IL operation per BPMN element. New capsules should first classify a construct by semantic mechanism, including:
+BPMN’s large event surface is not a reason to add one IL operation per BPMN element. New capsules must first classify a construct by semantic mechanism, including:
 
 - trigger source and delivery condition;
 - catching or throwing direction;
@@ -315,9 +315,9 @@ The IL may grow in bounded layers such as control, interaction, subscription, sc
 
 The project must not create a universal `event` operation with a bag of flags, duplicate the BPMN metamodel as opcodes, or erase distinctions merely because two constructs look similar in one witness. A new operation or field requires an approved capsule, a named consumer or refinement risk, a separating witness, source-origin rules, well-formedness rules, observation consequences, and Lean preservation obligations.
 
-## Required first slice
+## Supported slice
 
-The complete first implementation must support exactly:
+The maintained implementation supports exactly:
 
 - one none Start Event;
 - one or more User Tasks permitted by the two approved capsules;
@@ -330,7 +330,7 @@ The complete first implementation must support exactly:
 
 The sequential and balanced parallel fixtures must both lower through the same operation language and execute through the same generic semantic transition mechanism.
 
-## Excluded from the first slice
+## Excluded surface
 
 The following remain unsupported:
 
@@ -345,9 +345,9 @@ The following remain unsupported:
 - optimization, bytecode, code generation, migration, and durable-version compatibility;
 - a separate CIB-compatible parallel profile.
 
-## Acceptance criteria
+## Maintained conformance obligations
 
-The first implementation is acceptable only when:
+This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
 - sequential and parallel exact-source fixtures lower deterministically;
@@ -355,7 +355,7 @@ The first implementation is acceptable only when:
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
-- the reviewed preservation statement exists before production lowering code and its achieved proof status is reported exactly;
+- the reviewed preservation statement remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
 - the independent TypeScript evaluator passes sequential and parallel separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
@@ -366,11 +366,11 @@ The first implementation is acceptable only when:
 
 ## Stop and reconsider criteria
 
-Stop implementation and return to design if:
+Stop use or extension of this boundary and return to design if:
 
 - lowering performs runtime scheduling, activation, completion, propagation, or other semantic work that the IL claims to own;
 - the IL becomes a wrapper that selects an old topology evaluator;
-- a proposed opcode mirrors a BPMN surface class without a reusable semantic mechanism;
+- a new opcode mirrors a BPMN surface class without a reusable semantic mechanism;
 - required source distinctions cannot be reconstructed from origins and the checked graph;
 - structural invalidity is represented as an ordinary semantic outcome;
 - the Lean account begins only after an unverified semantic translation;
@@ -380,6 +380,6 @@ Stop implementation and return to design if:
 
 ## Ownership and change control
 
-Until graduation, this proposal owns the approved Semantic Process IL purpose, boundary, operation meanings, lowering obligations, and growth rules. [Shared wire contracts](../contracts/README.md) own the current schemas and artifact validation once implemented. Approved feature meaning remains in the applicable [semantic capsule](capsules/README.md), and exact implementation status remains in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
+This specification owns the Semantic Process IL purpose, boundary, operation meanings, lowering obligations, and growth rules. [Shared wire contracts](../contracts/README.md) own the current schemas and artifact validation. Approved feature meaning remains in the applicable [semantic capsule](capsules/README.md), and exact implementation status remains in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 During pre-release there is exactly one current checked-graph contract and one current Semantic Process program contract. A breaking change replaces all current producers, consumers, fixtures, schemas, and tests atomically. Compatibility readers, embedded format counters, and migration layers remain excluded until a durable baseline is explicitly approved.

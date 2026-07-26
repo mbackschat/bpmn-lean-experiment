@@ -160,7 +160,7 @@ The pipeline:
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 
-The source-current repository verification on 2026-07-26 completed in approximately 30 seconds after extending the differential lane to five cases and correcting the bounded Lean parallel closure, and its five-case prepared pipeline completed in 4.59 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+The source-current repository verification on 2026-07-26 completed in 22.04 seconds after the parallel and Semantic Process IL contracts graduated to evidence-closed draft specs, and its five-case prepared pipeline completed in 4.44 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
 
 ## Documentation-fragment gate
 

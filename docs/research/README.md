@@ -6,7 +6,7 @@ Read the smallest relevant document before changing a boundary:
 
 | Topic | Document |
 |---|---|
-| BPMN source, executable definition, runtime state, CIB Seven PVM, fUML, and PSSM | [Semantic representations and execution models](SEMANTIC-REPRESENTATIONS-RESEARCH.md) and the adopted [Semantic Process IL](../SEMANTIC-PROCESS-IL-PROPOSAL.md) |
+| BPMN source, executable definition, runtime state, CIB Seven PVM, fUML, and PSSM | [Semantic representations and execution models](SEMANTIC-REPRESENTATIONS-RESEARCH.md) and the adopted [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md) |
 | Declarative semantics, reference interpreters, SpecTec mechanization experiments, portable conformance scripts, and transferable WebAssembly practices | [WebAssembly semantics architecture and BPMN transfer](WEBASSEMBLY-SEMANTICS-RESEARCH.md) |
 | Lean semantic capsules, retained evidence, checked non-laws, and specification synchronization | [Process transfer from `a12-kernel-lean`](A12-KERNEL-LEAN-PROCESS-RESEARCH.md) |
 | Temporal replay, messaging, retries, versioning, and adapter boundaries | [Temporal execution model](../TEMPORAL-EXECUTION-RESEARCH.md) |

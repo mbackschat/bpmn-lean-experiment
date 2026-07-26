@@ -362,10 +362,8 @@ Within one content-addressed sequential User Task slice, the repository establis
 - duplicate-command stability, cleanup, and same-gate live replay;
 - mutation-sensitive differential evidence within the feedback budgets.
 
-It does not establish general BPMN parsing or execution, OMG conformance, immutable CIB compatibility, simultaneous or repeated task occurrences, variables, assignment, forms, timers, messages, Activities, fault recovery, Search Attributes, or a production task inbox.
+It does not establish general BPMN parsing or execution, OMG conformance, immutable CIB compatibility, repeated occurrences of one task element, variables, assignment, forms, timers, messages, Activities, fault recovery, Search Attributes, a production task inbox, or a production Workflow lifecycle.
 
 ## What comes next
 
-The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable, and both Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, and the duplicate-left/no-right non-law. The next lane must establish canonical CIB observations for both completion orders before Temporal and four-target closure.
-
-Its semantic contract is approved and partially implemented, while canonical CIB evidence, durable hosting, and cross-lane closure evidence remain open. The exact resume point and separating witnesses are in [PLAN.md](PLAN.md).
+The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, and the duplicate-left/no-right non-law; content-bound CIB evidence calibrates both balanced completion orders; and the five-case pipeline establishes exact four-target agreement with replay, projection mutation, and provenance-erasure rejection. The next boundary is the production Temporal lifecycle, not another BPMN element; the exact resume point is in [PLAN.md](PLAN.md).

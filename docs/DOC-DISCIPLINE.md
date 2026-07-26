@@ -101,8 +101,8 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 | Project mission, authority, and durable architecture | `PROJECT-DESIGN.md` |
 | Implemented semantic feature contract | capsule `-SPEC.md` |
 | Approved but unimplemented semantic feature | capsule `-PROPOSAL.md` |
-| Checked graph and Semantic Process IL before implementation | `SEMANTIC-PROCESS-IL-PROPOSAL.md` |
-| Checked graph and Semantic Process IL after implementation | future `SEMANTIC-PROCESS-IL-SPEC.md` |
+| Checked graph and Semantic Process IL before implementation | `SEMANTIC-PROCESS-IL-SPEC.md` |
+| Checked graph and Semantic Process IL after implementation | `SEMANTIC-PROCESS-IL-SPEC.md` |
 | CIB behavior relative to BPMN | `CIB-BPMN-RELATION-REGISTER.md` |
 | Reviewed BPMN requirement dispositions | `BPMN-REQUIREMENT-LEDGER.md` |
 | External-system findings | `research/*-RESEARCH.md` |
