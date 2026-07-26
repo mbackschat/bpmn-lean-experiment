@@ -2,6 +2,8 @@ export * from "./canonical-encoding.js";
 export * from "./command-identity.js";
 export * from "./contracts.js";
 export * from "./deterministic-sha256.js";
+export * from "./effect-probe.js";
+export * from "./effect-transport.js";
 export * from "./harness-evidence.js";
 export * from "./process-address.js";
 export * from "./runner.js";

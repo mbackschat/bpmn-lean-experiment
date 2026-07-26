@@ -17,6 +17,8 @@ import {
   WaitKind,
   applyStimulus,
   initialState,
+  projectEffectTransportMaterial,
+  projectOpenEffects,
   runScenario,
 } from "../dist/index.js";
 
@@ -204,6 +206,26 @@ test("scenario exposes the effect intent without a caller interaction", () => {
     enabledInteractions: [],
     logicalTimeMs: 0,
   });
+});
+
+test("projects transport material only from admitted definition and committed intent", () => {
+  const waiting = applyStimulus(effectProgram, initialState, start).state;
+  const [openEffect] = projectOpenEffects(waiting);
+
+  assert.notEqual(openEffect, undefined);
+  assert.deepEqual(
+    projectEffectTransportMaterial(effectProgram, openEffect),
+    {
+      definition: {
+        semanticProfile: effectProgram.identity.semanticProfile,
+        sourceId: effectProgram.identity.sourceId,
+        sourceSha256: effectProgram.identity.sourceSha256,
+        processId: effectProgram.processId,
+      },
+      occurrence: effectId,
+      descriptor,
+    },
+  );
 });
 
 function controlPlace(elementId) {

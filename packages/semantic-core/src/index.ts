@@ -1,4 +1,5 @@
 export * from "./contract.js";
+export * from "./effect-transport-material.js";
 export * from "./semantic-process-admission.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-runtime.js";
