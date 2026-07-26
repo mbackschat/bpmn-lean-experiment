@@ -1,0 +1,84 @@
+{
+  "kind": "semanticProfile",
+  "id": "parallel-fork-join-draft",
+  "status": "draft",
+  "claim": "normative-parallel-fork-join-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "parallel-gateway-fork",
+      "parallel-gateway-join",
+      "per-incoming-sequence-flow-synchronization",
+      "flow-token-multiplicity",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-OP-0001",
+      "CIB-CFG-0001",
+      "CIB-DEV-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-parallel-compatibility-claim",
+    "duplicate-same-incoming-flow-join-activation",
+    "repeated-user-task-element-activation",
+    "more-than-two-parallel-branches",
+    "nested-gateways",
+    "unbalanced-parallel-topology",
+    "claiming",
+    "assignment",
+    "authorization",
+    "forms",
+    "variables",
+    "expressions",
+    "timers",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "compensation",
+    "listeners",
+    "history",
+    "search-attributes",
+    "global-task-inbox",
+    "external-services",
+    "vendor-extensions"
+  ]
+}

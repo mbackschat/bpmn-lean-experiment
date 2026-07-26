@@ -18,6 +18,7 @@
     "check:cmof-semantic-process": "node scripts/check-bpmn-semantic-process-metamodel.mjs",
     "check:doc-fragments": "node scripts/markdown-code-fragments.mjs",
     "sync:doc-fragments": "node scripts/markdown-code-fragments.mjs --write",
+    "replace:cib-evidence": "node scripts/replace-cibseven-evidence.mjs --replace",
     "test:contracts": "node --test --test-concurrency=1 scripts/contract-artifacts.test.mjs",
     "test:differential": "tsc -p packages/differential/tsconfig.json && node --test --test-concurrency=1 packages/differential/test/comparator.test.mjs packages/differential/test/scenario-binding.test.mjs",
     "test:infrastructure": "node --test --test-concurrency=1 scripts/*.test.mjs",

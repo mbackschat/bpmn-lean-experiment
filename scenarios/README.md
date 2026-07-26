@@ -2,7 +2,7 @@
 
 This directory contains implementation-neutral BPMN resources, semantic stimuli, provenance, and requested observations. Target scenario documents never contain expected outcomes or traces.
 
-The current [User Task discovery and completion capsule](user-task-discovery-completion/README.md) owns one exact BPMN file and three separating scenarios: exact completion, wrong activation, and stale completion. Each scenario selects the same draft semantic profile and uses the same content-addressed source.
+The current [User Task discovery and completion capsule](user-task-discovery-completion/README.md) owns one exact BPMN file and three separating scenarios: exact completion, wrong activation, and stale completion. The [parallel fork/join scenarios](parallel-fork-join/README.md) add one content-addressed balanced source plus explicit A-then-B and B-then-A completion orders under their separate normative draft profile.
 
 Document shape is owned by the current [shared wire contracts](../contracts/README.md); semantic meaning is owned by the selected profile and capsule. Because the project is pre-release, a contract change replaces all scenario producers and consumers atomically instead of preserving parallel prototype formats.
 

@@ -354,6 +354,7 @@ public final class ScenarioProtocol {
       long startupNanos,
       PhaseTimings phases,
       PvmDefinitionProjection pvmDefinition,
+      List<TaskQuerySnapshot> taskQueries,
       CleanupProjection cleanup) {
     public Diagnostics {
       Objects.requireNonNull(engineVersion, "engineVersion");
@@ -363,7 +364,27 @@ public final class ScenarioProtocol {
       }
       Objects.requireNonNull(phases, "phases");
       Objects.requireNonNull(pvmDefinition, "pvmDefinition");
+      taskQueries = List.copyOf(taskQueries);
       Objects.requireNonNull(cleanup, "cleanup");
+    }
+  }
+
+  /**
+   * Raw engine task-query projection retained in producer order for independent evidence
+   * reconstruction.
+   */
+  public record TaskQuerySnapshot(
+      String afterCommandId,
+      List<TaskQueryTask> tasks) {
+    public TaskQuerySnapshot {
+      Objects.requireNonNull(afterCommandId, "afterCommandId");
+      tasks = List.copyOf(tasks);
+    }
+  }
+
+  public record TaskQueryTask(String elementId, String name) {
+    public TaskQueryTask {
+      Objects.requireNonNull(elementId, "elementId");
     }
   }
 

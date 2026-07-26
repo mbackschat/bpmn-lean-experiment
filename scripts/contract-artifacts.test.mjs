@@ -183,7 +183,7 @@ test("uses structural document kinds without embedded schema counters", async ()
 test("keeps every target scenario answer-free and binds retained CIB evidence by content", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 
-  assert.equal(artifactSets.length, 3);
+  assert.equal(artifactSets.length, 5);
   for (const artifactSet of artifactSets) {
     assert.equal("calibration" in artifactSet.scenario, false);
     assert.equal(
@@ -238,6 +238,26 @@ test("rejects a meaningful invalid task-projection mutation", async () => {
   assert.throws(
     () => verifyArtifactSet(mutated),
     /evidence schema validation failed/,
+  );
+});
+
+test("derives canonical parallel tasks independently of producer query order", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const parallel = artifactSets.find(
+    ({ scenario }) =>
+      scenario.id === "parallel-fork-join-a-then-b",
+  );
+  assert.notEqual(parallel, undefined);
+  const reordered = cloneArtifactSet(parallel);
+  reordered.evidence.producerObservations.taskQueries[0].tasks.reverse();
+
+  assert.doesNotThrow(() => verifyArtifactSet(reordered));
+
+  const dropped = cloneArtifactSet(parallel);
+  dropped.evidence.producerObservations.taskQueries[0].tasks.pop();
+  assert.throws(
+    () => verifyArtifactSet(dropped),
+    /producer task query projection does not match canonical/,
   );
 });
 

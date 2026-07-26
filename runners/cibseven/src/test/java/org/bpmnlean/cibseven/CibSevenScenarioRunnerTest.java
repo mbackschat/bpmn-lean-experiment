@@ -31,6 +31,8 @@ public class CibSevenScenarioRunnerTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path CAPSULE_ROOT =
       PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion");
+  private static final Path PARALLEL_ROOT =
+      PROJECT_ROOT.resolve("scenarios/parallel-fork-join");
 
   @Test
   public void calibratesCurrentUserTaskScenarioAndCleansEveryRun() throws Exception {
@@ -97,6 +99,45 @@ public class CibSevenScenarioRunnerTest {
     // end::cib-user-task-probe[]
   }
 
+  @Test
+  public void projectsParallelTasksAndBothCompletionOrdersDeterministically()
+      throws Exception {
+    var aThenB =
+        ScenarioJson.read(PARALLEL_ROOT.resolve("a-then-b.scenario.json"));
+    var bThenA =
+        ScenarioJson.read(PARALLEL_ROOT.resolve("b-then-a.scenario.json"));
+    var aThenBEvidence =
+        ScenarioJson.readEvidenceResult(
+            PARALLEL_ROOT.resolve("a-then-b.cibseven-evidence.json"));
+    var bThenAEvidence =
+        ScenarioJson.readEvidenceResult(
+            PARALLEL_ROOT.resolve("b-then-a.cibseven-evidence.json"));
+
+    try (var runner = CibSevenScenarioRunner.create()) {
+      var aThenBResult = runner.run(aThenB, PROJECT_ROOT);
+      var bThenAResult = runner.run(bThenA, PROJECT_ROOT);
+
+      assertEquals(
+          expectedParallelTrace("UserTask_A", "UserTask_B", "B"),
+          aThenBResult.trace());
+      assertEquals(
+          expectedParallelTrace("UserTask_B", "UserTask_A", "A"),
+          bThenAResult.trace());
+      assertEquals(aThenBEvidence.trace(), aThenBResult.trace());
+      assertEquals(bThenAEvidence.trace(), bThenAResult.trace());
+      assertEquals(aThenBEvidence.outcome(), aThenBResult.outcome());
+      assertEquals(bThenAEvidence.outcome(), bThenAResult.outcome());
+      assertEquals(aThenBResult.trace().get(2), bThenAResult.trace().get(2));
+      assertEquals(aThenBResult.trace().get(6), bThenAResult.trace().get(6));
+      assertEquals(
+          ScenarioProtocol.CleanupProjection.clean(),
+          aThenBResult.diagnostics().cleanup());
+      assertEquals(
+          ScenarioProtocol.CleanupProjection.clean(),
+          bThenAResult.diagnostics().cleanup());
+    }
+  }
+
   private static List<ScenarioProtocol.CanonicalObservation> expectedCommittedTrace() {
     var taskId = new UserTaskInstanceId(INSTANCE_ID, "UserTask_Approve", 1);
     var openTask = new OpenUserTask(taskId, "Approve", ACTIVE);
@@ -147,5 +188,55 @@ public class CibSevenScenarioRunnerTest {
                 PROCESS_ID,
                 null,
                 List.of())));
+  }
+
+  private static List<ScenarioProtocol.CanonicalObservation> expectedParallelTrace(
+      String firstElementId,
+      String secondElementId,
+      String secondName) {
+    var taskA = openTask("UserTask_A", "A");
+    var taskB = openTask("UserTask_B", "B");
+    var remaining = openTask(secondElementId, secondName);
+    return List.of(
+        new DeploymentObservation(COMMITTED),
+        new CommandObservation("start-process", COMMITTED),
+        new StateObservation(
+            INSTANCE_ID,
+            RUNNING,
+            List.of(
+                new ActiveWait("UserTask_A", USER_TASK, 1),
+                new ActiveWait("UserTask_B", USER_TASK, 1)),
+            List.of(taskA, taskB),
+            List.of(
+                new CompleteUserTaskInstanceInteraction(taskA.id()),
+                new CompleteUserTaskInstanceInteraction(taskB.id())),
+            0),
+        new CommandObservation(
+            "complete-user-task-" + firstElementId.substring("UserTask_".length()).toLowerCase(),
+            COMMITTED),
+        new StateObservation(
+            INSTANCE_ID,
+            RUNNING,
+            List.of(new ActiveWait(secondElementId, USER_TASK, 1)),
+            List.of(remaining),
+            List.of(new CompleteUserTaskInstanceInteraction(remaining.id())),
+            0),
+        new CommandObservation(
+            "complete-user-task-" + secondElementId.substring("UserTask_".length()).toLowerCase(),
+            COMMITTED),
+        new StateObservation(
+            INSTANCE_ID,
+            COMPLETED,
+            List.of(),
+            List.of(),
+            List.of(),
+            0));
+  }
+
+  private static OpenUserTask openTask(String elementId, String name) {
+    return new OpenUserTask(
+        new UserTaskInstanceId(INSTANCE_ID, elementId, 1),
+        name,
+        ACTIVE);
   }
 }

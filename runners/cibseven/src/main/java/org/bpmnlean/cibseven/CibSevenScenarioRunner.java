@@ -4,8 +4,6 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
-import static org.bpmnlean.cibseven.ScenarioProtocol.UserTaskLifecycleState.ACTIVE;
-import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.USER_TASK;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,11 +18,9 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.UUID;
-import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
+import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
@@ -35,7 +31,6 @@ import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Diagnostics;
 import org.bpmnlean.cibseven.ScenarioProtocol.EnabledInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.ObservationKind;
-import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.PhaseTimings;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
@@ -43,7 +38,8 @@ import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StartProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskInstanceId;
+import org.bpmnlean.cibseven.ScenarioProtocol.TaskQuerySnapshot;
+import org.bpmnlean.cibseven.ScenarioProtocol.TaskQueryTask;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -75,6 +71,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private final ProcessEngine processEngine;
   private final ProcessEngineConfigurationImpl configuration;
   private final PvmDefinitionProjector pvmProjector;
+  private final CibSevenUserTaskProjector userTaskProjector;
   private final long startupNanos;
   private boolean closed;
 
@@ -85,6 +82,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     this.processEngine = processEngine;
     this.configuration = configuration;
     this.pvmProjector = new PvmDefinitionProjector();
+    this.userTaskProjector = new CibSevenUserTaskProjector();
     this.startupNanos = startupNanos;
   }
 
@@ -128,6 +126,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var totalStartedAt = System.nanoTime();
     var timings = new MutableTimings();
     var trace = new ArrayList<CanonicalObservation>();
+    var taskQueries = new ArrayList<TaskQuerySnapshot>();
     String deploymentId = null;
     String engineInstanceId = null;
     String stableInstanceId = null;
@@ -182,7 +181,13 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(new CommandObservation(start.commandId(), COMMITTED));
 
             var projectionStartedAt = System.nanoTime();
-            trace.add(observeState(engineInstanceId, stableInstanceId));
+            var observed =
+                observeState(
+                    engineInstanceId,
+                    stableInstanceId,
+                    start.commandId());
+            trace.add(observed.state());
+            taskQueries.add(observed.taskQuery());
             timings.waitProjectionNanos = positiveElapsedSince(projectionStartedAt);
           }
           case CompleteUserTaskInstanceStimulus complete -> {
@@ -194,7 +199,13 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(new CommandObservation(complete.commandId(), outcome));
 
             var projectionStartedAt = System.nanoTime();
-            trace.add(observeState(engineInstanceId, stableInstanceId));
+            var observed =
+                observeState(
+                    engineInstanceId,
+                    stableInstanceId,
+                    complete.commandId());
+            trace.add(observed.state());
+            taskQueries.add(observed.taskQuery());
             timings.completionProjectionNanos =
                 positiveElapsedSince(projectionStartedAt);
             if (outcome == REJECTED) {
@@ -231,6 +242,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             startupNanos,
             timings.freeze(),
             Objects.requireNonNull(pvmDefinition, "pvmDefinition"),
+            taskQueries,
             Objects.requireNonNull(cleanup, "cleanup")));
   }
 
@@ -296,9 +308,10 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     return COMMITTED;
   }
 
-  private StateObservation observeState(
+  private ObservedState observeState(
       String engineInstanceId,
-      String stableInstanceId) {
+      String stableInstanceId,
+      String afterCommandId) {
     var isRunning =
         processEngine
                 .getRuntimeService()
@@ -314,52 +327,34 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 .processInstanceId(engineInstanceId)
                 .list()
             : List.<Task>of();
-    var activeWaits = observeActiveWaits(tasks);
-    var openUserTasks = observeOpenUserTasks(stableInstanceId, tasks);
+    var hostTasks =
+        tasks.stream()
+            .map(task -> new HostUserTask(task.getTaskDefinitionKey(), task.getName()))
+            .toList();
+    var taskQuery =
+        new TaskQuerySnapshot(
+            afterCommandId,
+            hostTasks.stream()
+                .map(task -> new TaskQueryTask(task.elementId(), task.name()))
+                .toList());
+    var activeWaits = userTaskProjector.activeWaits(hostTasks);
+    var openUserTasks =
+        userTaskProjector.openUserTasks(stableInstanceId, hostTasks);
     var enabledInteractions =
         openUserTasks.stream()
             .<EnabledInteraction>map(
                 task -> new CompleteUserTaskInstanceInteraction(task.id()))
             .toList();
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
-    return new StateObservation(
-        stableInstanceId,
-        isRunning ? RUNNING : COMPLETED,
-        activeWaits,
-        openUserTasks,
-        enabledInteractions,
-        logicalTimeMs);
-  }
-
-  private List<ActiveWait> observeActiveWaits(
-      List<Task> tasks) {
-    Map<String, Integer> multiplicities = new TreeMap<>();
-    for (var task : tasks) {
-      multiplicities.merge(task.getTaskDefinitionKey(), 1, Integer::sum);
-    }
-    return multiplicities.entrySet().stream()
-        .map(entry -> new ActiveWait(entry.getKey(), USER_TASK, entry.getValue()))
-        .toList();
-  }
-
-  private List<OpenUserTask> observeOpenUserTasks(
-      String stableInstanceId,
-      List<Task> tasks) {
-    if (tasks.size() > 1) {
-      throw new IllegalStateException(
-          "The User Task interaction capsule supports at most one active task");
-    }
-    return tasks.stream()
-        .map(
-            task ->
-                new OpenUserTask(
-                    new UserTaskInstanceId(
-                        stableInstanceId,
-                        task.getTaskDefinitionKey(),
-                        1),
-                    task.getName(),
-                    ACTIVE))
-        .toList();
+    return new ObservedState(
+        new StateObservation(
+            stableInstanceId,
+            isRunning ? RUNNING : COMPLETED,
+            activeWaits,
+            openUserTasks,
+            enabledInteractions,
+            logicalTimeMs),
+        taskQuery);
   }
 
   private CleanupProjection observeCleanup() {
@@ -410,6 +405,10 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private static long positiveElapsedSince(long startedAt) {
     return Math.max(1, System.nanoTime() - startedAt);
   }
+
+  private record ObservedState(
+      StateObservation state,
+      TaskQuerySnapshot taskQuery) {}
 
   private void ensureOpen() {
     if (closed) {

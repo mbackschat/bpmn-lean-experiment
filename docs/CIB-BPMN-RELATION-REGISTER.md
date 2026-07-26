@@ -20,7 +20,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 2 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Reviewed normative agreements | 3 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 1 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 0 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -56,15 +56,15 @@ None recorded.
 
 **Expected normative behavior:** The join remains inactive while `Flow_Right_Join` has offered no token. Two offers on `Flow_Left_Join` cannot substitute for the missing right-flow offer.
 
-**Alternative explanations excluded:** The exact model validates against the pinned BPMN 2.0.2 `BPMN20.xsd`; CIB deploys and executes it without parser warning; the probe observes public task existence rather than internal PVM state; `User_Right` proves the right branch has not traversed `Flow_Right_Join`; and neither task-query order nor project canonicalization can create `User_After_Join`. The result agrees with the pinned engine source. Full immutable-evidence and mutation thresholds remain open.
+**Alternative explanations excluded:** The exact model validates against the pinned BPMN 2.0.2 `BPMN20.xsd`; CIB deploys and executes it without parser warning; the probe observes public task existence rather than internal PVM state; `User_Right` proves the right branch has not traversed `Flow_Right_Join`; and neither task-query order nor project canonicalization can create `User_After_Join`. The result agrees with the pinned engine source. The balanced normative scenarios now calibrate raw task-query projection and canonical sorting but cannot separate the competing join-readiness accounts; immutable producer evidence for the negative probe remains open.
 
-**Classification rationale:** This is more than a representation difference because it changes the publicly observable point at which downstream BPMN work becomes active. It remains a candidate rather than a confirmed deviation until the project has answer-free content-bound evidence, a mutation-sensitive canonical projection, and complete Lean, TypeScript, Temporal, and compatibility impact evidence.
+**Classification rationale:** This is more than a representation difference because it changes the publicly observable point at which downstream BPMN work becomes active. The normative account now has answer-free content-bound balanced evidence, a mutation-sensitive raw-to-canonical projection, and Lean, TypeScript, and focused Temporal impact evidence. The entry remains a candidate rather than a confirmed deviation because the separating negative CIB probe itself is not yet an immutable answer-free evidence artifact and the parallel four-target impact lane is not closed.
 
 **Profile decision:** The approved parallel proposal follows normative per-incoming-Sequence-Flow behavior. The current `cibseven-2.2.0-user-task-draft` profile is not expanded to claim parallel compatibility. Pinned CIB count-based behavior may be retained later only in an explicitly separate compatibility profile; one behavior cannot be claimed as both exact CIB compatibility and BPMN conformance.
 
-**Capsule and semantic rule IDs:** The approved [parallel fork/join proposal](capsules/PARALLEL-FORK-JOIN-PROPOSAL.md) owns `PAR-JOIN-READY-01` and `PAR-JOIN-CONSUME-01`. Production implementation, proposal graduation, and confirmation evidence remain pending.
+**Capsule and semantic rule IDs:** The approved [parallel fork/join proposal](capsules/PARALLEL-FORK-JOIN-PROPOSAL.md) owns `PAR-JOIN-READY-01` and `PAR-JOIN-CONSUME-01`. The normative Lean, TypeScript, and focused Temporal implementations are complete; proposal graduation and negative-probe confirmation evidence remain pending.
 
-**Lean, TypeScript, Temporal, and compatibility impact:** Production lanes are intentionally absent. Any normative implementation needs incoming-flow provenance and excess-token retention. A CIB-compatible implementation would instead need an explicitly named deviation profile. Temporal must refine whichever selected semantic account is approved and may not hide the difference as scheduling.
+**Lean, TypeScript, Temporal, and compatibility impact:** Lean and TypeScript retain incoming-flow provenance and excess-token multiplicity under the normative account. Focused Temporal evidence shows that the adapter hosts that account without interpreting join readiness or hiding the difference as scheduling. Balanced CIB evidence agrees but cannot distinguish the normative account from CIB's count-based implementation. A CIB-compatible implementation of the separating case would need an explicitly named deviation profile, which remains intentionally absent.
 
 **Owner decision:** Approved normative BPMN behavior for the next capsule on 2026-07-26, with no parallel compatibility claim for the current CIB profile and no production implementation of the observed count-based behavior.
 
@@ -99,6 +99,18 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Evidence:** [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [exact-completion evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [interaction scenarios](../scenarios/user-task-discovery-completion/README.md), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-draft/README.md).
 
 **Boundary:** People assignment, ownership, authorization, forms, input/output data, and general User Task lifecycle are excluded. The project’s structured activation ordinal and refusal of a mismatched semantic occurrence are an operational mapping under `CIB-OP-0001`, not a claim that BPMN prescribes that identity representation.
+
+### CIB-AGR-0003 — balanced two-branch Parallel Gateway lifecycle
+
+**Status:** Reviewed bounded agreement
+
+**BPMN basis:** BPMN 2.0.2 Clauses 10.6.4 and 13.4.1 plus Table 13.1 require a diverging Parallel Gateway to activate both outgoing branches and a converging Parallel Gateway to wait for at least one token on each incoming Sequence Flow before consuming one per input and proceeding.
+
+**Pinned CIB observation:** CIB Seven `2.2.0` starts the exact balanced fork/join Process with simultaneous `UserTask_A` and `UserTask_B` waits. Completing either task first leaves only the other task active; completing both joins once and completes the Process. A-then-B and B-then-A have the same initial and final canonical states.
+
+**Evidence:** [Parallel scenarios](../scenarios/parallel-fork-join/README.md), [A-then-B evidence](../scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json), [B-then-A evidence](../scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json), [oracle runner test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java), and [the parallel draft profile](../profiles/parallel-fork-join-draft/README.md).
+
+**Boundary:** This agreement is limited to one balanced two-branch shape with distinct User Task elements. It does not distinguish normative per-incoming-flow synchronization from CIB's count-based join implementation and therefore does not weaken or resolve candidate `CIB-DEV-0001`. Repeated task elements, activation-ordinal derivation, excess same-input arrivals, more branches, nested gateways, and general parallel compatibility remain outside this agreement.
 
 ## Interpretation register
 
@@ -152,7 +164,8 @@ This is a profile constraint, not evidence that CIB differs from BPMN. It does n
 | Java/H2/history-TTL/job-executor/clock settings | `CIB-CFG-0001` | Required reproducibility and admission configuration, with non-semantic history excluded from comparison |
 | PVM ordered topology, `null` event scope on ordinary flow nodes, and internal `noneEndEvent` type | Diagnostic internal representation; no relationship entry | These are implementation diagnostics, not public BPMN behavior or compatibility keys |
 | Model API DOM, deployment parse tree, PVM definition graph, and runtime execution tree differ | Diagnostic architecture; no relationship entry | Separate authoring, compilation, and runtime representations do not imply a semantic difference |
-| Count-only versus incoming-edge-provenance join state | `CIB-DEV-0001` candidate deviation | The normative per-incoming-flow requirement, schema-valid separating model, pinned source mechanism, bounded pristine-lane probe, and owner-approved profile meaning establish a public conflict; immutable evidence and cross-lane impact remain open |
+| Balanced two-branch Parallel Gateway fork/join | `CIB-AGR-0003` | Both branches become active, either completion order leaves the symmetric wait, and both arrivals complete the Process; the balanced witness does not distinguish join algorithms |
+| Count-only versus incoming-edge-provenance join state | `CIB-DEV-0001` candidate deviation | The normative per-incoming-flow requirement, schema-valid separating model, pinned source mechanism, bounded pristine-lane probe, and owner-approved profile meaning establish a public conflict; immutable negative-probe evidence and four-target impact remain open |
 | External-worker execution | Extension research hint only | The exact CIB BPMN attributes and worker lifecycle have not yet been researched or selected |
 
 ## Classification order

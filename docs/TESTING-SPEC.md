@@ -68,14 +68,22 @@ The preflight must identify each semantic stimulus, wait, timer, subscription, e
 
 The gate:
 
-- validates the current profile, three answer-free scenarios, canonical results, CIB evidence, checked BPMN graph, and Semantic Process program shapes with Ajv Draft 2020-12;
+- validates the two current draft profiles, five answer-free scenarios, canonical results, CIB evidence, checked BPMN graph, and Semantic Process program shapes with Ajv Draft 2020-12;
 - requires stable document kinds and no embedded format counters;
 - verifies scenario/profile SHA-256 bindings in retained CIB evidence;
 - requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
-- checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, and canonical unordered-array order;
-- rejects answer smuggling, stale evidence, unknown relationships, invalid task activation, dangling graph/program references, invalid gateway arity, definition identity drift, and order-dependent definitions.
+- checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, canonical unordered-array order, and raw CIB task-query observations against their canonical projections;
+- rejects answer smuggling, stale evidence, unknown relationships, invalid task activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw task observations, and duplicate raw semantic task identities.
 
 Retained CIB evidence is verifier-only. Target runners never receive it, and ordinary green runs never regenerate it.
+
+Replacing retained CIB evidence is an explicit content-bound operation:
+
+```sh
+./scripts/pnpm.sh run replace:cib-evidence -- --replace
+```
+
+The replacement command refuses to run without the exact opt-in, executes all five answer-free scenarios through the pinned runner, verifies cleanup and producer identity, and rewrites only their retained CIB evidence. Every new evidence projection must first gain a meaningful verifier mutation.
 
 ## Current Lean and semantic-core gate
 
@@ -99,7 +107,7 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 
 The reviewed full observational checked-source-to-program-run preservation proposition is not claimed: there is no independent checked-source operational relation from which to establish it without assuming the program account. Structural lowering preservation and exact artifact equality are the current proved boundary.
 
-The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. The Temporal gate covers the sequential capsule and focused parallel adapter probes while the retained CIB and four-target parallel lanes remain open.
+The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. The CIB and Temporal gates now cover the bounded parallel adapter projections independently; the parallel four-target comparison remains open.
 
 ## Current CIB gate
 
@@ -107,9 +115,9 @@ The semantic core tests structural program/scenario admission, pure state transi
 ./scripts/test-cibseven-oracle.sh
 ```
 
-The Java 21 runner deploys exact BPMN, starts a Process, queries the active task, completes or refuses the requested semantic occurrence, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, and stale-completion cases share one warm engine through the persistent JSON-lines boundary. A bounded consistency probe captures a generated task ID, completes it, and requires pinned CIB Seven to reject that same host ID after it ceases to be live. A separate schema-valid research probe sends two executions through one Parallel Gateway incoming flow while the other incoming branch remains at a User Task and requires the observed downstream activation recorded by candidate `CIB-DEV-0001`.
+The Java 21 runner deploys exact BPMN, starts a Process, queries active tasks, completes or refuses requested semantic occurrences, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, stale-completion, parallel A-then-B, and parallel B-then-A cases share one warm engine through the persistent JSON-lines boundary. The multiple-task projector sorts distinct semantic occurrences independently of engine query order and preserves per-element active-wait multiplicity; repeated live instances of one BPMN element remain rejected because activation-ordinal derivation is outside the bounded profile. A bounded consistency probe captures a generated task ID, completes it, and requires pinned CIB Seven to reject that same host ID after it ceases to be live. A separate schema-valid research probe sends two executions through one Parallel Gateway incoming flow while the other incoming branch remains at a User Task and requires the observed downstream activation recorded by candidate `CIB-DEV-0001`.
 
-PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The parallel probe is calibration evidence only: it does not enter the current profile, canonical pipeline, or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated engine cleanup.
+PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw task-query snapshots are retained as producer observations, while the evidence verifier independently reconstructs the canonical task projection and includes a mutation that drops one observed parallel task. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated engine cleanup.
 
 ## Current Temporal gate
 
@@ -151,7 +159,7 @@ The pipeline:
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 
-The source-current repository verification on 2026-07-26 completed in 24.20 seconds after adding focused parallel Temporal evidence, and its retained three-case prepared pipeline completed in 5.58 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+The source-current repository verification on 2026-07-26 completed in 27.86 seconds after adding canonical balanced-parallel CIB evidence and its raw-projection guards, and its retained three-case prepared pipeline completed in 6.63 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
 
 ## Documentation-fragment gate
 

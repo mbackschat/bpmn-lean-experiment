@@ -1,12 +1,12 @@
 {
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
-    "id": "user-task-wrong-activation",
-    "sha256": "b35f0616519ae25702b11f560eed5515ee0674affc0dd3bb11c60bc5b058bbb3"
+    "id": "parallel-fork-join-b-then-a",
+    "sha256": "c3141bea41101b3ca930a5dc8810053770524d5c886b4ae70e73b54380dc3299"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-draft",
-    "sha256": "dd6553dd66793ad5dfef2420f545443b7b0b2c645199f020c6993e2b8f62bcae"
+    "id": "parallel-fork-join-draft",
+    "sha256": "98b52d8fbc3cb5afcf3aa4923626514c706bea89ef3655a3ba100587b38a28de"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -22,19 +22,27 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "UserTask_Approve",
-            "name": "Approve"
+            "elementId": "UserTask_A",
+            "name": "A"
+          },
+          {
+            "elementId": "UserTask_B",
+            "name": "B"
           }
         ]
       },
       {
-        "afterCommandId": "wrong-activation",
+        "afterCommandId": "complete-user-task-b",
         "tasks": [
           {
-            "elementId": "UserTask_Approve",
-            "name": "Approve"
+            "elementId": "UserTask_A",
+            "name": "A"
           }
         ]
+      },
+      {
+        "afterCommandId": "complete-user-task-a",
+        "tasks": []
       }
     ]
   },
@@ -44,7 +52,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rejected"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -62,7 +70,12 @@
         "status": "running",
         "activeWaits": [
           {
-            "elementId": "UserTask_Approve",
+            "elementId": "UserTask_A",
+            "kind": "userTask",
+            "multiplicity": 1
+          },
+          {
+            "elementId": "UserTask_B",
             "kind": "userTask",
             "multiplicity": 1
           }
@@ -71,10 +84,19 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Approve",
+              "elementId": "UserTask_A",
               "activation": 1
             },
-            "name": "Approve",
+            "name": "A",
+            "state": "active"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            },
+            "name": "B",
             "state": "active"
           }
         ],
@@ -83,7 +105,15 @@
             "kind": "completeUserTaskInstance",
             "taskId": {
               "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Approve",
+              "elementId": "UserTask_A",
+              "activation": 1
+            }
+          },
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
               "activation": 1
             }
           }
@@ -92,8 +122,8 @@
       },
       {
         "kind": "command",
-        "commandId": "wrong-activation",
-        "outcome": "rejected"
+        "commandId": "complete-user-task-b",
+        "outcome": "committed"
       },
       {
         "kind": "state",
@@ -101,7 +131,7 @@
         "status": "running",
         "activeWaits": [
           {
-            "elementId": "UserTask_Approve",
+            "elementId": "UserTask_A",
             "kind": "userTask",
             "multiplicity": 1
           }
@@ -110,10 +140,10 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Approve",
+              "elementId": "UserTask_A",
               "activation": 1
             },
-            "name": "Approve",
+            "name": "A",
             "state": "active"
           }
         ],
@@ -122,11 +152,25 @@
             "kind": "completeUserTaskInstance",
             "taskId": {
               "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Approve",
+              "elementId": "UserTask_A",
               "activation": 1
             }
           }
         ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-user-task-a",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "enabledInteractions": [],
         "logicalTimeMs": 0
       }
     ]

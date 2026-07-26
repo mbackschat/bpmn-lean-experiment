@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved semantic proposal on 2026-07-26; checked source/lowering, Lean and independent TypeScript semantic implementations, and focused Temporal refinement/replay witnesses are complete, while immutable profile, canonical CIB, four-target differential, and closure evidence remain pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
+**Owner-approved semantic proposal on 2026-07-26; the draft profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced CIB observations, and focused Temporal refinement/replay witnesses are complete, while the parallel four-target differential and epistemic closure remain pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
@@ -24,7 +24,7 @@ The project records [CIB-DEV-0001](../CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001
 
 The observation agrees with the pinned source implementation, which compares the number of inactive concurrent executions at the gateway with the number of incoming transitions rather than retaining the incoming transition that supplied each execution. This is executable compatibility evidence, not project semantic authority.
 
-The classification remains candidate rather than confirmed because this research probe is not yet an answer-free scenario with immutable content-bound raw evidence, a mutation-sensitive canonical projection, or completed Lean, TypeScript, Temporal, and compatibility impact lanes. Parser and fixture-shape explanations are excluded by BPMN 2.0.2 XSD validation and the exact engine observation; task-query ordering and project canonicalization cannot explain whether `User_After_Join` exists.
+The balanced A-then-B and B-then-A scenarios now have immutable content-bound raw task-query observations, a mutation-sensitive canonical projection, and exact pinned-CIB final agreement with the normative account. Those positive cases establish `CIB-AGR-0003`; they cannot separate per-incoming-flow semantics from the pinned engine's arrival-count behavior because both accounts agree on balanced input. The classification remains candidate rather than confirmed because the duplicate-left/no-right research probe itself is not yet an answer-free immutable evidence artifact with the complete compatibility-impact treatment. Parser and fixture-shape explanations are excluded by BPMN 2.0.2 XSD validation and the exact engine observation; task-query ordering and project canonicalization cannot explain whether `User_After_Join` exists.
 
 ## Approved semantic rules
 
@@ -145,7 +145,7 @@ Required negative and mutation evidence includes:
 - exposing a partial join offer changes canonical state and is rejected;
 - changing the admitted executable topology without changing the scenario is detected by the Lean input binding.
 
-The graduation rule-to-evidence matrix must keep normative/profile, Lean relation/law, pristine CIB observation, independent TypeScript behavior, Temporal refinement/replay, negative-witness, and mutation claims in separate cells. The current candidate CIB probe fills only the bounded research-observation cell.
+The graduation rule-to-evidence matrix must keep normative/profile, Lean relation/law, pristine CIB observation, independent TypeScript behavior, Temporal refinement/replay, negative-witness, and mutation claims in separate cells. The canonical balanced CIB evidence fills only the positive oracle-calibration cells; the candidate duplicate-left/no-right CIB probe fills only the bounded negative research-observation cell.
 
 ## Runtime-only and synthetic construct constraints
 
@@ -184,9 +184,9 @@ The focused Temporal gate now fills the bounded adapter evidence cells for this 
 The observable contract resolves the questions that previously blocked the two implementation corrections:
 
 - **R5 — completed:** current-state task projection, stimulus well-formedness, command identity, and same-stimulus comparison are semantic-core-owned operations. The current Workflow invokes them directly and no longer infers open tasks from diagnostic trace history or maintains validation and identity-policy copies.
-- **R6:** before the CIB runner emits canonical parallel evidence, remove its single-active-task guard only together with deterministic semantic task sorting and per-element wait multiplicity. Distinct active elements produce distinct entries; repeated instances of one element require derived activation ordinals and remain out of scope here.
+- **R6 — completed:** the CIB runner projects multiple distinct active elements as distinct semantic occurrences, sorts them by semantic identity independently of engine query order, and preserves per-element wait multiplicity. Repeated live instances of one element remain rejected because derived activation ordinals are out of scope.
 
-These corrections and semantic implementations are prerequisites, not evidence that this capsule is already closed across its required CIB, differential, mutation, and profile lanes.
+These corrections and semantic implementations are prerequisites, not evidence that this capsule is already closed across its differential, mutation, and epistemic-review lanes.
 
 ## Owner decisions
 

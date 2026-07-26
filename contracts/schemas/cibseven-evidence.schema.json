@@ -9,6 +9,7 @@
     "scenario",
     "profile",
     "producer",
+    "producerObservations",
     "projection",
     "result"
   ],
@@ -55,6 +56,21 @@
         }
       }
     },
+    "producerObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskQueries"
+      ],
+      "properties": {
+        "taskQueries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/taskQuerySnapshot"
+          }
+        }
+      }
+    },
     "projection": {
       "type": "object",
       "additionalProperties": false,
@@ -87,6 +103,46 @@
         "sha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "taskQuerySnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "tasks"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/taskQueryTask"
+          }
+        }
+      }
+    },
+    "taskQueryTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "name"
+      ],
+      "properties": {
+        "elementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }

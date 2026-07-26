@@ -32,6 +32,18 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/user-task-discovery-completion/stale-completion.cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/parallel-fork-join/a-then-b.scenario.json",
+    evidenceRelativePath:
+      "scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/parallel-fork-join/b-then-a.scenario.json",
+    evidenceRelativePath:
+      "scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json",
+  }),
 ]);
 
 const validatorsByRoot = new Map();
@@ -264,6 +276,122 @@ function verifyDefinitionReferences(checkedProcess, semanticProcess) {
   }
 }
 
+function verifyProducerTaskProjection(evidence) {
+  const snapshots = evidence.producerObservations.taskQueries;
+  const states = [];
+  let afterCommandId;
+  for (const observation of evidence.result.trace) {
+    switch (observation.kind) {
+      case "deployment":
+        break;
+      case "command":
+        afterCommandId = observation.commandId;
+        break;
+      case "state":
+        if (afterCommandId === undefined) {
+          throw new Error(
+            "canonical state has no preceding command observation",
+          );
+        }
+        states.push({ afterCommandId, observation });
+        afterCommandId = undefined;
+        break;
+      default:
+        throw new Error(
+          `unsupported canonical observation: ${observation.kind}`,
+        );
+    }
+  }
+  if (states.length !== snapshots.length) {
+    throw new Error(
+      "producer task-query count does not match canonical state count",
+    );
+  }
+
+  for (const [index, state] of states.entries()) {
+    const snapshot = snapshots[index];
+    if (snapshot.afterCommandId !== state.afterCommandId) {
+      throw new Error(
+        "producer task query is bound to a different command",
+      );
+    }
+    const projected = projectTaskQuery(
+      state.observation.instanceId,
+      snapshot.tasks,
+    );
+    for (const field of [
+      "activeWaits",
+      "openUserTasks",
+      "enabledInteractions",
+    ]) {
+      if (!isDeepStrictEqual(state.observation[field], projected[field])) {
+        throw new Error(
+          `producer task query projection does not match canonical ${field}`,
+        );
+      }
+    }
+  }
+}
+
+function projectTaskQuery(instanceId, tasks) {
+  const multiplicities = new Map();
+  const byElement = new Map();
+  for (const task of tasks) {
+    multiplicities.set(
+      task.elementId,
+      (multiplicities.get(task.elementId) ?? 0) + 1,
+    );
+    if (byElement.has(task.elementId)) {
+      throw new Error(
+        `producer task query repeats unsupported element ${task.elementId}`,
+      );
+    }
+    byElement.set(task.elementId, task);
+  }
+  const activeWaits = [...multiplicities.entries()]
+    .sort(([left], [right]) => compareStrings(left, right))
+    .map(([elementId, multiplicity]) => ({
+      elementId,
+      kind: "userTask",
+      multiplicity,
+    }));
+  const openUserTasks = [...byElement.values()]
+    .map((task) => ({
+      id: {
+        processInstanceId: instanceId,
+        elementId: task.elementId,
+        activation: 1,
+      },
+      name: task.name,
+      state: "active",
+    }))
+    .sort((left, right) =>
+      compareTaskIdentities(left.id, right.id)
+    );
+  return {
+    activeWaits,
+    openUserTasks,
+    enabledInteractions: openUserTasks.map((task) => ({
+      kind: "completeUserTaskInstance",
+      taskId: task.id,
+    })),
+  };
+}
+
+function compareTaskIdentities(left, right) {
+  for (const field of ["processInstanceId", "elementId"]) {
+    const comparison = compareStrings(left[field], right[field]);
+    if (comparison !== 0) {
+      return comparison;
+    }
+  }
+  return left.activation - right.activation;
+}
+
+function compareStrings(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export async function verifyDefinitionArtifacts(projectRoot, artifacts) {
   const validator = await validatorFor(projectRoot);
   const { checkedProcess, semanticProcess } = artifacts;
@@ -355,6 +483,7 @@ export function verifyArtifactSet(artifactSet) {
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
   }
+  verifyProducerTaskProjection(evidence);
   return artifactSet;
 }
 

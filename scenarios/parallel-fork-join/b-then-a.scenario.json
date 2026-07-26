@@ -1,0 +1,57 @@
+{
+  "kind": "scenario",
+  "id": "parallel-fork-join-b-then-a",
+  "profile": "parallel-fork-join-draft",
+  "bpmn": {
+    "id": "parallel-two-user-tasks-process",
+    "relativePath": "scenarios/parallel-fork-join/process.bpmn",
+    "sha256": "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ParallelForkJoin",
+      "instanceId": "Instance_1"
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-user-task-b",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_B",
+        "activation": 1
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-user-task-a",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_A",
+        "activation": 1
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.6.4",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 Table 13.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/gateway/ParallelGatewayTest.java#testForkJoin"
+    ]
+  }
+}

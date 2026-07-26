@@ -16,6 +16,23 @@
     "java": "21",
     "database": "H2 2.3.232"
   },
+  "producerObservations": {
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "tasks": []
+      }
+    ]
+  },
   "projection": {
     "id": "canonical-scenario-result"
   },
