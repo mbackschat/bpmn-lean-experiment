@@ -31,6 +31,20 @@ private def parallelProvenance : ScenarioProvenance :=
       [ "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java"
       , "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/gateway/ParallelGatewayTest.java#testForkJoin" ] }
 
+private def staleWhileSiblingActiveProvenance : ScenarioProvenance :=
+  { normativeRefs :=
+      [ "BPMN 2.0.2 §10.6.4"
+      , "BPMN 2.0.2 §10.7.3"
+      , "BPMN 2.0.2 §13.3.2"
+      , "BPMN 2.0.2 §13.3.3"
+      , "BPMN 2.0.2 §13.4.1"
+      , "BPMN 2.0.2 Table 13.1" ]
+    cibRevision := "834a9874760de8a0107f7c1b32806e37f17fb017"
+    cibRefs :=
+      [ "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java"
+      , "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId"
+      , "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/gateway/ParallelGatewayTest.java#testForkJoin" ] }
+
 private def parallelTaskId (elementId : String) : UserTaskInstanceId :=
   { processInstanceId := ⟨"Instance_1"⟩
     elementId := ⟨elementId⟩
@@ -64,5 +78,11 @@ def bThenAScenario : Scenario :=
   parallelScenario "parallel-fork-join-b-then-a"
     [ completionStimulus "complete-user-task-b" "UserTask_B"
     , completionStimulus "complete-user-task-a" "UserTask_A" ]
+
+def staleAWhileBActiveScenario : Scenario :=
+  { parallelScenario "parallel-fork-join-stale-a-while-b-active"
+      [ completionStimulus "complete-user-task-a" "UserTask_A"
+      , completionStimulus "complete-stale-user-task-a" "UserTask_A" ] with
+    provenance := staleWhileSiblingActiveProvenance }
 
 end BpmnSemantics.ParallelForkJoinConformance

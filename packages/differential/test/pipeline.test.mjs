@@ -4,6 +4,9 @@ import { test } from "node:test";
 import {
   CommandOutcome,
 } from "@bpmn-lean/semantic-core";
+import {
+  ProcessCommandResultKind,
+} from "@bpmn-lean/temporal-adapter";
 
 import {
   ComparisonKind,
@@ -37,6 +40,7 @@ test(
         "user-task-stale-completion",
         "parallel-fork-join-a-then-b",
         "parallel-fork-join-b-then-a",
+        "parallel-fork-join-stale-a-while-b-active",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
@@ -53,6 +57,25 @@ test(
         ComparisonKind.Agreement,
         JSON.stringify(caseReport.comparison),
       );
+      const isPostTerminal =
+        caseReport.scenario.id === "user-task-stale-completion";
+      assert.equal(
+        caseReport.comparison.targets.includes(
+          DifferentialTarget.Temporal,
+        ),
+        !isPostTerminal,
+      );
+      if (isPostTerminal) {
+        assert.deepEqual(caseReport.temporalPrefixComparison, {
+          kind: ComparisonKind.Agreement,
+          targets: [
+            DifferentialTarget.SemanticCore,
+            DifferentialTarget.Temporal,
+          ],
+        });
+      } else {
+        assert.equal(caseReport.temporalPrefixComparison, null);
+      }
       assert.deepEqual(caseReport.evidenceComparison, {
         kind: ComparisonKind.Agreement,
         targets: [
@@ -100,6 +123,17 @@ test(
       );
       assert.equal(
         caseEvidence.temporalInteractionEvidence
+          .postTerminalResult?.kind ?? null,
+        caseEvidence.expectedPostTerminalResultKind,
+      );
+      assert.equal(
+        caseEvidence.expectedPostTerminalResultKind,
+        isPostTerminal
+          ? ProcessCommandResultKind.ProcessClosed
+          : null,
+      );
+      assert.equal(
+        caseEvidence.temporalInteractionEvidence
           .duplicateCompletionOutcome,
         caseReport.scenario.id === "user-task-stale-completion"
           ? CommandOutcome.Committed
@@ -107,7 +141,7 @@ test(
       );
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 5,
+      liveHistories: 6,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
@@ -117,7 +151,7 @@ test(
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 10);
+    assert.equal(report.isolation.temporalWorkflowIds.length, 12);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,

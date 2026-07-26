@@ -37,7 +37,7 @@ Canonical traces include only stable deployment, command, Process state, wait, o
 
 A wrong semantic occurrence is rejected by the oracle adapter before CIB host-task completion and leaves the task active. A stale completion is rejected after no matching live task remains. These mappings are classified in the [CIB–BPMN relationship register](../../docs/CIB-BPMN-RELATION-REGISTER.md), not mislabeled as raw CIB or BPMN identity semantics.
 
-Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, and enabled interactions and therefore detects omitted tasks while treating raw query order as non-semantic. The persistent JSON-lines boundary preserves request identity and cleanup across all five scenarios.
+Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, and enabled interactions and therefore detects omitted tasks while treating raw query order as non-semantic. The persistent JSON-lines boundary preserves request identity and cleanup across all six scenarios.
 
 Ordinary verification never rewrites retained evidence. The explicit replacement operation is:
 

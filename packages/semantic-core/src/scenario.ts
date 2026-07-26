@@ -13,10 +13,12 @@ import type {
   OpenUserTask,
   Scenario,
   ScenarioResult,
+  StartProcessStimulus,
   StateObservation,
   Stimulus,
 } from "./contract.js";
 import {
+  supportsSemanticProcessExecution,
   supportsSemanticProcessScenario,
 } from "./semantic-process-admission.js";
 import type {
@@ -208,6 +210,22 @@ export function deployScenario(
   semanticProcess: SemanticProcessProgram,
 ): ScenarioDeployment {
   const outcome = supportsSemanticProcessScenario(scenario, semanticProcess)
+    ? CommandOutcome.Committed
+    : CommandOutcome.Unsupported;
+  return {
+    outcome,
+    observation: {
+      kind: CanonicalObservationKind.Deployment,
+      outcome,
+    },
+  };
+}
+
+export function deployProcess(
+  start: StartProcessStimulus,
+  semanticProcess: SemanticProcessProgram,
+): ScenarioDeployment {
+  const outcome = supportsSemanticProcessExecution(start, semanticProcess)
     ? CommandOutcome.Committed
     : CommandOutcome.Unsupported;
   return {

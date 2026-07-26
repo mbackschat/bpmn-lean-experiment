@@ -5,6 +5,7 @@ import {
 } from "./contract.js";
 import type {
   Scenario,
+  StartProcessStimulus,
 } from "./contract.js";
 import {
   SemanticOperationKind,
@@ -41,6 +42,19 @@ export function supportsSemanticProcessScenario(
     program.identity.semanticProfile === scenario.profile &&
     program.identity.sourceId === scenario.bpmn.id &&
     program.identity.sourceSha256 === scenario.bpmn.sha256
+  );
+}
+
+export function supportsSemanticProcessExecution(
+  start: StartProcessStimulus,
+  program: SemanticProcessProgram,
+): boolean {
+  return (
+    isWellFormedStimulus(start) &&
+    start.kind === StimulusKind.StartProcess &&
+    isWellFormedSemanticProcessProgram(program) &&
+    hasSupportedExecutionSurface(program) &&
+    start.processId === program.processId
   );
 }
 

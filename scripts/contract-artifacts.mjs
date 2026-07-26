@@ -44,6 +44,12 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/parallel-fork-join/stale-a-while-b-active.scenario.json",
+    evidenceRelativePath:
+      "scenarios/parallel-fork-join/stale-a-while-b-active.cibseven-evidence.json",
+  }),
 ]);
 
 const validatorsByRoot = new Map();

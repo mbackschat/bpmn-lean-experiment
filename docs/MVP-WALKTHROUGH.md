@@ -241,13 +241,13 @@ setHandler(
     enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
     await condition(
       () =>
-        commandOutcome(commandResults, stimulus.commandId) !== undefined ||
-        semanticLoopFinished,
+        commandOutcome(commandResults, stimulus.commandId) !== undefined,
     );
     const outcome = commandOutcome(commandResults, stimulus.commandId);
     if (outcome === undefined) {
-      throw new TypeError(
+      throw ApplicationFailure.nonRetryable(
         `Semantic loop ended without an outcome for ${stimulus.commandId}`,
+        "BpmnCommandOutcomeMissing",
       );
     }
     return outcome;
@@ -274,20 +274,7 @@ const comparison = compareTargetResults(
     target: DifferentialTarget.CibSeven,
     result: canonicalCib,
   },
-  [
-    {
-      target: DifferentialTarget.Lean,
-      result: leanResult,
-    },
-    {
-      target: DifferentialTarget.SemanticCore,
-      result: semanticCoreResult,
-    },
-    {
-      target: DifferentialTarget.Temporal,
-      result: temporalResult.primary.result,
-    },
-  ],
+  semanticCandidates,
 );
 ```
 
@@ -369,4 +356,4 @@ It does not establish general BPMN parsing or execution, OMG conformance, immuta
 
 ## What comes next
 
-The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, and the duplicate-left/no-right non-law; content-bound CIB evidence calibrates both balanced completion orders; and the five-case pipeline establishes exact four-target agreement with replay, projection mutation, and provenance-erasure rejection. The next boundary is the production Temporal lifecycle, not another BPMN element; the exact resume point is in [PLAN.md](PLAN.md).
+The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, stale rejection with a live sibling, and the duplicate-left/no-right non-law. Content-bound CIB evidence calibrates both balanced completion orders and the live-sibling stale witness. The six-case pipeline establishes the ordinary exact four-target relations, the explicit sequential post-terminal relation, replay, projection mutations, and provenance-erasure rejection under the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md). The exact resume point is in [PLAN.md](PLAN.md).

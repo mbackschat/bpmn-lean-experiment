@@ -20,16 +20,21 @@ import {
 import {
   ApplicationFailure,
   WorkflowExecutionAlreadyStartedError,
-  WorkflowNotFoundError,
 } from "@temporalio/client";
 import { TestWorkflowEnvironment } from "@temporalio/testing";
 import { Worker } from "@temporalio/worker";
 
 import {
+  ProcessCommandResultKind,
   bpmnCompleteUserTaskUpdateName,
   bpmnOpenUserTasksQueryName,
-  bpmnScenarioWorkflowType,
+  bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
+  contentBoundUpdateId,
+  isCompletedProcessReceipt,
+  processWorkflowId,
+  startBpmnProcess,
+  submitUserTaskCompletion,
 } from "../dist/index.js";
 
 const capsuleUrl = new URL(
@@ -44,7 +49,7 @@ const workflowsPath = fileURLToPath(
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
-const workflowId = "production-lifecycle-probe";
+const workflowId = processWorkflowId("Instance_1");
 const operationDeadlineMs = 10_000;
 
 test("closed Workflow retains accepted command result without accepting a new command", async () => {
@@ -82,15 +87,15 @@ test("closed Workflow retains accepted command result without accepting a new co
   try {
     workerLease = await startWorker(environment);
     const handle = await withDeadline(
-      environment.client.workflow.start(bpmnScenarioWorkflowType, {
-        taskQueue: bpmnSemanticTaskQueue,
-        workflowId,
-        workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [scenario, compilation.semanticProcess],
-      }),
+      startBpmnProcess(
+        environment.client.workflow,
+        scenario.stimuli[0],
+        compilation.semanticProcess,
+      ),
       operationDeadlineMs,
       "lifecycle Workflow start",
     );
+    assert.equal(handle.workflowId, workflowId);
     const openTasks = await waitForOpenTasks(handle);
     assert.equal(openTasks.length, 1);
     assert.equal(openTasks[0].id.processInstanceId, "Instance_1");
@@ -104,7 +109,7 @@ test("closed Workflow retains accepted command result without accepting a new co
       withDeadline(
         handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
           args: [conflictingCompletion],
-          updateId: "conflicting-command-identity-probe",
+          updateId: contentBoundUpdateId(conflictingCompletion),
         }),
         2_000,
         "conflicting command identity",
@@ -118,21 +123,27 @@ test("closed Workflow retains accepted command result without accepting a new co
     await stopWorker(workerLease);
     workerLease = await startWorker(environment);
 
-    const completionOutcome = await withDeadline(
-      handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
-        args: [completion],
-        updateId: completion.commandId,
-      }),
+    const completionResult = await withDeadline(
+      submitUserTaskCompletion(
+        environment.client.workflow,
+        "Instance_1",
+        completion,
+      ),
       operationDeadlineMs,
       "completion after Worker restart",
     );
-    assert.equal(completionOutcome, CommandOutcome.Committed);
+    assert.deepEqual(completionResult, {
+      kind: ProcessCommandResultKind.Semantic,
+      commandId: completion.commandId,
+      outcome: CommandOutcome.Committed,
+    });
 
     const result = await withDeadline(
       handle.result(),
       operationDeadlineMs,
       "lifecycle Workflow result",
     );
+    assert.equal(isCompletedProcessReceipt(result), true);
     const history = await withDeadline(
       handle.fetchHistory(),
       operationDeadlineMs,
@@ -144,7 +155,7 @@ test("closed Workflow retains accepted command result without accepting a new co
     workerLease = undefined;
 
     const retainedOutcome = await withDeadline(
-      handle.getUpdateHandle(completion.commandId).result(),
+      handle.getUpdateHandle(contentBoundUpdateId(completion)).result(),
       operationDeadlineMs,
       "retained completion result",
     );
@@ -158,26 +169,78 @@ test("closed Workflow retains accepted command result without accepting a new co
     const reusedUpdateIdOutcome = await withDeadline(
       handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
         args: [lateCompletion],
-        updateId: completion.commandId,
+        updateId: contentBoundUpdateId(completion),
       }),
       operationDeadlineMs,
       "payload-conflicting Update-ID retry",
     );
     assert.equal(reusedUpdateIdOutcome, CommandOutcome.Committed);
 
-    await assert.rejects(
-      withDeadline(
-        handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
-          args: [lateCompletion],
-          updateId: lateCompletion.commandId,
-        }),
-        operationDeadlineMs,
-        "late completion",
+    const exactRetry = await withDeadline(
+      submitUserTaskCompletion(
+        environment.client.workflow,
+        "Instance_1",
+        completion,
       ),
-      (error) =>
-        error instanceof WorkflowNotFoundError &&
-        error.message === "workflow execution already completed",
+      operationDeadlineMs,
+      "exact completion retry",
     );
+    assert.equal(exactRetry.kind, ProcessCommandResultKind.Semantic);
+    assert.equal(exactRetry.outcome, CommandOutcome.Committed);
+
+    const payloadConflictResult = await withDeadline(
+      submitUserTaskCompletion(
+        environment.client.workflow,
+        "Instance_1",
+        {
+          ...completion,
+          taskId: {
+            ...completion.taskId,
+            activation: 2,
+          },
+        },
+      ),
+      operationDeadlineMs,
+      "payload-conflicting completion",
+    );
+    assert.equal(
+      payloadConflictResult.kind,
+      ProcessCommandResultKind.ProcessClosed,
+    );
+
+    const lateResult = await withDeadline(
+      submitUserTaskCompletion(
+        environment.client.workflow,
+        "Instance_1",
+        lateCompletion,
+      ),
+      operationDeadlineMs,
+      "late completion",
+    );
+    assert.equal(lateResult.kind, ProcessCommandResultKind.ProcessClosed);
+    assert.deepEqual(lateResult.receipt, result);
+
+    const unknownResult = await withDeadline(
+      submitUserTaskCompletion(
+        environment.client.workflow,
+        "Unknown_Instance",
+        {
+          ...lateCompletion,
+          commandId: "unknown-process-command",
+          taskId: {
+            ...lateCompletion.taskId,
+            processInstanceId: "Unknown_Instance",
+          },
+        },
+      ),
+      operationDeadlineMs,
+      "unknown Process completion",
+    );
+    assert.deepEqual(unknownResult, {
+      kind: ProcessCommandResultKind.ProcessUnknown,
+      commandId: "unknown-process-command",
+      processInstanceId: "Unknown_Instance",
+    });
 
     const description = await withDeadline(
       handle.describe(),
@@ -188,11 +251,11 @@ test("closed Workflow retains accepted command result without accepting a new co
 
     await assert.rejects(
       withDeadline(
-        environment.client.workflow.start(bpmnScenarioWorkflowType, {
+        environment.client.workflow.start(bpmnProcessWorkflowType, {
           taskQueue: bpmnSemanticTaskQueue,
           workflowId,
           workflowIdReusePolicy: "REJECT_DUPLICATE",
-          args: [scenario, compilation.semanticProcess],
+          args: [scenario.stimuli[0], compilation.semanticProcess],
         }),
         operationDeadlineMs,
         "duplicate Workflow start",

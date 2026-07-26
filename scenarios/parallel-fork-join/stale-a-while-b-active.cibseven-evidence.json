@@ -1,0 +1,208 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "parallel-fork-join-stale-a-while-b-active",
+    "sha256": "f0c289216378399b12aab2fbdb1296d20974932727b33abc886796e1e5335635"
+  },
+  "profile": {
+    "id": "parallel-fork-join-draft",
+    "sha256": "98b52d8fbc3cb5afcf3aa4923626514c706bea89ef3655a3ba100587b38a28de"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_A",
+            "name": "A"
+          },
+          {
+            "elementId": "UserTask_B",
+            "name": "B"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-user-task-a",
+        "tasks": [
+          {
+            "elementId": "UserTask_B",
+            "name": "B"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-stale-user-task-a",
+        "tasks": [
+          {
+            "elementId": "UserTask_B",
+            "name": "B"
+          }
+        ]
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_A",
+            "kind": "userTask",
+            "multiplicity": 1
+          },
+          {
+            "elementId": "UserTask_B",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_A",
+              "activation": 1
+            },
+            "name": "A",
+            "state": "active"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            },
+            "name": "B",
+            "state": "active"
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_A",
+              "activation": 1
+            }
+          },
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-user-task-a",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_B",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            },
+            "name": "B",
+            "state": "active"
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-stale-user-task-a",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_B",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            },
+            "name": "B",
+            "state": "active"
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

@@ -183,7 +183,7 @@ test("uses structural document kinds without embedded schema counters", async ()
 test("keeps every target scenario answer-free and binds retained CIB evidence by content", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 
-  assert.equal(artifactSets.length, 5);
+  assert.equal(artifactSets.length, 6);
   for (const artifactSet of artifactSets) {
     assert.equal("calibration" in artifactSet.scenario, false);
     assert.equal(
@@ -257,6 +257,27 @@ test("derives canonical parallel tasks independently of producer query order", a
   dropped.evidence.producerObservations.taskQueries[0].tasks.pop();
   assert.throws(
     () => verifyArtifactSet(dropped),
+    /producer task query projection does not match canonical/,
+  );
+});
+
+test("detects a missing live sibling after stale parallel completion", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const stale = artifactSets.find(
+    ({ scenario }) =>
+      scenario.id === "parallel-fork-join-stale-a-while-b-active",
+  );
+  assert.notEqual(stale, undefined);
+  const mutated = cloneArtifactSet(stale);
+  const afterStale = mutated.evidence.producerObservations.taskQueries.find(
+    ({ afterCommandId }) =>
+      afterCommandId === "complete-stale-user-task-a",
+  );
+  assert.notEqual(afterStale, undefined);
+  afterStale.tasks.pop();
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
     /producer task query projection does not match canonical/,
   );
 });

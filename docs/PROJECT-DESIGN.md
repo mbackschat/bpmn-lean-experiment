@@ -156,7 +156,7 @@ This validates the separation of responsibilities, not scalability to all BPMN. 
 
 The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) supplies the second distinct topology and representation risk that justifies the bounded Semantic Process IL. Its closure does not generalize the language beyond its named consumers and separating witnesses.
 
-The current Temporal implementation is deliberately a finite conformance-scenario host. It receives the answer-free scenario and uses the scripted stimulus count to keep the Workflow open long enough to observe post-completion refusal. That establishes the current bounded differential result but is not the production process-lifecycle contract. A production host must derive its lifecycle from semantic state and explicitly decide how commands addressed after semantic completion receive a typed outcome when Temporal no longer accepts Updates for a closed Workflow.
+The production Temporal host follows the [Process lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md): one Workflow receives the admitted Semantic Process program and explicit start, derives its lifetime from semantic state, drains accepted handlers, recovers exact accepted results during retention, and classifies a distinct post-closure command through an adapter-owned lifecycle result. The semantic rejection lane remains separate: the sequential post-terminal case compares only the semantic prefix and `processClosed` adapter classification, while a live parallel sibling keeps the Process addressable for exact stale semantic rejection.
 
 ## Success criteria for every capsule
 

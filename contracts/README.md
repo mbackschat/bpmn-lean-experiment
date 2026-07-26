@@ -35,7 +35,7 @@ Portable assertions are verifier-side claims over canonical results or relations
 ## Schemas
 
 - [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates the current draft profile artifact.
-- [scenario.schema.json](schemas/scenario.schema.json) validates the three current answer-free User Task scenarios.
+- [scenario.schema.json](schemas/scenario.schema.json) validates the six current answer-free User Task and balanced-parallel scenarios.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.
 - [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.

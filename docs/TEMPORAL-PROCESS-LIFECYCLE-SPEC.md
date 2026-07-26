@@ -1,16 +1,16 @@
-# Temporal process lifecycle proposal
+# Temporal Process lifecycle specification
 
 ## Status
 
-**Recommended for owner approval; not implemented as the production Workflow contract.**
+**Implemented current pre-release contract.**
 
 ## Scope
 
-This proposal defines the smallest production lifecycle for the existing sequential and balanced-parallel User Task capsules. It answers when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
+This specification defines the smallest production lifecycle for the existing sequential and balanced-parallel User Task capsules. It answers when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
 It does not add BPMN semantics, a task inbox, Activities, timers, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline.
 
-## Required decision
+## Selected lifecycle
 
 Adopt a **semantic-lifetime Workflow with a retention-bounded closed-result boundary**:
 
@@ -83,7 +83,7 @@ A malformed command and reuse of one semantic command ID for a different well-fo
 
 The semantic Process-instance ID, Temporal Workflow ID, Run ID, semantic command ID, and Temporal Update ID remain distinct.
 
-The platform derives one collision-safe Workflow ID from the semantic Process address and starts it with `workflowIdReusePolicy: "REJECT_DUPLICATE"`. The encoding is host policy and never appears in canonical semantic state.
+The production adapter encodes the semantic Process-instance address as the typed tuple `["semanticProcessInstance", processInstanceId]`, hashes its UTF-8 JSON form with SHA-256, and prefixes the digest with `bpmn-process-sha256:`. It starts that Workflow ID with `workflowIdReusePolicy: "REJECT_DUPLICATE"`. The conformance harness may supply isolated Workflow IDs for independent disposable executions, but production start and command ingress derive the same ID from the semantic address. The encoding is host policy and never appears in canonical semantic state.
 
 The Temporal Update ID must be a deterministic content-bound key over:
 
@@ -93,7 +93,7 @@ The Temporal Update ID must be a deterministic content-bound key over:
 
 It must not be the command ID alone. The lifecycle experiment proves that the pinned server returns the first Update result when the same Update ID is reused with a different payload, without invoking the Workflow handler. A command-ID-only Update key would therefore bypass the semantic core’s conflicting-payload check.
 
-The project must define one canonical typed stimulus encoding and a collision-resistant digest before implementation. An exact retry produces the same Update ID and recovers the same semantic result. Reusing a command ID with a different stimulus produces a different Update ID, so it cannot silently alias the first result.
+The adapter defines one canonical typed stimulus encoding and a SHA-256 digest. An exact retry produces the same Update ID and recovers the same semantic result. Reusing a command ID with a different stimulus produces a different Update ID, so it cannot silently alias the first result.
 
 ## Workflow lifetime contract
 
@@ -110,6 +110,8 @@ While semantic state is nonterminal, the loop waits for queued accepted inputs. 
 
 Temporal decides whether a racing Update was accepted before the Workflow completion boundary. If accepted, it must complete with a semantic result before Workflow completion. If not accepted, the ingress contract resolves it through retained-result lookup and then `processClosed`.
 
+Accepted-handler draining does not reserve acceptance for a future request and does not impose caller order on concurrent requests. Two distinct concurrent completions for one occurrence may therefore be durably accepted in either order; exactly one commits, one is rejected, and both orders must reach the same final semantic state. A caller that awaits terminal completion before submitting another distinct command chooses an explicit post-terminal schedule and receives `processClosed`.
+
 ## Command-ingress resolution
 
 For one well-formed command and known semantic Process address:
@@ -125,9 +127,17 @@ For one well-formed command and known semantic Process address:
 
 Looking up the Update result before classifying closure closes the race where Temporal accepted the command but the caller lost its response as the Workflow completed.
 
-## Required evidence before graduation
+## Conformance evidence extraction
 
-Implementation may graduate this document to `-SPEC` only when the focused Temporal gate demonstrates:
+The differential runner may transport a replay-reconstructed canonical trace through a post-completion Query. This is a harness-only evidence-extraction contract, not the production canonical-observation API.
+
+The runner reconciles every Query-derived command outcome with the corresponding completed Update result payload in Event History and reconciles the terminal Query state with the validated completed Process receipt. Only intermediate stable-state observations remain Query-only; the differential comparison against the pure semantic core checks those observations independently. The same gate replays every fetched history.
+
+The sequential stale-completion case has a deliberately split relation. CIB Seven, Lean, and the pure semantic core agree on the complete semantic trace including stale rejection. Temporal agrees exactly on the prefix through semantic completion and separately classifies the explicitly post-terminal command as adapter-owned `processClosed`; that classification is never coerced into a semantic outcome. The parallel live-sibling stale witness keeps the Process addressable while the stale command reaches the semantic core and therefore retains exact four-target semantic agreement.
+
+## Verification contract
+
+The focused Temporal gate must demonstrate:
 
 - Workflow lifetime depends on terminal semantic state and contains no scenario-stimulus count;
 - start precedes every external completion under immediate delivery and Worker restart;
@@ -140,16 +150,18 @@ Implementation may graduate this document to `-SPEC` only when the focused Tempo
 - a never-existing address returns `processUnknown`;
 - Workflow-ID reuse and Update-With-Start command ingress are absent;
 - Query and canonical result projections contain no Workflow ID, Run ID, or Update ID;
+- Query-derived command outcomes and terminal state reconcile with durable Update results and the completed receipt;
+- the sequential post-terminal schedule and parallel live-sibling stale witness preserve the semantic/adapter evidence split without coercion;
 - the produced histories replay and every Worker/server resource is cleaned up;
 - a seeded command-ID-only Update-key mutation makes the payload-conflict witness fail.
 
-The complete applicable pipeline must remain green. The current conformance-scenario Workflow may be replaced only atomically; no production legacy lifecycle or compatibility branch is retained during pre-release.
+The complete applicable pipeline must remain green. No production legacy lifecycle, finite scenario-stimulus-count lifetime, or compatibility branch is retained during pre-release.
 
 ## Optional and excluded functionality
 
 An external tombstone or durable router is optional only after a consumer requires command-result or closed-address lookup beyond Temporal retention. That later proposal must specify its support window, atomic publication, rebuild or reconciliation path, authorization, cleanup, and failure classification.
 
-Excluded from this proposal:
+Excluded from this specification:
 
 - returning semantic rejection for a command never accepted by an already closed Workflow;
 - keeping a Workflow alive solely to reject future commands;

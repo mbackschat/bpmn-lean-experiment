@@ -2,13 +2,13 @@
 
 ## Status
 
-**Executed adapter experiment; the restart-ordering correction is adopted, while the production lifecycle remains an unapproved proposal boundary.**
+**Executed and resolved adapter experiment; the selected account is implemented by the [Temporal Process lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).**
 
 ## Question
 
 Can a production Workflow close when the semantic Process completes, preserve an accepted command result for an idempotent retry, refuse a genuinely new post-closure command without resurrecting the Process, and reconstruct the same semantic state after Worker restart?
 
-The question separates BPMN-visible command outcomes from Temporal host lifecycle outcomes. It does not select the eventual public API or make retained prototype history immutable.
+The question separates BPMN-visible command outcomes from Temporal host lifecycle outcomes. It does not make the disposable histories immutable.
 
 ## Competing accounts
 
@@ -30,7 +30,7 @@ The executable witness is [production-lifecycle.test.mjs](../../packages/tempora
 
 The test:
 
-1. starts the current Workflow under an explicit `REJECT_DUPLICATE` Workflow-ID reuse policy;
+1. derives the Workflow ID from the semantic Process address and starts under an explicit `REJECT_DUPLICATE` Workflow-ID reuse policy;
 2. reaches the exact open User Task;
 3. stops the first Worker, starts a second Worker on the same Task Queue, and completes the task;
 4. fetches the completed result and history, then stops the Worker;
@@ -53,7 +53,7 @@ The content-bound identity review exposed a second failure. A completion that re
 
 ## Green result
 
-The focused gate now passes the restart witness and all existing sequential, parallel, concurrent-delivery, duplicate-delivery, Update-before-completion, and replay checks.
+The original focused probe gate passed the restart witness and all then-existing sequential, parallel, concurrent-delivery, duplicate-delivery, Update-before-completion, and replay checks.
 
 The pinned platform establishes these bounded facts:
 
@@ -67,9 +67,33 @@ The pinned platform establishes these bounded facts:
 - replay reconstructs the same Workflow command history;
 - none of those host identities enters the semantic result.
 
+## Accepted-before-closure ordering witness and correction
+
+Production-lifecycle TDD tested whether the sequential stale-completion discriminator could preserve its old four-target trace under a semantic-lifetime Workflow without retaining future scenario stimuli in Workflow input. That would require the successful completion and stale repeat both to be accepted before closure, with the successful completion reaching the semantic core first.
+
+Two delivery accounts fail different halves of that contract:
+
+| Account | Established behavior | Failure |
+|---|---|---|
+| Sequential `startUpdate` calls that each wait for `ACCEPTED` | Caller submission order is explicit | The successful completion can run to terminal state and close the Workflow before the caller can obtain acceptance and submit the stale command |
+| Concurrent `startUpdate` calls followed by accepted-handler draining | Both requests can be in flight before semantic completion | Temporal processes messages in server-received order, not JavaScript call order; the executable witness received the stale command first and produced `rejected` followed by `committed` |
+
+`allHandlersFinished()` closes neither gap. It ensures that handlers already accepted by Temporal finish before Workflow return; it does not reserve acceptance for a later request or impose caller-selected order on concurrent requests.
+
+The retained red run received the stale command first and produced `[rejected, committed]`. Its green race contract now asserts exactly one committed and one rejected outcome with identical final state, without pinning which command wins. This preserves the discovered, semantically permitted host nondeterminism as executable evidence.
+
+The owner selected the evidence correction rather than an explicit sequence protocol, ordered-batch production ingress, or grace period:
+
+- the sequential stale scenario remains untouched CIB Seven, Lean, and pure-core semantic evidence;
+- its Temporal schedule explicitly awaits the completed receipt before submitting the stale command, compares the semantic prefix through completion, and separately requires adapter-owned `processClosed`;
+- the parallel live-sibling scenario completes task A and then repeats A while task B keeps the Process active, so the stale command reaches the semantic core and all four targets agree on semantic rejection;
+- the stable `UTASK-REFUSE-02` proposition is unchanged and is indexed by both capsules.
+
+The Query evidence boundary was resolved without enlarging `CompletedProcessReceipt`. The differential runner may transport a replay-reconstructed trace through Query only as a harness extraction mechanism. It reconciles each command outcome against the corresponding durable Update result payload and the terminal state against the receipt; only intermediate observations remain Query-only and are independently compared with the pure semantic core. Production canonical observation remains an explicit open API decision.
+
 ## Disposition
 
-The experiment recommends the closed-Workflow account as the smallest initial production boundary:
+The experiment selected the closed-Workflow account as the smallest initial production boundary:
 
 - derive Workflow completion from terminal semantic state after draining accepted handlers;
 - derive the Temporal Update ID from the semantic command ID and exact canonical stimulus content;
@@ -78,16 +102,14 @@ The experiment recommends the closed-Workflow account as the smallest initial pr
 - reject Workflow-ID reuse for one semantic Process-instance address;
 - defer a durable router, permanent entity, or external tombstone until a retention or discovery consumer requires one.
 
-This is evidence for a proposal, not approval to change the production Workflow. The exact typed result union, race-resolution algorithm, terminal result shape, support window, and accepted-handler drain witness must be reviewed together before implementation.
+The owner approved the lifecycle account and evidence correction. The focused Temporal gate and complete differential now implement the resulting contract; [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) is the current authority.
 
-## Non-claims and next discriminator
+## Non-claims
 
-The probe does not establish a production Workflow whose lifetime is derived from semantic state, a public post-closure command API, behavior after Temporal retention deletion, cross-Run Update lookup, Continue-As-New, cancellation or failure classification, an external tombstone, or router/process atomicity.
+The experiment and graduated implementation do not establish behavior after Temporal retention deletion, cross-Run Update lookup, Continue-As-New, cancellation or failure classification, an external tombstone, router/process atomicity, or a production canonical-observation API.
 
-The next discriminator is an owner-approved lifecycle proposal with a typed three-way result:
+The implemented lifecycle exposes the approved typed three-way result:
 
 1. an accepted or recovered semantic command result;
 2. a known closed semantic Process with no matching accepted command;
 3. an unknown or no-longer-retained Process address.
-
-Implementation must then add a live race witness in which accepted handlers drain before Workflow completion and a late distinct command is classified outside the semantic outcome type.

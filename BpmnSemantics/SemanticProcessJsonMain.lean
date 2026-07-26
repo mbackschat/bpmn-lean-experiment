@@ -175,7 +175,8 @@ private def emittedScenarios : List Scenario :=
   , BpmnSemantics.UserTaskInteractionConformance.wrongActivationScenario
   , BpmnSemantics.UserTaskInteractionConformance.staleCompletionScenario
   , BpmnSemantics.ParallelForkJoinConformance.aThenBScenario
-  , BpmnSemantics.ParallelForkJoinConformance.bThenAScenario ]
+  , BpmnSemantics.ParallelForkJoinConformance.bThenAScenario
+  , BpmnSemantics.ParallelForkJoinConformance.staleAWhileBActiveScenario ]
 
 private def readDefinitionInputs (path : System.FilePath) :
     IO (List DefinitionInput) := do

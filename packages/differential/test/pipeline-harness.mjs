@@ -25,6 +25,7 @@ import {
   requireScenarioBinding,
 } from "../dist/index.js";
 import {
+  ProcessCommandResultKind,
   TemporalCompletionDelivery,
   TemporalScenarioRunner,
 } from "@bpmn-lean/temporal-adapter";
@@ -38,6 +39,11 @@ const temporalCacheDirectory = path.join(
 const leanExecutable = "emitSemanticProcessResults";
 const buildMs = Number.parseFloat(process.env.BPMN_PIPELINE_BUILD_MS ?? "");
 const buildMode = process.env.BPMN_PIPELINE_BUILD_MODE;
+
+const TemporalCaseRelation = Object.freeze({
+  ExactSemantic: "exactSemantic",
+  PostTerminalClosed: "postTerminalClosed",
+});
 
 function mutateOpenTaskActivation(result) {
   const running = runningObservation(result);
@@ -60,6 +66,25 @@ function omitOneParallelOpenTask(result) {
     throw new Error("two calibrated parallel User Tasks are required");
   }
   running.openUserTasks = running.openUserTasks.slice(0, 1);
+}
+
+function omitLiveSiblingAfterStaleRejection(result) {
+  const staleCommandIndex = result.trace.findIndex(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.Command &&
+      observation.commandId === "complete-stale-user-task-a",
+  );
+  const state = result.trace[staleCommandIndex + 1];
+  if (
+    staleCommandIndex < 0 ||
+    state?.kind !== CanonicalObservationKind.State ||
+    state.openUserTasks.length !== 1
+  ) {
+    throw new Error(
+      "stale parallel calibration requires one live sibling",
+    );
+  }
+  state.openUserTasks = [];
 }
 
 function runningObservation(result) {
@@ -90,8 +115,14 @@ function interactionCase(
       "scenarios/user-task-discovery-completion/process.bpmn",
     workflowIdPrefix: id,
     expectedWaitTraceLength: 3,
-    duplicateFirstCompletionUpdateId:
-      options.duplicateFirstCompletionUpdateId,
+    completionDelivery:
+      options.completionDelivery ??
+      TemporalCompletionDelivery.Ordered,
+    temporalRelation:
+      options.temporalRelation ??
+      TemporalCaseRelation.ExactSemantic,
+    duplicateFirstCompletion:
+      options.duplicateFirstCompletion === true,
     injectMutation: mutateOpenTaskActivation,
     expectedInjectedDisagreement: {
       kind: DisagreementKind.ObservationValue,
@@ -102,7 +133,7 @@ function interactionCase(
   });
 }
 
-function parallelCase(id, scenarioFile, evidenceFile) {
+function parallelCase(id, scenarioFile, evidenceFile, options = {}) {
   return Object.freeze({
     id,
     scenarioRelativePath:
@@ -112,13 +143,17 @@ function parallelCase(id, scenarioFile, evidenceFile) {
     bpmnRelativePath: "scenarios/parallel-fork-join/process.bpmn",
     workflowIdPrefix: id,
     expectedWaitTraceLength: 3,
-    injectMutation: omitOneParallelOpenTask,
-    expectedInjectedDisagreement: {
-      kind: DisagreementKind.ObservationValue,
-      path: "trace[2].openUserTasks.length",
-      expected: 2,
-      actual: 1,
-    },
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    injectMutation:
+      options.injectMutation ?? omitOneParallelOpenTask,
+    expectedInjectedDisagreement:
+      options.expectedInjectedDisagreement ?? {
+        kind: DisagreementKind.ObservationValue,
+        path: "trace[2].openUserTasks.length",
+        expected: 2,
+        actual: 1,
+      },
   });
 }
 
@@ -138,8 +173,9 @@ export const pipelineCases = Object.freeze([
     "stale-completion.scenario.json",
     "stale-completion.cibseven-evidence.json",
     {
-      duplicateFirstCompletionUpdateId:
-        "pipeline-duplicate-first-completion",
+      completionDelivery: TemporalCompletionDelivery.PostTerminal,
+      temporalRelation: TemporalCaseRelation.PostTerminalClosed,
+      duplicateFirstCompletion: true,
     },
   ),
   parallelCase(
@@ -151,6 +187,20 @@ export const pipelineCases = Object.freeze([
     "parallel-fork-join-b-then-a",
     "b-then-a.scenario.json",
     "b-then-a.cibseven-evidence.json",
+  ),
+  parallelCase(
+    "parallel-fork-join-stale-a-while-b-active",
+    "stale-a-while-b-active.scenario.json",
+    "stale-a-while-b-active.cibseven-evidence.json",
+    {
+      injectMutation: omitLiveSiblingAfterStaleRejection,
+      expectedInjectedDisagreement: {
+        kind: DisagreementKind.ObservationValue,
+        path: "trace[6].openUserTasks.length",
+        expected: 1,
+        actual: 0,
+      },
+    },
   ),
 ]);
 
@@ -421,11 +471,10 @@ function runCoreTargets(contexts) {
 function temporalOptions(pipelineCase, suffix) {
   const options = {
     workflowId: `${pipelineCase.workflowIdPrefix}-${suffix}`,
-    completionDelivery: TemporalCompletionDelivery.Ordered,
+    completionDelivery: pipelineCase.completionDelivery,
   };
-  if (pipelineCase.duplicateFirstCompletionUpdateId !== undefined) {
-    options.duplicateFirstCompletionUpdateId =
-      pipelineCase.duplicateFirstCompletionUpdateId;
+  if (pipelineCase.duplicateFirstCompletion) {
+    options.duplicateFirstCompletion = true;
   }
   return options;
 }
@@ -588,28 +637,82 @@ function compareCase(context, projectedTargets) {
     semanticCoreResult,
     temporalResult,
   } = projectedTargets;
+  const semanticCandidates = [
+    {
+      target: DifferentialTarget.Lean,
+      result: leanResult,
+    },
+    {
+      target: DifferentialTarget.SemanticCore,
+      result: semanticCoreResult,
+    },
+  ];
+  if (
+    pipelineCase.temporalRelation ===
+      TemporalCaseRelation.ExactSemantic
+  ) {
+    semanticCandidates.push({
+      target: DifferentialTarget.Temporal,
+      result: temporalResult.primary.result,
+    });
+  }
   // tag::four-target-comparison[]
   const comparison = compareTargetResults(
     {
       target: DifferentialTarget.CibSeven,
       result: canonicalCib,
     },
-    [
-      {
-        target: DifferentialTarget.Lean,
-        result: leanResult,
-      },
-      {
-        target: DifferentialTarget.SemanticCore,
-        result: semanticCoreResult,
-      },
-      {
-        target: DifferentialTarget.Temporal,
-        result: temporalResult.primary.result,
-      },
-    ],
+    semanticCandidates,
   );
   // end::four-target-comparison[]
+  const expectedTemporalPrefix =
+    pipelineCase.temporalRelation ===
+      TemporalCaseRelation.PostTerminalClosed
+      ? semanticPrefixThroughCompletion(semanticCoreResult)
+      : null;
+  const temporalPrefixComparison =
+    expectedTemporalPrefix === null
+      ? null
+      : compareTargetResults(
+          {
+            target: DifferentialTarget.SemanticCore,
+            result: expectedTemporalPrefix,
+          },
+          [
+            {
+              target: DifferentialTarget.Temporal,
+              result: temporalResult.primary.result,
+            },
+          ],
+        );
+  const expectedPostTerminalCommand =
+    pipelineCase.temporalRelation ===
+      TemporalCaseRelation.PostTerminalClosed
+      ? scenario.stimuli.at(-1)
+      : null;
+  const postTerminalResult =
+    temporalResult.primary.interactionEvidence.postTerminalResult;
+  if (
+    expectedPostTerminalCommand !== null &&
+    (
+      postTerminalResult?.kind !==
+        ProcessCommandResultKind.ProcessClosed ||
+      postTerminalResult.commandId !==
+        expectedPostTerminalCommand.commandId
+    )
+  ) {
+    throw new Error(
+      `Temporal did not classify ${expectedPostTerminalCommand.commandId} as processClosed`,
+    );
+  }
+  if (
+    expectedPostTerminalCommand === null &&
+    postTerminalResult !== null
+  ) {
+    throw new Error(
+      `Temporal returned an unexpected post-terminal result for ${scenario.id}`,
+    );
+  }
   const evidenceComparison = compareTargetResults(
     {
       target: DifferentialTarget.RetainedCibEvidence,
@@ -648,6 +751,12 @@ function compareCase(context, projectedTargets) {
         ? [observation.outcome]
         : [],
   );
+  if (
+    pipelineCase.temporalRelation ===
+      TemporalCaseRelation.PostTerminalClosed
+  ) {
+    expectedCompletionOutcomes.pop();
+  }
   const intermediateCompletionCommandIds = scenario.stimuli
     .slice(1, -1)
     .map(({ commandId }) => commandId);
@@ -687,6 +796,7 @@ function compareCase(context, projectedTargets) {
         cibRevision: scenario.provenance.cibRevision,
       },
       comparison,
+      temporalPrefixComparison,
       evidenceComparison,
       injectedDisagreement,
     },
@@ -701,10 +811,40 @@ function compareCase(context, projectedTargets) {
       isolationTemporalResult: temporalResult.isolation.result,
       temporalInteractionEvidence:
         temporalResult.primary.interactionEvidence,
+      expectedPostTerminalResultKind:
+        expectedPostTerminalCommand === null
+          ? null
+          : ProcessCommandResultKind.ProcessClosed,
       expectedCompletionOutcomes,
       expectedOpenUserTasksAfterCompletions,
       cibCleanup: cibResult.diagnostics.cleanup,
     },
+  };
+}
+
+function semanticPrefixThroughCompletion(result) {
+  const completedStateIndex = result.trace.findIndex(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Completed,
+  );
+  if (completedStateIndex < 1) {
+    throw new Error(
+      "Post-terminal relation requires one completed semantic prefix",
+    );
+  }
+  const finalCommand = result.trace[completedStateIndex - 1];
+  if (finalCommand?.kind !== CanonicalObservationKind.Command) {
+    throw new Error(
+      "Completed semantic prefix has no preceding command outcome",
+    );
+  }
+  return {
+    outcome: {
+      kind: "semantic",
+      outcome: finalCommand.outcome,
+    },
+    trace: result.trace.slice(0, completedStateIndex + 1),
   };
 }
 

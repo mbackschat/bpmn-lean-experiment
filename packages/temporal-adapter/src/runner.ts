@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { clearTimeout, setTimeout } from "node:timers";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import type {
   CanonicalObservation,
@@ -11,22 +12,41 @@ import type {
   Scenario,
   ScenarioResult,
   SemanticProcessProgram,
+  StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
-import { StimulusKind } from "@bpmn-lean/semantic-core";
-import type { WorkflowHandle } from "@temporalio/client";
+import {
+  CanonicalObservationKind,
+  ProcessStatus,
+  ScenarioOutcomeKind,
+  SemanticProcessCompilerId,
+  StimulusKind,
+  isWellFormedStimulus,
+  supportsSemanticProcessExecution,
+} from "@bpmn-lean/semantic-core";
+import {
+  WorkflowNotFoundError,
+  WorkflowUpdateStage,
+} from "@temporalio/client";
+import type {
+  WorkflowClient,
+  WorkflowHandle,
+} from "@temporalio/client";
 import { TestWorkflowEnvironment } from "@temporalio/testing";
 import { Worker } from "@temporalio/worker";
 
 import {
-  bpmnScenarioWorkflowType,
+  bpmnProcessWorkflowType,
   bpmnCompleteUserTaskUpdateName,
   bpmnOpenUserTasksQueryName,
   bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
   TemporalCompletionDelivery,
+  ProcessCommandResultKind,
 } from "./contracts.js";
 import type {
-  BpmnScenarioWorkflow,
+  BpmnProcessWorkflow,
+  CompletedProcessReceipt,
+  ProcessCommandResult,
   TemporalHistory,
   TemporalReplayItem,
   TemporalScenarioBatchItem,
@@ -35,6 +55,15 @@ import type {
   TemporalScenarioRunnerOptions,
   TemporalUserTaskInteractionEvidence,
 } from "./contracts.js";
+import {
+  contentBoundUpdateId,
+} from "./command-identity.js";
+import {
+  reconcileHarnessTraceEvidence,
+} from "./harness-evidence.js";
+import {
+  processWorkflowId,
+} from "./process-address.js";
 
 const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
 
@@ -50,7 +79,9 @@ const shutdownDeadlineMs = 10_000;
 type CompletionDeliveryEvidence = Omit<
   TemporalUserTaskInteractionEvidence,
   "openUserTasksAtWait"
->;
+> & Readonly<{
+  completedReceipt?: CompletedProcessReceipt;
+}>;
 
 export class TemporalScenarioRunner {
   private workerError: unknown;
@@ -123,13 +154,15 @@ export class TemporalScenarioRunner {
   ): Promise<TemporalScenarioExecution> {
     this.assertAvailable();
     validateExecutionOptions(scenario, options);
+    const start = requireStartStimulus(scenario);
     const handle = await withDeadline(
-      this.environment.client.workflow.start<BpmnScenarioWorkflow>(
-        bpmnScenarioWorkflowType,
+      this.environment.client.workflow.start<BpmnProcessWorkflow>(
+        bpmnProcessWorkflowType,
         {
           taskQueue: bpmnSemanticTaskQueue,
           workflowId: options.workflowId,
-          args: [scenario, semanticProcess],
+          workflowIdReusePolicy: "REJECT_DUPLICATE",
+          args: [start, semanticProcess],
         },
       ),
       operationDeadlineMs,
@@ -150,17 +183,42 @@ export class TemporalScenarioRunner {
       "Workflow open User Tasks Query",
     );
     const completions = requireCompletionStimuli(scenario);
-    const interaction = await this.deliverCompletions(
+    const delivery = await this.deliverCompletions(
       handle,
+      start.instanceId,
       completions,
       options,
     );
+    const {
+      completedReceipt,
+      ...interaction
+    } = delivery;
 
-    const result = await withDeadline(
-      handle.result(),
-      workflowResultDeadlineMs,
-      "Workflow result",
+    const trace = await withDeadline(
+      handle.query<ReadonlyArray<CanonicalObservation>>(
+        bpmnTraceQueryName,
+      ),
+      operationDeadlineMs,
+      "Workflow final trace Query",
     );
+    const result = scenarioResultFromTrace(trace);
+    const receipt = completedReceipt ??
+      (completedState(trace)
+        ? requireCompletedProcessReceipt(
+          await withDeadline(
+            handle.result(),
+            workflowResultDeadlineMs,
+            "Workflow completed receipt",
+          ),
+        )
+        : null);
+    if (receipt === null) {
+      await withDeadline(
+        handle.terminate("conformance scenario input exhausted"),
+        operationDeadlineMs,
+        "running conformance Workflow cleanup",
+      );
+    }
     const history = await withDeadline(
       handle.fetchHistory(),
       operationDeadlineMs,
@@ -169,6 +227,11 @@ export class TemporalScenarioRunner {
     if (!Array.isArray(history.events)) {
       throw new TypeError("Temporal history did not contain an events array");
     }
+    reconcileHarnessTraceEvidence(
+      trace,
+      receipt,
+      history as TemporalHistory,
+    );
 
     this.assertWorkerHealthy();
     return {
@@ -178,6 +241,7 @@ export class TemporalScenarioRunner {
         ...interaction,
       },
       result,
+      receipt,
       history: history as TemporalHistory,
     };
   }
@@ -272,7 +336,7 @@ export class TemporalScenarioRunner {
   }
 
   private async waitForTrace(
-    handle: WorkflowHandle<BpmnScenarioWorkflow>,
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
     minimumLength: number,
   ): Promise<ReadonlyArray<CanonicalObservation>> {
     let latestError: unknown;
@@ -301,7 +365,8 @@ export class TemporalScenarioRunner {
   }
 
   private async deliverCompletions(
-    handle: WorkflowHandle<BpmnScenarioWorkflow>,
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    processInstanceId: string,
     completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
     options: TemporalScenarioExecutionOptions,
   ): Promise<CompletionDeliveryEvidence> {
@@ -309,20 +374,40 @@ export class TemporalScenarioRunner {
       case TemporalCompletionDelivery.Ordered:
         return this.deliverOrderedCompletions(
           handle,
+          processInstanceId,
           completions,
-          options.duplicateFirstCompletionUpdateId,
+          options.duplicateFirstCompletion === true,
+        );
+      case TemporalCompletionDelivery.PostTerminal:
+        return this.deliverPostTerminalCompletion(
+          handle,
+          processInstanceId,
+          completions,
+          options.duplicateFirstCompletion === true,
+        );
+      case TemporalCompletionDelivery.AcceptedBatch:
+        return this.deliverAcceptedBatch(
+          handle,
+          processInstanceId,
+          completions,
+          options.duplicateFirstCompletion === true,
         );
       case TemporalCompletionDelivery.Concurrent:
-        return this.deliverConcurrentCompletions(handle, completions);
+        return this.deliverConcurrentCompletions(
+          processInstanceId,
+          completions,
+          options.workflowId,
+        );
       default:
         return assertNever(options.completionDelivery);
     }
   }
 
   private async deliverOrderedCompletions(
-    handle: WorkflowHandle<BpmnScenarioWorkflow>,
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    processInstanceId: string,
     completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
-    duplicateFirstCompletionUpdateId: string | undefined,
+    duplicateFirstCompletion: boolean,
   ): Promise<CompletionDeliveryEvidence> {
     const completionOutcomes: CommandOutcome[] = [];
     const openUserTasksAfterCompletions:
@@ -332,20 +417,26 @@ export class TemporalScenarioRunner {
     for (const [index, stimulus] of completions.entries()) {
       this.assertWorkerHealthy();
       completionOutcomes.push(
-        await executeCompletionUpdate(
-          handle,
-          stimulus,
-          stimulus.commandId,
+        requireSemanticOutcome(
+          await submitUserTaskCompletionAtWorkflowId(
+            this.environment.client.workflow,
+            handle.workflowId,
+            processInstanceId,
+            stimulus,
+          ),
         ),
       );
       if (
         index === 0 &&
-        duplicateFirstCompletionUpdateId !== undefined
+        duplicateFirstCompletion
       ) {
-        duplicateCompletionOutcome = await executeCompletionUpdate(
-          handle,
-          stimulus,
-          duplicateFirstCompletionUpdateId,
+        duplicateCompletionOutcome = requireSemanticOutcome(
+          await submitUserTaskCompletionAtWorkflowId(
+            this.environment.client.workflow,
+            handle.workflowId,
+            processInstanceId,
+            stimulus,
+          ),
         );
       }
       if (index < completions.length - 1) {
@@ -365,20 +456,127 @@ export class TemporalScenarioRunner {
       openUserTasksAfterCompletions,
       completionOutcomes,
       duplicateCompletionOutcome,
+      postTerminalResult: null,
+    };
+  }
+
+  private async deliverPostTerminalCompletion(
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    processInstanceId: string,
+    completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+    duplicateFirstCompletion: boolean,
+  ): Promise<CompletionDeliveryEvidence> {
+    const postTerminalStimulus = completions.at(-1);
+    if (postTerminalStimulus === undefined) {
+      throw new TypeError(
+        "Post-terminal delivery requires one command after semantic completion",
+      );
+    }
+    const semanticCompletions = completions.slice(0, -1);
+    const delivered = await this.deliverOrderedCompletions(
+      handle,
+      processInstanceId,
+      semanticCompletions,
+      duplicateFirstCompletion,
+    );
+    const completedReceipt = requireCompletedProcessReceipt(
+      await withDeadline(
+        handle.result(),
+        workflowResultDeadlineMs,
+        "Workflow completed receipt before post-terminal command",
+      ),
+    );
+    const postTerminalResult = await submitUserTaskCompletionAtWorkflowId(
+      this.environment.client.workflow,
+      handle.workflowId,
+      processInstanceId,
+      postTerminalStimulus,
+    );
+    if (
+      postTerminalResult.kind !==
+        ProcessCommandResultKind.ProcessClosed ||
+      !isDeepStrictEqual(
+        postTerminalResult.receipt,
+        completedReceipt,
+      )
+    ) {
+      throw new Error(
+        `Post-terminal command ${postTerminalStimulus.commandId} did not resolve against the completed Process receipt`,
+      );
+    }
+    return {
+      ...delivered,
+      openUserTasksAfterCompletions: [
+        ...delivered.openUserTasksAfterCompletions,
+        completedReceipt.finalState.openUserTasks,
+      ],
+      postTerminalResult,
+      completedReceipt,
+    };
+  }
+
+  private async deliverAcceptedBatch(
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    processInstanceId: string,
+    completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+    duplicateFirstCompletion: boolean,
+  ): Promise<CompletionDeliveryEvidence> {
+    // Every request is in flight before an acceptance response is awaited. Temporal may receive these concurrent requests in a different order, so this is an acceptance-race discriminator rather than an ordering guarantee.
+    const updateHandlePromises = completions.map((stimulus) =>
+      handle.startUpdate<
+        CommandOutcome,
+        [CompleteUserTaskInstanceStimulus]
+      >(bpmnCompleteUserTaskUpdateName, {
+        args: [stimulus],
+        updateId: contentBoundUpdateId(stimulus),
+        waitForStage: WorkflowUpdateStage.ACCEPTED,
+      })
+    );
+    const updateHandles = await Promise.all(updateHandlePromises);
+    const completionOutcomes = await Promise.all(
+      updateHandles.map((updateHandle) =>
+        withDeadline(
+          updateHandle.result(),
+          operationDeadlineMs,
+          `Workflow accepted Update ${updateHandle.updateId}`,
+        )
+      ),
+    );
+    let duplicateCompletionOutcome: CommandOutcome | null = null;
+    const first = completions[0];
+    if (duplicateFirstCompletion && first !== undefined) {
+      duplicateCompletionOutcome = requireSemanticOutcome(
+        await submitUserTaskCompletionAtWorkflowId(
+          this.environment.client.workflow,
+          handle.workflowId,
+          processInstanceId,
+          first,
+        ),
+      );
+    }
+    return {
+      openUserTasksAfterCompletions: [],
+      completionOutcomes,
+      duplicateCompletionOutcome,
+      postTerminalResult: null,
     };
   }
 
   private async deliverConcurrentCompletions(
-    handle: WorkflowHandle<BpmnScenarioWorkflow>,
+    processInstanceId: string,
     completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+    workflowId: string,
   ): Promise<CompletionDeliveryEvidence> {
     const completionOutcomes = await Promise.all(
       completions.map((stimulus) => {
         this.assertWorkerHealthy();
-        return executeCompletionUpdate(
-          handle,
+        return submitUserTaskCompletionAtWorkflowId(
+          this.environment.client.workflow,
+          workflowId,
+          processInstanceId,
           stimulus,
-          stimulus.commandId,
+        ).then(
+          requireSemanticOutcome,
         );
       }),
     );
@@ -386,6 +584,7 @@ export class TemporalScenarioRunner {
       openUserTasksAfterCompletions: [],
       completionOutcomes,
       duplicateCompletionOutcome: null,
+      postTerminalResult: null,
     };
   }
 
@@ -432,22 +631,143 @@ async function replayHistoryBatch(
   }
 }
 
-async function executeCompletionUpdate(
-  handle: WorkflowHandle<BpmnScenarioWorkflow>,
-  stimulus: CompleteUserTaskInstanceStimulus,
-  updateId: string,
-): Promise<CommandOutcome> {
+export async function startBpmnProcess(
+  client: WorkflowClient,
+  start: StartProcessStimulus,
+  semanticProcess: SemanticProcessProgram,
+): Promise<WorkflowHandle<BpmnProcessWorkflow>> {
+  if (!supportsSemanticProcessExecution(start, semanticProcess)) {
+    throw new TypeError(
+      "Workflow start requires one admitted Semantic Process execution",
+    );
+  }
   return withDeadline(
-    handle.executeUpdate<
-      CommandOutcome,
-      [CompleteUserTaskInstanceStimulus]
-    >(bpmnCompleteUserTaskUpdateName, {
-      args: [stimulus],
-      updateId,
-    }),
+    client.start<BpmnProcessWorkflow>(
+      bpmnProcessWorkflowType,
+      {
+        taskQueue: bpmnSemanticTaskQueue,
+        workflowId: processWorkflowId(start.instanceId),
+        workflowIdReusePolicy: "REJECT_DUPLICATE",
+        args: [start, semanticProcess],
+      },
+    ),
     operationDeadlineMs,
-    `Workflow Update ${updateId}`,
+    "Process Workflow start",
   );
+}
+
+export async function submitUserTaskCompletion(
+  client: WorkflowClient,
+  processInstanceId: string,
+  stimulus: CompleteUserTaskInstanceStimulus,
+): Promise<ProcessCommandResult> {
+  return submitUserTaskCompletionAtWorkflowId(
+    client,
+    processWorkflowId(processInstanceId),
+    processInstanceId,
+    stimulus,
+  );
+}
+
+async function submitUserTaskCompletionAtWorkflowId(
+  client: WorkflowClient,
+  workflowId: string,
+  processInstanceId: string,
+  stimulus: CompleteUserTaskInstanceStimulus,
+): Promise<ProcessCommandResult> {
+  if (
+    !isWellFormedStimulus(stimulus) ||
+    stimulus.kind !== StimulusKind.CompleteUserTaskInstance ||
+    stimulus.taskId.processInstanceId !== processInstanceId
+  ) {
+    throw new TypeError(
+      "Completion command must be well-formed and address the named Process instance",
+    );
+  }
+  const updateId = contentBoundUpdateId(stimulus);
+  const handle = client.getHandle<BpmnProcessWorkflow>(workflowId);
+  try {
+    const outcome = await withDeadline(
+      handle.executeUpdate<
+        CommandOutcome,
+        [CompleteUserTaskInstanceStimulus]
+      >(bpmnCompleteUserTaskUpdateName, {
+        args: [stimulus],
+        updateId,
+      }),
+      operationDeadlineMs,
+      `Workflow Update ${updateId}`,
+    );
+    return semanticCommandResult(stimulus.commandId, outcome);
+  } catch (error: unknown) {
+    if (!(error instanceof WorkflowNotFoundError)) {
+      throw error;
+    }
+  }
+
+  try {
+    const retainedOutcome = await withDeadline(
+      handle.getUpdateHandle<CommandOutcome>(updateId).result(),
+      operationDeadlineMs,
+      `retained Workflow Update ${updateId}`,
+    );
+    return semanticCommandResult(stimulus.commandId, retainedOutcome);
+  } catch (error: unknown) {
+    if (!(error instanceof WorkflowNotFoundError)) {
+      throw error;
+    }
+  }
+
+  try {
+    const receipt = requireCompletedProcessReceipt(
+      await withDeadline(
+        handle.result(),
+        operationDeadlineMs,
+        "retained completed Process receipt",
+      ),
+    );
+    if (receipt.processInstanceId !== processInstanceId) {
+      throw new TypeError(
+        "Temporal Workflow receipt does not match the addressed Process instance",
+      );
+    }
+    return {
+      kind: ProcessCommandResultKind.ProcessClosed,
+      commandId: stimulus.commandId,
+      receipt,
+    };
+  } catch (error: unknown) {
+    if (error instanceof WorkflowNotFoundError) {
+      return {
+        kind: ProcessCommandResultKind.ProcessUnknown,
+        commandId: stimulus.commandId,
+        processInstanceId,
+      };
+    }
+    throw error;
+  }
+}
+
+function semanticCommandResult(
+  commandId: string,
+  outcome: CommandOutcome,
+): ProcessCommandResult {
+  return {
+    kind: ProcessCommandResultKind.Semantic,
+    commandId,
+    outcome,
+  };
+}
+
+function requireSemanticOutcome(
+  result: ProcessCommandResult,
+): CommandOutcome {
+  if (result.kind !== ProcessCommandResultKind.Semantic) {
+    throw new Error(
+      `Conformance command ${result.commandId} was not accepted before Process closure`,
+    );
+  }
+  return result.outcome;
 }
 
 function validateExecutionOptions(
@@ -456,9 +776,17 @@ function validateExecutionOptions(
 ): void {
   switch (options.completionDelivery) {
     case TemporalCompletionDelivery.Ordered:
+    case TemporalCompletionDelivery.AcceptedBatch:
+      break;
+    case TemporalCompletionDelivery.PostTerminal:
+      if (requireCompletionStimuli(scenario).length < 2) {
+        throw new TypeError(
+          "Post-terminal delivery requires a semantic completion followed by a distinct command",
+        );
+      }
       break;
     case TemporalCompletionDelivery.Concurrent:
-      if (options.duplicateFirstCompletionUpdateId !== undefined) {
+      if (options.duplicateFirstCompletion === true) {
         throw new TypeError(
           "Concurrent completion delivery cannot also duplicate one completion",
         );
@@ -469,12 +797,8 @@ function validateExecutionOptions(
         `Unsupported completion delivery: ${String(options.completionDelivery)}`,
       );
   }
-  const duplicateUpdateId = options.duplicateFirstCompletionUpdateId;
-  if (duplicateUpdateId === undefined) {
+  if (options.duplicateFirstCompletion !== true) {
     return;
-  }
-  if (duplicateUpdateId.length === 0) {
-    throw new TypeError("Duplicate completion Update ID must be non-empty");
   }
   const firstCompletion = scenario.stimuli
     .slice(1)
@@ -485,11 +809,6 @@ function validateExecutionOptions(
   if (firstCompletion === undefined) {
     throw new TypeError(
       "Duplicate completion requires a task-instance completion stimulus",
-    );
-  }
-  if (duplicateUpdateId === firstCompletion.commandId) {
-    throw new TypeError(
-      "Duplicate completion probe requires a distinct Temporal Update ID",
     );
   }
 }
@@ -509,6 +828,136 @@ function requireCompletionStimuli(
         return assertNever(stimulus);
     }
   });
+}
+
+function requireStartStimulus(scenario: Scenario): StartProcessStimulus {
+  const start = scenario.stimuli[0];
+  if (
+    start === undefined ||
+    start.kind !== StimulusKind.StartProcess
+  ) {
+    throw new TypeError(
+      "Temporal Process execution requires one explicit start stimulus",
+    );
+  }
+  return start;
+}
+
+function scenarioResultFromTrace(
+  trace: ReadonlyArray<CanonicalObservation>,
+): ScenarioResult {
+  const finalCommand = trace.findLast(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.Command,
+  );
+  if (
+    finalCommand === undefined ||
+    finalCommand.kind !== CanonicalObservationKind.Command
+  ) {
+    throw new Error(
+      "Workflow trace has no semantic command result",
+    );
+  }
+  return {
+    outcome: {
+      kind: ScenarioOutcomeKind.Semantic,
+      outcome: finalCommand.outcome,
+    },
+    trace,
+  };
+}
+
+function completedState(
+  trace: ReadonlyArray<CanonicalObservation>,
+): boolean {
+  return trace.some(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Completed,
+  );
+}
+
+export function isCompletedProcessReceipt(
+  value: unknown,
+): value is CompletedProcessReceipt {
+  if (!isRecord(value) || !hasOnlyKeys(value, [
+    "definition",
+    "processId",
+    "processInstanceId",
+    "finalState",
+  ])) {
+    return false;
+  }
+  const definition = value.definition;
+  const finalState = value.finalState;
+  return (
+    isRecord(definition) &&
+    hasOnlyKeys(definition, [
+      "compiler",
+      "semanticProfile",
+      "sourceId",
+      "sourceSha256",
+    ]) &&
+    definition.compiler ===
+      SemanticProcessCompilerId.BpmnSourceSemanticProcess &&
+    isNonEmptyString(definition.semanticProfile) &&
+    isNonEmptyString(definition.sourceId) &&
+    typeof definition.sourceSha256 === "string" &&
+    /^[a-f0-9]{64}$/u.test(definition.sourceSha256) &&
+    isNonEmptyString(value.processId) &&
+    isNonEmptyString(value.processInstanceId) &&
+    isRecord(finalState) &&
+    hasOnlyKeys(finalState, [
+      "kind",
+      "instanceId",
+      "status",
+      "activeWaits",
+      "openUserTasks",
+      "enabledInteractions",
+      "logicalTimeMs",
+    ]) &&
+    finalState.kind === CanonicalObservationKind.State &&
+    finalState.instanceId === value.processInstanceId &&
+    finalState.status === ProcessStatus.Completed &&
+    Array.isArray(finalState.activeWaits) &&
+    finalState.activeWaits.length === 0 &&
+    Array.isArray(finalState.openUserTasks) &&
+    finalState.openUserTasks.length === 0 &&
+    Array.isArray(finalState.enabledInteractions) &&
+    finalState.enabledInteractions.length === 0 &&
+    Number.isSafeInteger(finalState.logicalTimeMs) &&
+    Number(finalState.logicalTimeMs) >= 0
+  );
+}
+
+function requireCompletedProcessReceipt(
+  value: unknown,
+): CompletedProcessReceipt {
+  if (!isCompletedProcessReceipt(value)) {
+    throw new TypeError(
+      "Temporal Workflow returned a malformed completed Process receipt",
+    );
+  }
+  return value;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  keys: ReadonlyArray<string>,
+): boolean {
+  const allowed = new Set(keys);
+  return (
+    Object.keys(value).length === allowed.size &&
+    Object.keys(value).every((key) => allowed.has(key))
+  );
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
 }
 
 function assertNever(value: never): never {

@@ -19,8 +19,10 @@ import {
 } from "@bpmn-lean/semantic-core";
 
 import {
+  ProcessCommandResultKind,
   TemporalCompletionDelivery,
   TemporalScenarioRunner,
+  isCompletedProcessReceipt,
 } from "../dist/index.js";
 
 const capsuleUrl = new URL(
@@ -166,7 +168,10 @@ function assertExactCompletionUpdateHistory(
   );
   const workflowInputs =
     started.workflowExecutionStartedEventAttributes.input.payloads;
-  assert.deepEqual(decodeJsonPayload(workflowInputs[0]), scenario);
+  assert.deepEqual(
+    decodeJsonPayload(workflowInputs[0]),
+    scenario.stimuli[0],
+  );
   assert.deepEqual(decodeJsonPayload(workflowInputs[1]), semanticProcess);
 
   const acceptedAttributes =
@@ -199,12 +204,14 @@ function assertExactCompletionUpdateHistory(
     history,
     "workflowExecutionCompletedEventAttributes",
   );
-  assert.deepEqual(
-    decodeJsonPayload(
-      workflowCompleted.workflowExecutionCompletedEventAttributes
-        .result.payloads[0],
+  assert.equal(
+    isCompletedProcessReceipt(
+      decodeJsonPayload(
+        workflowCompleted.workflowExecutionCompletedEventAttributes
+          .result.payloads[0],
+      ),
     ),
-    runScenario(scenario, semanticProcess),
+    true,
   );
 }
 
@@ -292,6 +299,22 @@ function stateObservations(result) {
   );
 }
 
+function semanticPrefixThroughCompletion(result) {
+  const completedStateIndex = result.trace.findIndex(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === "completed",
+  );
+  assert.notEqual(completedStateIndex, -1);
+  return {
+    outcome: {
+      kind: "semantic",
+      outcome: CommandOutcome.Committed,
+    },
+    trace: result.trace.slice(0, completedStateIndex + 1),
+  };
+}
+
 function completionCommandOrder(result) {
   return result.trace.flatMap((observation) =>
     observation.kind === CanonicalObservationKind.Command &&
@@ -374,9 +397,11 @@ test("one clean server executes, captures, and replays the current capsule", asy
       semanticProcess,
       options: {
         workflowId: `user-task-batch-${index}`,
-        completionDelivery: TemporalCompletionDelivery.Ordered,
-        duplicateFirstCompletionUpdateId:
-          index === 2 ? "duplicate-first-completion-transport" : undefined,
+        completionDelivery:
+          index === 2
+            ? TemporalCompletionDelivery.PostTerminal
+            : TemporalCompletionDelivery.Ordered,
+        duplicateFirstCompletion: index === 2,
       },
     }),
   );
@@ -403,13 +428,17 @@ test("one clean server executes, captures, and replays the current capsule", asy
     const completionCommandIds = new Set(
       input.scenario.stimuli.slice(1).map(({ commandId }) => commandId),
     );
-    const expectedCompletionOutcomes = semanticCoreResult.trace.flatMap(
+    const allExpectedCompletionOutcomes = semanticCoreResult.trace.flatMap(
       (observation) =>
         observation.kind === CanonicalObservationKind.Command &&
         completionCommandIds.has(observation.commandId)
           ? [observation.outcome]
           : [],
     );
+    const expectedCompletionOutcomes =
+      index === 2
+        ? allExpectedCompletionOutcomes.slice(0, -1)
+        : allExpectedCompletionOutcomes;
 
     assert.notEqual(waitingState, undefined);
     assert.deepEqual(
@@ -428,7 +457,31 @@ test("one clean server executes, captures, and replays the current capsule", asy
       execution.interactionEvidence.duplicateCompletionOutcome,
       index === 2 ? CommandOutcome.Committed : null,
     );
-    assert.deepEqual(execution.result, semanticCoreResult);
+    assert.deepEqual(
+      execution.result,
+      index === 2
+        ? semanticPrefixThroughCompletion(semanticCoreResult)
+        : semanticCoreResult,
+    );
+    assert.equal(
+      execution.interactionEvidence.postTerminalResult?.kind ?? null,
+      index === 2
+        ? ProcessCommandResultKind.ProcessClosed
+        : null,
+    );
+    if (index === 2) {
+      assert.equal(
+        execution.interactionEvidence.postTerminalResult.commandId,
+        input.scenario.stimuli.at(-1).commandId,
+      );
+    }
+    assert.equal(
+      execution.receipt === null,
+      index === 1,
+    );
+    if (execution.receipt !== null) {
+      assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+    }
     assert.deepEqual(
       collectTemporalIdentities(execution.history),
       new Set([expectedTemporalIdentity]),
@@ -444,6 +497,37 @@ test("one clean server executes, captures, and replays the current capsule", asy
     ),
     10_000,
     "current history batch replay",
+  );
+});
+
+test("concurrent distinct commands retain an unordered completion race witness", async () => {
+  const input = await loadExecutionInput(scenarioUrls[2]);
+  const execution = await withDeadline(
+    runner.runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "user-task-concurrent-race",
+      completionDelivery: TemporalCompletionDelivery.AcceptedBatch,
+    }),
+    15_000,
+    "User Task concurrent completion race",
+  );
+
+  assert.deepEqual(
+    [...execution.interactionEvidence.completionOutcomes].sort(),
+    [CommandOutcome.Committed, CommandOutcome.Rejected].sort(),
+  );
+  const terminalStates = stateObservations(execution.result).slice(-2);
+  assert.equal(terminalStates.length, 2);
+  assert.deepEqual(terminalStates[0], terminalStates[1]);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+  assertUpdatesCompleteBeforeWorkflow(execution.history, 2);
+
+  await withDeadline(
+    runner.replayHistory(
+      execution.history,
+      "user-task-concurrent-race-replay",
+    ),
+    10_000,
+    "User Task concurrent race history replay",
   );
 });
 
@@ -465,8 +549,7 @@ test("parallel waits and both completion orders refine through Query, Update, an
         options: {
           workflowId: `parallel-ordered-${index}`,
           completionDelivery: TemporalCompletionDelivery.Ordered,
-          duplicateFirstCompletionUpdateId:
-            index === 0 ? "duplicate-first-parallel-completion" : undefined,
+          duplicateFirstCompletion: index === 0,
         },
       })),
     ),
@@ -499,9 +582,10 @@ test("parallel waits and both completion orders refine through Query, Update, an
       index === 0 ? CommandOutcome.Committed : null,
     );
     assert.deepEqual(execution.result, expected);
+    assert.equal(isCompletedProcessReceipt(execution.receipt), true);
     assertUpdatesCompleteBeforeWorkflow(
       execution.history,
-      index === 0 ? 3 : 2,
+      2,
     );
   }
 
@@ -553,6 +637,7 @@ test("concurrent parallel completion submission realizes and replays one permitt
     completionCommandOrder(execution.result),
   );
   assertUpdatesCompleteBeforeWorkflow(execution.history, 2);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
 
   await withDeadline(
     runner.replayHistory(execution.history, "parallel-concurrent"),

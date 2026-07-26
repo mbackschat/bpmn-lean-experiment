@@ -68,7 +68,7 @@ The preflight must identify each semantic stimulus, wait, timer, subscription, e
 
 The gate:
 
-- validates the two current draft profiles, five answer-free scenarios, canonical results, CIB evidence, checked BPMN graph, and Semantic Process program shapes with Ajv Draft 2020-12;
+- validates the two current draft profiles, six answer-free scenarios, canonical results, CIB evidence, checked BPMN graph, and Semantic Process program shapes with Ajv Draft 2020-12;
 - requires stable document kinds and no embedded format counters;
 - verifies scenario/profile SHA-256 bindings in retained CIB evidence;
 - requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
@@ -80,10 +80,10 @@ Retained CIB evidence is verifier-only. Target runners never receive it, and ord
 Replacing retained CIB evidence is an explicit content-bound operation:
 
 ```sh
-./scripts/pnpm.sh run replace:cib-evidence -- --replace
+./scripts/pnpm.sh run replace:cib-evidence
 ```
 
-The replacement command refuses to run without the exact opt-in, executes all five answer-free scenarios through the pinned runner, verifies cleanup and producer identity, and rewrites only their retained CIB evidence. Every new evidence projection must first gain a meaningful verifier mutation.
+The package script supplies the exact `--replace` opt-in to the underlying replacement program. The program refuses direct execution without that flag, executes all six answer-free scenarios through the pinned runner, verifies cleanup and producer identity, and rewrites only their retained CIB evidence. Every new evidence projection must first gain a meaningful verifier mutation.
 
 ## Current Lean and semantic-core gate
 
@@ -115,9 +115,9 @@ The semantic core tests structural program/scenario admission, pure state transi
 ./scripts/test-cibseven-oracle.sh
 ```
 
-The Java 21 runner deploys exact BPMN, starts a Process, queries active tasks, completes or refuses requested semantic occurrences, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, stale-completion, parallel A-then-B, and parallel B-then-A cases share one warm engine through the persistent JSON-lines boundary. The multiple-task projector sorts distinct semantic occurrences independently of engine query order and preserves per-element active-wait multiplicity; repeated live instances of one BPMN element remain rejected because activation-ordinal derivation is outside the bounded profile. A bounded consistency probe captures a generated task ID, completes it, and requires pinned CIB Seven to reject that same host ID after it ceases to be live. A separate schema-valid research probe sends two executions through one Parallel Gateway incoming flow while the other incoming branch remains at a User Task and requires the observed downstream activation recorded by candidate `CIB-DEV-0001`.
+The Java 21 runner deploys exact BPMN, starts a Process, queries active tasks, completes or refuses requested semantic occurrences, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, sequential stale-completion, parallel A-then-B, parallel B-then-A, and parallel live-sibling stale cases share one warm engine through the persistent JSON-lines boundary. The multiple-task projector sorts distinct semantic occurrences independently of engine query order and preserves per-element active-wait multiplicity; repeated live instances of one BPMN element remain rejected because activation-ordinal derivation is outside the bounded profile. A bounded consistency probe captures a generated task ID, completes it, and requires pinned CIB Seven to reject that same host ID after it ceases to be live. A separate schema-valid research probe sends two executions through one Parallel Gateway incoming flow while the other incoming branch remains at a User Task and requires the observed downstream activation recorded by candidate `CIB-DEV-0001`.
 
-PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw task-query snapshots are retained as producer observations, while the evidence verifier independently reconstructs the canonical task projection and includes a mutation that drops one observed parallel task. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated engine cleanup.
+PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw task-query snapshots are retained as producer observations, while the evidence verifier independently reconstructs the canonical task projection and includes mutations that drop one initial parallel task or the live B sibling after stale A. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated engine cleanup.
 
 ## Current Temporal gate
 
@@ -125,11 +125,11 @@ PVM definition data remains diagnostic. Generated engine IDs are excluded from c
 ./scripts/pnpm.sh run test:temporal
 ```
 
-The gate starts fresh in-memory Temporal servers, compiles exact BPMN before Workflow start, runs all three retained sequential scenarios plus focused parallel probes, compares Query projections, Update outcomes, and final results with the pure core, checks duplicate logical delivery, and shuts each server down after replaying every fetched history. The parallel probes require both simultaneous waits, A-then-B and B-then-A with exact intermediate Query projections, duplicate stability, concurrent client submission realizing one permitted history order, and every Update completion event before Workflow completion. The production-lifecycle experiment stops the first Worker at the semantic wait, resumes through a replacement Worker, retrieves the accepted command result after closure, proves same-Update-ID payload aliasing, requires a conflicting command ID under a distinct Update ID to fail as `BpmnCommandIdentityConflict` without failing the Workflow Task, rejects a distinct late command and Workflow-ID reuse, verifies identity separation, and replays the resulting history.
+The gate starts fresh in-memory Temporal servers, compiles exact BPMN before Workflow start, and runs the semantic-lifetime Workflow over all three retained sequential scenarios plus the parallel completion-order and live-sibling probes. It checks canonical typed stimulus encoding, SHA-256 content-bound Update IDs, collision-resistant Process-address Workflow IDs, duplicate logical delivery, accepted-handler draining, typed adapter lifecycle results, retained-Update-first recovery, Query evidence reconciliation, and replay before cleanup.
 
-The current Workflow is a finite conformance-scenario host: it receives the answer-free scenario and uses the scripted stimulus count as a harness lifetime bound. This lets the stale-completion case reach the semantic core after semantic Process completion. It does not establish how a production adapter returns a typed semantic outcome for a command addressed after the hosting Workflow has closed. That lifecycle mapping remains an explicit preflight blocker rather than an implicit production claim.
+The sequential stale schedule awaits the completed receipt before submitting the distinct stale command. The gate requires CIB Seven, Lean, and the pure core to retain exact semantic rejection, Temporal to agree exactly through semantic completion, and the adapter to return `processClosed` separately. The parallel live-sibling schedule completes A and then repeats A while B remains active, requiring exact four-target semantic rejection. A retained concurrent same-occurrence race asserts one committed and one rejected result with identical final state without pinning the winner.
 
-The Workflow must enqueue its admitted start stimulus before registering externally addressable handlers. Update handlers may run as soon as they are registered, including during replay after Worker restart; the focused restart witness guards against completion overtaking start.
+The Workflow must enqueue its admitted start stimulus before registering externally addressable handlers. Update handlers may run as soon as they are registered, including during replay after Worker restart; the focused restart witness guards against completion overtaking start. The harness-only post-completion Query trace must reconcile every completion-command outcome with its completed Update result in Event History and its terminal state with the validated completed receipt. A failed Update is classified as harness infrastructure failure rather than parsed as a malformed semantic outcome. The start command is excluded from durable Update-result reconciliation because it is a Workflow argument rather than an Update. Intermediate Query state remains independently checked against the core and does not become the production observation API.
 
 No Event History fixture is committed. No legacy IR reader, Workflow patch branch, or format migration path exists during pre-release. The pre-release infrastructure guard locks this policy.
 

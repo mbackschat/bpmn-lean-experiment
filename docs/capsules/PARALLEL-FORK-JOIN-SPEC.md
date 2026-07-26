@@ -2,7 +2,7 @@
 
 ## Status
 
-**Evidence-closed draft contract.** The bounded normative profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced CIB observations, focused Temporal refinement/replay witnesses, and five-case four-target differential implement this capsule. The status is draft because no immutable compatibility profile or production Temporal lifecycle is approved.
+**Evidence-closed draft contract.** The bounded normative profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced and live-sibling CIB observations, production-lifecycle Temporal refinement/replay witnesses, and six-case differential implement this capsule. The status is draft because no immutable compatibility profile is approved.
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
@@ -26,6 +26,8 @@ The observation agrees with the pinned source implementation, which compares the
 
 The balanced A-then-B and B-then-A scenarios now have immutable content-bound raw task-query observations, a mutation-sensitive canonical projection, and exact pinned-CIB final agreement with the normative account. Those positive cases establish `CIB-AGR-0003`; they cannot separate per-incoming-flow semantics from the pinned engine's arrival-count behavior because both accounts agree on balanced input. The classification remains candidate rather than confirmed because the duplicate-left/no-right research probe itself is not yet an answer-free immutable evidence artifact with the complete compatibility-impact treatment. Parser and fixture-shape explanations are excluded by BPMN 2.0.2 XSD validation and the exact engine observation; task-query ordering and project canonicalization cannot explain whether `User_After_Join` exists.
 
+The retained [live-sibling stale evidence](../../scenarios/parallel-fork-join/stale-a-while-b-active.cibseven-evidence.json) is bound to the exact third answer-free scenario and the unchanged parallel profile. CIB engine observations establish that A is no longer live after its real completion while B remains live before and after the stale A attempt; structured occurrence identity and canonical sorting remain adapter-derived through `CIB-OP-0001`. The profile names `CIB-AGR-0002` and `CIB-OP-0001` for this User Task behavior. A seeded projection mutation removes B after the stale attempt and must fail, so the retained evidence is sensitive to the live-sibling fact rather than only to rejection.
+
 ## Approved semantic rules
 
 The identifiers below are stable traceability labels for the maintained propositions.
@@ -38,6 +40,7 @@ The identifiers below are stable traceability labels for the maintained proposit
 | `PAR-JOIN-CONSUME-01` | One join activation consumes exactly one token from each incoming Sequence Flow, retains every excess offered token, and offers exactly one token on each outgoing Sequence Flow. |
 | `PAR-ORDER-01` | Completing A then B and completing B then A reach equivalent final stable state and canonical state observation; their command traces are not byte-identical because submitted command order and the intermediate remaining task differ. |
 | `PAR-PROJECT-01` | Canonical task and enabled-interaction arrays use semantic order `(processInstanceId, elementId, activation)`; `activeWaits` is grouped per `(kind, elementId)` and preserves multiplicity within that element. Internal tokens or partial join offers are absent from the stable canonical state projection. |
+| `UTASK-REFUSE-02` | Repeating completion for A under a distinct semantic command ID after A completed is rejected without reactivation while B keeps the Process semantically active. This is the unchanged User Task proposition owned by the [User Task capsule](USER-TASK-INTERACTION-SPEC.md). |
 
 The contract intentionally says “equivalent final stable state and canonical state observation,” not “identical traces.” The first completion is a committed command boundary and therefore produces an observable stable running state. That state exposes the one remaining open task and its enabled completion interaction, but not the completed branch's hidden offer at the join.
 
@@ -65,6 +68,13 @@ Let the admitted Process instance be `Instance_1`, the two User Task element IDs
 - The join has not fired and the Process has not completed.
 
 The B-first case is symmetric, with only A remaining.
+
+### Stable state after stale A while B remains active
+
+- A has completed and only B remains open.
+- A distinct completion command for occurrence `(Instance_1, User_A, 1)` is `rejected`.
+- The running state before and after rejection is identical: B remains the only open task and enabled completion interaction.
+- Because the Process is still semantically active, ordinary sequential Temporal Update ingress reaches the semantic core and returns the same semantic rejection as CIB Seven, Lean, and the TypeScript core.
 
 ### Stable state after completing both
 
@@ -144,6 +154,7 @@ Maintained negative and mutation evidence includes:
 - erasing parallel control-place incoming-flow provenance is rejected by Lean's lowering-equality gate;
 - reversing CIB task-query order leaves the canonical result unchanged;
 - omitting one of the distinct projected tasks makes the CIB evidence projection and four-target comparison fail;
+- removing live sibling B from the post-stale CIB projection makes the content-bound evidence guard fail;
 - the stable intermediate observations demonstrate that a partial join offer does not enter canonical state;
 - changing the admitted executable topology without changing the scenario is detected by the Lean input binding.
 
@@ -157,14 +168,15 @@ The cells below remain distinct claims. CIB's balanced positive cases do not est
 | `PAR-WAIT-01` | [Observable start contract](#stable-state-after-start) | Exact wait multiplicities, activation-order observation equality, and bounded closure in [SemanticProcess.lean](../../BpmnSemantics/SemanticProcess.lean) | Raw task queries are independently projected into two sorted semantic tasks | Exact two-wait state and projection tests | Query returns both waits without Workflow-owned task semantics | Dropped raw CIB task and omitted four-target task both fail |
 | `PAR-JOIN-READY-01` | BPMN per-incoming-flow rule in [source basis](#source-basis) | `duplicate_left_no_right_non_law` | Balanced evidence is positive calibration only; the separate [bounded negative probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.java) records candidate `CIB-DEV-0001` | Duplicate-left/no-right test rejects count-only readiness | No host counter or handler order triggers the join | Parallel provenance erasure is rejected; the CIB negative probe separates the pinned engine |
 | `PAR-JOIN-CONSUME-01` | Exact consumption and excess-retention rule in [source basis](#source-basis) | `synchronize_consumes_per_incoming_and_preserves_excess` | Balanced cases establish one completed join only, not the excess-token law | Excess-token test consumes one per input and retains the extra token | Both completions are required before Workflow completion | Duplicate-left/no-right and excess-token witnesses guard the nearest wrong accounts |
-| `PAR-ORDER-01` | [Observable completion-order contract](#stable-state-after-completing-both) | `completion_order_independent_at_final_state` | Separate content-bound A-then-B and B-then-A evidence | Both orders have equivalent final state and exact symmetric intermediate observations | Both ordered histories plus one concurrent-submission history replay | Five-case pipeline compares both orders and their exact intermediate Queries |
+| `PAR-ORDER-01` | [Observable completion-order contract](#stable-state-after-completing-both) | `completion_order_independent_at_final_state` | Separate content-bound A-then-B and B-then-A evidence | Both orders have equivalent final state and exact symmetric intermediate observations | Both ordered histories plus one concurrent-submission history replay | Six-case pipeline compares both orders and their exact intermediate Queries |
 | `PAR-PROJECT-01` | [Canonical projection contract](#observable-contract) | Storage-permutation and activation-order observation laws | Raw query order is non-semantic; independent projection sorts and preserves per-element multiplicity | Task-storage and operation-order permutations preserve canonical projection | Query exposes core-owned semantic order before and between Updates | Raw-order reversal passes, while dropped raw task and omitted canonical task fail |
+| `UTASK-REFUSE-02` | [User Task completion rule](USER-TASK-INTERACTION-SPEC.md#completion-command), `CIB-AGR-0002`, and `CIB-OP-0001` | `staleAWhileBActiveScenario` in [ParallelForkJoinConformance.lean](../../BpmnSemantics/ParallelForkJoinConformance.lean) | Content-bound live-sibling evidence observes A absent and B still active after stale A refusal | Live-sibling scenario rejects stale A with exact state preservation | Ordinary ordered Update ingress returns semantic rejection while B keeps the Workflow active | Dropping B from the post-stale evidence projection fails; sequential post-terminal `processClosed` remains a separate adapter lane |
 
 ## Assurance boundary
 
-The exact established claim is: for the admitted content-addressed balanced two-branch Process and the two answer-free completion orders, the reviewed normative program reaches two simultaneous distinct User Task waits, exposes the specified stable intermediate observations, synchronizes only after both branch completions, and reaches the same completed observation across the definition-bound Lean interpreter, pinned CIB positive calibration, independent TypeScript core, and replayed Temporal conformance host.
+The exact established claim is: for the admitted content-addressed balanced two-branch Process, the two answer-free completion orders and live-sibling stale witness reach simultaneous distinct User Task waits, expose the specified stable intermediate observations, reject stale A while B remains active, synchronize only after both branch completions, and reach the same completed observation across the definition-bound Lean interpreter, pinned CIB positive calibration, independent TypeScript core, and replayed semantic-lifetime Temporal host.
 
-The closest unsupported claims are a production Temporal lifecycle independent of future scripted command count, a typed command result after Workflow closure, repeated live occurrences of one User Task element, immutable negative CIB evidence for `CIB-DEV-0001`, and full observational checked-source-to-program-run preservation. None is implied by this capsule's draft closure.
+The closest unsupported claims are repeated live occurrences of one User Task element, immutable negative CIB evidence for `CIB-DEV-0001`, production canonical-observation API design, and full observational checked-source-to-program-run preservation. None is implied by this capsule's draft closure.
 
 The material common-mode risks remain explicit:
 
@@ -205,9 +217,9 @@ The bounded mapping is feasible without a Temporal analogue for either User Task
 | Partial join and readiness | Incoming-flow offers remain opaque semantic-core state | No Workflow counter, `Promise.all`, or handler order may trigger the join |
 | Completion and replay | Workflow return follows semantic completion only after all accepted handlers finish | Update completion precedes Workflow completion and every produced history replays |
 
-The current Workflow is still a finite conformance-scenario host whose lifetime uses the scenario stimulus count. That is sufficient for the bounded parallel witnesses because both completion orders end at the final scripted command. It is not the production lifecycle contract and does not resolve how a typed stale-command result is returned after a Temporal Workflow has closed. That general User Task lifecycle boundary remains explicit research rather than being hidden inside this capsule.
+The implemented Workflow follows the [Temporal Process lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md): lifetime derives from semantic terminal state, not scenario stimulus count; accepted handlers drain; production Workflow and Update identities are content-bound host policy; exact retries recover retained semantic results; and post-closure results remain outside semantic outcomes.
 
-The focused Temporal gate now fills the bounded adapter evidence cells for this mapping: it compiles the exact parallel source, queries both initial waits, executes both ordered completion sequences, queries the exact remaining task after the first completion, checks a duplicate command, submits both completions concurrently in a host-level probe, requires the realized history order to be one permitted semantic order, requires Update completion before Workflow completion, and replays all three histories. This establishes the conformance-host refinement claim only; the production lifecycle limitation above remains open.
+The focused Temporal gate compiles the exact parallel source, queries both initial waits, executes both ordered completion sequences, queries the exact remaining task after the first completion, checks a duplicate command, rejects stale A through ordinary ordered ingress while B remains live, submits two distinct completions concurrently for the same occurrence and requires an unordered one-commit/one-rejection result with identical final state, requires Update completion before Workflow completion, reconciles Query-derived command outcomes and terminal state with Event History and the receipt, and replays every history.
 
 ## Boundary ownership
 

@@ -13,7 +13,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Run or inspect the Temporal adapter | [TESTING-SPEC.md](TESTING-SPEC.md), [TEMPORAL-EXECUTION-RESEARCH.md](TEMPORAL-EXECUTION-RESEARCH.md), and the [adapter guide](../packages/temporal-adapter/README.md) |
 | Run or inspect BPMN XML ingestion | [BPMN-XML-INGESTION-DECISION.md](BPMN-XML-INGESTION-DECISION.md), [TESTING-SPEC.md](TESTING-SPEC.md), and the [source package guide](../packages/bpmn-source/README.md) |
 | Implement or review User Task interaction | [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [TEMPORAL-EXECUTION-RESEARCH.md](TEMPORAL-EXECUTION-RESEARCH.md), and [TESTING-SPEC.md](TESTING-SPEC.md) |
-| Decide or implement the production Temporal lifecycle | [TEMPORAL-PROCESS-LIFECYCLE-PROPOSAL.md](TEMPORAL-PROCESS-LIFECYCLE-PROPOSAL.md), [the lifecycle experiment](experiments/TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md), [TEMPORAL-EXECUTION-RESEARCH.md](TEMPORAL-EXECUTION-RESEARCH.md), and [PLAN.md](PLAN.md) |
+| Review or change the production Temporal lifecycle | [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [the lifecycle experiment](experiments/TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md), [TEMPORAL-EXECUTION-RESEARCH.md](TEMPORAL-EXECUTION-RESEARCH.md), and [PLAN.md](PLAN.md) |
 | Implement or review the Semantic Process IL and parallel fork/join contracts | [SEMANTIC-PROCESS-IL-SPEC.md](SEMANTIC-PROCESS-IL-SPEC.md), [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md), [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md), and [PLAN.md](PLAN.md) |
 | Run or inspect differential comparison | [TESTING-SPEC.md](TESTING-SPEC.md) and the [comparator guide](../packages/differential/README.md) |
 | Understand assurance roles, Lean’s value, or MVP feasibility | [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the [implementation map](IMPLEMENTATION-MAP.md), and the active [semantic capsule](capsules/README.md) |
@@ -29,7 +29,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 
 | Document | Audience and ownership |
 |---|---|
-| Top-level [README.md](../README.md) | New readers; concise purpose, honest status, quick start, and routes into this registry |
+| Top-level [README.md](../README.md) | New readers; durable purpose, architecture, quick start, and routes to the live implementation map and plan |
 | [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) | Contributors and agents; filename-role contracts, spec/proposal lifecycle, document homes, same-change triggers, and archive rules aligned with `a12-rulekit` |
 | [MVP-WALKTHROUGH.md](MVP-WALKTHROUGH.md) | New readers and reviewers; source-synchronized tour through exact BPMN input, executable IR, CIB, Lean, the semantic core, Temporal, comparison, mutation, and replay |
 | [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Architecture and assurance contract supplied to the project; content preserved with trailing Markdown whitespace normalized |
@@ -42,7 +42,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [capsules/USER-TASK-INTERACTION-SPEC.md](capsules/USER-TASK-INTERACTION-SPEC.md) | Semantic contributors; evidence-closed draft task identity, projection, exact completion admission, witnesses, laws, closure interpretation, and exclusions |
 | [capsules/PARALLEL-FORK-JOIN-SPEC.md](capsules/PARALLEL-FORK-JOIN-SPEC.md) | Owner and semantic contributors; evidence-closed draft observable contract, rule-to-evidence matrix, assurance boundary, candidate CIB deviation, representation decision, and exclusions for the parallel slice |
 | [TEMPORAL-EXECUTION-RESEARCH.md](TEMPORAL-EXECUTION-RESEARCH.md) | Adapter contributors and reviewers; Temporal replay, execution, messaging, failure, concurrency, versioning, and BPMN-boundary research |
-| [TEMPORAL-PROCESS-LIFECYCLE-PROPOSAL.md](TEMPORAL-PROCESS-LIFECYCLE-PROPOSAL.md) | Owner and adapter contributors; recommended semantic-lifetime Workflow, content-bound Update identity, retention-bounded result recovery, typed post-closure outcomes, acceptance evidence, and exclusions |
+| [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) | Adapter contributors and reviewers; implemented semantic-lifetime Workflow, collision-resistant Process addressing, content-bound Update identity, retention-bounded result recovery, typed post-closure outcomes, evidence contract, and exclusions |
 | [TLA-AND-BISIMULATION-RESEARCH.md](TLA-AND-BISIMULATION-RESEARCH.md) | Semantic and adapter assurance contributors; question-driven formal-methods toolbox, behavioral relations, candidate experiments, and evidence limits |
 | [REFERENCE-INSTRUMENTATION-POLICY.md](REFERENCE-INSTRUMENTATION-POLICY.md) | Researchers and performance contributors; pristine evidence lane, experimental source branches, execution profiles, acceleration limits, and shadow-equivalence gate |
 | [research/README.md](research/README.md) | Researchers and semantic contributors; topic index and boundary between research input and approved decisions |
