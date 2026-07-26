@@ -3,6 +3,7 @@ import BpmnSemantics.Scenario
 import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.Conformance
 import BpmnSemantics.IntermediateCatchTimerConformance
+import BpmnSemantics.ServiceTaskEffectConformance
 import BpmnSemantics.UserTaskInteractionConformance
 
 /-! Root of the BPMN semantic contract library.

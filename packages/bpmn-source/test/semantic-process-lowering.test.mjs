@@ -155,6 +155,124 @@ test("retains PT1S in the checked graph and lowers one timer wait", async () => 
   );
 });
 
+test("retains the exact Service Task binding and lowers one effect wait", async () => {
+  const result = await compileFixture(
+    "../../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn",
+    "service-task-effect-phase-zero-probe",
+    "cibseven-2.2.0-service-task-effect-draft",
+  );
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(
+    result.checkedProcess.nodes.find(
+      ({ id }) => id === "ServiceTask_Record",
+    ),
+    {
+      kind: CheckedNodeKind.ServiceTask,
+      id: "ServiceTask_Record",
+      implementation: "urn:bpmn-lean:effect:probe-v1",
+      sourceBinding: {
+        delegateExpressionAttribute: {
+          namespace: "http://camunda.org/schema/1.0/bpmn",
+          value: "${bpmnLeanEffectHandler}",
+        },
+        asyncBeforeAttribute: {
+          namespace: "http://camunda.org/schema/1.0/bpmn",
+          value: "true",
+        },
+      },
+    },
+  );
+  assert.deepEqual(
+    result.semanticProcess.operations.find(
+      ({ kind }) => kind === SemanticOperationKind.AwaitEffect,
+    ),
+    {
+      id: "operation:ServiceTask_Record",
+      kind: SemanticOperationKind.AwaitEffect,
+      origin: {
+        kind: "bpmnElement",
+        elementId: "ServiceTask_Record",
+      },
+      input: "place:Flow_StartToService",
+      output: "place:Flow_ServiceToEnd",
+      effect: {
+        elementId: "ServiceTask_Record",
+        descriptor: {
+          protocol: "urn:bpmn-lean:effect:probe-v1",
+          handler: "bpmnLeanEffectHandler",
+        },
+      },
+    },
+  );
+});
+
+test("rejects every incomplete or altered Service Task binding", async () => {
+  const bytes = await readFile(
+    new URL(
+      "../../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn",
+      import.meta.url,
+    ),
+  );
+  const xml = new TextDecoder().decode(bytes);
+  const mutations = [
+    xml.replace(
+      ' implementation="urn:bpmn-lean:effect:probe-v1"',
+      "",
+    ),
+    xml.replace(
+      'implementation="urn:bpmn-lean:effect:probe-v1"',
+      'implementation="urn:bpmn-lean:effect:other"',
+    ),
+    xml.replace(
+      'camunda:delegateExpression="${bpmnLeanEffectHandler}"',
+      'camunda:delegateExpression="${otherHandler}"',
+    ),
+    xml.replace(
+      'camunda:delegateExpression="${bpmnLeanEffectHandler}"',
+      'camunda:delegateExpression="${bpmnLeanEffectHandler.method()}"',
+    ),
+    xml.replace(
+      'camunda:delegateExpression="${bpmnLeanEffectHandler}"',
+      'camunda:delegateExpression="${bpmnLeanEffectHandler.property}"',
+    ),
+    xml.replace(' camunda:asyncBefore="true"', ""),
+    xml.replace(
+      'camunda:asyncBefore="true"',
+      'camunda:asyncBefore="false"',
+    ),
+    xml.replace(
+      'xmlns:camunda="http://camunda.org/schema/1.0/bpmn"',
+      'xmlns:camunda="urn:hostile:camunda"',
+    ),
+    xml.replace(
+      'camunda:asyncBefore="true"',
+      'camunda:asyncBefore="true" camunda:class="OtherDelegate"',
+    ),
+    xml.replace(
+      "      <bpmn:incoming>Flow_StartToService</bpmn:incoming>",
+      [
+        "      <bpmn:extensionElements>",
+        '        <camunda:field name="unexpected"/>',
+        "      </bpmn:extensionElements>",
+        "      <bpmn:incoming>Flow_StartToService</bpmn:incoming>",
+      ].join("\n"),
+    ),
+  ];
+
+  for (const mutation of mutations) {
+    const result = await compileBpmnToSemanticProcess({
+      bytes: new TextEncoder().encode(mutation),
+      sourceId: "invalid-service-task",
+      expectedSha256: undefined,
+      semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
+      limits,
+    });
+
+    assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  }
+});
+
 test("rejects a gateway direction that contradicts its checked arity", async () => {
   const bytes = await readFile(
     new URL(

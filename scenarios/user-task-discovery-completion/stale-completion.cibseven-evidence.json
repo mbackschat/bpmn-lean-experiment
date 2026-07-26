@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-stale-completion",
-    "sha256": "ac598ac6050376ecef4d28fc15a58c335f133fcc992e74965cb3aa42fcf03411"
+    "sha256": "d8fca0b4b93dc5e046a76c423d210afb004339e7f8e22ff4d71d236598d19828"
   },
   "profile": {
     "id": "cibseven-2.2.0-user-task-draft",
-    "sha256": "eb5f681804a912b9596ed8486b24fa2e34b39637e4049357e35737c0c7586dae"
+    "sha256": "28b1bbe88f6b120c290c0057f91730e0bd1dff0fa593d9b4749c5193878fa980"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -92,6 +92,7 @@
           }
         ],
         "openTimers": [],
+        "openEffects": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -116,6 +117,7 @@
         "activeWaits": [],
         "openUserTasks": [],
         "openTimers": [],
+        "openEffects": [],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       },
@@ -131,6 +133,7 @@
         "activeWaits": [],
         "openUserTasks": [],
         "openTimers": [],
+        "openEffects": [],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       }

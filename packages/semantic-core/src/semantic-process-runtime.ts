@@ -3,6 +3,8 @@ import {
   StimulusKind,
 } from "./contract.js";
 import type {
+  EffectOccurrenceId,
+  OccurrenceId,
   Stimulus,
   TimerOccurrenceId,
   UserTaskInstanceId,
@@ -11,6 +13,7 @@ import {
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
 import type {
+  EffectDescriptor,
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
@@ -52,7 +55,13 @@ export type SemanticTimerWait = Readonly<{
   output: string;
 }>;
 
-type TaskActivationCounter = Readonly<{
+export type SemanticEffectWait = Readonly<{
+  id: EffectOccurrenceId;
+  descriptor: EffectDescriptor;
+  output: string;
+}>;
+
+type ActivationCounter = Readonly<{
   elementId: string;
   count: number;
 }>;
@@ -63,8 +72,10 @@ export type RuntimeState = Readonly<{
   controlTokens: ReadonlyArray<ControlPlaceTokens>;
   userTaskWaits: ReadonlyArray<SemanticUserTaskWait>;
   timerWaits: ReadonlyArray<SemanticTimerWait>;
-  taskActivations: ReadonlyArray<TaskActivationCounter>;
-  timerActivations: ReadonlyArray<TaskActivationCounter>;
+  effectWaits: ReadonlyArray<SemanticEffectWait>;
+  taskActivations: ReadonlyArray<ActivationCounter>;
+  timerActivations: ReadonlyArray<ActivationCounter>;
+  effectActivations: ReadonlyArray<ActivationCounter>;
   endOccurrences: number;
   logicalTimeMs: number;
 }>;
@@ -75,8 +86,10 @@ export const initialState: RuntimeState = {
   controlTokens: [],
   userTaskWaits: [],
   timerWaits: [],
+  effectWaits: [],
   taskActivations: [],
   timerActivations: [],
+  effectActivations: [],
   endOccurrences: 0,
   logicalTimeMs: 0,
 };
@@ -135,7 +148,7 @@ function admit(
       return { outcome: CommandOutcome.Rejected, state };
     case StimulusKind.CompleteUserTaskInstance: {
       const wait = state.userTaskWaits.find((candidate) =>
-        sameTaskInstance(candidate.id, stimulus.taskId)
+        sameOccurrence(candidate.id, stimulus.taskId)
       );
       if (
         state.control.kind !== ControlStateKind.Running ||
@@ -156,7 +169,7 @@ function admit(
     }
     case StimulusKind.FireTimer: {
       const wait = state.timerWaits.find((candidate) =>
-        sameTimerOccurrence(candidate.id, stimulus.timerId)
+        sameOccurrence(candidate.id, stimulus.timerId)
       );
       if (
         state.control.kind !== ControlStateKind.Running ||
@@ -174,6 +187,27 @@ function admit(
             (candidate) => candidate !== wait,
           ),
           logicalTimeMs: wait.deadlineMs,
+        },
+      };
+    }
+    case StimulusKind.CompleteEffect: {
+      const wait = state.effectWaits.find((candidate) =>
+        sameOccurrence(candidate.id, stimulus.effectId)
+      );
+      if (
+        state.control.kind !== ControlStateKind.Running ||
+        wait === undefined
+      ) {
+        return { outcome: CommandOutcome.Rejected, state };
+      }
+      return {
+        outcome: CommandOutcome.Committed,
+        state: {
+          ...state,
+          controlTokens: addToken(state.controlTokens, wait.output),
+          effectWaits: state.effectWaits.filter(
+            (candidate) => candidate !== wait,
+          ),
         },
       };
     }
@@ -228,6 +262,10 @@ export function applyInternalOperation(
     case SemanticOperationKind.AwaitTimer:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
         ? createTimerWait(operation, state)
+        : null;
+    case SemanticOperationKind.AwaitEffect:
+      return tokenMultiplicity(state.controlTokens, operation.input) > 0
+        ? createEffectWait(operation, state)
         : null;
     case SemanticOperationKind.Duplicate:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
@@ -326,6 +364,43 @@ function createTimerWait(
   };
 }
 
+function createEffectWait(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitEffect }
+  >,
+  state: RuntimeState,
+): RuntimeState {
+  if (state.control.kind !== ControlStateKind.Running) {
+    return state;
+  }
+  const activation =
+    (state.effectActivations.find(
+      ({ elementId }) => elementId === operation.effect.elementId,
+    )?.count ?? 0) + 1;
+  return {
+    ...state,
+    controlTokens: removeToken(state.controlTokens, operation.input),
+    effectWaits: [
+      ...state.effectWaits,
+      {
+        id: {
+          processInstanceId: state.control.instanceId,
+          elementId: operation.effect.elementId,
+          activation,
+        },
+        descriptor: operation.effect.descriptor,
+        output: operation.output,
+      },
+    ].sort(compareEffectWaits),
+    effectActivations: setActivationCount(
+      state.effectActivations,
+      operation.effect.elementId,
+      activation,
+    ),
+  };
+}
+
 function terminate(
   operation: Extract<
     SemanticOperation,
@@ -339,6 +414,7 @@ function terminate(
     controlTokens.length === 0 &&
     state.userTaskWaits.length === 0 &&
     state.timerWaits.length === 0 &&
+    state.effectWaits.length === 0 &&
     !state.initiationPending;
   return {
     ...state,
@@ -475,10 +551,10 @@ function tokenMultiplicity(
 }
 
 function setActivationCount(
-  counters: ReadonlyArray<TaskActivationCounter>,
+  counters: ReadonlyArray<ActivationCounter>,
   elementId: string,
   count: number,
-): ReadonlyArray<TaskActivationCounter> {
+): ReadonlyArray<ActivationCounter> {
   return [
     ...counters.filter((counter) => counter.elementId !== elementId),
     { elementId, count },
@@ -487,20 +563,9 @@ function setActivationCount(
   );
 }
 
-function sameTaskInstance(
-  left: UserTaskInstanceId,
-  right: UserTaskInstanceId,
-): boolean {
-  return (
-    left.processInstanceId === right.processInstanceId &&
-    left.elementId === right.elementId &&
-    left.activation === right.activation
-  );
-}
-
-function sameTimerOccurrence(
-  left: TimerOccurrenceId,
-  right: TimerOccurrenceId,
+function sameOccurrence(
+  left: OccurrenceId,
+  right: OccurrenceId,
 ): boolean {
   return (
     left.processInstanceId === right.processInstanceId &&
@@ -520,32 +585,31 @@ function compareWaits(
   left: SemanticUserTaskWait,
   right: SemanticUserTaskWait,
 ): number {
-  if (left.id.processInstanceId !== right.id.processInstanceId) {
-    return compareStrings(
-      left.id.processInstanceId,
-      right.id.processInstanceId,
-    );
-  }
-  if (left.id.elementId !== right.id.elementId) {
-    return compareStrings(left.id.elementId, right.id.elementId);
-  }
-  return left.id.activation - right.id.activation;
+  return compareOccurrences(left.id, right.id);
 }
 
 function compareTimerWaits(
   left: SemanticTimerWait,
   right: SemanticTimerWait,
 ): number {
-  if (left.id.processInstanceId !== right.id.processInstanceId) {
-    return compareStrings(
-      left.id.processInstanceId,
-      right.id.processInstanceId,
-    );
+  return compareOccurrences(left.id, right.id);
+}
+
+function compareEffectWaits(
+  left: SemanticEffectWait,
+  right: SemanticEffectWait,
+): number {
+  return compareOccurrences(left.id, right.id);
+}
+
+function compareOccurrences(left: OccurrenceId, right: OccurrenceId): number {
+  if (left.processInstanceId !== right.processInstanceId) {
+    return compareStrings(left.processInstanceId, right.processInstanceId);
   }
-  if (left.id.elementId !== right.id.elementId) {
-    return compareStrings(left.id.elementId, right.id.elementId);
+  if (left.elementId !== right.elementId) {
+    return compareStrings(left.elementId, right.elementId);
   }
-  return left.id.activation - right.id.activation;
+  return left.activation - right.activation;
 }
 
 function compareStrings(left: string, right: string): number {

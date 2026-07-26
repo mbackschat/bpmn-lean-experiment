@@ -136,14 +136,29 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
 
   @Test
   public void rejectsADeployedBindingThatDoesNotMatchTheProfilePair() throws Exception {
-    var source =
+    requireRejectedBinding(
         readResource()
             .replace(
                 EFFECT_PROTOCOL,
-                "urn:bpmn-lean:effect:unexpected-protocol");
+                "urn:bpmn-lean:effect:unexpected-protocol"),
+        "service-task-protocol-negative-control");
+  }
+
+  @Test
+  public void rejectsADeployedDelegateExpressionForAnotherBean() throws Exception {
+    requireRejectedBinding(
+        readResource()
+            .replace(
+                HANDLER_EXPRESSION,
+                "${unexpectedEffectHandler}"),
+        "service-task-handler-negative-control");
+  }
+
+  private static void requireRejectedBinding(
+      String source, String engineName) throws Exception {
     var engine =
         CibSevenTestEngine.create(
-            "service-task-binding-negative-control",
+            engineName,
             configuration ->
                 configuration.setBeans(
                     Map.of(HANDLER_BEAN, new SucceedingDelegate())));
@@ -153,7 +168,7 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
           engine
               .getRepositoryService()
               .createDeployment()
-              .addString("service-task-binding-negative-control.bpmn", source)
+              .addString(engineName + ".bpmn", source)
               .deploy()
               .getId();
       var processInstance =

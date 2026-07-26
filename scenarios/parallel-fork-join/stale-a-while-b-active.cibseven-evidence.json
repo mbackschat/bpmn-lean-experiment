@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-fork-join-stale-a-while-b-active",
-    "sha256": "56993a2926e478865f59f84616c0c3f5418e715ab1aa5d38349c9fb9f758f45a"
+    "sha256": "ec2557ed021649be6d40b7e179a231a2f23f67692354813e701f4ebb8e628f7d"
   },
   "profile": {
     "id": "parallel-fork-join-draft",
-    "sha256": "0a5420d7459bba77d38539a7a3639409554700e58467ca8790e37eca7ca34952"
+    "sha256": "cc4067ecd6dd7781575bbad464d98928a8529f12a7d863320331e045d80019db"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -120,6 +120,7 @@
           }
         ],
         "openTimers": [],
+        "openEffects": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -168,6 +169,7 @@
           }
         ],
         "openTimers": [],
+        "openEffects": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -208,6 +210,7 @@
           }
         ],
         "openTimers": [],
+        "openEffects": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",

@@ -36,6 +36,7 @@ const completedState = {
   activeWaits: [],
   openUserTasks: [],
   openTimers: [],
+  openEffects: [],
   enabledInteractions: [],
   logicalTimeMs: 0,
 };
@@ -62,6 +63,7 @@ const trace = [
     ],
     openUserTasks: [],
     openTimers: [],
+    openEffects: [],
     enabledInteractions: [],
     logicalTimeMs: 0,
   },

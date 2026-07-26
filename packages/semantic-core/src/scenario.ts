@@ -12,6 +12,8 @@ import type {
   CanonicalObservation,
   OpenUserTask,
   OpenTimer,
+  OpenEffect,
+  OccurrenceId,
   Scenario,
   ScenarioResult,
   StartProcessStimulus,
@@ -89,7 +91,7 @@ export function projectOpenUserTasks(
       name: wait.name,
       state: UserTaskLifecycleState.Active,
     }))
-    .sort(compareOpenUserTasks);
+    .sort(compareOpenOccurrences);
 }
 
 export function projectOpenTimers(
@@ -97,7 +99,15 @@ export function projectOpenTimers(
 ): ReadonlyArray<OpenTimer> {
   return state.timerWaits
     .map(({ id, deadlineMs }) => ({ id, deadlineMs }))
-    .sort(compareOpenTimers);
+    .sort(compareOpenOccurrences);
+}
+
+export function projectOpenEffects(
+  state: RuntimeState,
+): ReadonlyArray<OpenEffect> {
+  return state.effectWaits
+    .map(({ id, descriptor }) => ({ id, descriptor }))
+    .sort(compareOpenOccurrences);
 }
 
 function observeStableState(state: RuntimeState): StateObservation | null {
@@ -114,6 +124,7 @@ function observeStableState(state: RuntimeState): StateObservation | null {
         activeWaits: projectActiveWaits(state),
         openUserTasks: projectOpenUserTasks(state),
         openTimers: projectOpenTimers(state),
+        openEffects: projectOpenEffects(state),
         enabledInteractions: projectOpenUserTasks(state).map((task) => ({
           kind: StimulusKind.CompleteUserTaskInstance,
           taskId: task.id,
@@ -142,6 +153,13 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
       (timerMultiplicities.get(wait.id.elementId) ?? 0) + 1,
     );
   }
+  const effectMultiplicities = new Map<string, number>();
+  for (const wait of state.effectWaits) {
+    effectMultiplicities.set(
+      wait.id.elementId,
+      (effectMultiplicities.get(wait.id.elementId) ?? 0) + 1,
+    );
+  }
   return [
     ...[...userTaskMultiplicities.entries()].map(
       ([elementId, multiplicity]) => ({
@@ -157,6 +175,13 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
         multiplicity,
       }),
     ),
+    ...[...effectMultiplicities.entries()].map(
+      ([elementId, multiplicity]) => ({
+        elementId,
+        kind: WaitKind.Effect,
+        multiplicity,
+      }),
+    ),
   ]
     .sort((left, right) =>
       left.elementId === right.elementId
@@ -165,23 +190,10 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
     );
 }
 
-function compareOpenUserTasks(
-  left: OpenUserTask,
-  right: OpenUserTask,
+function compareOpenOccurrences(
+  left: Readonly<{ id: OccurrenceId }>,
+  right: Readonly<{ id: OccurrenceId }>,
 ): number {
-  if (left.id.processInstanceId !== right.id.processInstanceId) {
-    return compareStrings(
-      left.id.processInstanceId,
-      right.id.processInstanceId,
-    );
-  }
-  if (left.id.elementId !== right.id.elementId) {
-    return compareStrings(left.id.elementId, right.id.elementId);
-  }
-  return left.id.activation - right.id.activation;
-}
-
-function compareOpenTimers(left: OpenTimer, right: OpenTimer): number {
   if (left.id.processInstanceId !== right.id.processInstanceId) {
     return compareStrings(
       left.id.processInstanceId,

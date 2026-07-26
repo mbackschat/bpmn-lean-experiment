@@ -85,25 +85,13 @@ private def decodeResourceIdentity (json : Json) :
       relativePath := ← stringField json "relativePath"
       sha256 := ← stringField json "sha256" }
 
-private def decodeUserTaskInstanceId (json : Json) :
-    Except String UserTaskInstanceId := do
+private def decodeOccurrenceId (json : Json) :
+    Except String OccurrenceId := do
   requireObjectShape json
     ["activation", "elementId", "processInstanceId"]
   let activation ← decodeSafeNat (← field json "activation")
   if activation = 0 then
-    throw "task activation must be positive"
-  pure
-    { processInstanceId := ⟨← stringField json "processInstanceId"⟩
-      elementId := ⟨← stringField json "elementId"⟩
-      activation }
-
-private def decodeTimerOccurrenceId (json : Json) :
-    Except String TimerOccurrenceId := do
-  requireObjectShape json
-    ["activation", "elementId", "processInstanceId"]
-  let activation ← decodeSafeNat (← field json "activation")
-  if activation = 0 then
-    throw "timer activation must be positive"
+    throw "occurrence activation must be positive"
   pure
     { processInstanceId := ⟨← stringField json "processInstanceId"⟩
       elementId := ⟨← stringField json "elementId"⟩
@@ -125,15 +113,21 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
       pure
         (.completeUserTaskInstance
           ⟨← stringField json "commandId"⟩
-          (← decodeUserTaskInstanceId (← field json "taskId")))
+          (← decodeOccurrenceId (← field json "taskId")))
   | "fireTimer" =>
       requireObjectShape json
         ["commandId", "kind", "logicalTimeMs", "timerId"]
       pure
         (.fireTimer
           ⟨← stringField json "commandId"⟩
-          (← decodeTimerOccurrenceId (← field json "timerId"))
+          (← decodeOccurrenceId (← field json "timerId"))
           (← decodeSafeNat (← field json "logicalTimeMs")))
+  | "completeEffect" =>
+      requireObjectShape json ["commandId", "effectId", "kind"]
+      pure
+        (.completeEffect
+          ⟨← stringField json "commandId"⟩
+          (← decodeOccurrenceId (← field json "effectId")))
   | _ => throw s!"unsupported scenario stimulus {kind}"
 
 private def decodeObservationKind (json : Json) :
@@ -145,6 +139,7 @@ private def decodeObservationKind (json : Json) :
   | "activeWaits" => pure .activeWaits
   | "openUserTasks" => pure .openUserTasks
   | "openTimers" => pure .openTimers
+  | "openEffects" => pure .openEffects
   | "enabledInteractions" => pure .enabledInteractions
   | "logicalTime" => pure .logicalTime
   | kind => throw s!"unsupported scenario observation {kind}"
@@ -206,6 +201,24 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.intermediateCatchTimerEvent
           ⟨← stringField json "id"⟩
           (← stringField json "durationLiteral"))
+  | "serviceTask" =>
+      requireObjectShape json
+        ["id", "implementation", "kind", "sourceBinding"]
+      let binding ← field json "sourceBinding"
+      requireObjectShape binding
+        ["asyncBeforeAttribute", "delegateExpressionAttribute"]
+      let delegateExpression ← field binding "delegateExpressionAttribute"
+      requireObjectShape delegateExpression ["namespace", "value"]
+      let asyncBefore ← field binding "asyncBeforeAttribute"
+      requireObjectShape asyncBefore ["namespace", "value"]
+      pure
+        (.serviceTask
+          ⟨← stringField json "id"⟩
+          (← stringField json "implementation")
+          (← stringField delegateExpression "namespace")
+          (← stringField delegateExpression "value")
+          (← stringField asyncBefore "namespace")
+          (← stringField asyncBefore "value"))
   | "parallelGateway" =>
       requireObjectShape json ["direction", "id", "kind"]
       let direction ← stringField json "direction"
@@ -283,6 +296,20 @@ private def decodeTimerDefinition (json : Json) :
     { elementId := ⟨← stringField json "elementId"⟩
       durationMs := ← decodeSafeNat (← field json "durationMs") }
 
+private def decodeEffectDescriptor (json : Json) :
+    Except String EffectDescriptor := do
+  requireObjectShape json ["handler", "protocol"]
+  pure
+    { protocol := ← stringField json "protocol"
+      handler := ← stringField json "handler" }
+
+private def decodeEffectDefinition (json : Json) :
+    Except String EffectDefinition := do
+  requireObjectShape json ["descriptor", "elementId"]
+  pure
+    { elementId := ⟨← stringField json "elementId"⟩
+      descriptor := ← decodeEffectDescriptor (← field json "descriptor") }
+
 private def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
   decodeArray (fun value => ControlPlaceId.mk <$> value.getStr?) json
@@ -316,6 +343,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
           (← decodeTimerDefinition (← field json "timer")))
+  | "awaitEffect" =>
+      requireObjectShape json
+        ["effect", "id", "input", "kind", "origin", "output"]
+      pure
+        (.awaitEffect
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "output"⟩
+          (← decodeEffectDefinition (← field json "effect")))
   | "duplicate" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "outputs"]

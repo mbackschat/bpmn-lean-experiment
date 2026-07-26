@@ -11,7 +11,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, UserTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, UserTask, ServiceTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
@@ -36,6 +36,7 @@
     "timerEventDefinitionType": "bpmn:TimerEventDefinition",
     "formalExpressionType": "bpmn:FormalExpression",
     "userTaskType": "bpmn:UserTask",
+    "serviceTaskType": "bpmn:ServiceTask",
     "parallelGatewayType": "bpmn:ParallelGateway",
     "endEventType": "bpmn:EndEvent",
     "sequenceFlowType": "bpmn:SequenceFlow"
@@ -98,6 +99,12 @@
     },
     {
       "name": "UserTask",
+      "directSuperClasses": [
+        "Task"
+      ]
+    },
+    {
+      "name": "ServiceTask",
       "directSuperClasses": [
         "Task"
       ]
@@ -241,6 +248,14 @@
       "upper": 1,
       "containment": false,
       "default": "unspecified"
+    },
+    {
+      "owner": "ServiceTask",
+      "name": "implementation",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
     }
   ]
 }

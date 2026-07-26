@@ -42,6 +42,7 @@ const admittedScenario = {
     "activeWaits",
     "openUserTasks",
     "openTimers",
+    "openEffects",
     "enabledInteractions",
     "logicalTime",
   ],

@@ -86,6 +86,30 @@
           "required": [
             "kind",
             "id",
+            "implementation",
+            "sourceBinding"
+          ],
+          "properties": {
+            "kind": {
+              "const": "serviceTask"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "implementation": {
+              "const": "urn:bpmn-lean:effect:probe-v1"
+            },
+            "sourceBinding": {
+              "$ref": "#/$defs/serviceTaskSourceBinding"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "durationLiteral"
           ],
           "properties": {
@@ -163,6 +187,48 @@
           }
         }
       ]
+    },
+    "serviceTaskSourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "delegateExpressionAttribute",
+        "asyncBeforeAttribute"
+      ],
+      "properties": {
+        "delegateExpressionAttribute": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "namespace",
+            "value"
+          ],
+          "properties": {
+            "namespace": {
+              "const": "http://camunda.org/schema/1.0/bpmn"
+            },
+            "value": {
+              "const": "${bpmnLeanEffectHandler}"
+            }
+          }
+        },
+        "asyncBeforeAttribute": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "namespace",
+            "value"
+          ],
+          "properties": {
+            "namespace": {
+              "const": "http://camunda.org/schema/1.0/bpmn"
+            },
+            "value": {
+              "const": "true"
+            }
+          }
+        }
+      }
     },
     "sequenceFlow": {
       "type": "object",

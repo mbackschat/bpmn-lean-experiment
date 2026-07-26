@@ -72,6 +72,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           ObservationKind.ACTIVE_WAITS,
           ObservationKind.OPEN_USER_TASKS,
           ObservationKind.OPEN_TIMERS,
+          ObservationKind.OPEN_EFFECTS,
           ObservationKind.ENABLED_INTERACTIONS,
           ObservationKind.LOGICAL_TIME);
 
@@ -455,6 +456,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             allWaits,
             openUserTasks,
             openTimers,
+            List.of(),
             enabledInteractions,
             logicalTimeMs),
         taskQuery,

@@ -2,11 +2,11 @@
 
 ## Status
 
-This is an unapproved semantic-capsule proposal. It defines the smallest Service Task and Temporal Activity account that would test the remaining external-effect feasibility risk. Its authorized phase-zero source/oracle probe is green; it authorizes no production implementation, profile extension, dependency, or retained-evidence replacement.
+This semantic-capsule proposal was owner-approved on 2026-07-26 with the four implementation corrections recorded below. Its authorized phase-zero source/oracle probe and first checked-source/Lean/TypeScript semantic checkpoint are green, and the semantic account passed independent review on 2026-07-27 after the non-law, intent-claim boundary, admission witnesses, and occurrence comparator were corrected. Temporal Activity implementation has not begun. No dependency was added; the atomic empty-`openEffects` evolution of the seven existing scenarios and retained CIB envelopes used only the explicit evidence-replacement command required by this proposal.
 
-The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. This capsule still requires its own semantic approval. The green [phase-zero probe](#phase-zero-cib-seven-probe) removes the packaged-engine uncertainty but does not authorize checked-source, Lean, TypeScript, or Temporal production work.
+The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. The green [phase-zero probe](#phase-zero-cib-seven-probe) removes the packaged-engine uncertainty.
 
-The external-review blockers have been incorporated, and the proposal is ready for an owner approve/reject decision. No unresolved implementation choice is delegated to the implementer; the red phase measures the already-pinned Worker-replacement timeout margin and stops if it is inadequate.
+The first implementation checkpoint is the green Lean and TypeScript semantic account before Temporal Activity work begins. This preserves independent review of semantic meaning before refinement evidence is added.
 
 ## Question
 
@@ -184,6 +184,17 @@ The semantic core owns this structured intent and its stability. It does not sto
 
 This split avoids making SHA-256 an operational-semantic primitive while ensuring every Temporal attempt receives the same externally usable key. A seeded mutation that includes a Temporal Run ID, Activity attempt, Activity ID, or other host identity must produce two external mutations and fail the reconciliation witness. CIB computes no project transport key in this capsule.
 
+The first tuple group is explicitly `EffectDefinitionKey`, not `SemanticProcessIdentity`: it contains three fields from `program.identity`, deliberately omits `compiler`, and adds sibling `program.processId`.
+
+```ts
+type EffectDefinitionKey = Readonly<{
+  semanticProfile: string;
+  sourceId: string;
+  sourceSha256: string;
+  processId: string;
+}>;
+```
+
 The transport material uses the already-implemented Workflow-safe canonical typed-tuple encoder:
 
 ```text
@@ -245,7 +256,9 @@ Consuming the input token of `awaitEffect` activates exactly one occurrence and 
 
 ### EFFECT-INTENT-01
 
-Exactly one intent exists for an active effect occurrence. Its full structured identity and descriptor depend only on admitted definition identity and committed runtime state and remain stable across observation, replay, and host attempts. The core-owned transport-material projection is a pure function of that state rather than an additional stored field.
+Exactly one intent exists for an active effect occurrence. Its full structured identity and descriptor depend only on admitted definition identity and committed runtime state and remain stable across observation, replay, and host attempts.
+
+The first semantic checkpoint establishes the unique structured intent in the start-prefix observation and its dependence on committed core state. Replay and host-attempt stability are Temporal-refinement evidence and remain unclosed until that lane is implemented.
 
 ### EFFECT-RESULT-01
 
@@ -351,7 +364,7 @@ Transport-key evidence includes both over-inclusion and under-inclusion discrimi
 
 - a host-derived-key mutation adds Run or attempt identity and must turn the lost-completion witness into two mutations;
 - two distinct semantic Process instance IDs executed against one fresh shared store must yield two keys and two mutations, separating committed-intent derivation from a hard-coded key;
-- pairwise encoding tests vary every definition, occurrence, and descriptor field and require a distinct key; field-drop mutations for `processInstanceId`, `elementId`, and `activation` must each collide on a constructed pair and be rejected.
+- pairwise encoding tests vary every definition, occurrence, and descriptor field and require a distinct key; field-drop mutations for `processId`, `processInstanceId`, `elementId`, and `activation` must each collide on a constructed pair and be rejected.
 
 The Workflow-safe digest implementation is already guarded before the key carries semantic weight: fixed SHA-256 vectors cover empty input, `abc`, 55/56/57/63/64/65-byte padding boundaries, and a supplementary-plane character; an exact multi-block effect-transport tuple is cross-checked against `node:crypto` outside Workflow code. Existing literal locks preserve the current Process-address, Update-stimulus, and timer-firing encodings and digests during the shared-encoder extraction.
 
@@ -370,7 +383,7 @@ The red test is the exact fail-once/re-execute probe. If the packaged engine dif
 
 ### Result
 
-The phase-zero probe is green against packaged CIB Seven `2.2.0`. [The exact source fixture](../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn) deploys with no engine parser warning under the shared disabled-executor configuration. Start creates exactly one immediately executable async-continuation job at `ServiceTask_Record`, with three retries, a null due date, and no timer classification. The probe derives the activity ID from the public Job Definition, reads the standard implementation value and expanded-name delegate expression from the deployed BPMN model, counts the one live job, and applies the exact profile-pair comparator. A negative control deploys a different implementation URI and proves that comparator rejects it. Mapping the counted host wait to activation ordinal `1` remains adapter-decided because CIB exposes no semantic effect occurrence or engine-derived activation ordinal.
+The phase-zero probe is green against packaged CIB Seven `2.2.0`. [The exact source fixture](../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn) deploys with no engine parser warning under the shared disabled-executor configuration. Start creates exactly one immediately executable async-continuation job at `ServiceTask_Record`, with three retries, a null due date, and no timer classification. The probe derives the activity ID from the public Job Definition, reads the standard implementation value and expanded-name delegate expression from the deployed BPMN model, counts the one live job, and applies the exact profile-pair comparator. Separate negative controls deploy a different implementation URI and a different delegate-expression bean token and prove that the comparator rejects each half of the pair. Mapping the counted host wait to activation ordinal `1` remains adapter-decided because CIB exposes no semantic effect occurrence or engine-derived activation ordinal.
 
 [The engine probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.java) registers only the exact `bpmnLeanEffectHandler` bean. Its first public `executeJob` invocation performs one probe mutation and throws; the same durable job remains executable with retries decremented from three to two. Its second public execution invokes the delegate again, observes the prior mutation, performs no second mutation, removes the job, and completes the Process. No call edits retries administratively, and no incident is created.
 
@@ -387,9 +400,21 @@ The same test deploys an equivalent source whose lexical prefix is `probe` and w
 | Delegate invocation and test-local mutation counts | Probe-service-observed |
 | Retry decrement `3 → 2` | Engine-observed raw evidence |
 | Successful second execution and Process completion | Engine-observed |
-| Canonical occurrence identity, descriptor, and stable intent | Adapter-decided in the CIB projection; defined and checked by Lean and TypeScript |
+| Canonical occurrence identity and descriptor at the initial wait | Adapter-decided in the CIB projection; defined and checked by Lean and TypeScript |
 
 No row presents the CIB job, activation ordinal, or retry count as an independent derivation of the semantic intent. For `EFFECT-WAIT-01`, `EFFECT-INTENT-01`, and `EFFECT-OBSERVE-01`, CIB supplies a host-realization compatibility check only.
+
+The activation comparator component cannot fail independently in this bounded probe: it is `Math.toIntExact(activationCount)` after the same count is required to equal one. The activity, protocol, and handler components are independently deployment-derived and can fail the profile comparator. This asymmetry is acceptable only under the explicit adapter-decided fidelity.
+
+## First semantic checkpoint result
+
+The exact phase-zero BPMN source now admits only the paired protocol/handler binding, preserves both Camunda attributes by expanded namespace name, and lowers through the checked Service Task to `awaitEffect`. Missing, altered, hostile-namespace, duplicate-expanded-name, and extra bindings reject.
+
+Lean independently validates and lowers the checked graph, relates executable `awaitEffect` steps to the declarative operation relation, proves full occurrence-identity mismatch rejection with exact state preservation, and checks the exact success trace plus the accept-arbitrary-result non-law. The pure TypeScript semantic core independently closes start at one structured effect intent, commits only the matching `completeEffect`, rejects mismatch and stale completion without state change, and projects `openEffects` without a caller interaction.
+
+The shared wire contract now uses one occurrence-ID shape for User Tasks, timers, and effects and includes the separate `openEffects` projection. The seven pre-existing scenarios and retained CIB envelopes contain only empty `openEffects`; they were regenerated through `replace:cib-evidence` because the current pre-release observation shape changed, not because any prior semantic result changed.
+
+This checkpoint establishes `EFFECT-WAIT-01`, `EFFECT-RESULT-01`, `EFFECT-REFUSE-01`, and `EFFECT-OBSERVE-01` in Lean and the pure TypeScript core and establishes the exact checked-source lowering boundary. For `EFFECT-INTENT-01`, it establishes one structured intent at the committed start prefix; replay and host-attempt stability remain unclosed. It does not establish transport-key rendering, Activity execution, retry reconciliation, typed adapter exhaustion, Worker replacement, replay, Activity-history evidence, the eight-scenario matrix, or retained Service Task CIB evidence. Those remain the Temporal/refinement half of this proposal.
 
 ## Smallest separating witnesses
 
@@ -431,7 +456,7 @@ No row presents the CIB job, activation ordinal, or retry count as an independen
 - retained CIB evidence bound explicitly to `PlainSuccess`, with `FailAfterMutationOnce` retry details raw-only and no CIB transport-key claim;
 - Temporal Activity input derived only from committed intent;
 - Temporal fail-after-mutation-once reconciliation with two invocations, one mutation, one semantic result, and canonical equivalence to Temporal plain success;
-- per-execution empty-store assertions, the adapter-local two-instance/shared-store discriminator, pairwise transport-field coverage, host-over-inclusion mutation, and under-inclusion field-drop mutations;
+- per-execution empty-store assertions, the adapter-local two-instance/shared-store discriminator, pairwise transport-field coverage, host-over-inclusion mutation, and `processId`/occurrence-field under-inclusion mutations;
 - exact domain-separated transport and `completeEffect` encodings through the shared canonical encoder, fixed current digest locks, SHA-256 padding/multi-block/supplementary-plane vectors, and an exact transport cross-check against native crypto outside Workflow code;
 - eight answer-free scenarios, sixteen Temporal executions, nine replayed histories, and the documented failure-schedule substitution for Service Task isolation;
 - Activity-bypass mutation rejected by Event History evidence;
@@ -457,9 +482,9 @@ Stop for owner direction if:
 - alignment requires changing existing closure, observation, lifecycle, or wire semantics for proof convenience;
 - the complete gate exceeds its existing budget and cannot be restored without weakening evidence.
 
-## Decisions still required
+## Approved decisions
 
-Owner approval of this corrected capsule selects:
+The owner approved:
 
 1. the exact success-only semantic account and exclusions;
 2. the green phase-zero `asyncBefore` exact delegate-expression bean binding;

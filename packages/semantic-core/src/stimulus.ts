@@ -13,6 +13,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
     case StimulusKind.StartProcess:
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.FireTimer:
+    case StimulusKind.CompleteEffect:
       return stimulus.commandId;
     default:
       return assertNever(stimulus);
@@ -44,6 +45,15 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.timerId.elementId === right.timerId.elementId &&
         left.timerId.activation === right.timerId.activation &&
         left.logicalTimeMs === right.logicalTimeMs
+      );
+    case StimulusKind.CompleteEffect:
+      return (
+        right.kind === StimulusKind.CompleteEffect &&
+        left.commandId === right.commandId &&
+        left.effectId.processInstanceId ===
+          right.effectId.processInstanceId &&
+        left.effectId.elementId === right.effectId.elementId &&
+        left.effectId.activation === right.effectId.activation
       );
     default:
       return assertNever(left);
@@ -104,9 +114,30 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         Number.isSafeInteger(value.logicalTimeMs) &&
         Number(value.logicalTimeMs) >= 0
       );
+    case StimulusKind.CompleteEffect:
+      return (
+        hasOnlyKeys(value, ["kind", "commandId", "effectId"]) &&
+        isNonEmptyString(value.commandId) &&
+        isOccurrenceId(value.effectId)
+      );
     default:
       return false;
   }
+}
+
+function isOccurrenceId(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, [
+      "processInstanceId",
+      "elementId",
+      "activation",
+    ]) &&
+    isNonEmptyString(value.processInstanceId) &&
+    isNonEmptyString(value.elementId) &&
+    Number.isSafeInteger(value.activation) &&
+    Number(value.activation) >= 1
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

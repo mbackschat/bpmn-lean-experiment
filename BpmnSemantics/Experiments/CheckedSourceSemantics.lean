@@ -57,6 +57,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
   | .intermediateCatchTimerEvent id _
+  | .serviceTask id _ _ _ _ _
   | .parallelGateway id _
   | .noneEndEvent id => id
 
@@ -204,6 +205,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
       | .notStarted
       | .completed _ => none
   | .intermediateCatchTimerEvent _ _ => none
+  | .serviceTask _ _ _ _ _ _ => none
   | .parallelGateway id .diverging =>
       let input := firstFlowId (incomingFlowIds source id)
       if hasToken state input then
@@ -246,11 +248,14 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
           by_cases enabled :
               hasToken before (firstFlowId (incomingFlowIds source id)) = true
           · simp [fireNode?, controlEq, enabled] at result
-  | intermediateCatchTimerEvent id durationLiteral =>
-      simp [fireNode?] at result
             subst after
             exact .userTask id name before instanceId controlEq enabled
           · simp [fireNode?, controlEq, enabled] at result
+  | intermediateCatchTimerEvent id durationLiteral =>
+      simp [fireNode?] at result
+  | serviceTask id implementation delegateExpressionNamespace
+      delegateExpressionValue asyncBeforeNamespace asyncBeforeValue =>
+      simp [fireNode?] at result
   | parallelGateway id direction =>
       cases direction with
       | diverging =>
@@ -324,6 +329,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
       | .notStarted
       | .completed _ => { outcome := .rejected, state }
   | .fireTimer _ _ _ => { outcome := .unsupported, state }
+  | .completeEffect _ _ => { outcome := .unsupported, state }
 
 def enabledTransitions (source : CheckedProcess)
     (state : SourceRuntimeState) :
@@ -443,6 +449,7 @@ def observeStableState (source : CheckedProcess)
                     multiplicity }
           openUserTasks := tasks
           openTimers := []
+          openEffects := []
           enabledInteractions :=
             tasks.map fun task => .completeUserTaskInstance task.id
           logicalTimeMs := state.logicalTimeMs }
@@ -453,13 +460,15 @@ def observeStableState (source : CheckedProcess)
           activeWaits := []
           openUserTasks := []
           openTimers := []
+          openEffects := []
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
 
 def commandId : Stimulus → SemanticId
   | .startProcess id _ _
   | .completeUserTaskInstance id _
-  | .fireTimer id _ _ => id
+  | .fireTimer id _ _
+  | .completeEffect id _ => id
 
 structure ScenarioExecution where
   outcome : ScenarioOutcome
@@ -518,6 +527,7 @@ def requiredObservations : List ObservationKind :=
   , .activeWaits
   , .openUserTasks
   , .openTimers
+  , .openEffects
   , .enabledInteractions
   , .logicalTime ]
 

@@ -6,6 +6,7 @@ export enum CheckedNodeKind {
   NoneStartEvent = "noneStartEvent",
   UserTask = "userTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
+  ServiceTask = "serviceTask",
   ParallelGateway = "parallelGateway",
   NoneEndEvent = "noneEndEvent",
 }
@@ -35,6 +36,21 @@ export type CheckedNode =
       kind: CheckedNodeKind.IntermediateCatchTimerEvent;
       id: string;
       durationLiteral: "PT1S";
+    }>
+  | Readonly<{
+      kind: CheckedNodeKind.ServiceTask;
+      id: string;
+      implementation: "urn:bpmn-lean:effect:probe-v1";
+      sourceBinding: Readonly<{
+        delegateExpressionAttribute: Readonly<{
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          value: "${bpmnLeanEffectHandler}";
+        }>;
+        asyncBeforeAttribute: Readonly<{
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          value: "true";
+        }>;
+      }>;
     }>
   | Readonly<{
       kind: CheckedNodeKind.ParallelGateway;
@@ -72,6 +88,7 @@ export enum SemanticOperationKind {
   Initiate = "initiate",
   AwaitUserTask = "awaitUserTask",
   AwaitTimer = "awaitTimer",
+  AwaitEffect = "awaitEffect",
   Duplicate = "duplicate",
   Synchronize = "synchronize",
   Terminate = "terminate",
@@ -104,6 +121,11 @@ export type ControlPlace = Readonly<{
   origin: BpmnSequenceFlowOrigin;
 }>;
 
+export type EffectDescriptor = Readonly<{
+  protocol: "urn:bpmn-lean:effect:probe-v1";
+  handler: "bpmnLeanEffectHandler";
+}>;
+
 type OperationBase = Readonly<{
   id: string;
   origin: BpmnElementOrigin;
@@ -133,6 +155,16 @@ export type SemanticOperation =
         timer: Readonly<{
           elementId: string;
           durationMs: 1000;
+        }>;
+      }>)
+  | (OperationBase &
+      Readonly<{
+        kind: SemanticOperationKind.AwaitEffect;
+        input: string;
+        output: string;
+        effect: Readonly<{
+          elementId: string;
+          descriptor: EffectDescriptor;
         }>;
       }>)
   | (OperationBase &

@@ -30,18 +30,21 @@ structure ResourceIdentity where
   sha256 : String
   deriving Repr, DecidableEq
 
-/-- Stable semantic identity of one active User Task occurrence. -/
-structure UserTaskInstanceId where
+/-- Stable semantic identity shared by all externally completed wait occurrences. -/
+structure OccurrenceId where
   processInstanceId : SemanticId
   elementId : SemanticId
   activation : Nat
   deriving Repr, DecidableEq
 
-/-- Stable semantic identity of one active timer occurrence. -/
-structure TimerOccurrenceId where
-  processInstanceId : SemanticId
-  elementId : SemanticId
-  activation : Nat
+abbrev UserTaskInstanceId := OccurrenceId
+abbrev TimerOccurrenceId := OccurrenceId
+abbrev EffectOccurrenceId := OccurrenceId
+
+/-- Project-owned protocol and business-handler identity for an effect. -/
+structure EffectDescriptor where
+  protocol : String
+  handler : String
   deriving Repr, DecidableEq
 
 /-- User Task lifecycle states exposed by the current bounded interaction capsule. -/
@@ -66,6 +69,7 @@ inductive Stimulus where
   | startProcess (commandId : SemanticId) (processId : SemanticId) (instanceId : SemanticId)
   | completeUserTaskInstance (commandId : SemanticId) (taskId : UserTaskInstanceId)
   | fireTimer (commandId : SemanticId) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
+  | completeEffect (commandId : SemanticId) (effectId : EffectOccurrenceId)
   deriving Repr, DecidableEq
 
 /-- Process status visible through the canonical observation boundary. -/
@@ -79,6 +83,7 @@ inductive ProcessStatus where
 inductive WaitKind where
   | userTask
   | timer
+  | effect
   deriving Repr, DecidableEq
 
 /-- One active semantic wait, retaining multiplicity without host runtime identifiers. -/
@@ -94,6 +99,12 @@ structure OpenTimer where
   deadlineMs : Nat
   deriving Repr, DecidableEq
 
+/-- Public projection of one active semantic effect intent. -/
+structure OpenEffect where
+  id : EffectOccurrenceId
+  descriptor : EffectDescriptor
+  deriving Repr, DecidableEq
+
 /-- Canonical state projection at one observation point. -/
 structure StateObservation where
   instanceId : SemanticId
@@ -101,6 +112,7 @@ structure StateObservation where
   activeWaits : List ActiveWait
   openUserTasks : List OpenUserTask
   openTimers : List OpenTimer
+  openEffects : List OpenEffect
   enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
@@ -120,6 +132,7 @@ inductive ObservationKind where
   | activeWaits
   | openUserTasks
   | openTimers
+  | openEffects
   | enabledInteractions
   | logicalTime
   deriving Repr, DecidableEq

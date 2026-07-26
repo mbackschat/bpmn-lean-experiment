@@ -30,12 +30,13 @@ private def processStatusJson : ProcessStatus → Json
 private def waitKindJson : WaitKind → Json
   | .userTask => toJson "userTask"
   | .timer => toJson "timer"
+  | .effect => toJson "effect"
 
-private def userTaskInstanceIdJson (taskId : UserTaskInstanceId) : Json :=
+private def occurrenceIdJson (occurrenceId : OccurrenceId) : Json :=
   Json.mkObj
-    [ ("processInstanceId", toJson taskId.processInstanceId.value)
-    , ("elementId", toJson taskId.elementId.value)
-    , ("activation", toJson taskId.activation) ]
+    [ ("processInstanceId", toJson occurrenceId.processInstanceId.value)
+    , ("elementId", toJson occurrenceId.elementId.value)
+    , ("activation", toJson occurrenceId.activation) ]
 
 private def activeWaitJson (wait : ActiveWait) : Json :=
   Json.mkObj
@@ -48,26 +49,30 @@ private def userTaskLifecycleStateJson : UserTaskLifecycleState → Json
 
 private def openUserTaskJson (task : OpenUserTask) : Json :=
   Json.mkObj
-    [ ("id", userTaskInstanceIdJson task.id)
+    [ ("id", occurrenceIdJson task.id)
     , ("name", toJson task.name)
     , ("state", userTaskLifecycleStateJson task.state) ]
 
-private def timerOccurrenceIdJson (timerId : TimerOccurrenceId) : Json :=
-  Json.mkObj
-    [ ("processInstanceId", toJson timerId.processInstanceId.value)
-    , ("elementId", toJson timerId.elementId.value)
-    , ("activation", toJson timerId.activation) ]
-
 private def openTimerJson (timer : OpenTimer) : Json :=
   Json.mkObj
-    [ ("id", timerOccurrenceIdJson timer.id)
+    [ ("id", occurrenceIdJson timer.id)
     , ("deadlineMs", toJson timer.deadlineMs) ]
+
+private def effectDescriptorJson (descriptor : EffectDescriptor) : Json :=
+  Json.mkObj
+    [ ("protocol", toJson descriptor.protocol)
+    , ("handler", toJson descriptor.handler) ]
+
+private def openEffectJson (effect : OpenEffect) : Json :=
+  Json.mkObj
+    [ ("id", occurrenceIdJson effect.id)
+    , ("descriptor", effectDescriptorJson effect.descriptor) ]
 
 private def enabledInteractionJson : EnabledInteraction → Json
   | .completeUserTaskInstance taskId =>
       Json.mkObj
         [ ("kind", toJson "completeUserTaskInstance")
-        , ("taskId", userTaskInstanceIdJson taskId) ]
+        , ("taskId", occurrenceIdJson taskId) ]
 
 private def stateObservationJson (state : StateObservation) : Json :=
   Json.mkObj
@@ -77,6 +82,7 @@ private def stateObservationJson (state : StateObservation) : Json :=
     , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
     , ("openUserTasks", jsonArray (state.openUserTasks.map openUserTaskJson))
     , ("openTimers", jsonArray (state.openTimers.map openTimerJson))
+    , ("openEffects", jsonArray (state.openEffects.map openEffectJson))
     , ("enabledInteractions",
         jsonArray (state.enabledInteractions.map enabledInteractionJson))
     , ("logicalTimeMs", toJson state.logicalTimeMs) ]
@@ -123,13 +129,18 @@ private def stimulusJson : Stimulus → Json
       Json.mkObj
         [ ("kind", toJson "completeUserTaskInstance")
         , ("commandId", toJson commandId.value)
-        , ("taskId", userTaskInstanceIdJson taskId) ]
+        , ("taskId", occurrenceIdJson taskId) ]
   | .fireTimer commandId timerId logicalTimeMs =>
       Json.mkObj
         [ ("kind", toJson "fireTimer")
         , ("commandId", toJson commandId.value)
-        , ("timerId", timerOccurrenceIdJson timerId)
+        , ("timerId", occurrenceIdJson timerId)
         , ("logicalTimeMs", toJson logicalTimeMs) ]
+  | .completeEffect commandId effectId =>
+      Json.mkObj
+        [ ("kind", toJson "completeEffect")
+        , ("commandId", toJson commandId.value)
+        , ("effectId", occurrenceIdJson effectId) ]
 
 private def observationKindJson : ObservationKind → Json
   | .deployment => toJson "deployment"
@@ -138,6 +149,7 @@ private def observationKindJson : ObservationKind → Json
   | .activeWaits => toJson "activeWaits"
   | .openUserTasks => toJson "openUserTasks"
   | .openTimers => toJson "openTimers"
+  | .openEffects => toJson "openEffects"
   | .enabledInteractions => toJson "enabledInteractions"
   | .logicalTime => toJson "logicalTime"
 

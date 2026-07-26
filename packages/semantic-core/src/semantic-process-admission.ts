@@ -32,6 +32,7 @@ const supportedObservations = Object.freeze([
   ObservationRequestKind.ActiveWaits,
   ObservationRequestKind.OpenUserTasks,
   ObservationRequestKind.OpenTimers,
+  ObservationRequestKind.OpenEffects,
   ObservationRequestKind.EnabledInteractions,
   ObservationRequestKind.LogicalTime,
 ]);
@@ -129,7 +130,25 @@ function hasSupportedExecutionSurface(
   return (
     hasSequentialExecutionSurface(program) ||
     hasTimerExecutionSurface(program) ||
+    hasEffectExecutionSurface(program) ||
     hasBalancedParallelExecutionSurface(program)
+  );
+}
+
+function hasEffectExecutionSurface(
+  program: SemanticProcessProgram,
+): boolean {
+  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
+  const effect = onlyOperation(program, SemanticOperationKind.AwaitEffect);
+  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
+  return (
+    program.controlPlaces.length === 2 &&
+    program.operations.length === 3 &&
+    initiate !== undefined &&
+    effect !== undefined &&
+    terminate !== undefined &&
+    initiate.output === effect.input &&
+    effect.output === terminate.input
   );
 }
 
@@ -287,6 +306,27 @@ function isWellFormedOperation(
         value.timer.elementId === value.origin.elementId &&
         value.timer.durationMs === 1000
       );
+    case SemanticOperationKind.AwaitEffect:
+      return (
+        hasOnlyKeys(value, [
+          "id",
+          "kind",
+          "origin",
+          "input",
+          "output",
+          "effect",
+        ]) &&
+        isPlaceReference(value.input, placeIds) &&
+        isPlaceReference(value.output, placeIds) &&
+        isRecord(value.effect) &&
+        hasOnlyKeys(value.effect, ["elementId", "descriptor"]) &&
+        value.effect.elementId === value.origin.elementId &&
+        isRecord(value.effect.descriptor) &&
+        hasOnlyKeys(value.effect.descriptor, ["protocol", "handler"]) &&
+        value.effect.descriptor.protocol ===
+          "urn:bpmn-lean:effect:probe-v1" &&
+        value.effect.descriptor.handler === "bpmnLeanEffectHandler"
+      );
     case SemanticOperationKind.Duplicate:
       return (
         hasOnlyKeys(value, [
@@ -346,7 +386,8 @@ function isSupportedScenario(value: unknown): value is Scenario {
       .every(
         (stimulus) =>
           stimulus.kind === StimulusKind.CompleteUserTaskInstance ||
-          stimulus.kind === StimulusKind.FireTimer,
+          stimulus.kind === StimulusKind.FireTimer ||
+          stimulus.kind === StimulusKind.CompleteEffect,
       ) &&
     observations !== undefined &&
     observations.length === supportedObservations.length &&

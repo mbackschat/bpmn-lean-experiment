@@ -186,6 +186,7 @@ function referencedControlPlaces(operation) {
       return [operation.output];
     case "awaitUserTask":
     case "awaitTimer":
+    case "awaitEffect":
       return [operation.input, operation.output];
     case "duplicate":
       return [operation.input, ...operation.outputs];
@@ -226,6 +227,7 @@ function verifyCanonicalDefinitionOrder(checkedProcess, semanticProcess) {
       case "initiate":
       case "awaitUserTask":
       case "awaitTimer":
+      case "awaitEffect":
       case "terminate":
         break;
       default:
@@ -292,6 +294,14 @@ function verifyDefinitionReferences(checkedProcess, semanticProcess) {
     ) {
       throw new Error(
         `operation ${operation.id} timer identity differs from its BPMN origin`,
+      );
+    }
+    if (
+      operation.kind === "awaitEffect" &&
+      operation.effect.elementId !== operation.origin.elementId
+    ) {
+      throw new Error(
+        `operation ${operation.id} effect identity differs from its BPMN origin`,
       );
     }
   }
@@ -361,6 +371,7 @@ function verifyProducerProjection(evidence) {
       activeWaits,
       openUserTasks: taskProjection.openUserTasks,
       openTimers: timerProjection.openTimers,
+      openEffects: [],
       enabledInteractions: taskProjection.enabledInteractions,
     };
     for (const [field, expected] of Object.entries(expectedByField)) {

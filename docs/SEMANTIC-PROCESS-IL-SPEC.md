@@ -89,6 +89,21 @@ type CheckedNode =
       readonly durationLiteral: "PT1S";
     }
   | {
+      readonly kind: "serviceTask";
+      readonly id: string;
+      readonly implementation: "urn:bpmn-lean:effect:probe-v1";
+      readonly sourceBinding: {
+        readonly delegateExpressionAttribute: {
+          readonly namespace: "http://camunda.org/schema/1.0/bpmn";
+          readonly value: "${bpmnLeanEffectHandler}";
+        };
+        readonly asyncBeforeAttribute: {
+          readonly namespace: "http://camunda.org/schema/1.0/bpmn";
+          readonly value: "true";
+        };
+      };
+    }
+  | {
       readonly kind: "parallelGateway";
       readonly id: string;
       readonly direction: "diverging" | "converging";
@@ -141,6 +156,11 @@ interface OperationBase {
   };
 }
 
+interface EffectDescriptor {
+  readonly protocol: "urn:bpmn-lean:effect:probe-v1";
+  readonly handler: "bpmnLeanEffectHandler";
+}
+
 type SemanticOperation =
   | (OperationBase & {
       readonly kind: "initiate";
@@ -165,6 +185,15 @@ type SemanticOperation =
       };
     })
   | (OperationBase & {
+      readonly kind: "awaitEffect";
+      readonly input: string;
+      readonly output: string;
+      readonly effect: {
+        readonly elementId: string;
+        readonly descriptor: EffectDescriptor;
+      };
+    })
+  | (OperationBase & {
       readonly kind: "duplicate";
       readonly input: string;
       readonly outputs: readonly [string, string, ...string[]];
@@ -182,13 +211,13 @@ type SemanticOperation =
 
 String identifiers are wire representations, not permission to treat distinct identifier domains interchangeably in Lean or implementation code. Lean must use distinct types for process, node, Sequence Flow, operation, control-place, task-definition, and task-occurrence identifiers where those domains can be confused.
 
-Semantic operation payloads carry their own element identifier when runtime occurrence identity depends on that element. That identifier is deliberately redundant with `origin.elementId`: program validation requires exact equality, runtime construction reads the semantic payload field, and source traceability reads `origin`. `awaitUserTask` and `awaitTimer` establish this convention; a future interaction/effect operation must follow it rather than derive runtime identity directly from source provenance.
+Semantic operation payloads carry their own element identifier when runtime occurrence identity depends on that element. That identifier is deliberately redundant with `origin.elementId`: program validation requires exact equality, runtime construction reads the semantic payload field, and source traceability reads `origin`. `awaitUserTask`, `awaitTimer`, and `awaitEffect` establish this convention; future occurrence-producing operations must follow it rather than derive runtime identity directly from source provenance.
 
 Array order has no semantic meaning. Canonical serialization sorts definitions and unordered references by their identifiers.
 
 ### Runtime state
 
-Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task and timer occurrences, the logical clock, committed command outcomes, and any explicit semantic choices.
+Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task, timer, and effect occurrences, the logical clock, committed command outcomes, and any explicit semantic choices.
 
 Lean and TypeScript may use different internal runtime representations. They must implement the same reviewed transition account and canonical observation contract; sharing an IL does not require sharing evaluator algorithms or runtime data structures.
 
@@ -204,6 +233,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | Sequence Flow | `ControlPlace` |
 | User Task | `awaitUserTask` |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
+| exact bounded Service Task binding | `awaitEffect` with the normalized protocol/handler descriptor |
 | diverging Parallel Gateway | `duplicate` |
 | converging Parallel Gateway | `synchronize` |
 | none End Event | `terminate` |
@@ -351,14 +381,15 @@ The maintained implementation supports exactly:
 - one none Start Event;
 - one or more User Tasks permitted by the two approved capsules;
 - one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
+- one exact Service Task binding under its single-token success-only effect capsule;
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;
 - none End Events permitted by the capsules;
-- `initiate`, `awaitUserTask`, `awaitTimer`, `duplicate`, `synchronize`, and `terminate`;
+- `initiate`, `awaitUserTask`, `awaitTimer`, `awaitEffect`, `duplicate`, `synchronize`, and `terminate`;
 - token multiplicity per Sequence Flow;
-- semantic task and timer occurrence identity, logical time, and command closure;
-- the canonical observation boundary including `openTimers`.
+- semantic task, timer, and effect occurrence identity, logical time, and command closure;
+- the canonical observation boundary including `openTimers` and `openEffects`.
 
-The sequential User Task, balanced parallel, and Intermediate Catch Timer fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, Intermediate Catch Timer, and Service Task effect fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
@@ -370,7 +401,7 @@ The following remain unsupported:
 - subprocess scopes, call activities, transactions, event subprocesses, and propagation;
 - exclusive, inclusive, complex, and event-based gateways;
 - loops, multi-instance activities, conditions, expressions, data, and variables;
-- external-effect execution;
+- host-side external-effect execution and effect mechanisms beyond the approved success-only capsule;
 - generated TypeScript as semantic authority;
 - optimization, bytecode, code generation, migration, and durable-version compatibility;
 - a separate CIB-compatible parallel profile.
@@ -380,14 +411,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, and timer exact-source fixtures lower deterministically;
+- sequential, parallel, timer, and effect exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the reviewed preservation statement remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, and timer separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, timer, and effect separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

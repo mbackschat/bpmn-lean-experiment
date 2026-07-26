@@ -45,6 +45,16 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         ],
         stimulus.logicalTimeMs,
       ]);
+    case StimulusKind.CompleteEffect:
+      return canonicalTypedTupleEncoding([
+        stimulus.kind,
+        stimulus.commandId,
+        [
+          stimulus.effectId.processInstanceId,
+          stimulus.effectId.elementId,
+          stimulus.effectId.activation,
+        ],
+      ]);
     default:
       return assertNever(stimulus);
   }

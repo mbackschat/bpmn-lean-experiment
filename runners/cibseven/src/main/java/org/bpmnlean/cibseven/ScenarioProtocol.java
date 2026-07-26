@@ -71,7 +71,8 @@ public final class ScenarioProtocol {
 
   public enum WaitKind implements WireValue {
     USER_TASK("userTask"),
-    TIMER("timer");
+    TIMER("timer"),
+    EFFECT("effect");
 
     private final String wireValue;
 
@@ -119,6 +120,7 @@ public final class ScenarioProtocol {
     ACTIVE_WAITS("activeWaits"),
     OPEN_USER_TASKS("openUserTasks"),
     OPEN_TIMERS("openTimers"),
+    OPEN_EFFECTS("openEffects"),
     ENABLED_INTERACTIONS("enabledInteractions"),
     LOGICAL_TIME("logicalTime");
 
@@ -273,6 +275,31 @@ public final class ScenarioProtocol {
     }
   }
 
+  public record EffectDescriptor(String protocol, String handler) {
+    public EffectDescriptor {
+      Objects.requireNonNull(protocol, "protocol");
+      Objects.requireNonNull(handler, "handler");
+    }
+  }
+
+  public record EffectOccurrenceId(
+      String processInstanceId, String elementId, long activation) {
+    public EffectOccurrenceId {
+      Objects.requireNonNull(processInstanceId, "processInstanceId");
+      Objects.requireNonNull(elementId, "elementId");
+      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("activation must be a positive safe wire integer");
+      }
+    }
+  }
+
+  public record OpenEffect(EffectOccurrenceId id, EffectDescriptor descriptor) {
+    public OpenEffect {
+      Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(descriptor, "descriptor");
+    }
+  }
+
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
     @JsonSubTypes.Type(
@@ -318,6 +345,7 @@ public final class ScenarioProtocol {
       List<ActiveWait> activeWaits,
       List<OpenUserTask> openUserTasks,
       List<OpenTimer> openTimers,
+      List<OpenEffect> openEffects,
       List<EnabledInteraction> enabledInteractions,
       long logicalTimeMs)
       implements CanonicalObservation {
@@ -327,6 +355,7 @@ public final class ScenarioProtocol {
       activeWaits = List.copyOf(activeWaits);
       openUserTasks = List.copyOf(openUserTasks);
       openTimers = List.copyOf(openTimers);
+      openEffects = List.copyOf(openEffects);
       enabledInteractions = List.copyOf(enabledInteractions);
       if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
         throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");

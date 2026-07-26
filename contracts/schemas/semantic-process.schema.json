@@ -237,6 +237,70 @@
         }
       }
     },
+    "effectDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "handler"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "urn:bpmn-lean:effect:probe-v1"
+        },
+        "handler": {
+          "const": "bpmnLeanEffectHandler"
+        }
+      }
+    },
+    "effectDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "descriptor"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "descriptor": {
+          "$ref": "#/$defs/effectDescriptor"
+        }
+      }
+    },
+    "awaitEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "effect"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitEffect"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "effect": {
+          "$ref": "#/$defs/effectDefinition"
+        }
+      }
+    },
     "duplicate": {
       "type": "object",
       "additionalProperties": false,
@@ -337,6 +401,9 @@
         },
         {
           "$ref": "#/$defs/awaitTimer"
+        },
+        {
+          "$ref": "#/$defs/awaitEffect"
         },
         {
           "$ref": "#/$defs/duplicate"

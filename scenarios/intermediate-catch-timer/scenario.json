@@ -32,6 +32,7 @@
     "activeWaits",
     "openUserTasks",
     "openTimers",
+    "openEffects",
     "enabledInteractions",
     "logicalTime"
   ],

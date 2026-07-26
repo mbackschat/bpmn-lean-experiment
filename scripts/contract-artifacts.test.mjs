@@ -172,6 +172,85 @@ function parallelDefinitionArtifacts() {
   };
 }
 
+function serviceTaskDefinitionArtifacts() {
+  const identity = {
+    semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
+    sourceId: "service-task-effect-phase-zero-probe",
+    sourceSha256:
+      "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d",
+  };
+  const descriptor = {
+    protocol: "urn:bpmn-lean:effect:probe-v1",
+    handler: "bpmnLeanEffectHandler",
+  };
+  return {
+    checkedProcess: {
+      kind: "checkedProcess",
+      identity,
+      processId: "Process_ServiceTaskEffectProbe",
+      nodes: [
+        { kind: "noneEndEvent", id: "EndEvent_1" },
+        {
+          kind: "serviceTask",
+          id: "ServiceTask_Record",
+          implementation: descriptor.protocol,
+          sourceBinding: {
+            delegateExpressionAttribute: {
+              namespace: "http://camunda.org/schema/1.0/bpmn",
+              value: "${bpmnLeanEffectHandler}",
+            },
+            asyncBeforeAttribute: {
+              namespace: "http://camunda.org/schema/1.0/bpmn",
+              value: "true",
+            },
+          },
+        },
+        { kind: "noneStartEvent", id: "StartEvent_1" },
+      ],
+      sequenceFlows: [
+        {
+          id: "Flow_ServiceToEnd",
+          sourceId: "ServiceTask_Record",
+          targetId: "EndEvent_1",
+        },
+        {
+          id: "Flow_StartToService",
+          sourceId: "StartEvent_1",
+          targetId: "ServiceTask_Record",
+        },
+      ],
+    },
+    semanticProcess: {
+      kind: "semanticProcess",
+      identity: {
+        compiler: "bpmn-source-semantic-process",
+        ...identity,
+      },
+      processId: "Process_ServiceTaskEffectProbe",
+      controlPlaces: [
+        controlPlace("Flow_ServiceToEnd"),
+        controlPlace("Flow_StartToService"),
+      ],
+      operations: [
+        operation("EndEvent_1", "terminate", {
+          input: "place:Flow_ServiceToEnd",
+        }),
+        operation("ServiceTask_Record", "awaitEffect", {
+          input: "place:Flow_StartToService",
+          output: "place:Flow_ServiceToEnd",
+          effect: {
+            elementId: "ServiceTask_Record",
+            descriptor,
+          },
+        }),
+        operation("StartEvent_1", "initiate", {
+          output: "place:Flow_StartToService",
+        }),
+      ],
+    },
+  };
+}
+
 function controlPlace(flowId) {
   return {
     id: `place:${flowId}`,
@@ -482,12 +561,39 @@ test("requires every semantic profile to identify its reviewed CIB-BPMN relation
 });
 
 test("accepts the canonical checked-process and Semantic Process contract shapes", async () => {
-  const artifacts = parallelDefinitionArtifacts();
+  for (const artifacts of [
+    parallelDefinitionArtifacts(),
+    serviceTaskDefinitionArtifacts(),
+  ]) {
+    assert.equal(
+      await verifyDefinitionArtifacts(projectRoot, artifacts),
+      artifacts,
+    );
+  }
+});
 
-  assert.equal(
-    await verifyDefinitionArtifacts(projectRoot, artifacts),
-    artifacts,
-  );
+test("rejects drift in either exact Service Task binding identity", async () => {
+  for (const mutate of [
+    (artifacts) => {
+      artifacts.checkedProcess.nodes[1].implementation =
+        "urn:bpmn-lean:effect:other";
+    },
+    (artifacts) => {
+      artifacts.checkedProcess.nodes[1].sourceBinding
+        .delegateExpressionAttribute.value = "${otherHandler}";
+    },
+    (artifacts) => {
+      artifacts.semanticProcess.operations[1].effect.elementId =
+        "Other_ServiceTask";
+    },
+  ]) {
+    const artifacts = serviceTaskDefinitionArtifacts();
+    mutate(artifacts);
+    await assert.rejects(
+      verifyDefinitionArtifacts(projectRoot, artifacts),
+      /schema validation failed|effect identity differs/,
+    );
+  }
 });
 
 test("rejects checked and Semantic Process references outside their definition domains", async () => {

@@ -32,6 +32,7 @@ export enum StimulusKind {
   StartProcess = "startProcess",
   CompleteUserTaskInstance = "completeUserTaskInstance",
   FireTimer = "fireTimer",
+  CompleteEffect = "completeEffect",
 }
 
 export type StartProcessStimulus = Readonly<{
@@ -41,11 +42,13 @@ export type StartProcessStimulus = Readonly<{
   instanceId: string;
 }>;
 
-export type UserTaskInstanceId = Readonly<{
+export type OccurrenceId = Readonly<{
   processInstanceId: string;
   elementId: string;
   activation: number;
 }>;
+
+export type UserTaskInstanceId = OccurrenceId;
 
 export type CompleteUserTaskInstanceStimulus = Readonly<{
   kind: StimulusKind.CompleteUserTaskInstance;
@@ -53,11 +56,7 @@ export type CompleteUserTaskInstanceStimulus = Readonly<{
   taskId: UserTaskInstanceId;
 }>;
 
-export type TimerOccurrenceId = Readonly<{
-  processInstanceId: string;
-  elementId: string;
-  activation: number;
-}>;
+export type TimerOccurrenceId = OccurrenceId;
 
 export type FireTimerStimulus = Readonly<{
   kind: StimulusKind.FireTimer;
@@ -66,10 +65,19 @@ export type FireTimerStimulus = Readonly<{
   logicalTimeMs: number;
 }>;
 
+export type EffectOccurrenceId = OccurrenceId;
+
+export type CompleteEffectStimulus = Readonly<{
+  kind: StimulusKind.CompleteEffect;
+  commandId: string;
+  effectId: EffectOccurrenceId;
+}>;
+
 export type Stimulus =
   | StartProcessStimulus
   | CompleteUserTaskInstanceStimulus
-  | FireTimerStimulus;
+  | FireTimerStimulus
+  | CompleteEffectStimulus;
 
 export enum ProcessStatus {
   NotStarted = "notStarted",
@@ -80,6 +88,7 @@ export enum ProcessStatus {
 export enum WaitKind {
   UserTask = "userTask",
   Timer = "timer",
+  Effect = "effect",
 }
 
 export enum ObservationRequestKind {
@@ -89,6 +98,7 @@ export enum ObservationRequestKind {
   ActiveWaits = "activeWaits",
   OpenUserTasks = "openUserTasks",
   OpenTimers = "openTimers",
+  OpenEffects = "openEffects",
   EnabledInteractions = "enabledInteractions",
   LogicalTime = "logicalTime",
 }
@@ -127,6 +137,11 @@ export type OpenTimer = Readonly<{
   deadlineMs: number;
 }>;
 
+export type OpenEffect = Readonly<{
+  id: EffectOccurrenceId;
+  descriptor: import("./semantic-process-contract.js").EffectDescriptor;
+}>;
+
 export type StateObservation = Readonly<{
   kind: CanonicalObservationKind.State;
   instanceId: string;
@@ -134,6 +149,7 @@ export type StateObservation = Readonly<{
   activeWaits: ReadonlyArray<ActiveWait>;
   openUserTasks: ReadonlyArray<OpenUserTask>;
   openTimers: ReadonlyArray<OpenTimer>;
+  openEffects: ReadonlyArray<OpenEffect>;
   enabledInteractions: ReadonlyArray<EnabledInteraction>;
   logicalTimeMs: number;
 }>;

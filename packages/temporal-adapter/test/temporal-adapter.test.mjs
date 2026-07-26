@@ -274,6 +274,7 @@ function parallelScenario(firstElementId, secondElementId) {
       ObservationRequestKind.ActiveWaits,
       ObservationRequestKind.OpenUserTasks,
       ObservationRequestKind.OpenTimers,
+      ObservationRequestKind.OpenEffects,
       ObservationRequestKind.EnabledInteractions,
       ObservationRequestKind.LogicalTime,
     ],

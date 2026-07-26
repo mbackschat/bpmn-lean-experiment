@@ -54,6 +54,13 @@ inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | userTask (id : NodeId) (name : Option String)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
+  | serviceTask
+      (id : NodeId)
+      (implementation : String)
+      (delegateExpressionNamespace : String)
+      (delegateExpressionValue : String)
+      (asyncBeforeNamespace : String)
+      (asyncBeforeValue : String)
   | parallelGateway (id : NodeId) (direction : GatewayDirection)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
@@ -101,6 +108,11 @@ structure TimerDefinition where
   durationMs : Nat
   deriving Repr, DecidableEq
 
+structure EffectDefinition where
+  elementId : NodeId
+  descriptor : EffectDescriptor
+  deriving Repr, DecidableEq
+
 inductive SemanticOperation where
   | initiate
       (id : OperationId)
@@ -118,6 +130,12 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (timer : TimerDefinition)
+  | awaitEffect
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (output : ControlPlaceId)
+      (effect : EffectDefinition)
   | duplicate
       (id : OperationId)
       (origin : BpmnElementOrigin)

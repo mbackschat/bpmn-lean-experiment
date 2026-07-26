@@ -234,21 +234,18 @@ test("rejects BPMN behavior outside the first executable profile", async () => {
   );
 });
 
-test("retains the exact Service Task probe source and foreign attributes without parser warnings", async () => {
+test("admits the exact Service Task source and foreign attributes without parser warnings", async () => {
   const probeBytes = await readFile(serviceTaskProbeUrl);
   const result = await compileBpmnToSemanticProcess({
     bytes: probeBytes,
     sourceId: "service-task-effect-phase-zero-probe",
-    semanticProfile: scenario.profile,
+    semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
     limits,
   });
 
   assert.deepEqual([...result.copyExactBytes()], [...probeBytes]);
-  assert.equal(result.status, BpmnCompilationStatus.Rejected);
-  assert.deepEqual(
-    result.diagnostics.map(({ code }) => code),
-    [BpmnSourceDiagnosticCode.UnsupportedModel],
-  );
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(result.diagnostics, []);
 
   const { importBpmnGraph } = await import("../dist/moddle-adapter.js");
   const imported = await importBpmnGraph(

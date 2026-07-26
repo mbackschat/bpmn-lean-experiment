@@ -22,6 +22,9 @@ import type {
 } from "./contracts.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
+const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
+const effectProtocol = "urn:bpmn-lean:effect:probe-v1";
+const effectHandlerExpression = "${bpmnLeanEffectHandler}";
 
 type ElementRecord = Record<string, unknown>;
 
@@ -108,7 +111,7 @@ export function compileCheckedProcess(
       "Every Sequence Flow requires a distinct ID and resolved source and target references.",
     );
   }
-  const nodes = projectNodes(sourceNodes, sequenceFlows);
+  const nodes = projectNodes(sourceNodes, sequenceFlows, definitions);
   if (nodes === undefined) {
     return unsupported(
       "Every admitted node requires a supported plain shape, distinct ID, and gateway direction consistent with its arity.",
@@ -127,7 +130,7 @@ export function compileCheckedProcess(
   }
   if (!hasSupportedTopology(nodes, sequenceFlows)) {
     return unsupported(
-      "The bounded compiler supports only the sequential User Task or balanced two-branch Parallel Gateway topology.",
+      "The bounded compiler supports only one sequential wait or the balanced two-branch Parallel Gateway topology.",
     );
   }
 
@@ -150,6 +153,7 @@ export function compileCheckedProcess(
 function projectNodes(
   elements: ReadonlyArray<ElementRecord>,
   flows: ReadonlyArray<CheckedSequenceFlow>,
+  definitions: ElementRecord,
 ): ReadonlyArray<CheckedNode> | undefined {
   const projected = elements.map((element) => {
     const id = readId(element);
@@ -175,6 +179,8 @@ function projectNodes(
               durationLiteral: "PT1S",
             }
           : undefined;
+      case bpmnTypes.serviceTaskType:
+        return projectServiceTask(element, definitions, id);
       case bpmnTypes.parallelGatewayType: {
         const direction = classifyGateway(element, id, flows);
         return direction === undefined
@@ -249,6 +255,9 @@ function hasSupportedTopology(
   const timers = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.IntermediateCatchTimerEvent,
   );
+  const effects = nodes.filter(
+    ({ kind }) => kind === CheckedNodeKind.ServiceTask,
+  );
   const gateways = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.ParallelGateway,
   );
@@ -264,11 +273,11 @@ function hasSupportedTopology(
     return false;
   }
   if (
-    tasks.length + timers.length === 1 &&
+    tasks.length + timers.length + effects.length === 1 &&
     gateways.length === 0 &&
     flows.length === 2
   ) {
-    const waitNode = tasks[0] ?? timers[0];
+    const waitNode = tasks[0] ?? timers[0] ?? effects[0];
     return (
       waitNode !== undefined &&
       hasFlow(flows, start.id, waitNode.id) &&
@@ -277,6 +286,7 @@ function hasSupportedTopology(
   }
   if (
     timers.length !== 0 ||
+    effects.length !== 0 ||
     tasks.length !== 2 ||
     gateways.length !== 2 ||
     flows.length !== 6
@@ -332,9 +342,82 @@ function isSupportedNodeType(type: unknown): boolean {
     bpmnTypes.startEventType,
     bpmnTypes.intermediateCatchEventType,
     bpmnTypes.userTaskType,
+    bpmnTypes.serviceTaskType,
     bpmnTypes.parallelGatewayType,
     bpmnTypes.endEventType,
   ].includes(String(type));
+}
+
+function projectServiceTask(
+  element: ElementRecord,
+  definitions: ElementRecord,
+  id: string,
+): Extract<CheckedNode, { kind: CheckedNodeKind.ServiceTask }> | undefined {
+  if (
+    !hasOnlyOwnKeys(element, ["$type", "id", "name", "implementation"]) ||
+    element.implementation !== effectProtocol
+  ) {
+    return undefined;
+  }
+  const attributes = readForeignAttributes(element, definitions);
+  if (
+    attributes === undefined ||
+    attributes.size !== 2 ||
+    attributes.get(`${camundaNamespace}#delegateExpression`) !==
+      effectHandlerExpression ||
+    attributes.get(`${camundaNamespace}#asyncBefore`) !== "true"
+  ) {
+    return undefined;
+  }
+  return {
+    kind: CheckedNodeKind.ServiceTask,
+    id,
+    implementation: effectProtocol,
+    sourceBinding: {
+      delegateExpressionAttribute: {
+        namespace: camundaNamespace,
+        value: effectHandlerExpression,
+      },
+      asyncBeforeAttribute: {
+        namespace: camundaNamespace,
+        value: "true",
+      },
+    },
+  };
+}
+
+function readForeignAttributes(
+  element: ElementRecord,
+  definitions: ElementRecord,
+): ReadonlyMap<string, string> | undefined {
+  const rawAttributes = asElement(element.$attrs);
+  const namespaceAttributes = asElement(definitions.$attrs);
+  if (rawAttributes === undefined || namespaceAttributes === undefined) {
+    return undefined;
+  }
+  const expanded = new Map<string, string>();
+  for (const [qualifiedName, value] of Object.entries(rawAttributes)) {
+    const separator = qualifiedName.indexOf(":");
+    if (
+      separator <= 0 ||
+      separator === qualifiedName.length - 1 ||
+      typeof value !== "string"
+    ) {
+      return undefined;
+    }
+    const prefix = qualifiedName.slice(0, separator);
+    const localName = qualifiedName.slice(separator + 1);
+    const namespace = namespaceAttributes[`xmlns:${prefix}`];
+    if (typeof namespace !== "string") {
+      return undefined;
+    }
+    const expandedName = `${namespace}#${localName}`;
+    if (expanded.has(expandedName)) {
+      return undefined;
+    }
+    expanded.set(expandedName, value);
+  }
+  return expanded;
 }
 
 function isExactPt1sTimerEvent(element: ElementRecord): boolean {

@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "intermediate-catch-timer-pt1s",
-    "sha256": "a731f9a3a472799d80e16305ff0819953078a47ea085e05e7f30c80e51ea4a99"
+    "sha256": "911ad0fd13587aa79be3b606fefc6bed1644c0d42d4bedd803d702b993c8bae4"
   },
   "profile": {
     "id": "cibseven-2.2.0-intermediate-catch-timer-draft",
-    "sha256": "56d413248ea4db319eab572a56359c175d440d4e22fe5731210eaa5d5a4e528b"
+    "sha256": "a88761acd87eed9cdb595eeb704077181585590ecee44abf84eb8236db4a2514"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -84,6 +84,7 @@
             "deadlineMs": 1000
           }
         ],
+        "openEffects": [],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       },
@@ -99,6 +100,7 @@
         "activeWaits": [],
         "openUserTasks": [],
         "openTimers": [],
+        "openEffects": [],
         "enabledInteractions": [],
         "logicalTimeMs": 1000
       }

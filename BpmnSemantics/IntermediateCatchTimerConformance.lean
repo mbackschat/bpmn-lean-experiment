@@ -82,6 +82,7 @@ private def observations : List ObservationKind :=
   , .activeWaits
   , .openUserTasks
   , .openTimers
+  , .openEffects
   , .enabledInteractions
   , .logicalTime ]
 
@@ -123,6 +124,7 @@ def waitingObservation : StateObservation :=
           multiplicity := 1 } ]
     openUserTasks := []
     openTimers := [{ id := timerId, deadlineMs := 1000 }]
+    openEffects := []
     enabledInteractions := []
     logicalTimeMs := 0 }
 
@@ -132,6 +134,7 @@ def completedObservation : StateObservation :=
     activeWaits := []
     openUserTasks := []
     openTimers := []
+    openEffects := []
     enabledInteractions := []
     logicalTimeMs := 1000 }
 

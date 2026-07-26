@@ -1061,6 +1061,8 @@ function requireCompletionStimuli(
         return [stimulus];
       case StimulusKind.FireTimer:
         return [];
+      case StimulusKind.CompleteEffect:
+        return [];
       case StimulusKind.StartProcess:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
@@ -1078,6 +1080,7 @@ function requireOptionalTimerStimulus(
   for (const stimulus of scenario.stimuli.slice(1)) {
     switch (stimulus.kind) {
       case StimulusKind.CompleteUserTaskInstance:
+      case StimulusKind.CompleteEffect:
         break;
       case StimulusKind.FireTimer:
         if (timer !== undefined) {
@@ -1206,6 +1209,7 @@ export function isCompletedProcessReceipt(
       "activeWaits",
       "openUserTasks",
       "openTimers",
+      "openEffects",
       "enabledInteractions",
       "logicalTimeMs",
     ]) &&
@@ -1218,6 +1222,8 @@ export function isCompletedProcessReceipt(
     finalState.openUserTasks.length === 0 &&
     Array.isArray(finalState.openTimers) &&
     finalState.openTimers.length === 0 &&
+    Array.isArray(finalState.openEffects) &&
+    finalState.openEffects.length === 0 &&
     Array.isArray(finalState.enabledInteractions) &&
     finalState.enabledInteractions.length === 0 &&
     Number.isSafeInteger(finalState.logicalTimeMs) &&

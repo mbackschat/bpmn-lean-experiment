@@ -19,6 +19,7 @@ private def parallelObservations : List ObservationKind :=
   , .activeWaits
   , .openUserTasks
   , .openTimers
+  , .openEffects
   , .enabledInteractions
   , .logicalTime ]
 

@@ -31,6 +31,7 @@ const calibratedResult = {
       ],
       openUserTasks: [],
       openTimers: [],
+      openEffects: [],
       enabledInteractions: [],
       logicalTimeMs: 0,
     },

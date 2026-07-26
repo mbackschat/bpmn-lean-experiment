@@ -91,6 +91,20 @@ function lowerNode(
           durationMs: normalizeTimerDuration(node.durationLiteral),
         },
       };
+    case CheckedNodeKind.ServiceTask:
+      return {
+        ...base,
+        kind: SemanticOperationKind.AwaitEffect,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        effect: {
+          elementId: node.id,
+          descriptor: {
+            protocol: node.implementation,
+            handler: "bpmnLeanEffectHandler",
+          },
+        },
+      };
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:

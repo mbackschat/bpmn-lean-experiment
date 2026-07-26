@@ -40,6 +40,9 @@
           },
           {
             "$ref": "#/$defs/fireTimer"
+          },
+          {
+            "$ref": "#/$defs/completeEffect"
           }
         ]
       },
@@ -53,6 +56,7 @@
         "activeWaits",
         "openUserTasks",
         "openTimers",
+        "openEffects",
         "enabledInteractions",
         "logicalTime"
       ]
@@ -199,7 +203,7 @@
         }
       }
     },
-    "userTaskInstanceId": {
+    "occurrenceId": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -220,6 +224,9 @@
           "maximum": 9007199254740991
         }
       }
+    },
+    "userTaskInstanceId": {
+      "$ref": "#/$defs/occurrenceId"
     },
     "completeUserTaskInstance": {
       "type": "object",
@@ -242,24 +249,28 @@
       }
     },
     "timerOccurrenceId": {
+      "$ref": "#/$defs/occurrenceId"
+    },
+    "effectOccurrenceId": {
+      "$ref": "#/$defs/occurrenceId"
+    },
+    "completeEffect": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "processInstanceId",
-        "elementId",
-        "activation"
+        "kind",
+        "commandId",
+        "effectId"
       ],
       "properties": {
-        "processInstanceId": {
-          "$ref": "#/$defs/nonEmptyString"
+        "kind": {
+          "const": "completeEffect"
         },
-        "elementId": {
-          "$ref": "#/$defs/nonEmptyString"
+        "commandId": {
+          "$ref": "#/$defs/commandId"
         },
-        "activation": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
+        "effectId": {
+          "$ref": "#/$defs/effectOccurrenceId"
         }
       }
     },
@@ -320,7 +331,8 @@
         "kind": {
           "enum": [
             "userTask",
-            "timer"
+            "timer",
+            "effect"
           ]
         },
         "multiplicity": {
@@ -368,6 +380,38 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 9007199254740991
+        }
+      }
+    },
+    "effectDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "handler"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "urn:bpmn-lean:effect:probe-v1"
+        },
+        "handler": {
+          "const": "bpmnLeanEffectHandler"
+        }
+      }
+    },
+    "openEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "descriptor"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/effectOccurrenceId"
+        },
+        "descriptor": {
+          "$ref": "#/$defs/effectDescriptor"
         }
       }
     },
@@ -426,6 +470,7 @@
         "activeWaits",
         "openUserTasks",
         "openTimers",
+        "openEffects",
         "enabledInteractions",
         "logicalTimeMs"
       ],
@@ -459,6 +504,12 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/openTimer"
+          }
+        },
+        "openEffects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openEffect"
           }
         },
         "enabledInteractions": {
