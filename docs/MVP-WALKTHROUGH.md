@@ -366,6 +366,6 @@ It does not establish general BPMN parsing or execution, OMG conformance, immuta
 
 ## What comes next
 
-The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable, and Lean now checks the admitted definition, token multiplicity, per-incoming-flow synchronization, completion-order independence, and duplicate-left/no-right non-law. The next lane must establish the same observable contract through an independently implemented TypeScript evaluator before CIB and Temporal closure.
+The next owner-approved proposal is a parallel fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable, and both Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, and the duplicate-left/no-right non-law. The next lane must establish canonical CIB observations for both completion orders before Temporal and four-target closure.
 
-Its semantic contract is approved and partially implemented, while independent production execution and cross-lane closure evidence remain open. The exact resume point and separating witnesses are in [PLAN.md](PLAN.md).
+Its semantic contract is approved and partially implemented, while canonical CIB evidence, durable hosting, and cross-lane closure evidence remain open. The exact resume point and separating witnesses are in [PLAN.md](PLAN.md).

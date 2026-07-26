@@ -35,4 +35,4 @@ Start with a Markdown evidence matrix inside the owning capsule. Do not introduc
 | Capsule | Status and scope |
 |---|---|
 | [User Task interaction](USER-TASK-INTERACTION-SPEC.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |
-| [Parallel fork/join](PARALLEL-FORK-JOIN-PROPOSAL.md) | Owner-approved semantic proposal for two concurrent distinct User Tasks and normative per-incoming-flow synchronization; implementation and confirmation evidence remain pending, and `CIB-DEV-0001` remains candidate |
+| [Parallel fork/join](PARALLEL-FORK-JOIN-PROPOSAL.md) | Owner-approved, partially implemented semantic proposal for two concurrent distinct User Tasks and normative per-incoming-flow synchronization; checked source/lowering plus Lean and TypeScript semantics are implemented, CIB/Temporal/closure evidence remains pending, and `CIB-DEV-0001` remains candidate |

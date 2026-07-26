@@ -37,7 +37,7 @@ export function supportsSemanticProcessScenario(
   return (
     isSupportedScenario(scenario) &&
     isWellFormedSemanticProcessProgram(program) &&
-    hasSequentialExecutionSurface(program) &&
+    hasSupportedExecutionSurface(program) &&
     program.identity.semanticProfile === scenario.profile &&
     program.identity.sourceId === scenario.bpmn.id &&
     program.identity.sourceSha256 === scenario.bpmn.sha256
@@ -104,21 +104,95 @@ export function isWellFormedSemanticProcessProgram(
   return initiates === 1;
 }
 
-function hasSequentialExecutionSurface(
+function hasSupportedExecutionSurface(
   program: SemanticProcessProgram,
 ): boolean {
   return (
+    hasSequentialExecutionSurface(program) ||
+    hasBalancedParallelExecutionSurface(program)
+  );
+}
+
+function hasSequentialExecutionSurface(
+  program: SemanticProcessProgram,
+): boolean {
+  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
+  const task = onlyOperation(program, SemanticOperationKind.AwaitUserTask);
+  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
+  return (
     program.controlPlaces.length === 2 &&
     program.operations.length === 3 &&
-    program.operations.filter(
-      ({ kind }) => kind === SemanticOperationKind.Initiate,
-    ).length === 1 &&
-    program.operations.filter(
-      ({ kind }) => kind === SemanticOperationKind.AwaitUserTask,
-    ).length === 1 &&
-    program.operations.filter(
-      ({ kind }) => kind === SemanticOperationKind.Terminate,
-    ).length === 1
+    initiate !== undefined &&
+    task !== undefined &&
+    terminate !== undefined &&
+    initiate.output === task.input &&
+    task.output === terminate.input
+  );
+}
+
+function hasBalancedParallelExecutionSurface(
+  program: SemanticProcessProgram,
+): boolean {
+  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
+  const duplicate = onlyOperation(program, SemanticOperationKind.Duplicate);
+  const synchronize = onlyOperation(
+    program,
+    SemanticOperationKind.Synchronize,
+  );
+  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
+  const tasks = operationsOfKind(
+    program,
+    SemanticOperationKind.AwaitUserTask,
+  );
+  return (
+    program.controlPlaces.length === 6 &&
+    program.operations.length === 6 &&
+    initiate !== undefined &&
+    duplicate !== undefined &&
+    synchronize !== undefined &&
+    terminate !== undefined &&
+    tasks.length === 2 &&
+    new Set(tasks.map(({ task }) => task.elementId)).size === 2 &&
+    initiate.output === duplicate.input &&
+    sameStringSet(
+      duplicate.outputs,
+      tasks.map(({ input }) => input),
+    ) &&
+    sameStringSet(
+      tasks.map(({ output }) => output),
+      synchronize.inputs,
+    ) &&
+    synchronize.output === terminate.input
+  );
+}
+
+function onlyOperation<K extends SemanticOperationKind>(
+  program: SemanticProcessProgram,
+  kind: K,
+): Extract<SemanticOperation, { kind: K }> | undefined {
+  const operations = operationsOfKind(program, kind);
+  return operations.length === 1 ? operations[0] : undefined;
+}
+
+function operationsOfKind<K extends SemanticOperationKind>(
+  program: SemanticProcessProgram,
+  kind: K,
+): ReadonlyArray<Extract<SemanticOperation, { kind: K }>> {
+  return program.operations.filter(
+    (
+      operation,
+    ): operation is Extract<SemanticOperation, { kind: K }> =>
+      operation.kind === kind,
+  );
+}
+
+function sameStringSet(
+  left: ReadonlyArray<string>,
+  right: ReadonlyArray<string>,
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value) => right.includes(value))
   );
 }
 

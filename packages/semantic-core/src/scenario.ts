@@ -77,11 +77,13 @@ export type ScenarioDeployment = Readonly<{
 export function projectOpenUserTasks(
   state: RuntimeState,
 ): ReadonlyArray<OpenUserTask> {
-  return state.userTaskWaits.map((wait) => ({
-    id: wait.id,
-    name: wait.name,
-    state: UserTaskLifecycleState.Active,
-  }));
+  return state.userTaskWaits
+    .map((wait) => ({
+      id: wait.id,
+      name: wait.name,
+      state: UserTaskLifecycleState.Active,
+    }))
+    .sort(compareOpenUserTasks);
 }
 
 function observeStableState(state: RuntimeState): StateObservation | null {
@@ -97,9 +99,9 @@ function observeStableState(state: RuntimeState): StateObservation | null {
             : ProcessStatus.Completed,
         activeWaits: projectActiveWaits(state),
         openUserTasks: projectOpenUserTasks(state),
-        enabledInteractions: state.userTaskWaits.map((wait) => ({
+        enabledInteractions: projectOpenUserTasks(state).map((task) => ({
           kind: StimulusKind.CompleteUserTaskInstance,
-          taskId: wait.id,
+          taskId: task.id,
         })),
         logicalTimeMs: state.logicalTimeMs,
       };
@@ -125,6 +127,26 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
       kind: WaitKind.UserTask,
       multiplicity,
     }));
+}
+
+function compareOpenUserTasks(
+  left: OpenUserTask,
+  right: OpenUserTask,
+): number {
+  if (left.id.processInstanceId !== right.id.processInstanceId) {
+    return compareStrings(
+      left.id.processInstanceId,
+      right.id.processInstanceId,
+    );
+  }
+  if (left.id.elementId !== right.id.elementId) {
+    return compareStrings(left.id.elementId, right.id.elementId);
+  }
+  return left.id.activation - right.id.activation;
+}
+
+function compareStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 export function advanceScenario(

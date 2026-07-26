@@ -2,7 +2,7 @@
 
 `@bpmn-lean/semantic-core` is the production-oriented, dependency-free TypeScript implementation of the approved semantic capsule. It owns BPMN-visible command/state transitions and canonical observations, but no file I/O, XML parser, CIB Seven code, Temporal SDK code, or external effects.
 
-The current execution surface supports only the content-addressed `None Start Event → User Task → None End Event` model and the three [User Task witnesses](../../scenarios/user-task-discovery-completion/README.md). The current Semantic Process program comes from the separate [source-ingestion package](../bpmn-source/README.md), and results are checked independently against retained CIB evidence and the generic [Lean Semantic Process interpreter](../../BpmnSemantics/SemanticProcess.lean). The contract admits the approved parallel operation shapes, but TypeScript parallel execution remains gated until its independent evaluator and witnesses are complete.
+The current execution surface supports the content-addressed `None Start Event → User Task → None End Event` model and the exact balanced two-branch parallel fork/join model. The current Semantic Process program comes from the separate [source-ingestion package](../bpmn-source/README.md), and sequential results are checked independently against retained CIB evidence and the generic [Lean Semantic Process interpreter](../../BpmnSemantics/SemanticProcess.lean). The parallel evaluator executes `duplicate` and per-incoming-flow `synchronize`, preserves flow-identified token multiplicity, projects two semantic task occurrences deterministically, accepts either completion order, and retains excess join tokens. Canonical CIB and Temporal parallel evidence remain outside this package.
 
 ## Public boundary
 
@@ -35,7 +35,7 @@ The code is split by responsibility:
 |---|---|
 | [semantic-process-contract.ts](src/semantic-process-contract.ts) | Checked BPMN graph and Semantic Process definition data |
 | [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario/program validation, identity admission, and current execution-surface gate |
-| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, external command admission, operation dispatch, internal closure, and `applyStimulus` |
+| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, external command admission, enum-based operation dispatch for all current operations, operation-ID-stable internal closure, and `applyStimulus` |
 | [scenario.ts](src/scenario.ts) | Stable observation projection and incremental/full scenario evaluation |
 | [stimulus.ts](src/stimulus.ts) | Structural stimulus validation, command identity, and exact same-stimulus comparison |
 

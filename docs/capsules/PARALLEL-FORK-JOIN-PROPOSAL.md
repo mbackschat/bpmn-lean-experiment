@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved semantic proposal on 2026-07-26; production implementation, immutable profile artifact, and closure evidence are pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
+**Owner-approved semantic proposal on 2026-07-26; checked source/lowering plus Lean and independent TypeScript semantic implementations are complete, while immutable profile, canonical CIB, Temporal, differential, and closure evidence remain pending. It graduates to `PARALLEL-FORK-JOIN-SPEC.md` only with the implemented contract and its required evidence lanes.**
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
@@ -109,7 +109,7 @@ Reconsider this decision if a material rule cannot be stated or proved without p
 
 The bounded source compiler expansion admits exactly the reviewed fork/join topology with two distinct User Tasks and resolved Sequence Flows. The approved [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the proposed checked source graph, `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, and `terminate` operations, lowering rules, well-formedness, and growth constraints.
 
-The sequential topology-specific executable representation and evaluator path were replaced atomically by the checked graph, Semantic Process program, and program-driven sequential evaluator. They do not survive as delegated or compatibility paths. This does not authorize a general BPMN compiler, universal semantic language, general scope algebra, or arbitrary graph execution.
+The sequential topology-specific executable representation and evaluator path were replaced atomically by the checked graph, Semantic Process program, and generic program-driven evaluator. The independent TypeScript semantic core now admits exactly the sequential graph or the balanced two-task parallel graph and executes every current operation without delegating to topology-specific logic. This does not authorize a general BPMN compiler, universal semantic language, general scope algebra, or arbitrary graph execution.
 
 Lean consumes the exact admitted checked graph and Semantic Process program produced once for the scenario rather than compiling a second definition into its module. The bounded obligations are:
 
@@ -127,7 +127,7 @@ The same Semantic Process program must be supplied to the TypeScript semantic co
 
 The new runtime-transition family needs a declarative relation separate from the executable evaluator and a theorem that every evaluator-produced transition is admitted by that relation. That soundness bridge does not establish completeness, determinism, BPMN fidelity, TypeScript correspondence, or CIB compatibility.
 
-Useful proposed laws are:
+The current Lean laws and independent TypeScript witnesses establish:
 
 - start closure creates exactly the two branch waits and no other public wait;
 - before both incoming-flow conditions hold, no evaluator step crosses the join;
@@ -145,7 +145,7 @@ Required negative and mutation evidence includes:
 - exposing a partial join offer changes canonical state and is rejected;
 - changing the admitted executable topology without changing the scenario is detected by the Lean input binding.
 
-The future rule-to-evidence matrix must keep normative/profile, Lean relation/law, pristine CIB observation, independent TypeScript behavior, Temporal refinement/replay, negative-witness, and mutation claims in separate cells. The current candidate CIB probe fills only the bounded research-observation cell.
+The graduation rule-to-evidence matrix must keep normative/profile, Lean relation/law, pristine CIB observation, independent TypeScript behavior, Temporal refinement/replay, negative-witness, and mutation claims in separate cells. The current candidate CIB probe fills only the bounded research-observation cell.
 
 ## Runtime-only and synthetic construct constraints
 
@@ -160,6 +160,8 @@ The observable contract requires hidden runtime state to preserve token multipli
 | Internal microevents and closure bound | Implementation diagnostics and harness protection | Excluded from canonical state | Bound exhaustion remains a harness outcome, not a BPMN incident |
 | CIB execution/task IDs and Temporal Workflow/Run/Update IDs | Host runtime | Excluded | May address host operations but may not determine BPMN meaning or canonical ordering |
 
+The TypeScript realization uses a sorted array of `{ placeId, multiplicity }` entries for flow-identified tokens, sorted semantic User Task waits carrying their continuation place, and sorted per-element activation counters. Enum-based operation dispatch implements all current mechanisms. Internal closure selects the lowest semantic operation ID among enabled operations, and an operation-array permutation witness requires the same result; for the only simultaneous internal choice in the bounded graph, the two distinct task activations commute and stable projection is checked independently of wait storage order. These are TypeScript-owned runtime choices, not additions to the public capsule contract.
+
 ## R5 and R6 prerequisites
 
 The observable contract resolves the questions that previously blocked the two implementation corrections:
@@ -167,7 +169,7 @@ The observable contract resolves the questions that previously blocked the two i
 - **R5 — completed:** current-state task projection, stimulus well-formedness, command identity, and same-stimulus comparison are semantic-core-owned operations. The current Workflow invokes them directly and no longer infers open tasks from diagnostic trace history or maintains validation and identity-policy copies.
 - **R6:** before the CIB runner emits canonical parallel evidence, remove its single-active-task guard only together with deterministic semantic task sorting and per-element wait multiplicity. Distinct active elements produce distinct entries; repeated instances of one element require derived activation ordinals and remain out of scope here.
 
-These corrections are implementation prerequisites, not evidence that this capsule is already implemented.
+These corrections and semantic implementations are prerequisites, not evidence that this capsule is already closed across its required CIB, Temporal, differential, mutation, and profile lanes.
 
 ## Owner decisions
 

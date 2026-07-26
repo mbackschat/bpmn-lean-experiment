@@ -149,16 +149,26 @@ function internalStep(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): RuntimeState | null {
-  for (const operation of program.operations) {
-    const next = fireIfEnabled(operation, state);
-    if (next !== null) {
-      return next;
-    }
-  }
-  return null;
+  const enabled = program.operations
+    .map((operation) => ({
+      operation,
+      successor: applyInternalOperation(operation, state),
+    }))
+    .filter(
+      (
+        candidate,
+      ): candidate is {
+        operation: SemanticOperation;
+        successor: RuntimeState;
+      } => candidate.successor !== null,
+    )
+    .sort(({ operation: left }, { operation: right }) =>
+      compareStrings(left.id, right.id)
+    );
+  return enabled[0]?.successor ?? null;
 }
 
-function fireIfEnabled(
+export function applyInternalOperation(
   operation: SemanticOperation,
   state: RuntimeState,
 ): RuntimeState | null {
@@ -178,13 +188,20 @@ function fireIfEnabled(
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
         ? createUserTaskWait(operation, state)
         : null;
+    case SemanticOperationKind.Duplicate:
+      return tokenMultiplicity(state.controlTokens, operation.input) > 0
+        ? duplicate(operation, state)
+        : null;
+    case SemanticOperationKind.Synchronize:
+      return operation.inputs.every(
+        (input) => tokenMultiplicity(state.controlTokens, input) > 0,
+      )
+        ? synchronize(operation, state)
+        : null;
     case SemanticOperationKind.Terminate:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
         ? terminate(operation, state)
         : null;
-    case SemanticOperationKind.Duplicate:
-    case SemanticOperationKind.Synchronize:
-      return null;
     default:
       return assertNever(operation);
   }
@@ -251,6 +268,39 @@ function terminate(
         : state.control,
     controlTokens,
     endOccurrences,
+  };
+}
+
+function duplicate(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.Duplicate }
+  >,
+  state: RuntimeState,
+): RuntimeState {
+  return {
+    ...state,
+    controlTokens: operation.outputs.reduce(
+      addToken,
+      removeToken(state.controlTokens, operation.input),
+    ),
+  };
+}
+
+function synchronize(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.Synchronize }
+  >,
+  state: RuntimeState,
+): RuntimeState {
+  const remaining = operation.inputs.reduce(
+    removeToken,
+    state.controlTokens,
+  );
+  return {
+    ...state,
+    controlTokens: addToken(remaining, operation.output),
   };
 }
 
@@ -384,10 +434,20 @@ function compareWaits(
   left: SemanticUserTaskWait,
   right: SemanticUserTaskWait,
 ): number {
+  if (left.id.processInstanceId !== right.id.processInstanceId) {
+    return compareStrings(
+      left.id.processInstanceId,
+      right.id.processInstanceId,
+    );
+  }
   if (left.id.elementId !== right.id.elementId) {
-    return left.id.elementId < right.id.elementId ? -1 : 1;
+    return compareStrings(left.id.elementId, right.id.elementId);
   }
   return left.id.activation - right.id.activation;
+}
+
+function compareStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function assertNever(value: never): never {

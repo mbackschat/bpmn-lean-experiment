@@ -4,7 +4,7 @@ Making BPMN execution durable, explainable, and continuously checkable.
 
 This project explores a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. The ultimate goal is OMG BPMN Process Execution Conformance for imported executable Process diagrams—not merely translating BPMN shapes into Workflow code.
 
-> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. Exact BPMN lowers through a checked project-owned graph to the bounded Semantic Process program consumed by the sequential production path. Lean now independently lowers, validates, and evaluates those exact admitted definitions and checks the parallel fork/join laws. Independent TypeScript parallel execution, canonical CIB evidence, and Temporal refinement remain open. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
+> **Status:** The bounded `None Start Event → User Task → None End Event` MVP is evidence-closed as a draft. Exact completion, wrong activation, and stale completion agree across pinned CIB Seven, an executable Lean reference interpreter, an independent pure TypeScript semantic core, and a Temporal adapter. Exact BPMN lowers through a checked project-owned graph to the bounded Semantic Process program. Lean independently lowers, validates, and evaluates those exact admitted definitions, and both Lean and the TypeScript semantic core now check the approved parallel fork/join behavior. Canonical parallel CIB evidence, Temporal refinement, and four-target comparison remain open. This repository is not yet a general BPMN engine and makes no OMG conformance or immutable CIB compatibility claim.
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
@@ -160,9 +160,9 @@ scripts/             Maintained verification and infrastructure guards
 
 ## Next
 
-The next implementation lane is the independent TypeScript parallel evaluator. It must execute `duplicate` and per-incoming-flow `synchronize`, preserve token multiplicity, keep semantic task occurrences explicit, avoid collection order as an undeclared scheduler, and pass both completion orders plus the separating non-law and excess-token witnesses.
+The next implementation lane is canonical parallel CIB evidence. It must generalize the oracle adapter from one active task to two with semantic identity sorting and per-element wait multiplicity, retain answer-free A-then-B and B-then-A scenarios with content-bound evidence, and keep candidate deviation `CIB-DEV-0001` outside the normative target result.
 
-The source contract, deterministic TypeScript and Lean lowerers, exact Lean definition binding, generic Lean relation/evaluator, and Lean parallel laws are implemented. Independent TypeScript parallel execution and the CIB, Temporal, and differential evidence remain open. The exact red/green sequence and resume point are in [PLAN.md](docs/PLAN.md).
+The source contract, deterministic TypeScript and Lean lowerers, exact Lean definition binding, generic Lean relation/evaluator, and independent TypeScript parallel evaluator are implemented. The CIB, Temporal, and differential parallel evidence remain open. The exact red/green sequence and resume point are in [PLAN.md](docs/PLAN.md).
 
 ## Contributing
 
