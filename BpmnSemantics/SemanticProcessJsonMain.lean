@@ -1,13 +1,9 @@
-import BpmnSemantics.Conformance
-import BpmnSemantics.ParallelForkJoinConformance
 import BpmnSemantics.SemanticProcessJson
-import BpmnSemantics.SequentialUserTask
-import BpmnSemantics.UserTaskInteractionConformance
 import Lean.Data.Json
 
-/-! One-way canonical JSON-lines emitter for the admitted Semantic Process scenarios.
+/-! One-way canonical JSON-lines emitter for admitted Semantic Process scenarios.
 
-This is deliberately not a general scenario parser or transport. It exposes results derived by the executable Lean interpreter for the exact content-addressed scenarios so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
+It strictly decodes the same answer-free scenario documents supplied to the other targets, then exposes results derived by the executable Lean interpreter so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
 -/
 
 namespace BpmnSemantics.SemanticProcessJsonMain
@@ -170,14 +166,6 @@ private def resultRecordJson (scenario : Scenario)
         (BpmnSemantics.SemanticProcess.runScenario
           input.semanticProcess scenario)) ]
 
-private def emittedScenarios : List Scenario :=
-  [ BpmnSemantics.UserTaskInteractionConformance.successfulScenario
-  , BpmnSemantics.UserTaskInteractionConformance.wrongActivationScenario
-  , BpmnSemantics.UserTaskInteractionConformance.staleCompletionScenario
-  , BpmnSemantics.ParallelForkJoinConformance.aThenBScenario
-  , BpmnSemantics.ParallelForkJoinConformance.bThenAScenario
-  , BpmnSemantics.ParallelForkJoinConformance.staleAWhileBActiveScenario ]
-
 private def readDefinitionInputs (path : System.FilePath) :
     IO (List DefinitionInput) := do
   let contents ← IO.FS.readFile path
@@ -186,6 +174,13 @@ private def readDefinitionInputs (path : System.FilePath) :
     match decodeAndValidateDefinitionInput line with
     | .ok input => pure input
     | .error message => throw (IO.userError message)
+
+private def readScenario (path : System.FilePath) : IO Scenario := do
+  let contents ← IO.FS.readFile path
+  match decodeScenarioDocument contents with
+  | .ok scenario => pure scenario
+  | .error message =>
+      throw (IO.userError s!"invalid scenario {path}: {message}")
 
 private def definitionForScenario (inputs : List DefinitionInput)
     (scenario : Scenario) : IO DefinitionInput := do
@@ -208,11 +203,13 @@ private def definitionForScenario (inputs : List DefinitionInput)
       s!"definition identity does not match scenario {scenario.id.value}")
   pure input
 
-def emit (definitionInputPath : System.FilePath) : IO Unit := do
+def emit (definitionInputPath : System.FilePath)
+    (scenarioPaths : List System.FilePath) : IO Unit := do
   let inputs ← readDefinitionInputs definitionInputPath
-  if inputs.length ≠ emittedScenarios.length then
+  let scenarios ← scenarioPaths.mapM readScenario
+  if inputs.length ≠ scenarios.length then
     throw (IO.userError "definition input count does not match Lean scenarios")
-  for scenario in emittedScenarios do
+  for scenario in scenarios do
     let input ← definitionForScenario inputs scenario
     IO.println (resultRecordJson scenario input).compress
 
@@ -221,8 +218,13 @@ end BpmnSemantics.SemanticProcessJsonMain
 def main (arguments : List String) : IO Unit :=
   do
     match arguments with
-    | [definitionInputPath] =>
-        BpmnSemantics.SemanticProcessJsonMain.emit definitionInputPath
+    | definitionInputPath :: scenarioPaths =>
+        if scenarioPaths.isEmpty then
+          throw (IO.userError
+            "at least one scenario document path is required")
+        BpmnSemantics.SemanticProcessJsonMain.emit
+          definitionInputPath
+          (scenarioPaths.map fun path => (⟨path⟩ : System.FilePath))
     | _ =>
         throw (IO.userError
-          "usage: emitSemanticProcessResults <definition-input.jsonl>")
+          "usage: emitSemanticProcessResults <definition-input.jsonl> <scenario.json>...")

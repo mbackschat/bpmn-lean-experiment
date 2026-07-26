@@ -314,6 +314,12 @@ function leanDefinitionRecords(contexts) {
   );
 }
 
+function leanScenarioPaths(contexts) {
+  return contexts.map(({ pipelineCase }) =>
+    path.join(projectRoot, pipelineCase.scenarioRelativePath)
+  );
+}
+
 async function writeJsonLines(filePath, records) {
   await writeFile(
     filePath,
@@ -327,7 +333,12 @@ async function runLeanTargets(contexts, inputPath) {
   await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
   const execution = await runProcess(
     "lake",
-    ["exe", leanExecutable, inputPath],
+    [
+      "exe",
+      leanExecutable,
+      inputPath,
+      ...leanScenarioPaths(contexts),
+    ],
     10_000,
   );
   const records = execution.stdout
@@ -389,7 +400,12 @@ async function requireLeanDefinitionMutationRejection(contexts, inputPath) {
   try {
     await runProcess(
       "lake",
-      ["exe", leanExecutable, inputPath],
+      [
+        "exe",
+        leanExecutable,
+        inputPath,
+        ...leanScenarioPaths(contexts),
+      ],
       10_000,
     );
   } catch (error) {
@@ -409,6 +425,43 @@ async function requireLeanDefinitionMutationRejection(contexts, inputPath) {
   throw new Error(
     "Lean accepted a Semantic Process that differs from its lowering",
   );
+}
+
+async function requireLeanScenarioMutationRejection(
+  contexts,
+  inputPath,
+  scenarioPath,
+) {
+  await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
+  await writeFile(
+    scenarioPath,
+    JSON.stringify({
+      ...contexts[0].scenario,
+      unexpectedSemanticAnswer: "committed",
+    }),
+    "utf8",
+  );
+  const scenarioPaths = leanScenarioPaths(contexts);
+  scenarioPaths[0] = scenarioPath;
+  try {
+    await runProcess(
+      "lake",
+      ["exe", leanExecutable, inputPath, ...scenarioPaths],
+      10_000,
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("object fields do not match")
+    ) {
+      return {
+        kind: "rejected",
+        mutation: "scenarioExtraField",
+      };
+    }
+    throw error;
+  }
+  throw new Error("Lean accepted a scenario with an extra answer field");
 }
 
 async function requireLeanProvenanceErasureRejection(
@@ -433,7 +486,12 @@ async function requireLeanProvenanceErasureRejection(
   try {
     await runProcess(
       "lake",
-      ["exe", leanExecutable, inputPath],
+      [
+        "exe",
+        leanExecutable,
+        inputPath,
+        ...leanScenarioPaths(contexts),
+      ],
       10_000,
     );
   } catch (error) {
@@ -922,6 +980,14 @@ export async function runPipelineCases(cases) {
     temporaryDirectory,
     "lean-provenance-mutation.jsonl",
   );
+  const leanScenarioMutationInputPath = path.join(
+    temporaryDirectory,
+    "lean-scenario-mutation.jsonl",
+  );
+  const leanScenarioMutationPath = path.join(
+    temporaryDirectory,
+    "lean-scenario-mutation.json",
+  );
   const warmStarted = performance.now();
   let runner;
   let startupMs = 0;
@@ -949,6 +1015,7 @@ export async function runPipelineCases(cases) {
       cib,
       lean,
       leanDefinitionMutation,
+      leanScenarioMutation,
       leanProvenanceMutation,
       temporal,
     ] = await Promise.all([
@@ -962,6 +1029,11 @@ export async function runPipelineCases(cases) {
         contexts,
         leanMutationInputPath,
       ),
+      requireLeanScenarioMutationRejection(
+        contexts,
+        leanScenarioMutationInputPath,
+        leanScenarioMutationPath,
+      ),
       requireLeanProvenanceErasureRejection(
         contexts,
         leanProvenanceMutationInputPath,
@@ -972,6 +1044,7 @@ export async function runPipelineCases(cases) {
       cib,
       lean,
       leanDefinitionMutation,
+      leanScenarioMutation,
       leanProvenanceMutation,
       core,
       temporal,
@@ -1029,6 +1102,7 @@ export async function runPipelineCases(cases) {
     implementationRevision: revision,
     cases: caseResults.map(({ report: caseReport }) => caseReport),
     leanDefinitionMutation: targets.leanDefinitionMutation,
+    leanScenarioMutation: targets.leanScenarioMutation,
     leanProvenanceMutation: targets.leanProvenanceMutation,
     replay,
     phaseMs: {

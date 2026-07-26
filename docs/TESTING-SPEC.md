@@ -107,7 +107,7 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 
 The reviewed full observational checked-source-to-program-run preservation proposition is not claimed: there is no independent checked-source operational relation from which to establish it without assuming the program account. Structural lowering preservation and exact artifact equality are the current proved boundary.
 
-The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. Lean's scenario closure additionally admits only the exact distinct two-task activation pair among multiple-enabled states, with checked activation-order observation equivalence and exact waiting-state closure. The five-case differential gate now connects the independent CIB, Lean, TypeScript, and Temporal lanes.
+The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, live-sibling stale rejection, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. Lean's scenario closure additionally admits only the exact distinct two-task activation pair among multiple-enabled states, with checked activation-order observation equivalence and exact waiting-state closure. Lean strictly decodes the same admitted scenario documents supplied to the other targets and echoes the decoded values. This removes disk-versus-compiled-Lean scenario drift by construction; exact content drift relative to the oracle lane remains detected by retained CIB evidence binding, while the Lean extra-field mutation independently guards strict decoding against answer smuggling. The six-case differential gate connects the independent CIB, Lean, TypeScript, and Temporal lanes under explicit per-case relations.
 
 ## Current CIB gate
 
@@ -144,25 +144,31 @@ When the owner approves the first immutable deployment/history baseline, retaine
 The pipeline:
 
 1. builds the source importer, Lean emitter, CIB test boundary, TypeScript core/comparator, and Temporal adapter;
-2. loads five answer-free scenarios and content-bound CIB evidence;
+2. loads six answer-free scenarios and content-bound CIB evidence;
 3. compiles the exact BPMN bytes once per source/profile identity;
 4. starts one clean Temporal server and Worker;
 5. writes the actual checked graph and Semantic Process program for each retained scenario to a private definition-input batch;
-6. runs one five-case CIB batch, one five-result Lean emitter over that definition batch, the pure core, and ten Temporal Workflows concurrently;
-7. requires Lean's echoed scenario to equal the admitted scenario document, rejecting a drifted stimulus, BPMN digest, or provenance at an exact structural path;
+6. runs one six-case CIB batch, one six-result Lean emitter over that definition batch, the pure core, and twelve Temporal Workflows concurrently;
+7. requires Lean's decoded-and-echoed scenario to equal the admitted scenario document and injects an extra answer field that the strict Lean decoder must reject; because Lean consumes the admitted file directly, retained CIB content binding rather than a second compiled scenario copy detects disk-content drift;
 8. requires Lean's echoed definition identity and lowering-equality result to match the admitted artifacts;
 9. mutates one operation origin without making the program structurally invalid and requires Lean to reject the program as unequal to its lowering;
-10. compares CIB with Lean, the core, and Temporal exactly by scenario identity, including both parallel completion orders and their intermediate remaining-task projections;
+10. compares CIB, Lean, and the core exactly by scenario identity; requires exact four-target agreement for ordinary cases including the live-sibling stale witness; and for sequential stale requires exact Temporal prefix agreement plus a separate `processClosed` adapter assertion;
 11. compares fresh CIB output with retained CIB evidence;
 12. checks exact Query/Update evidence, duplicate delivery, isolated Workflow equality, and clean CIB state;
-13. mutates the observed activation ordinal in sequential cases, omits one parallel open task in parallel cases, and requires exact disagreement paths;
+13. mutates the observed activation ordinal in sequential cases, omits one initial parallel open task, drops the live sibling after stale A, and requires exact disagreement paths;
 14. erases the parallel control-place Sequence-Flow provenance while preserving structural validity and requires Lean's lowering-equality gate to reject it;
-15. replays all five primary live histories;
+15. replays all six primary live histories;
 16. shuts down the Worker/server and removes temporary files.
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 
-The source-current repository verification on 2026-07-26 completed in 23.30 seconds after the production-lifecycle experiment and command-identity correction, and its five-case prepared pipeline completed in 4.29 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+The source-current repository verification on 2026-07-26 completed in 24.32 seconds after the production lifecycle, single-source Lean scenario decoding, and Query-evidence hardening. Its six-case prepared pipeline completed in 4.72 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+
+## Continuous integration
+
+[The verification workflow](../.github/workflows/verify.yml) runs `./scripts/verify.sh` on `ubuntu-latest` and `macos-latest` with the repository-pinned Node and pnpm versions, Java 21, and the Lean toolchain selected by `lean-toolchain`. It installs the frozen pnpm lockfile and relies on the Maven wrapper and Temporal test environment for their pinned artifacts.
+
+The 15-second prepared-pipeline warm budget remains a hard assertion on both CI operating systems. Dependency installation and compilation occur before the prepared pipeline measurement, so runner provisioning does not consume that budget. The 45-second cold budget remains a measured local `test:pipeline` assertion and is not reported as zero in prepared CI mode. If a hosted runner repeatedly exceeds the warm budget, treat that as evidence to classify runner variance or optimize the gate; changing, suppressing, or conditionally weakening either budget requires an explicit owner decision.
 
 ## Documentation-fragment gate
 

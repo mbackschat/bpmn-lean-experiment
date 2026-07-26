@@ -147,6 +147,10 @@ test(
       kind: "rejected",
       mutation: "operationOrigin",
     });
+    assert.deepEqual(report.leanScenarioMutation, {
+      kind: "rejected",
+      mutation: "scenarioExtraField",
+    });
     assert.deepEqual(report.leanProvenanceMutation, {
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",

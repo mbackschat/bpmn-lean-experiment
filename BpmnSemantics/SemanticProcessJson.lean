@@ -3,7 +3,7 @@ import Lean.Data.Json
 
 /-! # BpmnSemantics.SemanticProcessJson — strict current artifact decoders
 
-These decoders accept only the current checked-process and Semantic Process wire shapes. A definition input is admitted only after both structural validators pass and Lean's canonical lowering exactly equals the received program.
+These decoders accept only the current scenario, checked-process, and Semantic Process wire shapes. A definition input is admitted only after both structural validators pass and Lean's canonical lowering exactly equals the received program.
 -/
 
 namespace BpmnSemantics.SemanticProcessJson
@@ -56,6 +56,91 @@ private def decodeOptionalString : Json → Except String (Option String)
   | .null => pure none
   | .str value => pure (some value)
   | _ => throw "string or null expected"
+
+private def decodeStringArray (json : Json) :
+    Except String (List String) :=
+  decodeArray Json.getStr? json
+
+private def decodeResourceIdentity (json : Json) :
+    Except String ResourceIdentity := do
+  requireObjectShape json ["id", "relativePath", "sha256"]
+  pure
+    { id := ⟨← stringField json "id"⟩
+      relativePath := ← stringField json "relativePath"
+      sha256 := ← stringField json "sha256" }
+
+private def decodeUserTaskInstanceId (json : Json) :
+    Except String UserTaskInstanceId := do
+  requireObjectShape json
+    ["activation", "elementId", "processInstanceId"]
+  let activation ← (← field json "activation").getNat?
+  if activation = 0 then
+    throw "task activation must be positive"
+  pure
+    { processInstanceId := ⟨← stringField json "processInstanceId"⟩
+      elementId := ⟨← stringField json "elementId"⟩
+      activation }
+
+private def decodeStimulus (json : Json) : Except String Stimulus := do
+  let kind ← stringField json "kind"
+  match kind with
+  | "startProcess" =>
+      requireObjectShape json
+        ["commandId", "instanceId", "kind", "processId"]
+      pure
+        (.startProcess
+          ⟨← stringField json "commandId"⟩
+          ⟨← stringField json "processId"⟩
+          ⟨← stringField json "instanceId"⟩)
+  | "completeUserTaskInstance" =>
+      requireObjectShape json ["commandId", "kind", "taskId"]
+      pure
+        (.completeUserTaskInstance
+          ⟨← stringField json "commandId"⟩
+          (← decodeUserTaskInstanceId (← field json "taskId")))
+  | _ => throw s!"unsupported scenario stimulus {kind}"
+
+private def decodeObservationKind (json : Json) :
+    Except String ObservationKind := do
+  match ← json.getStr? with
+  | "deployment" => pure .deployment
+  | "commandResults" => pure .commandResults
+  | "processStatus" => pure .processStatus
+  | "activeWaits" => pure .activeWaits
+  | "openUserTasks" => pure .openUserTasks
+  | "enabledInteractions" => pure .enabledInteractions
+  | "logicalTime" => pure .logicalTime
+  | kind => throw s!"unsupported scenario observation {kind}"
+
+private def decodeScenarioProvenance (json : Json) :
+    Except String ScenarioProvenance := do
+  requireObjectShape json ["cibRefs", "cibRevision", "normativeRefs"]
+  pure
+    { normativeRefs :=
+        ← decodeStringArray (← field json "normativeRefs")
+      cibRevision := ← stringField json "cibRevision"
+      cibRefs := ← decodeStringArray (← field json "cibRefs") }
+
+/-- Strict decoder for the exact answer-free scenario document supplied to every target. -/
+def decodeScenario (json : Json) : Except String Scenario := do
+  requireObjectShape json
+    ["bpmn", "id", "kind", "observations", "profile", "provenance",
+      "stimuli"]
+  expectStringField json "kind" "scenario"
+  pure
+    { kind := .scenario
+      id := ⟨← stringField json "id"⟩
+      profile := ⟨← stringField json "profile"⟩
+      bpmn := ← decodeResourceIdentity (← field json "bpmn")
+      stimuli := ← decodeArray decodeStimulus (← field json "stimuli")
+      observations :=
+        ← decodeArray decodeObservationKind (← field json "observations")
+      provenance :=
+        ← decodeScenarioProvenance (← field json "provenance") }
+
+def decodeScenarioDocument (contents : String) :
+    Except String Scenario := do
+  decodeScenario (← Json.parse contents)
 
 private def decodeSourceIdentity (json : Json) :
     Except String SourceIdentity := do
