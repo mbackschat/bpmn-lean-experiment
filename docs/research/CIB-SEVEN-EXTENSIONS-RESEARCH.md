@@ -18,7 +18,7 @@ The most important compatibility finding is:
 
 `camunda:class` is small only as XML. Executing an existing class with CIB semantics brings class loading, construction or dependency injection, field injection, the `JavaDelegate` interface, the broad `DelegateExecution` object, variables and scopes, model access, incidents, engine services, transaction behavior, and failure translation. That surface cannot be represented honestly as one Service Task effect callback.
 
-The bounded packaged-engine probe linked from the [Service Task effect proposal](../capsules/SERVICE-TASK-EFFECT-PROPOSAL.md#result) confirms the exact narrower candidate: CIB Seven resolves `${bpmnLeanEffectHandler}` from the legacy Camunda namespace, recognizes `asyncBefore` by expanded QName under a different lexical prefix, creates an immediately executable continuation job with three retries and no due date, decrements retries to two after a public failed execution, and cleanly re-executes the same durable job. These are source/oracle feasibility facts, not selection of general JUEL, bean, or Java-delegate compatibility.
+The bounded packaged-engine probe linked from the [Service Task effect spec](../capsules/SERVICE-TASK-EFFECT-SPEC.md#result) confirms the exact narrower selection: CIB Seven resolves `${bpmnLeanEffectHandler}` from the legacy Camunda namespace, recognizes `asyncBefore` by expanded QName under a different lexical prefix, creates an immediately executable continuation job with three retries and no due date, decrements retries to two after a public failed execution, and cleanly re-executes the same durable job. These are source/oracle facts for the exact profile, not selection of general JUEL, bean, or Java-delegate compatibility.
 
 ## Namespace and ownership
 
@@ -134,4 +134,4 @@ The exact project probe class originally proposed is adequate as a CIB oracle fi
 
 That candidate proves only L1–L3 for one exact binding. General JUEL, arbitrary bean names, field injection, Java delegate loading, variables, and the production handler registry remain separate decisions.
 
-The durable extension and API boundary is owner-approved in the [CIB Seven compatibility scope proposal](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md). The exact handler pair and phase-zero engine facts are ready for the separate semantic decision in the [Service Task effect proposal](../capsules/SERVICE-TASK-EFFECT-PROPOSAL.md); no broader expression, bean, Java API, or engine API claim follows.
+The durable extension and API boundary is owner-approved in the [CIB Seven compatibility scope proposal](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md). The exact handler pair, phase-zero engine facts, and bounded success-only semantic account are fixed by the [Service Task effect spec](../capsules/SERVICE-TASK-EFFECT-SPEC.md); no broader expression, bean, Java API, or engine API claim follows.

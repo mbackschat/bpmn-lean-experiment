@@ -26,7 +26,7 @@ Do not add a separately written Java semantic core and do not run the proposed J
 
 The Java-core account has no forcing consumer, supplies bounded assurance surplus, and would impose lockstep implementation and review cost on every future capsule. The existing TypeScript core remains the single production semantic realization. Java integration belongs at the client façade and Activity Worker boundaries.
 
-This rejection satisfies the interpreter-language decision that previously blocked the [Service Task effect proposal](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md). The packaged-CIB phase-zero probe and the capsule’s separate semantic decision may proceed in their approved order.
+This rejection satisfied the interpreter-language decision that previously blocked the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md). The exact packaged-CIB binding and bounded semantic account now live in that specification.
 
 ## What “derived from Lean” meant
 

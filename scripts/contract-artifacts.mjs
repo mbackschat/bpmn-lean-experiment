@@ -61,6 +61,12 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/intermediate-catch-timer/cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/service-task-effect/scenario.json",
+    evidenceRelativePath:
+      "scenarios/service-task-effect/cibseven-evidence.json",
+  }),
 ]);
 
 const validatorsByRoot = new Map();
@@ -310,6 +316,9 @@ function verifyDefinitionReferences(checkedProcess, semanticProcess) {
 function verifyProducerProjection(evidence) {
   const taskSnapshots = evidence.producerObservations.taskQueries;
   const timerSnapshots = evidence.producerObservations.timerJobs;
+  const effectSnapshots =
+    evidence.producerObservations.effectJobs ??
+    statesWithEmptyEffectSnapshots(evidence.result.trace);
   const states = [];
   let afterCommandId;
   for (const observation of evidence.result.trace) {
@@ -336,7 +345,8 @@ function verifyProducerProjection(evidence) {
   }
   if (
     states.length !== taskSnapshots.length ||
-    states.length !== timerSnapshots.length
+    states.length !== timerSnapshots.length ||
+    states.length !== effectSnapshots.length
   ) {
     throw new Error(
       "producer observation count does not match canonical state count",
@@ -346,9 +356,11 @@ function verifyProducerProjection(evidence) {
   for (const [index, state] of states.entries()) {
     const taskSnapshot = taskSnapshots[index];
     const timerSnapshot = timerSnapshots[index];
+    const effectSnapshot = effectSnapshots[index];
     if (
       taskSnapshot.afterCommandId !== state.afterCommandId ||
-      timerSnapshot.afterCommandId !== state.afterCommandId
+      timerSnapshot.afterCommandId !== state.afterCommandId ||
+      effectSnapshot.afterCommandId !== state.afterCommandId
     ) {
       throw new Error(
         "producer observation is bound to a different command",
@@ -362,16 +374,21 @@ function verifyProducerProjection(evidence) {
       state.observation.instanceId,
       timerSnapshot.jobs,
     );
+    const effectProjection = projectEffectJobs(
+      state.observation.instanceId,
+      effectSnapshot.jobs,
+    );
     const activeWaits = [
       ...taskProjection.activeWaits,
       ...timerProjection.activeWaits,
+      ...effectProjection.activeWaits,
     ].sort((left, right) =>
       compareStrings(left.elementId, right.elementId));
     const expectedByField = {
       activeWaits,
       openUserTasks: taskProjection.openUserTasks,
       openTimers: timerProjection.openTimers,
-      openEffects: [],
+      openEffects: effectProjection.openEffects,
       enabledInteractions: taskProjection.enabledInteractions,
     };
     for (const [field, expected] of Object.entries(expectedByField)) {
@@ -382,6 +399,60 @@ function verifyProducerProjection(evidence) {
       }
     }
   }
+
+  const effectExecutions =
+    evidence.producerObservations.effectExecutions ?? [];
+  if (effectExecutions.length > 0) {
+    if (
+      effectExecutions.length !== 1 ||
+      effectExecutions[0].schedule !== "plainSuccess" ||
+      effectExecutions[0].invocations !== 1 ||
+      effectExecutions[0].mutations !== 1 ||
+      effectExecutions[0].initialRetries !== 3 ||
+      effectExecutions[0].retriesAfterFirstFailure !== null
+    ) {
+      throw new Error(
+        "retained CIB effect evidence must bind to plain success",
+      );
+    }
+  }
+}
+
+function statesWithEmptyEffectSnapshots(trace) {
+  const snapshots = [];
+  let afterCommandId;
+  for (const observation of trace) {
+    if (observation.kind === "command") {
+      afterCommandId = observation.commandId;
+    } else if (
+      observation.kind === "state" &&
+      afterCommandId !== undefined
+    ) {
+      snapshots.push({ afterCommandId, jobs: [] });
+      afterCommandId = undefined;
+    }
+  }
+  return snapshots;
+}
+
+function projectEffectJobs(instanceId, jobs) {
+  const activeWaits = jobs.map((job) => ({
+    elementId: job.elementId,
+    kind: "effect",
+    multiplicity: 1,
+  }));
+  const openEffects = jobs.map((job) => ({
+    id: {
+      processInstanceId: instanceId,
+      elementId: job.elementId,
+      activation: job.activation,
+    },
+    descriptor: {
+      protocol: job.protocol,
+      handler: job.handler,
+    },
+  }));
+  return { activeWaits, openEffects };
 }
 
 function projectTimerJobs(instanceId, jobs) {

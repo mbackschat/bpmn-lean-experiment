@@ -75,6 +75,18 @@
           "items": {
             "$ref": "#/$defs/timerJobSnapshot"
           }
+        },
+        "effectJobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectJobSnapshot"
+          }
+        },
+        "effectExecutions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectExecutionSnapshot"
+          }
         }
       }
     },
@@ -193,6 +205,116 @@
         },
         "executable": {
           "type": "boolean"
+        }
+      }
+    },
+    "effectJobSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "jobs"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectJob"
+          }
+        }
+      }
+    },
+    "effectJob": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "activation",
+        "protocol",
+        "handler",
+        "retries",
+        "executable",
+        "dueDatePresent"
+      ],
+      "properties": {
+        "elementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "activation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "protocol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "handler": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "executable": {
+          "type": "boolean"
+        },
+        "dueDatePresent": {
+          "type": "boolean"
+        }
+      }
+    },
+    "effectExecutionSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "schedule",
+        "invocations",
+        "mutations",
+        "initialRetries",
+        "retriesAfterFirstFailure"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schedule": {
+          "enum": [
+            "plainSuccess",
+            "failAfterMutationOnce"
+          ]
+        },
+        "invocations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "mutations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "initialRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "retriesAfterFirstFailure": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
         }
       }
     }

@@ -59,6 +59,14 @@ function requireCleanDiagnostics(result) {
       `CIB scenario ${result.scenarioId} omitted raw timer-job observations`,
     );
   }
+  if (
+    !Array.isArray(result.diagnostics.effectJobs) ||
+    !Array.isArray(result.diagnostics.effectExecutions)
+  ) {
+    throw new Error(
+      `CIB scenario ${result.scenarioId} omitted raw effect observations`,
+    );
+  }
 }
 
 async function runCibBatch(scenarios, temporaryDirectory) {
@@ -177,6 +185,15 @@ async function replaceEvidence() {
             producerObservations: {
               taskQueries: result.diagnostics.taskQueries,
               timerJobs: result.diagnostics.timerJobs,
+              ...(result.diagnostics.effectJobs.some(
+                ({ jobs }) => jobs.length > 0,
+              )
+                ? {
+                    effectJobs: result.diagnostics.effectJobs,
+                    effectExecutions:
+                      result.diagnostics.effectExecutions,
+                  }
+                : {}),
             },
             projection: {
               id: "canonical-scenario-result",

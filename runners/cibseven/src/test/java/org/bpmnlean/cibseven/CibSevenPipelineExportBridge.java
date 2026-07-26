@@ -20,10 +20,13 @@ public final class CibSevenPipelineExportBridge {
     var projectRoot = requiredPath("bpmn.pipeline.projectRoot");
     var inputPath = requiredPath("bpmn.pipeline.input");
     var outputPath = requiredPath("bpmn.pipeline.output");
+    var effectSchedule =
+        CibEffectExecutionSchedule.fromWireValue(
+            System.getProperty("bpmn.pipeline.effectSchedule", "plainSuccess"));
 
     try (var input = Files.newBufferedReader(inputPath, UTF_8);
         var output = Files.newBufferedWriter(outputPath, UTF_8)) {
-      CibSevenOracleMain.serve(input, output, projectRoot);
+      CibSevenOracleMain.serve(input, output, projectRoot, effectSchedule);
     }
   }
 

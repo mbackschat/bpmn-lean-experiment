@@ -4,6 +4,7 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
+import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.EFFECT;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.TIMER;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
@@ -26,11 +28,14 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
+import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Diagnostics;
 import org.bpmnlean.cibseven.ScenarioProtocol.EnabledInteraction;
+import org.bpmnlean.cibseven.ScenarioProtocol.EffectExecutionSnapshot;
+import org.bpmnlean.cibseven.ScenarioProtocol.EffectJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.ObservationKind;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenTimer;
@@ -80,17 +85,22 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private final ProcessEngineConfigurationImpl configuration;
   private final PvmDefinitionProjector pvmProjector;
   private final CibSevenUserTaskProjector userTaskProjector;
+  private final CibSevenEffectProjector effectProjector;
+  private final CibSevenEffectProbe effectProbe;
   private final long startupNanos;
   private boolean closed;
 
   private CibSevenScenarioRunner(
       ProcessEngine processEngine,
       ProcessEngineConfigurationImpl configuration,
+      CibSevenEffectProbe effectProbe,
       long startupNanos) {
     this.processEngine = processEngine;
     this.configuration = configuration;
     this.pvmProjector = new PvmDefinitionProjector();
     this.userTaskProjector = new CibSevenUserTaskProjector();
+    this.effectProjector = new CibSevenEffectProjector();
+    this.effectProbe = effectProbe;
     this.startupNanos = startupNanos;
   }
 
@@ -107,22 +117,38 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     engineConfiguration.setHistory(ProcessEngineConfiguration.HISTORY_AUDIT);
     engineConfiguration.setHistoryTimeToLive("P180D");
     engineConfiguration.setEnforceHistoryTimeToLive(true);
+    var effectProbe = new CibSevenEffectProbe();
+    engineConfiguration.setBeans(
+        Map.of(CibSevenEffectProjector.HANDLER_BEAN, effectProbe));
     var engine = engineConfiguration.buildProcessEngine();
     return new CibSevenScenarioRunner(
         engine,
         engineConfiguration,
+        effectProbe,
         positiveElapsedSince(startedAt));
   }
 
   public synchronized ScenarioResult run(ScenarioDefinition scenario, Path projectRoot)
       throws IOException {
+    return run(scenario, projectRoot, CibEffectExecutionSchedule.PLAIN_SUCCESS);
+  }
+
+  public synchronized ScenarioResult run(
+      ScenarioDefinition scenario,
+      Path projectRoot,
+      CibEffectExecutionSchedule effectSchedule)
+      throws IOException {
     synchronized (PROCESS_GLOBAL_CLOCK_LOCK) {
-      return runWithProcessGlobalClock(scenario, projectRoot);
+      effectProbe.beginExecution(effectSchedule);
+      return runWithProcessGlobalClock(scenario, projectRoot, effectSchedule);
     }
   }
 
   private ScenarioResult runWithProcessGlobalClock(
-      ScenarioDefinition scenario, Path projectRoot) throws IOException {
+      ScenarioDefinition scenario,
+      Path projectRoot,
+      CibEffectExecutionSchedule effectSchedule)
+      throws IOException {
     ensureOpen();
     validateScenario(scenario);
     Objects.requireNonNull(projectRoot, "projectRoot");
@@ -136,6 +162,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var trace = new ArrayList<CanonicalObservation>();
     var taskQueries = new ArrayList<TaskQuerySnapshot>();
     var timerJobs = new ArrayList<TimerJobSnapshot>();
+    var effectJobs = new ArrayList<EffectJobSnapshot>();
+    var effectExecutions = new ArrayList<EffectExecutionSnapshot>();
     String deploymentId = null;
     String engineInstanceId = null;
     String stableInstanceId = null;
@@ -198,6 +226,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(observed.state());
             taskQueries.add(observed.taskQuery());
             timerJobs.add(observed.timerJobs());
+            effectJobs.add(observed.effectJobs());
             timings.waitProjectionNanos = positiveElapsedSince(projectionStartedAt);
           }
           case CompleteUserTaskInstanceStimulus complete -> {
@@ -217,6 +246,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(observed.state());
             taskQueries.add(observed.taskQuery());
             timerJobs.add(observed.timerJobs());
+            effectJobs.add(observed.effectJobs());
             timings.completionProjectionNanos =
                 positiveElapsedSince(projectionStartedAt);
             if (outcome == REJECTED) {
@@ -241,9 +271,42 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(observed.state());
             taskQueries.add(observed.taskQuery());
             timerJobs.add(observed.timerJobs());
+            effectJobs.add(observed.effectJobs());
             timings.completionProjectionNanos =
                 positiveElapsedSince(projectionStartedAt);
             if (outcome == REJECTED) {
+              scenarioOutcome = REJECTED;
+              break stimulusLoop;
+            }
+          }
+          case CompleteEffectStimulus complete -> {
+            requireStarted(engineInstanceId, stableInstanceId);
+            var completeStartedAt = System.nanoTime();
+            var execution =
+                completeEffect(
+                    engineInstanceId,
+                    stableInstanceId,
+                    complete,
+                    effectSchedule);
+            timings.completeNanos = positiveElapsedSince(completeStartedAt);
+            trace.add(new CommandObservation(complete.commandId(), execution.outcome()));
+            if (execution.evidence() != null) {
+              effectExecutions.add(execution.evidence());
+            }
+
+            var projectionStartedAt = System.nanoTime();
+            var observed =
+                observeState(
+                    engineInstanceId,
+                    stableInstanceId,
+                    complete.commandId());
+            trace.add(observed.state());
+            taskQueries.add(observed.taskQuery());
+            timerJobs.add(observed.timerJobs());
+            effectJobs.add(observed.effectJobs());
+            timings.completionProjectionNanos =
+                positiveElapsedSince(projectionStartedAt);
+            if (execution.outcome() == REJECTED) {
               scenarioOutcome = REJECTED;
               break stimulusLoop;
             }
@@ -279,6 +342,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             Objects.requireNonNull(pvmDefinition, "pvmDefinition"),
             taskQueries,
             timerJobs,
+            effectJobs,
+            effectExecutions,
             Objects.requireNonNull(cleanup, "cleanup")));
   }
 
@@ -313,10 +378,11 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 .allMatch(
                     stimulus ->
                         stimulus instanceof CompleteUserTaskInstanceStimulus
-                            || stimulus instanceof FireTimerStimulus);
+                            || stimulus instanceof FireTimerStimulus
+                            || stimulus instanceof CompleteEffectStimulus);
     if (!startsOnce || !hasExpectedCompletions) {
       throw new IllegalArgumentException(
-          "Scenario supports startProcess followed by task completion or timer firing commands");
+          "Scenario supports startProcess followed by task, timer, or effect completion commands");
     }
   }
 
@@ -392,6 +458,59 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     return COMMITTED;
   }
 
+  private EffectCompletion completeEffect(
+      String engineInstanceId,
+      String stableInstanceId,
+      CompleteEffectStimulus complete,
+      CibEffectExecutionSchedule schedule) {
+    var submitted = complete.effectId();
+    if (!submitted.processInstanceId().equals(stableInstanceId)
+        || submitted.activation() != 1) {
+      return new EffectCompletion(REJECTED, null);
+    }
+    var waits = effectProjector.project(processEngine, engineInstanceId, stableInstanceId);
+    if (waits.size() != 1
+        || !waits.getFirst().openEffect().id().equals(submitted)) {
+      return new EffectCompletion(REJECTED, null);
+    }
+    var wait = waits.getFirst();
+    var management = processEngine.getManagementService();
+    var initialRetries = wait.evidence().retries();
+    Long retriesAfterFirstFailure = null;
+    try {
+      management.executeJob(wait.jobId());
+    } catch (RuntimeException failure) {
+      if (schedule != CibEffectExecutionSchedule.FAIL_AFTER_MUTATION_ONCE) {
+        throw failure;
+      }
+      var failedJob = management.createJobQuery().jobId(wait.jobId()).singleResult();
+      if (failedJob == null || failedJob.getRetries() != initialRetries - 1) {
+        throw new IllegalStateException(
+            "CIB did not retain and decrement the failed Service Task job",
+            failure);
+      }
+      retriesAfterFirstFailure = (long) failedJob.getRetries();
+      if (management.createJobQuery().jobId(wait.jobId()).executable().count() != 1) {
+        throw new IllegalStateException(
+            "CIB failed Service Task job was not publicly executable",
+            failure);
+      }
+      management.executeJob(wait.jobId());
+    }
+    if (management.createJobQuery().jobId(wait.jobId()).count() != 0) {
+      throw new IllegalStateException("CIB retained the Service Task job after success");
+    }
+    return new EffectCompletion(
+        COMMITTED,
+        new EffectExecutionSnapshot(
+            complete.commandId(),
+            schedule.wireValue(),
+            effectProbe.invocations(),
+            effectProbe.mutations(),
+            initialRetries,
+            retriesAfterFirstFailure));
+  }
+
   private ObservedState observeState(
       String engineInstanceId,
       String stableInstanceId,
@@ -446,8 +565,23 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             .map(timer -> new ScenarioProtocol.ActiveWait(
                 timer.id().elementId(), TIMER, 1))
             .toList();
+    var projectedEffects =
+        isRunning
+            ? effectProjector.project(
+                processEngine, engineInstanceId, stableInstanceId)
+            : List.<CibSevenEffectProjector.ProjectedEffectWait>of();
+    var openEffects =
+        projectedEffects.stream().map(CibSevenEffectProjector.ProjectedEffectWait::openEffect).toList();
+    var effectWaits =
+        openEffects.stream()
+            .map(effect -> new ScenarioProtocol.ActiveWait(
+                effect.id().elementId(), EFFECT, 1))
+            .toList();
     var allWaits = new ArrayList<>(activeWaits);
     allWaits.addAll(timerWaits);
+    allWaits.addAll(effectWaits);
+    allWaits.sort(
+        (left, right) -> WireStrings.compare(left.elementId(), right.elementId()));
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
     return new ObservedState(
         new StateObservation(
@@ -456,11 +590,16 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             allWaits,
             openUserTasks,
             openTimers,
-            List.of(),
+            openEffects,
             enabledInteractions,
             logicalTimeMs),
         taskQuery,
-        timerJobSnapshot);
+        timerJobSnapshot,
+        new EffectJobSnapshot(
+            afterCommandId,
+            projectedEffects.stream()
+                .map(CibSevenEffectProjector.ProjectedEffectWait::evidence)
+                .toList()));
   }
 
   private TimerJobSnapshot observeTimerJobs(
@@ -557,7 +696,11 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private record ObservedState(
       StateObservation state,
       TaskQuerySnapshot taskQuery,
-      TimerJobSnapshot timerJobs) {}
+      TimerJobSnapshot timerJobs,
+      EffectJobSnapshot effectJobs) {}
+
+  private record EffectCompletion(
+      CommandOutcome outcome, EffectExecutionSnapshot evidence) {}
 
   private void ensureOpen() {
     if (closed) {

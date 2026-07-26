@@ -289,7 +289,7 @@ test("uses structural document kinds without embedded schema counters", async ()
 test("keeps every target scenario answer-free and binds retained CIB evidence by content", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 
-  assert.equal(artifactSets.length, 7);
+  assert.equal(artifactSets.length, 8);
   for (const artifactSet of artifactSets) {
     assert.equal("calibration" in artifactSet.scenario, false);
     assert.equal(
@@ -530,6 +530,22 @@ test("detects a timer deadline projection mutation", async () => {
   assert.throws(
     () => verifyArtifactSet(mutated),
     /producer observation projection does not match canonical openTimers/,
+  );
+});
+
+test("detects a Service Task effect-binding projection mutation", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const effect = artifactSets.find(
+    ({ scenario }) => scenario.id === "service-task-effect-success",
+  );
+  assert.notEqual(effect, undefined);
+  const mutated = cloneArtifactSet(effect);
+  mutated.evidence.producerObservations.effectJobs[0].jobs[0].handler =
+    "unexpectedEffectHandler";
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /producer observation projection does not match canonical openEffects/,
   );
 });
 

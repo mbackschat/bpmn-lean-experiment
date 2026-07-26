@@ -157,7 +157,7 @@ test("retains PT1S in the checked graph and lowers one timer wait", async () => 
 
 test("retains the exact Service Task binding and lowers one effect wait", async () => {
   const result = await compileFixture(
-    "../../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn",
+    "../../../scenarios/service-task-effect/process.bpmn",
     "service-task-effect-phase-zero-probe",
     "cibseven-2.2.0-service-task-effect-draft",
   );
@@ -210,7 +210,7 @@ test("retains the exact Service Task binding and lowers one effect wait", async 
 test("rejects every incomplete or altered Service Task binding", async () => {
   const bytes = await readFile(
     new URL(
-      "../../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn",
+      "../../../scenarios/service-task-effect/process.bpmn",
       import.meta.url,
     ),
   );

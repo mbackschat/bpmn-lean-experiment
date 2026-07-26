@@ -29,7 +29,7 @@ const cleanCibProjection = {
 };
 
 test(
-  "runs the User Task, parallel, and Timer witnesses through one four-target batch",
+  "runs the User Task, parallel, Timer, and Service Task witnesses through one batch",
   { timeout: 45_000 },
   async () => {
     assert.deepEqual(
@@ -42,6 +42,7 @@ test(
         "parallel-fork-join-b-then-a",
         "parallel-fork-join-stale-a-while-b-active",
         "intermediate-catch-timer-pt1s",
+        "service-task-effect-success",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
@@ -118,6 +119,10 @@ test(
         caseEvidence.expectedWaitTrace[2].openTimers,
       );
       assert.deepEqual(
+        caseEvidence.temporalInteractionEvidence.openEffectsAtWait,
+        caseEvidence.expectedWaitTrace[2].openEffects,
+      );
+      assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.completionOutcomes,
         caseEvidence.expectedCompletionOutcomes,
       );
@@ -155,9 +160,48 @@ test(
           true,
         );
       }
+      if (caseEvidence.expectedDerivedEffectCommandId !== null) {
+        assert.equal(
+          caseEvidence.primaryTemporalResult.trace.some(
+            (observation) =>
+              observation.kind === "command" &&
+              observation.commandId ===
+                caseEvidence.expectedDerivedEffectCommandId,
+          ),
+          true,
+        );
+        assert.deepEqual(caseEvidence.cibEffectRetryEvidence, {
+          afterCommandId: caseEvidence.expectedDerivedEffectCommandId,
+          schedule: "failAfterMutationOnce",
+          invocations: 2,
+          mutations: 1,
+          initialRetries: 3,
+          retriesAfterFirstFailure: 2,
+        });
+        assert.equal(
+          caseEvidence.primaryEffectProbeEvidence.invocations,
+          1,
+        );
+        assert.equal(
+          caseEvidence.primaryEffectProbeEvidence.mutations,
+          1,
+        );
+        assert.equal(
+          caseEvidence.isolationEffectProbeEvidence.invocations,
+          2,
+        );
+        assert.equal(
+          caseEvidence.isolationEffectProbeEvidence.mutations,
+          1,
+        );
+      } else {
+        assert.equal(caseEvidence.cibEffectRetryEvidence, null);
+        assert.equal(caseEvidence.primaryEffectProbeEvidence, null);
+        assert.equal(caseEvidence.isolationEffectProbeEvidence, null);
+      }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 7,
+      liveHistories: 9,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
@@ -171,7 +215,7 @@ test(
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 14);
+    assert.equal(report.isolation.temporalWorkflowIds.length, 16);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,

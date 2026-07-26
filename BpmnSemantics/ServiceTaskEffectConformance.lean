@@ -87,8 +87,7 @@ def scenario : Scenario :=
     profile := ⟨"cibseven-2.2.0-service-task-effect-draft"⟩
     bpmn :=
       { id := ⟨"service-task-effect-phase-zero-probe"⟩
-        relativePath :=
-          "runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn"
+        relativePath := "scenarios/service-task-effect/process.bpmn"
         sha256 :=
           "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d" }
     stimuli :=

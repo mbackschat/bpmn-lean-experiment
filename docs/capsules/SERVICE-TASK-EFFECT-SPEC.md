@@ -1,12 +1,10 @@
-# Service Task effect proposal
+# Service Task effect specification
 
-## Status
+## Role
 
-This semantic-capsule proposal was owner-approved on 2026-07-26 with the four implementation corrections recorded below. Its authorized phase-zero source/oracle probe, checked-source/Lean/TypeScript semantic checkpoint, transport-identity checkpoint, and focused Temporal Activity/refinement checkpoint are green. The semantic account passed independent review on 2026-07-27 after the non-law, intent-claim boundary, admission witnesses, and occurrence comparator were corrected. The eighth answer-free scenario, retained Service Task CIB evidence, complete differential matrix, capsule reflection, and graduation remain open. No dependency was added; the atomic empty-`openEffects` evolution of the seven existing scenarios and retained CIB envelopes used only the explicit evidence-replacement command required by this proposal.
+This specification owns the approved bounded meaning, host-refinement contract, witnesses, and exclusions for one extension-bound Service Task effect. Exact current implementation and evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).
 
 The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. The green [phase-zero probe](#phase-zero-cib-seven-probe) removes the packaged-engine uncertainty.
-
-The first implementation checkpoint was the green Lean and TypeScript semantic account before Temporal Activity work began. This preserved independent review of semantic meaning before refinement evidence was added.
 
 ## Question
 
@@ -47,7 +45,7 @@ BPMN 2.0.2 Clause 10.3.3.1 defines a Service Task as a Task using a service or a
 
 This capsule selects only the successful activation-to-completion path. It does not reinterpret transport attempts as repeated BPMN Service Task activations and does not claim the excluded fault path.
 
-The requirement disposition is recorded as pending in [BPMN-REQUIREMENT-LEDGER.md](../BPMN-REQUIREMENT-LEDGER.md). The CIB realization remains an unselected extension candidate in [CIB-BPMN-RELATION-REGISTER.md](../CIB-BPMN-RELATION-REGISTER.md) until owner approval and a green phase-zero probe.
+The bounded success requirement disposition is recorded in [BPMN-REQUIREMENT-LEDGER.md](../BPMN-REQUIREMENT-LEDGER.md). The exact CIB realization is classified by `CIB-EXT-0001` and `CIB-CFG-0002` in [CIB-BPMN-RELATION-REGISTER.md](../CIB-BPMN-RELATION-REGISTER.md).
 
 ## Verified feasibility facts
 
@@ -62,7 +60,7 @@ The pinned CIB Seven checkout and revision are recorded in [SOURCES.md](../SOURC
 
 The last fact means `asyncBefore` does not provide timer-like eligibility. Automatic job execution is disabled, and the harness makes the decision to release the already-executable job as an explicit scheduling input.
 
-Pinned `bpmn-moddle@10.0.0` imports the exact phase-zero source without a parser warning, retains the exact standard implementation URI and the two Camunda-namespace attributes through raw `$attrs`, and preserves the exact bytes through rejected executable admission. The bounded compiler still rejects the Service Task as unsupported; namespace-aware normalization remains production work for an approved capsule and requires no Camunda descriptor package.
+Pinned `bpmn-moddle@10.0.0` imports the exact source without a parser warning, retains the exact standard implementation URI and the two Camunda-namespace attributes through raw `$attrs`, and preserves the exact bytes. The bounded compiler admits only the exact namespace-normalized pair and requires no Camunda descriptor package.
 
 ## Competing CIB execution bindings
 
@@ -101,12 +99,12 @@ Requiring the project URN is a probe-fixture profile choice, not the future migr
 
 The checked Service Task retains a project-owned normalized source-binding record containing the standard implementation URI as `protocol`, handler identifier `bpmnLeanEffectHandler`, and the two extension QName/value pairs. Lean independently verifies that this exact record lowers to the project-owned effect descriptor. Recognizing this one complete lexical token is structural source admission, not JUEL evaluation. The Semantic Process IL and runtime contain no Camunda prefix, namespace, expression object, Java class, CIB job ID, retry count, or engine type.
 
-The CIB register classification proposed on approval is:
+The CIB register classification is:
 
 - a bounded CIB extension entry for the exact Camunda-namespaced delegate-expression token and async continuation used to realize the Service Task;
 - a configuration-specific entry for disabled automatic execution and explicit harness release of the immediately executable continuation job.
 
-No bounded normative-agreement entry is proposed for activation-then-wait. CIB exposes a pre-activation continuation wait followed by atomic delegate invocation and Service Task completion; it never exposes the capsule's activated effect-in-flight state.
+No bounded normative-agreement entry exists for activation-then-wait. CIB exposes a pre-activation continuation wait followed by atomic delegate invocation and Service Task completion; it never exposes the capsule's activated effect-in-flight state.
 
 ## Checked source and Semantic Process IL
 
@@ -305,7 +303,7 @@ enum EffectExecutionSchedule {
 
 This schedule is supplied only to CIB and Temporal harness adapters. It is not a BPMN stimulus, semantic outcome, or expected answer embedded in the neutral scenario. Lean and the pure core execute the single semantic scenario once.
 
-The approved implementation would add one answer-free Service Task scenario, taking the pipeline from seven to eight scenarios. It does not add a ninth scenario for transport-key discrimination because that key is non-canonical and adapter-local.
+The evidence contract uses one answer-free Service Task scenario, taking the pipeline from seven to eight scenarios. It does not add a ninth scenario for transport-key discrimination because that key is non-canonical and adapter-local.
 
 | Lane | Service Task executions | Store and evidence contract |
 |---|---:|---|
@@ -381,15 +379,15 @@ Before checked-source, IL, Lean, TypeScript, or Temporal production work:
 5. execute the same job again and require successful Process completion without administrative retry mutation;
 6. retain a negative assertion that no timer-like due-date eligibility transition is claimed.
 
-The red test is the exact fail-once/re-execute probe. If the packaged engine differs from the pinned-source account, if public manual execution does not perform the retry transition, or if the probe requires setting retries administratively, stop for owner direction and do not formalize the proposed semantics.
+The red test was the exact fail-once/re-execute probe. If the packaged engine later differs from the pinned-source account, if public manual execution does not perform the retry transition, or if the probe requires setting retries administratively, stop for owner direction and reopen this specification.
 
 ### Result
 
-The phase-zero probe is green against packaged CIB Seven `2.2.0`. [The exact source fixture](../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn) deploys with no engine parser warning under the shared disabled-executor configuration. Start creates exactly one immediately executable async-continuation job at `ServiceTask_Record`, with three retries, a null due date, and no timer classification. The probe derives the activity ID from the public Job Definition, reads the standard implementation value and expanded-name delegate expression from the deployed BPMN model, counts the one live job, and applies the exact profile-pair comparator. Separate negative controls deploy a different implementation URI and a different delegate-expression bean token and prove that the comparator rejects each half of the pair. Mapping the counted host wait to activation ordinal `1` remains adapter-decided because CIB exposes no semantic effect occurrence or engine-derived activation ordinal.
+The phase-zero probe is green against packaged CIB Seven `2.2.0`. [The exact source fixture](../../scenarios/service-task-effect/process.bpmn) deploys with no engine parser warning under the shared disabled-executor configuration. Start creates exactly one immediately executable async-continuation job at `ServiceTask_Record`, with three retries, a null due date, and no timer classification. The probe derives the activity ID from the public Job Definition, reads the standard implementation value and expanded-name delegate expression from the deployed BPMN model, counts the one live job, and applies the exact profile-pair comparator. Separate negative controls deploy a different implementation URI and a different delegate-expression bean token and prove that the comparator rejects each half of the pair. Mapping the counted host wait to activation ordinal `1` remains adapter-decided because CIB exposes no semantic effect occurrence or engine-derived activation ordinal.
 
 [The engine probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.java) registers only the exact `bpmnLeanEffectHandler` bean. Its first public `executeJob` invocation performs one probe mutation and throws; the same durable job remains executable with retries decremented from three to two. Its second public execution invokes the delegate again, observes the prior mutation, performs no second mutation, removes the job, and completes the Process. No call edits retries administratively, and no incident is created.
 
-The same test deploys an equivalent source whose lexical prefix is `probe` and whose expanded attribute names remain `{http://camunda.org/schema/1.0/bpmn}delegateExpression` and `{http://camunda.org/schema/1.0/bpmn}asyncBefore`; exact bean resolution and async-before job creation still succeed. [The source-import guard](../../packages/bpmn-source/test/bpmn-source.test.mjs) independently requires warning-free `bpmn-moddle` import, exact-byte retention, the standard implementation URI, and the two raw foreign attributes. These results satisfy the compatibility-scope phase-zero obligations without selecting the proposed extension into a profile.
+The same test deploys an equivalent source whose lexical prefix is `probe` and whose expanded attribute names remain `{http://camunda.org/schema/1.0/bpmn}delegateExpression` and `{http://camunda.org/schema/1.0/bpmn}asyncBefore`; exact bean resolution and async-before job creation still succeed. [The source-import guard](../../packages/bpmn-source/test/bpmn-source.test.mjs) independently requires warning-free `bpmn-moddle` import, exact-byte retention, the standard implementation URI, and the two raw foreign attributes. These results establish the compatibility-scope phase-zero obligations used by the selected extension profile.
 
 ## CIB fidelity labels
 
@@ -408,23 +406,17 @@ No row presents the CIB job, activation ordinal, or retry count as an independen
 
 The activation comparator component cannot fail independently in this bounded probe: it is `Math.toIntExact(activationCount)` after the same count is required to equal one. The activity, protocol, and handler components are independently deployment-derived and can fail the profile comparator. This asymmetry is acceptable only under the explicit adapter-decided fidelity.
 
-## First semantic checkpoint result
+## Rule-to-evidence matrix
 
-The exact phase-zero BPMN source now admits only the paired protocol/handler binding, preserves both Camunda attributes by expanded namespace name, and lowers through the checked Service Task to `awaitEffect`. Missing, altered, hostile-namespace, duplicate-expanded-name, and extra bindings reject.
+| Rule | Normative or profile clause | Lean | CIB Seven | TypeScript core | Temporal refinement | Negative or mutation guard |
+|---|---|---|---|---|---|---|
+| `EFFECT-WAIT-01` | BPMN 2.0.2 §13.3.3 under the success-only profile | Declarative `awaitEffect` relation, evaluator soundness, exact start prefix | Pre-activation continuation job plus adapter-decided singleton occurrence projection | Start closes at one effect wait with no output token | Committed wait state precedes Activity scheduling and is preserved across attempts | Synchronous/bypass accounts fail wait-state or Activity-history evidence |
+| `EFFECT-INTENT-01` | Profile-defined protocol/handler pair | Exact structured intent in the start prefix | Deployment-derived activity, protocol, and handler; activation remains adapter-decided | Intent and transport material project only from admitted program and committed state | Same request/key across replay, retry, and Worker replacement | Host-identity over-inclusion, field-omission collisions, and two-instance shared-store witness |
+| `EFFECT-RESULT-01` | BPMN 2.0.2 §13.3.3 successful service completion | Exact success trace | Public job execution invokes the bean and completes the Process | Matching `completeEffect` consumes the wait and closes | Activity success derives one content-bound completion from committed intent | Activity-bypass mutation preserves pure output but lacks durable Activity evidence |
+| `EFFECT-REFUSE-01` | Project occurrence-identity admission rule | Quantified three-field mismatch theorem with exact state preservation and accept-any-result non-law | No claim: CIB has no semantic result-ingress identity | Every mismatch and stale/consumed result rejects with unchanged state | No claim: the adapter derives identity from committed intent | Never-activated and stale completion witnesses |
+| `EFFECT-OBSERVE-01` | Project canonical observation boundary | Exact waiting and completed projections | Raw job/deployed-model facts reconstruct `openEffects`; handler mutation fails | One effect wait and descriptor, no caller interaction | Query trace is reconciled with Activity history and completed receipt | Producer handler mutation and canonical Activity-bypass mutation |
 
-Lean independently validates and lowers the checked graph, relates executable `awaitEffect` steps to the declarative operation relation, proves full occurrence-identity mismatch rejection with exact state preservation, and checks the exact success trace plus the accept-arbitrary-result non-law. The pure TypeScript semantic core independently closes start at one structured effect intent, commits only the matching `completeEffect`, rejects mismatch and stale completion without state change, and projects `openEffects` without a caller interaction.
-
-The shared wire contract now uses one occurrence-ID shape for User Tasks, timers, and effects and includes the separate `openEffects` projection. The seven pre-existing scenarios and retained CIB envelopes contain only empty `openEffects`; they were regenerated through `replace:cib-evidence` because the current pre-release observation shape changed, not because any prior semantic result changed.
-
-This checkpoint establishes `EFFECT-WAIT-01`, `EFFECT-RESULT-01`, `EFFECT-REFUSE-01`, and `EFFECT-OBSERVE-01` in Lean and the pure TypeScript core and establishes the exact checked-source lowering boundary. For `EFFECT-INTENT-01`, it establishes one structured intent at the committed start prefix; replay and host-attempt stability remain unclosed. It does not establish transport-key rendering, Activity execution, retry reconciliation, typed adapter exhaustion, Worker replacement, replay, Activity-history evidence, the eight-scenario matrix, or retained Service Task CIB evidence. Those remain the Temporal/refinement half of this proposal.
-
-## Focused Temporal refinement result
-
-The Workflow now projects the complete transport material from the admitted program and one committed `openEffects` entry, renders the exact transport request, and schedules one non-local Activity under the approved two-attempt policy. Plain success and fail-after-mutation-once produce identical canonical traces; the latter records two probe invocations, one external mutation, one derived `completeEffect`, the durable final-attempt retry summary, and replay-equivalent output.
-
-The focused gate also establishes the two-instance shared-store discriminator, every field-variation and retained omission mutation, host-identity over-inclusion failure, Worker replacement after the first mutation remains unacknowledged past start-to-close, typed `BPMN_EFFECT_EXECUTION_EXHAUSTED` Workflow failure with the committed intent unchanged, and the Activity-bypass history failure. The focused Temporal gate passed thirty-three tests in 14.216 seconds, within its unchanged repository-wide 60-second bound; the Worker-replacement witness completed inside the ten-second schedule-to-close envelope.
-
-This checkpoint closes the adapter-local and focused Temporal items only. The answer-free Service Task scenario, ordinary CIB runner path, content-bound retained CIB evidence, eight-scenario/sixteen-execution/nine-replay pipeline, rule/register updates, epistemic-closure review, and proposal-to-spec graduation remain open.
+Canonical equality does not erase these fidelity distinctions. In particular, CIB is a host-realization check rather than a semantic account for the invented effect-in-flight state, and Temporal is refinement evidence rather than a second choice of BPMN meaning.
 
 ## Smallest separating witnesses
 
@@ -452,7 +444,7 @@ This checkpoint closes the adapter-local and focused Temporal items only. The an
 | Temporal Activity Execution and attempts | Temporal server and Worker | Event History only | Scheduled from committed intent; retries under explicit policy |
 | Harness effect schedule and probe store | Test harness | Verifier evidence only | Fresh and asserted empty per ordinary execution; one deliberately fresh shared store only for the two-instance discriminator; cleaned afterward |
 
-## Required evidence before graduation
+## Required evidence
 
 - approved BPMN requirement disposition and CIB extension/configuration entries;
 - green packaged-engine phase-zero probe with exact source bytes and no administrative retry mutation;
@@ -473,7 +465,15 @@ This checkpoint closes the adapter-local and focused Temporal items only. The an
 - Worker-replacement, exhausted-Activity typed Workflow failure, semantic-lifetime completion, receipt reconciliation, cleanup, live-history replay, and exact Activity policy evidence;
 - full applicable gate within existing feedback budgets without weakening an assertion.
 
-On graduation, rename this document to `SERVICE-TASK-EFFECT-SPEC.md` and update [PLAN.md](../PLAN.md), [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), the documentation registries, requirement ledger, CIB relationship register, profile, and rule-to-evidence rows in the same atomic change.
+## Epistemic closure
+
+The exact established claim is one successful, payload-free, extension-bound Service Task whose project-owned intent is durably executed once at the observation boundary under the stated retry/idempotency contract. The closest unsupported claim is service failure behavior: BPMN service faults, `BpmnError`, typed variable patches, retry exhaustion semantics, incidents, and cancellation recovery remain outside this specification.
+
+The strongest common-mode risk is the shared reviewed source/profile account: Lean and TypeScript are separate transcriptions, not independent BPMN authorities, while CIB cannot derive the invented effect-in-flight state. That risk is kept explicit through fidelity labels, source/profile review, content-bound CIB host evidence, and mechanism mutations rather than majority voting.
+
+Canonical observations depend only on admitted definition state, committed runtime state, and explicit semantic inputs. The scenario's `completeEffect` is applied directly only by Lean and the pure core; Temporal derives the identical command from committed intent after Activity success, and CIB realizes it through the explicit host schedule.
+
+The nearest realistic wrong accounts are an accept-any-result evaluator, an under- or over-inclusive idempotency key, an in-memory callback that cannot survive Worker replacement, and an adapter that fabricates completion without an Activity. Each has a retained theorem, discriminator, restart witness, or history mutation. The profile and wire contracts remain under the pre-release replacement policy; no legacy effect reader, Workflow patch branch, or retained history baseline is introduced.
 
 ## Stop conditions
 

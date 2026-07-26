@@ -6,7 +6,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,7 +16,6 @@ import org.cibseven.bpm.engine.delegate.DelegateExecution;
 import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParse;
 import org.junit.Test;
-import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
 /**
@@ -25,16 +25,16 @@ import org.xml.sax.InputSource;
  */
 public final class CibSevenServiceTaskPhaseZeroProbeTest {
 
-  private static final String RESOURCE =
-      "org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn";
+  private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
+  private static final Path RESOURCE =
+      PROJECT_ROOT.resolve("scenarios/service-task-effect/process.bpmn");
   private static final String PROCESS_ID = "Process_ServiceTaskEffectProbe";
   private static final String SERVICE_TASK_ID = "ServiceTask_Record";
-  private static final String BPMN_NAMESPACE =
-      "http://www.omg.org/spec/BPMN/20100524/MODEL";
-  private static final String CAMUNDA_NAMESPACE = "http://camunda.org/schema/1.0/bpmn";
-  private static final String HANDLER_BEAN = "bpmnLeanEffectHandler";
+  private static final String BPMN_NAMESPACE = CibSevenEffectProjector.BPMN_NAMESPACE;
+  private static final String CAMUNDA_NAMESPACE = CibSevenEffectProjector.CAMUNDA_NAMESPACE;
+  private static final String HANDLER_BEAN = CibSevenEffectProjector.HANDLER_BEAN;
   private static final String HANDLER_EXPRESSION = "${" + HANDLER_BEAN + "}";
-  private static final String EFFECT_PROTOCOL = "urn:bpmn-lean:effect:probe-v1";
+  private static final String EFFECT_PROTOCOL = CibSevenEffectProjector.EFFECT_PROTOCOL;
 
   @Test
   public void decrementsRetriesAndReexecutesWithOneTestLocalMutation()
@@ -59,7 +59,7 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
           engine
               .getRepositoryService()
               .createDeployment()
-              .addClasspathResource(RESOURCE)
+              .addString(RESOURCE.getFileName().toString(), readResource())
               .deploy()
               .getId();
       assertNotNull(capturedParse.get());
@@ -247,51 +247,19 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
 
   private static EffectWaitProjection projectEffectWait(
       ProcessEngine engine, String processInstanceId) throws Exception {
-    var jobs =
-        engine
-            .getManagementService()
-            .createJobQuery()
-            .processInstanceId(processInstanceId)
-            .list();
-    if (jobs.size() != 1) {
+    var waits =
+        new CibSevenEffectProjector()
+            .project(engine, processInstanceId, "PhaseZero_Instance");
+    if (waits.size() != 1) {
       throw new IllegalStateException(
           "Expected exactly one async-before Service Task job");
     }
-    var job = jobs.getFirst();
-    var jobDefinition =
-        engine
-            .getManagementService()
-            .createJobDefinitionQuery()
-            .jobDefinitionId(job.getJobDefinitionId())
-            .singleResult();
-    if (jobDefinition == null) {
-      throw new IllegalStateException(
-          "Async-before job has no public JobDefinition");
-    }
-    var elementId = jobDefinition.getActivityId();
-    var serviceTask =
-        readDeployedServiceTask(
-            engine, job.getProcessDefinitionId(), elementId);
-    var activationCount =
-        engine
-            .getManagementService()
-            .createJobQuery()
-            .processInstanceId(processInstanceId)
-            .jobDefinitionId(jobDefinition.getId())
-            .count();
-    if (activationCount != 1) {
-      throw new IllegalStateException(
-          "Bounded phase-zero profile requires exactly one live Service Task job");
-    }
-    // CIB exposes host-job multiplicity, not semantic activation ordinals. The bounded adapter
-    // account deliberately maps the sole live job to the first activation.
+    var job = waits.getFirst().evidence();
     return new EffectWaitProjection(
-        elementId,
-        Math.toIntExact(activationCount),
-        requireAttribute(serviceTask, null, "implementation"),
-        requireBeanToken(
-            requireAttribute(
-                serviceTask, CAMUNDA_NAMESPACE, "delegateExpression")));
+        job.elementId(),
+        Math.toIntExact(job.activation()),
+        job.protocol(),
+        job.handler());
   }
 
   private static void requireExactEffectWait(EffectWaitProjection actual) {
@@ -305,67 +273,8 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
     }
   }
 
-  private static Element readDeployedServiceTask(
-      ProcessEngine engine, String processDefinitionId, String elementId)
-      throws Exception {
-    var factory = DocumentBuilderFactory.newInstance();
-    factory.setNamespaceAware(true);
-    try (var input =
-        engine.getRepositoryService().getProcessModel(processDefinitionId)) {
-      if (input == null) {
-        throw new IllegalStateException(
-            "Missing deployed BPMN model for async-before job");
-      }
-      var elements =
-          factory
-              .newDocumentBuilder()
-              .parse(input)
-              .getElementsByTagNameNS(BPMN_NAMESPACE, "serviceTask");
-      for (var index = 0; index < elements.getLength(); index += 1) {
-        var element = (Element) elements.item(index);
-        if (elementId.equals(element.getAttribute("id"))) {
-          return element;
-        }
-      }
-    }
-    throw new IllegalStateException(
-        "JobDefinition activity is not a deployed Service Task: " + elementId);
-  }
-
-  private static String requireAttribute(
-      Element element, String namespace, String localName) {
-    var attribute =
-        namespace == null
-            ? element.getAttributeNode(localName)
-            : element.getAttributeNodeNS(namespace, localName);
-    if (attribute == null || attribute.getValue().isEmpty()) {
-      throw new IllegalStateException(
-          "Deployed Service Task is missing attribute " + localName);
-    }
-    return attribute.getValue();
-  }
-
-  private static String requireBeanToken(String delegateExpression) {
-    if (
-        !delegateExpression.startsWith("${")
-            || !delegateExpression.endsWith("}")
-            || delegateExpression.length() <= 3) {
-      throw new IllegalStateException(
-          "Delegate expression is not one exact bean-token reference");
-    }
-    return delegateExpression.substring(2, delegateExpression.length() - 1);
-  }
-
   private static String readResource() throws Exception {
-    try (var input =
-        CibSevenServiceTaskPhaseZeroProbeTest.class
-            .getClassLoader()
-            .getResourceAsStream(RESOURCE)) {
-      if (input == null) {
-        throw new IllegalStateException("Missing phase-zero BPMN resource");
-      }
-      return new String(input.readAllBytes(), StandardCharsets.UTF_8);
-    }
+    return Files.readString(RESOURCE);
   }
 
   private static void assertExpandedQNames(String source) throws Exception {

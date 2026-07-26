@@ -1,6 +1,6 @@
 # CIB Seven oracle runner
 
-This Java 21 module embeds pinned CIB Seven `2.2.0` as the behavioral oracle for the bounded User Task, normative balanced parallel fork/join, and exact `PT1S` Intermediate Catch Timer draft profiles. It deploys the exact BPMN resource, invokes public engine services, projects canonical observations, removes all scenario-owned state, and keeps one engine warm across compact JSON-lines requests.
+This Java 21 module embeds pinned CIB Seven `2.2.0` as the behavioral oracle for the bounded User Task, normative balanced parallel fork/join, exact `PT1S` Intermediate Catch Timer, and success-only Service Task effect draft profiles. It deploys the exact BPMN resource, invokes public engine services, projects canonical observations, removes all scenario-owned state, and keeps one engine warm across compact JSON-lines requests.
 
 It is calibration infrastructure, not a reusable BPMN semantic kernel. A read-only PVM definition projection explains compilation choices but is never a compatibility key or an input to Lean or the TypeScript semantic core.
 
@@ -33,11 +33,11 @@ The script uses Homebrew Java 21 by default and the repository Maven wrapper.
 
 ## Semantic boundary
 
-Canonical traces include only stable deployment, command, Process state, wait, open semantic User Task or Timer occurrence, enabled interaction, and logical time. The runner maps generated CIB task IDs to project identity `(Process instance, BPMN element, activation ordinal)` and retains BPMN task names. Distinct active elements become distinct semantic occurrences sorted by semantic identity, and active waits preserve per-element multiplicity. The timer lane fixes the engine clock, proves the exact timer job ineligible before due time and eligible at due time, and executes it only after eligibility. Repeated live instances of one BPMN element remain rejected because deriving their activation ordinals from engine order would invent semantics. Generated deployment, definition, instance, execution, task, and job IDs never become comparison keys.
+Canonical traces include only stable deployment, command, Process state, wait, open semantic User Task, Timer, or effect occurrence, enabled interaction, and logical time. The runner maps generated CIB task IDs to project identity `(Process instance, BPMN element, activation ordinal)` and retains BPMN task names. Distinct active elements become distinct semantic occurrences sorted by semantic identity, and active waits preserve per-element multiplicity. The timer lane fixes the engine clock, proves the exact timer job ineligible before due time and eligible at due time, and executes it only after eligibility. The Service Task lane derives activity, protocol, and handler from public job-definition/deployed-model state, maps the singleton host wait to adapter-decided activation `1`, and records retry/invocation/mutation facts only as raw host evidence. Repeated live instances of one BPMN element remain rejected because deriving their activation ordinals from engine order would invent semantics. Generated deployment, definition, instance, execution, task, and job IDs never become comparison keys.
 
 A wrong semantic occurrence is rejected by the oracle adapter before CIB host-task completion and leaves the task active. A stale completion is rejected after no matching live task remains. These mappings are classified in the [CIB–BPMN relationship register](../../docs/CIB-BPMN-RELATION-REGISTER.md), not mislabeled as raw CIB or BPMN identity semantics.
 
-Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query and timer-job snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open timers, and enabled interactions and therefore detects omitted tasks and timer-deadline drift while treating raw query order as non-semantic. The persistent JSON-lines boundary preserves request identity and cleanup across all seven scenarios.
+Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query, timer-job, effect-job, and effect-execution snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open timers, open effects, and enabled interactions and therefore detects omitted tasks, timer-deadline drift, and effect-handler drift while treating raw query order as non-semantic. The persistent JSON-lines boundary preserves request identity and cleanup across all eight scenarios.
 
 Ordinary verification never rewrites retained evidence. The explicit replacement operation is:
 
@@ -45,7 +45,7 @@ Ordinary verification never rewrites retained evidence. The explicit replacement
 ./scripts/pnpm.sh run replace:cib-evidence
 ```
 
-The package script supplies the exact replacement opt-in. The command executes all seven answer-free scenarios through the pinned runner, verifies producer identity and cleanup, and replaces only content-bound CIB evidence artifacts.
+The package script supplies the exact replacement opt-in. The command executes all eight answer-free scenarios through the pinned runner, verifies producer identity and cleanup, and replaces only content-bound CIB evidence artifacts.
 
 ## Source guide
 
@@ -59,6 +59,9 @@ The package script supplies the exact replacement opt-in. The command executes a
 | [CibSevenConsistencyProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenConsistencyProbeTest.java) | Bounded generated-ID rejection consistency witness |
 | [CibSevenParallelGatewayProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.java) | Bounded duplicate-same-incoming-flow Parallel Gateway discriminator |
 | [CibSevenIntermediateCatchTimerTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenIntermediateCatchTimerTest.java) | Controlled-clock timer wait, due-date, eligibility, firing, completion, and cleanup witness |
+| [CibSevenEffectProjector.java](src/main/java/org/bpmnlean/cibseven/CibSevenEffectProjector.java) | Public job-definition/deployed-model projection for the exact effect wait |
+| [CibSevenEffectProbe.java](src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | Test-local plain and fail-after-mutation Service Task delegate behavior |
+| [CibSevenServiceTaskScenarioRunnerTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskScenarioRunnerTest.java) | Ordinary plain-success and raw retry/re-execution scenario-runner evidence |
 | [CibSevenTestEngine.java](src/test/java/org/bpmnlean/cibseven/CibSevenTestEngine.java) | Shared isolated test-engine configuration for the bounded probes |
 | [PvmDefinitionProjector.java](src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) | Read-only diagnostic definition projection |
 | [CibSevenOracleMain.java](src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | Persistent JSON-lines boundary |

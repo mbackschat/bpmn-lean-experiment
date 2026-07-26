@@ -29,6 +29,15 @@ public final class CibSevenOracleMain {
   }
 
   static void serve(Reader input, Writer output, Path projectRoot) throws IOException {
+    serve(input, output, projectRoot, CibEffectExecutionSchedule.PLAIN_SUCCESS);
+  }
+
+  static void serve(
+      Reader input,
+      Writer output,
+      Path projectRoot,
+      CibEffectExecutionSchedule effectSchedule)
+      throws IOException {
     var reader = input instanceof BufferedReader buffered ? buffered : new BufferedReader(input);
     var writer = output instanceof BufferedWriter buffered ? buffered : new BufferedWriter(output);
     try (var runner = CibSevenScenarioRunner.create()) {
@@ -38,7 +47,7 @@ public final class CibSevenOracleMain {
           continue;
         }
         var scenario = ScenarioJson.read(line);
-        var result = runner.run(scenario, projectRoot);
+        var result = runner.run(scenario, projectRoot, effectSchedule);
         writer.write(ScenarioJson.write(result));
         writer.newLine();
         writer.flush();

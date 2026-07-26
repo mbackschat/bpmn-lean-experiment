@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import {
   BpmnCompilationStatus,
@@ -27,6 +28,7 @@ import {
   requireScenarioBinding,
 } from "../dist/index.js";
 import {
+  EffectExecutionSchedule,
   ProcessCommandResultKind,
   TemporalCompletionDelivery,
   TemporalScenarioRunner,
@@ -99,6 +101,21 @@ function mutateOpenTimerDeadline(result) {
   running.openTimers[0] = {
     ...openTimer,
     deadlineMs: openTimer.deadlineMs + 1,
+  };
+}
+
+function mutateOpenEffectHandler(result) {
+  const running = runningObservation(result);
+  const openEffect = running.openEffects?.[0];
+  if (openEffect === undefined) {
+    throw new Error("one calibrated open effect is required");
+  }
+  running.openEffects[0] = {
+    ...openEffect,
+    descriptor: {
+      ...openEffect.descriptor,
+      handler: `${openEffect.descriptor.handler}-mutated`,
+    },
   };
 }
 
@@ -195,6 +212,30 @@ function timerCase() {
   });
 }
 
+function effectCase() {
+  return Object.freeze({
+    id: "service-task-effect-success",
+    scenarioRelativePath:
+      "scenarios/service-task-effect/scenario.json",
+    evidenceRelativePath:
+      "scenarios/service-task-effect/cibseven-evidence.json",
+    bpmnRelativePath: "scenarios/service-task-effect/process.bpmn",
+    workflowIdPrefix: "service-task-effect-success",
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    effectScheduleSubstitution: true,
+    replayIsolation: true,
+    injectMutation: mutateOpenEffectHandler,
+    expectedInjectedDisagreement: {
+      kind: DisagreementKind.ObservationValue,
+      path: "trace[2].openEffects[0].descriptor.handler",
+      expected: "bpmnLeanEffectHandler",
+      actual: "bpmnLeanEffectHandler-mutated",
+    },
+  });
+}
+
 export const pipelineCases = Object.freeze([
   interactionCase(
     "user-task-discovery-completion",
@@ -241,6 +282,7 @@ export const pipelineCases = Object.freeze([
     },
   ),
   timerCase(),
+  effectCase(),
 ]);
 
 function elapsedMs(started) {
@@ -305,7 +347,12 @@ function indexExactRecords(records, expectedIds, targetName) {
   return indexed;
 }
 
-async function runCibTargets(scenarios, inputPath, outputPath) {
+async function runCibTargets(
+  scenarios,
+  inputPath,
+  outputPath,
+  effectSchedule = EffectExecutionSchedule.PlainSuccess,
+) {
   const started = performance.now();
   await writeFile(
     inputPath,
@@ -325,6 +372,7 @@ async function runCibTargets(scenarios, inputPath, outputPath) {
       `-Dbpmn.pipeline.projectRoot=${projectRoot}`,
       `-Dbpmn.pipeline.input=${inputPath}`,
       `-Dbpmn.pipeline.output=${outputPath}`,
+      `-Dbpmn.pipeline.effectSchedule=${effectSchedule}`,
       "test",
     ],
     30_000,
@@ -575,6 +623,12 @@ function temporalOptions(pipelineCase, suffix) {
   if (pipelineCase.duplicateFirstCompletion) {
     options.duplicateFirstCompletion = true;
   }
+  if (pipelineCase.effectScheduleSubstitution === true) {
+    options.effectExecutionSchedule =
+      suffix === "isolation"
+        ? EffectExecutionSchedule.FailAfterMutationOnce
+        : EffectExecutionSchedule.PlainSuccess;
+  }
   return options;
 }
 
@@ -592,7 +646,36 @@ async function runTemporalTargets(runner, contexts) {
       options: temporalOptions(pipelineCase, "isolation"),
     },
   ]);
-  const executions = await runner.runScenarios(items);
+  const executions = new Array(items.length);
+  const ordinaryEntries = items
+    .map((item, index) => ({ item, index }))
+    .filter(
+      ({ item }) =>
+        item.options.effectExecutionSchedule === undefined,
+    );
+  const effectEntries = items
+    .map((item, index) => ({ item, index }))
+    .filter(
+      ({ item }) =>
+        item.options.effectExecutionSchedule !== undefined,
+    );
+  const ordinaryPromise = runner.runScenarios(
+    ordinaryEntries.map(({ item }) => item),
+  );
+  // The two same-intent schedules deliberately use isolated stores. Running
+  // them sequentially avoids inventing a host execution ID in EffectRequest
+  // merely to route concurrent harness registrations for the same key.
+  for (const { item, index } of effectEntries) {
+    executions[index] = await runner.runScenario(
+      item.scenario,
+      item.semanticProcess,
+      item.options,
+    );
+  }
+  const ordinaryExecutions = await ordinaryPromise;
+  for (const [ordinaryIndex, { index }] of ordinaryEntries.entries()) {
+    executions[index] = ordinaryExecutions[ordinaryIndex];
+  }
   const results = new Map();
   for (const [index, { pipelineCase }] of contexts.entries()) {
     const primary = executions[index * 2];
@@ -718,6 +801,10 @@ function projectCaseTargets(context, targets) {
       scenarioId,
       "Temporal",
     ),
+    cibEffectRetryResult:
+      targets.cibEffectRetry === null
+        ? null
+        : targets.cibEffectRetry.results.get(scenarioId) ?? null,
   };
 }
 
@@ -735,6 +822,7 @@ function compareCase(context, projectedTargets) {
     leanResult,
     semanticCoreResult,
     temporalResult,
+    cibEffectRetryResult,
   } = projectedTargets;
   const semanticCandidates = [
     {
@@ -824,6 +912,38 @@ function compareCase(context, projectedTargets) {
       },
     ],
   );
+  if (pipelineCase.effectScheduleSubstitution === true) {
+    if (cibEffectRetryResult === null) {
+      throw new Error("Service Task case omitted the CIB retry execution");
+    }
+    if (
+      !isDeepStrictEqual(
+        canonicalCibResult(cibEffectRetryResult),
+        canonicalCib,
+      )
+    ) {
+      throw new Error(
+        "CIB retry schedule changed the canonical Service Task result",
+      );
+    }
+    const [execution] =
+      cibEffectRetryResult.diagnostics.effectExecutions ?? [];
+    if (
+      execution?.schedule !== "failAfterMutationOnce" ||
+      execution.invocations !== 2 ||
+      execution.mutations !== 1 ||
+      execution.initialRetries !== 3 ||
+      execution.retriesAfterFirstFailure !== 2
+    ) {
+      throw new Error(
+        "CIB retry schedule omitted its raw decrement/re-execution facts",
+      );
+    }
+  } else if (cibEffectRetryResult !== null) {
+    throw new Error(
+      `Unexpected CIB retry execution for ${scenario.id}`,
+    );
+  }
   // tag::seeded-disagreement[]
   const injectedResult = structuredClone(semanticCoreResult);
   pipelineCase.injectMutation(injectedResult);
@@ -912,6 +1032,10 @@ function compareCase(context, projectedTargets) {
       actualWaitTrace: temporalResult.primary.waitTrace,
       primaryTemporalResult: temporalResult.primary.result,
       isolationTemporalResult: temporalResult.isolation.result,
+      primaryEffectProbeEvidence:
+        temporalResult.primary.effectProbeEvidence,
+      isolationEffectProbeEvidence:
+        temporalResult.isolation.effectProbeEvidence,
       temporalInteractionEvidence:
         temporalResult.primary.interactionEvidence,
       expectedPostTerminalResultKind:
@@ -924,6 +1048,13 @@ function compareCase(context, projectedTargets) {
         scenario.stimuli.find(
           (stimulus) => stimulus.kind === StimulusKind.FireTimer,
         )?.commandId ?? null,
+      expectedDerivedEffectCommandId:
+        scenario.stimuli.find(
+          (stimulus) => stimulus.kind === StimulusKind.CompleteEffect,
+        )?.commandId ?? null,
+      cibEffectRetryEvidence:
+        cibEffectRetryResult?.diagnostics.effectExecutions?.[0] ??
+        null,
       cibCleanup: cibResult.diagnostics.cleanup,
     },
   };
@@ -956,16 +1087,25 @@ function semanticPrefixThroughCompletion(result) {
 }
 
 async function replayEvidence(runner, contexts, temporalResults) {
-  const items = contexts.map((context) => {
+  const items = contexts.flatMap((context) => {
     const temporal = requiredResult(
       temporalResults,
       context.scenario.id,
       "Temporal",
     );
-    return {
-      history: temporal.primary.history,
-      workflowId: `${context.pipelineCase.workflowIdPrefix}-live-replay`,
-    };
+    return [
+      {
+        history: temporal.primary.history,
+        workflowId: `${context.pipelineCase.workflowIdPrefix}-live-replay`,
+      },
+      ...(context.pipelineCase.replayIsolation === true
+        ? [{
+            history: temporal.isolation.history,
+            workflowId:
+              `${context.pipelineCase.workflowIdPrefix}-isolation-live-replay`,
+          }]
+        : []),
+    ];
   });
   await runner.replayHistories(items);
   return { liveHistories: items.length };
@@ -1017,6 +1157,14 @@ export async function runPipelineCases(cases) {
   );
   const cibInputPath = path.join(temporaryDirectory, "cib-input.jsonl");
   const cibOutputPath = path.join(temporaryDirectory, "cib-output.jsonl");
+  const cibEffectRetryInputPath = path.join(
+    temporaryDirectory,
+    "cib-effect-retry-input.jsonl",
+  );
+  const cibEffectRetryOutputPath = path.join(
+    temporaryDirectory,
+    "cib-effect-retry-output.jsonl",
+  );
   const leanInputPath = path.join(
     temporaryDirectory,
     "lean-definition-input.jsonl",
@@ -1060,6 +1208,10 @@ export async function runPipelineCases(cases) {
 
     const scenarioStarted = performance.now();
     const core = runCoreTargets(contexts);
+    const effectContexts = contexts.filter(
+      ({ pipelineCase }) =>
+        pipelineCase.effectScheduleSubstitution === true,
+    );
     const [
       cib,
       lean,
@@ -1067,6 +1219,7 @@ export async function runPipelineCases(cases) {
       leanScenarioMutation,
       leanProvenanceMutation,
       temporal,
+      cibEffectRetry,
     ] = await Promise.all([
       runCibTargets(
         contexts.map(({ scenario }) => scenario),
@@ -1088,6 +1241,14 @@ export async function runPipelineCases(cases) {
         leanProvenanceMutationInputPath,
       ),
       runTemporalTargets(runner, contexts),
+      effectContexts.length === 0
+        ? null
+        : runCibTargets(
+            effectContexts.map(({ scenario }) => scenario),
+            cibEffectRetryInputPath,
+            cibEffectRetryOutputPath,
+            EffectExecutionSchedule.FailAfterMutationOnce,
+          ),
     ]);
     targets = {
       cib,
@@ -1097,6 +1258,7 @@ export async function runPipelineCases(cases) {
       leanProvenanceMutation,
       core,
       temporal,
+      cibEffectRetry,
     };
     scenarioExecutionMs = elapsedMs(scenarioStarted);
 

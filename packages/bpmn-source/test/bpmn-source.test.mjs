@@ -20,7 +20,7 @@ const bpmnUrl = new URL(
   import.meta.url,
 );
 const serviceTaskProbeUrl = new URL(
-  "../../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn",
+  "../../../scenarios/service-task-effect/process.bpmn",
   import.meta.url,
 );
 const scenario = JSON.parse(await readFile(scenarioUrl, "utf8"));

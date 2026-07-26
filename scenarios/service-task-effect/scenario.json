@@ -1,0 +1,51 @@
+{
+  "kind": "scenario",
+  "id": "service-task-effect-success",
+  "profile": "cibseven-2.2.0-service-task-effect-draft",
+  "bpmn": {
+    "id": "service-task-effect-phase-zero-probe",
+    "relativePath": "scenarios/service-task-effect/process.bpmn",
+    "sha256": "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ServiceTaskEffectProbe",
+      "instanceId": "Instance_1"
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Record",
+        "activation": 1
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 Table 10.8",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/ExecuteJobsCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/DefaultJobRetryCmd.java"
+    ]
+  }
+}

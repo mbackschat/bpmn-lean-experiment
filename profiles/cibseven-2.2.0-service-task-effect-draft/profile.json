@@ -1,0 +1,78 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-service-task-effect-draft",
+  "status": "immutable",
+  "claim": "service-task-effect-success-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "service-task",
+      "successful-effect-result",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "camunda-delegate-expression-exact-bean-token",
+      "camunda-async-before"
+    ],
+    "relationships": [
+      "CIB-EXT-0001",
+      "CIB-CFG-0002"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "effect-payloads",
+    "variables",
+    "general-juel",
+    "arbitrary-beans",
+    "java-class-loading",
+    "delegate-execution-compatibility",
+    "field-injection",
+    "data-associations",
+    "bpmn-operation",
+    "messages",
+    "service-faults",
+    "bpmn-errors",
+    "boundary-events",
+    "incidents-as-semantic-outcomes",
+    "retry-exhaustion-semantics",
+    "compensation",
+    "cancellation",
+    "heartbeats",
+    "local-activities",
+    "multiple-effects",
+    "effect-races",
+    "external-tasks"
+  ]
+}

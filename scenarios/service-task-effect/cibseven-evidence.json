@@ -1,0 +1,136 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "service-task-effect-success",
+    "sha256": "ac41165aa41aacda7059d12a25fc484831d9567cc2f76f8ad5519eb8a835acf3"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-service-task-effect-draft",
+    "sha256": "7b43b8569474c77b03be8ba5363355469d20ca0c730c9521cc46fb3bab2f830c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Record",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "jobs": []
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ServiceTask_Record",
+            "kind": "effect",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [],
+        "openTimers": [],
+        "openEffects": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Record",
+              "activation": 1
+            },
+            "descriptor": {
+              "protocol": "urn:bpmn-lean:effect:probe-v1",
+              "handler": "bpmnLeanEffectHandler"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openTimers": [],
+        "openEffects": [],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

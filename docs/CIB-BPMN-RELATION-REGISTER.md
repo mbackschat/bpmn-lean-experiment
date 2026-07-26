@@ -24,8 +24,8 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Permitted operational details | 1 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 0 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 0 | 1 green candidate | Project profile deliberately includes behavior beyond bare BPMN execution |
-| Configuration-specific realizations | 1 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Selected CIB extensions | 1 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Configuration-specific realizations | 2 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
@@ -136,13 +136,22 @@ The [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md#import-and-admission-po
 
 ## Extension register
 
-No CIB extension has yet been selected into an approved project profile.
+### CIB-EXT-0001 — exact delegate-expression Service Task binding
+
+**Status:** Selected bounded extension
+
+The Service Task effect profile admits exactly the paired standard protocol URI `urn:bpmn-lean:effect:probe-v1`, Camunda-namespace `delegateExpression="${bpmnLeanEffectHandler}"`, and Camunda-namespace `asyncBefore="true"` attributes. CIB Seven resolves the exact bean token and creates one durable async-before continuation job. The lexical XML prefix is irrelevant; both extension attributes are identified by expanded namespace name.
+
+The selected extension is a host realization, not an independent derivation of the project's activated effect intent. CIB exposes a pre-activation continuation wait followed by atomic delegate invocation and Service Task completion. The project adapter maps that wait to the one bounded semantic effect occurrence and descriptor, with activation ordinal `1` decided from the required singleton job count.
+
+**Evidence:** [Service Task effect scenario](../scenarios/service-task-effect/README.md), [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.java), [immutable profile](../profiles/cibseven-2.2.0-service-task-effect-draft/README.md), and content-bound retained evidence produced only by the explicit replacement command.
+
+**Boundary:** This entry claims no general JUEL, arbitrary bean, Java class, `JavaDelegate`, `DelegateExecution`, field injection, listener, variable, service-fault, incident, external-task, or Process Engine API compatibility.
 
 ### Research queue
 
 | Hint | Status | Required investigation |
 |---|---|---|
-| Exact delegate-expression bean plus async-before execution associated with a BPMN Service Task | Durable compatibility scope approved and packaged-engine phase-zero probe green; semantic capsule decision pending, so this is not an adopted extension record | The exact source uses `{http://camunda.org/schema/1.0/bpmn}delegateExpression` and `{http://camunda.org/schema/1.0/bpmn}asyncBefore`. The bounded probe proves prefix-independent bean resolution, an immediately executable job with no due date, public retry decrement `3 → 2`, and clean re-execution without claiming general JUEL or Java API compatibility. |
 | Java class, delegate-expression, expression, field-injection, and bean execution | Family inventoried in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); disposition pending | Separate namespace-aware source recognition, project handler binding, general JUEL, Java class loading, dependency injection, `JavaDelegate`, and `DelegateExecution` compatibility. |
 | Script Task and script-bearing extensions | Family inventoried; disposition pending | Separate pure deterministic expressions, effectful scripts, and versioned engine-compatible scripts. Pin language, runtime, security, variables, results, limits, and dependencies before selection. |
 | FEEL | Candidate project expression language, not a Service Task delegate-expression mechanism | The pinned CIB FEEL integrations belong to DMN. Reopen after typed variables for an exact project subset and separate CIB calibration. |
@@ -172,6 +181,14 @@ The current draft profile pins CIB Seven `2.2.0` at revision `834a9874760de8a010
 
 This is a profile constraint, not evidence that CIB differs from BPMN. It does not claim that another database, history level, scheduler setting, plugin set, or engine configuration produces the same observations. The machine-readable declarations are in the [current profile](../profiles/cibseven-2.2.0-user-task-draft/profile.json).
 
+### CIB-CFG-0002 — explicit release of the Service Task continuation job
+
+**Status:** Reviewed configuration dependency
+
+Under `CIB-CFG-0001`, automatic job execution is disabled. Starting the exact `CIB-EXT-0001` Process creates one immediately executable async-before continuation job with no due date. The harness deliberately leaves that job waiting until the explicit Service Task effect schedule releases it through the public job API. Plain success executes it once; the fail-after-mutation schedule observes public retry decrement from three to two and executes the same durable job again without administrative retry changes.
+
+The waiting interval is a harness scheduling input and the job is a CIB host construct. Neither is BPMN logical time, effect intent, or caller interaction. The content-bound retained result uses plain success; retry and re-execution details remain raw producer evidence.
+
 ## Audit of previously visited findings
 
 | Previously visited finding | Classification | Reason |
@@ -185,7 +202,7 @@ This is a profile constraint, not evidence that CIB differs from BPMN. It does n
 | Balanced two-branch Parallel Gateway fork/join | `CIB-AGR-0003` | Both branches become active, either completion order leaves the symmetric wait, and both arrivals complete the Process; the balanced witness does not distinguish join algorithms |
 | Count-only versus incoming-edge-provenance join state | `CIB-DEV-0001` candidate deviation | The normative per-incoming-flow requirement, schema-valid separating model, pinned source mechanism, bounded pristine-lane probe, owner-approved profile meaning, and balanced four-target impact establish a public conflict; immutable negative-probe evidence remains open |
 | Literal `PT1S` normal-flow Intermediate Catch Timer | `CIB-AGR-0004` under `CIB-CFG-0001` | Controlled-clock evidence observes wait creation, ineligibility before due time, eligibility at the due date, due transition, and completion; logical deadline projection remains adapter-derived |
-| Exact delegate-expression bean plus async-before Service Task execution | Green extension candidate; not selected | Compatibility scope is approved and the exact expanded-QName, bean-resolution, packaged retry-decrement, idempotent re-execution, and no-due-date facts are executable. The Service Task capsule and profile selection remain pending. |
+| Exact delegate-expression bean plus async-before Service Task execution | `CIB-EXT-0001` under `CIB-CFG-0002` | The exact expanded-QName pair, bean resolution, immediately executable continuation job, plain completion, packaged retry decrement, and test-local one-mutation re-execution are executable; the semantic effect-in-flight projection remains adapter-decided |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
 | External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |
 

@@ -198,12 +198,14 @@ public final class ScenarioProtocol {
     @JsonSubTypes.Type(
         value = CompleteUserTaskInstanceStimulus.class,
         name = "completeUserTaskInstance"),
-    @JsonSubTypes.Type(value = FireTimerStimulus.class, name = "fireTimer")
+    @JsonSubTypes.Type(value = FireTimerStimulus.class, name = "fireTimer"),
+    @JsonSubTypes.Type(value = CompleteEffectStimulus.class, name = "completeEffect")
   })
   public sealed interface Stimulus
       permits StartProcessStimulus,
           CompleteUserTaskInstanceStimulus,
-          FireTimerStimulus {
+          FireTimerStimulus,
+          CompleteEffectStimulus {
     String commandId();
   }
 
@@ -297,6 +299,14 @@ public final class ScenarioProtocol {
     public OpenEffect {
       Objects.requireNonNull(id, "id");
       Objects.requireNonNull(descriptor, "descriptor");
+    }
+  }
+
+  public record CompleteEffectStimulus(
+      String commandId, EffectOccurrenceId effectId) implements Stimulus {
+    public CompleteEffectStimulus {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(effectId, "effectId");
     }
   }
 
@@ -424,6 +434,8 @@ public final class ScenarioProtocol {
       PvmDefinitionProjection pvmDefinition,
       List<TaskQuerySnapshot> taskQueries,
       List<TimerJobSnapshot> timerJobs,
+      List<EffectJobSnapshot> effectJobs,
+      List<EffectExecutionSnapshot> effectExecutions,
       CleanupProjection cleanup) {
     public Diagnostics {
       Objects.requireNonNull(engineVersion, "engineVersion");
@@ -435,6 +447,8 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(pvmDefinition, "pvmDefinition");
       taskQueries = List.copyOf(taskQueries);
       timerJobs = List.copyOf(timerJobs);
+      effectJobs = List.copyOf(effectJobs);
+      effectExecutions = List.copyOf(effectExecutions);
       Objects.requireNonNull(cleanup, "cleanup");
     }
   }
@@ -480,6 +494,53 @@ public final class ScenarioProtocol {
       if (dueDateDeltaMs < 0 || dueDateDeltaMs > MAX_SAFE_WIRE_INTEGER) {
         throw new IllegalArgumentException("dueDateDeltaMs must be a non-negative safe wire integer");
       }
+    }
+  }
+
+  /**
+   * Raw async-before Service Task job projection. The semantic activation ordinal is the
+   * adapter-decided singleton job count; every other field is deployment or engine state.
+   */
+  public record EffectJobSnapshot(
+      String afterCommandId, List<EffectJob> jobs) {
+    public EffectJobSnapshot {
+      Objects.requireNonNull(afterCommandId, "afterCommandId");
+      jobs = List.copyOf(jobs);
+    }
+  }
+
+  public record EffectJob(
+      String elementId,
+      long activation,
+      String protocol,
+      String handler,
+      long retries,
+      boolean executable,
+      boolean dueDatePresent) {
+    public EffectJob {
+      Objects.requireNonNull(elementId, "elementId");
+      Objects.requireNonNull(protocol, "protocol");
+      Objects.requireNonNull(handler, "handler");
+      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("activation must be a positive safe wire integer");
+      }
+      if (retries < 0 || retries > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("retries must be a non-negative safe wire integer");
+      }
+    }
+  }
+
+  /** Raw probe and public-retry facts; the project transport key is deliberately absent. */
+  public record EffectExecutionSnapshot(
+      String afterCommandId,
+      String schedule,
+      long invocations,
+      long mutations,
+      long initialRetries,
+      Long retriesAfterFirstFailure) {
+    public EffectExecutionSnapshot {
+      Objects.requireNonNull(afterCommandId, "afterCommandId");
+      Objects.requireNonNull(schedule, "schedule");
     }
   }
 

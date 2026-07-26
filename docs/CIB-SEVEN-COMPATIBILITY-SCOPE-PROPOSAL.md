@@ -202,7 +202,7 @@ Unknown or unselected extensions may remain in retained exact bytes, but executa
 
 The durable compatibility claim and interpreter/Worker language boundary are recorded in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution). This document retains the detailed family dispositions, claim discipline, evidence conditions, and reopen boundaries.
 
-The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect proposal](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md) is revised to the exact delegate-expression pair and is no longer blocked on interpreter language. Its phase-zero evidence condition is green; its separate semantic decision remains pending.
+The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) implements the exact delegate-expression pair under its bounded success-only semantic account.
 
 Apart from the bounded phase-zero probe, no production implementation, dependency, Java Worker, expression engine, script engine, or evidence replacement is approved by this document.
 
