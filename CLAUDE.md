@@ -11,11 +11,11 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The bounded sequential User Task and balanced two-branch parallel fork/join capsules are evidence-closed drafts. One command executes exact source through CIB Seven, compiles the checked BPMN graph and Semantic Process program once for the independent TypeScript semantic core and isolated Temporal executions, and gives those exact definition artifacts to the Lean reference interpreter. Five answer-free scenarios have exact canonical agreement, content-bound CIB evidence, classified projection and provenance mutations, duplicate-command handling, cleanup, live-history replay, provenance, timings, and feedback budgets. Lean strictly decodes the admitted definitions, recomputes canonical lowering, rejects inequality before evaluation, and executes the received program. The production Temporal lifecycle remains the nearest boundary in [PLAN.md](docs/PLAN.md). Code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and active sequencing and decisions belong in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
-The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**. The implemented path is exact BPMN XML bytes → bounded private structural import → checked project-owned BPMN graph → bounded [Semantic Process IL](docs/SEMANTIC-PROCESS-IL-SPEC.md) → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority. The source compiler, lowerer, Lean interpreter, pure semantic core, CIB projection, focused Temporal host, and complete differential admit the current sequential and balanced two-branch parallel structures. This is not a general BPMN importer.
+The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**: exact BPMN XML bytes → private structural import → checked project-owned BPMN graph → [Semantic Process IL](docs/SEMANTIC-PROCESS-IL-SPEC.md) → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority.
 
 Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -149,7 +149,8 @@ After the technical gate is green but before marking a milestone or semantic cap
 6. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
 7. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 8. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
-9. decide whether the result changes the next best step.
+9. ask whether this capsule cost materially less than the previous comparable capsule in code, documents, and wall time; if not, remove one identified process weight before starting the next capsule;
+10. decide whether the result changes the next best step.
 
 Turn every escaped issue into either a reusable review question or an executable guard. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 
@@ -189,6 +190,8 @@ Use one owner for each fact and link to it elsewhere:
 | External revisions, licenses, and checkout navigation | [SOURCES.md](docs/SOURCES.md) |
 
 Before adding, renaming, moving, graduating, archiving, or deleting a document, follow [DOC-DISCIPLINE.md](docs/DOC-DISCIPLINE.md). `-SPEC` is reserved for an implemented current contract; approved but unimplemented intent remains `-PROPOSAL`. Write one Markdown paragraph per line without hard wrapping. Use regular relative Markdown links for other project documents. Update the owner and every index or inbound link in the same change, and avoid copying live inventories.
+
+Keep the top-level `README.md` as a durable project front door. Do not put live status, evidence counts, current support inventories, or next-work narration there; link to [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) and [PLAN.md](docs/PLAN.md) instead.
 
 Keep the [MVP walkthrough](docs/MVP-WALKTHROUGH.md) as ordinary Markdown; do not introduce Showboat for code walkthroughs. Canonical walkthrough excerpts come from tagged regions in compiling or executable source. After changing a tagged region, run `./scripts/pnpm.sh run sync:doc-fragments`, review the resulting prose and diff, and leave `./scripts/pnpm.sh run check:doc-fragments` green. Never hand-edit a synchronized fence merely to satisfy the checker.
 
