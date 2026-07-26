@@ -70,9 +70,18 @@ test("keeps pre-release Temporal replay evidence disposable", async () => {
     [],
   );
 
-  const workflowSource = await readFile(
-    path.join(projectRoot, "packages/temporal-adapter/src/workflows.ts"),
-    "utf8",
+  const temporalSources = await sourceFiles(
+    "packages/temporal-adapter/src",
   );
-  assert.equal(workflowSource.includes(["patch", "ed("].join("")), false);
+  const patchedWorkflowSources = [];
+  for (const relativePath of temporalSources) {
+    const source = await readFile(
+      path.join(projectRoot, relativePath),
+      "utf8",
+    );
+    if (source.includes(["patch", "ed("].join(""))) {
+      patchedWorkflowSources.push(relativePath);
+    }
+  }
+  assert.deepEqual(patchedWorkflowSources, []);
 });

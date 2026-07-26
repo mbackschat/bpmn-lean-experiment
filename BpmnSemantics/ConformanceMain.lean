@@ -1,4 +1,5 @@
 import BpmnSemantics.Conformance
+import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.SemanticProcessConformance
 import BpmnSemantics.UserTaskInteractionConformance
 

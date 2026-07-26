@@ -29,6 +29,7 @@ private def interactionObservations : List ObservationKind :=
   , .processStatus
   , .activeWaits
   , .openUserTasks
+  , .openTimers
   , .enabledInteractions
   , .logicalTime ]
 
@@ -69,6 +70,7 @@ def waitingObservation : StateObservation :=
       [ { id := exactTaskId
           name := some "Approve"
           state := .active } ]
+    openTimers := []
     enabledInteractions := [exactCompletionInteraction]
     logicalTimeMs := 0 }
 
@@ -77,6 +79,7 @@ def completedObservation : StateObservation :=
     status := .completed
     activeWaits := []
     openUserTasks := []
+    openTimers := []
     enabledInteractions := []
     logicalTimeMs := 0 }
 

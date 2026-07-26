@@ -34,7 +34,14 @@
         }
       ],
       "items": {
-        "$ref": "#/$defs/completeUserTaskInstance"
+        "oneOf": [
+          {
+            "$ref": "#/$defs/completeUserTaskInstance"
+          },
+          {
+            "$ref": "#/$defs/fireTimer"
+          }
+        ]
       },
       "minItems": 1
     },
@@ -45,6 +52,7 @@
         "processStatus",
         "activeWaits",
         "openUserTasks",
+        "openTimers",
         "enabledInteractions",
         "logicalTime"
       ]
@@ -232,6 +240,52 @@
         }
       }
     },
+    "timerOccurrenceId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processInstanceId",
+        "elementId",
+        "activation"
+      ],
+      "properties": {
+        "processInstanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "activation": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "fireTimer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "timerId",
+        "logicalTimeMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "fireTimer"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "timerId": {
+          "$ref": "#/$defs/timerOccurrenceId"
+        },
+        "logicalTimeMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
     "enabledCompleteUserTaskInstance": {
       "type": "object",
       "additionalProperties": false,
@@ -261,7 +315,10 @@
           "$ref": "#/$defs/nonEmptyString"
         },
         "kind": {
-          "const": "userTask"
+          "enum": [
+            "userTask",
+            "timer"
+          ]
         },
         "multiplicity": {
           "type": "integer",
@@ -289,6 +346,23 @@
         },
         "state": {
           "const": "active"
+        }
+      }
+    },
+    "openTimer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "deadlineMs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/timerOccurrenceId"
+        },
+        "deadlineMs": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
@@ -346,6 +420,7 @@
         "status",
         "activeWaits",
         "openUserTasks",
+        "openTimers",
         "enabledInteractions",
         "logicalTimeMs"
       ],
@@ -373,6 +448,12 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/openUserTask"
+          }
+        },
+        "openTimers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openTimer"
           }
         },
         "enabledInteractions": {

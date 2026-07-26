@@ -32,6 +32,17 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.taskId.activation,
         ],
       ]);
+    case StimulusKind.FireTimer:
+      return JSON.stringify([
+        stimulus.kind,
+        stimulus.commandId,
+        [
+          stimulus.timerId.processInstanceId,
+          stimulus.timerId.elementId,
+          stimulus.timerId.activation,
+        ],
+        stimulus.logicalTimeMs,
+      ]);
     default:
       return assertNever(stimulus);
   }

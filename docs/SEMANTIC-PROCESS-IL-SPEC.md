@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential and balanced two-branch parallel capsules.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, and Intermediate Catch Timer capsules.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, User Task, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -84,6 +84,11 @@ type CheckedNode =
       readonly name: string | null;
     }
   | {
+      readonly kind: "intermediateCatchTimerEvent";
+      readonly id: string;
+      readonly durationLiteral: "PT1S";
+    }
+  | {
       readonly kind: "parallelGateway";
       readonly id: string;
       readonly direction: "diverging" | "converging";
@@ -151,6 +156,15 @@ type SemanticOperation =
       };
     })
   | (OperationBase & {
+      readonly kind: "awaitTimer";
+      readonly input: string;
+      readonly output: string;
+      readonly timer: {
+        readonly elementId: string;
+        readonly durationMs: 1000;
+      };
+    })
+  | (OperationBase & {
       readonly kind: "duplicate";
       readonly input: string;
       readonly outputs: readonly [string, string, ...string[]];
@@ -172,7 +186,7 @@ Array order has no semantic meaning. Canonical serialization sorts definitions a
 
 ### Runtime state
 
-Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task occurrences, committed command outcomes, and any explicit semantic choices.
+Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task and timer occurrences, the logical clock, committed command outcomes, and any explicit semantic choices.
 
 Lean and TypeScript may use different internal runtime representations. They must implement the same reviewed transition account and canonical observation contract; sharing an IL does not require sharing evaluator algorithms or runtime data structures.
 
@@ -187,6 +201,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | none Start Event | `initiate` |
 | Sequence Flow | `ControlPlace` |
 | User Task | `awaitUserTask` |
+| exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
 | diverging Parallel Gateway | `duplicate` |
 | converging Parallel Gateway | `synchronize` |
 | none End Event | `terminate` |
@@ -215,6 +230,14 @@ An accepted start stimulus enables `initiate` exactly once for the process insta
 `awaitUserTask` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token and creates one semantic task occurrence bound to the task definition and occurrence identity.
 
 An accepted completion for that occurrence removes the wait and adds one token to the output control place. A completion for an unknown, stale, duplicate, or otherwise ineligible occurrence follows the capsule-owned command outcome rules and does not invent control-flow progress.
+
+### Relative timer wait
+
+`awaitTimer` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token and creates one timer occurrence with full Process-instance, element, and activation identity, an output control place, and deadline `logicalTimeMs + durationMs`.
+
+Internal closure stops at the timer wait. An exact `fireTimer` stimulus commits only when its full occurrence identity is active and its submitted logical time equals the deadline. Commit removes the wait, advances logical time to the deadline, adds one token to the output control place, and resumes closure. Any occurrence-identity or logical-time mismatch is rejected with exact state preservation.
+
+The exact `PT1S` lexical value remains in the checked graph; Lean and TypeScript lower it independently to `1000`. Physical clock origin, scheduler latency, CIB job identity, and Temporal timer identity do not enter the program or runtime semantics. The complete rule and race-free refinement boundary belong to the [Intermediate Catch Timer capsule](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md).
 
 ### Parallel duplication
 
@@ -245,6 +268,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every source origin required by the current profile is present and nonempty;
 - every `duplicate` has at least two distinct outputs;
 - every `synchronize` has at least two distinct inputs;
+- every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
 - the current profile has exactly one `initiate`;
 - each control place has only the producer and consumer shapes permitted by the current lowering;
 - every operation and control place is reachable from initiation and can reach termination under the structural graph;
@@ -323,22 +347,23 @@ The maintained implementation supports exactly:
 
 - one none Start Event;
 - one or more User Tasks permitted by the two approved capsules;
+- one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;
 - none End Events permitted by the capsules;
-- `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, and `terminate`;
+- `initiate`, `awaitUserTask`, `awaitTimer`, `duplicate`, `synchronize`, and `terminate`;
 - token multiplicity per Sequence Flow;
-- semantic task occurrence identity and command closure;
-- the existing canonical observation boundary.
+- semantic task and timer occurrence identity, logical time, and command closure;
+- the canonical observation boundary including `openTimers`.
 
-The sequential and balanced parallel fixtures must both lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, and Intermediate Catch Timer fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
 The following remain unsupported:
 
 - general BPMN 2.0.2 import or conformance;
-- event subtypes beyond the admitted none Start and none End Events;
-- boundary events, timers, messages, signals, errors, escalation, cancellation, compensation, and terminate semantics;
+- event subtypes beyond the admitted none Start, exact normal-flow `PT1S` Intermediate Catch Timer, and none End Events;
+- other timer forms, boundary events, messages, signals, errors, escalation, cancellation, compensation, and terminate semantics;
 - subprocess scopes, call activities, transactions, event subprocesses, and propagation;
 - exclusive, inclusive, complex, and event-based gateways;
 - loops, multi-instance activities, conditions, expressions, data, and variables;
@@ -352,14 +377,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential and parallel exact-source fixtures lower deterministically;
+- sequential, parallel, and timer exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the reviewed preservation statement remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential and parallel separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, and timer separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

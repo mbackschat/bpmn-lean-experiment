@@ -2,7 +2,7 @@
 
 ## Status
 
-**Evidence-closed draft contract.** The bounded normative profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced and live-sibling CIB observations, production-lifecycle Temporal refinement/replay witnesses, and six-case differential implement this capsule. The status is draft because no immutable compatibility profile is approved.
+**Evidence-closed draft contract.** The bounded normative profile, checked source/lowering, Lean and independent TypeScript semantic implementations, canonical balanced and live-sibling CIB observations, production-lifecycle Temporal refinement/replay witnesses, and current differential gate implement this capsule. The status is draft because no immutable compatibility profile is approved.
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 

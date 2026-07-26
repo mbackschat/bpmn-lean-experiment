@@ -67,9 +67,11 @@ test("start closes at one stable User Task wait", async () => {
         output: "place:Flow_TaskToEnd",
       },
     ],
+    timerWaits: [],
     taskActivations: [
       { elementId: "UserTask_Approve", count: 1 },
     ],
+    timerActivations: [],
     endOccurrences: 0,
     logicalTimeMs: 0,
   });
@@ -121,9 +123,11 @@ test("matching occurrence completion closes the Process", async () => {
     initiationPending: false,
     controlTokens: [],
     userTaskWaits: [],
+    timerWaits: [],
     taskActivations: [
       { elementId: "UserTask_Approve", count: 1 },
     ],
+    timerActivations: [],
     endOccurrences: 1,
     logicalTimeMs: 0,
   });

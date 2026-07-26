@@ -2,6 +2,7 @@ import type {
   CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  OpenTimer,
   OpenUserTask,
   ProcessStatus,
   Scenario,
@@ -60,6 +61,10 @@ export type TemporalScenarioRunnerOptions = Readonly<{
   downloadDirectory: string;
 }>;
 
+export type TemporalTimeSkippingRunnerOptions = Readonly<{
+  downloadDirectory: string;
+}>;
+
 export enum TemporalCompletionDelivery {
   Ordered = "ordered",
   PostTerminal = "postTerminal",
@@ -71,6 +76,7 @@ export type TemporalScenarioExecutionOptions = Readonly<{
   workflowId: string;
   completionDelivery: TemporalCompletionDelivery;
   duplicateFirstCompletion?: boolean;
+  workerDownAtTimerDue?: boolean;
 }>;
 
 export type TemporalScenarioBatchItem = Readonly<{
@@ -90,14 +96,21 @@ export type TemporalReplayItem = Readonly<{
 
 export type TemporalScenarioExecution = Readonly<{
   waitTrace: ReadonlyArray<CanonicalObservation>;
-  interactionEvidence: TemporalUserTaskInteractionEvidence;
+  interactionEvidence: TemporalInteractionEvidence;
   result: ScenarioResult;
   receipt: CompletedProcessReceipt | null;
   history: TemporalHistory;
 }>;
 
-export type TemporalUserTaskInteractionEvidence = Readonly<{
+export type TemporalTimerBypassMutationExecution = Readonly<{
+  result: ScenarioResult;
+  receipt: CompletedProcessReceipt;
+  history: TemporalHistory;
+}>;
+
+export type TemporalInteractionEvidence = Readonly<{
   openUserTasksAtWait: ReadonlyArray<OpenUserTask>;
+  openTimersAtWait: ReadonlyArray<OpenTimer>;
   openUserTasksAfterCompletions: ReadonlyArray<
     ReadonlyArray<OpenUserTask>
   >;

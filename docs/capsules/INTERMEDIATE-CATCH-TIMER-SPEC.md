@@ -1,14 +1,10 @@
-# Intermediate Catch Timer proposal
+# Intermediate Catch Timer specification
 
 ## Status
 
-**Draft for owner review.** This proposal completes the approved timer hosting/refinement preflight and recommends one bounded semantic capsule. It does not authorize or describe an implemented surface. Production Lean, TypeScript, BPMN-source, wire, CIB-runner, and Temporal behavior remain unchanged until the owner approves this account.
+**Evidence-closed draft contract.** This specification owns the bounded Intermediate Catch Timer meaning, source profile, Semantic Process operation, logical-time account, CIB realization, Temporal refinement, laws, witnesses, and exclusions.
 
-## Question
-
-Can the project admit one BPMN 2.0.2 Intermediate Catch Timer Event in normal flow while keeping timer meaning in the semantic core and using Temporal only for a durable physical wakeup?
-
-The proposed discriminator is:
+The discriminator is:
 
 ```text
 None Start Event
@@ -16,21 +12,17 @@ None Start Event
   → None End Event
 ```
 
-## Recommendation
-
-Approve this capsule with the exact source subset, semantic time account, and evidence obligations below.
-
 The semantic core owns activation of the timer occurrence, its logical deadline, eligibility of a timer-firing stimulus, control-flow progress, logical-time advancement, duplicate or stale refusal, and public observation. The Temporal adapter observes a committed semantic timer wait, schedules one durable timer for the remaining duration, and feeds a content-bound timer-firing stimulus back to the semantic core only after that timer resolves.
 
 Temporal elapsed time is evidence that the physical minimum delay occurred. It is not BPMN state. Physical delivery latency after the deadline is refinement stutter: the adapter supplies the semantic deadline, not Workflow wall-clock arrival time, as the firing stimulus's logical time.
 
 ## Claim boundary
 
-If evidence closes, the capsule will establish only this proposition:
+The capsule establishes only this proposition:
 
 > In the admitted acyclic single-token Process, reaching the exact `PT1S` Intermediate Catch Timer Event creates one timer occurrence at logical deadline 1000 ms; an exact firing at that deadline consumes the wait and permits the token to continue to the none End Event; the Temporal adapter durably waits before delivering that firing and reproduces the same observations under Worker restart and replay.
 
-It will not establish general ISO-8601 duration support, expression evaluation, absolute dates, cycles, repeating timers, boundary timers, timer Start Events, event-based gateways, timer races, cancellation, arbitrary clock precision, or BPMN Process Execution Conformance.
+It does not establish general ISO-8601 duration support, expression evaluation, absolute dates, cycles, repeating timers, boundary timers, timer Start Events, event-based gateways, timer races, cancellation, arbitrary clock precision, or BPMN Process Execution Conformance.
 
 ## Source basis
 
@@ -45,7 +37,7 @@ Resolved OMG issue BPMN2-168 introduced `timeDuration` as a relative point in ti
 
 The official CMOF and XSD facts establish `IntermediateCatchEvent`, contained Event Definitions, `TimerEventDefinition`, and the optional composite `timeDuration` expression. They do not select the executable subset or define the runtime clock account.
 
-## Proposed source profile
+## Source profile
 
 ### Required source
 
@@ -77,7 +69,7 @@ The source compiler validates the exact literal and lowers it to the semantic du
 
 The `bpmn-moddle` object and TimerEventDefinition expression remain private to `@bpmn-lean/bpmn-source`.
 
-## Proposed Semantic Process IL
+## Semantic Process IL
 
 The source element lowers to a semantic wait mechanism rather than a generic BPMN event opcode:
 
@@ -100,7 +92,7 @@ type AwaitTimerOperation = Readonly<{
 
 The admitted program contains `initiate`, `awaitTimer`, and `terminate`, with one control place for each Sequence Flow. This operation is reusable only as the mechanism “wait for a relative semantic deadline.” It does not encode catching/throwing, boundary attachment, interruption, repetition, scope propagation, or calendar behavior as dormant flags.
 
-The [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) must gain the new checked node, operation, lowering rule, well-formedness obligations, runtime wait, and exact proof boundary in the implementation change. The frozen checked-source experiment is not extended by this capsule.
+The [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) owns the checked node, operation, lowering rule, well-formedness obligations, runtime wait, and exact proof boundary. The frozen checked-source experiment is not extended by this capsule.
 
 ## Semantic time and timer identity
 
@@ -137,11 +129,11 @@ type FireTimerStimulus = Readonly<{
 }>;
 ```
 
-This is a typed semantic command to the evaluator, but it is not an enabled caller interaction and is never exposed as a Signal or Update in the proposed production adapter. Reusing `CommandOutcome` records whether the semantic input committed or was rejected; it does not reclassify the BPMN Timer Event as a User Task or application API command.
+This is a typed semantic command to the evaluator, but it is not an enabled caller interaction and is never exposed as a Signal or Update in the production adapter. Reusing `CommandOutcome` records whether the semantic input committed or was rejected; it does not reclassify the BPMN Timer Event as a User Task or application API command.
 
 The production adapter derives a deterministic content-bound command ID from the full timer occurrence and deadline. It must not use a Temporal Run ID, timer sequence number, Event ID, or physical timestamp.
 
-## Proposed semantic rules
+## Stable semantic rules
 
 ### `TIMER-WAIT-01` — activate one relative timer
 
@@ -187,11 +179,11 @@ The completed state has no active wait or open timer and logical time `1000`.
 | CIB job ID and due date | Pinned CIB engine | Oracle host only; removed with deployment cleanup | Job ID excluded; due-date delta used as raw evidence |
 | Temporal timer sequence and history Events | Temporal SDK and Service | Adapter host and Event History | Refinement evidence only |
 
-## CIB Seven preflight
+## CIB Seven realization
 
 The pinned CIB source creates a wait-state execution and a `timer-intermediate-transition` job for this construct. Its duration calendar resolves a duration relative to the engine clock, and the timer job signals the waiting execution to leave the Intermediate Catch Event.
 
-The retained oracle probe must:
+The retained oracle probe:
 
 1. fix the CIB engine clock to a recorded baseline before starting the Process;
 2. deploy and start the exact BPMN bytes with automatic job execution disabled under existing `CIB-CFG-0001`;
@@ -203,9 +195,31 @@ The retained oracle probe must:
 
 Direct administrative `executeJob` before the due date is not timer-semantic evidence because that API can bypass scheduler eligibility. The probe must keep clock advancement and job execution as explicit harness scheduling inputs.
 
-Before a semantic profile is created, the observed relationship must be classified in [CIB-BPMN-RELATION-REGISTER.md](../CIB-BPMN-RELATION-REGISTER.md). This proposal does not allocate an unreviewed placeholder identifier. The expected account is normative agreement for the wait and due transition plus the already recorded configuration-specific manual scheduler realization, but the executable probe decides the recorded classification.
+The observed relationship is classified as normative agreement `CIB-AGR-0004` for the wait and due transition plus configuration-specific scheduler control `CIB-CFG-0001` in [CIB-BPMN-RELATION-REGISTER.md](../CIB-BPMN-RELATION-REGISTER.md).
 
-## Temporal hosting/refinement preflight
+### CIB fidelity by rule
+
+| Rule | CIB evidence | Fidelity boundary |
+|---|---|---|
+| `TIMER-WAIT-01` | Active execution at the Intermediate Catch Event and one timer job | Wait and job existence are `engine-observed`; the semantic occurrence ordinal is `adapter-derived` under the one-occurrence profile. |
+| `TIMER-FIRE-01` | Job is ineligible before the due date, eligible at the controlled due date, then transitions the Process to completion | Eligibility and the due transition are `engine-observed`; mapping the job due-date delta to logical deadline `1000` is `adapter-derived`. |
+| `TIMER-REFUSE-01` | Pre-due job ineligibility separates eligibility from administrative execution | The scheduler fact is `engine-observed`; it does not independently derive the full project stimulus-identity refusal rule, which is established by Lean and TypeScript. |
+| `TIMER-OBSERVE-01` | Active wait and raw job due date | Wait existence is `engine-observed`; `openTimers` identity and deadline projection are `adapter-derived`. |
+
+## Cross-target firing contract
+
+The answer-free scenario carries the exact `fireTimer` stimulus as explicit semantic input. `logicalTimeMs` is input under the explicit-input invariant; no expected outcome or trace enters the scenario.
+
+| Lane | Realization of the same semantic firing |
+|---|---|
+| Lean | Strictly decodes the scenario stimulus and applies it directly to the declarative relation and executable evaluator. |
+| TypeScript semantic core | Applies the scenario stimulus directly through `applyStimulus`. |
+| CIB Seven | Advances the controlled clock to the raw job due date, requires the job to be eligible, executes that job, and projects the scenario's content-bound command ID into the canonical command observation. |
+| Temporal | Never receives the scenario's `fireTimer` through runner delivery. The Workflow reads one committed `openTimers` occurrence, waits for `deadlineMs - logicalTimeMs`, and constructs the identical typed stimulus and command ID exclusively from that committed state. |
+
+The canonical typed encoding is `["fireTimer",[processInstanceId,elementId,activation],logicalTimeMs]`; the command ID is `fire-timer-sha256:` followed by the SHA-256 digest of that encoding. Exact four-lane command-observation agreement therefore binds kind, full occurrence identity, logical deadline, and command identity without exposing expected results to a target.
+
+## Temporal hosting and refinement
 
 ### Host composition
 
@@ -257,7 +271,7 @@ The retained adapter mutation bypasses `Workflow.sleep` and immediately applies 
 
 The full local development server remains the required refinement target. The admitted one-second duration adds one bounded physical second to the existing warm gate and is expected to remain within the 15-second warm and 45-second cold budgets.
 
-The time-skipping server is an optional acceleration/calibration lane, not a second semantic authority and not a substitute for the full-server witness. During red implementation, measure a second time-skipping witness separately. Add it to default verification only if the complete gate remains inside the existing budgets without changing an assertion. Otherwise retain it as an explicitly named optional timer-calibration gate or omit it; do not weaken the full-server duration, history, restart, or replay evidence to accommodate CI.
+The time-skipping server is an optional acceleration/calibration lane, not a second semantic authority and not a substitute for the full-server witness. `./scripts/pnpm.sh run test:timer-time-skipping` executes that lane separately and is not part of default verification. The full-server duration, history, restart, replay, and cleanup assertions remain mandatory.
 
 ## Separating witnesses
 
@@ -272,9 +286,9 @@ The time-skipping server is an optional acceleration/calibration lane, not a sec
 | Temporal bypass mutation | Missing durable timer history fails refinement although pure outcome matches | Workflow may synthesize deadline completion without waiting |
 | Worker-down-at-due witness | Timer survives Worker absence and completes after restart/replay | In-memory `setTimeout` or Worker-local callback implements durability |
 
-## Evidence required before graduation
+## Maintained evidence contract
 
-The proposal graduates to `INTERMEDIATE-CATCH-TIMER-SPEC.md` only when all of the following are green in one atomic pre-release change:
+This specification remains valid only while all of the following stay green:
 
 - the reviewed BPMN requirement rows and exact CIB relationship classification;
 - one immutable semantic profile naming its reviewed relationship IDs;

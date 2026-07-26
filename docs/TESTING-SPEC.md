@@ -34,6 +34,7 @@ git diff --check
 | CIB oracle, projection, or cleanup | `./scripts/test-cibseven-oracle.sh` |
 | Pure differential comparator | `./scripts/pnpm.sh run test:differential` |
 | Temporal Workflow/runner/refinement/replay | `./scripts/pnpm.sh run test:temporal` |
+| Optional timer time-skipping calibration | `./scripts/pnpm.sh run test:timer-time-skipping` |
 | Pipeline orchestration or any cross-target contract | `./scripts/pnpm.sh run test:pipeline` |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` |
 | Provisional representation experiment | `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike` |
@@ -69,12 +70,12 @@ The preflight must identify each semantic stimulus, wait, timer, subscription, e
 
 The gate:
 
-- validates the two current draft profiles, six answer-free scenarios, canonical results, CIB evidence, checked BPMN graph, and Semantic Process program shapes with Ajv Draft 2020-12;
+- validates the three draft profiles, seven answer-free scenarios, canonical results, CIB evidence, checked BPMN graph, and Semantic Process program shapes with Ajv Draft 2020-12;
 - requires stable document kinds and no embedded format counters;
 - verifies scenario/profile SHA-256 bindings in retained CIB evidence;
 - requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
-- checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, canonical unordered-array order, and raw CIB task-query observations against their canonical projections;
-- rejects answer smuggling, stale evidence, unknown relationships, invalid task activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw task observations, and duplicate raw semantic task identities.
+- checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, canonical unordered-array order, and raw CIB task-query and timer-job observations against their canonical projections;
+- rejects answer smuggling, stale evidence, unknown relationships, invalid task or timer activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw producer observations, duplicate raw semantic task identities, and timer-deadline projection drift.
 
 Retained CIB evidence is verifier-only. Target runners never receive it, and ordinary green runs never regenerate it.
 
@@ -84,7 +85,7 @@ Replacing retained CIB evidence is an explicit content-bound operation:
 ./scripts/pnpm.sh run replace:cib-evidence
 ```
 
-The package script supplies the exact `--replace` opt-in to the underlying replacement program. The program refuses direct execution without that flag, executes all six answer-free scenarios through the pinned runner, verifies cleanup and producer identity, and rewrites only their retained CIB evidence. Every new evidence projection must first gain a meaningful verifier mutation.
+The package script supplies the exact `--replace` opt-in to the underlying replacement program. The program refuses direct execution without that flag, executes all seven answer-free scenarios through the pinned runner, verifies cleanup and producer identity, and rewrites only their retained CIB evidence. Every new evidence projection must first gain a meaningful verifier mutation.
 
 ## Current Lean and semantic-core gate
 
@@ -100,6 +101,9 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 - any Process-instance, BPMN-element, or activation mismatch is rejected with exact state preservation;
 - wrong activation is a corollary of the general mismatch law;
 - element identity alone is insufficient;
+- exact `PT1S` lowering produces one 1000-millisecond `awaitTimer`;
+- exact timer firing consumes the full occurrence, advances logical time to its deadline, and completes the admitted Process;
+- one quantified timer law rejects every Process-instance, element, activation, or logical-time mismatch with exact state preservation; early firing is the named checked non-law and late firing is an instance of that law;
 - bounded parallel duplication creates exactly two task waits;
 - exact completion removes only the named occurrence and both completion orders reach the same final state;
 - synchronization requires every incoming flow, consumes one token from each, and retains excess multiplicity;
@@ -108,7 +112,7 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 
 The reviewed full observational checked-source-to-program-run preservation proposition is not claimed: there is no independent checked-source operational relation from which to establish it without assuming the program account. Structural lowering preservation and exact artifact equality are the current proved boundary.
 
-The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, live-sibling stale rejection, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. Lean's scenario closure additionally admits only the exact distinct two-task activation pair among multiple-enabled states, with checked activation-order observation equivalence and exact waiting-state closure. Lean strictly decodes the same admitted scenario documents supplied to the other targets and echoes the decoded values. This removes disk-versus-compiled-Lean scenario drift by construction; exact content drift relative to the oracle lane remains detected by retained CIB evidence binding, while the Lean extra-field mutation independently guards strict decoding against answer smuggling. The six-case differential gate connects the independent CIB, Lean, TypeScript, and Temporal lanes under explicit per-case relations.
+The semantic core tests structural program/scenario admission, pure state transitions, state-derived observations, direct current-state task and timer projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. Its parallel witnesses require exact two-task fork closure, both completion orders, equivalent final state and observation, public intermediate states, live-sibling stale rejection, per-incoming-flow join readiness and consumption, excess-token retention, storage-order-independent projection, operation-order-independent closure, and bounded topology rejection. Its timer witnesses require exact waiting projection, exact-deadline completion, full occurrence/time mismatch refusal, early/late refusal, and stale refusal. Lean's scenario closure additionally admits only the exact distinct two-task activation pair among multiple-enabled states, with checked activation-order observation equivalence and exact waiting-state closure. Lean strictly decodes the same admitted scenario documents supplied to the other targets and echoes the decoded values. This removes disk-versus-compiled-Lean scenario drift by construction; exact content drift relative to the oracle lane remains detected by retained CIB evidence binding, while the Lean extra-field mutation independently guards strict decoding against answer smuggling. The seven-case differential gate connects the independent CIB, Lean, TypeScript, and Temporal lanes under explicit per-case relations.
 
 ## Current CIB gate
 
@@ -116,9 +120,9 @@ The semantic core tests structural program/scenario admission, pure state transi
 ./scripts/test-cibseven-oracle.sh
 ```
 
-The Java 21 runner deploys exact BPMN, starts a Process, queries active tasks, completes or refuses requested semantic occurrences, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, sequential stale-completion, parallel A-then-B, parallel B-then-A, and parallel live-sibling stale cases share one warm engine through the persistent JSON-lines boundary. The multiple-task projector sorts distinct semantic occurrences independently of engine query order and preserves per-element active-wait multiplicity; repeated live instances of one BPMN element remain rejected because activation-ordinal derivation is outside the bounded profile. A bounded consistency probe captures a generated task ID, completes it, and requires pinned CIB Seven to reject that same host ID after it ceases to be live. A separate schema-valid research probe sends two executions through one Parallel Gateway incoming flow while the other incoming branch remains at a User Task and requires the observed downstream activation recorded by candidate `CIB-DEV-0001`.
+The Java 21 runner deploys exact BPMN, starts a Process, queries active tasks and timer jobs, completes or refuses requested semantic occurrences, projects canonical results, and removes all deployments and runtime/history state after each scenario. Exact, wrong-activation, sequential stale-completion, parallel A-then-B, parallel B-then-A, parallel live-sibling stale, and exact Intermediate Catch Timer cases share one warm engine through the persistent JSON-lines boundary. The timer probe fixes the engine clock, requires one job due at +1000 ms, proves the job ineligible before due time and eligible at the due date, and only then executes it. The multiple-task projector sorts distinct semantic occurrences independently of engine query order and preserves per-element active-wait multiplicity; repeated live instances of one BPMN element remain rejected because activation-ordinal derivation is outside the bounded profile. A bounded consistency probe captures a generated task ID, completes it, and requires pinned CIB Seven to reject that same host ID after it ceases to be live. A separate schema-valid research probe sends two executions through one Parallel Gateway incoming flow while the other incoming branch remains at a User Task and requires the observed downstream activation recorded by candidate `CIB-DEV-0001`.
 
-PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw task-query snapshots are retained as producer observations, while the evidence verifier independently reconstructs the canonical task projection and includes mutations that drop one initial parallel task or the live B sibling after stale A. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated engine cleanup.
+PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw task-query and timer-job snapshots are retained as producer observations, while the evidence verifier independently reconstructs canonical task and timer projections and includes mutations that drop one initial parallel task, drop the live B sibling after stale A, or change the timer deadline. The CIB wait, scheduler eligibility, due transition, and completion are engine-observed; timer occurrence identity and logical deadline mapping are adapter-derived. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated engine cleanup.
 
 ## Current Temporal gate
 
@@ -126,11 +130,15 @@ PVM definition data remains diagnostic. Generated engine IDs are excluded from c
 ./scripts/pnpm.sh run test:temporal
 ```
 
-The gate starts fresh in-memory Temporal servers, compiles exact BPMN before Workflow start, and runs the semantic-lifetime Workflow over all three retained sequential scenarios plus the parallel completion-order and live-sibling probes. It checks canonical typed stimulus encoding, SHA-256 content-bound Update IDs, collision-resistant Process-address Workflow IDs, duplicate logical delivery, accepted-handler draining, typed adapter lifecycle results, retained-Update-first recovery, Query evidence reconciliation, and replay before cleanup.
+The gate starts fresh in-memory Temporal servers, compiles exact BPMN before Workflow start, and runs the semantic-lifetime Workflow over the retained sequential, parallel, and Intermediate Catch Timer probes. It checks canonical typed stimulus encoding, SHA-256 content-bound Update and timer command IDs, collision-resistant Process-address Workflow IDs, duplicate logical delivery, accepted-handler draining, typed adapter lifecycle results, retained-Update-first recovery, Query evidence reconciliation, durable timer history, and replay before cleanup.
 
 The sequential stale schedule awaits the completed receipt before submitting the distinct stale command. The gate requires CIB Seven, Lean, and the pure core to retain exact semantic rejection, Temporal to agree exactly through semantic completion, and the adapter to return `processClosed` separately. The parallel live-sibling schedule completes A and then repeats A while B remains active, requiring exact four-target semantic rejection. A retained concurrent same-occurrence race asserts one committed and one rejected result with identical final state without pinning the winner.
 
 The Workflow must enqueue its admitted start stimulus before registering externally addressable handlers. Update handlers may run as soon as they are registered, including during replay after Worker restart; the focused restart witness guards against completion overtaking start. The harness-only post-completion Query trace must reconcile every completion-command outcome with its completed Update result in Event History and its terminal state with the validated completed receipt. A failed Update is classified as harness infrastructure failure rather than parsed as a malformed semantic outcome. The start command is excluded from durable Update-result reconciliation because it is a Workflow argument rather than an Update. Intermediate Query state remains independently checked against the core and does not become the production observation API.
+
+For the timer capsule, the runner validates but never delivers the scenario's explicit `fireTimer` stimulus. The Workflow derives the identical stimulus only from committed `openTimers` state, schedules the exact remaining duration, and records one matching timer-started/timer-fired pair. The mandatory full-server witness stops the Worker before the due boundary, waits beyond due time without a poller, starts a replacement Worker, reconciles the completed receipt and history, and replays the history. A separately bundled mutation bypasses `Workflow.sleep`; the pure result stays equal while the durable-history assertion fails.
+
+The optional `test:timer-time-skipping` command runs the same exact timer result and durable-history assertion on Temporal's time-skipping test server. It is calibration only and is excluded from `verify.sh`; it cannot replace or weaken the full-server duration, Worker absence, history, replay, or cleanup evidence.
 
 No Event History fixture is committed. No legacy IR reader, Workflow patch branch, or format migration path exists during pre-release. The pre-release infrastructure guard locks this policy.
 
@@ -145,25 +153,23 @@ When the owner approves the first immutable deployment/history baseline, retaine
 The pipeline:
 
 1. builds the source importer, Lean emitter, CIB test boundary, TypeScript core/comparator, and Temporal adapter;
-2. loads six answer-free scenarios and content-bound CIB evidence;
+2. loads seven answer-free scenarios and content-bound CIB evidence;
 3. compiles the exact BPMN bytes once per source/profile identity;
 4. starts one clean Temporal server and Worker;
 5. writes the actual checked graph and Semantic Process program for each retained scenario to a private definition-input batch;
-6. runs one six-case CIB batch, one six-result Lean emitter over that definition batch, the pure core, and twelve Temporal Workflows concurrently;
+6. runs one seven-case CIB batch, one seven-result Lean emitter over that definition batch, the pure core, and fourteen Temporal Workflows concurrently;
 7. requires Lean's decoded-and-echoed scenario to equal the admitted scenario document and injects an extra answer field that the strict Lean decoder must reject; because Lean consumes the admitted file directly, retained CIB content binding rather than a second compiled scenario copy detects disk-content drift;
 8. requires Lean's echoed definition identity and lowering-equality result to match the admitted artifacts;
 9. mutates one operation origin without making the program structurally invalid and requires Lean to reject the program as unequal to its lowering;
 10. compares CIB, Lean, and the core exactly by scenario identity; requires exact four-target agreement for ordinary cases including the live-sibling stale witness; and for sequential stale requires exact Temporal prefix agreement plus a separate `processClosed` adapter assertion;
 11. compares fresh CIB output with retained CIB evidence;
 12. checks exact Query/Update evidence, duplicate delivery, isolated Workflow equality, and clean CIB state;
-13. mutates the observed activation ordinal in sequential cases, omits one initial parallel open task, drops the live sibling after stale A, and requires exact disagreement paths;
+13. mutates the observed activation ordinal in sequential cases, omits one initial parallel open task, drops the live sibling after stale A, changes the timer deadline, and requires exact disagreement paths;
 14. erases the parallel control-place Sequence-Flow provenance while preserving structural validity and requires Lean's lowering-equality gate to reject it;
-15. replays all six primary live histories;
+15. replays all seven primary live histories;
 16. shuts down the Worker/server and removes temporary files.
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
-
-The source-current repository verification on 2026-07-26 completed in 25.94 seconds after the production lifecycle, single-source Lean scenario decoding, Query-evidence hardening, and the frozen checked-source experiment. Its six-case prepared pipeline completed in 4.72 seconds warm. The separately gated checked-source build and executable also passed. All remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
 
 ## Continuous integration
 

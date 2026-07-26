@@ -228,7 +228,7 @@ The Temporal Workflow stores the Semantic Process program, semantic state, trace
 
 The handler boundary is synchronized from the real Workflow:
 
-<!-- source-fragment: packages/temporal-adapter/src/workflows.ts#temporal-semantic-boundary -->
+<!-- source-fragment: packages/temporal-adapter/src/workflow-implementation.ts#temporal-semantic-boundary -->
 ```ts
 setHandler(bpmnTraceQuery, () => [...trace]);
 setHandler(
@@ -352,8 +352,10 @@ Within one content-addressed sequential User Task slice, the repository establis
 - duplicate-command stability, cleanup, and same-gate live replay;
 - mutation-sensitive differential evidence within the feedback budgets.
 
-It does not establish general BPMN parsing or execution, OMG conformance, immutable CIB compatibility, repeated occurrences of one task element, variables, assignment, forms, timers, messages, Activities, fault recovery, Search Attributes, a production task inbox, or a production Workflow lifecycle.
+The MVP itself does not establish general BPMN parsing or execution, OMG conformance, immutable CIB compatibility, repeated occurrences of one task element, variables, assignment, forms, timers, messages, Activities, fault recovery, Search Attributes, a production task inbox, or a production Workflow lifecycle. Later capsule specs own any bounded additions and do not broaden the MVP claim retroactively.
 
-## What comes next
+## Additional bounded capsules
 
-The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, stale rejection with a live sibling, and the duplicate-left/no-right non-law. Content-bound CIB evidence calibrates both balanced completion orders and the live-sibling stale witness. The six-case pipeline establishes the ordinary exact four-target relations, the explicit sequential post-terminal relation, replay, projection mutations, and provenance-erasure rejection under the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md). The exact resume point is in [PLAN.md](PLAN.md).
+The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, stale rejection with a live sibling, and the duplicate-left/no-right non-law. Content-bound CIB evidence calibrates both balanced completion orders and the live-sibling stale witness.
+
+The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The seven-case pipeline connects these capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).

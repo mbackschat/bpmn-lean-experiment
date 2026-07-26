@@ -79,6 +79,17 @@ function lowerNode(
           name: node.name,
         },
       };
+    case CheckedNodeKind.IntermediateCatchTimerEvent:
+      return {
+        ...base,
+        kind: SemanticOperationKind.AwaitTimer,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        timer: {
+          elementId: node.id,
+          durationMs: normalizeTimerDuration(node.durationLiteral),
+        },
+      };
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:
@@ -102,6 +113,13 @@ function lowerNode(
         kind: SemanticOperationKind.Terminate,
         input: requireOnly(incoming, node.id, "incoming"),
       };
+  }
+}
+
+function normalizeTimerDuration(durationLiteral: "PT1S"): 1000 {
+  switch (durationLiteral) {
+    case "PT1S":
+      return 1000;
   }
 }
 

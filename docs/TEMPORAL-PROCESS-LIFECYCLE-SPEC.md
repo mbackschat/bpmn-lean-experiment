@@ -6,9 +6,9 @@
 
 ## Scope
 
-This specification defines the smallest production lifecycle for the existing sequential and balanced-parallel User Task capsules. It answers when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
+This specification defines the production lifecycle shared by the admitted semantic capsules. It answers when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
-It does not add BPMN semantics, a task inbox, Activities, timers, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline.
+It does not itself add BPMN semantics, a task inbox, Activities, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The separately approved [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority.
 
 ## Selected lifecycle
 
@@ -169,7 +169,7 @@ Excluded from this specification:
 - Workflow-ID reuse, Update-With-Start, and host-derived semantic identity;
 - Continue-As-New and cross-Run command-result lookup;
 - cancellation, termination, timeout, reset, pause, failure, and operator-repair semantics;
-- Activities, effects, timers, messages, Search Attributes, forms, variables, and task discovery.
+- Activities, effects, messages, Search Attributes, forms, variables, task discovery, and timer forms or races beyond the separately specified exact Intermediate Catch Timer capsule.
 
 ## Re-open conditions
 

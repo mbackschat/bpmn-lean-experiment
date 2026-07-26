@@ -183,7 +183,7 @@ test("uses structural document kinds without embedded schema counters", async ()
 test("keeps every target scenario answer-free and binds retained CIB evidence by content", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 
-  assert.equal(artifactSets.length, 6);
+  assert.equal(artifactSets.length, 7);
   for (const artifactSet of artifactSets) {
     assert.equal("calibration" in artifactSet.scenario, false);
     assert.equal(
@@ -257,7 +257,7 @@ test("derives canonical parallel tasks independently of producer query order", a
   dropped.evidence.producerObservations.taskQueries[0].tasks.pop();
   assert.throws(
     () => verifyArtifactSet(dropped),
-    /producer task query projection does not match canonical/,
+    /producer observation projection does not match canonical/,
   );
 });
 
@@ -278,7 +278,24 @@ test("detects a missing live sibling after stale parallel completion", async () 
 
   assert.throws(
     () => verifyArtifactSet(mutated),
-    /producer task query projection does not match canonical/,
+    /producer observation projection does not match canonical/,
+  );
+});
+
+test("detects a timer deadline projection mutation", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const timer = artifactSets.find(
+    ({ scenario }) =>
+      scenario.id === "intermediate-catch-timer-pt1s",
+  );
+  assert.notEqual(timer, undefined);
+  const mutated = cloneArtifactSet(timer);
+  mutated.evidence.producerObservations.timerJobs[0].jobs[0]
+    .dueDateDeltaMs = 999;
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /producer observation projection does not match canonical openTimers/,
   );
 });
 

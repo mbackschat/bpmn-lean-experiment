@@ -116,6 +116,45 @@ test("lowers the balanced parallel source through duplicate and synchronize", as
   );
 });
 
+test("retains PT1S in the checked graph and lowers one timer wait", async () => {
+  const result = await compileFixture(
+    "../../../scenarios/intermediate-catch-timer/process.bpmn",
+    "intermediate-catch-timer-pt1s-process",
+    "cibseven-2.2.0-intermediate-catch-timer-draft",
+  );
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(
+    result.checkedProcess.nodes.find(
+      ({ id }) => id === "TimerCatch_PT1S",
+    ),
+    {
+      kind: CheckedNodeKind.IntermediateCatchTimerEvent,
+      id: "TimerCatch_PT1S",
+      durationLiteral: "PT1S",
+    },
+  );
+  assert.deepEqual(
+    result.semanticProcess.operations.find(
+      ({ kind }) => kind === SemanticOperationKind.AwaitTimer,
+    ),
+    {
+      id: "operation:TimerCatch_PT1S",
+      kind: SemanticOperationKind.AwaitTimer,
+      origin: {
+        kind: "bpmnElement",
+        elementId: "TimerCatch_PT1S",
+      },
+      input: "place:Flow_StartToTimer",
+      output: "place:Flow_TimerToEnd",
+      timer: {
+        elementId: "TimerCatch_PT1S",
+        durationMs: 1000,
+      },
+    },
+  );
+});
+
 test("rejects a gateway direction that contradicts its checked arity", async () => {
   const bytes = await readFile(
     new URL(
@@ -140,4 +179,32 @@ test("rejects a gateway direction that contradicts its checked arity", async () 
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
   assert.equal(result.checkedProcess, undefined);
   assert.equal(result.semanticProcess, undefined);
+});
+
+test("rejects timer forms outside the exact PT1S literal profile", async () => {
+  const bytes = await readFile(
+    new URL(
+      "../../../scenarios/intermediate-catch-timer/process.bpmn",
+      import.meta.url,
+    ),
+  );
+  const xml = new TextDecoder().decode(bytes);
+  for (const mutation of [
+    xml.replace("PT1S", "PT2S"),
+    xml.replace("timeDuration", "timeCycle"),
+    xml.replace(
+      "<bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT1S</bpmn:timeDuration>",
+      "",
+    ),
+  ]) {
+    const result = await compileBpmnToSemanticProcess({
+      bytes: new TextEncoder().encode(mutation),
+      sourceId: "invalid-timer",
+      expectedSha256: undefined,
+      semanticProfile: "cibseven-2.2.0-intermediate-catch-timer-draft",
+      limits,
+    });
+
+    assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  }
 });

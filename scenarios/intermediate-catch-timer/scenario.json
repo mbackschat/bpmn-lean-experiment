@@ -1,0 +1,53 @@
+{
+  "kind": "scenario",
+  "id": "intermediate-catch-timer-pt1s",
+  "profile": "cibseven-2.2.0-intermediate-catch-timer-draft",
+  "bpmn": {
+    "id": "intermediate-catch-timer-pt1s-process",
+    "relativePath": "scenarios/intermediate-catch-timer/process.bpmn",
+    "sha256": "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_IntermediateCatchTimer",
+      "instanceId": "Instance_1"
+    },
+    {
+      "kind": "fireTimer",
+      "commandId": "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b",
+      "timerId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "TimerCatch_PT1S",
+        "activation": 1
+      },
+      "logicalTimeMs": 1000
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 Table 10.122"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerCatchIntermediateEventJobHandler.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/IntermediateTimerEventTest.java#testCatchingTimerEvent"
+    ]
+  }
+}

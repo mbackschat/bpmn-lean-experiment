@@ -82,6 +82,67 @@ export function reconcileHarnessTraceEvidence(
   }
 }
 
+/**
+ * Requires one history-backed durable timer with the exact requested duration and matching fired
+ * event. A pure semantic trace can remain correct when an adapter bypasses sleep, so this is the
+ * independent host-mechanism discriminator.
+ */
+export function requireDurableTimerHistory(
+  history: TemporalHistory,
+  expectedDurationMs: number,
+): void {
+  const started = history.events.flatMap((rawEvent) => {
+    const event = asRecord(rawEvent, "Temporal history event");
+    const attributes = optionalRecord(event.timerStartedEventAttributes);
+    return attributes === undefined ? [] : [{ event, attributes }];
+  });
+  const fired = history.events.flatMap((rawEvent) => {
+    const event = asRecord(rawEvent, "Temporal history event");
+    const attributes = optionalRecord(event.timerFiredEventAttributes);
+    return attributes === undefined ? [] : [{ event, attributes }];
+  });
+  if (started.length !== 1 || fired.length !== 1) {
+    throw new TypeError(
+      "Temporal history must contain exactly one durable timer-started/timer-fired pair",
+    );
+  }
+  const start = started[0];
+  const fire = fired[0];
+  if (start === undefined || fire === undefined) {
+    throw new TypeError("Temporal history lost its durable timer pair");
+  }
+  const duration = asRecord(
+    start.attributes.startToFireTimeout,
+    "Timer-started duration",
+  );
+  const durationMs =
+    integerToBigInt(duration.seconds ?? 0) * 1000n +
+    BigInt(requiredNonNegativeInteger(
+      duration.nanos ?? 0,
+      "Timer-started duration nanos",
+    )) / 1_000_000n;
+  if (durationMs !== BigInt(expectedDurationMs)) {
+    throw new TypeError(
+      `Temporal durable timer duration ${durationMs}ms differs from ${expectedDurationMs}ms`,
+    );
+  }
+  if (
+    start.attributes.timerId !== fire.attributes.timerId ||
+    requiredEventId(
+        start.event.eventId,
+        "Timer-started event ID",
+      ) !==
+      requiredEventId(
+        fire.attributes.startedEventId,
+        "Timer-fired started event ID",
+      )
+  ) {
+    throw new TypeError(
+      "Temporal timer-fired event does not identify its timer-started event",
+    );
+  }
+}
+
 function durableUpdateOutcomes(
   history: TemporalHistory,
 ): ReadonlyMap<string, CommandOutcome> {
@@ -135,6 +196,43 @@ function durableUpdateOutcomes(
   }
 
   return outcomes;
+}
+
+function integerToBigInt(value: unknown): bigint {
+  if (
+    typeof value === "number" ||
+    typeof value === "bigint" ||
+    typeof value === "string"
+  ) {
+    return BigInt(value);
+  }
+  const long = asRecord(value, "Temporal integer");
+  if (
+    typeof long.low !== "number" ||
+    typeof long.high !== "number"
+  ) {
+    throw new TypeError("Temporal integer has an unsupported representation");
+  }
+  const low = BigInt(long.low >>> 0);
+  const high = BigInt(long.high >>> 0);
+  const unsigned = (high << 32n) | low;
+  return long.unsigned === true || long.high >= 0
+    ? unsigned
+    : unsigned - (1n << 64n);
+}
+
+function requiredNonNegativeInteger(
+  value: unknown,
+  description: string,
+): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < 0
+  ) {
+    throw new TypeError(`${description} must be a non-negative integer`);
+  }
+  return value;
 }
 
 function decodeAcceptedStimulus(

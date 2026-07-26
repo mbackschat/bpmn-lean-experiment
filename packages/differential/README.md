@@ -12,7 +12,7 @@ Run the pure comparator gate:
 ./scripts/pnpm.sh run test:differential
 ```
 
-The complete pipeline batches exact completion, wrong activation, and stale completion through one CIB Seven engine, one Lean result emitter, the semantic core, and two isolated Temporal executions per case. It compares all four canonical targets and content-bound CIB evidence, checks Query/Update results, requires a seeded task-activation mutation to be classified, replays all primary live histories through one Worker, records provenance and phase timings, proves cleanup, and enforces feedback budgets.
+The complete pipeline batches the User Task, balanced-parallel, live-sibling stale, and exact Intermediate Catch Timer witnesses through one CIB Seven engine, one Lean result emitter, the semantic core, and two isolated Temporal executions per case. It compares all applicable canonical target relations and content-bound CIB evidence, checks Query/Update and committed-state-derived timer results, requires seeded task, parallel, provenance, and timer-deadline mutations to be classified, replays all primary live histories through one Worker, records provenance and phase timings, proves cleanup, and enforces feedback budgets.
 
 ```sh
 ./scripts/pnpm.sh run test:pipeline

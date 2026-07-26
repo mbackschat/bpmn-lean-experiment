@@ -150,12 +150,14 @@ public class CibSevenScenarioRunnerTest {
             RUNNING,
             List.of(new ActiveWait("UserTask_Approve", USER_TASK, 1)),
             List.of(openTask),
+            List.of(),
             List.of(completionInteraction),
             0),
         new CommandObservation("complete-user-task-instance", COMMITTED),
         new StateObservation(
             INSTANCE_ID,
             COMPLETED,
+            List.of(),
             List.of(),
             List.of(),
             List.of(),
@@ -207,6 +209,7 @@ public class CibSevenScenarioRunnerTest {
                 new ActiveWait("UserTask_A", USER_TASK, 1),
                 new ActiveWait("UserTask_B", USER_TASK, 1)),
             List.of(taskA, taskB),
+            List.of(),
             List.of(
                 new CompleteUserTaskInstanceInteraction(taskA.id()),
                 new CompleteUserTaskInstanceInteraction(taskB.id())),
@@ -219,6 +222,7 @@ public class CibSevenScenarioRunnerTest {
             RUNNING,
             List.of(new ActiveWait(secondElementId, USER_TASK, 1)),
             List.of(remaining),
+            List.of(),
             List.of(new CompleteUserTaskInstanceInteraction(remaining.id())),
             0),
         new CommandObservation(
@@ -227,6 +231,7 @@ public class CibSevenScenarioRunnerTest {
         new StateObservation(
             INSTANCE_ID,
             COMPLETED,
+            List.of(),
             List.of(),
             List.of(),
             List.of(),

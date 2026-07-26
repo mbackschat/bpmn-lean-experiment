@@ -31,6 +31,7 @@ export enum ScenarioDocumentKind {
 export enum StimulusKind {
   StartProcess = "startProcess",
   CompleteUserTaskInstance = "completeUserTaskInstance",
+  FireTimer = "fireTimer",
 }
 
 export type StartProcessStimulus = Readonly<{
@@ -52,9 +53,23 @@ export type CompleteUserTaskInstanceStimulus = Readonly<{
   taskId: UserTaskInstanceId;
 }>;
 
+export type TimerOccurrenceId = Readonly<{
+  processInstanceId: string;
+  elementId: string;
+  activation: number;
+}>;
+
+export type FireTimerStimulus = Readonly<{
+  kind: StimulusKind.FireTimer;
+  commandId: string;
+  timerId: TimerOccurrenceId;
+  logicalTimeMs: number;
+}>;
+
 export type Stimulus =
   | StartProcessStimulus
-  | CompleteUserTaskInstanceStimulus;
+  | CompleteUserTaskInstanceStimulus
+  | FireTimerStimulus;
 
 export enum ProcessStatus {
   NotStarted = "notStarted",
@@ -64,6 +79,7 @@ export enum ProcessStatus {
 
 export enum WaitKind {
   UserTask = "userTask",
+  Timer = "timer",
 }
 
 export enum ObservationRequestKind {
@@ -72,6 +88,7 @@ export enum ObservationRequestKind {
   ProcessStatus = "processStatus",
   ActiveWaits = "activeWaits",
   OpenUserTasks = "openUserTasks",
+  OpenTimers = "openTimers",
   EnabledInteractions = "enabledInteractions",
   LogicalTime = "logicalTime",
 }
@@ -105,12 +122,18 @@ export type CompleteUserTaskInstanceInteraction = Readonly<{
 
 export type EnabledInteraction = CompleteUserTaskInstanceInteraction;
 
+export type OpenTimer = Readonly<{
+  id: TimerOccurrenceId;
+  deadlineMs: number;
+}>;
+
 export type StateObservation = Readonly<{
   kind: CanonicalObservationKind.State;
   instanceId: string;
   status: ProcessStatus;
   activeWaits: ReadonlyArray<ActiveWait>;
   openUserTasks: ReadonlyArray<OpenUserTask>;
+  openTimers: ReadonlyArray<OpenTimer>;
   enabledInteractions: ReadonlyArray<EnabledInteraction>;
   logicalTimeMs: number;
 }>;

@@ -4,6 +4,7 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
+import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.TIMER;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +31,9 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Diagnostics;
 import org.bpmnlean.cibseven.ScenarioProtocol.EnabledInteraction;
+import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.ObservationKind;
+import org.bpmnlean.cibseven.ScenarioProtocol.OpenTimer;
 import org.bpmnlean.cibseven.ScenarioProtocol.PhaseTimings;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
@@ -40,6 +43,9 @@ import org.bpmnlean.cibseven.ScenarioProtocol.StartProcessStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.TaskQuerySnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.TaskQueryTask;
+import org.bpmnlean.cibseven.ScenarioProtocol.TimerJob;
+import org.bpmnlean.cibseven.ScenarioProtocol.TimerJobSnapshot;
+import org.bpmnlean.cibseven.ScenarioProtocol.TimerOccurrenceId;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -65,6 +71,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           ObservationKind.PROCESS_STATUS,
           ObservationKind.ACTIVE_WAITS,
           ObservationKind.OPEN_USER_TASKS,
+          ObservationKind.OPEN_TIMERS,
           ObservationKind.ENABLED_INTERACTIONS,
           ObservationKind.LOGICAL_TIME);
 
@@ -127,6 +134,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var timings = new MutableTimings();
     var trace = new ArrayList<CanonicalObservation>();
     var taskQueries = new ArrayList<TaskQuerySnapshot>();
+    var timerJobs = new ArrayList<TimerJobSnapshot>();
     String deploymentId = null;
     String engineInstanceId = null;
     String stableInstanceId = null;
@@ -188,6 +196,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     start.commandId());
             trace.add(observed.state());
             taskQueries.add(observed.taskQuery());
+            timerJobs.add(observed.timerJobs());
             timings.waitProjectionNanos = positiveElapsedSince(projectionStartedAt);
           }
           case CompleteUserTaskInstanceStimulus complete -> {
@@ -206,6 +215,31 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     complete.commandId());
             trace.add(observed.state());
             taskQueries.add(observed.taskQuery());
+            timerJobs.add(observed.timerJobs());
+            timings.completionProjectionNanos =
+                positiveElapsedSince(projectionStartedAt);
+            if (outcome == REJECTED) {
+              scenarioOutcome = REJECTED;
+              break stimulusLoop;
+            }
+          }
+          case FireTimerStimulus fire -> {
+            requireStarted(engineInstanceId, stableInstanceId);
+            var completeStartedAt = System.nanoTime();
+            var outcome =
+                fireTimer(engineInstanceId, stableInstanceId, fire);
+            timings.completeNanos = positiveElapsedSince(completeStartedAt);
+            trace.add(new CommandObservation(fire.commandId(), outcome));
+
+            var projectionStartedAt = System.nanoTime();
+            var observed =
+                observeState(
+                    engineInstanceId,
+                    stableInstanceId,
+                    fire.commandId());
+            trace.add(observed.state());
+            taskQueries.add(observed.taskQuery());
+            timerJobs.add(observed.timerJobs());
             timings.completionProjectionNanos =
                 positiveElapsedSince(projectionStartedAt);
             if (outcome == REJECTED) {
@@ -243,6 +277,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             timings.freeze(),
             Objects.requireNonNull(pvmDefinition, "pvmDefinition"),
             taskQueries,
+            timerJobs,
             Objects.requireNonNull(cleanup, "cleanup")));
   }
 
@@ -274,10 +309,13 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var hasExpectedCompletions =
         startsOnce
             && scenario.stimuli().subList(1, scenario.stimuli().size()).stream()
-                .allMatch(CompleteUserTaskInstanceStimulus.class::isInstance);
+                .allMatch(
+                    stimulus ->
+                        stimulus instanceof CompleteUserTaskInstanceStimulus
+                            || stimulus instanceof FireTimerStimulus);
     if (!startsOnce || !hasExpectedCompletions) {
       throw new IllegalArgumentException(
-          "Scenario supports startProcess followed by task-occurrence completion commands");
+          "Scenario supports startProcess followed by task completion or timer firing commands");
     }
   }
 
@@ -305,6 +343,51 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       return REJECTED;
     }
     processEngine.getTaskService().complete(tasks.getFirst().getId());
+    return COMMITTED;
+  }
+
+  /**
+   * Advances the controlled clock only after proving the selected timer job is ineligible, then
+   * executes it only after the engine's executable query admits the same job.
+   */
+  private CommandOutcome fireTimer(
+      String engineInstanceId,
+      String stableInstanceId,
+      FireTimerStimulus fire) {
+    var timerId = fire.timerId();
+    if (!timerId.processInstanceId().equals(stableInstanceId)
+        || timerId.activation() != 1) {
+      return REJECTED;
+    }
+    var jobs =
+        processEngine
+            .getManagementService()
+            .createJobQuery()
+            .processInstanceId(engineInstanceId)
+            .activityId(timerId.elementId())
+            .timers()
+            .list();
+    if (jobs.size() != 1) {
+      return REJECTED;
+    }
+    var job = jobs.getFirst();
+    var dueDateDeltaMs = job.getDuedate().getTime() - LOGICAL_EPOCH.getTime();
+    if (dueDateDeltaMs != fire.logicalTimeMs()) {
+      return REJECTED;
+    }
+    var management = processEngine.getManagementService();
+    if (management.createJobQuery().jobId(job.getId()).executable().count() != 0) {
+      throw new IllegalStateException(
+          "Timer job was executable before the controlled clock reached its due date");
+    }
+    ClockUtil.setCurrentTime(new Date(LOGICAL_EPOCH.getTime() + fire.logicalTimeMs()));
+    var executable =
+        management.createJobQuery().jobId(job.getId()).executable().singleResult();
+    if (executable == null) {
+      throw new IllegalStateException(
+          "Timer job was not executable when the controlled clock reached its due date");
+    }
+    management.executeJob(executable.getId());
     return COMMITTED;
   }
 
@@ -345,16 +428,79 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             .<EnabledInteraction>map(
                 task -> new CompleteUserTaskInstanceInteraction(task.id()))
             .toList();
+    var timerJobSnapshot = observeTimerJobs(engineInstanceId, afterCommandId, isRunning);
+    var openTimers =
+        timerJobSnapshot.jobs().stream()
+            .map(
+                job ->
+                    new OpenTimer(
+                        new TimerOccurrenceId(
+                            stableInstanceId,
+                            job.elementId(),
+                            1),
+                        job.dueDateDeltaMs()))
+            .toList();
+    var timerWaits =
+        openTimers.stream()
+            .map(timer -> new ScenarioProtocol.ActiveWait(
+                timer.id().elementId(), TIMER, 1))
+            .toList();
+    var allWaits = new ArrayList<>(activeWaits);
+    allWaits.addAll(timerWaits);
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
     return new ObservedState(
         new StateObservation(
             stableInstanceId,
             isRunning ? RUNNING : COMPLETED,
-            activeWaits,
+            allWaits,
             openUserTasks,
+            openTimers,
             enabledInteractions,
             logicalTimeMs),
-        taskQuery);
+        taskQuery,
+        timerJobSnapshot);
+  }
+
+  private TimerJobSnapshot observeTimerJobs(
+      String engineInstanceId,
+      String afterCommandId,
+      boolean isRunning) {
+    if (!isRunning) {
+      return new TimerJobSnapshot(afterCommandId, List.of());
+    }
+    var management = processEngine.getManagementService();
+    var jobs =
+        management
+            .createJobQuery()
+            .processInstanceId(engineInstanceId)
+            .timers()
+            .list();
+    var projected =
+        jobs.stream()
+            .map(
+                job -> {
+                  var definition =
+                      management
+                          .createJobDefinitionQuery()
+                          .jobDefinitionId(job.getJobDefinitionId())
+                          .singleResult();
+                  if (definition == null) {
+                    throw new IllegalStateException(
+                        "Timer job has no job definition " + job.getJobDefinitionId());
+                  }
+                  return new TimerJob(
+                      definition.getActivityId(),
+                      job.getDuedate().getTime() - LOGICAL_EPOCH.getTime(),
+                      management
+                              .createJobQuery()
+                              .jobId(job.getId())
+                              .executable()
+                              .count()
+                          == 1);
+                })
+            .sorted((left, right) -> left.elementId().compareTo(right.elementId()))
+            .toList();
+    return new TimerJobSnapshot(afterCommandId, projected);
   }
 
   private CleanupProjection observeCleanup() {
@@ -408,7 +554,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private record ObservedState(
       StateObservation state,
-      TaskQuerySnapshot taskQuery) {}
+      TaskQuerySnapshot taskQuery,
+      TimerJobSnapshot timerJobs) {}
 
   private void ensureOpen() {
     if (closed) {

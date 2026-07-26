@@ -30,6 +30,7 @@
     "processStatus",
     "activeWaits",
     "openUserTasks",
+    "openTimers",
     "enabledInteractions",
     "logicalTime"
   ],

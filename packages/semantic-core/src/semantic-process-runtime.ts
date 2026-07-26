@@ -4,6 +4,7 @@ import {
 } from "./contract.js";
 import type {
   Stimulus,
+  TimerOccurrenceId,
   UserTaskInstanceId,
 } from "./contract.js";
 import {
@@ -42,6 +43,12 @@ export type SemanticUserTaskWait = Readonly<{
   output: string;
 }>;
 
+export type SemanticTimerWait = Readonly<{
+  id: TimerOccurrenceId;
+  deadlineMs: number;
+  output: string;
+}>;
+
 type TaskActivationCounter = Readonly<{
   elementId: string;
   count: number;
@@ -52,7 +59,9 @@ export type RuntimeState = Readonly<{
   initiationPending: boolean;
   controlTokens: ReadonlyArray<ControlPlaceTokens>;
   userTaskWaits: ReadonlyArray<SemanticUserTaskWait>;
+  timerWaits: ReadonlyArray<SemanticTimerWait>;
   taskActivations: ReadonlyArray<TaskActivationCounter>;
+  timerActivations: ReadonlyArray<TaskActivationCounter>;
   endOccurrences: number;
   logicalTimeMs: number;
 }>;
@@ -62,7 +71,9 @@ export const initialState: RuntimeState = {
   initiationPending: false,
   controlTokens: [],
   userTaskWaits: [],
+  timerWaits: [],
   taskActivations: [],
+  timerActivations: [],
   endOccurrences: 0,
   logicalTimeMs: 0,
 };
@@ -140,6 +151,29 @@ function admit(
         },
       };
     }
+    case StimulusKind.FireTimer: {
+      const wait = state.timerWaits.find((candidate) =>
+        sameTimerOccurrence(candidate.id, stimulus.timerId)
+      );
+      if (
+        state.control.kind !== ControlStateKind.Running ||
+        wait === undefined ||
+        stimulus.logicalTimeMs !== wait.deadlineMs
+      ) {
+        return { outcome: CommandOutcome.Rejected, state };
+      }
+      return {
+        outcome: CommandOutcome.Committed,
+        state: {
+          ...state,
+          controlTokens: addToken(state.controlTokens, wait.output),
+          timerWaits: state.timerWaits.filter(
+            (candidate) => candidate !== wait,
+          ),
+          logicalTimeMs: wait.deadlineMs,
+        },
+      };
+    }
     default:
       return assertNever(stimulus);
   }
@@ -187,6 +221,10 @@ export function applyInternalOperation(
     case SemanticOperationKind.AwaitUserTask:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
         ? createUserTaskWait(operation, state)
+        : null;
+    case SemanticOperationKind.AwaitTimer:
+      return tokenMultiplicity(state.controlTokens, operation.input) > 0
+        ? createTimerWait(operation, state)
         : null;
     case SemanticOperationKind.Duplicate:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
@@ -244,6 +282,47 @@ function createUserTaskWait(
   };
 }
 
+function createTimerWait(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.AwaitTimer }
+  >,
+  state: RuntimeState,
+): RuntimeState {
+  if (state.control.kind !== ControlStateKind.Running) {
+    return state;
+  }
+  const activation =
+    (state.timerActivations.find(
+      ({ elementId }) => elementId === operation.timer.elementId,
+    )?.count ?? 0) + 1;
+  const deadlineMs = state.logicalTimeMs + operation.timer.durationMs;
+  if (!Number.isSafeInteger(deadlineMs)) {
+    throw new RangeError("Timer deadline exceeds the safe integer boundary");
+  }
+  return {
+    ...state,
+    controlTokens: removeToken(state.controlTokens, operation.input),
+    timerWaits: [
+      ...state.timerWaits,
+      {
+        id: {
+          processInstanceId: state.control.instanceId,
+          elementId: operation.timer.elementId,
+          activation,
+        },
+        deadlineMs,
+        output: operation.output,
+      },
+    ].sort(compareTimerWaits),
+    timerActivations: setActivationCount(
+      state.timerActivations,
+      operation.timer.elementId,
+      activation,
+    ),
+  };
+}
+
 function terminate(
   operation: Extract<
     SemanticOperation,
@@ -256,6 +335,7 @@ function terminate(
   const completed =
     controlTokens.length === 0 &&
     state.userTaskWaits.length === 0 &&
+    state.timerWaits.length === 0 &&
     !state.initiationPending;
   return {
     ...state,
@@ -419,6 +499,17 @@ function sameTaskInstance(
   );
 }
 
+function sameTimerOccurrence(
+  left: TimerOccurrenceId,
+  right: TimerOccurrenceId,
+): boolean {
+  return (
+    left.processInstanceId === right.processInstanceId &&
+    left.elementId === right.elementId &&
+    left.activation === right.activation
+  );
+}
+
 function compareTokenPlaces(
   left: ControlPlaceTokens,
   right: ControlPlaceTokens,
@@ -433,6 +524,22 @@ function compareTokenPlaces(
 function compareWaits(
   left: SemanticUserTaskWait,
   right: SemanticUserTaskWait,
+): number {
+  if (left.id.processInstanceId !== right.id.processInstanceId) {
+    return compareStrings(
+      left.id.processInstanceId,
+      right.id.processInstanceId,
+    );
+  }
+  if (left.id.elementId !== right.id.elementId) {
+    return compareStrings(left.id.elementId, right.id.elementId);
+  }
+  return left.id.activation - right.id.activation;
+}
+
+function compareTimerWaits(
+  left: SemanticTimerWait,
+  right: SemanticTimerWait,
 ): number {
   if (left.id.processInstanceId !== right.id.processInstanceId) {
     return compareStrings(

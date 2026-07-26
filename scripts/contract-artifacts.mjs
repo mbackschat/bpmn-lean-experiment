@@ -50,6 +50,12 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/parallel-fork-join/stale-a-while-b-active.cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/intermediate-catch-timer/scenario.json",
+    evidenceRelativePath:
+      "scenarios/intermediate-catch-timer/cibseven-evidence.json",
+  }),
 ]);
 
 const validatorsByRoot = new Map();
@@ -180,6 +186,7 @@ function referencedControlPlaces(operation) {
     case "initiate":
       return [operation.output];
     case "awaitUserTask":
+    case "awaitTimer":
       return [operation.input, operation.output];
     case "duplicate":
       return [operation.input, ...operation.outputs];
@@ -219,6 +226,7 @@ function verifyCanonicalDefinitionOrder(checkedProcess, semanticProcess) {
         break;
       case "initiate":
       case "awaitUserTask":
+      case "awaitTimer":
       case "terminate":
         break;
       default:
@@ -279,11 +287,20 @@ function verifyDefinitionReferences(checkedProcess, semanticProcess) {
         `operation ${operation.id} task identity differs from its BPMN origin`,
       );
     }
+    if (
+      operation.kind === "awaitTimer" &&
+      operation.timer.elementId !== operation.origin.elementId
+    ) {
+      throw new Error(
+        `operation ${operation.id} timer identity differs from its BPMN origin`,
+      );
+    }
   }
 }
 
-function verifyProducerTaskProjection(evidence) {
-  const snapshots = evidence.producerObservations.taskQueries;
+function verifyProducerProjection(evidence) {
+  const taskSnapshots = evidence.producerObservations.taskQueries;
+  const timerSnapshots = evidence.producerObservations.timerJobs;
   const states = [];
   let afterCommandId;
   for (const observation of evidence.result.trace) {
@@ -308,35 +325,76 @@ function verifyProducerTaskProjection(evidence) {
         );
     }
   }
-  if (states.length !== snapshots.length) {
+  if (
+    states.length !== taskSnapshots.length ||
+    states.length !== timerSnapshots.length
+  ) {
     throw new Error(
-      "producer task-query count does not match canonical state count",
+      "producer observation count does not match canonical state count",
     );
   }
 
   for (const [index, state] of states.entries()) {
-    const snapshot = snapshots[index];
-    if (snapshot.afterCommandId !== state.afterCommandId) {
+    const taskSnapshot = taskSnapshots[index];
+    const timerSnapshot = timerSnapshots[index];
+    if (
+      taskSnapshot.afterCommandId !== state.afterCommandId ||
+      timerSnapshot.afterCommandId !== state.afterCommandId
+    ) {
       throw new Error(
-        "producer task query is bound to a different command",
+        "producer observation is bound to a different command",
       );
     }
-    const projected = projectTaskQuery(
+    const taskProjection = projectTaskQuery(
       state.observation.instanceId,
-      snapshot.tasks,
+      taskSnapshot.tasks,
     );
-    for (const field of [
-      "activeWaits",
-      "openUserTasks",
-      "enabledInteractions",
-    ]) {
-      if (!isDeepStrictEqual(state.observation[field], projected[field])) {
+    const timerProjection = projectTimerJobs(
+      state.observation.instanceId,
+      timerSnapshot.jobs,
+    );
+    const activeWaits = [
+      ...taskProjection.activeWaits,
+      ...timerProjection.activeWaits,
+    ].sort((left, right) =>
+      compareStrings(left.elementId, right.elementId));
+    const expectedByField = {
+      activeWaits,
+      openUserTasks: taskProjection.openUserTasks,
+      openTimers: timerProjection.openTimers,
+      enabledInteractions: taskProjection.enabledInteractions,
+    };
+    for (const [field, expected] of Object.entries(expectedByField)) {
+      if (!isDeepStrictEqual(state.observation[field], expected)) {
         throw new Error(
-          `producer task query projection does not match canonical ${field}`,
+          `producer observation projection does not match canonical ${field}`,
         );
       }
     }
   }
+}
+
+function projectTimerJobs(instanceId, jobs) {
+  const activeWaits = jobs
+    .map((job) => ({
+      elementId: job.elementId,
+      kind: "timer",
+      multiplicity: 1,
+    }))
+    .sort((left, right) =>
+      compareStrings(left.elementId, right.elementId));
+  const openTimers = jobs
+    .map((job) => ({
+      id: {
+        processInstanceId: instanceId,
+        elementId: job.elementId,
+        activation: 1,
+      },
+      deadlineMs: job.dueDateDeltaMs,
+    }))
+    .sort((left, right) =>
+      compareTaskIdentities(left.id, right.id));
+  return { activeWaits, openTimers };
 }
 
 function projectTaskQuery(instanceId, tasks) {
@@ -489,7 +547,7 @@ export function verifyArtifactSet(artifactSet) {
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
   }
-  verifyProducerTaskProjection(evidence);
+  verifyProducerProjection(evidence);
   return artifactSet;
 }
 

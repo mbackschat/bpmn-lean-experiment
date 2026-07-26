@@ -37,6 +37,13 @@ structure UserTaskInstanceId where
   activation : Nat
   deriving Repr, DecidableEq
 
+/-- Stable semantic identity of one active timer occurrence. -/
+structure TimerOccurrenceId where
+  processInstanceId : SemanticId
+  elementId : SemanticId
+  activation : Nat
+  deriving Repr, DecidableEq
+
 /-- User Task lifecycle states exposed by the current bounded interaction capsule. -/
 inductive UserTaskLifecycleState where
   | active
@@ -58,6 +65,7 @@ inductive EnabledInteraction where
 inductive Stimulus where
   | startProcess (commandId : SemanticId) (processId : SemanticId) (instanceId : SemanticId)
   | completeUserTaskInstance (commandId : SemanticId) (taskId : UserTaskInstanceId)
+  | fireTimer (commandId : SemanticId) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
   deriving Repr, DecidableEq
 
 /-- Process status visible through the canonical observation boundary. -/
@@ -70,6 +78,7 @@ inductive ProcessStatus where
 /-- Semantic wait categories supported by the current milestone contract. -/
 inductive WaitKind where
   | userTask
+  | timer
   deriving Repr, DecidableEq
 
 /-- One active semantic wait, retaining multiplicity without host runtime identifiers. -/
@@ -79,12 +88,19 @@ structure ActiveWait where
   multiplicity : Nat
   deriving Repr, DecidableEq
 
+/-- Public projection of one active semantic timer occurrence. -/
+structure OpenTimer where
+  id : TimerOccurrenceId
+  deadlineMs : Nat
+  deriving Repr, DecidableEq
+
 /-- Canonical state projection at one observation point. -/
 structure StateObservation where
   instanceId : SemanticId
   status : ProcessStatus
   activeWaits : List ActiveWait
   openUserTasks : List OpenUserTask
+  openTimers : List OpenTimer
   enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
@@ -103,6 +119,7 @@ inductive ObservationKind where
   | processStatus
   | activeWaits
   | openUserTasks
+  | openTimers
   | enabledInteractions
   | logicalTime
   deriving Repr, DecidableEq

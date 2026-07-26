@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-fork-join-stale-a-while-b-active",
-    "sha256": "f0c289216378399b12aab2fbdb1296d20974932727b33abc886796e1e5335635"
+    "sha256": "56993a2926e478865f59f84616c0c3f5418e715ab1aa5d38349c9fb9f758f45a"
   },
   "profile": {
     "id": "parallel-fork-join-draft",
-    "sha256": "98b52d8fbc3cb5afcf3aa4923626514c706bea89ef3655a3ba100587b38a28de"
+    "sha256": "0a5420d7459bba77d38539a7a3639409554700e58467ca8790e37eca7ca34952"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -48,6 +48,20 @@
             "name": "B"
           }
         ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-user-task-a",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-stale-user-task-a",
+        "jobs": []
       }
     ]
   },
@@ -105,6 +119,7 @@
             "state": "active"
           }
         ],
+        "openTimers": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -152,6 +167,7 @@
             "state": "active"
           }
         ],
+        "openTimers": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -191,6 +207,7 @@
             "state": "active"
           }
         ],
+        "openTimers": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",

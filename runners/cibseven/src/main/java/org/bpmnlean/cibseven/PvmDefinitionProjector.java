@@ -61,6 +61,9 @@ final class PvmDefinitionProjector {
       Map<String, PvmActivityProjection> projected) {
     var children = new ArrayList<>(scope.getActivities());
     scope.getEventActivities().stream()
+        // A normal-flow Intermediate Catch Event is its own CIB event scope. That registration
+        // describes scope ownership; it is not a nested PVM activity to traverse again.
+        .filter(activity -> activity != scope)
         .filter(activity -> !children.contains(activity))
         .sorted(Comparator.comparing(ActivityImpl::getId))
         .forEach(children::add);

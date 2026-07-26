@@ -8,6 +8,8 @@ import type {
   CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  FireTimerStimulus,
+  OpenTimer,
   OpenUserTask,
   Scenario,
   ScenarioResult,
@@ -53,21 +55,33 @@ import type {
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
   TemporalScenarioRunnerOptions,
-  TemporalUserTaskInteractionEvidence,
+  TemporalTimerBypassMutationExecution,
+  TemporalTimeSkippingRunnerOptions,
+  TemporalInteractionEvidence,
 } from "./contracts.js";
 import {
   contentBoundUpdateId,
 } from "./command-identity.js";
 import {
+  requireDurableTimerHistory,
   reconcileHarnessTraceEvidence,
 } from "./harness-evidence.js";
 import {
   processWorkflowId,
 } from "./process-address.js";
+import {
+  timerFiringCommandId,
+} from "./timer-command.js";
 
 const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
+const timerBypassMutationWorkflowsPath = fileURLToPath(
+  new URL("./timer-bypass-mutation-workflows.js", import.meta.url),
+);
 
 const temporalTestIdentity = "bpmn-lean-test-runtime";
+const timerBypassMutationTaskQueue = "bpmn-timer-bypass-mutation";
+const timerBypassMutationWorkflowType =
+  "runBpmnProcessTimerBypassMutation";
 const operationDeadlineMs = 5_000;
 const environmentStartupDeadlineMs = 40_000;
 const workerStartupDeadlineMs = 20_000;
@@ -77,8 +91,8 @@ const replayDeadlineMs = 10_000;
 const shutdownDeadlineMs = 10_000;
 
 type CompletionDeliveryEvidence = Omit<
-  TemporalUserTaskInteractionEvidence,
-  "openUserTasksAtWait"
+  TemporalInteractionEvidence,
+  "openUserTasksAtWait" | "openTimersAtWait"
 > & Readonly<{
   completedReceipt?: CompletedProcessReceipt;
 }>;
@@ -86,12 +100,17 @@ type CompletionDeliveryEvidence = Omit<
 export class TemporalScenarioRunner {
   private workerError: unknown;
   private shutdownStarted = false;
+  private worker: Worker;
+  private workerRun: Promise<void>;
 
   private constructor(
     private readonly environment: TestWorkflowEnvironment,
-    private readonly worker: Worker,
-    private readonly workerRun: Promise<void>,
-  ) {}
+    worker: Worker,
+    workerRun: Promise<void>,
+  ) {
+    this.worker = worker;
+    this.workerRun = workerRun;
+  }
 
   static async create(
     options: TemporalScenarioRunnerOptions,
@@ -117,7 +136,39 @@ export class TemporalScenarioRunner {
       environmentStartupDeadlineMs,
       "Temporal environment startup",
     );
+    return this.createWithEnvironment(environment);
+  }
 
+  static async createTimeSkipping(
+    options: TemporalTimeSkippingRunnerOptions,
+  ): Promise<TemporalScenarioRunner> {
+    await withDeadline(
+      mkdir(options.downloadDirectory, { recursive: true }),
+      operationDeadlineMs,
+      "Temporal test-server cache creation",
+    );
+    const environment = await withDeadline(
+      TestWorkflowEnvironment.createTimeSkipping({
+        server: {
+          executable: {
+            type: "cached-download",
+            version: "default",
+            downloadDir: options.downloadDirectory,
+          },
+        },
+        client: {
+          identity: temporalTestIdentity,
+        },
+      }),
+      environmentStartupDeadlineMs,
+      "Temporal time-skipping environment startup",
+    );
+    return this.createWithEnvironment(environment);
+  }
+
+  private static async createWithEnvironment(
+    environment: TestWorkflowEnvironment,
+  ): Promise<TemporalScenarioRunner> {
     try {
       const worker = await withDeadline(
         Worker.create({
@@ -182,6 +233,7 @@ export class TemporalScenarioRunner {
       operationDeadlineMs,
       "Workflow open User Tasks Query",
     );
+    const openTimersAtWait = openTimersInTrace(waitTrace);
     const completions = requireCompletionStimuli(scenario);
     const delivery = await this.deliverCompletions(
       handle,
@@ -193,6 +245,20 @@ export class TemporalScenarioRunner {
       completedReceipt,
       ...interaction
     } = delivery;
+    const timerStimulus = requireOptionalTimerStimulus(scenario);
+    let timerReceipt: CompletedProcessReceipt | undefined;
+    if (timerStimulus !== undefined) {
+      if (options.workerDownAtTimerDue === true) {
+        await this.restartWorkerAfterTimerDue(handle, timerStimulus);
+      }
+      timerReceipt = requireCompletedProcessReceipt(
+        await withDeadline(
+          handle.result(),
+          workflowResultDeadlineMs,
+          "timer Workflow completed receipt",
+        ),
+      );
+    }
 
     const trace = await withDeadline(
       handle.query<ReadonlyArray<CanonicalObservation>>(
@@ -202,7 +268,7 @@ export class TemporalScenarioRunner {
       "Workflow final trace Query",
     );
     const result = scenarioResultFromTrace(trace);
-    const receipt = completedReceipt ??
+    const receipt = completedReceipt ?? timerReceipt ??
       (completedState(trace)
         ? requireCompletedProcessReceipt(
           await withDeadline(
@@ -232,12 +298,19 @@ export class TemporalScenarioRunner {
       receipt,
       history as TemporalHistory,
     );
+    if (timerStimulus !== undefined) {
+      requireDurableTimerHistory(
+        history as TemporalHistory,
+        timerStimulus.logicalTimeMs,
+      );
+    }
 
     this.assertWorkerHealthy();
     return {
       waitTrace,
       interactionEvidence: {
         openUserTasksAtWait,
+        openTimersAtWait,
         ...interaction,
       },
       result,
@@ -279,6 +352,98 @@ export class TemporalScenarioRunner {
           throw new Error("Rejected batch result escaped failure handling");
       }
     });
+  }
+
+  async runTimerBypassMutation(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalTimerBypassMutationExecution> {
+    this.assertAvailable();
+    const start = requireStartStimulus(scenario);
+    const timer = requireOptionalTimerStimulus(scenario);
+    if (timer === undefined) {
+      throw new TypeError(
+        "Timer-bypass mutation requires one Fire Timer stimulus",
+      );
+    }
+    const mutationWorker = await withDeadline(
+      Worker.create({
+        connection: this.environment.nativeConnection,
+        identity: temporalTestIdentity,
+        taskQueue: timerBypassMutationTaskQueue,
+        workflowsPath: timerBypassMutationWorkflowsPath,
+      }),
+      workerStartupDeadlineMs,
+      "timer-bypass mutation Worker startup",
+    );
+    let mutationWorkerError: unknown;
+    const mutationWorkerRun = mutationWorker.run().catch((error: unknown) => {
+      mutationWorkerError = error;
+    });
+
+    try {
+      const handle = await withDeadline(
+        this.environment.client.workflow.start(
+          timerBypassMutationWorkflowType,
+          {
+            taskQueue: timerBypassMutationTaskQueue,
+            workflowId,
+            workflowIdReusePolicy: "REJECT_DUPLICATE",
+            args: [start, semanticProcess],
+          },
+        ),
+        operationDeadlineMs,
+        "timer-bypass mutation Workflow start",
+      );
+      const receipt = requireCompletedProcessReceipt(
+        await withDeadline(
+          handle.result(),
+          workflowResultDeadlineMs,
+          "timer-bypass mutation Workflow result",
+        ),
+      );
+      const trace = await withDeadline(
+        handle.query<ReadonlyArray<CanonicalObservation>>(
+          bpmnTraceQueryName,
+        ),
+        operationDeadlineMs,
+        "timer-bypass mutation trace Query",
+      );
+      const history = await withDeadline(
+        handle.fetchHistory(),
+        operationDeadlineMs,
+        "timer-bypass mutation history fetch",
+      );
+      if (!Array.isArray(history.events)) {
+        throw new TypeError(
+          "Timer-bypass mutation history did not contain an events array",
+        );
+      }
+      reconcileHarnessTraceEvidence(
+        trace,
+        receipt,
+        history as TemporalHistory,
+      );
+      return {
+        result: scenarioResultFromTrace(trace),
+        receipt,
+        history: history as TemporalHistory,
+      };
+    } finally {
+      mutationWorker.shutdown();
+      await withDeadline(
+        mutationWorkerRun,
+        shutdownDeadlineMs,
+        "timer-bypass mutation Worker shutdown",
+      );
+      if (mutationWorkerError !== undefined) {
+        throw normalizeError(
+          mutationWorkerError,
+          "Timer-bypass mutation Worker failed",
+        );
+      }
+    }
   }
 
   async replayHistory(history: unknown, workflowId: string): Promise<void> {
@@ -362,6 +527,65 @@ export class TemporalScenarioRunner {
       latestError,
       `Workflow trace did not reach ${minimumLength} observations`,
     );
+  }
+
+  private async restartWorkerAfterTimerDue(
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    timer: FireTimerStimulus,
+  ): Promise<void> {
+    await withDeadline(
+      this.waitForTimerStarted(handle),
+      operationDeadlineMs,
+      "durable timer start",
+    );
+    this.worker.shutdown();
+    await withDeadline(
+      this.workerRun,
+      shutdownDeadlineMs,
+      "pre-due Temporal Worker shutdown",
+    );
+    this.assertWorkerHealthy();
+
+    // The Service owns timer firing while no Worker polls. Waiting beyond the admitted duration
+    // makes Worker absence at the due boundary an explicit harness scheduling input.
+    await delay(timer.logicalTimeMs + 100);
+
+    const replacement = await withDeadline(
+      Worker.create({
+        connection: this.environment.nativeConnection,
+        identity: temporalTestIdentity,
+        taskQueue: bpmnSemanticTaskQueue,
+        workflowsPath,
+      }),
+      workerStartupDeadlineMs,
+      "replacement Temporal Worker startup",
+    );
+    this.worker = replacement;
+    this.workerError = undefined;
+    this.workerRun = replacement.run().catch((error: unknown) => {
+      this.workerError = error;
+    });
+    await delay(0);
+    this.assertWorkerHealthy();
+  }
+
+  private async waitForTimerStarted(
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+  ): Promise<void> {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const history = await handle.fetchHistory();
+      if (
+        history.events?.some((event) =>
+          isRecord(event) &&
+          isRecord(event.timerStartedEventAttributes) &&
+          Object.keys(event.timerStartedEventAttributes).length > 0
+        ) === true
+      ) {
+        return;
+      }
+      await delay(25);
+    }
+    throw new Error("Workflow history did not record a durable timer start");
   }
 
   private async deliverCompletions(
@@ -774,6 +998,21 @@ function validateExecutionOptions(
   scenario: Scenario,
   options: TemporalScenarioExecutionOptions,
 ): void {
+  const timer = requireOptionalTimerStimulus(scenario);
+  if (timer !== undefined) {
+    if (
+      options.completionDelivery !== TemporalCompletionDelivery.Ordered ||
+      options.duplicateFirstCompletion === true
+    ) {
+      throw new TypeError(
+        "Timer scenarios use internally derived ordered firing without caller duplication",
+      );
+    }
+  } else if (options.workerDownAtTimerDue === true) {
+    throw new TypeError(
+      "Worker-down-at-due scheduling requires one timer stimulus",
+    );
+  }
   switch (options.completionDelivery) {
     case TemporalCompletionDelivery.Ordered:
     case TemporalCompletionDelivery.AcceptedBatch:
@@ -816,10 +1055,12 @@ function validateExecutionOptions(
 function requireCompletionStimuli(
   scenario: Scenario,
 ): ReadonlyArray<CompleteUserTaskInstanceStimulus> {
-  return scenario.stimuli.slice(1).map((stimulus) => {
+  return scenario.stimuli.slice(1).flatMap((stimulus) => {
     switch (stimulus.kind) {
       case StimulusKind.CompleteUserTaskInstance:
-        return stimulus;
+        return [stimulus];
+      case StimulusKind.FireTimer:
+        return [];
       case StimulusKind.StartProcess:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
@@ -828,6 +1069,44 @@ function requireCompletionStimuli(
         return assertNever(stimulus);
     }
   });
+}
+
+function requireOptionalTimerStimulus(
+  scenario: Scenario,
+): FireTimerStimulus | undefined {
+  let timer: FireTimerStimulus | undefined;
+  for (const stimulus of scenario.stimuli.slice(1)) {
+    switch (stimulus.kind) {
+      case StimulusKind.CompleteUserTaskInstance:
+        break;
+      case StimulusKind.FireTimer:
+        if (timer !== undefined) {
+          throw new TypeError(
+            "The admitted Temporal capsule supports exactly one timer firing",
+          );
+        }
+        if (
+          stimulus.commandId !==
+            timerFiringCommandId(
+              stimulus.timerId,
+              stimulus.logicalTimeMs,
+            )
+        ) {
+          throw new TypeError(
+            "Timer command ID is not bound to its occurrence and logical deadline",
+          );
+        }
+        timer = stimulus;
+        break;
+      case StimulusKind.StartProcess:
+        throw new TypeError(
+          "Only the first scenario stimulus may start the Process",
+        );
+      default:
+        assertNever(stimulus);
+    }
+  }
+  return timer;
 }
 
 function requireStartStimulus(scenario: Scenario): StartProcessStimulus {
@@ -877,6 +1156,19 @@ function completedState(
   );
 }
 
+function openTimersInTrace(
+  trace: ReadonlyArray<CanonicalObservation>,
+): ReadonlyArray<OpenTimer> {
+  const waiting = trace.findLast(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Running,
+  );
+  return waiting?.kind === CanonicalObservationKind.State
+    ? waiting.openTimers
+    : [];
+}
+
 export function isCompletedProcessReceipt(
   value: unknown,
 ): value is CompletedProcessReceipt {
@@ -913,6 +1205,7 @@ export function isCompletedProcessReceipt(
       "status",
       "activeWaits",
       "openUserTasks",
+      "openTimers",
       "enabledInteractions",
       "logicalTimeMs",
     ]) &&
@@ -923,6 +1216,8 @@ export function isCompletedProcessReceipt(
     finalState.activeWaits.length === 0 &&
     Array.isArray(finalState.openUserTasks) &&
     finalState.openUserTasks.length === 0 &&
+    Array.isArray(finalState.openTimers) &&
+    finalState.openTimers.length === 0 &&
     Array.isArray(finalState.enabledInteractions) &&
     finalState.enabledInteractions.length === 0 &&
     Number.isSafeInteger(finalState.logicalTimeMs) &&

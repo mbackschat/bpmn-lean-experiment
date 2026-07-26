@@ -14,6 +14,7 @@ open BpmnSemantics
 def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
+  | .intermediateCatchTimerEvent id _
   | .parallelGateway id _
   | .noneEndEvent id => id
 
@@ -60,6 +61,14 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
         { id := ⟨id.value⟩, name }
+  | .intermediateCatchTimerEvent id durationLiteral =>
+      .awaitTimer
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        { elementId := id
+          durationMs := if durationLiteral = "PT1S" then 1000 else 0 }
   | .parallelGateway id .diverging =>
       .duplicate
         (nodeOperationId id)
@@ -138,6 +147,9 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       incomingCount flows id = 0 && outgoingCount flows id = 1
   | .userTask id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .intermediateCatchTimerEvent id durationLiteral =>
+      durationLiteral = "PT1S" &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1
   | .parallelGateway id .diverging =>
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
   | .parallelGateway id .converging =>
@@ -153,6 +165,11 @@ private def startIds (nodes : List CheckedNode) : List NodeId :=
 private def taskIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .userTask id _ => some id
+    | _ => none
+
+private def timerIds (nodes : List CheckedNode) : List NodeId :=
+  nodes.filterMap fun
+    | .intermediateCatchTimerEvent id _ => some id
     | _ => none
 
 private def divergingGatewayIds (nodes : List CheckedNode) : List NodeId :=
@@ -174,15 +191,21 @@ private def boundedTopology (source : CheckedProcess) : Bool :=
   match
       startIds source.nodes,
       taskIds source.nodes,
+      timerIds source.nodes,
       divergingGatewayIds source.nodes,
       convergingGatewayIds source.nodes,
       endIds source.nodes with
-  | [start], [task], [], [], [endNode] =>
+  | [start], [task], [], [], [], [endNode] =>
       source.nodes.length = 3 &&
         source.sequenceFlows.length = 2 &&
         hasFlow source.sequenceFlows start task &&
         hasFlow source.sequenceFlows task endNode
-  | [start], [taskA, taskB], [fork], [join], [endNode] =>
+  | [start], [], [timer], [], [], [endNode] =>
+      source.nodes.length = 3 &&
+        source.sequenceFlows.length = 2 &&
+        hasFlow source.sequenceFlows start timer &&
+        hasFlow source.sequenceFlows timer endNode
+  | [start], [taskA, taskB], [], [fork], [join], [endNode] =>
       source.nodes.length = 6 &&
         source.sequenceFlows.length = 6 &&
         hasFlow source.sequenceFlows start fork &&
@@ -191,7 +214,7 @@ private def boundedTopology (source : CheckedProcess) : Bool :=
         hasFlow source.sequenceFlows taskA join &&
         hasFlow source.sequenceFlows taskB join &&
         hasFlow source.sequenceFlows join endNode
-  | _, _, _, _, _ => false
+  | _, _, _, _, _, _ => false
 
 /-- Independent static admission for the current sequential and balanced parallel checked graphs. -/
 def checkedWellFormed (source : CheckedProcess) : Bool :=
@@ -213,6 +236,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
 def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
   | .awaitUserTask id _ _ _ _
+  | .awaitTimer id _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _
   | .terminate id _ _ => id
@@ -234,6 +258,14 @@ private def operationWellFormed (places : List ControlPlace) :
         nonempty origin.elementId.value &&
         nonempty task.id.value &&
         decide (origin.elementId.value = task.id.value) &&
+        placeExists places input &&
+        placeExists places output
+  | .awaitTimer id origin input output timer =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty timer.elementId.value &&
+        decide (origin.elementId = timer.elementId) &&
+        timer.durationMs = 1000 &&
         placeExists places input &&
         placeExists places output
   | .duplicate id origin input outputs =>
@@ -293,8 +325,21 @@ structure UserTaskWait where
   output : ControlPlaceId
   deriving Repr, DecidableEq
 
+structure TimerWait where
+  processInstanceId : SemanticId
+  elementId : NodeId
+  activation : Nat
+  deadlineMs : Nat
+  output : ControlPlaceId
+  deriving Repr, DecidableEq
+
 structure TaskActivation where
   taskId : TaskDefinitionId
+  count : Nat
+  deriving Repr, DecidableEq
+
+structure TimerActivation where
+  elementId : NodeId
   count : Nat
   deriving Repr, DecidableEq
 
@@ -303,7 +348,9 @@ structure RuntimeState where
   initiationPending : Bool
   tokens : List ControlPlaceId
   waits : List UserTaskWait
+  timerWaits : List TimerWait
   activations : List TaskActivation
+  timerActivations : List TimerActivation
   endOccurrences : Nat
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
@@ -313,7 +360,9 @@ def initialState : RuntimeState :=
     initiationPending := false
     tokens := []
     waits := []
+    timerWaits := []
     activations := []
+    timerActivations := []
     endOccurrences := 0
     logicalTimeMs := 0 }
 
@@ -352,6 +401,17 @@ private def setActivationCount (activations : List TaskActivation)
   { taskId, count } ::
     activations.filter fun activation => decide (activation.taskId ≠ taskId)
 
+private def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
+    Nat :=
+  (state.timerActivations.find? fun activation =>
+    decide (activation.elementId = elementId)).map (·.count) |>.getD 0
+
+private def setTimerActivationCount (activations : List TimerActivation)
+    (elementId : NodeId) (count : Nat) : List TimerActivation :=
+  { elementId, count } ::
+    activations.filter fun activation =>
+      decide (activation.elementId ≠ elementId)
+
 private def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
     (input output : ControlPlaceId) (task : UserTaskDefinition) : RuntimeState :=
   let activation := activationCount state task.id + 1
@@ -363,6 +423,20 @@ private def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
         activation
         output } :: state.waits
     activations := setActivationCount state.activations task.id activation }
+
+private def activateTimer (state : RuntimeState) (instanceId : SemanticId)
+    (input output : ControlPlaceId) (timer : TimerDefinition) : RuntimeState :=
+  let activation := timerActivationCount state timer.elementId + 1
+  { state with
+    tokens := removeToken state.tokens input
+    timerWaits :=
+      { processInstanceId := instanceId
+        elementId := timer.elementId
+        activation
+        deadlineMs := state.logicalTimeMs + timer.durationMs
+        output } :: state.timerWaits
+    timerActivations :=
+      setTimerActivationCount state.timerActivations timer.elementId activation }
 
 private def duplicateToken (state : RuntimeState) (input : ControlPlaceId)
     (outputs : List ControlPlaceId) : RuntimeState :=
@@ -378,7 +452,8 @@ private def terminateToken (state : RuntimeState) (instanceId : SemanticId)
     (input : ControlPlaceId) : RuntimeState :=
   let tokens := removeToken state.tokens input
   let completed :=
-    tokens.isEmpty && state.waits.isEmpty && !state.initiationPending
+    tokens.isEmpty && state.waits.isEmpty && state.timerWaits.isEmpty &&
+      !state.initiationPending
   { state with
     control := if completed then .completed instanceId else state.control
     tokens
@@ -402,6 +477,14 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
         (.awaitUserTask id origin input output task)
         state
         (activateUserTask state instanceId input output task)
+  | awaitTimer (id origin input output timer) (state : RuntimeState)
+      (instanceId : SemanticId)
+      (running : state.control = .running instanceId)
+      (enabled : hasToken state input = true) :
+      OperationStep
+        (.awaitTimer id origin input output timer)
+        state
+        (activateTimer state instanceId input output timer)
   | duplicate (id origin input outputs) (state : RuntimeState)
       (enabled : hasToken state input = true) :
       OperationStep
@@ -440,6 +523,15 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
       | .running instanceId =>
           if hasToken state input then
             some (activateUserTask state instanceId input output task)
+          else
+            none
+      | .notStarted
+      | .completed _ => none
+  | .awaitTimer _ _ input output timer =>
+      match state.control with
+      | .running instanceId =>
+          if hasToken state input then
+            some (activateTimer state instanceId input output timer)
           else
             none
       | .notStarted
@@ -484,6 +576,17 @@ theorem fire_sound (operation : SemanticOperation)
           · simp [fire?, controlEq, enabled] at result
             subst after
             exact .awaitUserTask id origin input output task before
+              instanceId controlEq enabled
+          · simp [fire?, controlEq, enabled] at result
+  | awaitTimer id origin input output timer =>
+      cases controlEq : before.control with
+      | notStarted => simp [fire?, controlEq] at result
+      | completed instanceId => simp [fire?, controlEq] at result
+      | running instanceId =>
+          by_cases enabled : hasToken before input = true
+          · simp [fire?, controlEq, enabled] at result
+            subst after
+            exact .awaitTimer id origin input output timer before
               instanceId controlEq enabled
           · simp [fire?, controlEq, enabled] at result
   | duplicate id origin input outputs =>
@@ -571,6 +674,24 @@ def completeUserTask (state : RuntimeState) (processInstanceId : SemanticId)
           waits := state.waits.erase wait
           tokens := wait.output :: state.tokens }
 
+def fireTimer (state : RuntimeState) (timerId : TimerOccurrenceId)
+    (logicalTimeMs : Nat) : Option RuntimeState :=
+  match state.timerWaits.find? fun wait =>
+      decide (
+        wait.processInstanceId = timerId.processInstanceId &&
+          wait.elementId.value = timerId.elementId.value &&
+          wait.activation = timerId.activation) with
+  | none => none
+  | some wait =>
+      if logicalTimeMs = wait.deadlineMs then
+        some
+          { state with
+            timerWaits := state.timerWaits.erase wait
+            tokens := wait.output :: state.tokens
+            logicalTimeMs := wait.deadlineMs }
+      else
+        none
+
 def runChoices (program : Program) : RuntimeState → List OperationId →
     Option RuntimeState
   | state, [] => some state
@@ -586,7 +707,8 @@ def projectTokenMultiplicities (program : Program) (state : RuntimeState) :
 
 private def commandId : Stimulus → SemanticId
   | .startProcess id _ _
-  | .completeUserTaskInstance id _ => id
+  | .completeUserTaskInstance id _
+  | .fireTimer id _ _ => id
 
 private structure ExternalAdmission where
   outcome : CommandOutcome
@@ -611,6 +733,18 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
               ⟨taskId.elementId.value⟩ taskId.activation with
           | some successor =>
               if taskId.processInstanceId = instanceId then
+                { outcome := .committed, state := successor }
+              else
+                { outcome := .rejected, state }
+          | none => { outcome := .rejected, state }
+      | .notStarted
+      | .completed _ => { outcome := .rejected, state }
+  | .fireTimer _ timerId logicalTimeMs =>
+      match state.control with
+      | .running instanceId =>
+          match fireTimer state timerId logicalTimeMs with
+          | some successor =>
+              if timerId.processInstanceId = instanceId then
                 { outcome := .committed, state := successor }
               else
                 { outcome := .rejected, state }
@@ -707,6 +841,16 @@ def singletonWaitingState (wait : UserTaskWait) (logicalTimeMs : Nat := 0) :
     activations := [{ taskId := wait.task.id, count := wait.activation }]
     logicalTimeMs }
 
+/-- Isolated state used to state timer-refusal laws over the complete public timer occurrence identity and logical-time input. -/
+def singletonTimerWaitingState (wait : TimerWait) (logicalTimeMs : Nat := 0) :
+    RuntimeState :=
+  { initialState with
+    control := .running wait.processInstanceId
+    timerWaits := [wait]
+    timerActivations :=
+      [{ elementId := wait.elementId, count := wait.activation }]
+    logicalTimeMs }
+
 /-- Any mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 -- tag::task-identity-law[]
 theorem task_identity_mismatch_is_rejected
@@ -753,22 +897,128 @@ theorem task_identity_mismatch_is_rejected
         singletonWaitingState, noMatch]
 -- end::task-identity-law[]
 
+/-- Any mismatch in the full timer-occurrence identity or exact logical deadline rejects firing with exact state preservation. This one law covers both early and late firing. -/
+theorem timer_identity_or_time_mismatch_is_rejected
+    (program : Program) (wait : TimerWait)
+    (fireCommandId : SemanticId)
+    (submittedTimerId : TimerOccurrenceId) (submittedLogicalTimeMs : Nat)
+    (currentLogicalTimeMs : Nat)
+    (mismatch :
+      submittedTimerId.processInstanceId ≠ wait.processInstanceId ∨
+      submittedTimerId.elementId.value ≠ wait.elementId.value ∨
+      submittedTimerId.activation ≠ wait.activation ∨
+      submittedLogicalTimeMs ≠ wait.deadlineMs) :
+    applyStimulus scenarioClosureLimit program
+        (singletonTimerWaitingState wait currentLogicalTimeMs)
+        (.fireTimer fireCommandId submittedTimerId submittedLogicalTimeMs) =
+      { outcome := .rejected
+        state := singletonTimerWaitingState wait currentLogicalTimeMs
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  rcases mismatch with processMismatch | remainingMismatch
+  · have noMatch : ¬ (
+        (wait.processInstanceId = submittedTimerId.processInstanceId ∧
+          wait.elementId.value = submittedTimerId.elementId.value) ∧
+        wait.activation = submittedTimerId.activation) := by
+      intro exactMatch
+      exact processMismatch exactMatch.1.1.symm
+    simp [applyStimulus, admitStimulus, fireTimer,
+      singletonTimerWaitingState, noMatch]
+  · rcases remainingMismatch with elementMismatch | remainingMismatch
+    · have noMatch : ¬ (
+          (wait.processInstanceId = submittedTimerId.processInstanceId ∧
+            wait.elementId.value = submittedTimerId.elementId.value) ∧
+          wait.activation = submittedTimerId.activation) := by
+        intro exactMatch
+        exact elementMismatch exactMatch.1.2.symm
+      simp [applyStimulus, admitStimulus, fireTimer,
+        singletonTimerWaitingState, noMatch]
+    · rcases remainingMismatch with activationMismatch | timeMismatch
+      · have noMatch : ¬ (
+            (wait.processInstanceId = submittedTimerId.processInstanceId ∧
+              wait.elementId.value = submittedTimerId.elementId.value) ∧
+            wait.activation = submittedTimerId.activation) := by
+          intro exactMatch
+          exact activationMismatch exactMatch.2.symm
+        simp [applyStimulus, admitStimulus, fireTimer,
+          singletonTimerWaitingState, noMatch]
+      · by_cases processMatches :
+          wait.processInstanceId = submittedTimerId.processInstanceId
+        · by_cases elementMatches :
+            wait.elementId.value = submittedTimerId.elementId.value
+          · by_cases activationMatches :
+              wait.activation = submittedTimerId.activation
+            · simp [applyStimulus, admitStimulus, fireTimer,
+                singletonTimerWaitingState, processMatches, elementMatches,
+                activationMatches, timeMismatch]
+            · have noMatch : ¬ (
+                  (wait.processInstanceId =
+                      submittedTimerId.processInstanceId ∧
+                    wait.elementId.value =
+                      submittedTimerId.elementId.value) ∧
+                  wait.activation = submittedTimerId.activation) := by
+                intro exactMatch
+                exact activationMatches exactMatch.2
+              simp [applyStimulus, admitStimulus, fireTimer,
+                singletonTimerWaitingState, noMatch]
+          · have noMatch : ¬ (
+                (wait.processInstanceId =
+                    submittedTimerId.processInstanceId ∧
+                  wait.elementId.value =
+                    submittedTimerId.elementId.value) ∧
+                wait.activation = submittedTimerId.activation) := by
+              intro exactMatch
+              exact elementMatches exactMatch.1.2
+            simp [applyStimulus, admitStimulus, fireTimer,
+              singletonTimerWaitingState, noMatch]
+        · have noMatch : ¬ (
+              (wait.processInstanceId =
+                  submittedTimerId.processInstanceId ∧
+                wait.elementId.value =
+                  submittedTimerId.elementId.value) ∧
+              wait.activation = submittedTimerId.activation) := by
+            intro exactMatch
+            exact processMatches exactMatch.1.1
+          simp [applyStimulus, admitStimulus, fireTimer,
+            singletonTimerWaitingState, noMatch]
+
 private def taskDefinitions (program : Program) : List UserTaskDefinition :=
   program.operations.filterMap fun
     | .awaitUserTask _ _ _ _ task => some task
     | _ => none
 
+private def timerDefinitions (program : Program) : List TimerDefinition :=
+  program.operations.filterMap fun
+    | .awaitTimer _ _ _ _ timer => some timer
+    | _ => none
+
+def timerWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
+  (state.timerWaits.filter fun wait =>
+    decide (wait.elementId = elementId)).length
+
 private def activeWaits (program : Program) (state : RuntimeState) :
     List ActiveWait :=
-  (taskDefinitions program).filterMap fun task =>
-    let multiplicity := waitMultiplicity state task.id
-    if multiplicity = 0 then
-      none
-    else
-      some
-        { elementId := ⟨task.id.value⟩
-          kind := .userTask
-          multiplicity }
+  let taskWaits :=
+    (taskDefinitions program).filterMap fun task =>
+      let multiplicity := waitMultiplicity state task.id
+      if multiplicity = 0 then
+        none
+      else
+        some
+          { elementId := ⟨task.id.value⟩
+            kind := .userTask
+            multiplicity }
+  let timerWaits :=
+    (timerDefinitions program).filterMap fun timer =>
+      let multiplicity := timerWaitMultiplicity state timer.elementId
+      if multiplicity = 0 then
+        none
+      else
+        some
+          { elementId := ⟨timer.elementId.value⟩
+            kind := .timer
+            multiplicity }
+  taskWaits ++ timerWaits
 
 private def openUserTasks (program : Program) (state : RuntimeState) :
     List OpenUserTask :=
@@ -781,6 +1031,17 @@ private def openUserTasks (program : Program) (state : RuntimeState) :
         name := task.name
         state := .active }
 
+private def openTimers (program : Program) (state : RuntimeState) :
+    List OpenTimer :=
+  (timerDefinitions program).flatMap fun timer =>
+    (state.timerWaits.filter fun wait =>
+      decide (wait.elementId = timer.elementId)).map fun wait =>
+        { id :=
+            { processInstanceId := wait.processInstanceId
+              elementId := ⟨timer.elementId.value⟩
+              activation := wait.activation }
+          deadlineMs := wait.deadlineMs }
+
 private def observeStableState (program : Program) (state : RuntimeState) :
     Option StateObservation :=
   match state.control with
@@ -792,6 +1053,7 @@ private def observeStableState (program : Program) (state : RuntimeState) :
           status := .running
           activeWaits := activeWaits program state
           openUserTasks := tasks
+          openTimers := openTimers program state
           enabledInteractions :=
             tasks.map fun task => .completeUserTaskInstance task.id
           logicalTimeMs := state.logicalTimeMs }
@@ -801,6 +1063,7 @@ private def observeStableState (program : Program) (state : RuntimeState) :
           status := .completed
           activeWaits := []
           openUserTasks := []
+          openTimers := []
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
 
@@ -863,6 +1126,7 @@ private def requiredObservations : List ObservationKind :=
   , .processStatus
   , .activeWaits
   , .openUserTasks
+  , .openTimers
   , .enabledInteractions
   , .logicalTime ]
 

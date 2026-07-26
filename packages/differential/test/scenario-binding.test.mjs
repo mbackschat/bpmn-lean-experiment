@@ -41,6 +41,7 @@ const admittedScenario = {
     "processStatus",
     "activeWaits",
     "openUserTasks",
+    "openTimers",
     "enabledInteractions",
     "logicalTime",
   ],

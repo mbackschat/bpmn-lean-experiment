@@ -189,6 +189,54 @@
         }
       }
     },
+    "timerDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "durationMs"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "durationMs": {
+          "const": 1000
+        }
+      }
+    },
+    "awaitTimer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "timer"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitTimer"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "timer": {
+          "$ref": "#/$defs/timerDefinition"
+        }
+      }
+    },
     "duplicate": {
       "type": "object",
       "additionalProperties": false,
@@ -286,6 +334,9 @@
         },
         {
           "$ref": "#/$defs/awaitUserTask"
+        },
+        {
+          "$ref": "#/$defs/awaitTimer"
         },
         {
           "$ref": "#/$defs/duplicate"

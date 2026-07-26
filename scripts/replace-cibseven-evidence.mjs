@@ -53,6 +53,11 @@ function requireCleanDiagnostics(result) {
       `CIB scenario ${result.scenarioId} omitted raw task-query observations`,
     );
   }
+  if (!Array.isArray(result.diagnostics.timerJobs)) {
+    throw new Error(
+      `CIB scenario ${result.scenarioId} omitted raw timer-job observations`,
+    );
+  }
 }
 
 async function runCibBatch(scenarios, temporaryDirectory) {
@@ -169,6 +174,7 @@ async function replaceEvidence() {
             },
             producerObservations: {
               taskQueries: result.diagnostics.taskQueries,
+              timerJobs: result.diagnostics.timerJobs,
             },
             projection: {
               id: "canonical-scenario-result",

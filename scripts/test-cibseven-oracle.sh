@@ -9,12 +9,13 @@ maven_settings=${BPMN_MAVEN_SETTINGS:-"$runner_dir/maven-settings.xml"}
 xsd_path="$project_root/docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
 sequential_bpmn_path="$project_root/scenarios/user-task-discovery-completion/process.bpmn"
 parallel_bpmn_path="$project_root/scenarios/parallel-fork-join/process.bpmn"
+timer_bpmn_path="$project_root/scenarios/intermediate-catch-timer/process.bpmn"
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
 
 test -x "$java_home/bin/java"
 test -f "$maven_settings"
 
-for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$parallel_probe_path"; do
+for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$parallel_probe_path"; do
   if test -f "$xsd_path"; then
     xmllint --noout --schema "$xsd_path" "$bpmn_path"
   else

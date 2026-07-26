@@ -97,7 +97,7 @@ export function compileCheckedProcess(
   );
   if (sourceNodes.length + sourceFlows.length !== flowElements.length) {
     return unsupported(
-      "The bounded compiler supports only None Start Events, User Tasks, Parallel Gateways, None End Events, and Sequence Flows.",
+      "The bounded compiler supports only None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, Parallel Gateways, None End Events, and Sequence Flows.",
     );
   }
 
@@ -166,6 +166,14 @@ function projectNodes(
           ? { kind: CheckedNodeKind.UserTask, id, name }
           : undefined;
       }
+      case bpmnTypes.intermediateCatchEventType:
+        return isExactPt1sTimerEvent(element)
+          ? {
+              kind: CheckedNodeKind.IntermediateCatchTimerEvent,
+              id,
+              durationLiteral: "PT1S",
+            }
+          : undefined;
       case bpmnTypes.parallelGatewayType: {
         const direction = classifyGateway(element, id, flows);
         return direction === undefined
@@ -237,6 +245,9 @@ function hasSupportedTopology(
   const tasks = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.UserTask,
   );
+  const timers = nodes.filter(
+    ({ kind }) => kind === CheckedNodeKind.IntermediateCatchTimerEvent,
+  );
   const gateways = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.ParallelGateway,
   );
@@ -251,15 +262,24 @@ function hasSupportedTopology(
   if (start === undefined || end === undefined) {
     return false;
   }
-  if (tasks.length === 1 && gateways.length === 0 && flows.length === 2) {
-    const task = tasks[0];
+  if (
+    tasks.length + timers.length === 1 &&
+    gateways.length === 0 &&
+    flows.length === 2
+  ) {
+    const waitNode = tasks[0] ?? timers[0];
     return (
-      task !== undefined &&
-      hasFlow(flows, start.id, task.id) &&
-      hasFlow(flows, task.id, end.id)
+      waitNode !== undefined &&
+      hasFlow(flows, start.id, waitNode.id) &&
+      hasFlow(flows, waitNode.id, end.id)
     );
   }
-  if (tasks.length !== 2 || gateways.length !== 2 || flows.length !== 6) {
+  if (
+    timers.length !== 0 ||
+    tasks.length !== 2 ||
+    gateways.length !== 2 ||
+    flows.length !== 6
+  ) {
     return false;
   }
   const fork = gateways.find(
@@ -309,10 +329,46 @@ function projectSequenceFlows(
 function isSupportedNodeType(type: unknown): boolean {
   return [
     bpmnTypes.startEventType,
+    bpmnTypes.intermediateCatchEventType,
     bpmnTypes.userTaskType,
     bpmnTypes.parallelGatewayType,
     bpmnTypes.endEventType,
   ].includes(String(type));
+}
+
+function isExactPt1sTimerEvent(element: ElementRecord): boolean {
+  if (
+    !hasOnlyOwnKeys(element, [
+      "$type",
+      "id",
+      "name",
+      "eventDefinitions",
+    ])
+  ) {
+    return false;
+  }
+  const eventDefinitions = asElementArray(element.eventDefinitions);
+  if (
+    eventDefinitions === undefined ||
+    eventDefinitions.length !== 1
+  ) {
+    return false;
+  }
+  const definition = eventDefinitions[0];
+  if (
+    definition === undefined ||
+    definition.$type !== bpmnTypes.timerEventDefinitionType ||
+    !hasOnlyOwnKeys(definition, ["$type", "timeDuration"])
+  ) {
+    return false;
+  }
+  const duration = asElement(definition.timeDuration);
+  return (
+    duration !== undefined &&
+    duration.$type === bpmnTypes.formalExpressionType &&
+    hasOnlyOwnKeys(duration, ["$type", "body"]) &&
+    duration.body === "PT1S"
+  );
 }
 
 function asElement(value: unknown): ElementRecord | undefined {

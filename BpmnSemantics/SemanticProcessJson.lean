@@ -81,6 +81,18 @@ private def decodeUserTaskInstanceId (json : Json) :
       elementId := ⟨← stringField json "elementId"⟩
       activation }
 
+private def decodeTimerOccurrenceId (json : Json) :
+    Except String TimerOccurrenceId := do
+  requireObjectShape json
+    ["activation", "elementId", "processInstanceId"]
+  let activation ← (← field json "activation").getNat?
+  if activation = 0 then
+    throw "timer activation must be positive"
+  pure
+    { processInstanceId := ⟨← stringField json "processInstanceId"⟩
+      elementId := ⟨← stringField json "elementId"⟩
+      activation }
+
 private def decodeStimulus (json : Json) : Except String Stimulus := do
   let kind ← stringField json "kind"
   match kind with
@@ -98,6 +110,14 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
         (.completeUserTaskInstance
           ⟨← stringField json "commandId"⟩
           (← decodeUserTaskInstanceId (← field json "taskId")))
+  | "fireTimer" =>
+      requireObjectShape json
+        ["commandId", "kind", "logicalTimeMs", "timerId"]
+      pure
+        (.fireTimer
+          ⟨← stringField json "commandId"⟩
+          (← decodeTimerOccurrenceId (← field json "timerId"))
+          (← (← field json "logicalTimeMs").getNat?))
   | _ => throw s!"unsupported scenario stimulus {kind}"
 
 private def decodeObservationKind (json : Json) :
@@ -108,6 +128,7 @@ private def decodeObservationKind (json : Json) :
   | "processStatus" => pure .processStatus
   | "activeWaits" => pure .activeWaits
   | "openUserTasks" => pure .openUserTasks
+  | "openTimers" => pure .openTimers
   | "enabledInteractions" => pure .enabledInteractions
   | "logicalTime" => pure .logicalTime
   | kind => throw s!"unsupported scenario observation {kind}"
@@ -163,6 +184,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.userTask
           ⟨← stringField json "id"⟩
           (← decodeOptionalString (← field json "name")))
+  | "intermediateCatchTimerEvent" =>
+      requireObjectShape json ["durationLiteral", "id", "kind"]
+      pure
+        (.intermediateCatchTimerEvent
+          ⟨← stringField json "id"⟩
+          (← stringField json "durationLiteral"))
   | "parallelGateway" =>
       requireObjectShape json ["direction", "id", "kind"]
       let direction ← stringField json "direction"
@@ -233,6 +260,13 @@ private def decodeTaskDefinition (json : Json) :
     { id := ⟨← stringField json "elementId"⟩
       name := ← decodeOptionalString (← field json "name") }
 
+private def decodeTimerDefinition (json : Json) :
+    Except String TimerDefinition := do
+  requireObjectShape json ["durationMs", "elementId"]
+  pure
+    { elementId := ⟨← stringField json "elementId"⟩
+      durationMs := ← (← field json "durationMs").getNat? }
+
 private def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
   decodeArray (fun value => ControlPlaceId.mk <$> value.getStr?) json
@@ -256,6 +290,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
           (← decodeTaskDefinition (← field json "task")))
+  | "awaitTimer" =>
+      requireObjectShape json
+        ["id", "input", "kind", "origin", "output", "timer"]
+      pure
+        (.awaitTimer
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "output"⟩
+          (← decodeTimerDefinition (← field json "timer")))
   | "duplicate" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "outputs"]

@@ -23,6 +23,7 @@ import {
   TemporalCompletionDelivery,
   TemporalScenarioRunner,
   isCompletedProcessReceipt,
+  requireDurableTimerHistory,
 } from "../dist/index.js";
 
 const capsuleUrl = new URL(
@@ -37,6 +38,14 @@ const scenarioUrls = [
 const bpmnUrl = new URL("process.bpmn", capsuleUrl);
 const parallelBpmnUrl = new URL(
   "../../../scenarios/parallel-fork-join/process.bpmn",
+  import.meta.url,
+);
+const timerScenarioUrl = new URL(
+  "../../../scenarios/intermediate-catch-timer/scenario.json",
+  import.meta.url,
+);
+const timerBpmnUrl = new URL(
+  "../../../scenarios/intermediate-catch-timer/process.bpmn",
   import.meta.url,
 );
 const parallelSourceSha256 =
@@ -264,6 +273,7 @@ function parallelScenario(firstElementId, secondElementId) {
       ObservationRequestKind.ProcessStatus,
       ObservationRequestKind.ActiveWaits,
       ObservationRequestKind.OpenUserTasks,
+      ObservationRequestKind.OpenTimers,
       ObservationRequestKind.EnabledInteractions,
       ObservationRequestKind.LogicalTime,
     ],
@@ -497,6 +507,82 @@ test("one clean server executes, captures, and replays the current capsule", asy
     ),
     10_000,
     "current history batch replay",
+  );
+});
+
+test("durable timer survives Worker absence at due time and replays exactly", async () => {
+  const scenario = await loadJson(timerScenarioUrl);
+  const input = await compileExecutionInput(scenario, timerBpmnUrl);
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    runner.runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "intermediate-catch-timer-worker-restart",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      workerDownAtTimerDue: true,
+    }),
+    15_000,
+    "Intermediate Catch Timer Worker-restart execution",
+  );
+
+  assert.deepEqual(execution.waitTrace, expected.trace.slice(0, 3));
+  assert.deepEqual(
+    execution.interactionEvidence.openTimersAtWait,
+    expected.trace[2].openTimers,
+  );
+  assert.deepEqual(execution.interactionEvidence.completionOutcomes, []);
+  assert.deepEqual(execution.result, expected);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+  assert.equal(
+    historyEvents(
+      execution.history,
+      "workflowExecutionUpdateAcceptedEventAttributes",
+    ).length,
+    0,
+  );
+  assert.equal(
+    historyEvents(
+      execution.history,
+      "timerStartedEventAttributes",
+    ).length,
+    1,
+  );
+  assert.equal(
+    historyEvents(
+      execution.history,
+      "timerFiredEventAttributes",
+    ).length,
+    1,
+  );
+
+  await withDeadline(
+    runner.replayHistory(
+      execution.history,
+      "intermediate-catch-timer-worker-restart-replay",
+    ),
+    10_000,
+    "Intermediate Catch Timer history replay",
+  );
+});
+
+test("timer-bypass mutation preserves pure observations but loses durable timer evidence", async () => {
+  const scenario = await loadJson(timerScenarioUrl);
+  const input = await compileExecutionInput(scenario, timerBpmnUrl);
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    runner.runTimerBypassMutation(
+      input.scenario,
+      input.semanticProcess,
+      "intermediate-catch-timer-bypass-mutation",
+    ),
+    15_000,
+    "Intermediate Catch Timer bypass mutation",
+  );
+
+  assert.deepEqual(execution.result, expected);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+  assert.throws(
+    () => requireDurableTimerHistory(execution.history, 1_000),
+    /exactly one durable timer-started\/timer-fired pair/u,
   );
 });
 

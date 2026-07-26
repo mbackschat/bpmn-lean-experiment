@@ -11,12 +11,13 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, UserTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, UserTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
       "FlowElement name type identity",
       "CatchEvent and ThrowEvent event-definition containment",
+      "TimerEventDefinition timeDuration expression containment",
       "StartEvent.isInterrupting default",
       "Gateway.gatewayDirection type and default"
     ],
@@ -31,6 +32,9 @@
     "definitionsType": "bpmn:Definitions",
     "processType": "bpmn:Process",
     "startEventType": "bpmn:StartEvent",
+    "intermediateCatchEventType": "bpmn:IntermediateCatchEvent",
+    "timerEventDefinitionType": "bpmn:TimerEventDefinition",
+    "formalExpressionType": "bpmn:FormalExpression",
     "userTaskType": "bpmn:UserTask",
     "parallelGatewayType": "bpmn:ParallelGateway",
     "endEventType": "bpmn:EndEvent",
@@ -54,6 +58,36 @@
       "name": "StartEvent",
       "directSuperClasses": [
         "CatchEvent"
+      ]
+    },
+    {
+      "name": "IntermediateCatchEvent",
+      "directSuperClasses": [
+        "CatchEvent"
+      ]
+    },
+    {
+      "name": "TimerEventDefinition",
+      "directSuperClasses": [
+        "EventDefinition"
+      ]
+    },
+    {
+      "name": "EventDefinition",
+      "directSuperClasses": [
+        "RootElement"
+      ]
+    },
+    {
+      "name": "Expression",
+      "directSuperClasses": [
+        "BaseElement"
+      ]
+    },
+    {
+      "name": "FormalExpression",
+      "directSuperClasses": [
+        "Expression"
       ]
     },
     {
@@ -180,6 +214,14 @@
       "type": "EventDefinition",
       "lower": 0,
       "upper": "*",
+      "containment": true
+    },
+    {
+      "owner": "TimerEventDefinition",
+      "name": "timeDuration",
+      "type": "Expression",
+      "lower": 0,
+      "upper": 1,
       "containment": true
     },
     {

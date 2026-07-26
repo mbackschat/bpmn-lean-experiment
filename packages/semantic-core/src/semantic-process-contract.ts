@@ -5,6 +5,7 @@ export enum CheckedProcessKind {
 export enum CheckedNodeKind {
   NoneStartEvent = "noneStartEvent",
   UserTask = "userTask",
+  IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   ParallelGateway = "parallelGateway",
   NoneEndEvent = "noneEndEvent",
 }
@@ -29,6 +30,11 @@ export type CheckedNode =
       kind: CheckedNodeKind.UserTask;
       id: string;
       name: string | null;
+    }>
+  | Readonly<{
+      kind: CheckedNodeKind.IntermediateCatchTimerEvent;
+      id: string;
+      durationLiteral: "PT1S";
     }>
   | Readonly<{
       kind: CheckedNodeKind.ParallelGateway;
@@ -65,6 +71,7 @@ export enum SemanticProcessCompilerId {
 export enum SemanticOperationKind {
   Initiate = "initiate",
   AwaitUserTask = "awaitUserTask",
+  AwaitTimer = "awaitTimer",
   Duplicate = "duplicate",
   Synchronize = "synchronize",
   Terminate = "terminate",
@@ -116,6 +123,16 @@ export type SemanticOperation =
         task: Readonly<{
           elementId: string;
           name: string | null;
+        }>;
+      }>)
+  | (OperationBase &
+      Readonly<{
+        kind: SemanticOperationKind.AwaitTimer;
+        input: string;
+        output: string;
+        timer: Readonly<{
+          elementId: string;
+          durationMs: 1000;
         }>;
       }>)
   | (OperationBase &

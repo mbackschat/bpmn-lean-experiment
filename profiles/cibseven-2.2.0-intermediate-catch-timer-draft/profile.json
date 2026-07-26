@@ -1,0 +1,71 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-intermediate-catch-timer-draft",
+  "status": "immutable",
+  "claim": "intermediate-catch-timer-pt1s-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "intermediate-catch-timer-event",
+      "literal-time-duration-pt1s",
+      "controlled-clock-eligibility-gated-firing",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0004",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "duration-literals-other-than-PT1S",
+    "time-date",
+    "time-cycle",
+    "timer-start-events",
+    "boundary-timer-events",
+    "event-subprocesses",
+    "event-based-gateways",
+    "multiple-timers",
+    "timer-races",
+    "cancellation",
+    "physical-lateness-observation",
+    "expressions",
+    "variables",
+    "messages",
+    "user-tasks",
+    "service-tasks",
+    "activities",
+    "vendor-extensions"
+  ]
+}

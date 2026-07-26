@@ -29,7 +29,7 @@ const cleanCibProjection = {
 };
 
 test(
-  "runs the sequential and parallel witnesses through one four-target batch",
+  "runs the User Task, parallel, and Timer witnesses through one four-target batch",
   { timeout: 45_000 },
   async () => {
     assert.deepEqual(
@@ -41,6 +41,7 @@ test(
         "parallel-fork-join-a-then-b",
         "parallel-fork-join-b-then-a",
         "parallel-fork-join-stale-a-while-b-active",
+        "intermediate-catch-timer-pt1s",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
@@ -113,6 +114,10 @@ test(
         caseEvidence.expectedWaitTrace[2].openUserTasks,
       );
       assert.deepEqual(
+        caseEvidence.temporalInteractionEvidence.openTimersAtWait,
+        caseEvidence.expectedWaitTrace[2].openTimers,
+      );
+      assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.completionOutcomes,
         caseEvidence.expectedCompletionOutcomes,
       );
@@ -139,9 +144,20 @@ test(
           ? CommandOutcome.Committed
           : null,
       );
+      if (caseEvidence.expectedDerivedTimerCommandId !== null) {
+        assert.equal(
+          caseEvidence.primaryTemporalResult.trace.some(
+            (observation) =>
+              observation.kind === "command" &&
+              observation.commandId ===
+                caseEvidence.expectedDerivedTimerCommandId,
+          ),
+          true,
+        );
+      }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 6,
+      liveHistories: 7,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
@@ -155,7 +171,7 @@ test(
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 12);
+    assert.equal(report.isolation.temporalWorkflowIds.length, 14);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,

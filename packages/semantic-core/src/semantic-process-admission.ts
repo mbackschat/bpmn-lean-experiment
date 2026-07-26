@@ -27,6 +27,7 @@ const supportedObservations = Object.freeze([
   ObservationRequestKind.ProcessStatus,
   ObservationRequestKind.ActiveWaits,
   ObservationRequestKind.OpenUserTasks,
+  ObservationRequestKind.OpenTimers,
   ObservationRequestKind.EnabledInteractions,
   ObservationRequestKind.LogicalTime,
 ]);
@@ -123,7 +124,25 @@ function hasSupportedExecutionSurface(
 ): boolean {
   return (
     hasSequentialExecutionSurface(program) ||
+    hasTimerExecutionSurface(program) ||
     hasBalancedParallelExecutionSurface(program)
+  );
+}
+
+function hasTimerExecutionSurface(
+  program: SemanticProcessProgram,
+): boolean {
+  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
+  const timer = onlyOperation(program, SemanticOperationKind.AwaitTimer);
+  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
+  return (
+    program.controlPlaces.length === 2 &&
+    program.operations.length === 3 &&
+    initiate !== undefined &&
+    timer !== undefined &&
+    terminate !== undefined &&
+    initiate.output === timer.input &&
+    timer.output === terminate.input
   );
 }
 
@@ -247,6 +266,23 @@ function isWellFormedOperation(
         value.task.elementId === value.origin.elementId &&
         (value.task.name === null || typeof value.task.name === "string")
       );
+    case SemanticOperationKind.AwaitTimer:
+      return (
+        hasOnlyKeys(value, [
+          "id",
+          "kind",
+          "origin",
+          "input",
+          "output",
+          "timer",
+        ]) &&
+        isPlaceReference(value.input, placeIds) &&
+        isPlaceReference(value.output, placeIds) &&
+        isRecord(value.timer) &&
+        hasOnlyKeys(value.timer, ["elementId", "durationMs"]) &&
+        value.timer.elementId === value.origin.elementId &&
+        value.timer.durationMs === 1000
+      );
     case SemanticOperationKind.Duplicate:
       return (
         hasOnlyKeys(value, [
@@ -305,7 +341,8 @@ function isSupportedScenario(value: unknown): value is Scenario {
       .slice(1)
       .every(
         (stimulus) =>
-          stimulus.kind === StimulusKind.CompleteUserTaskInstance,
+          stimulus.kind === StimulusKind.CompleteUserTaskInstance ||
+          stimulus.kind === StimulusKind.FireTimer,
       ) &&
     observations !== undefined &&
     observations.length === supportedObservations.length &&

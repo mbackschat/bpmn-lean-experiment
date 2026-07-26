@@ -53,6 +53,7 @@ inductive GatewayDirection where
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | userTask (id : NodeId) (name : Option String)
+  | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | parallelGateway (id : NodeId) (direction : GatewayDirection)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
@@ -95,6 +96,11 @@ structure UserTaskDefinition where
   name : Option String
   deriving Repr, DecidableEq
 
+structure TimerDefinition where
+  elementId : NodeId
+  durationMs : Nat
+  deriving Repr, DecidableEq
+
 inductive SemanticOperation where
   | initiate
       (id : OperationId)
@@ -106,6 +112,12 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (task : UserTaskDefinition)
+  | awaitTimer
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (output : ControlPlaceId)
+      (timer : TimerDefinition)
   | duplicate
       (id : OperationId)
       (origin : BpmnElementOrigin)

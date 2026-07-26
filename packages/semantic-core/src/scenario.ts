@@ -11,6 +11,7 @@ import type {
   ActiveWait,
   CanonicalObservation,
   OpenUserTask,
+  OpenTimer,
   Scenario,
   ScenarioResult,
   StartProcessStimulus,
@@ -88,6 +89,14 @@ export function projectOpenUserTasks(
     .sort(compareOpenUserTasks);
 }
 
+export function projectOpenTimers(
+  state: RuntimeState,
+): ReadonlyArray<OpenTimer> {
+  return state.timerWaits
+    .map(({ id, deadlineMs }) => ({ id, deadlineMs }))
+    .sort(compareOpenTimers);
+}
+
 function observeStableState(state: RuntimeState): StateObservation | null {
   switch (state.control.kind) {
     case ControlStateKind.Running:
@@ -101,6 +110,7 @@ function observeStableState(state: RuntimeState): StateObservation | null {
             : ProcessStatus.Completed,
         activeWaits: projectActiveWaits(state),
         openUserTasks: projectOpenUserTasks(state),
+        openTimers: projectOpenTimers(state),
         enabledInteractions: projectOpenUserTasks(state).map((task) => ({
           kind: StimulusKind.CompleteUserTaskInstance,
           taskId: task.id,
@@ -115,26 +125,60 @@ function observeStableState(state: RuntimeState): StateObservation | null {
 }
 
 function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
-  const multiplicities = new Map<string, number>();
+  const userTaskMultiplicities = new Map<string, number>();
   for (const wait of state.userTaskWaits) {
-    multiplicities.set(
+    userTaskMultiplicities.set(
       wait.id.elementId,
-      (multiplicities.get(wait.id.elementId) ?? 0) + 1,
+      (userTaskMultiplicities.get(wait.id.elementId) ?? 0) + 1,
     );
   }
-  return [...multiplicities.entries()]
-    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-    .map(([elementId, multiplicity]) => ({
-      elementId,
-      kind: WaitKind.UserTask,
-      multiplicity,
-    }));
+  const timerMultiplicities = new Map<string, number>();
+  for (const wait of state.timerWaits) {
+    timerMultiplicities.set(
+      wait.id.elementId,
+      (timerMultiplicities.get(wait.id.elementId) ?? 0) + 1,
+    );
+  }
+  return [
+    ...[...userTaskMultiplicities.entries()].map(
+      ([elementId, multiplicity]) => ({
+        elementId,
+        kind: WaitKind.UserTask,
+        multiplicity,
+      }),
+    ),
+    ...[...timerMultiplicities.entries()].map(
+      ([elementId, multiplicity]) => ({
+        elementId,
+        kind: WaitKind.Timer,
+        multiplicity,
+      }),
+    ),
+  ]
+    .sort((left, right) =>
+      left.elementId === right.elementId
+        ? compareStrings(left.kind, right.kind)
+        : compareStrings(left.elementId, right.elementId)
+    );
 }
 
 function compareOpenUserTasks(
   left: OpenUserTask,
   right: OpenUserTask,
 ): number {
+  if (left.id.processInstanceId !== right.id.processInstanceId) {
+    return compareStrings(
+      left.id.processInstanceId,
+      right.id.processInstanceId,
+    );
+  }
+  if (left.id.elementId !== right.id.elementId) {
+    return compareStrings(left.id.elementId, right.id.elementId);
+  }
+  return left.id.activation - right.id.activation;
+}
+
+function compareOpenTimers(left: OpenTimer, right: OpenTimer): number {
   if (left.id.processInstanceId !== right.id.processInstanceId) {
     return compareStrings(
       left.id.processInstanceId,

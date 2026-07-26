@@ -9,7 +9,10 @@ import { test } from "node:test";
 
 import {
   canonicalStimulusEncoding,
+  canonicalTimerFiringEncoding,
   contentBoundUpdateId,
+  timerFiringCommandId,
+  timerFiringStimulus,
 } from "../dist/index.js";
 
 const completion = {
@@ -56,6 +59,32 @@ test("derives fixed SHA-256 Update IDs from exact canonical content", () => {
     }),
     "bpmn-command-sha256:4e983b4226cdde1bd1e933ed9dffa08479839d0ef6c259b73252198f8ebbe0fd",
   );
+});
+
+test("derives the scenario-identical timer command inside the Workflow boundary", () => {
+  const timer = {
+    id: {
+      processInstanceId: "Instance_1",
+      elementId: "TimerCatch_PT1S",
+      activation: 1,
+    },
+    deadlineMs: 1000,
+  };
+  assert.equal(
+    canonicalTimerFiringEncoding(timer.id, timer.deadlineMs),
+    '["fireTimer",["Instance_1","TimerCatch_PT1S",1],1000]',
+  );
+  assert.equal(
+    timerFiringCommandId(timer.id, timer.deadlineMs),
+    "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b",
+  );
+  assert.deepEqual(timerFiringStimulus(timer), {
+    kind: "fireTimer",
+    commandId:
+      "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b",
+    timerId: timer.id,
+    logicalTimeMs: 1000,
+  });
 });
 
 test("the command-ID-only mutation collapses the payload-conflict witness", () => {

@@ -87,6 +87,7 @@ export const parallelScenario = {
     ObservationRequestKind.ProcessStatus,
     ObservationRequestKind.ActiveWaits,
     ObservationRequestKind.OpenUserTasks,
+    ObservationRequestKind.OpenTimers,
     ObservationRequestKind.EnabledInteractions,
     ObservationRequestKind.LogicalTime,
   ],

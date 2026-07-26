@@ -149,12 +149,15 @@ The bounded `None Start Event → User Task → None End Event` slice demonstrat
 - the production TypeScript transition system stays pure;
 - one generic Temporal Workflow hosts the core through Query and acknowledged Update;
 - CIB, Lean, the core, and Temporal agree for exact completion, wrong activation, stale completion, and both balanced parallel completion orders;
+- the exact Intermediate Catch Timer capsule demonstrates committed-state-derived durable wakeup without giving Temporal ownership of occurrence identity, deadline, eligibility, or logical time;
 - live Event Histories replay before the disposable server shuts down;
-- seeded task-activation, omitted-parallel-task, operation-origin, and Sequence-Flow-provenance mutations prove that the observation, definition-binding, and comparison boundaries detect the claimed distinctions.
+- seeded task-activation, omitted-parallel-task, timer-deadline, durable-timer-bypass, operation-origin, and Sequence-Flow-provenance mutations prove that the observation, definition-binding, adapter-refinement, and comparison boundaries detect the claimed distinctions.
 
-This validates the separation of responsibilities, not scalability to all BPMN. The bounded runtime has no general scope, race, effect, or variable model; the compiler recognizes only the sequential and balanced two-branch parallel topologies; Lean consumes the exact checked graph and Semantic Process program but has no independent checked-source operational relation; and Temporal has not exercised Activities, timers, cancellation, Worker restart, or Continue-As-New.
+This validates the separation of responsibilities, not scalability to all BPMN. The bounded runtime has no general scope, race, effect, or variable model; the compiler recognizes only the sequential User Task, balanced two-branch parallel, and exact `PT1S` timer topologies; Lean consumes the exact checked graph and Semantic Process program but has no adopted independent checked-source operational relation; and Temporal has not exercised Activities, cancellation, Continue-As-New, or any timer race.
 
 The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) supplies the second distinct topology and representation risk that justifies the bounded Semantic Process IL. Its closure does not generalize the language beyond its named consumers and separating witnesses.
+
+The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) supplies the first durable host Command driven by a semantic wait. Its deadline-as-logical-time refinement stutter is valid only for the race-free capsule and must be reopened before any competing input, second timer, cancellation, or physical-lateness observation enters scope.
 
 The production Temporal host follows the [Process lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md): one Workflow receives the admitted Semantic Process program and explicit start, derives its lifetime from semantic state, drains accepted handlers, recovers exact accepted results during retention, and classifies a distinct post-closure command through an adapter-owned lifecycle result. The semantic rejection lane remains separate: the sequential post-terminal case compares only the semantic prefix and `processClosed` adapter classification, while a live parallel sibling keeps the Process addressable for exact stale semantic rejection.
 

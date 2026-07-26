@@ -2,7 +2,7 @@
 
 `@bpmn-lean/semantic-core` is the production-oriented, dependency-free TypeScript implementation of the approved semantic capsule. It owns BPMN-visible command/state transitions and canonical observations, but no file I/O, XML parser, CIB Seven code, Temporal SDK code, or external effects.
 
-The current execution surface supports the content-addressed `None Start Event → User Task → None End Event` model and the exact balanced two-branch parallel fork/join model. The current Semantic Process program comes from the separate [source-ingestion package](../bpmn-source/README.md), and sequential results are checked independently against retained CIB evidence and the generic [Lean Semantic Process interpreter](../../BpmnSemantics/SemanticProcess.lean). The parallel evaluator executes `duplicate` and per-incoming-flow `synchronize`, preserves flow-identified token multiplicity, projects two semantic task occurrences deterministically, accepts either completion order, and retains excess join tokens. Canonical CIB and focused Temporal parallel evidence are checked outside this package.
+The execution surface supports the content-addressed `None Start Event → User Task → None End Event` model, the exact balanced two-branch parallel fork/join model, and the exact `None Start Event → PT1S Intermediate Catch Timer Event → None End Event` model. Semantic Process programs come from the separate [source-ingestion package](../bpmn-source/README.md), and results are checked independently against retained CIB evidence and the generic [Lean Semantic Process interpreter](../../BpmnSemantics/SemanticProcess.lean). The parallel evaluator executes `duplicate` and per-incoming-flow `synchronize`, while the timer evaluator executes `awaitTimer`, owns occurrence identity and logical deadlines, admits only exact-deadline firing, and projects `openTimers`. Canonical CIB and focused Temporal evidence are checked outside this package.
 
 ## Public boundary
 
@@ -27,7 +27,7 @@ const completed = applyStimulus(semanticProcess, started.state, {
 const result = runScenario(scenario, semanticProcess);
 ```
 
-`applyStimulus` is pure: the same admitted Semantic Process program, state, stimulus, and closure limit produce the same result. Completion is admitted only for the exact active semantic occurrence `(Process instance, BPMN element, activation ordinal)`. `projectOpenUserTasks` derives the host Query projection directly from current semantic state. `isWellFormedStimulus`, `stimulusCommandId`, and `sameStimulus` own structural admission and logical-command identity for adapters. Closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
+`applyStimulus` is pure: the same admitted Semantic Process program, state, stimulus, and closure limit produce the same result. User Task completion is admitted only for the exact active semantic occurrence `(Process instance, BPMN element, activation ordinal)`. Timer firing additionally requires exact logical deadline equality. `projectOpenUserTasks` and `projectOpenTimers` derive adapter projections directly from current semantic state. `isWellFormedStimulus`, `stimulusCommandId`, and `sameStimulus` own structural admission and logical-command identity for adapters. Closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
 
 The code is split by responsibility:
 

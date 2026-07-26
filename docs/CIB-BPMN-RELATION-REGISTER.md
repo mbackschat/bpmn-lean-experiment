@@ -20,7 +20,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 3 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Reviewed normative agreements | 4 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 1 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 0 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -112,6 +112,20 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** This agreement is limited to one balanced two-branch shape with distinct User Task elements. It does not distinguish normative per-incoming-flow synchronization from CIB's count-based join implementation and therefore does not weaken or resolve candidate `CIB-DEV-0001`. Repeated task elements, activation-ordinal derivation, excess same-input arrivals, more branches, nested gateways, and general parallel compatibility remain outside this agreement.
 
+### CIB-AGR-0004 — literal PT1S Intermediate Catch Timer lifecycle
+
+**Status:** Reviewed bounded agreement
+
+**BPMN basis:** BPMN 2.0.2 Clause 10.5.4 and Table 10.89 require a catching Intermediate Timer Event in normal flow to retain the token until its trigger and then continue. Clause 10.5.5 plus Tables 10.101 and 10.122 define `timeDuration` as the relative-duration timer form.
+
+**Pinned CIB observation:** With CIB Seven `2.2.0` at the pinned revision, automatic job execution disabled, and the engine clock fixed at epoch zero, the exact `PT1S` fixture creates one wait-state timer job due at epoch plus 1000 ms. The executable-job query excludes that job before its due date, includes the same job when the controlled clock reaches the due date, and public job execution then removes the wait and completes the Process.
+
+**Evidence:** [Intermediate Catch Timer scenario](../scenarios/intermediate-catch-timer/README.md), [controlled-clock oracle test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIntermediateCatchTimerTest.java), [immutable profile](../profiles/cibseven-2.2.0-intermediate-catch-timer-draft/README.md), and the content-bound retained evidence generated only through the explicit replacement command.
+
+**Fidelity boundary:** Job existence, scheduler ineligibility before due time, scheduler eligibility at due time, the due transition, and Process completion are engine-observed. The canonical logical deadline `1000` is adapter-derived by subtracting the fixed controlled-clock epoch from the engine job due date; it is not an independent CIB derivation of the project's logical-time representation.
+
+**Boundary:** This establishes agreement only for one acyclic private executable `None Start Event → Intermediate Catch Timer Event with exact literal PT1S → None End Event` Process under `CIB-CFG-0001`. Other duration literals, expressions, time dates, cycles, repeating timers, boundary events, timer Start Events, competing events, cancellation, scheduler latency, and general timer compatibility remain unreviewed.
+
 ## Interpretation register
 
 No CIB gap resolution has yet been approved as a project semantic-profile decision.
@@ -166,6 +180,7 @@ This is a profile constraint, not evidence that CIB differs from BPMN. It does n
 | Model API DOM, deployment parse tree, PVM definition graph, and runtime execution tree differ | Diagnostic architecture; no relationship entry | Separate authoring, compilation, and runtime representations do not imply a semantic difference |
 | Balanced two-branch Parallel Gateway fork/join | `CIB-AGR-0003` | Both branches become active, either completion order leaves the symmetric wait, and both arrivals complete the Process; the balanced witness does not distinguish join algorithms |
 | Count-only versus incoming-edge-provenance join state | `CIB-DEV-0001` candidate deviation | The normative per-incoming-flow requirement, schema-valid separating model, pinned source mechanism, bounded pristine-lane probe, owner-approved profile meaning, and balanced four-target impact establish a public conflict; immutable negative-probe evidence remains open |
+| Literal `PT1S` normal-flow Intermediate Catch Timer | `CIB-AGR-0004` under `CIB-CFG-0001` | Controlled-clock evidence observes wait creation, ineligibility before due time, eligibility at the due date, due transition, and completion; logical deadline projection remains adapter-derived |
 | External-worker execution | Extension research hint only | The exact CIB BPMN attributes and worker lifecycle have not yet been researched or selected |
 
 ## Classification order

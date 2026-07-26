@@ -60,13 +60,20 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "taskQueries"
+        "taskQueries",
+        "timerJobs"
       ],
       "properties": {
         "taskQueries": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/taskQuerySnapshot"
+          }
+        },
+        "timerJobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/timerJobSnapshot"
           }
         }
       }
@@ -143,6 +150,48 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "timerJobSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "jobs"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/timerJob"
+          }
+        }
+      }
+    },
+    "timerJob": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "dueDateDeltaMs",
+        "executable"
+      ],
+      "properties": {
+        "elementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dueDateDeltaMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executable": {
+          "type": "boolean"
         }
       }
     }

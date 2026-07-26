@@ -35,6 +35,7 @@ const completedState = {
   status: ProcessStatus.Completed,
   activeWaits: [],
   openUserTasks: [],
+  openTimers: [],
   enabledInteractions: [],
   logicalTimeMs: 0,
 };
@@ -60,6 +61,7 @@ const trace = [
       },
     ],
     openUserTasks: [],
+    openTimers: [],
     enabledInteractions: [],
     logicalTimeMs: 0,
   },

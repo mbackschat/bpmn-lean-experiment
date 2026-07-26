@@ -69,7 +69,8 @@ public final class ScenarioProtocol {
   }
 
   public enum WaitKind implements WireValue {
-    USER_TASK("userTask");
+    USER_TASK("userTask"),
+    TIMER("timer");
 
     private final String wireValue;
 
@@ -116,6 +117,7 @@ public final class ScenarioProtocol {
     PROCESS_STATUS("processStatus"),
     ACTIVE_WAITS("activeWaits"),
     OPEN_USER_TASKS("openUserTasks"),
+    OPEN_TIMERS("openTimers"),
     ENABLED_INTERACTIONS("enabledInteractions"),
     LOGICAL_TIME("logicalTime");
 
@@ -192,11 +194,13 @@ public final class ScenarioProtocol {
     @JsonSubTypes.Type(value = StartProcessStimulus.class, name = "startProcess"),
     @JsonSubTypes.Type(
         value = CompleteUserTaskInstanceStimulus.class,
-        name = "completeUserTaskInstance")
+        name = "completeUserTaskInstance"),
+    @JsonSubTypes.Type(value = FireTimerStimulus.class, name = "fireTimer")
   })
   public sealed interface Stimulus
       permits StartProcessStimulus,
-          CompleteUserTaskInstanceStimulus {
+          CompleteUserTaskInstanceStimulus,
+          FireTimerStimulus {
     String commandId();
   }
 
@@ -228,11 +232,43 @@ public final class ScenarioProtocol {
     }
   }
 
+  public record TimerOccurrenceId(
+      String processInstanceId, String elementId, int activation) {
+    public TimerOccurrenceId {
+      Objects.requireNonNull(processInstanceId, "processInstanceId");
+      Objects.requireNonNull(elementId, "elementId");
+      if (activation < 1) {
+        throw new IllegalArgumentException("activation must be positive");
+      }
+    }
+  }
+
+  public record FireTimerStimulus(
+      String commandId, TimerOccurrenceId timerId, long logicalTimeMs)
+      implements Stimulus {
+    public FireTimerStimulus {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(timerId, "timerId");
+      if (logicalTimeMs < 0) {
+        throw new IllegalArgumentException("logicalTimeMs must not be negative");
+      }
+    }
+  }
+
   public record OpenUserTask(
       UserTaskInstanceId id, String name, UserTaskLifecycleState state) {
     public OpenUserTask {
       Objects.requireNonNull(id, "id");
       Objects.requireNonNull(state, "state");
+    }
+  }
+
+  public record OpenTimer(TimerOccurrenceId id, long deadlineMs) {
+    public OpenTimer {
+      Objects.requireNonNull(id, "id");
+      if (deadlineMs < 0) {
+        throw new IllegalArgumentException("deadlineMs must not be negative");
+      }
     }
   }
 
@@ -280,6 +316,7 @@ public final class ScenarioProtocol {
       ProcessStatus status,
       List<ActiveWait> activeWaits,
       List<OpenUserTask> openUserTasks,
+      List<OpenTimer> openTimers,
       List<EnabledInteraction> enabledInteractions,
       long logicalTimeMs)
       implements CanonicalObservation {
@@ -288,6 +325,7 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(status, "status");
       activeWaits = List.copyOf(activeWaits);
       openUserTasks = List.copyOf(openUserTasks);
+      openTimers = List.copyOf(openTimers);
       enabledInteractions = List.copyOf(enabledInteractions);
       if (logicalTimeMs < 0) {
         throw new IllegalArgumentException("logicalTimeMs must not be negative");
@@ -355,6 +393,7 @@ public final class ScenarioProtocol {
       PhaseTimings phases,
       PvmDefinitionProjection pvmDefinition,
       List<TaskQuerySnapshot> taskQueries,
+      List<TimerJobSnapshot> timerJobs,
       CleanupProjection cleanup) {
     public Diagnostics {
       Objects.requireNonNull(engineVersion, "engineVersion");
@@ -365,6 +404,7 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(phases, "phases");
       Objects.requireNonNull(pvmDefinition, "pvmDefinition");
       taskQueries = List.copyOf(taskQueries);
+      timerJobs = List.copyOf(timerJobs);
       Objects.requireNonNull(cleanup, "cleanup");
     }
   }
@@ -385,6 +425,31 @@ public final class ScenarioProtocol {
   public record TaskQueryTask(String elementId, String name) {
     public TaskQueryTask {
       Objects.requireNonNull(elementId, "elementId");
+    }
+  }
+
+  /**
+   * Raw engine timer-job projection. The due-date delta is adapter-derived from the controlled
+   * epoch; job existence and scheduler eligibility are engine-observed.
+   */
+  public record TimerJobSnapshot(
+      String afterCommandId,
+      List<TimerJob> jobs) {
+    public TimerJobSnapshot {
+      Objects.requireNonNull(afterCommandId, "afterCommandId");
+      jobs = List.copyOf(jobs);
+    }
+  }
+
+  public record TimerJob(
+      String elementId,
+      long dueDateDeltaMs,
+      boolean executable) {
+    public TimerJob {
+      Objects.requireNonNull(elementId, "elementId");
+      if (dueDateDeltaMs < 0) {
+        throw new IllegalArgumentException("dueDateDeltaMs must not be negative");
+      }
     }
   }
 

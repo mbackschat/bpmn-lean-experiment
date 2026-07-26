@@ -12,19 +12,21 @@ The sequential stale case now records the honest target relation: CIB Seven, Lea
 
 Harness-only Query extraction reconciles completion-command outcomes with completed Update results in Event History and the terminal state with the completed receipt. Failed Updates are named infrastructure failures, the start command is explicitly outside Update-result reconciliation, and intermediate Query observations remain independently compared with the pure core.
 
-Lean now strictly decodes the same six answer-free scenario documents consumed by the other targets and echoes the decoded values. The extra-field mutation guards answer smuggling; retained CIB content binding owns disk-content drift detection now that there is no compiled Lean scenario copy.
+Lean now strictly decodes the same seven answer-free scenario documents consumed by the other targets and echoes the decoded values. The extra-field mutation guards answer smuggling; retained CIB content binding owns disk-content drift detection now that there is no compiled Lean scenario copy.
 
-The exact implementation and absence boundary, including the incomplete standalone Lean `programWellFormed` obligations, is recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The checked-source experiment ended not adopted at its approved effort boundary with a provisional source account and discriminator retained; that successful stop outcome is frozen under explicit non-extension and reopening rules. The timer-then-service-task sequence is approved, the timer hosting/refinement preflight and capsule proposal are complete and awaiting owner review, and the optional fuzz lane is deferred until that review.
+The exact implementation and absence boundary, including the incomplete standalone Lean `programWellFormed` obligations, is recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The checked-source experiment ended not adopted at its approved effort boundary with a provisional source account and discriminator retained; that successful stop outcome is frozen under explicit non-extension and reopening rules.
+
+The approved [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) is implemented under its exact `PT1S` account. The checked graph retains the literal for independent Lean normalization; the IL, Lean relation/evaluator, semantic core, controlled-clock CIB runner, and Temporal adapter implement the same timer occurrence and exact-deadline firing. CIB proves pre-due ineligibility and due-time eligibility before execution. Temporal derives the content-bound firing exclusively from committed core state, durably waits while the Worker is absent at the due boundary, completes after Worker replacement, and replays one exact timer pair. The seven-case differential pipeline and retained deadline/bypass mutations close the capsule's required evidence. The time-skipping lane remains optional because the full local-server witness is the mandatory refinement gate.
 
 The active implementation boundary is [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 ## Last verified baseline
 
-`env CI=true /opt/homebrew/bin/timeout 60 /usr/bin/time -p ./scripts/verify.sh` passed on 2026-07-26 in 24.79 seconds for the review-ready Intermediate Catch Timer proposal worktree. It passed thirteen contract tests, twenty-seven semantic-core tests, twelve BPMN-source tests, nine CIB tests, nine differential unit tests, twenty-six infrastructure guards, and fifteen Temporal tests; checked seven synchronized documentation fragments and the bounded CMOF manifest; and left all local services cleaned up.
+`env CI=true /opt/homebrew/bin/timeout 60 /usr/bin/time -p ./scripts/verify.sh` passed on 2026-07-26 in 27.55 seconds for the completed Intermediate Catch Timer capsule. It passed fourteen contract tests, thirty-one semantic-core tests, fourteen BPMN-source tests, ten CIB tests, nine differential unit tests, twenty-seven infrastructure guards, eighteen Temporal tests, and the complete seven-case pipeline; checked seven synchronized documentation fragments and the bounded CMOF manifest; replayed seven live histories; and left all local services cleaned up.
 
 The separately gated C2 experiment passed `lake build checkCheckedSourceRelationExperiment` and `lake exe checkCheckedSourceRelationExperiment`. That gate establishes the retained direct source account and mutation discriminator only; it does not establish the unresolved observational lowering-preservation theorem.
 
-The prepared six-case pipeline completed in 4.80 seconds warm, established each explicit target relation, replayed all six primary histories, and rejected the definition-origin, scenario-extra-field, and parallel-provenance mutations. The focused Temporal gate separately passed all fifteen tests in 4.65 seconds, including failed-Update infrastructure classification, Worker restart, retained result lookup, the unordered race witness, and live replay.
+In the final complete gate, the prebuilt seven-case pipeline completed in 4.405 seconds warm, ran fourteen isolated Temporal executions, replayed seven primary histories, and rejected the definition-origin, scenario-extra-field, parallel-provenance, timer-deadline, and durable-timer-bypass mutations. The latest separately measured build-inclusive pipeline completed in 5.074 seconds warm and 6.649 seconds cold, inside the unchanged 15-second and 45-second budgets. The focused Temporal gate passed eighteen tests in 7.93 seconds, including failed-Update infrastructure classification, Worker restart, retained result lookup, the unordered command race, Worker absence at the timer due boundary, durable-timer history, bypass detection, and live replay. The separately named optional time-skipping calibration passed in 7.989 seconds and remains outside default verification.
 
 ## Approved decisions
 
@@ -41,14 +43,15 @@ The owner approved the following on 2026-07-26:
 - **Production-lifecycle evidence correction:** retain sequential stale rejection as three-way CIB/Lean/core semantic evidence, require Temporal prefix agreement through completion plus a separate adapter-owned `processClosed` result under an explicit post-terminal delivery schedule, and add a parallel live-sibling stale scenario for exact four-target semantic rejection. Keep `UTASK-REFUSE-02`, update both capsule evidence rows, retain the concurrent reversal as an unordered race witness, and reconcile harness-only Query extraction with durable Update results and the completed receipt.
 - **C2 — independent checked-source relation experiment:** execute the bounded current-five-operation source token game, renamed positional-lowering divergence witness, and projection-level observational preservation attempt under the owner conditions below. The relation is a transcription-correspondence account for reviewed meaning, not an independent BPMN authority. The experiment ended not adopted at the effort stop; the permanent-proof-boundary alternative remains rejected.
 - **C2 freeze:** accept the not-adopted result as the intended stop outcome. Keep the five-operation experiment compiling without extending its source semantics. Reopen only before admission widens beyond the two fixture-pinned topologies, after another fixture-coincidental lowering defect surfaces, or when a future capsule independently needs source-level semantics.
-- **C1 next-capsule sequence:** proceed with a bounded Intermediate Catch Timer capsule and then a bounded Service Task/Temporal Activity capsule. Approval currently extends through the timer hosting/refinement preflight and capsule proposal; production semantics still require approval of the resulting timer account.
+- **C1 next-capsule sequence:** proceed with the approved bounded Intermediate Catch Timer capsule and then a bounded Service Task/Temporal Activity capsule. The Service Task account still requires its own proposal and owner decision.
+- **Intermediate Catch Timer capsule:** the exact approved `PT1S` account is implemented and graduated to [the specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md). The answer-free scenario carries `fireTimer` for Lean, semantic core, and controlled-clock CIB realization; Temporal derives the identical content-bound stimulus exclusively from committed semantic state. Per-rule CIB fidelity labels, quantified full-identity/time refusal, the early-firing non-law, explicit retained-evidence replacement, mandatory full-server durability evidence, and optional time-skipping calibration are retained.
 - **D1 sequencing:** defer the optional dependency-free Lean/core fuzz experiment until after the timer preflight is reviewed so it does not delay the dominant adapter-feasibility discriminator.
 
 ## Approved next-capsule sequence
 
 ### C1 — next semantic capsules
 
-**Owner decision:** approved for a timer capsule followed by a service-task Activity capsule. This sequence attacks the residual Temporal-adapter feasibility risk before adding more topology. No capsule has begun, and the decision does not yet approve either capsule's semantic profile.
+**Owner decision:** approved for a timer capsule followed by a service-task Activity capsule. This sequence attacks the residual Temporal-adapter feasibility risk before adding more topology. The Intermediate Catch Timer capsule is complete; the Service Task capsule has not begun and still requires its own proposal and owner approval before production implementation.
 
 **Timer first:** use one bounded `None Start Event → Intermediate Catch Timer Event → None End Event` discriminator with one reviewed literal duration form. The semantic core must own the timer occurrence, logical deadline, readiness, duplicate/stale firing behavior, and public observations. The adapter may translate one typed semantic timer wait into a durable Temporal timer and feed its recorded wakeup back as an explicit typed stimulus; Temporal time must not become implicit BPMN state or decide semantic firing. The mandatory preflight must settle the admitted BPMN timer-expression subset, logical-time input, timer identity, deadline comparison, Workflow completion, duplicate wakeup, Worker restart, replay, and whether the full-server plus time-skipping evidence can remain inside the feedback budgets. The nearest adapter counterexample is deriving the deadline independently in Workflow code or advancing the core merely because a Temporal timer fired.
 
@@ -56,13 +59,13 @@ The owner approved the following on 2026-07-26:
 
 **Why this order:** the timer introduces the first durable host Command driven by semantic waiting without also introducing nondeterministic I/O. The Service Task then reuses the proven wakeup/input loop while adding external effects and retry separation. Another pure-topology capsule would exercise the existing Query/Update host composition and would not reduce either risk.
 
-**Authorized next action:** review and decide [the Intermediate Catch Timer proposal](capsules/INTERMEDIATE-CATCH-TIMER-PROPOSAL.md). Production Lean, semantic-core, source, wire, CIB, and Temporal changes remain unauthorized until that proposal is approved.
+**Authorized next action:** prepare the bounded Service Task/Temporal Activity capsule proposal and adapter preflight described above. Do not begin production implementation before the owner approves that account.
 
 ## Deferred assessment
 
 ### D1 — seeded Lean/core fuzz lane
 
-**Deferred until the timer preflight is reviewed.** A hand-rolled seeded generator could compare well-formed stimulus sequences over the two admitted topologies in batches and report the exact seed on failure. Malformed documents require an explicit per-case admission-result envelope or isolated Lean invocations because the strict Lean decoder currently rejects an entire invocation while the TypeScript core classifies structural admission separately; do not coerce either into a semantic outcome. Estimated cost is 220–340 lines of JavaScript and protocol/test support with no new dependency. Its value compounds as capsules grow, but it must not delay the first timer/Temporal feasibility discriminator.
+**Deferred behind the next adapter-feasibility preflight.** A hand-rolled seeded generator could compare well-formed stimulus sequences over the admitted topologies in batches and report the exact seed on failure. Malformed documents require an explicit per-case admission-result envelope or isolated Lean invocations because the strict Lean decoder currently rejects an entire invocation while the TypeScript core classifies structural admission separately; do not coerce either into a semantic outcome. Estimated cost is 220–340 lines of JavaScript and protocol/test support with no new dependency. Its value compounds as capsules grow, but it is not the nearest Temporal-adapter risk.
 
 ## Approved C2 experiment
 
@@ -96,9 +99,9 @@ The experiment ended **not adopted** at the binding effort stop. Approximately 7
 
 The removed correspondence attempt reached the Sequence-Flow/control-place state mapping, prefix injectivity, and token-list lemmas. It had not yet proved nonempty-Flow facts from checked admission, wait and activation mapping, complete enabled-transition list correspondence, parallel supported closure, admission, observation, or the final stimulus induction. Continuing would exceed the owner-approved effort boundary or require proof-facing restructuring of production internals. [The experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) owns the precise unresolved boundary and red/green evidence. No production semantics, wire contract, observation projection, or rule-to-evidence row changed.
 
-## Target slice
+## Implemented discriminator slices
 
-The approved production capsule model is:
+The bounded parallel discriminator is:
 
 ```text
 None Start
@@ -112,18 +115,28 @@ parallel join
 None End
 ```
 
-The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) owns the semantic rules, observations, laws, non-law, witnesses, runtime-information invariants, evidence matrix, assurance boundary, and exclusions. The [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source contract, `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, and `terminate` operations, lowering, well-formedness, exact Lean proof boundary, event-growth policy, maintained obligations, and stop criteria.
+The bounded timer discriminator is:
+
+```text
+None Start
+    ↓
+Intermediate Catch Timer PT1S
+    ↓
+None End
+```
+
+The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) own their semantic rules, observations, laws, non-laws, witnesses, runtime-information invariants, evidence matrices, assurance boundaries, and exclusions. The [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source contract, six admitted operations, lowering, well-formedness, exact Lean proof boundary, event-growth policy, maintained obligations, and stop criteria.
 
 ## Ordered work
 
 1. **Completed — review hygiene:** declare the differential test dependency, remove live status from `CLAUDE.md`, add portable Java resolution and the approved two-platform CI workflow, preserve feedback budgets, and add the capsule-amortization review question.
-2. **Completed — close the approved production lifecycle:** the specification, implementation, evidence correction, six-case comparison, Query reconciliation, failure-outcome classification, focused gates, and complete repository gate are green.
+2. **Completed — close the approved production lifecycle:** the specification, implementation, evidence correction, then-current differential comparison, Query reconciliation, failure-outcome classification, focused gates, and complete repository gate are green.
 3. **Completed — single-source Lean scenarios:** remove the hard-coded Lean scenario list, strictly decode the same admitted files, retain exact echo and identity checks, add the answer-smuggling mutation, and record the shifted disk-drift responsibility.
 4. **Completed, not adopted — C2 checked-source experiment:** the direct graph relation and renamed discriminator are retained under the separate gate; the observational correspondence proof stopped at the approved effort boundary, with the exact remaining induction obligations recorded and no production change.
-5. **Completed, awaiting owner review — timer preflight and capsule proposal:** [the proposal](capsules/INTERMEDIATE-CATCH-TIMER-PROPOSAL.md) fixes the exact `PT1S` source subset, semantic occurrence/deadline account, controlled-clock CIB probe, durable Temporal wakeup, Worker-restart/replay witness, bypass mutation, and evidence required before graduation.
-6. **Deferred — D1 seeded fuzz experiment:** revisit after the timer preflight is reviewed; do not add a dependency or weaken the structural/semantic result boundary.
-7. **Approved sequence, not started — timer capsule implementation:** begin only after the timer proposal is approved.
-8. **Approved sequence, not started — service-task Activity capsule:** begin after the timer capsule and first record the effect lifecycle, idempotency, retry, incident, and replay account.
+5. **Completed — timer preflight and capsule implementation:** [the Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) fixes and implements the exact `PT1S` source subset, semantic occurrence/deadline account, controlled-clock CIB realization, durable Temporal wakeup, Worker-restart/replay witness, bypass mutation, and four-target evidence.
+6. **Next proposal — service-task Activity capsule:** record the effect lifecycle, idempotency, retry, incident, cancellation, reconciliation, and replay account for owner decision; do not implement it from the sequencing approval alone.
+7. **Deferred — D1 seeded fuzz experiment:** reassess after the Service Task adapter preflight; do not add a dependency or weaken the structural/semantic result boundary.
+8. **Deferred tooling cleanup — substantial directly executed TypeScript harnesses:** migrate substantial `.mjs` harnesses only after the timer capsule commit, without mixing the change into semantic work. Proper Node typing requires an explicit direct dependency decision before implementation; do not rely on a transitive `@types/node`.
 
 Each item ends green at its applicable focused and complete gate before the next begins. No strategic assessment authorizes its implementation.
 
@@ -131,7 +144,7 @@ Each item ends green at its applicable focused and complete gate before the next
 
 - assignment, users/groups, authorization, forms, variables, expressions, and data associations;
 - global task discovery or Search Attributes;
-- messages, timers, Activities, retries, cancellation, incidents, compensation, and event subprocesses;
+- messages, timer forms or races beyond the exact Intermediate Catch Timer capsule, Activities, retries, cancellation, incidents, compensation, and event subprocesses;
 - multi-instance, loops, migration, and Continue-As-New;
 - a universal BPMN IL, general BPMN compiler, or general semantic assertion language;
 - a separate CIB parallel-compatibility profile until it has a concrete consumer;
@@ -158,6 +171,6 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-Review and decide [the bounded Intermediate Catch Timer proposal](capsules/INTERMEDIATE-CATCH-TIMER-PROPOSAL.md). Stop before changing production Lean, semantic-core, source, wire, CIB, or Temporal behavior. If approved, begin ordered item 7 with the proposal's red evidence sequence and atomic pre-release contract replacement. D1 remains deferred until this review. C2 remains frozen under the non-extension and reopening rules in [the experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md); do not extend it with new capsules or silently treat the unresolved theorem as permanently waived.
+Prepare ordered item 6 as an owner-facing Service Task/Temporal Activity proposal and preflight without starting production implementation. Keep D1 behind that adapter-feasibility work. Keep C2 frozen under the non-extension and reopening rules in [the experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md); do not extend it with new capsules or silently treat the unresolved theorem as permanently waived. Keep the substantial `.mjs`-to-direct-`.ts` harness migration separate and deferred until after a direct Node typing dependency decision.
 
 Before beginning, run the applicable baseline in [TESTING-SPEC.md](TESTING-SPEC.md) and confirm `git status --short --branch`.

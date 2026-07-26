@@ -86,6 +86,26 @@
           "required": [
             "kind",
             "id",
+            "durationLiteral"
+          ],
+          "properties": {
+            "kind": {
+              "const": "intermediateCatchTimerEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "durationLiteral": {
+              "const": "PT1S"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "name"
           ],
           "properties": {

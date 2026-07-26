@@ -29,6 +29,7 @@ private def processStatusJson : ProcessStatus → Json
 
 private def waitKindJson : WaitKind → Json
   | .userTask => toJson "userTask"
+  | .timer => toJson "timer"
 
 private def userTaskInstanceIdJson (taskId : UserTaskInstanceId) : Json :=
   Json.mkObj
@@ -51,6 +52,17 @@ private def openUserTaskJson (task : OpenUserTask) : Json :=
     , ("name", toJson task.name)
     , ("state", userTaskLifecycleStateJson task.state) ]
 
+private def timerOccurrenceIdJson (timerId : TimerOccurrenceId) : Json :=
+  Json.mkObj
+    [ ("processInstanceId", toJson timerId.processInstanceId.value)
+    , ("elementId", toJson timerId.elementId.value)
+    , ("activation", toJson timerId.activation) ]
+
+private def openTimerJson (timer : OpenTimer) : Json :=
+  Json.mkObj
+    [ ("id", timerOccurrenceIdJson timer.id)
+    , ("deadlineMs", toJson timer.deadlineMs) ]
+
 private def enabledInteractionJson : EnabledInteraction → Json
   | .completeUserTaskInstance taskId =>
       Json.mkObj
@@ -64,6 +76,7 @@ private def stateObservationJson (state : StateObservation) : Json :=
     , ("status", processStatusJson state.status)
     , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
     , ("openUserTasks", jsonArray (state.openUserTasks.map openUserTaskJson))
+    , ("openTimers", jsonArray (state.openTimers.map openTimerJson))
     , ("enabledInteractions",
         jsonArray (state.enabledInteractions.map enabledInteractionJson))
     , ("logicalTimeMs", toJson state.logicalTimeMs) ]
@@ -111,6 +124,12 @@ private def stimulusJson : Stimulus → Json
         [ ("kind", toJson "completeUserTaskInstance")
         , ("commandId", toJson commandId.value)
         , ("taskId", userTaskInstanceIdJson taskId) ]
+  | .fireTimer commandId timerId logicalTimeMs =>
+      Json.mkObj
+        [ ("kind", toJson "fireTimer")
+        , ("commandId", toJson commandId.value)
+        , ("timerId", timerOccurrenceIdJson timerId)
+        , ("logicalTimeMs", toJson logicalTimeMs) ]
 
 private def observationKindJson : ObservationKind → Json
   | .deployment => toJson "deployment"
@@ -118,6 +137,7 @@ private def observationKindJson : ObservationKind → Json
   | .processStatus => toJson "processStatus"
   | .activeWaits => toJson "activeWaits"
   | .openUserTasks => toJson "openUserTasks"
+  | .openTimers => toJson "openTimers"
   | .enabledInteractions => toJson "enabledInteractions"
   | .logicalTime => toJson "logicalTime"
 

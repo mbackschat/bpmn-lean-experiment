@@ -9,6 +9,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
     case StimulusKind.CompleteUserTaskInstance:
+    case StimulusKind.FireTimer:
       return stimulus.commandId;
     default:
       return assertNever(stimulus);
@@ -31,6 +32,15 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.taskId.processInstanceId === right.taskId.processInstanceId &&
         left.taskId.elementId === right.taskId.elementId &&
         left.taskId.activation === right.taskId.activation
+      );
+    case StimulusKind.FireTimer:
+      return (
+        right.kind === StimulusKind.FireTimer &&
+        left.commandId === right.commandId &&
+        left.timerId.processInstanceId === right.timerId.processInstanceId &&
+        left.timerId.elementId === right.timerId.elementId &&
+        left.timerId.activation === right.timerId.activation &&
+        left.logicalTimeMs === right.logicalTimeMs
       );
     default:
       return assertNever(left);
@@ -68,6 +78,28 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isNonEmptyString(value.taskId.elementId) &&
         Number.isSafeInteger(value.taskId.activation) &&
         Number(value.taskId.activation) >= 1
+      );
+    case StimulusKind.FireTimer:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "timerId",
+          "logicalTimeMs",
+        ]) &&
+        isNonEmptyString(value.commandId) &&
+        isRecord(value.timerId) &&
+        hasOnlyKeys(value.timerId, [
+          "processInstanceId",
+          "elementId",
+          "activation",
+        ]) &&
+        isNonEmptyString(value.timerId.processInstanceId) &&
+        isNonEmptyString(value.timerId.elementId) &&
+        Number.isSafeInteger(value.timerId.activation) &&
+        Number(value.timerId.activation) >= 1 &&
+        Number.isSafeInteger(value.logicalTimeMs) &&
+        Number(value.logicalTimeMs) >= 0
       );
     default:
       return false;

@@ -56,6 +56,7 @@ def runningStartState (instanceId : SemanticId) : SourceRuntimeState :=
 def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
+  | .intermediateCatchTimerEvent id _
   | .parallelGateway id _
   | .noneEndEvent id => id
 
@@ -202,6 +203,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
           else none
       | .notStarted
       | .completed _ => none
+  | .intermediateCatchTimerEvent _ _ => none
   | .parallelGateway id .diverging =>
       let input := firstFlowId (incomingFlowIds source id)
       if hasToken state input then
@@ -244,6 +246,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
           by_cases enabled :
               hasToken before (firstFlowId (incomingFlowIds source id)) = true
           · simp [fireNode?, controlEq, enabled] at result
+  | intermediateCatchTimerEvent id durationLiteral =>
+      simp [fireNode?] at result
             subst after
             exact .userTask id name before instanceId controlEq enabled
           · simp [fireNode?, controlEq, enabled] at result
@@ -319,6 +323,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _ => { outcome := .rejected, state }
+  | .fireTimer _ _ _ => { outcome := .unsupported, state }
 
 def enabledTransitions (source : CheckedProcess)
     (state : SourceRuntimeState) :
@@ -437,6 +442,7 @@ def observeStableState (source : CheckedProcess)
                     kind := .userTask
                     multiplicity }
           openUserTasks := tasks
+          openTimers := []
           enabledInteractions :=
             tasks.map fun task => .completeUserTaskInstance task.id
           logicalTimeMs := state.logicalTimeMs }
@@ -446,12 +452,14 @@ def observeStableState (source : CheckedProcess)
           status := .completed
           activeWaits := []
           openUserTasks := []
+          openTimers := []
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
 
 def commandId : Stimulus → SemanticId
   | .startProcess id _ _
-  | .completeUserTaskInstance id _ => id
+  | .completeUserTaskInstance id _
+  | .fireTimer id _ _ => id
 
 structure ScenarioExecution where
   outcome : ScenarioOutcome
@@ -509,6 +517,7 @@ def requiredObservations : List ObservationKind :=
   , .processStatus
   , .activeWaits
   , .openUserTasks
+  , .openTimers
   , .enabledInteractions
   , .logicalTime ]
 

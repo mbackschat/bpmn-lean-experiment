@@ -16,6 +16,7 @@ import {
 import {
   CanonicalObservationKind,
   ProcessStatus,
+  StimulusKind,
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -85,6 +86,18 @@ function omitLiveSiblingAfterStaleRejection(result) {
     );
   }
   state.openUserTasks = [];
+}
+
+function mutateOpenTimerDeadline(result) {
+  const running = runningObservation(result);
+  const openTimer = running.openTimers?.[0];
+  if (openTimer === undefined) {
+    throw new Error("one calibrated open Timer is required");
+  }
+  running.openTimers[0] = {
+    ...openTimer,
+    deadlineMs: openTimer.deadlineMs + 1,
+  };
 }
 
 function runningObservation(result) {
@@ -157,6 +170,29 @@ function parallelCase(id, scenarioFile, evidenceFile, options = {}) {
   });
 }
 
+function timerCase() {
+  return Object.freeze({
+    id: "intermediate-catch-timer-pt1s",
+    scenarioRelativePath:
+      "scenarios/intermediate-catch-timer/scenario.json",
+    evidenceRelativePath:
+      "scenarios/intermediate-catch-timer/cibseven-evidence.json",
+    bpmnRelativePath:
+      "scenarios/intermediate-catch-timer/process.bpmn",
+    workflowIdPrefix: "intermediate-catch-timer-pt1s",
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    injectMutation: mutateOpenTimerDeadline,
+    expectedInjectedDisagreement: {
+      kind: DisagreementKind.ObservationValue,
+      path: "trace[2].openTimers[0].deadlineMs",
+      expected: 1000,
+      actual: 1001,
+    },
+  });
+}
+
 export const pipelineCases = Object.freeze([
   interactionCase(
     "user-task-discovery-completion",
@@ -202,6 +238,7 @@ export const pipelineCases = Object.freeze([
       },
     },
   ),
+  timerCase(),
 ]);
 
 function elapsedMs(started) {
@@ -799,8 +836,12 @@ function compareCase(context, projectedTargets) {
     ],
   );
   // end::seeded-disagreement[]
+  const completionStimuli = scenario.stimuli.slice(1).filter(
+    (stimulus) =>
+      stimulus.kind === StimulusKind.CompleteUserTaskInstance,
+  );
   const completionCommandIds = new Set(
-    scenario.stimuli.slice(1).map(({ commandId }) => commandId),
+    completionStimuli.map(({ commandId }) => commandId),
   );
   const expectedCompletionOutcomes = semanticCoreResult.trace.flatMap(
     (observation) =>
@@ -815,8 +856,8 @@ function compareCase(context, projectedTargets) {
   ) {
     expectedCompletionOutcomes.pop();
   }
-  const intermediateCompletionCommandIds = scenario.stimuli
-    .slice(1, -1)
+  const intermediateCompletionCommandIds = completionStimuli
+    .slice(0, -1)
     .map(({ commandId }) => commandId);
   const expectedOpenUserTasksAfterCompletions =
     intermediateCompletionCommandIds.map((commandId) => {
@@ -875,6 +916,10 @@ function compareCase(context, projectedTargets) {
           : ProcessCommandResultKind.ProcessClosed,
       expectedCompletionOutcomes,
       expectedOpenUserTasksAfterCompletions,
+      expectedDerivedTimerCommandId:
+        scenario.stimuli.find(
+          (stimulus) => stimulus.kind === StimulusKind.FireTimer,
+        )?.commandId ?? null,
       cibCleanup: cibResult.diagnostics.cleanup,
     },
   };

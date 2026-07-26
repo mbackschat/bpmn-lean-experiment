@@ -15,8 +15,8 @@ This separation avoids routing every consumer through document-version switches 
 | Artifact | Identity and responsibility |
 |---|---|
 | Semantic profile | Stable `kind`; versioned semantic `id`; pinned CIB release/configuration, selected feature surface, observation boundary, and CIB–BPMN relationship references |
-| Scenario | Stable `kind`; answer-free model/profile identity, explicit stimuli, requested observations, and provenance |
-| Canonical result | Outcome plus canonical observation trace; no target-specific host data |
+| Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, and timer-firing stimuli, requested observations, and provenance |
+| Canonical result | Outcome plus canonical observation trace including semantic task and timer occurrences; no target-specific host data |
 | CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; canonical result |
 | Checked BPMN graph | Current `checkedProcess` contract; source-facing admitted graph with exact source/profile identity and no runtime semantics |
 | Semantic Process program | Current `semanticProcess` contract; compiler/source/profile identity, typed control places and operations, and no mutable runtime state |
@@ -28,17 +28,17 @@ Schema validation is a boundary guard, not correspondence evidence. The maintain
 
 ## Portable semantic assertions
 
-A target scenario contains only admitted model/profile identity and explicit semantic inputs. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.
+A target scenario contains only admitted model/profile identity and explicit semantic inputs. `fireTimer.logicalTimeMs` is one such answer-free semantic input. Lean and the semantic core apply it directly, CIB realizes it through controlled-clock advancement plus eligibility-gated job execution, and Temporal derives the identical typed stimulus exclusively from committed `openTimers` state without runner delivery. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.
 
 Portable assertions are verifier-side claims over canonical results or relations between results. A future assertion artifact must bind the exact scenario content digest, semantic profile, applicable canonical observation contract, and stable rule identifiers. A general assertion language remains deferred until repeated semantic capsules demonstrate the smallest useful contract.
 
 ## Schemas
 
 - [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates the current draft profile artifact.
-- [scenario.schema.json](schemas/scenario.schema.json) validates the six current answer-free User Task and balanced-parallel scenarios.
+- [scenario.schema.json](schemas/scenario.schema.json) validates the seven answer-free User Task, balanced-parallel, and Intermediate Catch Timer scenarios.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.
 - [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.
 - [semantic-process.schema.json](schemas/semantic-process.schema.json) validates the immutable Semantic Process definition contract.
 
-The checked BPMN graph and Semantic Process schemas freeze the artifact boundaries from [the Semantic Process IL spec](../docs/SEMANTIC-PROCESS-IL-SPEC.md). The bounded source compiler produces both artifacts, while the sequential and balanced-parallel execution paths consume only the Semantic Process program. The schemas validate transport shape; they do not establish lowering correspondence or operational semantics.
+The checked BPMN graph and Semantic Process schemas freeze the artifact boundaries from [the Semantic Process IL spec](../docs/SEMANTIC-PROCESS-IL-SPEC.md). The bounded source compiler produces both artifacts, while the sequential, balanced-parallel, and Intermediate Catch Timer execution paths consume only the Semantic Process program. The schemas validate transport shape; they do not establish lowering correspondence or operational semantics.
