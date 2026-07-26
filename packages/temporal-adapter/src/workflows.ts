@@ -66,6 +66,15 @@ export async function runBpmnScenario(
   let semanticLoopFinished = false;
   let state: RuntimeState = initialState;
 
+  const startStimulus = scenario.stimuli[0];
+  if (
+    deployment.outcome === CommandOutcome.Committed &&
+    startStimulus !== undefined
+  ) {
+    // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
+    enqueueStimulus(acceptedStimuli, pendingStimuli, startStimulus);
+  }
+
   // tag::temporal-semantic-boundary[]
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
@@ -108,11 +117,6 @@ export async function runBpmnScenario(
       break;
     default:
       return assertNever(deployment.outcome);
-  }
-
-  const startStimulus = scenario.stimuli[0];
-  if (startStimulus !== undefined) {
-    enqueueStimulus(acceptedStimuli, pendingStimuli, startStimulus);
   }
 
   let outcome: ScenarioOutcome = {

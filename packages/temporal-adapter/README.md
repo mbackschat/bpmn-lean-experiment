@@ -24,8 +24,11 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - every completion Update finishes before Workflow completion;
 - all fetched live histories replay before shutdown;
 - duplicate Workflow identities are rejected before start.
+- replacing a Worker at the semantic wait preserves start-before-completion ordering and the final result;
+- one accepted Update result remains retrievable after Workflow closure, while a distinct late Update and Workflow-ID reuse are refused;
+- semantic results do not contain the Temporal Workflow ID.
 
-The adapter does not yet implement a production lifecycle independent of future scenario stimuli, typed post-closure command handling, Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the current sequential and balanced two-branch parallel execution surfaces.
+The restart and closed-result checks are a bounded architecture experiment, not the production lifecycle. The adapter does not yet implement a production lifecycle independent of future scenario stimuli, public typed post-closure command handling, retained results beyond Temporal retention, Activities, timers, Search Attributes, Continue-As-New, general Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the current sequential and balanced two-branch parallel execution surfaces.
 
 Run the focused gate:
 

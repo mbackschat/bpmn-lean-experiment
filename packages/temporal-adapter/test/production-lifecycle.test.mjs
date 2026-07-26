@@ -1,0 +1,272 @@
+/**
+ * Probes the pinned Temporal lifecycle facts needed to distinguish a permanent entity host from a closed-result command boundary.
+ *
+ * The semantic Process instance and command identity remain application data. Workflow identity, closure, Update retention, Worker restart, and replay are the Temporal oracle for this adapter-only experiment.
+ */
+
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
+import test from "node:test";
+
+import {
+  BpmnCompilationStatus,
+  compileBpmnToSemanticProcess,
+} from "@bpmn-lean/bpmn-source";
+import {
+  CommandOutcome,
+} from "@bpmn-lean/semantic-core";
+import {
+  WorkflowExecutionAlreadyStartedError,
+  WorkflowNotFoundError,
+} from "@temporalio/client";
+import { TestWorkflowEnvironment } from "@temporalio/testing";
+import { Worker } from "@temporalio/worker";
+
+import {
+  bpmnCompleteUserTaskUpdateName,
+  bpmnOpenUserTasksQueryName,
+  bpmnScenarioWorkflowType,
+  bpmnSemanticTaskQueue,
+} from "../dist/index.js";
+
+const capsuleUrl = new URL(
+  "../../../scenarios/user-task-discovery-completion/",
+  import.meta.url,
+);
+const scenarioUrl = new URL("scenario.json", capsuleUrl);
+const bpmnUrl = new URL("process.bpmn", capsuleUrl);
+const workflowsPath = fileURLToPath(
+  new URL("../dist/workflows.js", import.meta.url),
+);
+const temporalCacheDirectory = fileURLToPath(
+  new URL("../../../.cache/temporal-cli/", import.meta.url),
+);
+const workflowId = "production-lifecycle-probe";
+const operationDeadlineMs = 10_000;
+
+test("closed Workflow retains accepted command result without accepting a new command", async () => {
+  const scenario = JSON.parse(await readFile(scenarioUrl, "utf8"));
+  const compilation = await compileBpmnToSemanticProcess({
+    bytes: await readFile(bpmnUrl),
+    sourceId: scenario.bpmn.id,
+    expectedSha256: scenario.bpmn.sha256,
+    semanticProfile: scenario.profile,
+    limits: {
+      maxBytes: 1024 * 1024,
+      parserDeadlineMs: 1_000,
+    },
+  });
+  assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
+
+  const environment = await withDeadline(
+    TestWorkflowEnvironment.createLocal({
+      server: {
+        executable: {
+          type: "cached-download",
+          version: "v1.8.1",
+          downloadDir: temporalCacheDirectory,
+        },
+      },
+      client: {
+        identity: "bpmn-lean-lifecycle-probe",
+      },
+    }),
+    40_000,
+    "Temporal lifecycle environment startup",
+  );
+  let workerLease;
+
+  try {
+    workerLease = await startWorker(environment);
+    const handle = await withDeadline(
+      environment.client.workflow.start(bpmnScenarioWorkflowType, {
+        taskQueue: bpmnSemanticTaskQueue,
+        workflowId,
+        workflowIdReusePolicy: "REJECT_DUPLICATE",
+        args: [scenario, compilation.semanticProcess],
+      }),
+      operationDeadlineMs,
+      "lifecycle Workflow start",
+    );
+    const openTasks = await waitForOpenTasks(handle);
+    assert.equal(openTasks.length, 1);
+    assert.equal(openTasks[0].id.processInstanceId, "Instance_1");
+
+    await stopWorker(workerLease);
+    workerLease = await startWorker(environment);
+
+    const completion = scenario.stimuli[1];
+    const completionOutcome = await withDeadline(
+      handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
+        args: [completion],
+        updateId: completion.commandId,
+      }),
+      operationDeadlineMs,
+      "completion after Worker restart",
+    );
+    assert.equal(completionOutcome, CommandOutcome.Committed);
+
+    const result = await withDeadline(
+      handle.result(),
+      operationDeadlineMs,
+      "lifecycle Workflow result",
+    );
+    const history = await withDeadline(
+      handle.fetchHistory(),
+      operationDeadlineMs,
+      "lifecycle Workflow history",
+    );
+    assert.equal(JSON.stringify(result).includes(workflowId), false);
+
+    await stopWorker(workerLease);
+    workerLease = undefined;
+
+    const retainedOutcome = await withDeadline(
+      handle.getUpdateHandle(completion.commandId).result(),
+      operationDeadlineMs,
+      "retained completion result",
+    );
+    assert.equal(retainedOutcome, CommandOutcome.Committed);
+
+    const lateCompletion = {
+      ...completion,
+      commandId: "complete-user-task-after-workflow-closure",
+    };
+    await assert.rejects(
+      withDeadline(
+        handle.executeUpdate(bpmnCompleteUserTaskUpdateName, {
+          args: [lateCompletion],
+          updateId: lateCompletion.commandId,
+        }),
+        operationDeadlineMs,
+        "late completion",
+      ),
+      (error) =>
+        error instanceof WorkflowNotFoundError &&
+        error.message === "workflow execution already completed",
+    );
+
+    const description = await withDeadline(
+      handle.describe(),
+      operationDeadlineMs,
+      "closed Workflow description",
+    );
+    assert.equal(description.status.name, "COMPLETED");
+
+    await assert.rejects(
+      withDeadline(
+        environment.client.workflow.start(bpmnScenarioWorkflowType, {
+          taskQueue: bpmnSemanticTaskQueue,
+          workflowId,
+          workflowIdReusePolicy: "REJECT_DUPLICATE",
+          args: [scenario, compilation.semanticProcess],
+        }),
+        operationDeadlineMs,
+        "duplicate Workflow start",
+      ),
+      WorkflowExecutionAlreadyStartedError,
+    );
+
+    await withDeadline(
+      replayHistory(history),
+      operationDeadlineMs,
+      "lifecycle history replay",
+    );
+  } finally {
+    if (workerLease !== undefined) {
+      await stopWorker(workerLease);
+    }
+    await withDeadline(
+      environment.teardown(),
+      operationDeadlineMs,
+      "Temporal lifecycle environment teardown",
+    );
+  }
+});
+
+async function startWorker(environment) {
+  const worker = await withDeadline(
+    Worker.create({
+      connection: environment.nativeConnection,
+      identity: "bpmn-lean-lifecycle-probe",
+      taskQueue: bpmnSemanticTaskQueue,
+      workflowsPath,
+    }),
+    operationDeadlineMs,
+    "Temporal lifecycle Worker startup",
+  );
+  let failure;
+  const completion = worker.run().catch((error) => {
+    failure = error;
+  });
+  await delay(0);
+  if (failure !== undefined) {
+    throw failure;
+  }
+  return {
+    worker,
+    completion,
+    failure: () => failure,
+  };
+}
+
+async function stopWorker(lease) {
+  lease.worker.shutdown();
+  await withDeadline(
+    lease.completion,
+    operationDeadlineMs,
+    "Temporal lifecycle Worker shutdown",
+  );
+  const failure = lease.failure();
+  if (failure !== undefined) {
+    throw failure;
+  }
+}
+
+async function waitForOpenTasks(handle) {
+  let latestError;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    try {
+      const tasks = await withDeadline(
+        handle.query(bpmnOpenUserTasksQueryName),
+        1_000,
+        "open-task Query",
+      );
+      if (tasks.length > 0) {
+        return tasks;
+      }
+    } catch (error) {
+      latestError = error;
+    }
+    await delay(25);
+  }
+  throw latestError instanceof Error
+    ? latestError
+    : new Error("Workflow did not expose an open User Task");
+}
+
+async function replayHistory(history) {
+  let replayed = 0;
+  for await (const result of Worker.runReplayHistories(
+    { workflowsPath },
+    [{ history, workflowId }],
+  )) {
+    assert.equal(result.workflowId, workflowId);
+    assert.equal(result.error, undefined);
+    replayed += 1;
+  }
+  assert.equal(replayed, 1);
+}
+
+function withDeadline(promise, timeoutMs, operation) {
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${operation} exceeded ${timeoutMs}ms`)),
+      timeoutMs,
+    );
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
