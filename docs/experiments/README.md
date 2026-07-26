@@ -27,4 +27,5 @@ Keep experiments out of the default semantic authority until they are adopted. P
 |---|---|---|
 | [Semantic representation experiment](SEMANTIC-REPRESENTATION-EXPERIMENT.md) | Executed; provisional candidates retained | `lake exe checkSemanticRepresentationSpike` |
 | [BPMN XML ingestion experiment](BPMN-XML-INGESTION-EXPERIMENT.md) | Closed; bounded source boundary adopted | `./scripts/pnpm.sh run test:bpmn-source` and optional `test:miwg` |
-| [Temporal production-lifecycle experiment](TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md) | Executed; restart ordering adopted and lifecycle proposal boundary retained | `./scripts/pnpm.sh run test:temporal` |
+| [Temporal production-lifecycle experiment](TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md) | Executed and resolved; selected account graduated to the lifecycle specification | `./scripts/pnpm.sh run test:temporal` |
+| [Checked-source relation experiment](CHECKED-SOURCE-RELATION-EXPERIMENT.md) | Executed; unresolved at the effort boundary; provisional discriminator retained | `lake exe checkCheckedSourceRelationExperiment` |

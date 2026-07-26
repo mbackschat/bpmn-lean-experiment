@@ -251,6 +251,8 @@ The relation may permit more than one internal operation. Any semantically mater
 - the current bounded graph is acyclic;
 - every operation kind is permitted by the named semantic profile.
 
+Lean's standalone `programWellFormed` currently omits reachability, acyclicity, and permitted producer/consumer-shape checks; admitted artifacts obtain those guarantees transitively through checked-source validation and exact lowering equality, and the standalone validator must be strengthened when admission widens. The separately gated checked-source experiment neither fixes nor depends on this gap.
+
 Malformed structure, unsupported source, lowering failure, invalid program, semantic rejection, semantic failure, and harness failure are distinct result classes. `UNKNOWN` or an equivalent semantic value must never stand in for invalid program structure.
 
 ## Lean specification and proof obligations
@@ -283,7 +285,7 @@ The implemented statement may use a state relation rather than identical source 
 
 For each retained program emitted by TypeScript, Lean must decode both the checked graph and emitted program, recompute `lower source`, reject inequality, and only then evaluate or prove program properties. A scenario identifier or fixture name is not a substitute for this content equality.
 
-Lean implements items 1 through 7 and the exact per-artifact requirement above. It proves structural definition-identity and Sequence-Flow-origin preservation, but it does not claim `lower_preserves_supported_run`: the repository has no independent checked-source operational relation, so instantiating `projectSource` with the program semantics would assume the result being pursued. This is an explicit proof boundary rather than an admitted or circular theorem.
+Lean implements items 1 through 7 and the exact per-artifact requirement above. It proves structural definition-identity and Sequence-Flow-origin preservation, but it does not claim `lower_preserves_supported_run`. The [bounded checked-source relation experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) produced a provisional direct source token game and a fixture-coincidental lowering discriminator, then stopped at the approved effort boundary before enabled-transition, closure, observation, and run-level correspondence were proved. The source account remains experimental and is not an independent BPMN authority. This is an explicit unresolved proof boundary rather than an admitted, circular, or permanently waived theorem.
 
 These obligations establish bounded interpretation and execution claims. They do not prove the correctness of an arbitrary XML parser, arbitrary BPMN documents, CIB Seven, Temporal, or the independent TypeScript implementation. Those remain separate evidence lanes.
 

@@ -16,5 +16,9 @@ name = "checkSemanticRepresentationSpike"
 root = "BpmnSemantics.Experiments.SemanticRepresentationsMain"
 
 [[lean_exe]]
+name = "checkCheckedSourceRelationExperiment"
+root = "BpmnSemantics.Experiments.CheckedSourceRelationMain"
+
+[[lean_exe]]
 name = "emitSemanticProcessResults"
 root = "BpmnSemantics.SemanticProcessJsonMain"

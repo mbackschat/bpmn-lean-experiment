@@ -1,0 +1,89 @@
+# Checked-source relation experiment
+
+**Status:** Executed; unresolved boundary recorded; not adopted
+
+**Question:** Can a direct token-game account over `CheckedProcess` support a run-level observational lowering-preservation theorem for the current five Semantic Process operations without reusing lowering or IL execution as source semantics?
+
+**Claim boundary:** The source relation is a second transcription of the reviewed capsule account and can lock lowering correspondence. It is not an independent BPMN authority. Normative/profile review and CIB evidence remain responsible for validating the selected account.
+
+The production proof boundary remains recorded in the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md). The provisional direct account and countermodel remain solely in the separately gated experiments lane.
+
+## Competing accounts
+
+1. **Direct checked-source token game:** define transitions over checked BPMN nodes, tokens on Sequence Flow identities, active User Task occurrences, and per-incoming-Sequence-Flow join readiness. Relate its projected observations to execution of the lowered Semantic Process program after every supported stimulus.
+2. **Program-derived source account:** define source behavior by lowering or by invoking IL operations or the IL evaluator. This is rejected as circular because the supposed source side assumes the translation being checked.
+3. **Permanent proof boundary:** retain exact artifact equality and structural lowering theorems while explicitly declining observational preservation. The owner rejected this account because the induction skeleton becomes substantially more expensive after timers and Activities and the IL architecture depends on checked lowering rather than fixture exercise alone.
+
+## Scope and exclusions
+
+The experiment covers only the currently admitted none Start Event, User Task, diverging Parallel Gateway, converging Parallel Gateway, and none End Event slice. Source transitions use BPMN vocabulary and no `lowerCheckedProcess`, Semantic Process operation, or IL evaluator. The target-side correspondence proof may name lowering and target execution.
+
+The theorem compares public observations after each supported stimulus. It does not require identical source and target runtime states, validate the selected BPMN account independently, prove the XML parser, add a dependency, change a wire contract, or introduce timers, Activities, or additional BPMN elements.
+
+`programWellFormed` independently omits reachability, acyclicity, and producer/consumer-shape checks. Admitted artifacts currently obtain those guarantees transitively through checked-source validation and exact lowering equality. This experiment neither fixes nor depends on that separate gap.
+
+## Separating witness
+
+The deliberately wrong lowering pairs User Tasks positionally with sorted task input and output flow lists instead of selecting flows by their checked source and target endpoints. A flow-only permutation is observationally symmetric in the admitted balanced topology, so it cannot separate the accounts at the approved public boundary. The retained mutation therefore models the complete positional-record error: it also reads User Task metadata through the wrongly paired input Flow target.
+
+All six retained sequential and parallel scenario locks remain green under this mutation because their identifier orders happen to align. The admitted renamed graph orders `Task_A` before `Task_Z` while its input Flow identifiers order the Flow to Z before the Flow to A. The direct source account projects `Task_A/Alpha` and `Task_Z/Zulu`; positional lowering swaps the names through the wrong Flow targets. Both accounts execute the renamed graph and produce different public observations.
+
+The retained experiment gate keeps both the green fixture controls and renamed executable divergence. The production preservation theorem was not reached before the effort stop, so no theorem-failure build is claimed.
+
+The renamed endpoint-agreement check is also a finite regression guard for the exact fixture-coincidental defect class: if production lowering drifts from endpoint matching toward positional pairing, the focused gate fails on the adversarial counter-model. This is concrete coverage of one preservation instance, not the unproved universally quantified theorem.
+
+## Executed direct account
+
+[CheckedSourceSemantics.lean](../../BpmnSemantics/Experiments/CheckedSourceSemantics.lean) defines a separate source control state, Sequence-Flow token multiset, source User Task waits, per-task activation state, and direct checked-node transition relation for none Start Event, User Task, diverging and converging Parallel Gateway, and none End Event. `fireNode_sound` proves every executable source-node transition is permitted by that relation. Source admission, supported closure, canonical observation, and scenario execution are implemented without importing Semantic Process lowering or execution.
+
+[CheckedSourceRelation.lean](../../BpmnSemantics/Experiments/CheckedSourceRelation.lean) contains only the deliberately wrong lowerer, retained-fixture controls, admitted renamed graph, and public divergence check. [CheckedSourceRelationMain.lean](../../BpmnSemantics/Experiments/CheckedSourceRelationMain.lean) is the focused executable gate.
+
+## Red/green evidence
+
+The first focused build failed because `BpmnSemantics.Experiments.CheckedSourceRelation` did not exist. After the provisional source account and discriminator were added:
+
+```sh
+lake build checkCheckedSourceRelationExperiment
+lake exe checkCheckedSourceRelationExperiment
+```
+
+Both commands passed, and the executable reported `Checked-source relation experiment checks passed.` The gate comprises approximately 700 lines across the source account, witness, and main. It requires all six retained fixtures to survive the mutation, the direct source account to agree with correct endpoint-based lowering on the renamed graph, and the same source result to disagree with positional lowering.
+
+## Precise unresolved boundary
+
+The attempted correspondence layer defined the source-to-program runtime mapping, proved injectivity of the `place:` Sequence-Flow encoding, and proved mapping lemmas for token removal and production. At that point the experiment had exceeded the agreed approximate 700-line boundary without reaching the run theorem.
+
+The remaining proof was not a single mechanical induction. It still required:
+
+- extracting nonempty incoming/outgoing Flow facts for every checked node from the private bounded well-formedness conjunction so the source Flow default and IL control-place default could be related only on admitted graphs;
+- relating source wait lookup/erase and activation-count updates to the mapped IL runtime;
+- proving that the complete `enabledTransitions` lists correspond in node/operation order;
+- proving that the two independent User Task choices and recursive `closeSupported` results correspond at every fuel value;
+- relating external admission, stable observation projection, and rejected-command state preservation;
+- performing the final stimulus-list induction over projected observations.
+
+Completing that bridge would exceed the authorized effort boundary or require restructuring proof-facing production internals. No production semantic function, observation projection, wire contract, or visibility boundary was changed. The partial correspondence code was removed rather than retained as an apparent proof.
+
+## Stop conditions
+
+- Stop if correspondence requires a semantic change to `closeSupported`, `enabledTransitions`, observation projection, or any wire contract.
+- Stop and record the precise unresolved induction boundary if the implementation exceeds approximately 700 lines of Lean or requires restructuring beyond the current slice.
+- Do not weaken the witness. If the positional mutation does not leave every retained fixture lock green, find a genuine fixture-coincidental mutation within the current admission boundary or report that the class is empty.
+
+## Result
+
+**Not adopted.** The direct source account and fixture-coincidental witness are useful executable discriminators and remain provisional in `BpmnSemantics/Experiments/`. The run-level observational lowering-preservation theorem remains unproved, so the IL proof boundary and capsule rule-to-evidence rows do not graduate.
+
+The program-derived account remains rejected as circular. The permanent-proof-boundary account also remains rejected by owner decision; this experiment records an unresolved implementation boundary rather than silently selecting that alternative.
+
+## Frozen experiment policy
+
+This result is frozen at the current five-operation discriminator. New semantic capsules may keep the experiment compiling, but must not extend `CheckedSourceSemantics.lean` while the preservation boundary remains frozen.
+
+Reopen the experiment only when:
+
+1. admission is proposed beyond the two fixture-pinned topologies, in which case the observational preservation theorem must close before widened admission ships;
+2. a fixture-coincidental lowering defect surfaces outside the retained positional-pairing guard;
+3. a future capsule independently requires source-level operational semantics.
+
+The effort stop is the approved outcome doing its job, not a failed experiment. A new proof round requires one of these triggers and a new explicit effort decision.

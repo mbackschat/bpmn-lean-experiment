@@ -37,6 +37,7 @@ git diff --check
 | Pipeline orchestration or any cross-target contract | `./scripts/pnpm.sh run test:pipeline` |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` |
 | Provisional representation experiment | `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike` |
+| Checked-source relation experiment | `lake build checkCheckedSourceRelationExperiment && lake exe checkCheckedSourceRelationExperiment` |
 
 For JavaScript and TypeScript tests use the global long-running-command policy: pnpm, `CI=true`, tests bounded to 60 seconds, builds bounded to 120 seconds, and no indefinite watch process.
 
@@ -162,7 +163,7 @@ The pipeline:
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 
-The source-current repository verification on 2026-07-26 completed in 24.32 seconds after the production lifecycle, single-source Lean scenario decoding, and Query-evidence hardening. Its six-case prepared pipeline completed in 4.72 seconds warm. Both remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
+The source-current repository verification on 2026-07-26 completed in 25.94 seconds after the production lifecycle, single-source Lean scenario decoding, Query-evidence hardening, and the frozen checked-source experiment. Its six-case prepared pipeline completed in 4.72 seconds warm. The separately gated checked-source build and executable also passed. All remain within their budgets; timings are diagnostic performance evidence, not semantic claims.
 
 ## Continuous integration
 
