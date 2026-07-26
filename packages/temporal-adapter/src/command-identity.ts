@@ -8,6 +8,8 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 
+import { canonicalTypedTupleEncoding } from "./canonical-encoding.js";
+
 export function canonicalStimulusEncoding(stimulus: unknown): string {
   if (!isWellFormedStimulus(stimulus)) {
     throw new TypeError(
@@ -16,14 +18,14 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
   }
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
-      return JSON.stringify([
+      return canonicalTypedTupleEncoding([
         stimulus.kind,
         stimulus.commandId,
         stimulus.processId,
         stimulus.instanceId,
       ]);
     case StimulusKind.CompleteUserTaskInstance:
-      return JSON.stringify([
+      return canonicalTypedTupleEncoding([
         stimulus.kind,
         stimulus.commandId,
         [
@@ -33,7 +35,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         ],
       ]);
     case StimulusKind.FireTimer:
-      return JSON.stringify([
+      return canonicalTypedTupleEncoding([
         stimulus.kind,
         stimulus.commandId,
         [

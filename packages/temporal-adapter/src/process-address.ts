@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { canonicalTypedTupleEncoding } from "./canonical-encoding.js";
+
 export function canonicalProcessAddressEncoding(
   processInstanceId: string,
 ): string {
@@ -11,7 +13,7 @@ export function canonicalProcessAddressEncoding(
       "Workflow identity requires a non-empty semantic Process-instance ID",
     );
   }
-  return JSON.stringify([
+  return canonicalTypedTupleEncoding([
     "semanticProcessInstance",
     processInstanceId,
   ]);
