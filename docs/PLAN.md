@@ -14,7 +14,7 @@ Harness-only Query extraction reconciles completion-command outcomes with comple
 
 Lean now strictly decodes the same six answer-free scenario documents consumed by the other targets and echoes the decoded values. The extra-field mutation guards answer smuggling; retained CIB content binding owns disk-content drift detection now that there is no compiled Lean scenario copy.
 
-The exact implementation and absence boundary, including the incomplete standalone Lean `programWellFormed` obligations, is recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The checked-source experiment ended not adopted at its approved effort boundary with a provisional source account and discriminator retained; that successful stop outcome is frozen under explicit non-extension and reopening rules. The next-capsule sequence and optional fuzz lane await the owner decisions below.
+The exact implementation and absence boundary, including the incomplete standalone Lean `programWellFormed` obligations, is recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The checked-source experiment ended not adopted at its approved effort boundary with a provisional source account and discriminator retained; that successful stop outcome is frozen under explicit non-extension and reopening rules. The timer-then-service-task sequence is approved, the timer hosting/refinement preflight and capsule proposal are active, and the optional fuzz lane is deferred until that preflight is reviewed.
 
 The active implementation boundary is [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
@@ -41,12 +41,14 @@ The owner approved the following on 2026-07-26:
 - **Production-lifecycle evidence correction:** retain sequential stale rejection as three-way CIB/Lean/core semantic evidence, require Temporal prefix agreement through completion plus a separate adapter-owned `processClosed` result under an explicit post-terminal delivery schedule, and add a parallel live-sibling stale scenario for exact four-target semantic rejection. Keep `UTASK-REFUSE-02`, update both capsule evidence rows, retain the concurrent reversal as an unordered race witness, and reconcile harness-only Query extraction with durable Update results and the completed receipt.
 - **C2 — independent checked-source relation experiment:** execute the bounded current-five-operation source token game, renamed positional-lowering divergence witness, and projection-level observational preservation attempt under the owner conditions below. The relation is a transcription-correspondence account for reviewed meaning, not an independent BPMN authority. The experiment ended not adopted at the effort stop; the permanent-proof-boundary alternative remains rejected.
 - **C2 freeze:** accept the not-adopted result as the intended stop outcome. Keep the five-operation experiment compiling without extending its source semantics. Reopen only before admission widens beyond the two fixture-pinned topologies, after another fixture-coincidental lowering defect surfaces, or when a future capsule independently needs source-level semantics.
+- **C1 next-capsule sequence:** proceed with a bounded Intermediate Catch Timer capsule and then a bounded Service Task/Temporal Activity capsule. Approval currently extends through the timer hosting/refinement preflight and capsule proposal; production semantics still require approval of the resulting timer account.
+- **D1 sequencing:** defer the optional dependency-free Lean/core fuzz experiment until after the timer preflight is reviewed so it does not delay the dominant adapter-feasibility discriminator.
 
-## Owner decisions requested
+## Approved next-capsule sequence
 
 ### C1 — next semantic capsules
 
-**Assessment outcome:** feasible; approve a timer capsule followed by a service-task Activity capsule. This sequence attacks the residual Temporal-adapter feasibility risk before adding more topology. No capsule has begun, and this assessment does not approve either capsule's semantic profile.
+**Owner decision:** approved for a timer capsule followed by a service-task Activity capsule. This sequence attacks the residual Temporal-adapter feasibility risk before adding more topology. No capsule has begun, and the decision does not yet approve either capsule's semantic profile.
 
 **Timer first:** use one bounded `None Start Event → Intermediate Catch Timer Event → None End Event` discriminator with one reviewed literal duration form. The semantic core must own the timer occurrence, logical deadline, readiness, duplicate/stale firing behavior, and public observations. The adapter may translate one typed semantic timer wait into a durable Temporal timer and feed its recorded wakeup back as an explicit typed stimulus; Temporal time must not become implicit BPMN state or decide semantic firing. The mandatory preflight must settle the admitted BPMN timer-expression subset, logical-time input, timer identity, deadline comparison, Workflow completion, duplicate wakeup, Worker restart, replay, and whether the full-server plus time-skipping evidence can remain inside the feedback budgets. The nearest adapter counterexample is deriving the deadline independently in Workflow code or advancing the core merely because a Temporal timer fired.
 
@@ -54,11 +56,13 @@ The owner approved the following on 2026-07-26:
 
 **Why this order:** the timer introduces the first durable host Command driven by semantic waiting without also introducing nondeterministic I/O. The Service Task then reuses the proven wakeup/input loop while adding external effects and retry separation. Another pure-topology capsule would exercise the existing Query/Update host composition and would not reduce either risk.
 
-**Decision requested:** approve only the timer-then-service-task sequence. If approved, the next semantic action is the timer hosting/refinement preflight and capsule proposal; production Lean, semantic-core, source, wire, and Temporal changes remain unauthorized until that proposal is reviewed.
+**Authorized next action:** complete the timer hosting/refinement preflight and capsule proposal. Production Lean, semantic-core, source, wire, and Temporal changes remain unauthorized until that proposal is reviewed.
+
+## Deferred assessment
 
 ### D1 — seeded Lean/core fuzz lane
 
-**Recommendation:** approve a dependency-free bounded experiment after C2 and before the timer capsule. A hand-rolled seeded generator can compare well-formed stimulus sequences over the two admitted topologies in batches and report the exact seed on failure. Malformed documents require an explicit per-case admission-result envelope or isolated Lean invocations because the strict Lean decoder currently rejects an entire invocation while the TypeScript core classifies structural admission separately; do not coerce either into a semantic outcome. Estimated cost is 220–340 lines of JavaScript and protocol/test support with no new dependency. Its value compounds as capsules grow, but it is lower priority than establishing the independent checked-source account.
+**Deferred until the timer preflight is reviewed.** A hand-rolled seeded generator could compare well-formed stimulus sequences over the two admitted topologies in batches and report the exact seed on failure. Malformed documents require an explicit per-case admission-result envelope or isolated Lean invocations because the strict Lean decoder currently rejects an entire invocation while the TypeScript core classifies structural admission separately; do not coerce either into a semantic outcome. Estimated cost is 220–340 lines of JavaScript and protocol/test support with no new dependency. Its value compounds as capsules grow, but it must not delay the first timer/Temporal feasibility discriminator.
 
 ## Approved C2 experiment
 
@@ -116,9 +120,10 @@ The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) owns the sema
 2. **Completed — close the approved production lifecycle:** the specification, implementation, evidence correction, six-case comparison, Query reconciliation, failure-outcome classification, focused gates, and complete repository gate are green.
 3. **Completed — single-source Lean scenarios:** remove the hard-coded Lean scenario list, strictly decode the same admitted files, retain exact echo and identity checks, add the answer-smuggling mutation, and record the shifted disk-drift responsibility.
 4. **Completed, not adopted — C2 checked-source experiment:** the direct graph relation and renamed discriminator are retained under the separate gate; the observational correspondence proof stopped at the approved effort boundary, with the exact remaining induction obligations recorded and no production change.
-5. **Await owner decision — D1 seeded fuzz experiment:** if approved, run it after C2 and before a new semantic capsule without adding a dependency or weakening the structural/semantic result boundary.
-6. **Await owner decision — timer capsule:** begin only after the C1 sequence is approved and the mandatory Temporal hosting/refinement preflight maps semantic time to durable wakeup.
-7. **Await owner decision — service-task Activity capsule:** begin after the timer capsule and first record the effect lifecycle, idempotency, retry, incident, and replay account.
+5. **In progress — timer preflight and capsule proposal:** map semantic time to durable wakeup, state the exact profile and source subset, record the separating host witness, and return the proposal for owner review before production implementation.
+6. **Deferred — D1 seeded fuzz experiment:** revisit after the timer preflight is reviewed; do not add a dependency or weaken the structural/semantic result boundary.
+7. **Approved sequence, not started — timer capsule implementation:** begin only after the timer proposal is approved.
+8. **Approved sequence, not started — service-task Activity capsule:** begin after the timer capsule and first record the effect lifecycle, idempotency, retry, incident, and replay account.
 
 Each item ends green at its applicable focused and complete gate before the next begins. No strategic assessment authorizes its implementation.
 
@@ -153,6 +158,6 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-No strategic implementation is authorized until the owner decides ordered item 5 and the C1 next-capsule sequence. If D1 is approved, execute the dependency-free fuzz experiment before any new capsule. If C1 is approved, begin the timer capsule only after the applicable Temporal hosting/refinement preflight. C2 remains frozen under the non-extension and reopening rules in [the experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md); do not extend it with new capsules or silently treat the unresolved theorem as permanently waived.
+Complete ordered item 5 by writing the bounded timer capsule proposal and its Temporal hosting/refinement preflight. Stop at owner review before changing production Lean, semantic-core, source, wire, CIB, or Temporal behavior. D1 remains deferred until that review. C2 remains frozen under the non-extension and reopening rules in [the experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md); do not extend it with new capsules or silently treat the unresolved theorem as permanently waived.
 
 Before beginning, run the applicable baseline in [TESTING-SPEC.md](TESTING-SPEC.md) and confirm `git status --short --branch`.
