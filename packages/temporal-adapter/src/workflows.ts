@@ -7,6 +7,9 @@ import {
   advanceScenario,
   deployScenario,
   initialState,
+  isWellFormedStimulus,
+  projectOpenUserTasks,
+  sameStimulus,
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -61,12 +64,13 @@ export async function runBpmnScenario(
   const acceptedStimuli: Stimulus[] = [];
   const commandResults: CommandResultLedgerEntry[] = [];
   let semanticLoopFinished = false;
+  let state: RuntimeState = initialState;
 
   // tag::temporal-semantic-boundary[]
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
     bpmnOpenUserTasksQuery,
-    () => currentOpenUserTasks(trace),
+    () => projectOpenUserTasks(executableIr, state),
   );
   setHandler(
     bpmnCompleteUserTaskUpdate,
@@ -111,7 +115,6 @@ export async function runBpmnScenario(
     enqueueStimulus(acceptedStimuli, pendingStimuli, startStimulus);
   }
 
-  let state: RuntimeState = initialState;
   let outcome: ScenarioOutcome = {
     kind: ScenarioOutcomeKind.Semantic,
     outcome: CommandOutcome.Committed,
@@ -153,21 +156,6 @@ export async function runBpmnScenario(
   return { outcome, trace };
 }
 
-function currentOpenUserTasks(
-  trace: ReadonlyArray<CanonicalObservation>,
-): ReadonlyArray<OpenUserTask> {
-  for (let index = trace.length - 1; index >= 0; index -= 1) {
-    const observation = trace[index];
-    if (
-      observation?.kind === CanonicalObservationKind.State &&
-      "openUserTasks" in observation
-    ) {
-      return [...observation.openUserTasks];
-    }
-  }
-  return [];
-}
-
 function enqueueStimulus(
   acceptedStimuli: Stimulus[],
   pendingStimuli: Stimulus[],
@@ -186,28 +174,6 @@ function enqueueStimulus(
     throw new TypeError(
       `Command ID ${commandId} was reused with a different stimulus`,
     );
-  }
-}
-
-function sameStimulus(left: Stimulus, right: Stimulus): boolean {
-  switch (left.kind) {
-    case StimulusKind.StartProcess:
-      return (
-        right.kind === StimulusKind.StartProcess &&
-        left.commandId === right.commandId &&
-        left.processId === right.processId &&
-        left.instanceId === right.instanceId
-      );
-    case StimulusKind.CompleteUserTaskInstance:
-      return (
-        right.kind === StimulusKind.CompleteUserTaskInstance &&
-        left.commandId === right.commandId &&
-        left.taskId.processInstanceId === right.taskId.processInstanceId &&
-        left.taskId.elementId === right.taskId.elementId &&
-        left.taskId.activation === right.taskId.activation
-      );
-    default:
-      return assertNever(left);
   }
 }
 
@@ -249,44 +215,13 @@ function validateCompleteUserTaskUpdate(
 ): void {
   const value = stimulus as unknown;
   if (
-    !isRecord(value) ||
-    !hasOnlyKeys(value, ["kind", "commandId", "taskId"]) ||
-    value.kind !== StimulusKind.CompleteUserTaskInstance ||
-    !isNonEmptyString(value.commandId) ||
-    !isRecord(value.taskId) ||
-    !hasOnlyKeys(value.taskId, [
-      "processInstanceId",
-      "elementId",
-      "activation",
-    ]) ||
-    !isNonEmptyString(value.taskId.processInstanceId) ||
-    !isNonEmptyString(value.taskId.elementId) ||
-    !Number.isSafeInteger(value.taskId.activation) ||
-    Number(value.taskId.activation) < 1
+    !isWellFormedStimulus(value) ||
+    value.kind !== StimulusKind.CompleteUserTaskInstance
   ) {
     throw new TypeError(
       "Completion Update must contain one well-formed task-instance stimulus",
     );
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function hasOnlyKeys(
-  value: Record<string, unknown>,
-  keys: ReadonlyArray<string>,
-): boolean {
-  const allowed = new Set(keys);
-  return (
-    Object.keys(value).length === allowed.size &&
-    Object.keys(value).every((key) => allowed.has(key))
-  );
-}
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
 }
 
 function assertNever(value: never): never {

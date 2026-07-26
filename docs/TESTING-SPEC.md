@@ -89,7 +89,7 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 - element identity alone is insufficient;
 - closure-bound exhaustion remains a harness failure and never exposes a committed semantic command.
 
-The semantic core tests structural IR/scenario admission, pure state transitions, state-derived observations, exact identity rejection, stale completion, incremental hosting, and malformed identity/topology inputs.
+The semantic core tests structural IR/scenario admission, pure state transitions, state-derived observations, direct current-state task projection, exact structural stimulus well-formedness, same-stimulus identity, exact active-occurrence rejection, stale completion, incremental hosting, and malformed identity/topology inputs. The Temporal gate demonstrates that Query projection, Update admission, logical deduplication, and replay remain unchanged when the Workflow delegates these policies to the core.
 
 ## Current CIB gate
 

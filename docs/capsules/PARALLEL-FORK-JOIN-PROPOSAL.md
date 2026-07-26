@@ -164,7 +164,7 @@ The observable contract requires hidden runtime state to preserve token multipli
 
 The observable contract resolves the questions that previously blocked the two implementation corrections:
 
-- **R5:** before Temporal hosts parallel semantics, current-state task projection, stimulus well-formedness, and same-stimulus identity comparison move behind semantic-core-owned operations. The Workflow must not infer current open tasks by scanning diagnostic trace history or maintain parallel copies of semantic validation and identity policy.
+- **R5 — completed:** current-state task projection, stimulus well-formedness, command identity, and same-stimulus comparison are semantic-core-owned operations. The current Workflow invokes them directly and no longer infers open tasks from diagnostic trace history or maintains validation and identity-policy copies.
 - **R6:** before the CIB runner emits canonical parallel evidence, remove its single-active-task guard only together with deterministic semantic task sorting and per-element wait multiplicity. Distinct active elements produce distinct entries; repeated instances of one element require derived activation ordinals and remain out of scope here.
 
 These corrections are implementation prerequisites, not evidence that this capsule is already implemented.

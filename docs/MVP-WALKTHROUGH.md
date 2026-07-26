@@ -211,7 +211,7 @@ The handler boundary is synchronized from the real Workflow:
 setHandler(bpmnTraceQuery, () => [...trace]);
 setHandler(
   bpmnOpenUserTasksQuery,
-  () => currentOpenUserTasks(trace),
+  () => projectOpenUserTasks(executableIr, state),
 );
 setHandler(
   bpmnCompleteUserTaskUpdate,

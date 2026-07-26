@@ -27,7 +27,7 @@ const completed = applyStimulus(executableIr, started.state, {
 const result = runScenario(scenario, executableIr);
 ```
 
-`applyStimulus` is pure: the same admitted IR, state, stimulus, and closure limit produce the same result. Completion is admitted only for the exact active semantic occurrence `(Process instance, BPMN element, activation ordinal)`. Open tasks and enabled interactions are derived only from current semantic state. Closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
+`applyStimulus` is pure: the same admitted IR, state, stimulus, and closure limit produce the same result. Completion is admitted only for the exact active semantic occurrence `(Process instance, BPMN element, activation ordinal)`. `projectOpenUserTasks` derives the host Query projection directly from current semantic state. `isWellFormedStimulus`, `stimulusCommandId`, and `sameStimulus` own structural admission and logical-command identity for adapters. Closure-bound exhaustion is a harness result and never exposes an admitted command as committed.
 
 The code is split by responsibility:
 
@@ -37,8 +37,9 @@ The code is split by responsibility:
 | [sequential-user-task-admission.ts](src/sequential-user-task-admission.ts) | Structural scenario/IR validation and identity admission |
 | [sequential-user-task-runtime.ts](src/sequential-user-task-runtime.ts) | Runtime state, external command admission, internal closure, and `applyStimulus` |
 | [sequential-user-task.ts](src/sequential-user-task.ts) | Stable observation projection and incremental/full scenario evaluation |
+| [stimulus.ts](src/stimulus.ts) | Structural stimulus validation, command identity, and exact same-stimulus comparison |
 
-`deployScenario` and `advanceScenario` expose the same logic incrementally for durable hosts. `runScenario` consumes those operations too, so adapters do not copy observation semantics.
+`deployScenario` and `advanceScenario` expose the same logic incrementally for durable hosts. `runScenario` consumes those operations too. Temporal delegates its current-task Query, Update validation, and logical deduplication policy to the core instead of scanning trace history or maintaining copies.
 
 Run the focused gate:
 

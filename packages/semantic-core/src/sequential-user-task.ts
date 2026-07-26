@@ -9,6 +9,7 @@ import {
 } from "./contract.js";
 import type {
   CanonicalObservation,
+  OpenUserTask,
   Scenario,
   ScenarioResult,
   StateObservation,
@@ -30,6 +31,9 @@ import {
 import type {
   RuntimeState,
 } from "./sequential-user-task-runtime.js";
+import {
+  stimulusCommandId,
+} from "./stimulus.js";
 
 export enum ScenarioStepKind {
   Committed = "committed",
@@ -85,6 +89,35 @@ function taskInstanceId(
   };
 }
 
+export function projectOpenUserTasks(
+  model: SequentialUserTaskExecutableIr,
+  state: RuntimeState,
+): ReadonlyArray<OpenUserTask> {
+  switch (state.control.kind) {
+    case ControlStateKind.WaitingUserTask:
+      return [
+        {
+          id: taskInstanceId(
+            model,
+            state.control.instanceId,
+            state.control.activation,
+          ),
+          name: model.userTask.name,
+          state: UserTaskLifecycleState.Active,
+        },
+      ];
+    case ControlStateKind.NotStarted:
+    case ControlStateKind.EnteringStart:
+    case ControlStateKind.EnteringUserTask:
+    case ControlStateKind.LeavingUserTask:
+    case ControlStateKind.EnteringEnd:
+    case ControlStateKind.Completed:
+      return [];
+    default:
+      return assertNever(state.control);
+  }
+}
+
 function observeStableState(
   model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
@@ -107,13 +140,7 @@ function observeStableState(
             multiplicity: 1,
           },
         ],
-        openUserTasks: [
-          {
-            id,
-            name: model.userTask.name,
-            state: UserTaskLifecycleState.Active,
-          },
-        ],
+        openUserTasks: projectOpenUserTasks(model, state),
         enabledInteractions: [
           {
             kind: StimulusKind.CompleteUserTaskInstance,
@@ -141,16 +168,6 @@ function observeStableState(
       return null;
     default:
       return assertNever(state.control);
-  }
-}
-
-export function stimulusCommandId(stimulus: Stimulus): string {
-  switch (stimulus.kind) {
-    case StimulusKind.StartProcess:
-    case StimulusKind.CompleteUserTaskInstance:
-      return stimulus.commandId;
-    default:
-      return assertNever(stimulus);
   }
 }
 
