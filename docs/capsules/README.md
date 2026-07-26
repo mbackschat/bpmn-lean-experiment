@@ -36,3 +36,4 @@ Start with a Markdown evidence matrix inside the owning capsule. Do not introduc
 |---|---|
 | [User Task interaction](USER-TASK-INTERACTION-SPEC.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |
 | [Parallel fork/join](PARALLEL-FORK-JOIN-SPEC.md) | Evidence-closed draft contract for two concurrent distinct User Tasks and normative per-incoming-flow synchronization; the production Temporal lifecycle and immutable negative evidence for candidate `CIB-DEV-0001` remain outside its claim |
+| [Intermediate Catch Timer](INTERMEDIATE-CATCH-TIMER-PROPOSAL.md) | Exact `PT1S` normal-flow timer wait, logical deadline and occurrence identity, controlled-clock CIB probe, durable Temporal wakeup, Worker restart, and replay preflight |

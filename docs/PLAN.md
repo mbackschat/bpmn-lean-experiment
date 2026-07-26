@@ -14,17 +14,17 @@ Harness-only Query extraction reconciles completion-command outcomes with comple
 
 Lean now strictly decodes the same six answer-free scenario documents consumed by the other targets and echoes the decoded values. The extra-field mutation guards answer smuggling; retained CIB content binding owns disk-content drift detection now that there is no compiled Lean scenario copy.
 
-The exact implementation and absence boundary, including the incomplete standalone Lean `programWellFormed` obligations, is recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The checked-source experiment ended not adopted at its approved effort boundary with a provisional source account and discriminator retained; that successful stop outcome is frozen under explicit non-extension and reopening rules. The timer-then-service-task sequence is approved, the timer hosting/refinement preflight and capsule proposal are active, and the optional fuzz lane is deferred until that preflight is reviewed.
+The exact implementation and absence boundary, including the incomplete standalone Lean `programWellFormed` obligations, is recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The checked-source experiment ended not adopted at its approved effort boundary with a provisional source account and discriminator retained; that successful stop outcome is frozen under explicit non-extension and reopening rules. The timer-then-service-task sequence is approved, the timer hosting/refinement preflight and capsule proposal are complete and awaiting owner review, and the optional fuzz lane is deferred until that review.
 
 The active implementation boundary is [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 ## Last verified baseline
 
-`env CI=true /opt/homebrew/bin/timeout 60 /usr/bin/time -p ./scripts/verify.sh` passed on 2026-07-26 in 25.94 seconds for the complete uncommitted review worktree. It passed thirteen contract tests, twenty-seven semantic-core tests, twelve BPMN-source tests, nine CIB tests, nine differential unit tests, twenty-six infrastructure guards, and fifteen Temporal tests; checked seven synchronized documentation fragments and the bounded CMOF manifest; and left all local services cleaned up.
+`env CI=true /opt/homebrew/bin/timeout 60 /usr/bin/time -p ./scripts/verify.sh` passed on 2026-07-26 in 24.79 seconds for the review-ready Intermediate Catch Timer proposal worktree. It passed thirteen contract tests, twenty-seven semantic-core tests, twelve BPMN-source tests, nine CIB tests, nine differential unit tests, twenty-six infrastructure guards, and fifteen Temporal tests; checked seven synchronized documentation fragments and the bounded CMOF manifest; and left all local services cleaned up.
 
 The separately gated C2 experiment passed `lake build checkCheckedSourceRelationExperiment` and `lake exe checkCheckedSourceRelationExperiment`. That gate establishes the retained direct source account and mutation discriminator only; it does not establish the unresolved observational lowering-preservation theorem.
 
-The prepared six-case pipeline completed in 4.72 seconds warm, established each explicit target relation, replayed all six primary histories, and rejected the definition-origin, scenario-extra-field, and parallel-provenance mutations. The focused Temporal gate separately passed all fifteen tests in 4.84 seconds, including failed-Update infrastructure classification, Worker restart, retained result lookup, the unordered race witness, and live replay.
+The prepared six-case pipeline completed in 4.80 seconds warm, established each explicit target relation, replayed all six primary histories, and rejected the definition-origin, scenario-extra-field, and parallel-provenance mutations. The focused Temporal gate separately passed all fifteen tests in 4.65 seconds, including failed-Update infrastructure classification, Worker restart, retained result lookup, the unordered race witness, and live replay.
 
 ## Approved decisions
 
@@ -56,7 +56,7 @@ The owner approved the following on 2026-07-26:
 
 **Why this order:** the timer introduces the first durable host Command driven by semantic waiting without also introducing nondeterministic I/O. The Service Task then reuses the proven wakeup/input loop while adding external effects and retry separation. Another pure-topology capsule would exercise the existing Query/Update host composition and would not reduce either risk.
 
-**Authorized next action:** complete the timer hosting/refinement preflight and capsule proposal. Production Lean, semantic-core, source, wire, and Temporal changes remain unauthorized until that proposal is reviewed.
+**Authorized next action:** review and decide [the Intermediate Catch Timer proposal](capsules/INTERMEDIATE-CATCH-TIMER-PROPOSAL.md). Production Lean, semantic-core, source, wire, CIB, and Temporal changes remain unauthorized until that proposal is approved.
 
 ## Deferred assessment
 
@@ -120,7 +120,7 @@ The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) owns the sema
 2. **Completed — close the approved production lifecycle:** the specification, implementation, evidence correction, six-case comparison, Query reconciliation, failure-outcome classification, focused gates, and complete repository gate are green.
 3. **Completed — single-source Lean scenarios:** remove the hard-coded Lean scenario list, strictly decode the same admitted files, retain exact echo and identity checks, add the answer-smuggling mutation, and record the shifted disk-drift responsibility.
 4. **Completed, not adopted — C2 checked-source experiment:** the direct graph relation and renamed discriminator are retained under the separate gate; the observational correspondence proof stopped at the approved effort boundary, with the exact remaining induction obligations recorded and no production change.
-5. **In progress — timer preflight and capsule proposal:** map semantic time to durable wakeup, state the exact profile and source subset, record the separating host witness, and return the proposal for owner review before production implementation.
+5. **Completed, awaiting owner review — timer preflight and capsule proposal:** [the proposal](capsules/INTERMEDIATE-CATCH-TIMER-PROPOSAL.md) fixes the exact `PT1S` source subset, semantic occurrence/deadline account, controlled-clock CIB probe, durable Temporal wakeup, Worker-restart/replay witness, bypass mutation, and evidence required before graduation.
 6. **Deferred — D1 seeded fuzz experiment:** revisit after the timer preflight is reviewed; do not add a dependency or weaken the structural/semantic result boundary.
 7. **Approved sequence, not started — timer capsule implementation:** begin only after the timer proposal is approved.
 8. **Approved sequence, not started — service-task Activity capsule:** begin after the timer capsule and first record the effect lifecycle, idempotency, retry, incident, and replay account.
@@ -158,6 +158,6 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-Complete ordered item 5 by writing the bounded timer capsule proposal and its Temporal hosting/refinement preflight. Stop at owner review before changing production Lean, semantic-core, source, wire, CIB, or Temporal behavior. D1 remains deferred until that review. C2 remains frozen under the non-extension and reopening rules in [the experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md); do not extend it with new capsules or silently treat the unresolved theorem as permanently waived.
+Review and decide [the bounded Intermediate Catch Timer proposal](capsules/INTERMEDIATE-CATCH-TIMER-PROPOSAL.md). Stop before changing production Lean, semantic-core, source, wire, CIB, or Temporal behavior. If approved, begin ordered item 7 with the proposal's red evidence sequence and atomic pre-release contract replacement. D1 remains deferred until this review. C2 remains frozen under the non-extension and reopening rules in [the experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md); do not extend it with new capsules or silently treat the unresolved theorem as permanently waived.
 
 Before beginning, run the applicable baseline in [TESTING-SPEC.md](TESTING-SPEC.md) and confirm `git status --short --branch`.
