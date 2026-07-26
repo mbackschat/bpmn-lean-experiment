@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
 
 import {
-  BpmnCompilerIdentity,
-  BpmnExecutableIrKind,
+  SemanticOperationKind,
+  SemanticOriginKind,
+  SemanticProcessCompilerId,
+  SemanticProcessKind,
 } from "../dist/index.js";
 
 const capsuleUrl = new URL(
@@ -24,33 +26,61 @@ export async function loadCase(scenarioName, evidenceName) {
   return { scenario, expected: evidence.result };
 }
 
-export function executableIrFor(scenario, name = "Approve") {
+export function semanticProcessFor(scenario, name = "Approve") {
   return {
-    kind: BpmnExecutableIrKind.SequentialUserTask,
+    kind: SemanticProcessKind.SemanticProcess,
     identity: {
-      compiler: BpmnCompilerIdentity.SequentialUserTask,
+      compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
       semanticProfile: scenario.profile,
       sourceId: scenario.bpmn.id,
       sourceSha256: scenario.bpmn.sha256,
     },
     processId: "Process_SequentialUserTask",
-    startEventId: "StartEvent_1",
-    userTask: {
-      id: "UserTask_Approve",
-      name,
-    },
-    endEventId: "EndEvent_1",
-    sequenceFlows: [
+    controlPlaces: [
+      controlPlace("Flow_StartToTask"),
+      controlPlace("Flow_TaskToEnd"),
+    ],
+    operations: [
       {
-        id: "Flow_StartToTask",
-        sourceId: "StartEvent_1",
-        targetId: "UserTask_Approve",
+        ...operationBase("EndEvent_1"),
+        kind: SemanticOperationKind.Terminate,
+        input: "place:Flow_TaskToEnd",
       },
       {
-        id: "Flow_TaskToEnd",
-        sourceId: "UserTask_Approve",
-        targetId: "EndEvent_1",
+        ...operationBase("StartEvent_1"),
+        kind: SemanticOperationKind.Initiate,
+        output: "place:Flow_StartToTask",
+      },
+      {
+        ...operationBase("UserTask_Approve"),
+        kind: SemanticOperationKind.AwaitUserTask,
+        input: "place:Flow_StartToTask",
+        output: "place:Flow_TaskToEnd",
+        task: {
+          elementId: "UserTask_Approve",
+          name,
+        },
       },
     ],
+  };
+}
+
+function controlPlace(flowId) {
+  return {
+    id: `place:${flowId}`,
+    origin: {
+      kind: SemanticOriginKind.BpmnSequenceFlow,
+      elementId: flowId,
+    },
+  };
+}
+
+function operationBase(elementId) {
+  return {
+    id: `operation:${elementId}`,
+    origin: {
+      kind: SemanticOriginKind.BpmnElement,
+      elementId,
+    },
   };
 }

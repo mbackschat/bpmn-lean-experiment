@@ -1,0 +1,143 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { test } from "node:test";
+
+import {
+  BpmnCompilationStatus,
+  CheckedNodeKind,
+  GatewayDirection,
+  SemanticOperationKind,
+  SemanticProcessCompilerId,
+  compileBpmnToSemanticProcess,
+} from "../dist/index.js";
+
+const limits = Object.freeze({
+  maxBytes: 1024 * 1024,
+  parserDeadlineMs: 1_000,
+});
+
+async function compileFixture(relativePath, sourceId, semanticProfile) {
+  return compileBpmnToSemanticProcess({
+    bytes: await readFile(new URL(relativePath, import.meta.url)),
+    sourceId,
+    expectedSha256: undefined,
+    semanticProfile,
+    limits,
+  });
+}
+
+test("emits the canonical checked graph and Semantic Process for the sequential source", async () => {
+  const result = await compileFixture(
+    "../../../scenarios/user-task-discovery-completion/process.bpmn",
+    "sequential-user-task-process",
+    "cibseven-2.2.0-user-task-draft",
+  );
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(
+    result.checkedProcess.nodes.map(({ kind, id }) => ({ kind, id })),
+    [
+      { kind: CheckedNodeKind.NoneEndEvent, id: "EndEvent_1" },
+      { kind: CheckedNodeKind.NoneStartEvent, id: "StartEvent_1" },
+      { kind: CheckedNodeKind.UserTask, id: "UserTask_Approve" },
+    ],
+  );
+  assert.deepEqual(
+    result.semanticProcess.operations.map(({ kind, id }) => ({ kind, id })),
+    [
+      {
+        kind: SemanticOperationKind.Terminate,
+        id: "operation:EndEvent_1",
+      },
+      {
+        kind: SemanticOperationKind.Initiate,
+        id: "operation:StartEvent_1",
+      },
+      {
+        kind: SemanticOperationKind.AwaitUserTask,
+        id: "operation:UserTask_Approve",
+      },
+    ],
+  );
+  assert.equal(
+    result.semanticProcess.identity.compiler,
+    SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+  );
+  assert.deepEqual(
+    result.semanticProcess.controlPlaces.map(({ id }) => id),
+    ["place:Flow_StartToTask", "place:Flow_TaskToEnd"],
+  );
+});
+
+test("lowers the balanced parallel source through duplicate and synchronize", async () => {
+  const result = await compileFixture(
+    "../../../scenarios/parallel-fork-join/process.bpmn",
+    "parallel-two-user-tasks-process",
+    "parallel-fork-join-draft",
+  );
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.equal(result.checkedProcess.nodes.length, 6);
+  assert.equal(result.checkedProcess.sequenceFlows.length, 6);
+  const fork = result.checkedProcess.nodes.find(
+    ({ id }) => id === "Gateway_Fork",
+  );
+  const join = result.checkedProcess.nodes.find(
+    ({ id }) => id === "Gateway_Join",
+  );
+  assert.deepEqual(fork, {
+    kind: CheckedNodeKind.ParallelGateway,
+    id: "Gateway_Fork",
+    direction: GatewayDirection.Diverging,
+  });
+  assert.deepEqual(join, {
+    kind: CheckedNodeKind.ParallelGateway,
+    id: "Gateway_Join",
+    direction: GatewayDirection.Converging,
+  });
+
+  const duplicate = result.semanticProcess.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.Duplicate,
+  );
+  const synchronize = result.semanticProcess.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.Synchronize,
+  );
+  assert.deepEqual(duplicate.outputs, [
+    "place:Flow_ForkToA",
+    "place:Flow_ForkToB",
+  ]);
+  assert.deepEqual(synchronize.inputs, [
+    "place:Flow_AToJoin",
+    "place:Flow_BToJoin",
+  ]);
+  assert.equal(
+    result.semanticProcess.controlPlaces.length,
+    result.checkedProcess.sequenceFlows.length,
+  );
+});
+
+test("rejects a gateway direction that contradicts its checked arity", async () => {
+  const bytes = await readFile(
+    new URL(
+      "../../../scenarios/parallel-fork-join/process.bpmn",
+      import.meta.url,
+    ),
+  );
+  const xml = new TextDecoder().decode(bytes);
+  const result = await compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(
+      xml.replace(
+        'id="Gateway_Fork" gatewayDirection="Diverging"',
+        'id="Gateway_Fork" gatewayDirection="Converging"',
+      ),
+    ),
+    sourceId: "invalid-parallel-direction",
+    expectedSha256: undefined,
+    semanticProfile: "parallel-fork-join-draft",
+    limits,
+  });
+
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  assert.equal(result.checkedProcess, undefined);
+  assert.equal(result.semanticProcess, undefined);
+});

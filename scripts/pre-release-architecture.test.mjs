@@ -25,6 +25,9 @@ const prohibitedSourceFragments = [
   ["m0", "-sequential-user-task"].join(""),
   ["m1", "-user-task"].join(""),
   ["bpmn-source-sequential-user-task", "@0."].join(""),
+  ["SequentialUserTask", "ExecutableIr"].join(""),
+  ["BpmnExecutable", "IrKind"].join(""),
+  ["bpmn-source", "-sequential-user-task"].join(""),
 ];
 
 async function sourceFiles(relativeRoot) {

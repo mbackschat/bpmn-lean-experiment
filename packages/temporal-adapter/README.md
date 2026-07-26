@@ -2,7 +2,7 @@
 
 `@bpmn-lean/temporal-adapter` durably hosts the pure [TypeScript semantic core](../semantic-core/README.md). Temporal records message delivery and Workflow decisions; the core remains the owner of BPMN-visible state transitions and canonical observations.
 
-Deployment-time code parses BPMN XML outside Workflow execution and passes admitted executable IR plus the neutral scenario to one generic Workflow. The Workflow applies the start stimulus and completion commands through the core. The `bpmn-open-user-tasks` Query invokes the core's current-state projection rather than scanning diagnostic trace history. The `bpmn-complete-user-task` Update delegates structural validation to the core, queues one completion, and returns the core-owned command outcome. Handlers never advance semantic state directly; one Workflow loop alone calls the core.
+Deployment-time code parses BPMN XML outside Workflow execution and passes the admitted Semantic Process program plus the neutral scenario to one generic Workflow. The Workflow applies the start stimulus and completion commands through the core. The `bpmn-open-user-tasks` Query invokes the core's current-state projection rather than scanning diagnostic trace history. The `bpmn-complete-user-task` Update delegates structural validation to the core, queues one completion, and returns the core-owned command outcome. Handlers never advance semantic state directly; one Workflow loop alone calls the core.
 
 A Workflow-local result ledger returns the first outcome when the same semantic command is delivered again under another Temporal Update ID. Core-owned exact stimulus comparison prevents conflicting reuse of a semantic command ID from entering the queue. Workflow IDs, Run IDs, Update IDs, Workflow Tasks, and Event History remain hosting facts rather than BPMN facts.
 
@@ -22,7 +22,7 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - all fetched live histories replay before shutdown;
 - duplicate Workflow identities are rejected before start.
 
-The adapter does not yet implement Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the single admitted sequential IR.
+The adapter does not yet implement parallel execution, Activities, timers, Search Attributes, Continue-As-New, Worker Versioning, fault injection, a global task inbox, production authorization/forms, or BPMN beyond the current sequential execution surface.
 
 Run the focused gate:
 

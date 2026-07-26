@@ -15,8 +15,9 @@ The MVP covers lifecycle execution plus discovery and exact completion of one Us
 ```mermaid
 flowchart LR
   XML[Exact BPMN XML] --> Import[Bounded admission]
-  Import --> IR[Profile-identified executable IR]
-  IR --> Core[Pure TypeScript semantic core]
+  Import --> Checked[Checked BPMN graph]
+  Checked --> IL[Profile-identified Semantic Process]
+  IL --> Core[Pure TypeScript semantic core]
   Core --> Temporal[Temporal durability adapter]
 
   XML --> CIB[CIB Seven probe]
@@ -36,7 +37,7 @@ flowchart LR
 
 There are two intentionally different routes:
 
-- The production route admits exact BPMN bytes, compiles project-owned IR data, evaluates that IR in the pure semantic core, and lets Temporal host the same transition system durably.
+- The production route admits exact BPMN bytes, projects a checked BPMN graph, lowers project-owned Semantic Process data, evaluates that program in the pure semantic core, and lets Temporal host the same transition system durably.
 - The assurance route asks CIB Seven and Lean to derive the same public consequences independently, then compares all four targets at a deliberately small observation boundary.
 
 This separation is the architecture’s main safeguard against one shared implementation mistake looking like agreement.
@@ -57,37 +58,36 @@ The [draft profile](../profiles/cibseven-2.2.0-user-task-draft/profile.json) pin
 
 ## 2. Admit BPMN and compile data, not source code
 
-The importer captures exact bytes and their hash before decoding, rejects oversized or non-UTF-8 input, blocks DOCTYPE and parser warnings, and keeps raw `bpmn-moddle` objects private. The bounded compiler accepts only this topology and emits project-owned serializable IR.
+The importer captures exact bytes and their hash before decoding, rejects oversized or non-UTF-8 input, blocks DOCTYPE and parser warnings, and keeps raw `bpmn-moddle` objects private. The bounded compiler projects a checked graph and the pure lowerer emits the project-owned serializable Semantic Process program.
 
 The actual compiler projection is kept synchronized from its tested source:
 
-<!-- source-fragment: packages/bpmn-source/src/sequential-user-task-compiler.ts#sequential-user-task-ir -->
+<!-- source-fragment: packages/bpmn-source/src/semantic-process-lowering.ts#semantic-process-lowering -->
 ```ts
-return {
-  executableIr: {
-    kind: BpmnExecutableIrKind.SequentialUserTask,
-    identity: {
-      compiler: BpmnCompilerIdentity.SequentialUserTask,
-      semanticProfile,
-      sourceId: source.id,
-      sourceSha256: source.sha256,
-    },
-    processId,
-    startEventId,
-    userTask: {
-      id: userTaskId,
-      name: userTaskName,
-    },
-    endEventId,
-    sequenceFlows: projectedFlows,
+const operations = source.nodes.map((node) =>
+  lowerNode(node, source.sequenceFlows)
+);
+const program: SemanticProcessProgram = {
+  kind: SemanticProcessKind.SemanticProcess,
+  identity: {
+    compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+    ...source.identity,
   },
-  diagnostic: undefined,
+  processId: source.processId,
+  controlPlaces: source.sequenceFlows.map((flow) => ({
+    id: placeId(flow.id),
+    origin: {
+      kind: SemanticOriginKind.BpmnSequenceFlow,
+      elementId: flow.id,
+    },
+  })),
+  operations: operations.sort(compareIds),
 };
 ```
 
-The IR records source, compiler, and semantic-profile identity alongside the admitted topology. It is data that a generic evaluator can interpret. No BPMN-to-TypeScript generator creates a Workflow class per diagram.
+The Semantic Process records source, compiler, and semantic-profile identity alongside typed operations and flow-derived control places. It is data that a generic evaluator can interpret. No BPMN-to-TypeScript generator creates a Workflow class per diagram.
 
-This is important for Temporal replay: every Workflow receives the admitted IR that it actually evaluates. During pre-release the gate replays its newly created histories and then discards the server state. Retained history compatibility begins only when an immutable deployment baseline is deliberately approved.
+This is important for Temporal replay: every Workflow receives the admitted Semantic Process program that it actually evaluates. During pre-release the gate replays its newly created histories and then discards the server state. Retained history compatibility begins only when an immutable deployment baseline is deliberately approved.
 
 ## 3. Observe the pinned CIB Seven engine
 
@@ -164,20 +164,24 @@ The semantic core owns BPMN-visible state transitions. It has no CIB or Temporal
 
 Its public transition boundary is:
 
-<!-- source-fragment: packages/semantic-core/src/sequential-user-task-runtime.ts#apply-stimulus -->
+<!-- source-fragment: packages/semantic-core/src/semantic-process-runtime.ts#apply-stimulus -->
 ```ts
 export function applyStimulus(
-  model: SequentialUserTaskExecutableIr,
+  program: SemanticProcessProgram,
   state: RuntimeState,
   stimulus: Stimulus,
-  closureLimit: number = sequentialUserTaskClosureLimit,
+  closureLimit: number = semanticProcessClosureLimit,
 ): CommandResult {
   validateClosureLimit(closureLimit);
 
-  const admission = admit(model, state, stimulus);
+  const admission = admit(program, state, stimulus);
   switch (admission.outcome) {
     case CommandOutcome.Committed: {
-      const closure = closeInternal(admission.state, closureLimit);
+      const closure = closeInternal(
+        program,
+        admission.state,
+        closureLimit,
+      );
       return {
         outcome: CommandOutcome.Committed,
         state: closure.state,
@@ -202,7 +206,7 @@ The core derives open tasks and enabled interactions from current admitted state
 
 ## 6. Let Temporal host the same transition system durably
 
-The Temporal Workflow stores the IR, semantic state, trace, pending stimuli, and a command-result ledger. Query exposes the core-derived open-task projection. Update validates transport shape, queues a completion stimulus, waits for the semantic loop, and returns the core-owned command outcome.
+The Temporal Workflow stores the Semantic Process program, semantic state, trace, pending stimuli, and a command-result ledger. Query exposes the core-derived open-task projection. Update validates transport shape, queues a completion stimulus, waits for the semantic loop, and returns the core-owned command outcome.
 
 The handler boundary is synchronized from the real Workflow:
 
@@ -211,7 +215,7 @@ The handler boundary is synchronized from the real Workflow:
 setHandler(bpmnTraceQuery, () => [...trace]);
 setHandler(
   bpmnOpenUserTasksQuery,
-  () => projectOpenUserTasks(executableIr, state),
+  () => projectOpenUserTasks(state),
 );
 setHandler(
   bpmnCompleteUserTaskUpdate,
@@ -333,7 +337,7 @@ For focused work, use the gate matrix in [TESTING-SPEC.md](TESTING-SPEC.md). The
 
 Within one content-addressed sequential User Task slice, the repository establishes:
 
-- exact-source admission into project-owned executable IR;
+- exact-source admission through a checked BPMN graph into a project-owned Semantic Process program;
 - one reviewed operational account realized separately in Lean and TypeScript, agreeing exactly with pinned CIB observation at the fidelity recorded in the capsule;
 - a useful general Lean law plus an executable nearest non-law;
 - Temporal Query/Update hosting that refines the pure core for the tested cases;

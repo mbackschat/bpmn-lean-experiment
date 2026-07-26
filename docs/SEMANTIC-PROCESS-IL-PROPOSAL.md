@@ -2,11 +2,11 @@
 
 ## Status
 
-This document is the owner-approved proposal for the project-owned Semantic Process intermediate language. The current wire schemas, adversarial boundary validation, Lean domain types, and reviewed proof proposition signatures are implemented; artifact production, lowering, execution semantics, correspondence, and proofs remain pending. Under [the documentation lifecycle](DOC-DISCIPLINE.md#proposal-graduation), its stable implemented contract will graduate to `SEMANTIC-PROCESS-IL-SPEC.md`; approval and boundary contracts alone do not make the current document a spec.
+This document is the owner-approved proposal for the project-owned Semantic Process intermediate language. The wire schemas, adversarial boundary validation, bounded checked-graph producer, canonical TypeScript lowerer, sequential program consumer, Lean domain types, and reviewed proof proposition signatures are implemented. Lean decoding and lowering equality, generic parallel execution semantics, correspondence, and proofs remain pending. Under [the documentation lifecycle](DOC-DISCIPLINE.md#proposal-graduation), the complete stable implemented contract will graduate to `SEMANTIC-PROCESS-IL-SPEC.md`; partial implementation does not make the current document a spec.
 
 The first proposed language slice is deliberately bounded to the approved none Start Event, User Task, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This proposal does not claim a universal lowering for BPMN 2.0.2.
 
-The current topology-specific executable IR is transitional. It must be replaced atomically when the first Semantic Process IL implementation is admitted; it must not remain as a parallel production representation or evaluator.
+The topology-specific executable representation and evaluator path were removed atomically when the first Semantic Process implementation was admitted. They do not remain as a parallel production representation, compatibility reader, or delegated evaluator.
 
 ## Decision
 

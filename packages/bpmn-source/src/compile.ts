@@ -6,7 +6,7 @@ import type {
   BpmnCompilationResult,
   BpmnSourceDiagnostic,
   BpmnSourceIdentity,
-  CompileSequentialUserTaskBpmnRequest,
+  CompileBpmnToSemanticProcessRequest,
 } from "./contracts.js";
 import {
   importBpmnGraph,
@@ -14,11 +14,14 @@ import {
   readMessage,
 } from "./moddle-adapter.js";
 import {
-  compileSequentialUserTaskGraph,
-} from "./sequential-user-task-compiler.js";
+  compileCheckedProcess,
+} from "./checked-process-compiler.js";
+import {
+  lowerCheckedProcess,
+} from "./semantic-process-lowering.js";
 
-export async function compileSequentialUserTaskBpmn(
-  request: CompileSequentialUserTaskBpmnRequest,
+export async function compileBpmnToSemanticProcess(
+  request: CompileBpmnToSemanticProcessRequest,
 ): Promise<BpmnCompilationResult> {
   validateRequest(request);
   const exactBytes = Uint8Array.from(request.bytes);
@@ -39,7 +42,8 @@ export async function compileSequentialUserTaskBpmn(
     status: BpmnCompilationStatus.Rejected,
     source: source(),
     diagnostics,
-    executableIr: undefined,
+    checkedProcess: undefined,
+    semanticProcess: undefined,
     copyExactBytes: () => Uint8Array.from(exactBytes),
   });
 
@@ -105,7 +109,7 @@ export async function compileSequentialUserTaskBpmn(
     return reject(imported.warnings);
   }
 
-  const projection = compileSequentialUserTaskGraph(
+  const projection = compileCheckedProcess(
     imported.rootElement,
     source(),
     request.semanticProfile,
@@ -113,16 +117,20 @@ export async function compileSequentialUserTaskBpmn(
   if (projection.diagnostic !== undefined) {
     return reject([projection.diagnostic]);
   }
+  const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
   return {
     status: BpmnCompilationStatus.Accepted,
     source: source(),
     diagnostics: [],
-    executableIr: projection.executableIr,
+    checkedProcess: projection.checkedProcess,
+    semanticProcess,
     copyExactBytes: () => Uint8Array.from(exactBytes),
   };
 }
 
-function validateRequest(request: CompileSequentialUserTaskBpmnRequest): void {
+function validateRequest(
+  request: CompileBpmnToSemanticProcessRequest,
+): void {
   if (!(request.bytes instanceof Uint8Array)) {
     throw new TypeError("bytes must be a Uint8Array");
   }

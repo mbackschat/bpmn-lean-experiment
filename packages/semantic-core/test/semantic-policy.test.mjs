@@ -11,7 +11,7 @@ import {
   sameStimulus,
 } from "../dist/index.js";
 import {
-  executableIrFor,
+  semanticProcessFor,
   loadCase,
 } from "./user-task-fixture.mjs";
 
@@ -20,12 +20,12 @@ test("projects open User Tasks directly from current semantic state", async () =
     "scenario.json",
     "cibseven-evidence.json",
   );
-  const model = executableIrFor(scenario);
+  const model = semanticProcessFor(scenario);
 
-  assert.deepEqual(projectOpenUserTasks(model, initialState), []);
+  assert.deepEqual(projectOpenUserTasks(initialState), []);
 
   const started = applyStimulus(model, initialState, scenario.stimuli[0]);
-  assert.deepEqual(projectOpenUserTasks(model, started.state), [
+  assert.deepEqual(projectOpenUserTasks(started.state), [
     {
       id: {
         processInstanceId: "Instance_1",
@@ -42,7 +42,7 @@ test("projects open User Tasks directly from current semantic state", async () =
     started.state,
     scenario.stimuli[1],
   );
-  assert.deepEqual(projectOpenUserTasks(model, completed.state), []);
+  assert.deepEqual(projectOpenUserTasks(completed.state), []);
 });
 
 test("owns exact structural well-formedness for every current stimulus", () => {

@@ -83,7 +83,7 @@ BPMN 2 XML
 
 Parsing, admission, and lowering occur outside deterministic Workflow execution. A generic Workflow receives an admitted Semantic Process program and serializes semantic inputs through the core. Temporal Activities, timers, messages, and child operations implement declared effects only after the core assigns their BPMN meaning.
 
-[SEMANTIC-PROCESS-IL-PROPOSAL.md](SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the approved future checked-source contract, operation meanings, lowering and Lean preservation obligations, event-growth policy, and stop criteria until implementation graduates that contract to `SEMANTIC-PROCESS-IL-SPEC.md`. The first language slice is bounded to the implemented sequential spec and approved parallel proposal. The current topology-specific executable IR is transitional and must be replaced atomically rather than retained as a legacy path.
+[SEMANTIC-PROCESS-IL-PROPOSAL.md](SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the implemented checked-source contract and lowering plus the remaining operation meanings, Lean preservation obligations, event-growth policy, and stop criteria until the complete stable contract graduates to `SEMANTIC-PROCESS-IL-SPEC.md`. The first language slice is bounded to the implemented sequential spec and approved parallel proposal. The topology-specific executable representation was removed atomically and is not retained as a legacy path.
 
 This choice preserves one inspectable model representation, avoids generating a new Workflow Definition for every diagram, and keeps SDK calls, Workflow deployment, and replay mechanics from becoming accidental BPMN semantics. It also keeps parser evolution, profile evolution, semantic-core evolution, and Worker deployment conceptually separate.
 

@@ -3,11 +3,12 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
-  BpmnCompilerIdentity,
   BpmnCompilationStatus,
-  BpmnExecutableIrKind,
   BpmnSourceDiagnosticCode,
-  compileSequentialUserTaskBpmn,
+  CheckedNodeKind,
+  SemanticOperationKind,
+  SemanticProcessCompilerId,
+  compileBpmnToSemanticProcess,
 } from "../dist/index.js";
 
 const scenarioUrl = new URL(
@@ -27,7 +28,7 @@ const limits = Object.freeze({
 });
 
 function compile(bytes, overrides = {}) {
-  return compileSequentialUserTaskBpmn({
+  return compileBpmnToSemanticProcess({
     bytes,
     sourceId: scenario.bpmn.id,
     expectedSha256: scenario.bpmn.sha256,
@@ -37,7 +38,7 @@ function compile(bytes, overrides = {}) {
   });
 }
 
-test("retains the exact source identity and compiles the model to named-task IR", async () => {
+test("retains exact source identity and compiles checked and semantic definitions", async () => {
   const result = await compile(canonicalBytes);
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
@@ -54,21 +55,23 @@ test("retains the exact source identity and compiles the model to named-task IR"
     declaredEncoding: "UTF-8",
     decodedAs: "UTF-8",
   });
-  assert.deepEqual(result.executableIr, {
-    kind: BpmnExecutableIrKind.SequentialUserTask,
+  assert.deepEqual(result.checkedProcess, {
+    kind: "checkedProcess",
     identity: {
-      compiler: BpmnCompilerIdentity.SequentialUserTask,
       semanticProfile: "cibseven-2.2.0-user-task-draft",
       sourceId: "sequential-user-task-process",
       sourceSha256: "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
     },
     processId: "Process_SequentialUserTask",
-    startEventId: "StartEvent_1",
-    userTask: {
-      id: "UserTask_Approve",
-      name: "Approve",
-    },
-    endEventId: "EndEvent_1",
+    nodes: [
+      { kind: CheckedNodeKind.NoneEndEvent, id: "EndEvent_1" },
+      { kind: CheckedNodeKind.NoneStartEvent, id: "StartEvent_1" },
+      {
+        kind: CheckedNodeKind.UserTask,
+        id: "UserTask_Approve",
+        name: "Approve",
+      },
+    ],
     sequenceFlows: [
       {
         id: "Flow_StartToTask",
@@ -82,6 +85,18 @@ test("retains the exact source identity and compiles the model to named-task IR"
       },
     ],
   });
+  assert.equal(
+    result.semanticProcess.identity.compiler,
+    SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+  );
+  assert.deepEqual(
+    result.semanticProcess.operations.map(({ kind }) => kind),
+    [
+      SemanticOperationKind.Terminate,
+      SemanticOperationKind.Initiate,
+      SemanticOperationKind.AwaitUserTask,
+    ],
+  );
 });
 
 test("preserves an omitted optional User Task name as null", async () => {
@@ -95,10 +110,16 @@ test("preserves an omitted optional User Task name as null", async () => {
   });
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
-  assert.deepEqual(result.executableIr.userTask, {
-    id: "UserTask_Approve",
-    name: null,
-  });
+  assert.deepEqual(
+    result.checkedProcess.nodes.find(
+      ({ kind }) => kind === CheckedNodeKind.UserTask,
+    ),
+    {
+      kind: CheckedNodeKind.UserTask,
+      id: "UserTask_Approve",
+      name: null,
+    },
+  );
 });
 
 test("rejects a source identity mismatch", async () => {
@@ -107,7 +128,8 @@ test("rejects a source identity mismatch", async () => {
   });
 
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
-  assert.equal(result.executableIr, undefined);
+  assert.equal(result.checkedProcess, undefined);
+  assert.equal(result.semanticProcess, undefined);
   assert.deepEqual(
     result.diagnostics.map(({ code }) => code),
     [BpmnSourceDiagnosticCode.SourceIdentityMismatch],
@@ -155,7 +177,8 @@ test("blocks executable admission when the parser reports a lost reference", asy
   });
 
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
-  assert.equal(result.executableIr, undefined);
+  assert.equal(result.checkedProcess, undefined);
+  assert.equal(result.semanticProcess, undefined);
   assert.ok(
     result.diagnostics.some(
       ({ code, evidence }) =>
@@ -178,7 +201,8 @@ test("rejects a DOCTYPE before structural parsing", async () => {
   });
 
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
-  assert.equal(result.executableIr, undefined);
+  assert.equal(result.checkedProcess, undefined);
+  assert.equal(result.semanticProcess, undefined);
   assert.deepEqual(
     result.diagnostics.map(({ code }) => code),
     [BpmnSourceDiagnosticCode.DoctypeForbidden],
@@ -197,7 +221,8 @@ test("rejects BPMN behavior outside the first executable profile", async () => {
   });
 
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
-  assert.equal(result.executableIr, undefined);
+  assert.equal(result.checkedProcess, undefined);
+  assert.equal(result.semanticProcess, undefined);
   assert.ok(
     result.diagnostics.some(
       ({ code }) => code === BpmnSourceDiagnosticCode.UnsupportedModel,
@@ -215,7 +240,8 @@ test("enforces the caller-provided byte limit before parsing", async () => {
   });
 
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
-  assert.equal(result.executableIr, undefined);
+  assert.equal(result.checkedProcess, undefined);
+  assert.equal(result.semanticProcess, undefined);
   assert.deepEqual(
     result.diagnostics.map(({ code }) => code),
     [BpmnSourceDiagnosticCode.SourceTooLarge],

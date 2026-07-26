@@ -20,7 +20,7 @@ import type {
   Scenario,
   ScenarioOutcome,
   ScenarioResult,
-  SequentialUserTaskExecutableIr,
+  SemanticProcessProgram,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -56,9 +56,9 @@ type CommandResultLedgerEntry = Readonly<{
 
 export async function runBpmnScenario(
   scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr,
+  semanticProcess: SemanticProcessProgram,
 ): Promise<ScenarioResult> {
-  const deployment = deployScenario(scenario, executableIr);
+  const deployment = deployScenario(scenario, semanticProcess);
   const trace: CanonicalObservation[] = [deployment.observation];
   const pendingStimuli: Stimulus[] = [];
   const acceptedStimuli: Stimulus[] = [];
@@ -70,7 +70,7 @@ export async function runBpmnScenario(
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
     bpmnOpenUserTasksQuery,
-    () => projectOpenUserTasks(executableIr, state),
+    () => projectOpenUserTasks(state),
   );
   setHandler(
     bpmnCompleteUserTaskUpdate,
@@ -130,7 +130,7 @@ export async function runBpmnScenario(
     }
 
     const step = advanceScenario(
-      executableIr,
+      semanticProcess,
       state,
       stimulus,
     );

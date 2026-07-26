@@ -1,6 +1,15 @@
 export {
-  BpmnCompilerIdentity,
-  BpmnExecutableIrKind,
+  CheckedNodeKind,
+  CheckedProcessKind,
+  GatewayDirection,
+  SemanticOperationKind,
+  SemanticOriginKind,
+  SemanticProcessCompilerId,
+  SemanticProcessKind,
+} from "@bpmn-lean/semantic-core";
+export type {
+  CheckedProcess,
+  SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
 export {
@@ -13,9 +22,12 @@ export type {
   BpmnSourceDiagnostic,
   BpmnSourceIdentity,
   BpmnSourceLimits,
-  CompileSequentialUserTaskBpmnRequest,
+  CompileBpmnToSemanticProcessRequest,
   RejectedBpmnCompilation,
 } from "./contracts.js";
 export {
-  compileSequentialUserTaskBpmn,
+  compileBpmnToSemanticProcess,
 } from "./compile.js";
+export {
+  lowerCheckedProcess,
+} from "./semantic-process-lowering.js";

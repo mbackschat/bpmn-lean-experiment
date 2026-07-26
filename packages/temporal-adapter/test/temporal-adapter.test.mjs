@@ -6,7 +6,7 @@ import { after, before, test } from "node:test";
 
 import {
   BpmnCompilationStatus,
-  compileSequentialUserTaskBpmn,
+  compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
   CanonicalObservationKind,
@@ -115,7 +115,7 @@ function temporalInt64ToBigInt(value) {
 
 function assertExactCompletionUpdateHistory(
   history,
-  { scenario, executableIr },
+  { scenario, semanticProcess },
 ) {
   const accepted = requiredHistoryEvent(
     history,
@@ -150,7 +150,7 @@ function assertExactCompletionUpdateHistory(
   const workflowInputs =
     started.workflowExecutionStartedEventAttributes.input.payloads;
   assert.deepEqual(decodeJsonPayload(workflowInputs[0]), scenario);
-  assert.deepEqual(decodeJsonPayload(workflowInputs[1]), executableIr);
+  assert.deepEqual(decodeJsonPayload(workflowInputs[1]), semanticProcess);
 
   const acceptedAttributes =
     accepted.workflowExecutionUpdateAcceptedEventAttributes;
@@ -187,13 +187,13 @@ function assertExactCompletionUpdateHistory(
       workflowCompleted.workflowExecutionCompletedEventAttributes
         .result.payloads[0],
     ),
-    runScenario(scenario, executableIr),
+    runScenario(scenario, semanticProcess),
   );
 }
 
 async function loadExecutionInput(selectedScenarioUrl) {
   const scenario = await loadJson(selectedScenarioUrl);
-  const compilation = await compileSequentialUserTaskBpmn({
+  const compilation = await compileBpmnToSemanticProcess({
     bytes: await readFile(bpmnUrl),
     sourceId: scenario.bpmn.id,
     expectedSha256: scenario.bpmn.sha256,
@@ -206,7 +206,7 @@ async function loadExecutionInput(selectedScenarioUrl) {
   assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
   return {
     scenario,
-    executableIr: compilation.executableIr,
+    semanticProcess: compilation.semanticProcess,
   };
 }
 
@@ -230,9 +230,9 @@ after(async () => {
 test("one clean server executes, captures, and replays the current capsule", async () => {
   const inputs = await Promise.all(scenarioUrls.map(loadExecutionInput));
   const batchItems = inputs.map(
-    ({ scenario, executableIr }, index) => ({
+    ({ scenario, semanticProcess }, index) => ({
       scenario,
-      executableIr,
+      semanticProcess,
       options: {
         workflowId: `user-task-batch-${index}`,
         duplicateFirstCompletionUpdateId:
@@ -253,7 +253,7 @@ test("one clean server executes, captures, and replays the current capsule", asy
     const input = inputs[index];
     const semanticCoreResult = runScenario(
       input.scenario,
-      input.executableIr,
+      input.semanticProcess,
     );
     const waitingState = semanticCoreResult.trace.find(
       (observation) =>

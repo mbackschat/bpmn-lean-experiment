@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_ParallelForkJoin"
+  targetNamespace="https://bpmn-lean.local/scenarios/parallel-fork-join">
+  <bpmn:process id="Process_ParallelForkJoin" name="Parallel user tasks" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToFork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_StartToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ForkToA</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ForkToB</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="UserTask_A" name="A">
+      <bpmn:incoming>Flow_ForkToA</bpmn:incoming>
+      <bpmn:outgoing>Flow_AToJoin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="UserTask_B" name="B">
+      <bpmn:incoming>Flow_ForkToB</bpmn:incoming>
+      <bpmn:outgoing>Flow_BToJoin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="Gateway_Join" gatewayDirection="Converging">
+      <bpmn:incoming>Flow_AToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_BToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_JoinToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToFork" sourceRef="StartEvent_1" targetRef="Gateway_Fork"/>
+    <bpmn:sequenceFlow id="Flow_ForkToA" sourceRef="Gateway_Fork" targetRef="UserTask_A"/>
+    <bpmn:sequenceFlow id="Flow_ForkToB" sourceRef="Gateway_Fork" targetRef="UserTask_B"/>
+    <bpmn:sequenceFlow id="Flow_AToJoin" sourceRef="UserTask_A" targetRef="Gateway_Join"/>
+    <bpmn:sequenceFlow id="Flow_BToJoin" sourceRef="UserTask_B" targetRef="Gateway_Join"/>
+    <bpmn:sequenceFlow id="Flow_JoinToEnd" sourceRef="Gateway_Join" targetRef="EndEvent_1"/>
+  </bpmn:process>
+</bpmn:definitions>

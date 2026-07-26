@@ -15,7 +15,7 @@
     "build:differential": "tsc -p packages/differential/tsconfig.json",
     "build:temporal-adapter": "tsc -p packages/temporal-adapter/tsconfig.json",
     "build:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json",
-    "check:cmof-sequential-user-task": "node scripts/check-bpmn-sequential-user-task-metamodel.mjs",
+    "check:cmof-semantic-process": "node scripts/check-bpmn-semantic-process-metamodel.mjs",
     "check:doc-fragments": "node scripts/markdown-code-fragments.mjs",
     "sync:doc-fragments": "node scripts/markdown-code-fragments.mjs --write",
     "test:contracts": "node --test --test-concurrency=1 scripts/contract-artifacts.test.mjs",
@@ -24,7 +24,7 @@
     "test:miwg": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && node scripts/test-bpmn-source-miwg.mjs",
     "test:pipeline": "node scripts/test-pipeline.mjs",
     "test:semantic-core": "tsc -p packages/semantic-core/tsconfig.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.mjs",
-    "test:bpmn-source": "node scripts/check-bpmn-sequential-user-task-metamodel.mjs && tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && node --test --test-concurrency=1 packages/bpmn-source/test/*.test.mjs",
+    "test:bpmn-source": "node scripts/check-bpmn-semantic-process-metamodel.mjs && tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && node --test --test-concurrency=1 packages/bpmn-source/test/*.test.mjs",
     "test:semantic": "lake test && tsc -p packages/semantic-core/tsconfig.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.mjs",
     "test:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json && node --test --test-concurrency=1 packages/temporal-adapter/test/*.test.mjs"
   },

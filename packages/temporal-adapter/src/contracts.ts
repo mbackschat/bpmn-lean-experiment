@@ -5,7 +5,7 @@ import type {
   OpenUserTask,
   Scenario,
   ScenarioResult,
-  SequentialUserTaskExecutableIr,
+  SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
 export const bpmnScenarioWorkflowType = "runBpmnScenario";
@@ -16,7 +16,7 @@ export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
 export type BpmnScenarioWorkflow = (
   scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr,
+  semanticProcess: SemanticProcessProgram,
 ) => Promise<ScenarioResult>;
 
 export type TemporalScenarioRunnerOptions = Readonly<{
@@ -31,7 +31,7 @@ export type TemporalScenarioExecutionOptions = Readonly<{
 
 export type TemporalScenarioBatchItem = Readonly<{
   scenario: Scenario;
-  executableIr: SequentialUserTaskExecutableIr;
+  semanticProcess: SemanticProcessProgram;
   options: TemporalScenarioExecutionOptions;
 }>;
 

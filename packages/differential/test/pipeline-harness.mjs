@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   BpmnCompilationStatus,
-  compileSequentialUserTaskBpmn,
+  compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
   CanonicalObservationKind,
@@ -250,9 +250,9 @@ function runCoreTargets(contexts) {
   const started = performance.now();
   return {
     results: new Map(
-      contexts.map(({ scenario, executableIr }) => [
+      contexts.map(({ scenario, semanticProcess }) => [
         scenario.id,
-        runScenario(scenario, executableIr),
+        runScenario(scenario, semanticProcess),
       ]),
     ),
     totalMs: elapsedMs(started),
@@ -272,15 +272,15 @@ function temporalOptions(pipelineCase, suffix) {
 
 async function runTemporalTargets(runner, contexts) {
   const started = performance.now();
-  const items = contexts.flatMap(({ pipelineCase, scenario, executableIr }) => [
+  const items = contexts.flatMap(({ pipelineCase, scenario, semanticProcess }) => [
     {
       scenario,
-      executableIr,
+      semanticProcess,
       options: temporalOptions(pipelineCase, "primary"),
     },
     {
       scenario,
-      executableIr,
+      semanticProcess,
       options: temporalOptions(pipelineCase, "isolation"),
     },
   ]);
@@ -349,7 +349,7 @@ async function loadAndCompileCases(cases) {
       let compilationPromise = compilations.get(compilationKey);
       if (compilationPromise === undefined) {
         compilationPromise = bytesPromise.then((bytes) =>
-          compileSequentialUserTaskBpmn({
+          compileBpmnToSemanticProcess({
             bytes,
             sourceId: scenario.bpmn.id,
             expectedSha256: scenario.bpmn.sha256,
@@ -370,7 +370,8 @@ async function loadAndCompileCases(cases) {
       }
       return {
         ...context,
-        executableIr: compilation.executableIr,
+        checkedProcess: compilation.checkedProcess,
+        semanticProcess: compilation.semanticProcess,
       };
     }),
   );
@@ -413,7 +414,13 @@ function projectCaseTargets(context, targets) {
 }
 
 function compareCase(context, projectedTargets) {
-  const { pipelineCase, scenario, retainedEvidence, executableIr } = context;
+  const {
+    pipelineCase,
+    scenario,
+    retainedEvidence,
+    checkedProcess,
+    semanticProcess,
+  } = context;
   const {
     cibResult,
     canonicalCib,
@@ -488,9 +495,12 @@ function compareCase(context, projectedTargets) {
         id: scenario.id,
         profile: scenario.profile,
         bpmnSha256: scenario.bpmn.sha256,
-        executableIr: {
-          kind: executableIr.kind,
-          compiler: executableIr.identity.compiler,
+        checkedProcess: {
+          kind: checkedProcess.kind,
+        },
+        semanticProcess: {
+          kind: semanticProcess.kind,
+          compiler: semanticProcess.identity.compiler,
         },
         normativeRefs: scenario.provenance.normativeRefs,
         cibRevision: scenario.provenance.cibRevision,

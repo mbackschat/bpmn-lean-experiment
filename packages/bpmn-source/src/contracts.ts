@@ -1,4 +1,7 @@
-import type { SequentialUserTaskExecutableIr } from "@bpmn-lean/semantic-core";
+import type {
+  CheckedProcess,
+  SemanticProcessProgram,
+} from "@bpmn-lean/semantic-core";
 
 export enum BpmnCompilationStatus {
   Accepted = "accepted",
@@ -35,7 +38,7 @@ export type BpmnSourceLimits = Readonly<{
   parserDeadlineMs: number;
 }>;
 
-export type CompileSequentialUserTaskBpmnRequest = Readonly<{
+export type CompileBpmnToSemanticProcessRequest = Readonly<{
   bytes: Uint8Array;
   sourceId: string;
   expectedSha256: string | undefined;
@@ -52,14 +55,16 @@ export type AcceptedBpmnCompilation = ExactSourceCapture &
   Readonly<{
     status: BpmnCompilationStatus.Accepted;
     diagnostics: readonly [];
-    executableIr: SequentialUserTaskExecutableIr;
+    checkedProcess: CheckedProcess;
+    semanticProcess: SemanticProcessProgram;
   }>;
 
 export type RejectedBpmnCompilation = ExactSourceCapture &
   Readonly<{
     status: BpmnCompilationStatus.Rejected;
     diagnostics: ReadonlyArray<BpmnSourceDiagnostic>;
-    executableIr: undefined;
+    checkedProcess: undefined;
+    semanticProcess: undefined;
   }>;
 
 export type BpmnCompilationResult =

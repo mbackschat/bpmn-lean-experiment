@@ -18,7 +18,6 @@ This separation avoids routing every consumer through document-version switches 
 | Scenario | Stable `kind`; answer-free model/profile identity, explicit stimuli, requested observations, and provenance |
 | Canonical result | Outcome plus canonical observation trace; no target-specific host data |
 | CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; canonical result |
-| Current executable IR | Transitional current `kind` and compiler identity; exact BPMN source and semantic-profile identity; one bounded executable topology |
 | Checked BPMN graph | Current `checkedProcess` contract; source-facing admitted graph with exact source/profile identity and no runtime semantics |
 | Semantic Process program | Current `semanticProcess` contract; compiler/source/profile identity, typed control places and operations, and no mutable runtime state |
 | Pipeline report | Stable `kind`; ephemeral verification report, provenance, comparisons, replay count, isolation, and timings |
@@ -42,4 +41,4 @@ Portable assertions are verifier-side claims over canonical results or relations
 - [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.
 - [semantic-process.schema.json](schemas/semantic-process.schema.json) validates the immutable Semantic Process definition contract.
 
-The checked BPMN graph and Semantic Process schemas freeze the approved artifact boundaries from [the Semantic Process IL proposal](../docs/SEMANTIC-PROCESS-IL-PROPOSAL.md). They do not make the proposed lowerer or semantics implemented. Until their later atomic replacement, the current executable-IR schema and consumers remain authoritative for the production sequential path.
+The checked BPMN graph and Semantic Process schemas freeze the approved artifact boundaries from [the Semantic Process IL proposal](../docs/SEMANTIC-PROCESS-IL-PROPOSAL.md). The bounded source compiler now produces both artifacts and the sequential production path consumes only the Semantic Process program. The schemas validate transport shape; they do not establish lowering correspondence or operational semantics.

@@ -8,6 +8,7 @@ import {
   WaitKind,
 } from "./contract.js";
 import type {
+  ActiveWait,
   CanonicalObservation,
   OpenUserTask,
   Scenario,
@@ -15,22 +16,22 @@ import type {
   StateObservation,
   Stimulus,
 } from "./contract.js";
-import type {
-  SequentialUserTaskExecutableIr,
-} from "./executable-ir.js";
 import {
-  supportsSequentialUserTaskScenario,
-} from "./sequential-user-task-admission.js";
+  supportsSemanticProcessScenario,
+} from "./semantic-process-admission.js";
+import type {
+  SemanticProcessProgram,
+} from "./semantic-process-contract.js";
 import {
   ControlStateKind,
   applyStimulus,
   initialState,
-  sequentialUserTaskClosureLimit,
+  semanticProcessClosureLimit,
   validateClosureLimit,
-} from "./sequential-user-task-runtime.js";
+} from "./semantic-process-runtime.js";
 import type {
   RuntimeState,
-} from "./sequential-user-task-runtime.js";
+} from "./semantic-process-runtime.js";
 import {
   stimulusCommandId,
 } from "./stimulus.js";
@@ -73,111 +74,66 @@ export type ScenarioDeployment = Readonly<{
   >;
 }>;
 
-function assertNever(value: never): never {
-  throw new TypeError(`Unsupported semantic variant: ${JSON.stringify(value)}`);
-}
-
-function taskInstanceId(
-  model: SequentialUserTaskExecutableIr,
-  instanceId: string,
-  activation: number,
-) {
-  return {
-    processInstanceId: instanceId,
-    elementId: model.userTask.id,
-    activation,
-  };
-}
-
 export function projectOpenUserTasks(
-  model: SequentialUserTaskExecutableIr,
   state: RuntimeState,
 ): ReadonlyArray<OpenUserTask> {
-  switch (state.control.kind) {
-    case ControlStateKind.WaitingUserTask:
-      return [
-        {
-          id: taskInstanceId(
-            model,
-            state.control.instanceId,
-            state.control.activation,
-          ),
-          name: model.userTask.name,
-          state: UserTaskLifecycleState.Active,
-        },
-      ];
-    case ControlStateKind.NotStarted:
-    case ControlStateKind.EnteringStart:
-    case ControlStateKind.EnteringUserTask:
-    case ControlStateKind.LeavingUserTask:
-    case ControlStateKind.EnteringEnd:
-    case ControlStateKind.Completed:
-      return [];
-    default:
-      return assertNever(state.control);
-  }
+  return state.userTaskWaits.map((wait) => ({
+    id: wait.id,
+    name: wait.name,
+    state: UserTaskLifecycleState.Active,
+  }));
 }
 
-function observeStableState(
-  model: SequentialUserTaskExecutableIr,
-  state: RuntimeState,
-): StateObservation | null {
+function observeStableState(state: RuntimeState): StateObservation | null {
   switch (state.control.kind) {
-    case ControlStateKind.WaitingUserTask: {
-      const id = taskInstanceId(
-        model,
-        state.control.instanceId,
-        state.control.activation,
-      );
-      return {
-        kind: CanonicalObservationKind.State,
-        instanceId: state.control.instanceId,
-        status: ProcessStatus.Running,
-        activeWaits: [
-          {
-            elementId: model.userTask.id,
-            kind: WaitKind.UserTask,
-            multiplicity: 1,
-          },
-        ],
-        openUserTasks: projectOpenUserTasks(model, state),
-        enabledInteractions: [
-          {
-            kind: StimulusKind.CompleteUserTaskInstance,
-            taskId: id,
-          },
-        ],
-        logicalTimeMs: state.logicalTimeMs,
-      };
-    }
+    case ControlStateKind.Running:
     case ControlStateKind.Completed:
       return {
         kind: CanonicalObservationKind.State,
         instanceId: state.control.instanceId,
-        status: ProcessStatus.Completed,
-        activeWaits: [],
-        openUserTasks: [],
-        enabledInteractions: [],
+        status:
+          state.control.kind === ControlStateKind.Running
+            ? ProcessStatus.Running
+            : ProcessStatus.Completed,
+        activeWaits: projectActiveWaits(state),
+        openUserTasks: projectOpenUserTasks(state),
+        enabledInteractions: state.userTaskWaits.map((wait) => ({
+          kind: StimulusKind.CompleteUserTaskInstance,
+          taskId: wait.id,
+        })),
         logicalTimeMs: state.logicalTimeMs,
       };
     case ControlStateKind.NotStarted:
-    case ControlStateKind.EnteringStart:
-    case ControlStateKind.EnteringUserTask:
-    case ControlStateKind.LeavingUserTask:
-    case ControlStateKind.EnteringEnd:
       return null;
     default:
       return assertNever(state.control);
   }
 }
 
+function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
+  const multiplicities = new Map<string, number>();
+  for (const wait of state.userTaskWaits) {
+    multiplicities.set(
+      wait.id.elementId,
+      (multiplicities.get(wait.id.elementId) ?? 0) + 1,
+    );
+  }
+  return [...multiplicities.entries()]
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(([elementId, multiplicity]) => ({
+      elementId,
+      kind: WaitKind.UserTask,
+      multiplicity,
+    }));
+}
+
 export function advanceScenario(
-  model: SequentialUserTaskExecutableIr,
+  program: SemanticProcessProgram,
   state: RuntimeState,
   stimulus: Stimulus,
-  closureLimit: number = sequentialUserTaskClosureLimit,
+  closureLimit: number = semanticProcessClosureLimit,
 ): ScenarioStep {
-  const result = applyStimulus(model, state, stimulus, closureLimit);
+  const result = applyStimulus(program, state, stimulus, closureLimit);
   if (result.internalStepBoundExceeded) {
     return {
       kind: ScenarioStepKind.HarnessFailure,
@@ -186,7 +142,7 @@ export function advanceScenario(
     };
   }
 
-  const snapshot = observeStableState(model, result.state);
+  const snapshot = observeStableState(result.state);
   if (snapshot === null) {
     return {
       kind: ScenarioStepKind.HarnessFailure,
@@ -227,9 +183,9 @@ export function advanceScenario(
 
 export function deployScenario(
   scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr,
+  semanticProcess: SemanticProcessProgram,
 ): ScenarioDeployment {
-  const outcome = supportsSequentialUserTaskScenario(scenario, executableIr)
+  const outcome = supportsSemanticProcessScenario(scenario, semanticProcess)
     ? CommandOutcome.Committed
     : CommandOutcome.Unsupported;
   return {
@@ -242,7 +198,7 @@ export function deployScenario(
 }
 
 function executeStimuli(
-  model: SequentialUserTaskExecutableIr,
+  program: SemanticProcessProgram,
   stimuli: ReadonlyArray<Stimulus>,
   closureLimit: number,
 ): ScenarioResult {
@@ -250,7 +206,7 @@ function executeStimuli(
   const trace: CanonicalObservation[] = [];
 
   for (const stimulus of stimuli) {
-    const step = advanceScenario(model, state, stimulus, closureLimit);
+    const step = advanceScenario(program, state, stimulus, closureLimit);
     switch (step.kind) {
       case ScenarioStepKind.Committed:
         trace.push(...step.observations);
@@ -279,11 +235,11 @@ function executeStimuli(
 export function runScenarioWithClosureLimit(
   closureLimit: number,
   scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr,
+  semanticProcess: SemanticProcessProgram,
 ): ScenarioResult {
   validateClosureLimit(closureLimit);
 
-  const deployment = deployScenario(scenario, executableIr);
+  const deployment = deployScenario(scenario, semanticProcess);
   switch (deployment.outcome) {
     case CommandOutcome.Unsupported:
       return {
@@ -295,7 +251,7 @@ export function runScenarioWithClosureLimit(
       };
     case CommandOutcome.Committed: {
       const execution = executeStimuli(
-        executableIr,
+        semanticProcess,
         scenario.stimuli,
         closureLimit,
       );
@@ -311,11 +267,15 @@ export function runScenarioWithClosureLimit(
 
 export function runScenario(
   scenario: Scenario,
-  executableIr: SequentialUserTaskExecutableIr,
+  semanticProcess: SemanticProcessProgram,
 ): ScenarioResult {
   return runScenarioWithClosureLimit(
-    sequentialUserTaskClosureLimit,
+    semanticProcessClosureLimit,
     scenario,
-    executableIr,
+    semanticProcess,
   );
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported semantic variant: ${JSON.stringify(value)}`);
 }

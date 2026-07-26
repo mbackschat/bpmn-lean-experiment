@@ -30,7 +30,7 @@ The semantic core owns the User Task occurrence, its exact discoverable projecti
 BPMN source and profile
           │
           ▼
-profile-identified User Task definition in executable IR
+profile-identified User Task definition in a Semantic Process program
           │
           ▼
 semantic-core runtime creates one task occurrence
@@ -116,7 +116,7 @@ interface OpenUserTask {
 }
 ```
 
-The User Task name comes from the admitted BPMN source through the current executable IR. `null` distinguishes an omitted BPMN name from an invented display value. The task projection does not expose generated host IDs.
+The User Task name comes from the admitted BPMN source through the checked graph and current Semantic Process program. `null` distinguishes an omitted BPMN name from an invented display value. The task projection does not expose generated host IDs.
 
 The canonical state observation reports `openUserTasks` and state-derived, command-ID-free `enabledInteractions`. It must not filter a scenario’s future scripted commands: the same admitted model and runtime state always produce the same canonical state projection.
 
@@ -140,7 +140,7 @@ Claiming, delegation, assignment, actor identity, authorization, completion vari
 
 ## IR and Lean consequence
 
-The sequential XML compiler uses the CMOF-derived `FlowElement.name` property by preserving the optional BPMN User Task name in the current executable IR. This is not a second structurally distinct compiler consumer and does not generalize the partial CMOF manifest or introduce a universal BPMN IR.
+The bounded XML compiler uses the CMOF-derived `FlowElement.name` property by preserving the optional BPMN User Task name through the checked graph and current Semantic Process program. This does not generalize the partial CMOF manifest or introduce a universal BPMN IL.
 
 Lean keeps a small executable model separate from runtime instances. The model gains the reviewed User Task definition metadata; runtime state gains the semantic activation ordinal; observations gain the exact open-task projection for the new scenario.
 

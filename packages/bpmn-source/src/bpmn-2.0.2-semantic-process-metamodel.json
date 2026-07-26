@@ -8,16 +8,17 @@
   },
   "coverage": {
     "status": "partial",
-    "consumer": "bpmn-source-sequential-user-task",
+    "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, UserTask, EndEvent, and SequenceFlow type identity",
+      "StartEvent, UserTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
       "FlowElement name type identity",
       "CatchEvent and ThrowEvent event-definition containment",
-      "StartEvent.isInterrupting default"
+      "StartEvent.isInterrupting default",
+      "Gateway.gatewayDirection type and default"
     ],
     "absent": [
       "complete BPMN20 metamodel",
@@ -31,6 +32,7 @@
     "processType": "bpmn:Process",
     "startEventType": "bpmn:StartEvent",
     "userTaskType": "bpmn:UserTask",
+    "parallelGatewayType": "bpmn:ParallelGateway",
     "endEventType": "bpmn:EndEvent",
     "sequenceFlowType": "bpmn:SequenceFlow"
   },
@@ -70,6 +72,18 @@
       "name": "SequenceFlow",
       "directSuperClasses": [
         "FlowElement"
+      ]
+    },
+    {
+      "name": "Gateway",
+      "directSuperClasses": [
+        "FlowNode"
+      ]
+    },
+    {
+      "name": "ParallelGateway",
+      "directSuperClasses": [
+        "Gateway"
       ]
     },
     {
@@ -176,6 +190,15 @@
       "upper": 1,
       "containment": false,
       "default": true
+    },
+    {
+      "owner": "Gateway",
+      "name": "gatewayDirection",
+      "type": "GatewayDirection",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": "unspecified"
     }
   ]
 }

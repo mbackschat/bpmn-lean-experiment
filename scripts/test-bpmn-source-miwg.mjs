@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
-  compileSequentialUserTaskBpmn,
+  compileBpmnToSemanticProcess,
 } from "../packages/bpmn-source/dist/index.js";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -49,7 +49,7 @@ const outcomeCounts = new Map();
 
 for (const modelName of modelNames) {
   const bytes = await readFile(path.join(referenceDirectory, modelName));
-  const result = await compileSequentialUserTaskBpmn({
+  const result = await compileBpmnToSemanticProcess({
     bytes,
     sourceId: `miwg-${modelName}`,
     expectedSha256: undefined,

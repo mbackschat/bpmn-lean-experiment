@@ -15,7 +15,7 @@ The bounded `none Start Event → User Task → none End Event` MVP, first BPMN 
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
-The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**. The implemented first path is exact BPMN XML bytes → bounded private structural import → validated, content-addressed executable IR as data → semantic-core evaluation → Temporal hosting. The approved next architecture replaces that topology-specific IR atomically with exact BPMN XML bytes → checked project-owned BPMN graph → bounded [Semantic Process IL](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md) → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority. The production compiler remains deliberately bounded and is not a general BPMN importer.
+The primary execution architecture is **an interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**. The implemented path is exact BPMN XML bytes → bounded private structural import → checked project-owned BPMN graph → bounded [Semantic Process IL](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md) → semantic-core evaluation → Temporal hosting. Generated source may be a derived diagnostic or optimization only after equivalence evidence; it is never the profile or semantic authority. The source compiler and lowerer admit only the current sequential and balanced two-branch parallel structures; production execution remains gated to the sequential capsule until the parallel semantics close. This is not a general BPMN importer.
 
 Never claim BPMN conformance or CIB compatibility beyond the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 
@@ -161,7 +161,7 @@ Use one owner for each fact and link to it elsewhere:
 |---|---|
 | Document roles, suffix contracts, lifecycle, placement, and same-change triggers | [DOC-DISCIPLINE.md](docs/DOC-DISCIPLINE.md) |
 | Mission, authority, and approved durable boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
-| Proposed checked BPMN graph, Semantic Process IL contract, lowering, and growth rules before implementation | [SEMANTIC-PROCESS-IL-PROPOSAL.md](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md) |
+| Semantic Process IL contract, remaining semantic obligations, and growth rules before graduation | [SEMANTIC-PROCESS-IL-PROPOSAL.md](docs/SEMANTIC-PROCESS-IL-PROPOSAL.md) |
 | Reviewed BPMN Process Execution requirements and dispositions | [BPMN-REQUIREMENT-LEDGER.md](docs/BPMN-REQUIREMENT-LEDGER.md) |
 | Exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |

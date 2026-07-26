@@ -14,7 +14,7 @@ import {
   runScenario,
 } from "../dist/index.js";
 import {
-  executableIrFor,
+  semanticProcessFor,
   loadCase,
 } from "./user-task-fixture.mjs";
 
@@ -24,7 +24,7 @@ test("derives the exact retained User Task occurrence result", async () => {
     "cibseven-evidence.json",
   );
 
-  assert.deepEqual(runScenario(scenario, executableIrFor(scenario)), expected);
+  assert.deepEqual(runScenario(scenario, semanticProcessFor(scenario)), expected);
 });
 
 test("rejects a wrong activation and preserves its exact open task", async () => {
@@ -33,7 +33,7 @@ test("rejects a wrong activation and preserves its exact open task", async () =>
     "wrong-activation.cibseven-evidence.json",
   );
 
-  const result = runScenario(scenario, executableIrFor(scenario));
+  const result = runScenario(scenario, semanticProcessFor(scenario));
 
   assert.deepEqual(result, expected);
   assert.deepEqual(result.trace[2], result.trace[4]);
@@ -45,7 +45,7 @@ test("rejects stale completion without reactivating the completed task", async (
     "stale-completion.cibseven-evidence.json",
   );
 
-  const result = runScenario(scenario, executableIrFor(scenario));
+  const result = runScenario(scenario, semanticProcessFor(scenario));
 
   assert.deepEqual(result, expected);
   assert.deepEqual(result.trace[4], result.trace[6]);
@@ -57,7 +57,7 @@ test("derives enabled interaction only from current state", async () => {
     "wrong-activation.cibseven-evidence.json",
   );
   const step = advanceScenario(
-    executableIrFor(scenario),
+    semanticProcessFor(scenario),
     initialState,
     scenario.stimuli[0],
   );
@@ -83,11 +83,12 @@ test("requires the full active task occurrence for completion", async () => {
     "scenario.json",
     "cibseven-evidence.json",
   );
-  const model = executableIrFor(scenario);
+  const model = semanticProcessFor(scenario);
   const started = applyStimulus(model, initialState, scenario.stimuli[0]);
-  assert.deepEqual(started.state.control, {
-    kind: ControlStateKind.WaitingUserTask,
-    instanceId: "Instance_1",
+  assert.equal(started.state.control.kind, ControlStateKind.Running);
+  assert.deepEqual(started.state.userTaskWaits[0].id, {
+    processInstanceId: "Instance_1",
+    elementId: "UserTask_Approve",
     activation: 1,
   });
 
@@ -129,7 +130,7 @@ test("preserves an omitted BPMN task name as null", async () => {
       ...scenario,
       stimuli: scenario.stimuli.slice(0, 1),
     },
-    executableIrFor(scenario, null),
+    semanticProcessFor(scenario, null),
   );
 
   assert.deepEqual(result.outcome, {
@@ -144,8 +145,8 @@ test("rejects a malformed User Task name at deployment", async () => {
     "scenario.json",
     "cibseven-evidence.json",
   );
-  const malformedModel = executableIrFor(scenario);
-  malformedModel.userTask.name = 42;
+  const malformedModel = semanticProcessFor(scenario);
+  malformedModel.operations[2].task.name = 42;
 
   assert.equal(
     deployScenario(scenario, malformedModel).outcome,
@@ -166,7 +167,7 @@ test("admits a structurally compatible profile without profile-specific routing"
   assert.deepEqual(
     runScenario(
       compatibleScenario,
-      executableIrFor(compatibleScenario),
+      semanticProcessFor(compatibleScenario),
     ),
     expected,
   );

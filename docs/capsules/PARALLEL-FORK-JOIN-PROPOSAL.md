@@ -109,7 +109,7 @@ Reconsider this decision if a material rule cannot be stated or proved without p
 
 The bounded source compiler expansion admits exactly the reviewed fork/join topology with two distinct User Tasks and resolved Sequence Flows. The approved [Semantic Process IL proposal](../SEMANTIC-PROCESS-IL-PROPOSAL.md) owns the proposed checked source graph, `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, and `terminate` operations, lowering rules, well-formedness, and growth constraints.
 
-The current sequential executable IR and topology-specific evaluator path must be replaced atomically. They must not survive as delegated or compatibility paths. This does not authorize a general BPMN compiler, universal semantic language, general scope algebra, or arbitrary graph execution.
+The sequential topology-specific executable representation and evaluator path were replaced atomically by the checked graph, Semantic Process program, and program-driven sequential evaluator. They do not survive as delegated or compatibility paths. This does not authorize a general BPMN compiler, universal semantic language, general scope algebra, or arbitrary graph execution.
 
 Lean consumes the exact admitted checked graph and Semantic Process program produced once for the scenario rather than compiling a second definition into its module. The bounded obligations are:
 

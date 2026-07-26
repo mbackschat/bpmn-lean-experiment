@@ -55,9 +55,12 @@ test(
           DifferentialTarget.CibSeven,
         ],
       });
-      assert.deepEqual(caseReport.scenario.executableIr, {
-        kind: "sequentialUserTask",
-        compiler: "bpmn-source-sequential-user-task",
+      assert.deepEqual(caseReport.scenario.semanticProcess, {
+        kind: "semanticProcess",
+        compiler: "bpmn-source-semantic-process",
+      });
+      assert.deepEqual(caseReport.scenario.checkedProcess, {
+        kind: "checkedProcess",
       });
       assert.deepEqual(
         caseEvidence.actualWaitTrace,

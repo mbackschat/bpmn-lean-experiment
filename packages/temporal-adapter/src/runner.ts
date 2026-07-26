@@ -10,7 +10,7 @@ import type {
   OpenUserTask,
   Scenario,
   ScenarioResult,
-  SequentialUserTaskExecutableIr,
+  SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import { StimulusKind } from "@bpmn-lean/semantic-core";
 import type { WorkflowHandle } from "@temporalio/client";
@@ -111,7 +111,7 @@ export class TemporalScenarioRunner {
 
   async runScenario(
     scenario: Scenario,
-    executableIr: SequentialUserTaskExecutableIr,
+    semanticProcess: SemanticProcessProgram,
     options: TemporalScenarioExecutionOptions,
   ): Promise<TemporalScenarioExecution> {
     this.assertAvailable();
@@ -122,7 +122,7 @@ export class TemporalScenarioRunner {
         {
           taskQueue: bpmnSemanticTaskQueue,
           workflowId: options.workflowId,
-          args: [scenario, executableIr],
+          args: [scenario, semanticProcess],
         },
       ),
       operationDeadlineMs,
@@ -217,8 +217,8 @@ export class TemporalScenarioRunner {
       throw new TypeError("Workflow IDs must be unique within one batch");
     }
     const settled = await Promise.allSettled(
-      items.map(({ scenario, executableIr, options }) =>
-        this.runScenario(scenario, executableIr, options),
+      items.map(({ scenario, semanticProcess, options }) =>
+        this.runScenario(scenario, semanticProcess, options),
       ),
     );
     const failures = settled.flatMap((result) =>

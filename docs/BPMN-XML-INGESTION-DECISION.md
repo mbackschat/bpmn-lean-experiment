@@ -8,13 +8,13 @@ The approved direct runtime dependency is [`bpmn-moddle@10.0.0`](https://www.npm
 
 The bounded evidence behind this decision is recorded in [the BPMN XML ingestion experiment](experiments/BPMN-XML-INGESTION-EXPERIMENT.md). Adoption changes only the source-ingestion boundary and the existing sequential capsule’s executable input; it does not approve a general executable IR, new BPMN behavior, CIB extensions, export, or a conformance claim.
 
-The later [Semantic Process IL proposal](SEMANTIC-PROCESS-IL-PROPOSAL.md) approves a bounded successor to the initial topology-specific executable IR for the sequential and parallel capsules. That successor preserves this document's parser isolation, exact-source, admission, security, and license decisions.
+The later [Semantic Process IL proposal](SEMANTIC-PROCESS-IL-PROPOSAL.md) approved the bounded successor to the initial topology-specific executable representation for the sequential and parallel capsules. The implemented checked graph and lowerer preserve this document's parser isolation, exact-source, admission, security, and license decisions.
 
 ## Decision
 
 Use `bpmn-moddle@10.0.0` to construct a BPMN-metamodel-aware structural view during deployment. Preserve the exact original bytes and their SHA-256 digest as the source identity. Treat the moddle object graph as a derived structural view, never as the source of record or as executable semantic authority.
 
-The approved target boundary is shown below. The implemented sequential path still uses the transitional topology-specific executable IR until the atomic replacement recorded in [the plan](PLAN.md).
+The approved target boundary is shown below and is now the single implemented production definition path.
 
 ```text
 untrusted BPMN bytes
@@ -81,12 +81,12 @@ The CMOF path can justify facts such as type inheritance, reference targets, own
 
 ### CMOF-derived metamodel facts
 
-The implemented use of CMOF is a bounded current metamodel manifest rather than a second hand-written BPMN type hierarchy. The [tracked manifest](../packages/bpmn-source/src/bpmn-2.0.2-sequential-user-task-metamodel.json) retains:
+The implemented use of CMOF is a bounded current metamodel manifest rather than a second hand-written BPMN type hierarchy. The [tracked manifest](../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json) retains:
 
 - exact BPMN 2.0.2 artifact identity;
 - the qualified moddle type names consumed by the compiler;
-- twelve classes and their direct generalizations;
-- eight properties and their value types;
+- fourteen classes and their direct generalizations;
+- nine properties and their value types;
 - lower and upper multiplicities;
 - containment versus cross-reference distinctions;
 - the specified Start Event default;
@@ -98,7 +98,7 @@ That manifest can drive importer validation, supported/unsupported coverage, pro
 
 Lean should formalize the smallest reviewed executable fragment over checked source facts. CMOF justifies the structural premises—for example that a Sequence Flow has admitted source and target Flow Nodes—while Lean defines and proves the operational consequences. A full generated CMOF mirror would add large amounts of diagram, interchange, and modeling structure without supplying the missing execution semantics.
 
-The first ingestion slice therefore does not generate complete TypeScript or Lean bindings. It records only the twelve class/generalization facts and eight property facts consumed by the sequential User Task compiler, including the Flow Element name type, reference targets, multiplicities, containment, and the Start Event default, and explicitly records absent coverage. The maintained checker compares the manifest’s exact source digest and every recorded fact with the ignored normative `BPMN20.cmof` when that corpus is locally available. The XML-facing compiler separately tests that the XSD-optional User Task name becomes `null` when omitted. A second semantic consumer must demonstrate the reusable manifest shape before the project generalizes its extraction machinery.
+The current ingestion slice therefore does not generate complete TypeScript or Lean bindings. It records only the fourteen class/generalization facts and nine property facts consumed by the bounded checked-process compiler, including Gateway and Parallel Gateway structure, Gateway direction, the Flow Element name type, reference targets, multiplicities, containment, and the Start Event default, and explicitly records absent coverage. The maintained checker compares the manifest’s exact source digest and every recorded fact with the ignored normative `BPMN20.cmof` when that corpus is locally available. The XML-facing compiler separately tests that the XSD-optional User Task name becomes `null` when omitted. Further consumers must demonstrate a concrete need before the project generalizes its extraction machinery.
 
 ## Why `bpmn-moddle`
 
