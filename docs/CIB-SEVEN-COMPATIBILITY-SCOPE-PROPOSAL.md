@@ -18,7 +18,7 @@ Compatibility claims remain level-specific:
 
 - exact BPMN source bytes and unsupported extension content can be retained without being executable;
 - only selected namespace-expanded QNames and exact contexts enter source admission;
-- selected bindings normalize to project-owned descriptors before Semantic Process IL;
+- selected bindings normalize to project-owned protocol and handler descriptors before Semantic Process IL;
 - behavioral compatibility is established capsule by capsule against the pinned CIB profile;
 - handler, Java, scripting, expression, and worker-protocol compatibility require their own contracts and evidence.
 
@@ -30,7 +30,7 @@ Compatibility claims remain level-specific:
 |---|---|---|
 | Exact source-byte retention for extension-bearing BPMN | **In scope now** | Preserve provenance even when execution rejects an extension; retention does not imply normalized round-trip or execution |
 | Namespace-aware recognition of capsule-selected extensions | **In scope now** | Required for exact CIB evidence; admit by namespace URI, local name, BPMN context, and value shape |
-| Project-owned effect descriptor and handler identifier | **In scope for the Service Task capsule** | Supplies the portable semantic/adapter boundary without importing a Java class or JUEL object into the core |
+| Project-owned effect protocol and handler identifier | **In scope for the Service Task capsule** | Supplies the portable semantic/adapter boundary without importing a Java class or JUEL object into the core |
 | Polyglot Temporal Activity execution and project-native Java handlers | **Strategic compatibility scope; implementation separately approved** | A TypeScript Workflow can dispatch the language-neutral effect protocol to TypeScript or JVM Workers; this supplies Java business-code integration without duplicating the interpreter |
 | Exact `camunda:delegateExpression="${bpmnLeanEffectHandler}"` plus `camunda:asyncBefore="true"` | **Recommended for the Service Task capsule only** | CIB can bind the exact expression to the probe bean; project admission treats the whole expression as a selected token and does not claim general JUEL |
 | Generic `camunda:class` execution | **Deferred** | XML support is easy, but arbitrary Java class loading, construction, field injection and delegate APIs are not; reopen for a real Java-delegate migration consumer |
@@ -68,11 +68,11 @@ The approved binding replaces the draft capsule’s `camunda:class="org.bpmnlean
 The exact binding has two target-specific realizations:
 
 - CIB Seven’s test configuration registers `bpmnLeanEffectHandler` as the project probe `JavaDelegate`;
-- project admission recognizes only the exact expression token in this exact Service Task profile and normalizes it to handler identifier `bpmnLeanEffectHandler` plus the project effect descriptor.
+- project admission recognizes only the exact expression token in this exact Service Task profile and normalizes it to handler identifier `bpmnLeanEffectHandler` plus the project effect protocol.
 
-The standard `implementation="urn:bpmn-lean:effect:probe-v1"` and the extension `delegateExpression="${bpmnLeanEffectHandler}"` are one profile-defined pair. Executable admission rejects either field alone, any alternative spelling or value, and every mismatched pair. The normalized effect contract assigns distinct authority: `handler` is Worker dispatch authority, while `implementation` is effect-descriptor identity. Both come from the admitted pair and neither may be selected or changed independently by a Worker or adapter.
+The standard `implementation="urn:bpmn-lean:effect:probe-v1"` and the extension `delegateExpression="${bpmnLeanEffectHandler}"` are one profile-defined pair. Executable admission rejects either field alone, any alternative spelling or value, and every mismatched pair. The normalized effect contract assigns distinct authority: `protocol` is the technology or coordination protocol read from the standard `implementation` attribute, while `handler` is business-effect identity and Worker dispatch authority. Both come from the admitted pair and neither may be selected or changed independently by a Worker or adapter.
 
-Requiring the project URN is deliberately a probe-fixture profile choice. A real existing CIB document ordinarily carries its Camunda binding without this project URN, so the pair is not the future general migration-admission rule. Any migration profile that infers or supplies descriptor identity must make that mapping explicit, versioned, and separately evidenced.
+Requiring the project URN is deliberately a probe-fixture profile choice. A real existing CIB document ordinarily carries its Camunda binding without this project URN, so the pair is not the future general migration-admission rule. Any migration profile that infers or supplies protocol identity must make that mapping explicit, versioned, and separately evidenced. A second business effect under the same protocol receives a different handler rather than a new protocol URI.
 
 Lean, Semantic Process IL, the TypeScript semantic core, and Temporal Workflow code never parse or evaluate JUEL and never contain a CIB Java class. The Temporal Activity Worker selects the test handler through adapter configuration. A future public registry may reuse the stable handler identifier, but this capsule does not generalize or publish that registry without a non-test consumer.
 
@@ -84,8 +84,8 @@ The replacement architecture should expose a project-owned effect protocol rathe
 
 ```ts
 type EffectRequest = Readonly<{
+  protocol: "urn:bpmn-lean:effect:probe-v1";
   handler: "bpmnLeanEffectHandler";
-  implementation: "urn:bpmn-lean:effect:probe-v1";
   idempotencyKey: string;
 }>;
 
@@ -96,7 +96,7 @@ type EffectResult = Readonly<{
 
 The success-only Service Task capsule needs no variables or payload, so it should not publish a broader interface yet. Later variable/effect capsules can add typed input and result data under ordinary wire-contract evolution.
 
-The request is derived from one committed normalized descriptor containing the exact handler/implementation pair. A Worker dispatches only by `handler`; `implementation` identifies the requested effect meaning and remains part of content and idempotency binding. A request whose fields do not equal the admitted pair is an adapter-contract failure, not a fallback dispatch opportunity.
+The request is derived from one committed normalized descriptor containing the exact protocol/handler pair. A Worker dispatches only by `handler`; `protocol` identifies the execution protocol and remains part of content and idempotency binding. A request whose fields do not equal the admitted pair is an adapter-contract failure, not a fallback dispatch opportunity.
 
 A Java bridge, if separately approved, sits behind this protocol as a Temporal Activity Worker or isolated executor:
 
@@ -202,7 +202,7 @@ Unknown or unselected extensions may remain in retained exact bytes, but executa
 
 The durable compatibility claim and interpreter/Worker language boundary are recorded in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution). This document retains the detailed family dispositions, claim discipline, evidence conditions, and reopen boundaries.
 
-The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect proposal](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md) is revised to the exact delegate-expression pair and is no longer blocked on interpreter language, but it cannot resume semantic decision until the phase-zero evidence condition above is green. Do not begin semantic or production implementation from an unverified binding account.
+The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect proposal](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md) is revised to the exact delegate-expression pair and is no longer blocked on interpreter language. Its phase-zero evidence condition is green; its separate semantic decision remains pending.
 
 Apart from the bounded phase-zero probe, no production implementation, dependency, Java Worker, expression engine, script engine, or evidence replacement is approved by this document.
 

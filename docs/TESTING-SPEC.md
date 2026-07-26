@@ -131,7 +131,7 @@ PVM definition data remains diagnostic. Generated engine IDs are excluded from c
 ./scripts/pnpm.sh run test:temporal
 ```
 
-The gate starts fresh in-memory Temporal servers, compiles exact BPMN before Workflow start, and runs the semantic-lifetime Workflow over the retained sequential, parallel, and Intermediate Catch Timer probes. It checks canonical typed stimulus encoding, SHA-256 content-bound Update and timer command IDs, collision-resistant Process-address Workflow IDs, duplicate logical delivery, accepted-handler draining, typed adapter lifecycle results, retained-Update-first recovery, Query evidence reconciliation, durable timer history, and replay before cleanup.
+The gate starts fresh in-memory Temporal servers, compiles exact BPMN before Workflow start, and runs the semantic-lifetime Workflow over the retained sequential, parallel, and Intermediate Catch Timer probes. It checks the shared Workflow-safe typed-tuple encoder, fixed existing Process-address/Update/timer encodings and digests, deterministic SHA-256 known-answer vectors across padding boundaries, supplementary-plane UTF-8, a multi-block native-crypto cross-check outside Workflow code, content-bound Update and timer command IDs, collision-resistant Process-address Workflow IDs, duplicate logical delivery, accepted-handler draining, typed adapter lifecycle results, retained-Update-first recovery, Query evidence reconciliation, durable timer history, and replay before cleanup.
 
 The sequential stale schedule awaits the completed receipt before submitting the distinct stale command. The gate requires CIB Seven, Lean, and the pure core to retain exact semantic rejection, Temporal to agree exactly through semantic completion, and the adapter to return `processClosed` separately. The parallel live-sibling schedule completes A and then repeats A while B remains active, requiring exact four-target semantic rejection. A retained concurrent same-occurrence race asserts one committed and one rejected result with identical final state without pinning the winner.
 
@@ -169,6 +169,14 @@ The pipeline:
 14. erases the parallel control-place Sequence-Flow provenance while preserving structural validity and requires Lean's lowering-equality gate to reject it;
 15. replays all seven primary live histories;
 16. shuts down the Worker/server and removes temporary files.
+
+### Conditional Service Task schedule substitution
+
+If the unapproved [Service Task effect proposal](capsules/SERVICE-TASK-EFFECT-PROPOSAL.md) is approved, its pipeline change must retain one answer-free semantic scenario while substituting the Service Task's ordinary second plain Temporal isolation execution with `FailAfterMutationOnce`. The two executions still use separate stores that are asserted empty and must produce identical canonical results, so isolation remains checked while the substituted run adds retry/reconciliation evidence.
+
+The resulting conditional matrix is eight scenarios, sixteen Temporal executions, and nine replayed histories: eight primary histories plus the Service Task failure-schedule history. Lean and the core execute the semantic scenario once. CIB executes `PlainSuccess` for content-bound retained evidence and `FailAfterMutationOnce` separately for raw retry/re-execution facts; each uses fresh test-local state and CIB computes no project transport key. The adapter-local two-semantic-instance/shared-store key discriminator is not a ninth scenario.
+
+This substitution does not change either budget. The 15-second bound applies only to the prepared warm pipeline; focused Temporal tests remain subject to the repository-wide 60-second test limit.
 
 The warm budget is less than 15 seconds after prepared builds. The cold budget including measured builds is less than 45 seconds. Prepared mode reports cold time as unavailable rather than zero.
 

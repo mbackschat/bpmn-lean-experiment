@@ -6,6 +6,8 @@ This is an unapproved semantic-capsule proposal. It defines the smallest Service
 
 The project-wide [CIB Seven compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) is owner-approved, including this capsule's exact paired binding. The [dual semantic-core architecture](../DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is owner-rejected, so the TypeScript semantic-core and Workflow language boundary is settled. This capsule still requires its own semantic approval. The green [phase-zero probe](#phase-zero-cib-seven-probe) removes the packaged-engine uncertainty but does not authorize checked-source, Lean, TypeScript, or Temporal production work.
 
+The external-review blockers have been incorporated, and the proposal is ready for an owner approve/reject decision. No unresolved implementation choice is delegated to the implementer; the red phase measures the already-pinned Worker-replacement timeout margin and stops if it is inadequate.
+
 ## Question
 
 Can the project admit one BPMN Service Task whose successful external effect is represented by a core-owned occurrence and intent, executed behind a stable idempotency identity, and completed by an explicit semantic result, while CIB Seven job retries and Temporal Activity attempts remain host evidence rather than BPMN observations?
@@ -20,13 +22,13 @@ Service Task
 None End
 ```
 
-There is one token, one Service Task activation, one effect descriptor, no variables or data, and no competing work.
+There is one token, one Service Task activation, one effect protocol, one business handler, no variables or data, and no competing work.
 
 ## Required scope
 
 - exact private executable `None Start Event → Service Task → None End Event` topology;
 - exact paired Service Task binding: standard implementation URI `urn:bpmn-lean:effect:probe-v1` plus the Camunda-namespace bean token `${bpmnLeanEffectHandler}`, with `asyncBefore="true"`;
-- one project-owned `probe-v1` effect descriptor and one successful result with no payload;
+- one project-owned `probe-v1` effect protocol, one `bpmnLeanEffectHandler` business handler, and one successful result with no payload;
 - one semantic effect occurrence and intent;
 - one adapter-derived SHA-256 transport key whose complete typed input is committed semantic intent state;
 - one `awaitEffect` Semantic Process IL mechanism;
@@ -35,13 +37,13 @@ There is one token, one Service Task activation, one effect descriptor, no varia
 
 ## Excluded scope
 
-Effect payloads, variables, general JUEL evaluation, arbitrary bean resolution, Java class loading, `DelegateExecution` compatibility, field injection, data associations, BPMN `Operation`, Messages, service faults, BPMN Errors, boundary Events, incidents as semantic outcomes, retry exhaustion, compensation, cancellation, heartbeats, Local Activities, long-running work, multiple effects, effect races, external-task fetch-and-lock, production effect-service selection, and arbitrary Service Task implementation URIs are excluded.
+Effect payloads, variables, general JUEL evaluation, arbitrary bean resolution, Java class loading, `DelegateExecution` compatibility, field injection, data associations, BPMN `Operation`, Messages, service faults, BPMN Errors, boundary Events, incidents as semantic outcomes, retry exhaustion as semantics, compensation, supported Workflow cancellation or termination, heartbeats, Local Activities, long-running work, multiple effects, effect races, external-task fetch-and-lock, production effect-service selection, and arbitrary Service Task implementation URIs are excluded.
 
 A failed or exhausted host execution is an adapter or oracle failure outside the canonical semantic result. The capsule makes no cross-engine equivalence claim for that state.
 
 ## Normative basis
 
-BPMN 2.0.2 Clause 10.3.3.1 defines a Service Task as a Task using a service or automated application. Table 10.8 defines the standard `implementation` URI and optional `operationRef`. Clause 13.3.3 says activation invokes the service, successful service completion completes the Service Task, and a service fault is treated as an interrupting error that fails the Activity.
+BPMN 2.0.2 Clause 10.3.3.1 defines a Service Task as a Task using a service or automated application. Table 10.8 defines the standard `implementation` URI as the technology or coordination protocol and also defines optional `operationRef`; it does not make `implementation` the business-effect identity. Clause 13.3.3 says activation invokes the service, successful service completion completes the Service Task, and a service fault is treated as an interrupting error that fails the Activity.
 
 This capsule selects only the successful activation-to-completion path. It does not reinterpret transport attempts as repeated BPMN Service Task activations and does not claim the excluded fault path.
 
@@ -68,9 +70,9 @@ Pinned `bpmn-moddle@10.0.0` imports the exact phase-zero source without a parser
 |---|---|---|
 | Synchronous delegate | The delegate runs inside the command that enters the Service Task; an exception rolls back engine state after the external effect might already have happened. | Reject as the capsule binding. It supplies no durable intermediate host wait corresponding to the core intent and makes effect-after-rollback the first problem. |
 | External task | CIB exposes topic, fetch-and-lock, lease, completion, failure, retry, and incident protocols. | Defer. It is operationally close to a worker protocol but introduces multiple extension semantics and a second public command surface that this discriminator does not need. |
-| `asyncBefore` continuation job plus exact delegate-expression bean | Starting the Process creates an immediately executable durable job before the Service Task. The disabled executor leaves it waiting until the harness explicitly releases it; CIB resolves the exact bean token to the project probe delegate. | Select, conditional on the phase-zero probe. It is the smallest durable oracle boundary, exercises a replacement-oriented handler identity, and exposes retry/reconciliation facts without importing external-task leases or general JUEL. |
+| `asyncBefore` continuation job plus exact delegate-expression bean | Starting the Process creates an immediately executable durable job before the Service Task. The disabled executor leaves it waiting until the harness explicitly releases it; CIB resolves the exact bean token to the project probe delegate. | Select. The green phase-zero probe establishes the binding facts; this is the smallest durable oracle boundary and exposes retry/re-execution facts without importing external-task leases or general JUEL. |
 
-The selected account does not claim that the CIB async-continuation job is the BPMN effect occurrence. Job existence and execution are engine-observed host facts. Mapping that job to one semantic effect occurrence and intent is adapter-derived from the admitted source and live Process instance.
+The selected account does not claim that the CIB async-continuation job is the BPMN effect occurrence. Job existence and execution are engine-observed host facts. Mapping that pre-activation host wait to the capsule's later semantic effect occurrence and intent is adapter-decided, not a derivation from CIB state.
 
 ## Source profile
 
@@ -93,17 +95,18 @@ Admission accepts only:
 - one extension QName `{http://camunda.org/schema/1.0/bpmn}asyncBefore` with lexical value `true`;
 - no extension elements, fields, listeners, method or property expressions, retry cycles, `asyncAfter`, topics, or other foreign attributes.
 
-The implementation URI and delegate-expression token are one profile-defined pair. Admission rejects either field alone, every alternative spelling or value, and any mismatched pair. The normalized contract assigns distinct authority: `handler` is Worker dispatch authority and `implementation` is effect-descriptor identity. Both come from the admitted pair; a Worker or adapter cannot select or change either independently.
+The implementation URI and delegate-expression token are one profile-defined pair. Admission rejects either field alone, every alternative spelling or value, and any mismatched pair. The normalized contract assigns distinct authority: `protocol` is the effect execution protocol read from the standard `implementation` attribute, while `handler` is the business-effect identity and Worker dispatch authority read from the exact delegate-expression token. Both come from the admitted pair; a Worker or adapter cannot select or change either independently.
 
-Requiring the project URN is a probe-fixture profile choice, not the future migration-admission rule for existing CIB documents. A future migration profile may infer or supply descriptor identity for a real binding only through an explicit, versioned, separately evidenced mapping.
+Requiring the project URN is a probe-fixture profile choice, not the future migration-admission rule for existing CIB documents. A future migration profile may infer or supply protocol identity for a real binding only through an explicit, versioned, separately evidenced mapping. A second business effect under this protocol receives a different handler; it does not invent a different protocol URI.
 
-The checked Service Task retains a project-owned normalized source-binding record containing the standard implementation URI, handler identifier `bpmnLeanEffectHandler`, and the two extension QName/value pairs. Lean independently verifies that this exact record lowers to the one project effect descriptor. Recognizing this one complete lexical token is structural source admission, not JUEL evaluation. The Semantic Process IL and runtime contain no Camunda prefix, namespace, expression object, Java class, CIB job ID, retry count, or engine type.
+The checked Service Task retains a project-owned normalized source-binding record containing the standard implementation URI as `protocol`, handler identifier `bpmnLeanEffectHandler`, and the two extension QName/value pairs. Lean independently verifies that this exact record lowers to the project-owned effect descriptor. Recognizing this one complete lexical token is structural source admission, not JUEL evaluation. The Semantic Process IL and runtime contain no Camunda prefix, namespace, expression object, Java class, CIB job ID, retry count, or engine type.
 
 The CIB register classification proposed on approval is:
 
 - a bounded CIB extension entry for the exact Camunda-namespaced delegate-expression token and async continuation used to realize the Service Task;
-- a configuration-specific entry for disabled automatic execution and explicit harness release of the immediately executable continuation job;
-- a bounded normative-agreement entry for Service Task activation and successful completion only after the packaged probe and retained evidence are green.
+- a configuration-specific entry for disabled automatic execution and explicit harness release of the immediately executable continuation job.
+
+No bounded normative-agreement entry is proposed for activation-then-wait. CIB exposes a pre-activation continuation wait followed by atomic delegate invocation and Service Task completion; it never exposes the capsule's activated effect-in-flight state.
 
 ## Checked source and Semantic Process IL
 
@@ -130,6 +133,11 @@ type CheckedServiceTask = Readonly<{
 Lowering produces the reusable mechanism:
 
 ```ts
+type EffectDescriptor = Readonly<{
+  protocol: "urn:bpmn-lean:effect:probe-v1";
+  handler: "bpmnLeanEffectHandler";
+}>;
+
 type AwaitEffect = Readonly<{
   kind: "awaitEffect";
   id: string;
@@ -137,43 +145,55 @@ type AwaitEffect = Readonly<{
   output: string;
   origin: Readonly<{ kind: "bpmnElement"; elementId: string }>;
   effect: Readonly<{
-    kind: "service";
-    implementation: "urn:bpmn-lean:effect:probe-v1";
-    handler: "bpmnLeanEffectHandler";
+    elementId: string;
+    descriptor: EffectDescriptor;
   }>;
 }>;
 ```
 
-`awaitEffect` is justified by the Temporal Activity consumer and the effect-intent/refinement risk. It does not dispatch on a BPMN topology or name a CIB execution class.
+`awaitEffect` is justified by the Temporal Activity consumer and the effect-intent/refinement risk. It does not dispatch on a BPMN topology or name a CIB execution class. The operation carries no dormant `kind: "service"` discriminator because this capsule admits no second effect mechanism that would force one.
+
+The semantic `effect.elementId` is redundant with but independently validated against `origin.elementId`, matching the established User Task and timer convention. Runtime occurrence identity is always constructed from the semantic payload field; source traceability uses `origin`. [The Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) owns that general convention.
 
 ## Semantic runtime contract
 
-An effect occurrence uses the full identity:
+The current scenario schema's `userTaskInstanceId` and `timerOccurrenceId` already share the same exact structure. This change introduces one schema `$defs.occurrenceId` and one TypeScript `OccurrenceId`, with semantic aliases for all three consumers:
 
 ```ts
-type EffectOccurrenceId = Readonly<{
+type OccurrenceId = Readonly<{
   processInstanceId: string;
   elementId: string;
   activation: number;
 }>;
+
+type UserTaskInstanceId = OccurrenceId;
+type TimerOccurrenceId = OccurrenceId;
+type EffectOccurrenceId = OccurrenceId;
 ```
 
-An active intent contains the occurrence and descriptor:
+An active intent contains the occurrence and the one shared descriptor:
 
 ```ts
 type EffectIntent = Readonly<{
   id: EffectOccurrenceId;
-  effect: Readonly<{
-    kind: "service";
-    implementation: "urn:bpmn-lean:effect:probe-v1";
-    handler: "bpmnLeanEffectHandler";
-  }>;
+  descriptor: EffectDescriptor;
 }>;
 ```
 
-The semantic core owns this structured intent and its stability. A canonical typed encoding of definition identity plus the complete intent is the semantic idempotency material. The adapter renders that material as `effect-sha256:<digest>` for the external transport. The digest is a collision-resistant adapter encoding, not a Temporal, CIB, or BPMN identity and not a second source of semantic fields.
+The semantic core owns this structured intent and its stability. It does not store a transport key or a second idempotency field in canonical state. A core-owned pure function projects the typed transport material from definition identity plus `openEffects`; the adapter renders that material as a digest. The digest is a collision-resistant adapter encoding, not a Temporal, CIB, or BPMN identity and not a second source of semantic fields.
 
-This split avoids making SHA-256 an operational-semantic primitive while ensuring every CIB or Temporal attempt receives the same externally usable key. A seeded mutation that includes a Temporal Run ID, Activity attempt, Activity ID, CIB job ID, or other host identity must produce two external mutations and fail the reconciliation witness.
+This split avoids making SHA-256 an operational-semantic primitive while ensuring every Temporal attempt receives the same externally usable key. A seeded mutation that includes a Temporal Run ID, Activity attempt, Activity ID, or other host identity must produce two external mutations and fail the reconciliation witness. CIB computes no project transport key in this capsule.
+
+The transport material uses the already-implemented Workflow-safe canonical typed-tuple encoder:
+
+```text
+["effectTransport",
+  [semanticProfile, sourceId, sourceSha256, processId],
+  [processInstanceId, elementId, activation],
+  [protocol, handler]]
+```
+
+The external key is `effect-transport-sha256:<sha256(utf8(canonicalEncoding))>`. Compiler identity is deliberately excluded: exact lowering equality already binds a compiler result to the admitted source, and a compiler-only bump must not reissue external idempotency identity for byte-identical source under the same profile. The key is stable across Activity attempts, replay, and Worker replacement, and deliberately changes when profile, source identity or bytes, Process definition, occurrence, protocol, or handler changes.
 
 The success stimulus is:
 
@@ -184,6 +204,14 @@ type CompleteEffect = Readonly<{
   effectId: EffectOccurrenceId;
 }>;
 ```
+
+Its command identity uses a separate domain and exact typed encoding:
+
+```text
+["completeEffect", [processInstanceId, elementId, activation]]
+```
+
+The command ID is `complete-effect-sha256:<sha256(utf8(canonicalEncoding))>`. The distinct domain tag and prefix prevent substitution between the Activity transport key and semantic command ID.
 
 There is no result payload in this capsule.
 
@@ -201,13 +229,13 @@ The language-neutral Activity request is derived from the committed intent:
 
 ```ts
 type EffectRequest = Readonly<{
+  protocol: "urn:bpmn-lean:effect:probe-v1";
   handler: "bpmnLeanEffectHandler";
-  implementation: "urn:bpmn-lean:effect:probe-v1";
   idempotencyKey: string;
 }>;
 ```
 
-The Worker dispatches only by `handler`; it treats `implementation` as immutable descriptor identity and returns only `EffectExecutionResult`. The adapter derives both fields and the key from the same committed intent, so no host identifier, Activity return value, or independent registry lookup can create a mismatched binding.
+`EffectRequest` is exactly `EffectDescriptor` plus `idempotencyKey`. The Worker dispatches only by `handler`; it treats `protocol` as immutable protocol identity and returns only `EffectExecutionResult`. The adapter derives both fields and the key from the same committed intent, so no host identifier, Activity return value, or independent registry lookup can create a mismatched binding.
 
 ## Stable semantic rules
 
@@ -217,7 +245,7 @@ Consuming the input token of `awaitEffect` activates exactly one occurrence and 
 
 ### EFFECT-INTENT-01
 
-Exactly one intent exists for an active effect occurrence. Its full structured identity, descriptor, and canonical idempotency material depend only on admitted definition identity and committed runtime state and remain stable across observation, replay, and host attempts.
+Exactly one intent exists for an active effect occurrence. Its full structured identity and descriptor depend only on admitted definition identity and committed runtime state and remain stable across observation, replay, and host attempts. The core-owned transport-material projection is a pure function of that state rather than an additional stored field.
 
 ### EFFECT-RESULT-01
 
@@ -229,11 +257,15 @@ A result with any mismatched Process instance, element, or activation, or a resu
 
 The Lean refusal theorem quantifies over the full occurrence-identity mismatch space. The checked non-law is an evaluator that accepts a result for an arbitrary element or activation and advances the Process.
 
+The full mismatch space is exercised only by Lean and the TypeScript core. The Temporal Activity result carries no occurrence identity and the adapter derives `completeEffect` from the committed intent; CIB has no effect-result ingress identity. Neither adapter lane is evidence for this refusal proposition.
+
 ### EFFECT-OBSERVE-01
 
 While waiting, canonical state exposes one active wait of kind `effect` and one `openEffects` entry containing the full occurrence identity and descriptor. It exposes no caller interaction for effect completion. Host attempts, retry counts, CIB incidents, CIB job IDs, Temporal Activity IDs, and transport keys are excluded from canonical observations.
 
 `openEffects` is an atomic pre-release wire-contract evolution. Every producer, consumer, schema, fixture, and retained evidence envelope changes together. CIB evidence is regenerated only through the explicit replacement command with fresh content bindings.
+
+`openEffects` remains a separate canonical detail field alongside `openTimers`; the two are not generalized into one collection. `activeWaits` already supplies the generic wait summary, while timer and effect detail records have different consumers and fields. Adding a second detailed consumer is enough to make this choice explicit, not enough to justify a union that no consumer needs.
 
 ## Cross-target result realization
 
@@ -244,6 +276,8 @@ The answer-free scenario carries one `completeEffect` stimulus as explicit seman
 - the Temporal adapter does not receive this stimulus from the runner; after the Activity succeeds, it derives the identical stimulus exclusively from the committed core intent.
 
 The content-bound command ID covers every stimulus field. Temporal never accepts an occurrence identity returned by the Activity as authority; it uses the committed intent that scheduled the Activity.
+
+Canonical output comparison does not make four semantic accounts. The normative/profile lane selects the meaning; Lean executes and proves that account; the independently written TypeScript core tests its transcription; Temporal proves durable refinement of committed core state; CIB contributes a compatibility/host-realization check whose waiting projection is adapter-decided. For `EFFECT-WAIT-01`, `EFFECT-INTENT-01`, and `EFFECT-OBSERVE-01`, plain-success comparison is therefore Lean plus TypeScript semantic evidence, Temporal refinement evidence, and one CIB host check—not four independent semantic derivations.
 
 ## Explicit host schedules
 
@@ -258,12 +292,20 @@ enum EffectExecutionSchedule {
 
 This schedule is supplied only to CIB and Temporal harness adapters. It is not a BPMN stimulus, semantic outcome, or expected answer embedded in the neutral scenario. Lean and the pure core execute the single semantic scenario once.
 
-The comparison has two layers:
+The approved implementation would add one answer-free Service Task scenario, taking the pipeline from seven to eight scenarios. It does not add a ninth scenario for transport-key discrimination because that key is non-canonical and adapter-local.
 
-1. the plain-success execution establishes exact four-target canonical agreement;
-2. each host lane separately proves that `FailAfterMutationOnce` has the same canonical trace as its own `PlainSuccess` execution while raw evidence records two attempts.
+| Lane | Service Task executions | Store and evidence contract |
+|---|---:|---|
+| Lean | 1 | Executes the semantic scenario once; no host schedule or probe store |
+| TypeScript core | 1 | Executes the semantic scenario once; no host schedule or probe store |
+| CIB | 2 | `PlainSuccess` produces the canonical result bound into retained CIB evidence; `FailAfterMutationOnce` uses fresh test-local delegate state and contributes raw retry/re-execution facts only. Each execution asserts empty initial state; CIB computes no project transport key. |
+| Temporal pipeline | 2 | The primary execution uses `PlainSuccess`; the ordinary second plain isolation execution is deliberately replaced by `FailAfterMutationOnce`. Both use separate fresh stores asserted empty and must produce identical canonical results. |
 
-This is more precise than claiming that Lean or the pure core execute transport retries. They supply the semantic reference trace; only CIB and Temporal exercise the hidden host schedules.
+The substitution preserves the isolation claim because two separately stored executions still agree exactly, while adding retry evidence instead of paying for a duplicate plain run. Across eight scenarios the pipeline therefore runs sixteen Temporal executions and replays nine histories: eight primary histories plus the Service Task failure-schedule history. Retained CIB evidence binds explicitly to `PlainSuccess`; retry facts remain raw-only.
+
+The focused Temporal gate additionally owns an adapter-local two-instance key discriminator using two distinct semantic Process instance IDs against one deliberately fresh shared store, plus Worker replacement, exhausted-Activity failure, and Activity-bypass witnesses. The shared store is specific to the cross-instance discriminator; every ordinary execution uses an isolated store.
+
+This is more precise than claiming that Lean or the pure core execute transport retries. They supply semantic reference results; only CIB and Temporal exercise host schedules, and only Temporal exercises the project transport key.
 
 ## Temporal Activity refinement
 
@@ -273,8 +315,8 @@ The Workflow loop:
 2. projects the intent from semantic-core state;
 3. derives the transport key from the complete committed intent;
 4. schedules one non-local probe Activity with the paired handler/descriptor and key;
-5. uses `startToCloseTimeout: "5s"` and `maximumAttempts: 2`;
-6. uses no heartbeat and admits no cancellation in this capsule;
+5. uses `startToCloseTimeout: "2s"`, `scheduleToCloseTimeout: "10s"`, `maximumAttempts: 2`, `initialInterval: "100ms"`, and `backoffCoefficient: 1`;
+6. uses no heartbeat and provides no Workflow retry policy;
 7. after successful Activity resolution, derives `completeEffect` from the same committed intent and applies it through the ordinary semantic command path;
 8. completes under the semantic-lifetime Workflow contract.
 
@@ -282,7 +324,13 @@ The Activity result carries only success. It does not carry semantic occurrence 
 
 The Activity boundary is language-neutral. The TypeScript Workflow and semantic core remain the single production interpreter account; the probe Activity may later be serviced by a TypeScript, Java, or Kotlin Worker without moving BPMN semantics into that Worker. The [CIB Seven compatibility scope proposal](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md#interpreter-and-worker-language-boundary) owns this polyglot boundary. A JVM Worker is not approved by this capsule, and any future Java claim requires explicit cross-SDK payload, retry, idempotency, failure, and Worker-replacement evidence rather than assumed converter compatibility.
 
-If both attempts fail, the Activity failure remains an adapter failure and no semantic result is applied. Incident/exhaustion equivalence with CIB is outside this capsule and cannot be coerced into a canonical semantic outcome.
+If both attempts fail or the schedule-to-close limit expires, the Workflow Execution fails with typed adapter reason `BPMN_EFFECT_EXECUTION_EXHAUSTED`. No semantic result is applied, no completed receipt is produced, and the last committed semantic state still contains the unchanged active intent. This is an adapter/infrastructure failure, not a canonical semantic outcome, and it is not compared with CIB incident or exhaustion behavior.
+
+The refinement state relation is explicit: Workflow committed semantic state equals the semantic core's committed state; an in-flight Activity implies exactly one corresponding active intent exists and remains unchanged; Activity attempts are refinement stutter; only a successful Activity result permits the adapter to derive and apply `completeEffect`.
+
+Workflow cancellation or termination with an in-flight Activity remains an unresolved host risk rather than an admitted absence with no consequence: an external mutation may survive without a semantic result. The stable transport key is the reconciliation lever but does not by itself define cancellation recovery. Reopen before supporting cancellation, termination, compensation, or operator recovery.
+
+The existing focused gate's owned bound remains the global 60-second test limit; no new 15-second focused-gate assertion is introduced. The 15-second assertion belongs only to the prepared warm pipeline. Red implementation must measure replacement-Worker startup within the `10s` schedule-to-close envelope and stop rather than weaken the Worker-loss witness if the margin is inadequate. The pipeline's new critical delay is the explicit `100ms` retry interval; the two-second Worker-loss timeout is exercised only in the focused gate.
 
 ## Idempotency and lost-completion witness
 
@@ -297,7 +345,15 @@ Required observations are:
 - Temporal Event History containing Activity scheduling and attempt evidence;
 - replay preserving the exact canonical result and intent identity.
 
-The corresponding CIB delegate uses the same schedule: the first public job execution performs the mutation and throws, the retained async-continuation job records retries `3 → 2`, and the second public execution reconciles the key and completes. Retry decrement and invocation count are raw CIB evidence only.
+The corresponding CIB delegate uses the same schedule name but not the project transport key: the first public job execution performs one test-local in-process mutation and throws, the retained async-continuation job records retries `3 → 2`, and the second public execution observes that local state and completes without a second mutation. CIB establishes engine retry decrement, public re-execution, and test-local one-mutation/two-invocation behavior only. Key-based reconciliation is Temporal-only evidence.
+
+Transport-key evidence includes both over-inclusion and under-inclusion discriminators:
+
+- a host-derived-key mutation adds Run or attempt identity and must turn the lost-completion witness into two mutations;
+- two distinct semantic Process instance IDs executed against one fresh shared store must yield two keys and two mutations, separating committed-intent derivation from a hard-coded key;
+- pairwise encoding tests vary every definition, occurrence, and descriptor field and require a distinct key; field-drop mutations for `processInstanceId`, `elementId`, and `activation` must each collide on a constructed pair and be rejected.
+
+The Workflow-safe digest implementation is already guarded before the key carries semantic weight: fixed SHA-256 vectors cover empty input, `abc`, 55/56/57/63/64/65-byte padding boundaries, and a supplementary-plane character; an exact multi-block effect-transport tuple is cross-checked against `node:crypto` outside Workflow code. Existing literal locks preserve the current Process-address, Update-stimulus, and timer-firing encodings and digests during the shared-encoder extraction.
 
 ## Phase zero CIB Seven probe
 
@@ -305,7 +361,7 @@ Before checked-source, IL, Lean, TypeScript, or Temporal production work:
 
 1. configure the exact `bpmnLeanEffectHandler` bean as the project probe `JavaDelegate`, then deploy the exact source shape to the packaged CIB Seven `2.2.0` oracle with automatic job execution disabled;
 2. start the Process and require exactly one immediately executable async-continuation job with three retries;
-3. require canonical adapter projection of one effect wait while recording that the semantic occurrence and intent are adapter-derived;
+3. derive the activity ID from the public Job Definition, derive protocol and delegate-expression fields from the deployed model, count exactly one live job, require the profile pair, and record the activation/intent mapping as adapter-decided;
 4. execute the job under `FailAfterMutationOnce` and require the public call to fail, the job to remain, retries to become two, invocation count two only after the second execution, and mutation count to remain one;
 5. execute the same job again and require successful Process completion without administrative retry mutation;
 6. retain a negative assertion that no timer-like due-date eligibility transition is claimed.
@@ -327,26 +383,26 @@ The same test deploys an equivalent source whose lexical prefix is `probe` and w
 | Service Task source and exact extension attributes were deployed | Engine-observed deployment fact |
 | One async-continuation job exists and is immediately executable | Engine-observed host fact |
 | Harness waits before releasing the job | Harness scheduling input |
-| The job represents the selected semantic effect occurrence and intent | Adapter-derived from exact source and live instance |
-| Delegate invocation and external mutation counts | Probe-service-observed |
+| The pre-activation job is mapped to the selected semantic effect occurrence and intent | Adapter-decided |
+| Delegate invocation and test-local mutation counts | Probe-service-observed |
 | Retry decrement `3 → 2` | Engine-observed raw evidence |
 | Successful second execution and Process completion | Engine-observed |
-| Canonical occurrence identity, descriptor, and stable intent | Adapter-derived; checked independently by Lean and TypeScript |
+| Canonical occurrence identity, descriptor, and stable intent | Adapter-decided in the CIB projection; defined and checked by Lean and TypeScript |
 
-No row presents the CIB job or retry count as an independent derivation of the semantic intent.
+No row presents the CIB job, activation ordinal, or retry count as an independent derivation of the semantic intent. For `EFFECT-WAIT-01`, `EFFECT-INTENT-01`, and `EFFECT-OBSERVE-01`, CIB supplies a host-realization compatibility check only.
 
 ## Smallest separating witnesses
 
 | Witness | Wrong account separated |
 |---|---|
-| Start reaches one observable effect wait and stable intent before external execution | Synchronous execution inside Process start is the semantic account |
+| Lean/core start reaches one effect intent while CIB records only a pre-activation host wait | Synchronous execution inside Process start is the semantic account; CIB independently derives the invented effect-in-flight state |
 | Full-identity mismatch and stale result are rejected with state preservation | Element ID or host callback alone authorizes progress |
-| Fail-after-mutation-once produces two invocations and one mutation | Attempt, Run, Activity, or CIB job identity is used as the idempotency key |
-| Mutating either Activity-request binding identity after intent commitment fails reconciliation | A Worker or adapter may independently choose the dispatch handler or descriptor identity |
+| Temporal fail-after-mutation-once produces two invocations and one mutation | Attempt, Run, or Activity identity is used as the idempotency key |
+| Two semantic instance IDs share one fresh store and produce two keys/mutations; pairwise field-drop mutations collide | A hard-coded or under-inclusive transport key is treated as intent-derived |
 | Host failure schedule has the same canonical trace as plain success | Transport attempts leak into BPMN observations |
 | Activity-bypass mutation lacks a scheduled/completed Activity pair and fails | Pure trace agreement permits a fabricated external effect |
 | Worker replacement while the Activity is pending still completes once | An in-memory Workflow callback implements the effect |
-| CIB first failure records `3 → 2` and second execution completes | Administrative retry editing or automatic execution is mistaken for engine retry evidence |
+| CIB first failure records `3 → 2` and second execution completes with one test-local mutation | Administrative retry editing or automatic execution is mistaken for engine retry evidence |
 
 ## Runtime-only and synthetic constructs
 
@@ -354,12 +410,12 @@ No row presents the CIB job or retry count as an independent derivation of the s
 |---|---|---|---|
 | Effect activation ordinal | Semantic core from committed activation count | Full occurrence identity | Created on `awaitEffect`, removed on accepted result |
 | Effect intent | Semantic core from occurrence and IL descriptor | `openEffects` | Exactly one per active occurrence |
-| Typed idempotency material | Semantic core from definition identity and intent | Stable intent field or equivalent structured projection | Exists with the intent |
+| Typed idempotency material | Core-owned pure function over definition identity and `openEffects` | Not separately stored; verifier can recompute it | Derivable exactly while the intent exists |
 | SHA-256 transport key | Adapter from complete typed idempotency material | Not canonical | Stable across attempts; discarded from semantic state |
 | CIB async-continuation job | CIB engine from `asyncBefore` | Raw evidence only | Created before Service Task, retained across failure, removed on success |
 | CIB retry count | CIB engine | Raw evidence only | Decremented by failed-job handling |
 | Temporal Activity Execution and attempts | Temporal server and Worker | Event History only | Scheduled from committed intent; retries under explicit policy |
-| Harness effect schedule and probe store | Test harness | Verifier evidence only | Per isolated gate, cleaned afterward |
+| Harness effect schedule and probe store | Test harness | Verifier evidence only | Fresh and asserted empty per ordinary execution; one deliberately fresh shared store only for the two-instance discriminator; cleaned afterward |
 
 ## Required evidence before graduation
 
@@ -369,14 +425,17 @@ No row presents the CIB job or retry count as an independent derivation of the s
 - checked graph and `awaitEffect` schema changes with exact lowering equality;
 - Lean direct relation, evaluator, evaluator-soundness bridge, exact successful trace, stable-intent law, quantified full-identity refusal theorem, and accept-any-result non-law;
 - independently implemented TypeScript behavior and matching negative witnesses;
-- atomic `openEffects` and `completeEffect` wire-contract evolution;
-- plain-success four-target differential agreement;
+- one shared occurrence-ID schema/type reused by User Task, timer, and effect aliases, plus atomic separate `openEffects` and `completeEffect` wire-contract evolution;
+- exact canonical plain-success comparison under the explicit per-lane judgement; never reported as four semantic derivations;
 - content-bound CIB evidence with fidelity labels and a meaningful mutation over effect wait, retry, or completion projection;
-- CIB fail-after-mutation-once raw retry evidence and canonical equivalence to CIB plain success;
-- Temporal Activity input derived only from committed intent, with a retained mutation proving that neither handler nor implementation identity can drift;
+- retained CIB evidence bound explicitly to `PlainSuccess`, with `FailAfterMutationOnce` retry details raw-only and no CIB transport-key claim;
+- Temporal Activity input derived only from committed intent;
 - Temporal fail-after-mutation-once reconciliation with two invocations, one mutation, one semantic result, and canonical equivalence to Temporal plain success;
+- per-execution empty-store assertions, the adapter-local two-instance/shared-store discriminator, pairwise transport-field coverage, host-over-inclusion mutation, and under-inclusion field-drop mutations;
+- exact domain-separated transport and `completeEffect` encodings through the shared canonical encoder, fixed current digest locks, SHA-256 padding/multi-block/supplementary-plane vectors, and an exact transport cross-check against native crypto outside Workflow code;
+- eight answer-free scenarios, sixteen Temporal executions, nine replayed histories, and the documented failure-schedule substitution for Service Task isolation;
 - Activity-bypass mutation rejected by Event History evidence;
-- Worker-replacement, semantic-lifetime completion, receipt reconciliation, cleanup, live-history replay, and exact Activity policy evidence;
+- Worker-replacement, exhausted-Activity typed Workflow failure, semantic-lifetime completion, receipt reconciliation, cleanup, live-history replay, and exact Activity policy evidence;
 - full applicable gate within existing feedback budgets without weakening an assertion.
 
 On graduation, rename this document to `SERVICE-TASK-EFFECT-SPEC.md` and update [PLAN.md](../PLAN.md), [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), the documentation registries, requirement ledger, CIB relationship register, profile, and rule-to-evidence rows in the same atomic change.
@@ -391,6 +450,8 @@ Stop for owner direction if:
 - the adapter cannot derive Activity input and result exclusively from committed core intent;
 - a stable transport key requires host identity or attempt state;
 - effect intent emission is not replay-stable and exactly once at the semantic boundary;
+- the exhausted-Activity path cannot fail the Workflow with the typed adapter reason while preserving the unchanged last committed semantic state;
+- replacement-Worker startup cannot complete the second attempt inside the pinned ten-second schedule-to-close envelope under the focused gate's 60-second bound;
 - retry or incident state enters canonical observations;
 - canonical equivalence requires weakening raw CIB or Temporal history assertions;
 - alignment requires changing existing closure, observation, lifecycle, or wire semantics for proof convenience;
@@ -398,12 +459,12 @@ Stop for owner direction if:
 
 ## Decisions still required
 
-A later approval of this capsule, after the phase-zero probe is green, selects:
+Owner approval of this corrected capsule selects:
 
 1. the exact success-only semantic account and exclusions;
-2. the `asyncBefore` exact delegate-expression bean binding, conditional on phase zero;
+2. the green phase-zero `asyncBefore` exact delegate-expression bean binding;
 3. namespace-aware admission of only the two exact Camunda extension attributes without general JUEL;
-4. `awaitEffect`, full occurrence identity, structured committed intent, and adapter-rendered SHA-256 transport key;
-5. a two-attempt, five-second start-to-close Temporal Activity policy with no heartbeat or cancellation;
-6. separate explicit host schedules and adapter-local canonical-equivalence assertions;
-7. retry exhaustion, CIB incidents, service faults, and external-task protocol as named reopen conditions rather than semantic outcomes.
+4. `awaitEffect`, shared occurrence identity, structured committed intent, protocol/handler descriptor, separate `openEffects`, and adapter-rendered SHA-256 transport key;
+5. a two-attempt Activity policy with two-second start-to-close, ten-second schedule-to-close, 100-millisecond fixed retry interval, no heartbeat, no Workflow retry policy, and typed adapter failure on exhaustion;
+6. separate explicit host schedules, per-execution store isolation, the eight-scenario/sixteen-execution/nine-replay matrix, and adapter-local canonical-equivalence/key assertions;
+7. retry exhaustion as typed adapter failure, with CIB incidents, BPMN service faults, cancellation/termination recovery, and external-task protocol as named reopen conditions rather than semantic outcomes.

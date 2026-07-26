@@ -182,6 +182,8 @@ type SemanticOperation =
 
 String identifiers are wire representations, not permission to treat distinct identifier domains interchangeably in Lean or implementation code. Lean must use distinct types for process, node, Sequence Flow, operation, control-place, task-definition, and task-occurrence identifiers where those domains can be confused.
 
+Semantic operation payloads carry their own element identifier when runtime occurrence identity depends on that element. That identifier is deliberately redundant with `origin.elementId`: program validation requires exact equality, runtime construction reads the semantic payload field, and source traceability reads `origin`. `awaitUserTask` and `awaitTimer` establish this convention; a future interaction/effect operation must follow it rather than derive runtime identity directly from source provenance.
+
 Array order has no semantic meaning. Canonical serialization sorts definitions and unordered references by their identifiers.
 
 ### Runtime state
@@ -268,6 +270,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every source origin required by the current profile is present and nonempty;
 - every `duplicate` has at least two distinct outputs;
 - every `synchronize` has at least two distinct inputs;
+- every operation payload element identifier matches its BPMN origin;
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
 - the current profile has exactly one `initiate`;
 - each control place has only the producer and consumer shapes permitted by the current lowering;
