@@ -15,12 +15,13 @@ import org.cibseven.bpm.engine.delegate.DelegateExecution;
 import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParse;
 import org.junit.Test;
+import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
 /**
  * Establishes the packaged-engine facts required before the Service Task effect account can be
- * selected: exact extension binding, a durable async-before wait, public retry decrement, and an
- * idempotent fail-after-mutation re-execution.
+ * selected: exact extension binding, a durable async-before wait, public retry decrement, and a
+ * test-local one-mutation/two-invocation re-execution.
  */
 public final class CibSevenServiceTaskPhaseZeroProbeTest {
 
@@ -28,13 +29,15 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
       "org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.bpmn";
   private static final String PROCESS_ID = "Process_ServiceTaskEffectProbe";
   private static final String SERVICE_TASK_ID = "ServiceTask_Record";
+  private static final String BPMN_NAMESPACE =
+      "http://www.omg.org/spec/BPMN/20100524/MODEL";
   private static final String CAMUNDA_NAMESPACE = "http://camunda.org/schema/1.0/bpmn";
   private static final String HANDLER_BEAN = "bpmnLeanEffectHandler";
   private static final String HANDLER_EXPRESSION = "${" + HANDLER_BEAN + "}";
-  private static final String IMPLEMENTATION = "urn:bpmn-lean:effect:probe-v1";
+  private static final String EFFECT_PROTOCOL = "urn:bpmn-lean:effect:probe-v1";
 
   @Test
-  public void decrementsRetriesAndReexecutesTheIdempotentBeanWithoutAdministrativeMutation()
+  public void decrementsRetriesAndReexecutesWithOneTestLocalMutation()
       throws Exception {
     var delegate = new FailAfterMutationOnce();
     var capturedParse = new AtomicReference<BpmnParse>();
@@ -76,9 +79,7 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
       assertNull(job.getDuedate());
       assertNotNull(
           management.createJobQuery().jobId(job.getId()).executable().singleResult());
-      assertEquals(
-          new EffectWaitProjection(SERVICE_TASK_ID, 1, IMPLEMENTATION, HANDLER_BEAN),
-          projectEffectWait(engine, processInstance.getId()));
+      requireExactEffectWait(projectEffectWait(engine, processInstance.getId()));
       assertEquals(0, delegate.invocations());
       assertEquals(0, delegate.mutations());
       assertEquals(0, management.createJobQuery().jobId(job.getId()).timers().count());
@@ -123,6 +124,46 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
               .createIncidentQuery()
               .processInstanceId(processInstance.getId())
               .count());
+    } finally {
+      if (deploymentId != null) {
+        engine
+            .getRepositoryService()
+            .deleteDeployment(deploymentId, true, true, true);
+      }
+      engine.close();
+    }
+  }
+
+  @Test
+  public void rejectsADeployedBindingThatDoesNotMatchTheProfilePair() throws Exception {
+    var source =
+        readResource()
+            .replace(
+                EFFECT_PROTOCOL,
+                "urn:bpmn-lean:effect:unexpected-protocol");
+    var engine =
+        CibSevenTestEngine.create(
+            "service-task-binding-negative-control",
+            configuration ->
+                configuration.setBeans(
+                    Map.of(HANDLER_BEAN, new SucceedingDelegate())));
+    String deploymentId = null;
+    try {
+      deploymentId =
+          engine
+              .getRepositoryService()
+              .createDeployment()
+              .addString("service-task-binding-negative-control.bpmn", source)
+              .deploy()
+              .getId();
+      var processInstance =
+          engine.getRuntimeService().startProcessInstanceByKey(PROCESS_ID);
+
+      assertThrows(
+          IllegalStateException.class,
+          () ->
+              requireExactEffectWait(
+                  projectEffectWait(engine, processInstance.getId())));
     } finally {
       if (deploymentId != null) {
         engine
@@ -190,20 +231,114 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
   }
 
   private static EffectWaitProjection projectEffectWait(
-      ProcessEngine engine, String processInstanceId) {
+      ProcessEngine engine, String processInstanceId) throws Exception {
     var jobs =
         engine
             .getManagementService()
             .createJobQuery()
             .processInstanceId(processInstanceId)
-            .activityId(SERVICE_TASK_ID)
             .list();
     if (jobs.size() != 1) {
       throw new IllegalStateException(
           "Expected exactly one async-before Service Task job");
     }
+    var job = jobs.getFirst();
+    var jobDefinition =
+        engine
+            .getManagementService()
+            .createJobDefinitionQuery()
+            .jobDefinitionId(job.getJobDefinitionId())
+            .singleResult();
+    if (jobDefinition == null) {
+      throw new IllegalStateException(
+          "Async-before job has no public JobDefinition");
+    }
+    var elementId = jobDefinition.getActivityId();
+    var serviceTask =
+        readDeployedServiceTask(
+            engine, job.getProcessDefinitionId(), elementId);
+    var activationCount =
+        engine
+            .getManagementService()
+            .createJobQuery()
+            .processInstanceId(processInstanceId)
+            .jobDefinitionId(jobDefinition.getId())
+            .count();
+    if (activationCount != 1) {
+      throw new IllegalStateException(
+          "Bounded phase-zero profile requires exactly one live Service Task job");
+    }
+    // CIB exposes host-job multiplicity, not semantic activation ordinals. The bounded adapter
+    // account deliberately maps the sole live job to the first activation.
     return new EffectWaitProjection(
-        SERVICE_TASK_ID, 1, IMPLEMENTATION, HANDLER_BEAN);
+        elementId,
+        Math.toIntExact(activationCount),
+        requireAttribute(serviceTask, null, "implementation"),
+        requireBeanToken(
+            requireAttribute(
+                serviceTask, CAMUNDA_NAMESPACE, "delegateExpression")));
+  }
+
+  private static void requireExactEffectWait(EffectWaitProjection actual) {
+    var expected =
+        new EffectWaitProjection(
+            SERVICE_TASK_ID, 1, EFFECT_PROTOCOL, HANDLER_BEAN);
+    if (!expected.equals(actual)) {
+      throw new IllegalStateException(
+          "Deployed Service Task binding does not match the admitted profile: "
+              + actual);
+    }
+  }
+
+  private static Element readDeployedServiceTask(
+      ProcessEngine engine, String processDefinitionId, String elementId)
+      throws Exception {
+    var factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true);
+    try (var input =
+        engine.getRepositoryService().getProcessModel(processDefinitionId)) {
+      if (input == null) {
+        throw new IllegalStateException(
+            "Missing deployed BPMN model for async-before job");
+      }
+      var elements =
+          factory
+              .newDocumentBuilder()
+              .parse(input)
+              .getElementsByTagNameNS(BPMN_NAMESPACE, "serviceTask");
+      for (var index = 0; index < elements.getLength(); index += 1) {
+        var element = (Element) elements.item(index);
+        if (elementId.equals(element.getAttribute("id"))) {
+          return element;
+        }
+      }
+    }
+    throw new IllegalStateException(
+        "JobDefinition activity is not a deployed Service Task: " + elementId);
+  }
+
+  private static String requireAttribute(
+      Element element, String namespace, String localName) {
+    var attribute =
+        namespace == null
+            ? element.getAttributeNode(localName)
+            : element.getAttributeNodeNS(namespace, localName);
+    if (attribute == null || attribute.getValue().isEmpty()) {
+      throw new IllegalStateException(
+          "Deployed Service Task is missing attribute " + localName);
+    }
+    return attribute.getValue();
+  }
+
+  private static String requireBeanToken(String delegateExpression) {
+    if (
+        !delegateExpression.startsWith("${")
+            || !delegateExpression.endsWith("}")
+            || delegateExpression.length() <= 3) {
+      throw new IllegalStateException(
+          "Delegate expression is not one exact bean-token reference");
+    }
+    return delegateExpression.substring(2, delegateExpression.length() - 1);
   }
 
   private static String readResource() throws Exception {
@@ -228,7 +363,7 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
     var serviceTask =
         document
             .getElementsByTagNameNS(
-                "http://www.omg.org/spec/BPMN/20100524/MODEL",
+                BPMN_NAMESPACE,
                 "serviceTask")
             .item(0);
     assertEquals(
@@ -246,7 +381,7 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
   }
 
   private record EffectWaitProjection(
-      String elementId, int activation, String implementation, String handler) {}
+      String elementId, int activation, String protocol, String handler) {}
 
   private static final class FailAfterMutationOnce implements JavaDelegate {
 
