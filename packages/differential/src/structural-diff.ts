@@ -7,6 +7,8 @@
  * disagreements at different granularities.
  */
 
+import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
+
 export type ValueDisagreement = Readonly<{
   path: string;
   expected: unknown;
@@ -57,7 +59,7 @@ export function firstValueDisagreement(
 
   if (isJsonRecord(expected) && isJsonRecord(actual)) {
     const keys = [...new Set([...Object.keys(expected), ...Object.keys(actual)])]
-      .sort();
+      .sort(compareCanonicalStrings);
     for (const key of keys) {
       const difference = firstValueDisagreement(
         expected[key],

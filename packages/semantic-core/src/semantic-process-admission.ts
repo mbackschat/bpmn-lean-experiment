@@ -20,6 +20,10 @@ import type {
 import {
   isWellFormedStimulus,
 } from "./stimulus.js";
+import {
+  compareCanonicalStrings,
+  isWellFormedWireString,
+} from "./wire.js";
 
 const supportedObservations = Object.freeze([
   ObservationRequestKind.Deployment,
@@ -381,7 +385,7 @@ function isSortedById(values: ReadonlyArray<unknown>): boolean {
       (previous === undefined ||
         (isRecord(previous) &&
           isNonEmptyString(previous.id) &&
-          previous.id < value.id))
+          compareCanonicalStrings(previous.id, value.id) < 0))
     );
   });
 }
@@ -390,7 +394,8 @@ function isSortedStrings(values: ReadonlyArray<unknown>): boolean {
   return values.every(
     (value, index) =>
       typeof value === "string" &&
-      (index === 0 || String(values[index - 1]) < value),
+      (index === 0 ||
+        compareCanonicalStrings(String(values[index - 1]), value) < 0),
   );
 }
 
@@ -414,5 +419,5 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+  return isWellFormedWireString(value) && value.length > 0;
 }

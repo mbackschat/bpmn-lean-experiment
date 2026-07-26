@@ -4,6 +4,9 @@ import {
 import type {
   Stimulus,
 } from "./contract.js";
+import {
+  isWellFormedWireString,
+} from "./wire.js";
 
 export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
@@ -122,7 +125,7 @@ function hasOnlyKeys(
 }
 
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+  return isWellFormedWireString(value) && value.length > 0;
 }
 
 function assertNever(value: never): never {

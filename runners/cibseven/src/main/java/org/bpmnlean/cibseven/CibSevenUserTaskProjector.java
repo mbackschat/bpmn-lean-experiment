@@ -33,7 +33,7 @@ final class CibSevenUserTaskProjector {
 
   List<ActiveWait> activeWaits(List<HostUserTask> tasks) {
     Objects.requireNonNull(tasks, "tasks");
-    var multiplicities = new TreeMap<String, Integer>();
+    var multiplicities = new TreeMap<String, Integer>(WireStrings::compare);
     for (var task : tasks) {
       multiplicities.merge(
           Objects.requireNonNull(task, "task").elementId(),
@@ -75,9 +75,12 @@ final class CibSevenUserTaskProjector {
     }
     projected.sort(
         Comparator.comparing(
-                (OpenUserTask task) -> task.id().processInstanceId())
-            .thenComparing(task -> task.id().elementId())
-            .thenComparingInt(task -> task.id().activation()));
+                (OpenUserTask task) -> task.id().processInstanceId(),
+                WireStrings::compare)
+            .thenComparing(
+                task -> task.id().elementId(),
+                WireStrings::compare)
+            .thenComparingLong(task -> task.id().activation()));
     return List.copyOf(projected);
   }
 }

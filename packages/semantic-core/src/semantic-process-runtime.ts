@@ -14,6 +14,9 @@ import type {
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import {
+  compareCanonicalStrings,
+} from "./wire.js";
 
 export enum ControlStateKind {
   NotStarted = "notStarted",
@@ -480,11 +483,7 @@ function setActivationCount(
     ...counters.filter((counter) => counter.elementId !== elementId),
     { elementId, count },
   ].sort((left, right) =>
-    left.elementId < right.elementId
-      ? -1
-      : left.elementId > right.elementId
-        ? 1
-        : 0
+    compareCanonicalStrings(left.elementId, right.elementId)
   );
 }
 
@@ -514,11 +513,7 @@ function compareTokenPlaces(
   left: ControlPlaceTokens,
   right: ControlPlaceTokens,
 ): number {
-  return left.placeId < right.placeId
-    ? -1
-    : left.placeId > right.placeId
-      ? 1
-      : 0;
+  return compareCanonicalStrings(left.placeId, right.placeId);
 }
 
 function compareWaits(
@@ -554,7 +549,7 @@ function compareTimerWaits(
 }
 
 function compareStrings(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
+  return compareCanonicalStrings(left, right);
 }
 
 function assertNever(value: never): never {

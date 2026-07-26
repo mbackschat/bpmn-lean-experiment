@@ -139,6 +139,8 @@ Target scenarios contain only model/profile identity and explicit semantic input
 The project is far from a production compatibility boundary and expects substantial change. Its current evolution policy therefore optimizes for one clean scalable architecture:
 
 - each wire artifact has a stable structural `kind`;
+- wire integers stay within the non-negative JavaScript-safe integer domain, and canonical identifiers are exact Unicode-scalar strings ordered lexicographically by scalar value without normalization;
+- byte-level JSON admission rejects duplicate decoded object keys and unpaired surrogate encodings before typed decoding;
 - JSON Schema `$id` owns schema-document identity;
 - a semantic profile `id` owns reviewed semantic and compatibility meaning;
 - checked BPMN graphs and Semantic Process programs carry stable exact-source and selected-profile identity, and programs also carry compiler identity;

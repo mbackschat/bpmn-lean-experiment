@@ -498,7 +498,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                               .count()
                           == 1);
                 })
-            .sorted((left, right) -> left.elementId().compareTo(right.elementId()))
+            .sorted((left, right) -> WireStrings.compare(left.elementId(), right.elementId()))
             .toList();
     return new TimerJobSnapshot(afterCommandId, projected);
   }

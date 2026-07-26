@@ -32,6 +32,19 @@ public class CibSevenUserTaskProjectorTest {
   }
 
   @Test
+  public void sortsOpenTasksByUnicodeScalarValue() {
+    assertEquals(
+        List.of(
+            openTask("\uE000", "BMP"),
+            openTask("\uD800\uDC00", "supplementary")),
+        projector.openUserTasks(
+            "Instance_1",
+            List.of(
+                new HostUserTask("\uD800\uDC00", "supplementary"),
+                new HostUserTask("\uE000", "BMP"))));
+  }
+
+  @Test
   public void preservesWaitMultiplicityPerTaskElement() {
     assertEquals(
         List.of(

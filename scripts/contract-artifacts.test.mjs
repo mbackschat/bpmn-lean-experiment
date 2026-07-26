@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  compareCanonicalStrings,
   readAndVerifyArtifactSets,
   verifyArtifactSet,
   verifyDefinitionArtifacts,
@@ -21,6 +24,30 @@ function cloneArtifactSet(artifactSet) {
     evidence: structuredClone(artifactSet.evidence),
     bpmnBytes: Buffer.from(artifactSet.bpmnBytes),
   };
+}
+
+function bindScenarioBytes(artifactSet, scenarioBytes) {
+  artifactSet.scenarioBytes = Buffer.from(scenarioBytes);
+  artifactSet.evidence.scenario.sha256 = createHash("sha256")
+    .update(artifactSet.scenarioBytes)
+    .digest("hex");
+}
+
+function collectIntegerSchemas(value, locations = [], path = "$") {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      collectIntegerSchemas(item, locations, `${path}[${index}]`));
+    return locations;
+  }
+  if (value !== null && typeof value === "object") {
+    if (value.type === "integer") {
+      locations.push({ path, schema: value });
+    }
+    for (const [name, item] of Object.entries(value)) {
+      collectIntegerSchemas(item, locations, `${path}.${name}`);
+    }
+  }
+  return locations;
 }
 
 function collectPropertyNames(value, names = new Set()) {
@@ -208,6 +235,134 @@ test("rejects a semantic answer smuggled into target input", async () => {
   assert.throws(
     () => verifyArtifactSet(mutated),
     /scenario schema validation failed/,
+  );
+});
+
+test("pins every JSON integer to the JavaScript-safe domain", async () => {
+  for (const schemaName of [
+    "scenario.schema.json",
+    "canonical-result.schema.json",
+    "semantic-profile.schema.json",
+    "cibseven-evidence.schema.json",
+    "checked-process.schema.json",
+    "semantic-process.schema.json",
+  ]) {
+    const schema = JSON.parse(
+      await readFile(
+        new URL(`../contracts/schemas/${schemaName}`, import.meta.url),
+        "utf8",
+      ),
+    );
+    for (const integer of collectIntegerSchemas(schema)) {
+      assert.equal(
+        integer.schema.maximum,
+        Number.MAX_SAFE_INTEGER,
+        `${schemaName} ${integer.path}`,
+      );
+    }
+  }
+
+  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+  const unsafe = cloneArtifactSet(artifactSet);
+  unsafe.scenario.stimuli[1].taskId.activation =
+    Number.MAX_SAFE_INTEGER + 1;
+  bindScenarioBytes(
+    unsafe,
+    `${JSON.stringify(unsafe.scenario, null, 2)}\n`,
+  );
+  assert.throws(
+    () => verifyArtifactSet(unsafe),
+    /scenario schema validation failed/,
+  );
+
+  const fractional = cloneArtifactSet(artifactSet);
+  fractional.scenario.stimuli[1].taskId.activation = 1.5;
+  bindScenarioBytes(
+    fractional,
+    `${JSON.stringify(fractional.scenario, null, 2)}\n`,
+  );
+  assert.throws(
+    () => verifyArtifactSet(fractional),
+    /scenario schema validation failed/,
+  );
+});
+
+test("uses Unicode scalar-value order without normalization", () => {
+  assert.ok(compareCanonicalStrings("\u{E000}", "\u{10000}") < 0);
+  assert.ok(compareCanonicalStrings("e\u{301}", "\u{E9}") < 0);
+  assert.notEqual("e\u{301}", "\u{E9}");
+  assert.throws(
+    () => compareCanonicalStrings("\uD800", "valid"),
+    /unpaired Unicode surrogate/,
+  );
+});
+
+test("rejects duplicate keys and unpaired surrogates in exact JSON bytes", async () => {
+  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+
+  const duplicate = cloneArtifactSet(artifactSet);
+  const duplicateBytes = JSON.stringify(duplicate.scenario, null, 2).replace(
+    '"kind": "scenario"',
+    '"kind": "scenario",\n  "kind": "scenario"',
+  );
+  bindScenarioBytes(duplicate, `${duplicateBytes}\n`);
+  assert.throws(
+    () => verifyArtifactSet(duplicate),
+    /duplicate JSON object key: kind/,
+  );
+
+  const surrogate = cloneArtifactSet(artifactSet);
+  surrogate.scenario.id = "scenario-\uD800";
+  surrogate.evidence.scenario.id = surrogate.scenario.id;
+  bindScenarioBytes(
+    surrogate,
+    `${JSON.stringify(surrogate.scenario, null, 2)}\n`,
+  );
+  assert.throws(
+    () => verifyArtifactSet(surrogate),
+    /unpaired Unicode surrogate/,
+  );
+});
+
+test("distinguishes unknown, missing, closed-enum, null, and absent fields", async () => {
+  const [artifactSet] = await readAndVerifyArtifactSets(projectRoot);
+
+  const missing = cloneArtifactSet(artifactSet);
+  delete missing.scenario.provenance;
+  bindScenarioBytes(missing, `${JSON.stringify(missing.scenario)}\n`);
+  assert.throws(
+    () => verifyArtifactSet(missing),
+    /scenario schema validation failed/,
+  );
+
+  const closedEnum = cloneArtifactSet(artifactSet);
+  closedEnum.scenario.stimuli[1].kind = "completeAnyTask";
+  bindScenarioBytes(closedEnum, `${JSON.stringify(closedEnum.scenario)}\n`);
+  assert.throws(
+    () => verifyArtifactSet(closedEnum),
+    /scenario schema validation failed/,
+  );
+
+  const nullName = parallelDefinitionArtifacts();
+  const checkedTask = nullName.checkedProcess.nodes.find(
+    ({ kind }) => kind === "userTask",
+  );
+  const programTask = nullName.semanticProcess.operations.find(
+    ({ kind }) => kind === "awaitUserTask",
+  );
+  checkedTask.name = null;
+  programTask.task.name = null;
+  await assert.doesNotReject(
+    verifyDefinitionArtifacts(projectRoot, nullName),
+  );
+
+  const absentName = parallelDefinitionArtifacts();
+  delete absentName.checkedProcess.nodes.find(
+    ({ kind }) => kind === "userTask",
+  ).name;
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, absentName),
+    /checked process schema validation failed/,
   );
 });
 

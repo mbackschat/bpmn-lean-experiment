@@ -5,6 +5,7 @@ import {
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -48,11 +49,11 @@ function lowerNode(
   const incoming = flows
     .filter(({ targetId }) => targetId === node.id)
     .map(({ id }) => placeId(id))
-    .sort();
+    .sort(compareCanonicalStrings);
   const outgoing = flows
     .filter(({ sourceId }) => sourceId === node.id)
     .map(({ id }) => placeId(id))
-    .sort();
+    .sort(compareCanonicalStrings);
   const base = {
     id: operationId(node.id),
     origin: {
@@ -162,5 +163,5 @@ function compareIds(
   left: Readonly<{ id: string }>,
   right: Readonly<{ id: string }>,
 ): number {
-  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+  return compareCanonicalStrings(left.id, right.id);
 }

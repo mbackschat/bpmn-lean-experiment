@@ -17,6 +17,7 @@ import {
   CanonicalObservationKind,
   ProcessStatus,
   StimulusKind,
+  compareCanonicalStrings,
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -31,6 +32,7 @@ import {
   TemporalScenarioRunner,
 } from "@bpmn-lean/temporal-adapter";
 import { runCommand } from "../../../scripts/run-command.mjs";
+import { parseStrictJson } from "../../../scripts/strict-json.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const temporalCacheDirectory = path.join(
@@ -246,7 +248,7 @@ function elapsedMs(started) {
 }
 
 async function readJson(filePath) {
-  return JSON.parse(await readFile(filePath, "utf8"));
+  return parseStrictJson(await readFile(filePath, "utf8"), filePath);
 }
 
 function runProcess(command, args, timeoutMs) {
@@ -293,8 +295,8 @@ function indexExactRecords(records, expectedIds, targetName) {
     }
     indexed.set(scenarioId, record);
   }
-  const actualIds = [...indexed.keys()].sort();
-  const requiredIds = [...expectedIds].sort();
+  const actualIds = [...indexed.keys()].sort(compareCanonicalStrings);
+  const requiredIds = [...expectedIds].sort(compareCanonicalStrings);
   if (JSON.stringify(actualIds) !== JSON.stringify(requiredIds)) {
     throw new Error(
       `${targetName} scenario identities do not match the batch`,
@@ -330,7 +332,8 @@ async function runCibTargets(scenarios, inputPath, outputPath) {
   const records = (await readFile(outputPath, "utf8"))
     .split("\n")
     .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line));
+    .map((line, index) =>
+      parseStrictJson(line, `CIB result line ${index + 1}`));
   return {
     results: indexExactRecords(
       records,
@@ -381,7 +384,8 @@ async function runLeanTargets(contexts, inputPath) {
   const records = execution.stdout
     .split("\n")
     .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line));
+    .map((line, index) =>
+      parseStrictJson(line, `Lean result line ${index + 1}`));
   const indexedRecords = indexExactRecords(
     records,
     contexts.map(({ scenario }) => scenario.id),

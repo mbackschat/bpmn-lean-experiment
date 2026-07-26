@@ -75,7 +75,8 @@ The gate:
 - verifies scenario/profile SHA-256 bindings in retained CIB evidence;
 - requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
 - checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, canonical unordered-array order, and raw CIB task-query and timer-job observations against their canonical projections;
-- rejects answer smuggling, stale evidence, unknown relationships, invalid task or timer activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw producer observations, duplicate raw semantic task identities, and timer-deadline projection drift.
+- pins every schema integer to the JavaScript-safe range, checks Unicode scalar-value ordering across BMP and supplementary-plane identifiers without normalization, and rejects duplicate decoded keys and unpaired surrogates from exact JSON bytes;
+- distinguishes unknown and missing fields, closed-enum violations, explicit `null` from absence, unsafe and non-integral numbers, answer smuggling, stale evidence, unknown relationships, invalid task or timer activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw producer observations, duplicate raw semantic task identities, and timer-deadline projection drift.
 
 Retained CIB evidence is verifier-only. Target runners never receive it, and ordinary green runs never regenerate it.
 
@@ -93,7 +94,7 @@ The package script supplies the exact `--replace` opt-in to the underlying repla
 ./scripts/pnpm.sh run test:semantic
 ```
 
-Lean and TypeScript independently derive exact completion, wrong activation, and stale completion. Before evaluation, Lean strictly decodes the actual checked graph and Semantic Process program, independently validates both, recomputes canonical lowering, and rejects any inequality. Lean additionally checks:
+Lean and TypeScript independently derive exact completion, wrong activation, and stale completion. Before evaluation, Lean uses a project-owned strict JSON parser, strictly decodes the actual checked graph and Semantic Process program, independently validates both, recomputes canonical lowering, and rejects any inequality. Compile-time locks reject duplicate keys including escape-equivalent names, unpaired surrogate escapes, unsafe integers, unknown and missing fields, closed enums, and absent required nullable fields; they also lock Unicode scalar ordering without normalization. Lean additionally checks:
 
 - the executable operation-identified `step` is universally sound with respect to the declarative `OperationStep`/`ProgramStep` relation;
 - lowering preserves definition identity and Sequence-Flow origins;

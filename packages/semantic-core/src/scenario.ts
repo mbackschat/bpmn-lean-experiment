@@ -38,6 +38,9 @@ import type {
 import {
   stimulusCommandId,
 } from "./stimulus.js";
+import {
+  compareCanonicalStrings,
+} from "./wire.js";
 
 export enum ScenarioStepKind {
   Committed = "committed",
@@ -192,7 +195,7 @@ function compareOpenTimers(left: OpenTimer, right: OpenTimer): number {
 }
 
 function compareStrings(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
+  return compareCanonicalStrings(left, right);
 }
 
 export function advanceScenario(

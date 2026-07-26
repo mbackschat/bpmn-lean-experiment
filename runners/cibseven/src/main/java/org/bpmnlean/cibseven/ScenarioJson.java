@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -11,6 +12,7 @@ public final class ScenarioJson {
 
   private static final ObjectMapper MAPPER =
       JsonMapper.builder()
+          .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
           .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
           .build();
 

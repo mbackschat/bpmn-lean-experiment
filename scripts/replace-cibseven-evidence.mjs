@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { artifactCases } from "./contract-artifacts.mjs";
 import { resolveJavaHome } from "./java-home.mjs";
 import { runCommand } from "./run-command.mjs";
+import { parseStrictJson } from "./strict-json.mjs";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -30,7 +31,7 @@ async function readJsonWithBytes(relativePath) {
   const bytes = await readFile(path.join(projectRoot, relativePath));
   return {
     bytes,
-    value: JSON.parse(bytes.toString("utf8")),
+    value: parseStrictJson(bytes.toString("utf8"), relativePath),
   };
 }
 
@@ -103,7 +104,8 @@ async function runCibBatch(scenarios, temporaryDirectory) {
   return (await readFile(outputPath, "utf8"))
     .split("\n")
     .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line));
+    .map((line, index) =>
+      parseStrictJson(line, `CIB result line ${index + 1}`));
 }
 
 async function replaceEvidence() {

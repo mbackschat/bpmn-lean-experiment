@@ -17,6 +17,7 @@ public final class ScenarioProtocol {
 
   public static final String SCENARIO_KIND = "scenario";
   public static final String SCENARIO_RESULT_KIND = "scenarioResult";
+  private static final long MAX_SAFE_WIRE_INTEGER = 9007199254740991L;
 
   private ScenarioProtocol() {}
 
@@ -214,12 +215,12 @@ public final class ScenarioProtocol {
   }
 
   public record UserTaskInstanceId(
-      String processInstanceId, String elementId, int activation) {
+      String processInstanceId, String elementId, long activation) {
     public UserTaskInstanceId {
       Objects.requireNonNull(processInstanceId, "processInstanceId");
       Objects.requireNonNull(elementId, "elementId");
-      if (activation < 1) {
-        throw new IllegalArgumentException("activation must be positive");
+      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("activation must be a positive safe wire integer");
       }
     }
   }
@@ -233,12 +234,12 @@ public final class ScenarioProtocol {
   }
 
   public record TimerOccurrenceId(
-      String processInstanceId, String elementId, int activation) {
+      String processInstanceId, String elementId, long activation) {
     public TimerOccurrenceId {
       Objects.requireNonNull(processInstanceId, "processInstanceId");
       Objects.requireNonNull(elementId, "elementId");
-      if (activation < 1) {
-        throw new IllegalArgumentException("activation must be positive");
+      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("activation must be a positive safe wire integer");
       }
     }
   }
@@ -249,8 +250,8 @@ public final class ScenarioProtocol {
     public FireTimerStimulus {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(timerId, "timerId");
-      if (logicalTimeMs < 0) {
-        throw new IllegalArgumentException("logicalTimeMs must not be negative");
+      if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");
       }
     }
   }
@@ -266,8 +267,8 @@ public final class ScenarioProtocol {
   public record OpenTimer(TimerOccurrenceId id, long deadlineMs) {
     public OpenTimer {
       Objects.requireNonNull(id, "id");
-      if (deadlineMs < 0) {
-        throw new IllegalArgumentException("deadlineMs must not be negative");
+      if (deadlineMs < 0 || deadlineMs > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("deadlineMs must be a non-negative safe wire integer");
       }
     }
   }
@@ -327,19 +328,19 @@ public final class ScenarioProtocol {
       openUserTasks = List.copyOf(openUserTasks);
       openTimers = List.copyOf(openTimers);
       enabledInteractions = List.copyOf(enabledInteractions);
-      if (logicalTimeMs < 0) {
-        throw new IllegalArgumentException("logicalTimeMs must not be negative");
+      if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");
       }
     }
 
   }
 
-  public record ActiveWait(String elementId, WaitKind kind, int multiplicity) {
+  public record ActiveWait(String elementId, WaitKind kind, long multiplicity) {
     public ActiveWait {
       Objects.requireNonNull(elementId, "elementId");
       Objects.requireNonNull(kind, "kind");
-      if (multiplicity < 1) {
-        throw new IllegalArgumentException("multiplicity must be positive");
+      if (multiplicity < 1 || multiplicity > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("multiplicity must be a positive safe wire integer");
       }
     }
   }
@@ -447,8 +448,8 @@ public final class ScenarioProtocol {
       boolean executable) {
     public TimerJob {
       Objects.requireNonNull(elementId, "elementId");
-      if (dueDateDeltaMs < 0) {
-        throw new IllegalArgumentException("dueDateDeltaMs must not be negative");
+      if (dueDateDeltaMs < 0 || dueDateDeltaMs > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("dueDateDeltaMs must be a non-negative safe wire integer");
       }
     }
   }

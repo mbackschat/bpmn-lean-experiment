@@ -2,6 +2,7 @@ import {
   CheckedNodeKind,
   CheckedProcessKind,
   GatewayDirection,
+  compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -435,7 +436,7 @@ function compareIds(
   left: Readonly<{ id: string }>,
   right: Readonly<{ id: string }>,
 ): number {
-  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+  return compareCanonicalStrings(left.id, right.id);
 }
 
 function unsupported(evidence: string): CheckedCompilationProjection {

@@ -26,6 +26,14 @@ Neutral scenarios contain no expected answer. CIB evidence is a separate immutab
 
 Schema validation is a boundary guard, not correspondence evidence. The maintained Ajv Draft 2020-12 gate validates artifacts, checks content identities and known CIB–BPMN relationships, and includes answer-smuggling, stale-evidence, and invalid-projection mutations. CIB calibration, Lean laws, TypeScript behavior, Temporal refinement, and differential comparison remain separate claim lanes.
 
+## Exact scalar and JSON boundary
+
+Every wire integer represented as a JavaScript `number` is an integer in the inclusive range `0..9007199254740991`, with stricter positive minima where the field requires one. Schemas state both bounds, and TypeScript, Lean, and the CIB adapter reject values outside them rather than rounding or narrowing them.
+
+Canonical identifiers are exact, non-normalized strings of Unicode scalar values. Their order is lexicographic by scalar value, not JavaScript UTF-16 code units, Java `String.compareTo`, locale, UTF-8 bytes, or normalized text. Canonically ordered arrays use this comparison. Canonically equivalent Unicode spellings remain distinct unless a future contract explicitly changes the identity domain.
+
+Wire readers reject duplicate object keys after escape decoding and reject unpaired surrogate encodings. Unknown or missing fields, values outside closed enums, `null` where absence is required, absence where an explicit nullable field is required, non-integral numbers, and non-canonical array order are all boundary errors. This strictness applies before typed semantic decoding; ordinary parser behavior that overwrites a duplicate key or replaces an invalid surrogate is not authoritative.
+
 ## Portable semantic assertions
 
 A target scenario contains only admitted model/profile identity and explicit semantic inputs. `fireTimer.logicalTimeMs` is one such answer-free semantic input. Lean and the semantic core apply it directly, CIB realizes it through controlled-clock advancement plus eligibility-gated job execution, and Temporal derives the identical typed stimulus exclusively from committed `openTimers` state without runner delivery. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.

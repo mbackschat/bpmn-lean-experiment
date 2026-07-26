@@ -6,6 +6,11 @@ import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
+import {
+  parseStrictJson,
+  requireUnicodeScalarString,
+} from "./strict-json.mjs";
+
 const schemaBaseId = "https://bpmn-lean.local/schemas";
 const scenarioSchemaId = `${schemaBaseId}/scenario.schema.json`;
 const evidenceSchemaId = `${schemaBaseId}/cibseven-evidence.schema.json`;
@@ -80,7 +85,7 @@ async function readJsonDocument(filePath) {
   const bytes = await readFile(filePath);
   return {
     bytes,
-    value: JSON.parse(bytes.toString("utf8")),
+    value: parseStrictJson(bytes.toString("utf8"), filePath),
   };
 }
 
@@ -147,13 +152,7 @@ function validateWith(validator, schemaId, label, value) {
 }
 
 function compareIds(left, right) {
-  if (left.id < right.id) {
-    return -1;
-  }
-  if (left.id > right.id) {
-    return 1;
-  }
-  return 0;
+  return compareCanonicalStrings(left.id, right.id);
 }
 
 function requireSortedById(label, values) {
@@ -164,7 +163,7 @@ function requireSortedById(label, values) {
 }
 
 function requireSortedStrings(label, values) {
-  const sorted = [...values].sort();
+  const sorted = [...values].sort(compareCanonicalStrings);
   if (!isDeepStrictEqual(values, sorted)) {
     throw new Error(`${label} must be sorted`);
   }
@@ -453,7 +452,23 @@ function compareTaskIdentities(left, right) {
 }
 
 function compareStrings(left, right) {
-  return left < right ? -1 : left > right ? 1 : 0;
+  return compareCanonicalStrings(left, right);
+}
+
+export function compareCanonicalStrings(left, right) {
+  requireUnicodeScalarString(left, "canonical string");
+  requireUnicodeScalarString(right, "canonical string");
+  const leftScalars = [...left];
+  const rightScalars = [...right];
+  const sharedLength = Math.min(leftScalars.length, rightScalars.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const leftScalar = leftScalars[index].codePointAt(0);
+    const rightScalar = rightScalars[index].codePointAt(0);
+    if (leftScalar !== rightScalar) {
+      return leftScalar < rightScalar ? -1 : 1;
+    }
+  }
+  return Math.sign(leftScalars.length - rightScalars.length);
 }
 
 export async function verifyDefinitionArtifacts(projectRoot, artifacts) {
@@ -506,7 +521,15 @@ export function verifyArtifactSet(artifactSet) {
   validateWith(validator, scenarioSchemaId, "scenario", scenario);
   validateWith(validator, evidenceSchemaId, "evidence", evidence);
 
-  if (!isDeepStrictEqual(JSON.parse(scenarioBytes.toString("utf8")), scenario)) {
+  if (
+    !isDeepStrictEqual(
+      parseStrictJson(
+        scenarioBytes.toString("utf8"),
+        "scenario source bytes",
+      ),
+      scenario,
+    )
+  ) {
     throw new Error("scenario value does not match its exact source bytes");
   }
   if (evidence.scenario.id !== scenario.id) {

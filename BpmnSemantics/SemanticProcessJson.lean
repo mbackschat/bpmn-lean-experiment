@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess
+import BpmnSemantics.StrictJson
 import Lean.Data.Json
 
 /-! # BpmnSemantics.SemanticProcessJson — strict current artifact decoders
@@ -17,6 +18,21 @@ structure DefinitionInput where
   checkedProcess : CheckedProcess
   semanticProcess : Program
   deriving Repr, DecidableEq
+
+def maxSafeWireNat : Nat := 9007199254740991
+
+def isSafeWireNat (value : Nat) : Bool :=
+  value ≤ maxSafeWireNat
+
+def parseWireJson (contents : String) : Except String Json :=
+  BpmnSemantics.StrictJson.parse contents
+
+private def decodeSafeNat (json : Json) : Except String Nat := do
+  let value ← json.getNat?
+  if isSafeWireNat value then
+    pure value
+  else
+    throw s!"wire integer exceeds {maxSafeWireNat}"
 
 private def requireObjectShape (json : Json) (keys : List String) :
     Except String Unit :=
@@ -73,7 +89,7 @@ private def decodeUserTaskInstanceId (json : Json) :
     Except String UserTaskInstanceId := do
   requireObjectShape json
     ["activation", "elementId", "processInstanceId"]
-  let activation ← (← field json "activation").getNat?
+  let activation ← decodeSafeNat (← field json "activation")
   if activation = 0 then
     throw "task activation must be positive"
   pure
@@ -85,7 +101,7 @@ private def decodeTimerOccurrenceId (json : Json) :
     Except String TimerOccurrenceId := do
   requireObjectShape json
     ["activation", "elementId", "processInstanceId"]
-  let activation ← (← field json "activation").getNat?
+  let activation ← decodeSafeNat (← field json "activation")
   if activation = 0 then
     throw "timer activation must be positive"
   pure
@@ -117,7 +133,7 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
         (.fireTimer
           ⟨← stringField json "commandId"⟩
           (← decodeTimerOccurrenceId (← field json "timerId"))
-          (← (← field json "logicalTimeMs").getNat?))
+          (← decodeSafeNat (← field json "logicalTimeMs")))
   | _ => throw s!"unsupported scenario stimulus {kind}"
 
 private def decodeObservationKind (json : Json) :
@@ -161,7 +177,7 @@ def decodeScenario (json : Json) : Except String Scenario := do
 
 def decodeScenarioDocument (contents : String) :
     Except String Scenario := do
-  decodeScenario (← Json.parse contents)
+  decodeScenario (← parseWireJson contents)
 
 private def decodeSourceIdentity (json : Json) :
     Except String SourceIdentity := do
@@ -265,7 +281,7 @@ private def decodeTimerDefinition (json : Json) :
   requireObjectShape json ["durationMs", "elementId"]
   pure
     { elementId := ⟨← stringField json "elementId"⟩
-      durationMs := ← (← field json "durationMs").getNat? }
+      durationMs := ← decodeSafeNat (← field json "durationMs") }
 
 private def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
@@ -355,6 +371,6 @@ def validateDefinitionInput (input : DefinitionInput) :
 
 def decodeAndValidateDefinitionInput (line : String) :
     Except String DefinitionInput := do
-  validateDefinitionInput (← decodeDefinitionInput (← Json.parse line))
+  validateDefinitionInput (← decodeDefinitionInput (← parseWireJson line))
 
 end BpmnSemantics.SemanticProcessJson
