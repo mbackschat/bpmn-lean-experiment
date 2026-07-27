@@ -1,5 +1,6 @@
 packages:
   - packages/*
+enableGlobalVirtualStore: false
 allowBuilds:
   '@swc/core': false
   protobufjs: false

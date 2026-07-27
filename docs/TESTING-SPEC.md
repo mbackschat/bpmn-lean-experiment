@@ -15,6 +15,8 @@ git status --short
 
 The infrastructure guard enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names from [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), and resolves every project-authored local Markdown link.
 
+pnpm 11's implicit virtual-store choice is execution-context-sensitive: ordinary execution may select the shared global projection while `CI=true` selects the repository-local projection. This repository deliberately runs verification in CI mode and may reuse the same worktree for ordinary developer commands, so relying on that implicit choice would make one `node_modules` alternate between incompatible layouts. [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) therefore pins the supported CI-oriented `enableGlobalVirtualStore: false` mode, keeping the dependency projection isolated under the repository-local `node_modules/.pnpm` while the content-addressable package store remains shared. The infrastructure gate removes possible overrides, checks the effective value with and without `CI=true`, and executes a bare `./scripts/pnpm.sh run check:doc-fragments`; an unexpected install-state purge or reinstall attempt is a gate failure.
+
 Always finish with:
 
 ```sh
