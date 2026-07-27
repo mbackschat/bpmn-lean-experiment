@@ -6,6 +6,8 @@ This specification owns the approved bounded source, data, mapping, effect-resul
 
 This capsule defines the smallest semantic and compatibility contract needed to admit the maintained A12 Workflows `CreateDocument.bpmn` source unchanged while preserving the project's single TypeScript semantic core, Temporal Activity boundary, and Lean assurance model.
 
+This is a deliberate vertical feasibility slice, not the architectural location of A12 behavior. Literal input mapping, scoped result validation, output mapping, and effect-result commitment are reusable BPMN/CIB mechanisms; the exact bean token, profile-supplied protocol, external source check, and migration measurement belong to the downstream A12 adoption boundary. Another A12 model that uses these same contracts should add adapter/profile configuration and regression evidence rather than another model-specific semantic path.
+
 The [CIB Seven 2.0 target assessment](../research/CIB-SEVEN-A12-BASELINE-RESEARCH.md) owns release comparison. The [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns the product denominator. Owner approval authorizes this bounded implementation; it does not authorize a JVM Worker, general variables, general JUEL, or a broader compatibility claim.
 
 ## Question

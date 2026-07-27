@@ -31,11 +31,19 @@ export function compareCanonicalStrings(left: string, right: string): number {
   const rightScalars = [...right];
   const sharedLength = Math.min(leftScalars.length, rightScalars.length);
   for (let index = 0; index < sharedLength; index += 1) {
-    const leftScalar = leftScalars[index]!.codePointAt(0)!;
-    const rightScalar = rightScalars[index]!.codePointAt(0)!;
+    const leftScalar = requireCodePoint(leftScalars[index]);
+    const rightScalar = requireCodePoint(rightScalars[index]);
     if (leftScalar !== rightScalar) {
       return leftScalar < rightScalar ? -1 : 1;
     }
   }
   return Math.sign(leftScalars.length - rightScalars.length);
+}
+
+function requireCodePoint(scalar: string | undefined): number {
+  const codePoint = scalar?.codePointAt(0);
+  if (codePoint === undefined) {
+    throw new TypeError("canonical scalar comparison requires one code point");
+  }
+  return codePoint;
 }

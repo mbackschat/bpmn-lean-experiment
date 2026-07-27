@@ -4,6 +4,8 @@ This directory contains bounded project-owned semantic proposals and specificati
 
 A capsule does not own implementation sequencing, live completion status, test procedures, or host-specific transport mechanics. Those belong respectively to [the plan](../PLAN.md), [the implementation map](../IMPLEMENTATION-MAP.md), [the testing guide](../TESTING-SPEC.md), and the relevant adapter decision or research document.
 
+Capsules are mechanism-led rather than model-led. Every rule must say whether it belongs to the vendor-neutral BPMN account, a selected CIB Seven compatibility overlay, or a downstream adoption fixture. A representative vertical capsule may contain all three when that is the smallest way to prove a new seam, but it must keep the rules and evidence separate. Once a mechanism is established, another target model that only reuses it belongs in profile/adoption configuration and regression evidence rather than a new semantic implementation.
+
 ## Required capsule structure
 
 Every new capsule records:
@@ -18,7 +20,8 @@ Every new capsule records:
 8. useful laws with exact hypotheses and the nearest plausible checked non-law;
 9. a rule-to-evidence matrix that keeps BPMN/profile, Lean, CIB, TypeScript, Temporal, negative-witness, and mutation claims separate;
 10. an inventory of runtime-only or synthetic constructs, including derivation, ownership, public projection, and lifecycle invariants;
-11. exact unsupported claims, common-mode risks, and versioning consequences.
+11. the layer ownership of every rule and whether any target-shaped fixture is a one-time vertical feasibility witness or a reusable semantic mechanism;
+12. exact unsupported claims, common-mode risks, and versioning consequences.
 
 Completeness, determinism, liveness, fairness, compiler correspondence, TypeScript correspondence, and Temporal refinement are never implied by evaluator soundness. Record and check each only when its exact scope is meaningful.
 
@@ -38,5 +41,5 @@ Start with a Markdown evidence matrix inside the owning capsule. Do not introduc
 | [Parallel fork/join](PARALLEL-FORK-JOIN-SPEC.md) | Evidence-closed draft contract for two concurrent distinct User Tasks and normative per-incoming-flow synchronization; the production Temporal lifecycle and immutable negative evidence for candidate `CIB-DEV-0001` remain outside its claim |
 | [Intermediate Catch Timer](INTERMEDIATE-CATCH-TIMER-SPEC.md) | Exact `PT1S` normal-flow timer wait, logical deadline and occurrence identity, full-identity/time refusal, controlled-clock CIB evidence, durable Temporal wakeup, Worker restart, and replay |
 | [Service Task effect](SERVICE-TASK-EFFECT-SPEC.md) | Evidence-closed draft for one payload-free extension-bound Service Task, structured effect intent, success completion, retry reconciliation, durable Temporal Activity execution, and explicit CIB host-realization fidelity |
-| [CreateDocument data and mapping](CREATE-DOCUMENT-DATA-SPEC.md) | Approved A12-shaped string-variable, mapping, effect-result, success-only transaction-refinement, and exact external-source boundary |
-| [Typed BPMN Error and interrupting boundary error](BOUNDARY-ERROR-PROPOSAL.md) | Owner decision pending for one exact-code business-error result, one matching interrupting boundary route, Process continuation, mismatch handling, and distinct CIB/Temporal host relations |
+| [CreateDocument data and mapping](CREATE-DOCUMENT-DATA-SPEC.md) | Implemented vertical feasibility slice for reusable string-variable/mapping/effect-result mechanisms plus one exact A12 source-admission boundary; not a per-model adoption template |
+| [Typed BPMN Error and interrupting boundary error](BOUNDARY-ERROR-SPEC.md) | Implemented bounded vertical slice separating standard exact-code interrupting Error behavior, a CIB-specific caught-path mapping extension, and an A12-shaped downstream fixture |

@@ -132,7 +132,35 @@ function hasSupportedExecutionSurface(
     hasSequentialExecutionSurface(program) ||
     hasTimerExecutionSurface(program) ||
     hasEffectExecutionSurface(program) ||
+    hasBoundaryErrorExecutionSurface(program) ||
     hasBalancedParallelExecutionSurface(program)
+  );
+}
+
+function hasBoundaryErrorExecutionSurface(
+  program: SemanticProcessProgram,
+): boolean {
+  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
+  const effect = onlyOperation(program, SemanticOperationKind.AwaitEffect);
+  const task = onlyOperation(program, SemanticOperationKind.AwaitUserTask);
+  const terminates = operationsOfKind(
+    program,
+    SemanticOperationKind.Terminate,
+  );
+  return (
+    program.controlPlaces.length === 4 &&
+    program.operations.length === 5 &&
+    initiate !== undefined &&
+    effect !== undefined &&
+    effect.bpmnErrorRoute !== null &&
+    task !== undefined &&
+    terminates.length === 2 &&
+    initiate.output === effect.input &&
+    effect.bpmnErrorRoute.output === task.input &&
+    sameStringSet(
+      [effect.output, task.output],
+      terminates.map(({ input }) => input),
+    )
   );
 }
 
@@ -316,6 +344,7 @@ function isWellFormedOperation(
           "input",
           "output",
           "effect",
+          "bpmnErrorRoute",
         ]) &&
         isPlaceReference(value.input, placeIds) &&
         isPlaceReference(value.output, placeIds) &&
@@ -327,7 +356,11 @@ function isWellFormedOperation(
           "outputMappings",
         ]) &&
         value.effect.elementId === value.origin.elementId &&
-        isSupportedEffectContract(value.effect)
+        isSupportedEffectContract(
+          value.effect,
+          value.bpmnErrorRoute,
+          placeIds,
+        )
       );
     case SemanticOperationKind.Duplicate:
       return (
@@ -363,7 +396,11 @@ function isWellFormedOperation(
   }
 }
 
-function isSupportedEffectContract(effect: Record<string, unknown>): boolean {
+function isSupportedEffectContract(
+  effect: Record<string, unknown>,
+  bpmnErrorRoute: unknown,
+  placeIds: ReadonlySet<string>,
+): boolean {
   if (
     !isRecord(effect.descriptor) ||
     !hasOnlyKeys(effect.descriptor, ["protocol", "handler"]) ||
@@ -377,12 +414,18 @@ function isSupportedEffectContract(effect: Record<string, unknown>): boolean {
     effect.descriptor.handler === "bpmnLeanEffectHandler"
   ) {
     return effect.inputMappings.length === 0 &&
-      effect.outputMappings.length === 0;
+      effect.outputMappings.length === 0 &&
+      bpmnErrorRoute === null;
   }
-  return effect.descriptor.protocol ===
-      "urn:bpmn-lean:a12-delegate:v1" &&
+  if (
+    effect.descriptor.protocol !==
+      "urn:bpmn-lean:a12-delegate:v1"
+  ) {
+    return false;
+  }
+  const createDocument =
     effect.descriptor.handler === "createDocumentDelegate" &&
-    isExactMapping(
+      isExactMapping(
       effect.inputMappings,
       "documentModelName",
       "stringLiteral",
@@ -395,7 +438,53 @@ function isSupportedEffectContract(effect: Record<string, unknown>): boolean {
       "localVariable",
       "name",
       "newDocRef",
-    );
+    ) &&
+      bpmnErrorRoute === null;
+  const boundaryError =
+    effect.descriptor.handler === "createRelationshipLinkDelegate" &&
+      isExactMapping(
+        effect.inputMappings,
+        "relationshipModel",
+        "stringLiteral",
+        "value",
+        "RelationshipModel",
+      ) &&
+      isExactMapping(
+        effect.outputMappings,
+        "relationshipLinkId",
+        "localVariable",
+        "name",
+        "newLinkId",
+      ) &&
+      isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds);
+  return createDocument || boundaryError;
+}
+
+function isWellFormedBpmnErrorRoute(
+  value: unknown,
+  placeIds: ReadonlySet<string>,
+): boolean {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["code", "output", "origin"]) ||
+    value.code !== "LinkLimitReachedError" ||
+    !isPlaceReference(value.output, placeIds) ||
+    !isRecord(value.origin) ||
+    !hasOnlyKeys(value.origin, [
+      "kind",
+      "boundaryEventId",
+      "errorDefinitionId",
+      "errorElementId",
+      "sequenceFlowId",
+    ])
+  ) {
+    return false;
+  }
+  return value.origin.kind === SemanticOriginKind.BpmnElement &&
+    isNonEmptyString(value.origin.boundaryEventId) &&
+    isNonEmptyString(value.origin.errorDefinitionId) &&
+    isNonEmptyString(value.origin.errorElementId) &&
+    isNonEmptyString(value.origin.sequenceFlowId);
 }
 
 function isExactMapping(

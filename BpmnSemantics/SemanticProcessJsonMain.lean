@@ -68,6 +68,8 @@ private def variableValueJson : VariableValue → Json
       Json.mkObj
         [ ("kind", toJson "string")
         , ("value", toJson value) ]
+  | .null =>
+      Json.mkObj [("kind", toJson "null")]
 
 private def variableBindingJson (binding : VariableBinding) : Json :=
   Json.mkObj
@@ -78,6 +80,12 @@ private def effectExecutionResultJson : EffectExecutionResult → Json
   | .success localPatch =>
       Json.mkObj
         [ ("kind", toJson "success")
+        , ("localPatch", jsonArray (localPatch.map variableBindingJson)) ]
+  | .bpmnError code message localPatch =>
+      Json.mkObj
+        [ ("kind", toJson "bpmnError")
+        , ("code", toJson code)
+        , ("message", toJson message)
         , ("localPatch", jsonArray (localPatch.map variableBindingJson)) ]
 
 private def openEffectJson (effect : OpenEffect) : Json :=

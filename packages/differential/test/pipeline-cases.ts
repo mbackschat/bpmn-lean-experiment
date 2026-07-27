@@ -4,6 +4,7 @@
 import {
   CanonicalObservationKind,
   ProcessStatus,
+  VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import {
   DisagreementKind,
@@ -157,6 +158,28 @@ function mutateFinalProcessVariable(
   binding.value.value = `${binding.value.value}-mutated`;
 }
 
+function mutateBoundaryErrorProcessVariable(
+  result: MutableScenarioResult,
+): void {
+  const routedState = result.trace.find(
+    (observation): observation is MutableStateObservation =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.openUserTasks.some(
+        ({ id }) =>
+          id.elementId === "ExpectedUserTaskAfterBPMNError",
+      ),
+  );
+  const binding = routedState?.variables.find(
+    ({ name }) => name === "relationshipLinkId",
+  );
+  if (binding?.value.kind !== "null") {
+    throw new Error(
+      "boundary-error calibration requires one mapped null variable",
+    );
+  }
+  binding.value = { kind: VariableValueKind.String, value: "" };
+}
+
 function interactionCase(
   id: string,
   scenarioFile: string,
@@ -261,6 +284,7 @@ function effectCase(): PipelineCase {
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
+    hasEffectExecution: true,
     effectScheduleSubstitution: true,
     cibEffectRetrySchedule: true,
     replayIsolation: true,
@@ -287,6 +311,7 @@ function createDocumentCase(): PipelineCase {
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
+    hasEffectExecution: true,
     effectScheduleSubstitution: true,
     replayIsolation: true,
     injectMutation: mutateFinalProcessVariable,
@@ -294,6 +319,30 @@ function createDocumentCase(): PipelineCase {
       "trace[4].variables[0].value.value",
       "Document:42",
       "Document:42-mutated",
+    ),
+  });
+}
+
+function boundaryErrorCase(): PipelineCase {
+  return Object.freeze({
+    id: "a12-boundary-error-caught",
+    scenarioRelativePath:
+      "scenarios/boundary-error/scenario.json",
+    evidenceRelativePath:
+      "scenarios/boundary-error/cibseven-evidence.json",
+    bpmnRelativePath: "scenarios/boundary-error/process.bpmn",
+    workflowIdPrefix: "a12-boundary-error-caught",
+    cibVersion: "2.0.0",
+    cibRelation: CibCaseRelation.SynchronousBoundaryError,
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    hasEffectExecution: true,
+    injectMutation: mutateBoundaryErrorProcessVariable,
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[4].variables[0].value.kind",
+      "null",
+      "string",
     ),
   });
 }
@@ -345,4 +394,5 @@ export const pipelineCases = Object.freeze([
   timerCase(),
   effectCase(),
   createDocumentCase(),
+  boundaryErrorCase(),
 ]);

@@ -270,6 +270,22 @@
               "const": "createDocumentDelegate"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "handler"
+          ],
+          "properties": {
+            "protocol": {
+              "const": "urn:bpmn-lean:a12-delegate:v1"
+            },
+            "handler": {
+              "const": "createRelationshipLinkDelegate"
+            }
+          }
         }
       ]
     },
@@ -364,7 +380,8 @@
         "origin",
         "input",
         "output",
-        "effect"
+        "effect",
+        "bpmnErrorRoute"
       ],
       "properties": {
         "id": {
@@ -384,6 +401,61 @@
         },
         "effect": {
           "$ref": "#/$defs/effectDefinition"
+        },
+        "bpmnErrorRoute": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/bpmnErrorRoute"
+            }
+          ]
+        }
+      }
+    },
+    "bpmnErrorRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "output",
+        "origin"
+      ],
+      "properties": {
+        "code": {
+          "const": "LinkLimitReachedError"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "boundaryEventId",
+            "errorDefinitionId",
+            "errorElementId",
+            "sequenceFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bpmnElement"
+            },
+            "boundaryEventId": {
+              "const": "BoundaryEvent_LinkLimitReached"
+            },
+            "errorDefinitionId": {
+              "const": "ErrorEventDefinition_LinkLimitReached"
+            },
+            "errorElementId": {
+              "const": "Error_LinkLimitReached"
+            },
+            "sequenceFlowId": {
+              "const": "Flow_ErrorToUserTask"
+            }
+          }
         }
       }
     },

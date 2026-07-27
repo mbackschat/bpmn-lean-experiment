@@ -43,12 +43,13 @@ export function serviceTaskEffectInput(instanceId = "Instance_1") {
         kind: SemanticOperationKind.AwaitEffect,
         input: "place:Flow_StartToService",
         output: "place:Flow_ServiceToEnd",
-        effect: {
+      effect: {
           elementId: "ServiceTask_Record",
           descriptor,
           inputMappings: [],
-          outputMappings: [],
-        },
+        outputMappings: [],
+      },
+      bpmnErrorRoute: null,
       },
       {
         ...serviceTaskOperationBase("StartEvent_1"),

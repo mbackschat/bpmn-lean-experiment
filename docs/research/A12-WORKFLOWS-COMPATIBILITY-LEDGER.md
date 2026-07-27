@@ -2,13 +2,21 @@
 
 ## Purpose and claim boundary
 
-This ledger defines the first migration denominator for replacing A12 Workflows `release/2025.06` with this Temporal-hosted, Lean-assured system. A12 Workflows is the A12 product compatibility target: it layers product behavior, integration APIs, Java/Kotlin implementation, and maintained BPMN assets on CIB Seven for downstream A12 projects. It is not one representative customer application among many.
+This ledger defines the downstream adoption denominator for replacing A12 Workflows `release/2025.06` with this Temporal-hosted, Lean-assured engine plus an A12 adoption adapter. A12 Workflows is the ultimate A12 product target: it layers product behavior, integration APIs, Java/Kotlin implementation, and maintained BPMN assets on CIB Seven for downstream A12 projects. It is not one representative customer application among many, but neither is it the definition of the BPMN engine or CIB compatibility layer.
+
+The architecture below this ledger remains independently layered:
+
+1. the vendor-neutral BPMN execution core owns standard semantic mechanisms and is measured against the BPMN requirement ledger;
+2. selected CIB Seven profiles own classified engine interpretations, extensions, configurations, and compatibility evidence;
+3. the A12 adoption component owns exact target-model binding, delegates/Workers, façade adaptation, blueprint integration, and migration reporting.
+
+A12 evidence may prioritize work in the first two layers, but it may not change their authority or introduce A12-specific types, names, APIs, licensing, or deployment assumptions into the semantic core. Coverage in this ledger must not be combined with BPMN or CIB coverage into one percentage.
 
 The A12 Full Stack Project Template `release/2025.06` is the canonical downstream-project blueprint. Compatibility must ultimately be demonstrated through a Workflows-enabled template variant or generated project, but the inspected base checkout contains no direct Workflows or CIB dependency and no BPMN files. Its historical changelog records removal of the bundled Workflows/Camunda service in 2023, while its current documentation delegates product integrations to variants. The missing materialized Workflows variant is therefore a coverage gap, not evidence that the blueprint is outside scope.
 
 Presence in documentation or a test fixture means A12 Workflows deliberately maintains that capability as product behavior or migration evidence. It does not measure frequency in deployed customer models. No downstream-project BPMN corpus was supplied, so this ledger must not be presented as a census of every A12 application.
 
-This is external-system research and a classification ledger, not an approved semantic profile or implementation authorization. Exact checkout provenance and licenses are owned by [SOURCES.md](../SOURCES.md).
+This is external-system research and a classification ledger, not an approved semantic profile or implementation authorization. Exact checkout provenance and licenses are owned by [SOURCES.md](../SOURCES.md). A12 material remains external EUPL-1.2 research input and cannot be linked, vendored, or used as a runtime dependency of this MIT repository.
 
 ## Defined denominator and method
 
@@ -122,6 +130,14 @@ The inventory-time unchanged-admission baseline was 0 of 50 distinct A12 Workflo
 
 “Drop-in” is qualified at the A12 Workflows product boundary. A model, handler, or client is drop-in only when the exact source or public contract is accepted unchanged and its bounded behavior is evidenced. Anything requiring a source rewrite, API rewrite, unsupported `DelegateExecution` call, engine plugin, or changed transaction model receives an explicit migration disposition; no aggregate label may hide those differences.
 
-## Next decision input
+## How this ledger drives adoption
 
-The owner-approved [CreateDocument contract](../capsules/CREATE-DOCUMENT-DATA-SPEC.md) closes static admission, lowering, bounded string semantics, the project-authored equivalent's CIB `2.0.0` host evidence, and Temporal refinement while retaining the exact external-source and license boundary. The [typed BPMN Error and interrupting boundary-error proposal](../capsules/BOUNDARY-ERROR-PROPOSAL.md) is the next semantic decision. Its target review corrects the denominator: the three maintained Error Event Definitions comprise one matching boundary catch and two Error End Events, so only the former is proposed now. The Java-friendly Worker bridge, task/message façades, scripts, and listeners follow from that contract in the order above.
+Use this ledger at three decision points:
+
+1. **Prioritization:** prefer a BPMN mechanism with broad normative value and concrete A12 demand when otherwise comparable work is available. The ledger does not remove standard constructs that are absent from A12.
+2. **CIB overlay trigger:** inspect the exact target source and engine behavior only when the mechanism depends on a Camunda extension, CIB gap resolution, configuration, transaction boundary, or public compatibility claim. Record the result in the CIB–BPMN register rather than in A12-specific semantic code.
+3. **Adoption acceptance:** after the lower-layer mechanism and any required CIB profile are stable, prove unchanged model admission, handler/Worker binding, façade behavior, and blueprint integration in a separate adoption lane. A model that reuses an existing lower-layer contract normally adds regression evidence, not another semantic capsule.
+
+The `CreateDocument` and typed boundary-error slices are deliberate first-round vertical feasibility work. They prove that exact target evidence can influence priorities and that BPMN semantics, CIB profile behavior, Temporal hosting, and A12-shaped bindings can be separated in one running path. They do not authorize implementing the remaining 49 models through bespoke source projectors, Lean laws, semantic-core branches, and Temporal tests one by one.
+
+Future A12 adoption should therefore proceed as an on-top component after sufficient reusable BPMN and CIB mechanisms exist. The first Java-friendly Worker bridge, façade adapter, and Workflows-enabled full-stack-template integration remain valuable end-to-end adoption milestones, but they do not precede the BPMN coverage program unless they expose a blocking lower-layer feasibility risk.

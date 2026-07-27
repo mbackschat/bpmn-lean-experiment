@@ -20,6 +20,7 @@ import type {
   StateObservation,
   Stimulus,
 } from "./contract.js";
+import type { DeepReadonly } from "./deep-readonly.js";
 import {
   supportsSemanticProcessExecution,
   supportsSemanticProcessScenario,
@@ -50,23 +51,23 @@ export enum ScenarioStepKind {
   HarnessFailure = "harnessFailure",
 }
 
-type CommittedScenarioStep = Readonly<{
+type CommittedScenarioStep = DeepReadonly<{
   kind: ScenarioStepKind.Committed;
   state: RuntimeState;
-  observations: ReadonlyArray<CanonicalObservation>;
+  observations: CanonicalObservation[];
 }>;
 
-type TerminalScenarioStep = Readonly<{
+type TerminalScenarioStep = DeepReadonly<{
   kind: ScenarioStepKind.Terminal;
   state: RuntimeState;
   outcome: ScenarioResult["outcome"];
-  observations: ReadonlyArray<CanonicalObservation>;
+  observations: CanonicalObservation[];
 }>;
 
-type HarnessFailureScenarioStep = Readonly<{
+type HarnessFailureScenarioStep = DeepReadonly<{
   kind: ScenarioStepKind.HarnessFailure;
   outcome: ScenarioResult["outcome"];
-  observations: ReadonlyArray<CanonicalObservation>;
+  observations: CanonicalObservation[];
 }>;
 
 export type ScenarioStep =
@@ -74,7 +75,7 @@ export type ScenarioStep =
   | TerminalScenarioStep
   | HarnessFailureScenarioStep;
 
-export type ScenarioDeployment = Readonly<{
+export type ScenarioDeployment = DeepReadonly<{
   outcome: CommandOutcome.Committed | CommandOutcome.Unsupported;
   observation: Extract<
     CanonicalObservation,

@@ -58,6 +58,7 @@ const program = {
           },
         ],
       },
+      bpmnErrorRoute: null,
     },
     {
       ...operationBase("EndEvent_CreateDocument"),
@@ -189,6 +190,12 @@ test("rejects every malformed patch with exact state preservation", () => {
       {
         name: "newDocRef",
         value: { kind: "number", value: 42 },
+      },
+    ],
+    [
+      {
+        name: "newDocRef",
+        value: { kind: "null" },
       },
     ],
   ];

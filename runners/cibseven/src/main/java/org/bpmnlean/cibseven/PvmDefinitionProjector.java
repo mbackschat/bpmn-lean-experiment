@@ -2,9 +2,12 @@ package org.bpmnlean.cibseven;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmActivityProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.TransitionProjection;
@@ -45,7 +48,10 @@ final class PvmDefinitionProjector {
   private PvmDefinitionProjection project(
       ProcessDefinitionEntity definition, String sourceProcessId) {
     var projected = new LinkedHashMap<String, PvmActivityProjection>();
-    collect(definition, definition, sourceProcessId, projected);
+    var visited =
+        Collections.newSetFromMap(
+            new IdentityHashMap<ActivityImpl, Boolean>());
+    collect(definition, definition, sourceProcessId, projected, visited);
     var initial = definition.getInitial();
     if (initial == null) {
       throw new IllegalStateException("Process has no initial activity: " + sourceProcessId);
@@ -58,7 +64,8 @@ final class PvmDefinitionProjector {
       ScopeImpl scope,
       ProcessDefinitionEntity root,
       String sourceProcessId,
-      Map<String, PvmActivityProjection> projected) {
+      Map<String, PvmActivityProjection> projected,
+      Set<ActivityImpl> visited) {
     var children = new ArrayList<>(scope.getActivities());
     scope.getEventActivities().stream()
         // A normal-flow Intermediate Catch Event is its own CIB event scope. That registration
@@ -69,13 +76,19 @@ final class PvmDefinitionProjector {
         .forEach(children::add);
 
     for (var activity : children) {
+      // Boundary Events are registered both in the Process activity list and
+      // as event activities of their attached scope. They are one PVM object,
+      // not two semantic activities.
+      if (!visited.add(activity)) {
+        continue;
+      }
       if (projected.putIfAbsent(
               activity.getId(), projectActivity(activity, root, sourceProcessId))
           != null) {
         throw new IllegalStateException("Duplicate PVM activity id: " + activity.getId());
       }
       if (!activity.getActivities().isEmpty() || !activity.getEventActivities().isEmpty()) {
-        collect(activity, root, sourceProcessId, projected);
+        collect(activity, root, sourceProcessId, projected, visited);
       }
     }
   }

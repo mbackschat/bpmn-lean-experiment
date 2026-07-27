@@ -2,6 +2,7 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
+  EffectExecutionResultKind,
   ProcessStatus,
   ScenarioStepKind,
   StimulusKind,
@@ -19,6 +20,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalObservation,
+  CompleteEffectStimulus,
   CompleteUserTaskInstanceStimulus,
   OpenUserTask,
   RuntimeState,
@@ -240,6 +242,12 @@ export async function runBpmnProcessWithHostEffects(
         );
       }
       const step = advanceScenario(semanticProcess, state, stimulus);
+      if (
+        step.kind === ScenarioStepKind.Terminal &&
+        stimulus.kind === StimulusKind.CompleteEffect
+      ) {
+        failRejectedHostEffectResult(state, stimulus);
+      }
       recordCommandOutcome(commandResults, stimulus, step.observations);
       trace.push(...step.observations);
       switch (step.kind) {
@@ -272,6 +280,35 @@ export async function runBpmnProcessWithHostEffects(
     processInstanceId: start.instanceId,
     finalState: requireCompletedState(trace, start.instanceId),
   };
+}
+
+function failRejectedHostEffectResult(
+  state: RuntimeState,
+  stimulus: CompleteEffectStimulus,
+): never {
+  const wait = state.effectWaits.find(
+    ({ id }) =>
+      id.processInstanceId === stimulus.effectId.processInstanceId &&
+      id.elementId === stimulus.effectId.elementId &&
+      id.activation === stimulus.effectId.activation,
+  );
+  if (
+    stimulus.result.kind === EffectExecutionResultKind.BpmnError &&
+    wait !== undefined &&
+    (
+      wait.bpmnErrorRoute === null ||
+      wait.bpmnErrorRoute.code !== stimulus.result.code
+    )
+  ) {
+    throw ApplicationFailure.nonRetryable(
+      "Effect Activity returned a BPMN Error with no admitted matching route",
+      "BPMN_UNHANDLED_BPMN_ERROR",
+    );
+  }
+  throw ApplicationFailure.nonRetryable(
+    "Effect Activity returned a result refused by the committed semantic intent",
+    "BpmnEffectExecutionResultRejected",
+  );
 }
 
 function enqueueStimulus(

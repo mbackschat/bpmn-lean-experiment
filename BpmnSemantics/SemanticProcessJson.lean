@@ -99,9 +99,14 @@ private def decodeOccurrenceId (json : Json) :
 
 private def decodeVariableValue (json : Json) :
     Except String VariableValue := do
-  requireObjectShape json ["kind", "value"]
-  expectStringField json "kind" "string"
-  pure (.string (← stringField json "value"))
+  match ← stringField json "kind" with
+  | "string" =>
+      requireObjectShape json ["kind", "value"]
+      pure (.string (← stringField json "value"))
+  | "null" =>
+      requireObjectShape json ["kind"]
+      pure .null
+  | kind => throw s!"unsupported variable value {kind}"
 
 private def decodeVariableBinding (json : Json) :
     Except String VariableBinding := do
@@ -112,11 +117,26 @@ private def decodeVariableBinding (json : Json) :
 
 private def decodeEffectExecutionResult (json : Json) :
     Except String EffectExecutionResult := do
-  requireObjectShape json ["kind", "localPatch"]
-  expectStringField json "kind" "success"
-  pure
-    (.success
-      (← decodeArray decodeVariableBinding (← field json "localPatch")))
+  match ← stringField json "kind" with
+  | "success" =>
+      requireObjectShape json ["kind", "localPatch"]
+      pure
+        (.success
+          (← decodeArray decodeVariableBinding (← field json "localPatch")))
+  | "bpmnError" =>
+      requireObjectShape json ["code", "kind", "localPatch", "message"]
+      let code ← stringField json "code"
+      let message ← decodeOptionalString (← field json "message")
+      if code.isEmpty then
+        throw "BPMN Error code must be non-empty"
+      if message = some "" then
+        throw "BPMN Error message must be null or non-empty"
+      pure
+        (.bpmnError
+          code
+          message
+          (← decodeArray decodeVariableBinding (← field json "localPatch")))
+  | kind => throw s!"unsupported effect result {kind}"
 
 private def decodeStimulus (json : Json) : Except String Stimulus := do
   let kind ← stringField json "kind"
@@ -225,6 +245,26 @@ private def decodeVariableMapping (json : Json) :
     { target := ← stringField json "target"
       expression := ← decodeMappingExpression (← field json "expression") }
 
+private def decodeCheckedBpmnErrorRoute (json : Json) :
+    Except String (Option CheckedBpmnErrorRoute) :=
+  match json with
+  | .null => pure none
+  | _ => do
+      requireObjectShape json
+        ["attachedToRef", "boundaryEventId", "boundaryEventName", "code",
+          "errorDefinitionId", "errorElementId", "errorName", "outputFlowId"]
+      pure
+        (some
+          { boundaryEventId := ⟨← stringField json "boundaryEventId"⟩
+            boundaryEventName :=
+              ← decodeOptionalString (← field json "boundaryEventName")
+            attachedToRef := ⟨← stringField json "attachedToRef"⟩
+            errorDefinitionId := ⟨← stringField json "errorDefinitionId"⟩
+            errorElementId := ⟨← stringField json "errorElementId"⟩
+            errorName := ← decodeOptionalString (← field json "errorName")
+            code := ← stringField json "code"
+            outputFlowId := ⟨← stringField json "outputFlowId"⟩ })
+
 private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   let kind ← stringField json "kind"
   match kind with
@@ -245,8 +285,8 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← stringField json "durationLiteral"))
   | "serviceTask" =>
       requireObjectShape json
-        ["id", "implementation", "inputMappings", "kind", "outputMappings",
-          "sourceBinding"]
+        ["bpmnErrorRoute", "id", "implementation", "inputMappings", "kind",
+          "outputMappings", "sourceBinding"]
       let implementation ← stringField json "implementation"
       let binding ← field json "sourceBinding"
       let delegateExpression ← field binding "delegateExpressionAttribute"
@@ -265,10 +305,6 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
                 (← stringField asyncBefore "namespace")
                 (← stringField asyncBefore "value"))
         | "urn:bpmn-lean:a12-delegate:v1" => do
-            requireObjectShape binding
-              ["delegateExpressionAttribute", "inputOutputElement",
-                "protocolSource"]
-            expectStringField binding "protocolSource" "semanticProfile"
             let inputOutput ← field binding "inputOutputElement"
             requireObjectShape inputOutput
               ["inputParameter", "namespace", "outputParameter"]
@@ -276,15 +312,40 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
             let outputParameter ← field inputOutput "outputParameter"
             requireObjectShape inputParameter ["body", "name"]
             requireObjectShape outputParameter ["body", "name"]
-            pure
-              (.a12CreateDocument
-                (← stringField delegateExpression "namespace")
-                (← stringField delegateExpression "value")
-                (← stringField inputOutput "namespace")
-                (← stringField inputParameter "name")
-                (← stringField inputParameter "body")
-                (← stringField outputParameter "name")
-                (← stringField outputParameter "body"))
+            match binding with
+            | .obj object =>
+                if (object.get? "implementationAttribute").isSome then
+                  requireObjectShape binding
+                    ["delegateExpressionAttribute", "implementationAttribute",
+                      "inputOutputElement"]
+                  let implementationAttribute ←
+                    field binding "implementationAttribute"
+                  requireObjectShape implementationAttribute ["value"]
+                  pure
+                    (.a12BoundaryError
+                      (← stringField delegateExpression "namespace")
+                      (← stringField delegateExpression "value")
+                      (← stringField implementationAttribute "value")
+                      (← stringField inputOutput "namespace")
+                      (← stringField inputParameter "name")
+                      (← stringField inputParameter "body")
+                      (← stringField outputParameter "name")
+                      (← stringField outputParameter "body"))
+                else
+                  requireObjectShape binding
+                    ["delegateExpressionAttribute", "inputOutputElement",
+                      "protocolSource"]
+                  expectStringField binding "protocolSource" "semanticProfile"
+                  pure
+                    (.a12CreateDocument
+                      (← stringField delegateExpression "namespace")
+                      (← stringField delegateExpression "value")
+                      (← stringField inputOutput "namespace")
+                      (← stringField inputParameter "name")
+                      (← stringField inputParameter "body")
+                      (← stringField outputParameter "name")
+                      (← stringField outputParameter "body"))
+            | _ => throw "Service Task source binding must be an object"
         | _ => throw s!"unsupported Service Task implementation {implementation}"
       pure
         (.serviceTask
@@ -292,7 +353,8 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           implementation
           sourceBinding
           (← decodeArray decodeVariableMapping (← field json "inputMappings"))
-          (← decodeArray decodeVariableMapping (← field json "outputMappings")))
+          (← decodeArray decodeVariableMapping (← field json "outputMappings"))
+          (← decodeCheckedBpmnErrorRoute (← field json "bpmnErrorRoute")))
   | "parallelGateway" =>
       requireObjectShape json ["direction", "id", "kind"]
       let direction ← stringField json "direction"
@@ -389,6 +451,28 @@ private def decodeEffectDefinition (json : Json) :
       outputMappings :=
         ← decodeArray decodeVariableMapping (← field json "outputMappings") }
 
+private def decodeBpmnErrorRoute (json : Json) :
+    Except String (Option BpmnErrorRoute) :=
+  match json with
+  | .null => pure none
+  | _ => do
+      requireObjectShape json ["code", "origin", "output"]
+      let origin ← field json "origin"
+      requireObjectShape origin
+        ["boundaryEventId", "errorDefinitionId", "errorElementId", "kind",
+          "sequenceFlowId"]
+      expectStringField origin "kind" "bpmnElement"
+      pure
+        (some
+          { code := ← stringField json "code"
+            output := ⟨← stringField json "output"⟩
+            origin :=
+              { boundaryEventId := ⟨← stringField origin "boundaryEventId"⟩
+                errorDefinitionId :=
+                  ⟨← stringField origin "errorDefinitionId"⟩
+                errorElementId := ⟨← stringField origin "errorElementId"⟩
+                sequenceFlowId := ⟨← stringField origin "sequenceFlowId"⟩ } })
+
 private def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
   decodeArray (fun value => ControlPlaceId.mk <$> value.getStr?) json
@@ -424,14 +508,16 @@ private def decodeOperation (json : Json) :
           (← decodeTimerDefinition (← field json "timer")))
   | "awaitEffect" =>
       requireObjectShape json
-        ["effect", "id", "input", "kind", "origin", "output"]
+        ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",
+          "output"]
       pure
         (.awaitEffect
           id
           origin
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
-          (← decodeEffectDefinition (← field json "effect")))
+          (← decodeEffectDefinition (← field json "effect"))
+          (← decodeBpmnErrorRoute (← field json "bpmnErrorRoute")))
   | "duplicate" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "outputs"]

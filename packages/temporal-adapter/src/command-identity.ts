@@ -1,11 +1,14 @@
 import { createHash } from "node:crypto";
 
 import {
+  EffectExecutionResultKind,
   StimulusKind,
+  VariableValueKind,
   isWellFormedStimulus,
 } from "@bpmn-lean/semantic-core";
 import type {
   Stimulus,
+  VariableBinding,
 } from "@bpmn-lean/semantic-core";
 
 import { canonicalTypedTupleEncoding } from "./canonical-encoding.js";
@@ -54,16 +57,50 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.effectId.elementId,
           stimulus.effectId.activation,
         ],
-        [
-          stimulus.result.kind,
-          stimulus.result.localPatch.map((binding) => [
-            binding.name,
-            [binding.value.kind, binding.value.value],
-          ]),
-        ],
+        effectResultTuple(stimulus.result),
       ]);
     default:
       return assertNever(stimulus);
+  }
+}
+
+function effectResultTuple(
+  result: Extract<
+    Stimulus,
+    { kind: StimulusKind.CompleteEffect }
+  >["result"],
+): ReadonlyArray<import("./canonical-encoding.js").CanonicalTupleValue> {
+  const patch = result.localPatch.map(variableBindingTuple);
+  switch (result.kind) {
+    case EffectExecutionResultKind.Success:
+      return [result.kind, patch];
+    case EffectExecutionResultKind.BpmnError:
+      return [
+        result.kind,
+        result.code,
+        result.message === null
+          ? ["none"]
+          : ["some", result.message],
+        patch,
+      ];
+    default:
+      return assertNever(result);
+  }
+}
+
+function variableBindingTuple(
+  binding: VariableBinding,
+): ReadonlyArray<import("./canonical-encoding.js").CanonicalTupleValue> {
+  switch (binding.value.kind) {
+    case VariableValueKind.String:
+      return [
+        binding.name,
+        [binding.value.kind, binding.value.value],
+      ];
+    case VariableValueKind.Null:
+      return [binding.name, [binding.value.kind]];
+    default:
+      return assertNever(binding.value);
   }
 }
 

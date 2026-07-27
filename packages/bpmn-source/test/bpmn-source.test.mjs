@@ -294,6 +294,7 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
       kind: CheckedNodeKind.ServiceTask,
       id: "CreateDocument",
       implementation: "urn:bpmn-lean:a12-delegate:v1",
+      bpmnErrorRoute: null,
       sourceBinding: {
         delegateExpressionAttribute: {
           namespace: "http://camunda.org/schema/1.0/bpmn",
@@ -335,31 +336,42 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
   assert.deepEqual(
     result.semanticProcess.operations.find(
       ({ kind }) => kind === SemanticOperationKind.AwaitEffect,
-    )?.effect,
+    ),
     {
-      elementId: "CreateDocument",
-      descriptor: {
-        protocol: "urn:bpmn-lean:a12-delegate:v1",
-        handler: "createDocumentDelegate",
+      id: "operation:CreateDocument",
+      kind: SemanticOperationKind.AwaitEffect,
+      origin: {
+        kind: "bpmnElement",
+        elementId: "CreateDocument",
       },
-      inputMappings: [
-        {
-          target: "documentModelName",
-          expression: {
-            kind: "stringLiteral",
-            value: "MyDocumentModel",
-          },
+      input: "place:Flow_StartToCreate",
+      output: "place:Flow_CreateToEnd",
+      effect: {
+        elementId: "CreateDocument",
+        descriptor: {
+          protocol: "urn:bpmn-lean:a12-delegate:v1",
+          handler: "createDocumentDelegate",
         },
-      ],
-      outputMappings: [
-        {
-          target: "myDocumentReference",
-          expression: {
-            kind: "localVariable",
-            name: "newDocRef",
+        inputMappings: [
+          {
+            target: "documentModelName",
+            expression: {
+              kind: "stringLiteral",
+              value: "MyDocumentModel",
+            },
           },
-        },
-      ],
+        ],
+        outputMappings: [
+          {
+            target: "myDocumentReference",
+            expression: {
+              kind: "localVariable",
+              name: "newDocRef",
+            },
+          },
+        ],
+      },
+      bpmnErrorRoute: null,
     },
   );
 });

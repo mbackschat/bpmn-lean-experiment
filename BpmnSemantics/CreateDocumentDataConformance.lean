@@ -47,6 +47,7 @@ def checkedProcess : CheckedProcess :=
             "${newDocRef}")
           inputMappings
           outputMappings
+          none
       , .noneEndEvent ⟨"EndEvent_CreateDocument"⟩
       , .noneStartEvent ⟨"StartEvent_CreateDocument"⟩ ]
     sequenceFlows :=
@@ -81,7 +82,8 @@ def effectWait : EffectWait :=
     descriptor
     arguments
     outputMappings
-    output := ⟨"place:Flow_CreateToEnd"⟩ }
+    output := ⟨"place:Flow_CreateToEnd"⟩
+    bpmnErrorRoute := none }
 
 def waitingState : RuntimeState :=
   singletonEffectWaitingState effectWait
@@ -172,7 +174,8 @@ theorem successful_result_maps_only_process_target (reference : String) :
     applyEffectResult arguments outputMappings []
         (successResult reference) =
       some [expectedVariable reference] := by
-  simp [applyEffectResult, outputMappings, successResult, expectedVariable]
+  simp [applyEffectResult, applyEffectPatch, outputMappings, successResult,
+    expectedVariable]
 
 /-- Any typed patch outside the exact one-local-string contract is refused with exact semantic-state preservation. -/
 theorem invalid_patch_is_rejected

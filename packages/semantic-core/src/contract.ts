@@ -1,3 +1,5 @@
+import type { DeepReadonly } from "./deep-readonly.js";
+
 export enum CommandOutcome {
   Committed = "committed",
   RolledBack = "rolledBack",
@@ -13,14 +15,14 @@ export enum ScenarioOutcomeKind {
 }
 
 export type ScenarioOutcome =
-  | Readonly<{
+  | DeepReadonly<{
       kind: ScenarioOutcomeKind.Semantic;
       outcome: CommandOutcome;
     }>
-  | Readonly<{
+  | DeepReadonly<{
       kind: ScenarioOutcomeKind.HarnessFailure;
     }>
-  | Readonly<{
+  | DeepReadonly<{
       kind: ScenarioOutcomeKind.InfrastructureFailure;
     }>;
 
@@ -35,14 +37,14 @@ export enum StimulusKind {
   CompleteEffect = "completeEffect",
 }
 
-export type StartProcessStimulus = Readonly<{
+export type StartProcessStimulus = DeepReadonly<{
   kind: StimulusKind.StartProcess;
   commandId: string;
   processId: string;
   instanceId: string;
 }>;
 
-export type OccurrenceId = Readonly<{
+export type OccurrenceId = DeepReadonly<{
   processInstanceId: string;
   elementId: string;
   activation: number;
@@ -50,7 +52,7 @@ export type OccurrenceId = Readonly<{
 
 export type UserTaskInstanceId = OccurrenceId;
 
-export type CompleteUserTaskInstanceStimulus = Readonly<{
+export type CompleteUserTaskInstanceStimulus = DeepReadonly<{
   kind: StimulusKind.CompleteUserTaskInstance;
   commandId: string;
   taskId: UserTaskInstanceId;
@@ -58,7 +60,7 @@ export type CompleteUserTaskInstanceStimulus = Readonly<{
 
 export type TimerOccurrenceId = OccurrenceId;
 
-export type FireTimerStimulus = Readonly<{
+export type FireTimerStimulus = DeepReadonly<{
   kind: StimulusKind.FireTimer;
   commandId: string;
   timerId: TimerOccurrenceId;
@@ -69,28 +71,41 @@ export type EffectOccurrenceId = OccurrenceId;
 
 export enum VariableValueKind {
   String = "string",
+  Null = "null",
 }
 
-export type VariableValue = Readonly<{
-  kind: VariableValueKind.String;
-  value: string;
-}>;
+export type VariableValue =
+  | DeepReadonly<{
+      kind: VariableValueKind.String;
+      value: string;
+    }>
+  | DeepReadonly<{
+      kind: VariableValueKind.Null;
+    }>;
 
-export type VariableBinding = Readonly<{
+export type VariableBinding = DeepReadonly<{
   name: string;
   value: VariableValue;
 }>;
 
 export enum EffectExecutionResultKind {
   Success = "success",
+  BpmnError = "bpmnError",
 }
 
-export type EffectExecutionResult = Readonly<{
-  kind: EffectExecutionResultKind.Success;
-  localPatch: ReadonlyArray<VariableBinding>;
-}>;
+export type EffectExecutionResult =
+  | DeepReadonly<{
+      kind: EffectExecutionResultKind.Success;
+      localPatch: VariableBinding[];
+    }>
+  | DeepReadonly<{
+      kind: EffectExecutionResultKind.BpmnError;
+      code: string;
+      message: string | null;
+      localPatch: VariableBinding[];
+    }>;
 
-export type CompleteEffectStimulus = Readonly<{
+export type CompleteEffectStimulus = DeepReadonly<{
   kind: StimulusKind.CompleteEffect;
   commandId: string;
   effectId: EffectOccurrenceId;
@@ -128,7 +143,7 @@ export enum ObservationRequestKind {
   LogicalTime = "logicalTime",
 }
 
-export type ActiveWait = Readonly<{
+export type ActiveWait = DeepReadonly<{
   elementId: string;
   kind: WaitKind;
   multiplicity: number;
@@ -144,76 +159,76 @@ export enum UserTaskLifecycleState {
   Active = "active",
 }
 
-export type OpenUserTask = Readonly<{
+export type OpenUserTask = DeepReadonly<{
   id: UserTaskInstanceId;
   name: string | null;
   state: UserTaskLifecycleState;
 }>;
 
-export type CompleteUserTaskInstanceInteraction = Readonly<{
+export type CompleteUserTaskInstanceInteraction = DeepReadonly<{
   kind: StimulusKind.CompleteUserTaskInstance;
   taskId: UserTaskInstanceId;
 }>;
 
 export type EnabledInteraction = CompleteUserTaskInstanceInteraction;
 
-export type OpenTimer = Readonly<{
+export type OpenTimer = DeepReadonly<{
   id: TimerOccurrenceId;
   deadlineMs: number;
 }>;
 
-export type OpenEffect = Readonly<{
+export type OpenEffect = DeepReadonly<{
   id: EffectOccurrenceId;
   descriptor: import("./semantic-process-contract.js").EffectDescriptor;
-  arguments: ReadonlyArray<VariableBinding>;
+  arguments: VariableBinding[];
 }>;
 
-export type StateObservation = Readonly<{
+export type StateObservation = DeepReadonly<{
   kind: CanonicalObservationKind.State;
   instanceId: string;
   status: ProcessStatus;
-  activeWaits: ReadonlyArray<ActiveWait>;
-  openUserTasks: ReadonlyArray<OpenUserTask>;
-  openTimers: ReadonlyArray<OpenTimer>;
-  openEffects: ReadonlyArray<OpenEffect>;
-  variables: ReadonlyArray<VariableBinding>;
-  enabledInteractions: ReadonlyArray<EnabledInteraction>;
+  activeWaits: ActiveWait[];
+  openUserTasks: OpenUserTask[];
+  openTimers: OpenTimer[];
+  openEffects: OpenEffect[];
+  variables: VariableBinding[];
+  enabledInteractions: EnabledInteraction[];
   logicalTimeMs: number;
 }>;
 
 export type CanonicalObservation =
-  | Readonly<{
+  | DeepReadonly<{
       kind: CanonicalObservationKind.Deployment;
       outcome: CommandOutcome;
     }>
-  | Readonly<{
+  | DeepReadonly<{
       kind: CanonicalObservationKind.Command;
       commandId: string;
       outcome: CommandOutcome;
     }>
   | StateObservation;
 
-export type BpmnResource = Readonly<{
+export type BpmnResource = DeepReadonly<{
   id: string;
   relativePath: string;
   sha256: string;
 }>;
 
-export type Scenario = Readonly<{
+export type Scenario = DeepReadonly<{
   kind: ScenarioDocumentKind.Scenario;
   id: string;
   profile: string;
   bpmn: BpmnResource;
-  stimuli: ReadonlyArray<Stimulus>;
-  observations: ReadonlyArray<ObservationRequestKind>;
-  provenance: Readonly<{
-    normativeRefs: ReadonlyArray<string>;
+  stimuli: Stimulus[];
+  observations: ObservationRequestKind[];
+  provenance: {
+    normativeRefs: string[];
     cibRevision: string;
-    cibRefs: ReadonlyArray<string>;
-  }>;
+    cibRefs: string[];
+  };
 }>;
 
-export type ScenarioResult = Readonly<{
+export type ScenarioResult = DeepReadonly<{
   outcome: ScenarioOutcome;
-  trace: ReadonlyArray<CanonicalObservation>;
+  trace: CanonicalObservation[];
 }>;

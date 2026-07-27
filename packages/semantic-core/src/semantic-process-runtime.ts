@@ -1,10 +1,12 @@
 import {
   CommandOutcome,
+  EffectExecutionResultKind,
   StimulusKind,
 } from "./contract.js";
 import type {
   Stimulus,
 } from "./contract.js";
+import type { DeepReadonly } from "./deep-readonly.js";
 import {
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
@@ -13,7 +15,7 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  applyEffectResult,
+  applyEffectPatch,
   evaluateInputMappings,
 } from "./semantic-process-data.js";
 import {
@@ -49,18 +51,18 @@ type SemanticCommandOutcome =
   | CommandOutcome.Committed
   | CommandOutcome.Rejected;
 
-export type CommandResult = Readonly<{
+export type CommandResult = DeepReadonly<{
   outcome: SemanticCommandOutcome;
   state: RuntimeState;
   internalStepBoundExceeded: boolean;
 }>;
 
-type CommandAdmission = Readonly<{
+type CommandAdmission = DeepReadonly<{
   outcome: SemanticCommandOutcome;
   state: RuntimeState;
 }>;
 
-type ClosureResult = Readonly<{
+type ClosureResult = DeepReadonly<{
   state: RuntimeState;
   hitBound: boolean;
 }>;
@@ -151,11 +153,22 @@ function admit(
       ) {
         return { outcome: CommandOutcome.Rejected, state };
       }
-      const processVariables = applyEffectResult(
+      const route =
+        stimulus.result.kind === EffectExecutionResultKind.BpmnError
+          ? wait.bpmnErrorRoute
+          : null;
+      if (
+        stimulus.result.kind === EffectExecutionResultKind.BpmnError &&
+        (route === null || route.code !== stimulus.result.code)
+      ) {
+        return { outcome: CommandOutcome.Rejected, state };
+      }
+      const processVariables = applyEffectPatch(
         wait.arguments,
         wait.outputMappings,
         state.processVariables,
-        stimulus.result,
+        stimulus.result.localPatch,
+        stimulus.result.kind === EffectExecutionResultKind.BpmnError,
       );
       if (processVariables === null) {
         return { outcome: CommandOutcome.Rejected, state };
@@ -164,7 +177,10 @@ function admit(
         outcome: CommandOutcome.Committed,
         state: {
           ...state,
-          controlTokens: addToken(state.controlTokens, wait.output),
+          controlTokens: addToken(
+            state.controlTokens,
+            route?.output ?? wait.output,
+          ),
           effectWaits: state.effectWaits.filter(
             (candidate) => candidate !== wait,
           ),
@@ -353,6 +369,7 @@ function createEffectWait(
         descriptor: operation.effect.descriptor,
         arguments: evaluateInputMappings(operation.effect.inputMappings),
         outputMappings: operation.effect.outputMappings,
+        bpmnErrorRoute: operation.bpmnErrorRoute,
         output: operation.output,
       },
     ].sort(compareEffectWaits),

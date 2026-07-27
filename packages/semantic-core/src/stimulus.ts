@@ -134,15 +134,21 @@ function sameEffectResult(
   left: import("./contract.js").EffectExecutionResult,
   right: import("./contract.js").EffectExecutionResult,
 ): boolean {
-  return left.kind === right.kind &&
-    left.localPatch.length === right.localPatch.length &&
-    left.localPatch.every((binding, index) => {
-      const candidate = right.localPatch[index];
-      return candidate !== undefined &&
-        binding.name === candidate.name &&
-        binding.value.kind === candidate.value.kind &&
-        binding.value.value === candidate.value.value;
-    });
+  if (left.kind !== right.kind || !samePatch(left.localPatch, right.localPatch)) {
+    return false;
+  }
+  switch (left.kind) {
+    case EffectExecutionResultKind.Success:
+      return true;
+    case EffectExecutionResultKind.BpmnError:
+      return (
+        right.kind === EffectExecutionResultKind.BpmnError &&
+        left.code === right.code &&
+        left.message === right.message
+      );
+    default:
+      return assertNever(left);
+  }
 }
 
 export function isWellFormedEffectExecutionResult(
@@ -150,23 +156,29 @@ export function isWellFormedEffectExecutionResult(
 ): value is import("./contract.js").EffectExecutionResult {
   if (
     !isRecord(value) ||
-    !hasOnlyKeys(value, ["kind", "localPatch"]) ||
-    value.kind !== EffectExecutionResultKind.Success ||
     !Array.isArray(value.localPatch) ||
-    !value.localPatch.every(isVariableBinding)
+    !value.localPatch.every(isVariableBinding) ||
+    !isCanonicallyOrderedPatch(value.localPatch)
   ) {
     return false;
   }
-  const patch = value.localPatch as ReadonlyArray<
-    import("./contract.js").VariableBinding
-  >;
-  return patch.every((binding, index) =>
-      index === 0 ||
-      compareCanonicalStrings(
-        String(patch[index - 1]?.name),
-        binding.name,
-      ) < 0
-    );
+  switch (value.kind) {
+    case EffectExecutionResultKind.Success:
+      return hasOnlyKeys(value, ["kind", "localPatch"]);
+    case EffectExecutionResultKind.BpmnError:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "code",
+          "message",
+          "localPatch",
+        ]) &&
+        isNonEmptyString(value.code) &&
+        (value.message === null || isNonEmptyString(value.message))
+      );
+    default:
+      return false;
+  }
 }
 
 function isVariableBinding(
@@ -176,9 +188,69 @@ function isVariableBinding(
     hasOnlyKeys(value, ["name", "value"]) &&
     isNonEmptyString(value.name) &&
     isRecord(value.value) &&
-    hasOnlyKeys(value.value, ["kind", "value"]) &&
-    value.value.kind === VariableValueKind.String &&
-    isWellFormedWireString(value.value.value);
+    isVariableValue(value.value);
+}
+
+function isVariableValue(value: Record<string, unknown>): boolean {
+  switch (value.kind) {
+    case VariableValueKind.String:
+      return (
+        hasOnlyKeys(value, ["kind", "value"]) &&
+        isWellFormedWireString(value.value)
+      );
+    case VariableValueKind.Null:
+      return hasOnlyKeys(value, ["kind"]);
+    default:
+      return false;
+  }
+}
+
+function isCanonicallyOrderedPatch(
+  value: ReadonlyArray<unknown>,
+): boolean {
+  const patch = value as ReadonlyArray<
+    import("./contract.js").VariableBinding
+  >;
+  return patch.every((binding, index) =>
+    index === 0 ||
+    compareCanonicalStrings(
+        String(patch[index - 1]?.name),
+        binding.name,
+      ) < 0
+  );
+}
+
+function samePatch(
+  left: ReadonlyArray<import("./contract.js").VariableBinding>,
+  right: ReadonlyArray<import("./contract.js").VariableBinding>,
+): boolean {
+  return left.length === right.length &&
+    left.every((binding, index) => {
+      const candidate = right[index];
+      return candidate !== undefined &&
+        binding.name === candidate.name &&
+        sameVariableValue(binding.value, candidate.value);
+    });
+}
+
+function sameVariableValue(
+  left: import("./contract.js").VariableValue,
+  right: import("./contract.js").VariableValue,
+): boolean {
+  if (left.kind !== right.kind) {
+    return false;
+  }
+  switch (left.kind) {
+    case VariableValueKind.String:
+      return (
+        right.kind === VariableValueKind.String &&
+        left.value === right.value
+      );
+    case VariableValueKind.Null:
+      return true;
+    default:
+      return assertNever(left);
+  }
 }
 
 function isOccurrenceId(value: unknown): boolean {

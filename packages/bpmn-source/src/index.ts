@@ -29,5 +29,8 @@ export {
   compileBpmnToSemanticProcess,
 } from "./compile.js";
 export {
+  a12BoundaryErrorProfile,
+} from "./a12-boundary-error-source.js";
+export {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";

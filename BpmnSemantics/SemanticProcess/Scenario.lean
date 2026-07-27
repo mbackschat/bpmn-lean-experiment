@@ -27,7 +27,7 @@ private def timerDefinitions (program : Program) : List TimerDefinition :=
 
 private def effectDefinitions (program : Program) : List EffectDefinition :=
   program.operations.filterMap fun
-    | .awaitEffect _ _ _ _ effect => some effect
+    | .awaitEffect _ _ _ _ effect _ => some effect
     | _ => none
 
 def timerWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=

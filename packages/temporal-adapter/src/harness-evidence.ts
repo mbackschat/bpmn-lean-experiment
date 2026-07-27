@@ -166,7 +166,7 @@ export function requireDurableTimerHistory(
  * Binds canonical Service Task completion to one exact non-local Activity execution policy.
  *
  * The request must be the committed-intent rendering, retries remain raw history evidence, and
- * only the closed success result may authorize the semantic completion derived by the Workflow.
+ * only the exact closed typed result may authorize the semantic completion derived by the Workflow.
  */
 export function requireDurableEffectActivityHistory(
   history: TemporalHistory,
@@ -256,7 +256,7 @@ export function requireDurableEffectActivityHistory(
     )
   ) {
     throw new TypeError(
-      "Effect Activity history has no exact typed success result",
+      "Effect Activity history has no exact typed result",
     );
   }
 }

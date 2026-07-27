@@ -173,6 +173,7 @@ test("retains the exact Service Task binding and lowers one effect wait", async 
       implementation: "urn:bpmn-lean:effect:probe-v1",
       inputMappings: [],
       outputMappings: [],
+      bpmnErrorRoute: null,
       sourceBinding: {
         delegateExpressionAttribute: {
           namespace: "http://camunda.org/schema/1.0/bpmn",
@@ -207,8 +208,109 @@ test("retains the exact Service Task binding and lowers one effect wait", async 
         inputMappings: [],
         outputMappings: [],
       },
+      bpmnErrorRoute: null,
     },
   );
+});
+
+test("retains and lowers the exact A12 boundary-error route", async () => {
+  const result = await compileFixture(
+    "../../../scenarios/boundary-error/process.bpmn",
+    "a12-boundary-error",
+    "cibseven-2.0.0-a12-boundary-error-draft",
+  );
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  const task = result.checkedProcess.nodes.find(
+    ({ id }) => id === "CreateRelationshipLinkTask",
+  );
+  assert.deepEqual(task?.bpmnErrorRoute, {
+    boundaryEventId: "BoundaryEvent_LinkLimitReached",
+    boundaryEventName: "Link Limit Reached Boundary",
+    attachedToRef: "CreateRelationshipLinkTask",
+    errorDefinitionId: "ErrorEventDefinition_LinkLimitReached",
+    errorElementId: "Error_LinkLimitReached",
+    errorName: "Link Limit Reached",
+    code: "LinkLimitReachedError",
+    outputFlowId: "Flow_ErrorToUserTask",
+  });
+  assert.deepEqual(
+    result.semanticProcess.operations.find(
+      ({ id }) => id === "operation:CreateRelationshipLinkTask",
+    )?.bpmnErrorRoute,
+    {
+      code: "LinkLimitReachedError",
+      output: "place:Flow_ErrorToUserTask",
+      origin: {
+        kind: "bpmnElement",
+        boundaryEventId: "BoundaryEvent_LinkLimitReached",
+        errorDefinitionId: "ErrorEventDefinition_LinkLimitReached",
+        errorElementId: "Error_LinkLimitReached",
+        sequenceFlowId: "Flow_ErrorToUserTask",
+      },
+    },
+  );
+});
+
+test("rejects executable drift outside the exact boundary-error profile", async () => {
+  const bytes = await readFile(
+    new URL(
+      "../../../scenarios/boundary-error/process.bpmn",
+      import.meta.url,
+    ),
+  );
+  const xml = new TextDecoder().decode(bytes);
+  const mutations = [
+    xml.replace(
+      "#{createRelationshipLinkDelegate}",
+      "${createRelationshipLinkDelegate}",
+    ),
+    xml.replace(
+      "#{createRelationshipLinkDelegate}",
+      "#{createRelationshipLinkDelegate.execute()}",
+    ),
+    xml.replace(
+      "#{createRelationshipLinkDelegate}",
+      "#{createRelationshipLinkDelegate.property}",
+    ),
+    xml.replace(
+      'camunda:delegateExpression="#{createRelationshipLinkDelegate}"',
+      'camunda:delegateExpression="#{createRelationshipLinkDelegate}" camunda:class="example.Hostile"',
+    ),
+    xml.replace(
+      "</bpmn:extensionElements>",
+      "<camunda:properties /></bpmn:extensionElements>",
+    ),
+    xml.replace(
+      'attachedToRef="CreateRelationshipLinkTask"',
+      'attachedToRef="ExpectedUserTaskAfterBPMNError"',
+    ),
+    xml.replace(
+      'attachedToRef="CreateRelationshipLinkTask"',
+      'attachedToRef="CreateRelationshipLinkTask" cancelActivity="false"',
+    ),
+    xml.replace("LinkLimitReachedError", "UnexpectedError"),
+    xml.replace(
+      "http://camunda.org/schema/1.0/bpmn",
+      "https://example.invalid/camunda",
+    ),
+  ];
+
+  for (const [index, source] of mutations.entries()) {
+    assert.notEqual(source, xml);
+    const result = await compileBpmnToSemanticProcess({
+      bytes: new TextEncoder().encode(source),
+      sourceId: `boundary-error-hostile-${index}`,
+      expectedSha256: undefined,
+      semanticProfile: "cibseven-2.0.0-a12-boundary-error-draft",
+      limits,
+    });
+    assert.equal(
+      result.status,
+      BpmnCompilationStatus.Rejected,
+      `mutation ${index} must reject`,
+    );
+  }
 });
 
 test("rejects every incomplete or altered Service Task binding", async () => {

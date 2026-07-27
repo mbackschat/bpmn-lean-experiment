@@ -60,6 +60,14 @@ def effectOccurrenceMatches (effectId : EffectOccurrenceId)
       wait.elementId.value = effectId.elementId.value &&
       wait.activation = effectId.activation)
 
+def effectResultOutput (wait : EffectWait) :
+    EffectExecutionResult → Option ControlPlaceId
+  | .success _ => some wait.output
+  | .bpmnError code _ _ =>
+      match wait.bpmnErrorRoute with
+      | some route => if route.code = code then some route.output else none
+      | none => none
+
 /-- Declarative account of one successful effect-result transition. It exposes occurrence matching and mapping validation as separate premises rather than defining validity through the executable transition. -/
 inductive EffectCompletionStep :
     RuntimeState → EffectOccurrenceId → EffectExecutionResult →
@@ -70,16 +78,18 @@ inductive EffectCompletionStep :
       (result : EffectExecutionResult)
       (wait : EffectWait)
       (processVariables : List VariableBinding)
+      (output : ControlPlaceId)
       (occurrence :
         state.effectWaits.find? (effectOccurrenceMatches effectId) = some wait)
       (mapping :
         applyEffectResult wait.arguments wait.outputMappings
-          state.processVariables result = some processVariables) :
+          state.processVariables result = some processVariables)
+      (route : effectResultOutput wait result = some output) :
       EffectCompletionStep state effectId result
         { state with
           effectWaits := state.effectWaits.erase wait
           processVariables
-          tokens := wait.output :: state.tokens }
+          tokens := output :: state.tokens }
 
 def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
     (result : EffectExecutionResult) : Option RuntimeState :=
@@ -90,11 +100,14 @@ def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
           state.processVariables result with
       | none => none
       | some processVariables =>
-          some
-            { state with
-              effectWaits := state.effectWaits.erase wait
-              processVariables
-              tokens := wait.output :: state.tokens }
+          match effectResultOutput wait result with
+          | none => none
+          | some output =>
+              some
+                { state with
+                  effectWaits := state.effectWaits.erase wait
+                  processVariables
+                  tokens := output :: state.tokens }
 
 /-- Every successful executable effect completion is permitted by the separately stated effect-result relation. -/
 theorem completeEffect_sound
@@ -110,9 +123,12 @@ theorem completeEffect_sound
     split at success
     · contradiction
     · rename_i processVariables mapping
-      cases success
-      exact .commit state effectId result wait processVariables
-        occurrence mapping
+      split at success
+      · contradiction
+      · rename_i output route
+        cases success
+        exact .commit state effectId result wait processVariables output
+          occurrence mapping route
 
 def runChoices (program : Program) : RuntimeState → List OperationId →
     Option RuntimeState
@@ -310,8 +326,69 @@ theorem effect_result_mapping_failure_is_rejected
         state := singletonEffectWaitingState wait logicalTimeMs
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  simp [applyStimulus, admitStimulus, completeEffect,
-    singletonEffectWaitingState, effectOccurrenceMatches, invalid]
+  let state := singletonEffectWaitingState wait logicalTimeMs
+  let effectId : EffectOccurrenceId :=
+    { processInstanceId := wait.processInstanceId
+      elementId := ⟨wait.elementId.value⟩
+      activation := wait.activation }
+  have noCompletion : completeEffect state effectId result = none := by
+    simp [completeEffect, state, singletonEffectWaitingState,
+      effectId, effectOccurrenceMatches, invalid]
+  change applyStimulus scenarioClosureLimit program state
+      (.completeEffect completionCommandId effectId result) =
+    { outcome := .rejected
+      state
+      internalStepBoundExceeded := false
+      ambiguousInternalChoice := false }
+  have rejectedAdmission :
+      admitStimulus program state
+          (.completeEffect completionCommandId effectId result) =
+        { outcome := .rejected, state } := by
+    unfold admitStimulus
+    dsimp [state, singletonEffectWaitingState] at noCompletion ⊢
+    rw [noCompletion]
+  simp [applyStimulus, rejectedAdmission]
+
+/-- A matching effect occurrence whose typed result has no committed route is rejected with exact state preservation. -/
+theorem effect_result_route_failure_is_rejected
+    (program : Program) (wait : EffectWait)
+    (completionCommandId : SemanticId)
+    (result : EffectExecutionResult) (logicalTimeMs : Nat)
+    (invalid : effectResultOutput wait result = none) :
+    let effectId : EffectOccurrenceId :=
+      { processInstanceId := wait.processInstanceId
+        elementId := ⟨wait.elementId.value⟩
+        activation := wait.activation }
+    applyStimulus scenarioClosureLimit program
+        (singletonEffectWaitingState wait logicalTimeMs)
+        (.completeEffect completionCommandId effectId result) =
+      { outcome := .rejected
+        state := singletonEffectWaitingState wait logicalTimeMs
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  let state := singletonEffectWaitingState wait logicalTimeMs
+  let effectId : EffectOccurrenceId :=
+    { processInstanceId := wait.processInstanceId
+      elementId := ⟨wait.elementId.value⟩
+      activation := wait.activation }
+  have noCompletion : completeEffect state effectId result = none := by
+    simp [completeEffect, state, singletonEffectWaitingState,
+      effectId, effectOccurrenceMatches, invalid]
+    split <;> rfl
+  change applyStimulus scenarioClosureLimit program state
+      (.completeEffect completionCommandId effectId result) =
+    { outcome := .rejected
+      state
+      internalStepBoundExceeded := false
+      ambiguousInternalChoice := false }
+  have rejectedAdmission :
+      admitStimulus program state
+          (.completeEffect completionCommandId effectId result) =
+        { outcome := .rejected, state } := by
+    unfold admitStimulus
+    dsimp [state, singletonEffectWaitingState] at noCompletion ⊢
+    rw [noCompletion]
+  simp [applyStimulus, rejectedAdmission]
 
 /-- Any mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 -- tag::task-identity-law[]

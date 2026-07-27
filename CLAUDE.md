@@ -4,14 +4,16 @@ Shared guidance for Claude Code, OpenAI Codex, and human contributors working in
 
 ## Mission
 
-Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ultimately satisfies OMG Process Execution Conformance. Establish that result through four independent components:
+Build a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance. Treat standards coverage as the primary engine roadmap, selected CIB Seven behavior as a classified compatibility overlay, and A12 Workflows replacement as a downstream adoption layer. The durable layer boundaries and coverage measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture).
+
+Establish the semantic and hosting result through four components:
 
 1. a versioned CIB Seven semantic profile;
 2. an executable Lean reference interpreter;
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The A12 Workflows product-replacement goal and its inventory-based migration measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#mission). Use the maintained A12 Workflows product surface and its downstream full-stack blueprint to prioritize compatibility work; do not optimize only for abstract feature coverage or treat the target as one representative customer application.
+Use the maintained A12 Workflows product surface and its downstream full-stack blueprint to prioritize reusable BPMN mechanisms and necessary CIB overlays. A12 is the ultimate adoption target, but it does not define BPMN meaning and must not turn the engine into a collection of product-specific model paths.
 
 The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and active sequencing and decisions belong in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
@@ -60,6 +62,9 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 ## Non-negotiable boundaries
 
+- Preserve the dependency direction **BPMN execution core → selected CIB compatibility overlay → downstream A12 adoption adapter**. Lower layers never import or encode assumptions from a higher layer.
+- Track BPMN requirement coverage, CIB profile coverage, and A12 adoption coverage as three separate denominators. Never combine them into one support percentage or use success in one layer as evidence for another.
+- A12 inventory may prioritize the next standard mechanism or CIB relationship, but A12 bean names, façade APIs, data shapes, deployment assumptions, and license-bound source stay out of the BPMN core, Lean account, Semantic Process IL, and pure TypeScript semantic core.
 - Do not implement profile-dependent behavior until the relevant interpretation and scope are approved and recorded.
 - Do not formalize a CIB/BPMN mismatch as profile behavior until it is classified as normative agreement, gap resolution, extension, configuration-specific realization, limitation, or evidence-backed deviation in [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md). Keep candidate and confirmed deviations prominent.
 - Never silently choose an oracle release, feature meaning, expression subset, observation boundary, scheduling rule, listener scope, history contract, or external-effect contract.
@@ -75,6 +80,7 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 - Keep A12 source strictly outside the project dependency and distribution boundary. A12 is EUPL-1.2 and may be inspected only as an external research, compatibility, and optional exact-source evidence input recorded in [SOURCES.md](docs/SOURCES.md); never link it into this project, vendor it, use it as a build or runtime dependency, copy it into project-authored artifacts, or present it as MIT-licensed material. This repository must remain distributable under its MIT license. Any confirmed or potential violation is a blocker: stop, preserve the suspect material and provenance without redistributing it, and require an explicit owner resolution before continuing affected work.
 - An experiment is not semantic authority merely because it compiles or passes a finite witness.
 - Do not broaden any semantic capsule beyond its approved feature, interpretation, and observation boundary.
+- A first representative vertical slice may cross BPMN, CIB, Temporal, and downstream-adoption seams to establish feasibility. Once that seam is evidenced, do not repeat full-stack implementation for every model or variant: reuse the lower-layer mechanism and keep model/handler/client adaptation in the downstream component. Open another full semantic capsule only for a new BPMN proposition, a newly selected CIB relationship, or a material refinement risk.
 - Do not implement a new semantic transition family in Lean or the production semantic core until its capsule records a Temporal hosting/refinement preflight. The preflight must name the durable ingress, wait, timer, effect, cancellation, lifecycle, and projection mechanisms needed by that family; the state relation they preserve; delivery, ordering, concurrency, deduplication, retry, and replay risks; and the smallest executable refinement witness. “Temporal has no matching concept” is not itself a blocker, but an unclassified gap in preserving a public semantic outcome is.
 
 ## Semantic invariants
@@ -103,6 +109,10 @@ Use red/green TDD:
 5. implement the semantic root rather than a case-specific patch;
 6. run the focused gate and then the complete applicable gate;
 7. update the owning research, experiment, implementation, and plan documents.
+
+For coverage work, begin from the BPMN requirement and reusable mechanism. Add CIB source admission, probes, profile rules, and retained evidence only when the standard is ambiguous, the selected compatibility profile differs or adds behavior, a real downstream model requires an extension, or the Temporal mapping needs an engine observation. Do not require a CIB extension merely to complete a vendor-neutral BPMN capsule.
+
+Use A12 as a prioritization and later acceptance lane: first ask which standard mechanism its corpus forces, then which CIB overlay is actually required, and only then which A12 adapter binding remains. A target-shaped feasibility fixture may test the full composition once; subsequent A12 models using the same lower-layer contract belong in adoption regression evidence rather than new semantic implementations.
 
 The Temporal preflight is an early feasibility and information-preservation review, not evidence that the adapter already refines the core. It must distinguish a finite conformance-scenario host from the intended production lifecycle and must send unresolved mappings back to research or profile review before they become implicit adapter policy.
 
@@ -133,6 +143,14 @@ Split Lean code by semantic ownership, not into equal-sized chunks. Keep a famil
 Before adding a semantic family, inventory its existing checked-source types, lowering, runtime state, evaluator clauses, relations, laws, fixtures, observations, and adapters. Reuse a representation only when its meaning matches exactly; derive family-specific theorems by specialization when the proposition genuinely agrees rather than accumulating renamed restatements.
 
 For TypeScript and Java, prefer small typed collaborators over a runner or manager that parses, validates, schedules, mutates, projects, and cleans up in one class. Keep wire decoding, semantic orchestration, host lifecycle, evidence extraction, and canonical projection in separate owners. An extraction is complete only when the new owner has a narrow public contract and a focused test or compile target; forwarding every call through the old god object is not a completed split.
+
+TypeScript data and wire contracts are deeply immutable at compile time. Use the single project-owned `DeepReadonly<T>` utility for nested immutable contract shapes instead of repeating `readonly` at every property, and keep that utility tuple-preserving, union-distributive, and transparent to function types. Use ordinary `readonly` for a shallow contract only when nested values are deliberately mutable and that ownership is documented. Lock the convention with compile-time negative checks covering top-level, nested-object, and array or tuple mutation.
+
+For concrete TypeScript definitions and fixtures, prefer `as const satisfies Contract` so literals remain narrow while the complete shape is checked; do not use `as Contract` to silence incompatibility. Model semantic alternatives as closed discriminated unions, keep recurring concepts in one named type, and require exhaustive enum-based switches with a `never` check. Avoid optional-boolean mode bags, parallel near-duplicate object shapes, broad index signatures, and clever conditional-type machinery that makes public compiler errors harder to understand. A type abstraction must remove real repetition for at least two consumers without weakening exact field, tuple, or union information; target TypeScript contributors should be able to discover and use the contract from editor tooling without reading its implementation.
+
+Write idiomatic TypeScript rather than Java translated into TypeScript. Prefer immutable data plus small pure functions and cohesive ES modules over stateful utility classes, factories, builders, bean accessors, namespaces, and nominal wrapper ceremony. Accept `unknown` at untrusted boundaries and narrow it with explicit validators or type guards; avoid `any`, non-null assertions, unchecked casts, and catch-all string dictionaries. Let local implementation types infer when the result remains obvious, but annotate exported contracts, semantic functions, recursion boundaries, and callback ownership. Keep async control flow explicit with `async`/`await`, propagate typed domain results separately from thrown infrastructure failures, and never hide ordering, cancellation, timeout, or resource lifetime behind a convenience abstraction.
+
+Write idiomatic Lean rather than imperative evaluator code transliterated into theorem syntax. Represent semantic domains with distinct structures, inductive types, and propositions; use total pattern matching and structurally clear recursion; keep executable definitions separate from declarative relations and reusable laws. Prefer small named lemmas with meaningful hypotheses, library combinators, and readable `cases`/`induction`/`simp`/`rw` proofs over duplicated theorem bodies, giant tactic blocks, Boolean encodings of propositions, or proof-by-serialization. `by decide` is appropriate for finite fixtures, decoder locks, and concrete counterexamples; it does not replace a quantified semantic theorem. Preserve domain-specific identifier types, keep JSON and wire conversion at boundary modules, and do not weaken types or expose evaluator internals merely to shorten a proof.
 
 The source-hygiene gate detects hard file-size violations and requires an explicit reviewed justification for every file above the 600-line target. It complements design review; it does not make a file, class, or function clean merely because the counters pass.
 
@@ -201,6 +219,7 @@ Use one owner for each fact and link to it elsewhere:
 | Mission, authority, and approved durable boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | Semantic Process IL contract, exact proof boundary, maintained obligations, and growth rules | [SEMANTIC-PROCESS-IL-SPEC.md](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
 | Reviewed BPMN Process Execution requirements and dispositions | [BPMN-REQUIREMENT-LEDGER.md](docs/BPMN-REQUIREMENT-LEDGER.md) |
+| Downstream A12 model, delegate, façade, blueprint, and migration-adoption denominator | [A12-WORKFLOWS-COMPATIBILITY-LEDGER.md](docs/research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) |
 | Exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
 | CIB behavior relative to BPMN: agreements, operational details, interpretations, extensions, configuration, limitations, and deviations | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |

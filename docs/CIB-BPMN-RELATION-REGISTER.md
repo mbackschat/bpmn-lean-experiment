@@ -6,6 +6,8 @@
 
 This document owns the classification of CIB Seven behavior relative to BPMN 2.0.2. It keeps ordinary conformance, operational interpretations, extensions, configuration-specific realizations, limitations, and deviations distinct.
 
+This register is the CIB compatibility overlay, not the BPMN coverage ledger or the A12 adoption ledger. Add an entry only when a selected CIB behavior contributes a distinct classified fact. An A12 model may trigger the investigation, but its handler name, business data, façade, and adoption status remain outside the relationship proposition.
+
 ## Working presumption
 
 CIB Seven is treated as a mature, compliance-oriented BPMN execution reference. The default expectation is that it implements BPMN 2.0.2 faithfully, makes underspecified or inconsistent parts operational, and adds explicit engine capabilities around the standard.
@@ -20,12 +22,12 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 4 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
-| Permitted operational details | 2 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Reviewed normative agreements | 5 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Permitted operational details | 3 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 0 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 2 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
-| Configuration-specific realizations | 3 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Selected CIB extensions | 4 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Configuration-specific realizations | 4 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
@@ -126,6 +128,20 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** This establishes agreement only for one acyclic private executable `None Start Event → Intermediate Catch Timer Event with exact literal PT1S → None End Event` Process under `CIB-CFG-0001`. Other duration literals, expressions, time dates, cycles, repeating timers, boundary events, timer Start Events, competing events, cancellation, scheduler latency, and general timer compatibility remain unreviewed.
 
+### CIB-AGR-0005 — exact-code interrupting Error Boundary Event
+
+**Status:** Reviewed bounded agreement
+
+**BPMN basis:** BPMN 2.0.2 Clauses 13.3.3 and 13.5.3 plus Tables 10.86, 10.91, and 10.92 require the selected matching Error to interrupt the attached Service Task and continue only through the Error Boundary Event's outgoing Sequence Flow.
+
+**Pinned CIB observation:** CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371` catches both code-only and message-bearing `BpmnError("LinkLimitReachedError", ...)` from the exact attached Service Task, exposes the boundary-route User Task, and does not execute the normal End path. An independently perturbed Error code and attachment each fail the deployment-derived profile comparison.
+
+**Evidence:** [Boundary-error specification and phase-zero result](capsules/BOUNDARY-ERROR-SPEC.md), [project-authored fixture](../scenarios/boundary-error/process.bpmn), [packaged-engine probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java), and the ordinary content-bound scenario evidence.
+
+**Fidelity boundary:** The boundary User Task and absence of the normal End path are engine-observed. Project effect intent, typed business-result shape, occurrence identity, and command identity are not CIB concepts. Caught-path output mapping is not part of this agreement; it is the separately selected extension `CIB-EXT-0004`.
+
+**Boundary:** This establishes only one exact code, one attached interrupting handler, one flat Process, and one same-command synchronous CIB host realization. Catch-all handling, nested propagation, Error End Events, multiple handlers, general faults, and unhandled Error behavior remain outside this agreement.
+
 ## Interpretation register
 
 No CIB gap resolution has yet been approved as a project semantic-profile decision.
@@ -160,6 +176,32 @@ CIB Seven `2.0.0` resolves the exact bean token, provides the mapped literal to 
 
 **Boundary:** This entry claims no general input/output mapping, expression language, arbitrary variable, bean, delegate, `DelegateExecution`, Java binary, failure, transaction rollback, Script Task, listener, or engine-API compatibility.
 
+### CIB-EXT-0003 — exact deferred delegate expression and typed Java BPMN Error
+
+**Status:** Selected bounded extension
+
+The boundary-error profile admits exactly `{http://camunda.org/schema/1.0/bpmn}delegateExpression="#{createRelationshipLinkDelegate}"` and maps that deferred-expression token to project handler identity `createRelationshipLinkDelegate`. The project rejects the `${...}` spelling for this profile and does not evaluate either form as general JUEL.
+
+CIB Seven `2.0.0` resolves the exact bean and permits the delegate to throw `BpmnError` with non-empty code `LinkLimitReachedError` and either no message or the reviewed non-empty message. The project Worker-facing result is a language-neutral typed value rather than a Java exception; Java `BpmnError`, bean lookup, and `DelegateExecution` remain host-extension mechanisms.
+
+**Evidence:** [Boundary-error specification](capsules/BOUNDARY-ERROR-SPEC.md), [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java), and the project-authored fixture.
+
+**Boundary:** This entry claims no general immediate/deferred JUEL equivalence, arbitrary bean, Java delegate binary compatibility, general `DelegateExecution`, Process-scope writes, error-variable extensions, or other Error codes.
+
+### CIB-EXT-0004 — caught-Error output mapping before Activity cleanup
+
+**Status:** Selected profile-scoped extension and visible candidate deviation from the BPMN-only cancellation account
+
+CIB Seven `2.0.0` executes the attached Service Task's Camunda output parameters during `ExecutionEntity.destroy(false)` on the matching interrupting Error path, before clearing Activity-local state. A pre-error local sentinel therefore becomes Process `relationshipLinkId = "must-not-map"`; the target-shaped local null creates a present null-valued Process variable before the boundary User Task is exposed.
+
+**BPMN boundary:** BPMN 2.0.2 specifies interrupting Error handling and cancellation but does not define Camunda input/output extension execution during that cancellation. The capsule's BPMN-only reading would abandon normal Activity output. This entry is therefore not `CIB-AGR-0005` and is not evidence that general BPMN requires fault-path output mapping. It remains visibly candidate-deviating from that cancellation reading until a broader normative review warrants a different classification.
+
+**Profile decision and rationale:** The owner selected the CIB behavior only for the A12 migration profile on 2026-07-27. The target delegate writes Activity-local `newLinkId = null` on both reviewed Error branches, CIB distinguishes an absent identifier from present null, and suppressing the mapping would bake a known target incompatibility into the profile. The Worker reports only the validated pre-error Activity-local patch; the semantic program remains mapping authority. The project transition is atomic patch → mapping → cleanup → boundary.
+
+**Evidence and independence limit:** The [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java) establishes sentinel and null behavior and the pinned engine source explains the mechanism. Because CIB supplies the selected account, CIB agreement cannot count as independent corroboration for `BERROR-CIBMAP-01`; independent evidence is limited to strict negative witnesses and the separate Lean/TypeScript transcriptions, with Temporal refinement over the TypeScript core.
+
+**Boundary:** Delegate-side Process-scope writes, arbitrary mappings, mapping expressions beyond the one simple local reference, other value kinds, listeners, nested scopes, general fault propagation, and a BPMN-conformant profile remain excluded. A BPMN-only profile may drop this extension without changing `BERROR-INTERRUPT-01`.
+
 ### Research queue
 
 | Hint | Status | Required investigation |
@@ -193,6 +235,18 @@ For the approved success-only capsule, both accounts agree on admitted input and
 
 **Evidence:** [CreateDocument specification](capsules/CREATE-DOCUMENT-DATA-SPEC.md), [packaged-engine runner test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenCreateDocumentScenarioRunnerTest.java), [content-bound `2.0.0` evidence](../scenarios/create-document-data/cibseven-evidence.json), and the [A12 target profile](../profiles/cibseven-2.0.0-a12-create-document-draft/README.md).
 
+### CIB-OP-0003 — synchronous caught Error mapped to a durable typed result
+
+**Status:** Reviewed operational mapping
+
+CIB Seven `2.0.0` invokes the selected delegate, catches its Java `BpmnError`, applies `CIB-EXT-0004`, destroys the Activity scope, and opens the boundary User Task in one engine command. It exposes no committed effect intent or recoverable interval between the external delegate action and Error routing.
+
+The project instead commits an effect intent, runs a Temporal Activity, and receives a successful typed business result containing code, required nullable message, and validated Activity-local patch. The semantic core then performs the selected atomic patch → mapping → cleanup → boundary transition. Activity failure, retry exhaustion, and Workflow failure remain adapter outcomes rather than business Errors.
+
+**Evidence:** [Boundary-error specification](capsules/BOUNDARY-ERROR-SPEC.md), [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java), ordinary CIB scenario evidence, and Temporal Activity history/replay.
+
+**Boundary:** This mapping compares the admitted final host observations while retaining different host transaction boundaries. It does not claim rollback equivalence, an independent CIB semantic effect-intent state, Java exception transport through Temporal, or compatibility for unmatched Errors.
+
 ## Configuration-specific register
 
 ### CIB-CFG-0001 — pinned Milestone 0 oracle environment
@@ -218,6 +272,18 @@ The waiting interval is a harness scheduling input and the job is a CIB host con
 The A12 CreateDocument profile pins CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371`, Java 21, H2 `2.3.232`, disabled automatic job execution, an explicit clock, audit history, and default history TTL `P180D`. This identity is distinct from every `2.2.0` profile and evidence envelope even where selected engine source files are byte-identical.
 
 The synchronous CreateDocument path does not use a continuation job, but the full environment remains pinned so deployment, history, cleanup, and later comparisons are reproducible. Passing a `2.2.0` behavioral probe under a dependency override is not evidence for this profile.
+
+### CIB-CFG-0004 — default unmatched BPMN Error under the pinned A12 engine
+
+**Status:** Reviewed configuration dependency
+
+CIB Seven `2.0.0` defaults `enableExceptionsAfterUnhandledBpmnError` to `false`. For an unmatched `RelationshipLinkageError`, the engine logs the missing catcher and calls `execution.end(true)` rather than rethrowing the Error.
+
+The mapping-free phase-zero control isolates that default: the Process has no remaining runtime instance, task, job, incident, normal End execution, or boundary-task execution; history retains one ended Process plus Activity-local `relationshipModel = "RelationshipModel"` and `newLinkId = "must-not-map"`. In the complete selected fixture, the later Camunda output mapping instead tries to resolve the already destroyed `newLinkId`, raises `Cannot resolve identifier 'newLinkId'`, and rolls the entire start command back, leaving no runtime or historic Process state.
+
+**Classification rationale:** The two outcomes are separate configuration-and-extension facts. The mapping-free result records default unmatched handling; the mapped rollback is conditional on `CIB-EXT-0004` and must never be generalized as CIB's universal unmatched-Error behavior. The project does not select either as BPMN semantic authority. Its current unmatched successful Activity result becomes typed adapter failure `BPMN_UNHANDLED_BPMN_ERROR`.
+
+**Evidence:** [Boundary-error specification](capsules/BOUNDARY-ERROR-SPEC.md) and the seven-test [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java).
 
 ## Audit of previously visited findings
 

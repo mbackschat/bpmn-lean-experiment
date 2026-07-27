@@ -60,6 +60,9 @@ import {
 import {
   registerCreateDocumentDataTemporalTests,
 } from "./create-document-data-temporal-tests.mjs";
+import {
+  registerBoundaryErrorTemporalTests,
+} from "./boundary-error-temporal-tests.mjs";
 
 let runner;
 
@@ -287,3 +290,4 @@ test("batch execution rejects duplicate Workflow identities before start", async
 registerParallelTemporalTests(() => runner);
 registerServiceTaskEffectTemporalTests(() => runner);
 registerCreateDocumentDataTemporalTests(() => runner);
+registerBoundaryErrorTemporalTests(() => runner);

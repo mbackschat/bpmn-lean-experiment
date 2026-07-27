@@ -15,6 +15,7 @@ import type {
   CibSevenEvidence,
   EffectJob,
   EffectJobSnapshot,
+  MappingExecutionSnapshot,
   TaskQueryTask,
   TimerJob,
 } from "./contract-artifacts.ts";
@@ -329,40 +330,91 @@ export function verifyProducerProjection(evidence: CibSevenEvidence): void {
   const mappingExecutions =
     evidence.producerObservations.mappingExecutions ?? [];
   if (mappingExecutions.length > 0) {
-    const execution = mappingExecutions[0];
-    const finalState = [...evidence.result.trace].reverse().find(
-      (observation) => observation.kind === "state",
-    );
-    if (
-      mappingExecutions.length !== 1 ||
-      execution === undefined ||
-      execution.afterCommandId !== "start-create-document" ||
-      execution.handler !== "createDocumentDelegate" ||
-      execution.invocations !== 1 ||
-      !isDeepStrictEqual(execution.arguments, [
-        {
-          name: "documentModelName",
-          value: { kind: "string", value: "MyDocumentModel" },
-        },
-      ]) ||
-      !isDeepStrictEqual(execution.localPatch, [
-        {
-          name: "newDocRef",
-          value: { kind: "string", value: "Document:42" },
-        },
-      ]) ||
-      finalState?.kind !== "state" ||
-      !isDeepStrictEqual(finalState.variables, [
-        {
-          name: "myDocumentReference",
-          value: { kind: "string", value: "Document:42" },
-        },
-      ])
-    ) {
+    if (mappingExecutions.length !== 1) {
       throw new Error(
-        "retained CIB mapping evidence does not establish the exact CreateDocument contract",
+        "retained CIB mapping evidence requires one execution",
       );
     }
+    verifyMappingExecution(
+      mappingExecutions[0],
+      evidence.result.trace,
+    );
+  }
+}
+
+function verifyMappingExecution(
+  execution: MappingExecutionSnapshot | undefined,
+  trace: CibSevenEvidence["result"]["trace"],
+): void {
+  if (execution === undefined || execution.invocations !== 1) {
+    throw new Error(
+      "retained CIB mapping evidence requires one delegate invocation",
+    );
+  }
+  const finalState = [...trace].reverse().find(
+    (observation) => observation.kind === "state",
+  );
+  switch (execution.handler) {
+    case "createDocumentDelegate":
+      if (
+        execution.afterCommandId !== "start-create-document" ||
+        !isDeepStrictEqual(execution.arguments, [
+          {
+            name: "documentModelName",
+            value: { kind: "string", value: "MyDocumentModel" },
+          },
+        ]) ||
+        !isDeepStrictEqual(execution.localPatch, [
+          {
+            name: "newDocRef",
+            value: { kind: "string", value: "Document:42" },
+          },
+        ]) ||
+        finalState?.kind !== "state" ||
+        !isDeepStrictEqual(finalState.variables, [
+          {
+            name: "myDocumentReference",
+            value: { kind: "string", value: "Document:42" },
+          },
+        ])
+      ) {
+        throw new Error(
+          "retained CIB mapping evidence does not establish the exact CreateDocument contract",
+        );
+      }
+      return;
+    case "createRelationshipLinkDelegate":
+      if (
+        execution.afterCommandId !== "start-boundary-error" ||
+        !isDeepStrictEqual(execution.arguments, [
+          {
+            name: "relationshipModel",
+            value: { kind: "string", value: "RelationshipModel" },
+          },
+        ]) ||
+        !isDeepStrictEqual(execution.localPatch, [
+          {
+            name: "newLinkId",
+            value: { kind: "null" },
+          },
+        ]) ||
+        finalState?.kind !== "state" ||
+        !isDeepStrictEqual(finalState.variables, [
+          {
+            name: "relationshipLinkId",
+            value: { kind: "null" },
+          },
+        ])
+      ) {
+        throw new Error(
+          "retained CIB mapping evidence does not establish the exact boundary-error contract",
+        );
+      }
+      return;
+    default:
+      throw new Error(
+        `unsupported retained CIB mapping handler: ${execution.handler}`,
+      );
   }
 }
 

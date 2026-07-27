@@ -1,9 +1,5 @@
-import {
-  EffectExecutionResultKind,
-  VariableValueKind,
-} from "./contract.js";
+import { VariableValueKind } from "./contract.js";
 import type {
-  EffectExecutionResult,
   VariableBinding,
 } from "./contract.js";
 import {
@@ -39,15 +35,13 @@ export function evaluateInputMappings(
   }).sort(compareBindings);
 }
 
-export function applyEffectResult(
+export function applyEffectPatch(
   arguments_: ReadonlyArray<VariableBinding>,
   outputMappings: ReadonlyArray<VariableMapping>,
   processVariables: ReadonlyArray<VariableBinding>,
-  result: EffectExecutionResult,
+  localPatch: ReadonlyArray<VariableBinding>,
+  allowNull: boolean,
 ): ReadonlyArray<VariableBinding> | null {
-  if (result.kind !== EffectExecutionResultKind.Success) {
-    return null;
-  }
   const requiredLocalNames = outputMappings.map((mapping) => {
     const expression = mapping.expression;
     switch (expression.kind) {
@@ -61,7 +55,11 @@ export function applyEffectResult(
         return assertNever(expression);
     }
   }).sort(compareCanonicalStrings);
-  const patch = validatePatch(result.localPatch, requiredLocalNames);
+  const patch = validatePatch(
+    localPatch,
+    requiredLocalNames,
+    allowNull,
+  );
   if (patch === null) {
     return null;
   }
@@ -85,6 +83,7 @@ export function applyEffectResult(
 function validatePatch(
   patch: ReadonlyArray<VariableBinding>,
   requiredNames: ReadonlyArray<string>,
+  allowNull: boolean,
 ): ReadonlyArray<VariableBinding> | null {
   if (patch.length !== requiredNames.length) {
     return null;
@@ -95,12 +94,26 @@ function validatePatch(
     if (
       binding === undefined ||
       binding.name !== requiredNames[index] ||
-      binding.value.kind !== VariableValueKind.String
+      !isPermittedValue(binding, allowNull)
     ) {
       return null;
     }
   }
   return sorted;
+}
+
+function isPermittedValue(
+  binding: VariableBinding,
+  allowNull: boolean,
+): boolean {
+  switch (binding.value.kind) {
+    case VariableValueKind.String:
+      return true;
+    case VariableValueKind.Null:
+      return allowNull;
+    default:
+      return false;
+  }
 }
 
 function mergeBindings(

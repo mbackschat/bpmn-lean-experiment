@@ -165,6 +165,21 @@ export function compareCase(
             },
           ],
         )
+      : pipelineCase.cibRelation ===
+          CibCaseRelation.SynchronousBoundaryError
+        ? compareTargetResults(
+            {
+              target: DifferentialTarget.CibSeven,
+              result: canonicalCib,
+            },
+            [
+              {
+                target: DifferentialTarget.Lean,
+                result:
+                  projectSynchronousBoundaryErrorHostResult(leanResult),
+              },
+            ],
+          )
       : null;
   const expectedTemporalPrefix =
     pipelineCase.temporalRelation ===
@@ -405,6 +420,46 @@ function projectSynchronousHostResult(
   return {
     outcome: semanticResult.outcome,
     trace: [deployment, start, finalState],
+  };
+}
+
+function projectSynchronousBoundaryErrorHostResult(
+  semanticResult: ScenarioResult,
+): ScenarioResult {
+  const deployment = semanticResult.trace[0];
+  const start = semanticResult.trace[1];
+  const boundaryStateIndex = semanticResult.trace.findIndex(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.openUserTasks.some(
+        ({ id }) =>
+          id.elementId === "ExpectedUserTaskAfterBPMNError",
+      ),
+  );
+  const boundaryState = semanticResult.trace[boundaryStateIndex];
+  const completion = semanticResult.trace[boundaryStateIndex + 1];
+  const finalState = semanticResult.trace[boundaryStateIndex + 2];
+  if (
+    deployment?.kind !== CanonicalObservationKind.Deployment ||
+    start?.kind !== CanonicalObservationKind.Command ||
+    boundaryState?.kind !== CanonicalObservationKind.State ||
+    completion?.kind !== CanonicalObservationKind.Command ||
+    finalState?.kind !== CanonicalObservationKind.State ||
+    finalState.status !== ProcessStatus.Completed
+  ) {
+    throw new Error(
+      "Synchronous boundary-error relation requires start, routed User Task, completion, and final state",
+    );
+  }
+  return {
+    outcome: semanticResult.outcome,
+    trace: [
+      deployment,
+      start,
+      boundaryState,
+      completion,
+      finalState,
+    ],
   };
 }
 

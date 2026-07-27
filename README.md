@@ -2,7 +2,7 @@
 
 Making BPMN execution durable, explainable, and continuously checkable.
 
-This project builds a Temporal-hosted BPMN 2.0.2 execution adapter whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. Its driving product goal is evidence-backed migration of an existing CIB Seven solution—its used BPMN Processes, selected Java delegates, expressions, and integration code—with unchanged source or bounded adapters where feasible and explicit migration steps elsewhere. OMG BPMN Process Execution Conformance remains the ultimate semantic target. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#mission) owns the exact mission and migration measures.
+This project builds a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. Its primary implementation roadmap is OMG BPMN Process Execution coverage. Selected CIB Seven behavior is layered on as versioned compatibility profiles, and evidence-backed A12 Workflows replacement is a downstream adoption goal implemented through bounded adapters rather than product semantics in the core. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture) owns the exact boundaries and separate coverage measures.
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
@@ -17,6 +17,17 @@ BPMN, CIB Seven, and Temporal solve different problems:
 - Temporal provides durable execution, replay, messaging, timers, Activities, and recovery, but those mechanisms do not define BPMN semantics.
 
 A direct BPMN-to-Temporal translation risks turning SDK handlers, retries, scheduling, or replay constraints into accidental BPMN behavior. This project keeps semantic meaning in an explicit profile, Lean reference, and pure TypeScript transition system; Temporal hosts that system durably.
+
+The product layers are intentionally one-way:
+
+```text
+A12 Workflows adoption adapter
+  → selected CIB Seven compatibility profiles
+    → vendor-neutral BPMN execution core
+      → Temporal durability and effect hosting
+```
+
+A12 models and APIs help prioritize work and eventually test adoption, but they do not define BPMN semantics. A first target-shaped vertical slice may prove that the layers compose; later coverage grows by reusable BPMN mechanism, with CIB work added only when a selected compatibility question requires it.
 
 ## Architecture
 

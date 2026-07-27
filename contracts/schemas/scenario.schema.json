@@ -280,20 +280,36 @@
       }
     },
     "variableValue": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "value"
-      ],
-      "properties": {
-        "kind": {
-          "const": "string"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
         },
-        "value": {
-          "type": "string"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "null"
+            }
+          }
         }
-      }
+      ]
     },
     "variableBinding": {
       "type": "object",
@@ -312,23 +328,57 @@
       }
     },
     "effectExecutionResult": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "localPatch"
-      ],
-      "properties": {
-        "kind": {
-          "const": "success"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "localPatch"
+          ],
+          "properties": {
+            "kind": {
+              "const": "success"
+            },
+            "localPatch": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variableBinding"
+              }
+            }
+          }
         },
-        "localPatch": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/variableBinding"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "code",
+            "message",
+            "localPatch"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bpmnError"
+            },
+            "code": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "message": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "localPatch": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variableBinding"
+              }
+            }
           }
         }
-      }
+      ]
     },
     "fireTimer": {
       "type": "object",
@@ -470,6 +520,22 @@
             },
             "handler": {
               "const": "createDocumentDelegate"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "handler"
+          ],
+          "properties": {
+            "protocol": {
+              "const": "urn:bpmn-lean:a12-delegate:v1"
+            },
+            "handler": {
+              "const": "createRelationshipLinkDelegate"
             }
           }
         }

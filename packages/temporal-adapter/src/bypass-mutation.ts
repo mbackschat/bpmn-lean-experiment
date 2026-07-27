@@ -6,9 +6,13 @@ import { fileURLToPath } from "node:url";
 
 import type {
   CanonicalObservation,
+  CompleteUserTaskInstanceStimulus,
   Scenario,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
+import type {
+  WorkflowHandle,
+} from "@temporalio/client";
 import type {
   TestWorkflowEnvironment,
 } from "@temporalio/testing";
@@ -21,6 +25,7 @@ import {
   TemporalCompletionDelivery,
 } from "./contracts.js";
 import type {
+  BpmnProcessWorkflow,
   TemporalEffectBypassMutationExecution,
   TemporalHistory,
   TemporalTimerBypassMutationExecution,
@@ -34,12 +39,17 @@ import {
 import {
   normalizeError,
   requireCompletedProcessReceipt,
+  requireCompletionStimuli,
   requireOptionalEffectExecution,
   requireOptionalTimerStimulus,
+  requireSemanticOutcome,
   requireStartStimulus,
   scenarioResultFromTrace,
   withDeadline,
 } from "./runner-support.js";
+import {
+  submitUserTaskCompletionAtWorkflowId,
+} from "./process-client.js";
 
 const timerConfiguration = {
   taskQueue: "bpmn-timer-bypass-mutation",
@@ -72,6 +82,7 @@ export async function runTimerBypassMutation(
   scenario: Scenario,
   semanticProcess: SemanticProcessProgram,
   workflowId: string,
+  waitForUserTask: WaitForUserTask,
 ): Promise<TemporalTimerBypassMutationExecution> {
   if (requireOptionalTimerStimulus(scenario) === undefined) {
     throw new TypeError(
@@ -84,6 +95,7 @@ export async function runTimerBypassMutation(
     semanticProcess,
     workflowId,
     timerConfiguration,
+    waitForUserTask,
   );
 }
 
@@ -92,6 +104,7 @@ export async function runEffectBypassMutation(
   scenario: Scenario,
   semanticProcess: SemanticProcessProgram,
   workflowId: string,
+  waitForUserTask: WaitForUserTask,
 ): Promise<TemporalEffectBypassMutationExecution> {
   requireOptionalEffectExecution(scenario, semanticProcess, {
     workflowId,
@@ -104,8 +117,14 @@ export async function runEffectBypassMutation(
     semanticProcess,
     workflowId,
     effectConfiguration,
+    waitForUserTask,
   );
 }
+
+type WaitForUserTask = (
+  handle: WorkflowHandle<BpmnProcessWorkflow>,
+  completion: CompleteUserTaskInstanceStimulus,
+) => Promise<void>;
 
 async function runBypassMutation(
   environment: TestWorkflowEnvironment,
@@ -113,6 +132,7 @@ async function runBypassMutation(
   semanticProcess: SemanticProcessProgram,
   workflowId: string,
   configuration: BypassMutationConfiguration,
+  waitForUserTask: WaitForUserTask,
 ): Promise<TemporalTimerBypassMutationExecution> {
   const start = requireStartStimulus(scenario);
   const mutationWorker = await withDeadline(
@@ -143,6 +163,13 @@ async function runBypassMutation(
       ),
       operationDeadlineMs,
       `${configuration.description} Workflow start`,
+    );
+    await deliverCallerCompletions(
+      environment,
+      handle,
+      start.instanceId,
+      requireCompletionStimuli(scenario),
+      waitForUserTask,
     );
     const receipt = requireCompletedProcessReceipt(
       await withDeadline(
@@ -191,5 +218,25 @@ async function runBypassMutation(
         `${configuration.description} Worker failed`,
       );
     }
+  }
+}
+
+async function deliverCallerCompletions(
+  environment: TestWorkflowEnvironment,
+  handle: WorkflowHandle<BpmnProcessWorkflow>,
+  processInstanceId: string,
+  completions: ReadonlyArray<CompleteUserTaskInstanceStimulus>,
+  waitForUserTask: WaitForUserTask,
+): Promise<void> {
+  for (const completion of completions) {
+    await waitForUserTask(handle, completion);
+    requireSemanticOutcome(
+      await submitUserTaskCompletionAtWorkflowId(
+        environment.client.workflow,
+        handle.workflowId,
+        processInstanceId,
+        completion,
+      ),
+    );
   }
 }

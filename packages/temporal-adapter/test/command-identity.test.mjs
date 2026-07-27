@@ -61,6 +61,36 @@ test("derives fixed SHA-256 Update IDs from exact canonical content", () => {
   );
 });
 
+test("content-binds the typed BPMN Error command without coercing null", () => {
+  const stimulus = {
+    kind: "completeEffect",
+    commandId:
+      "complete-effect-sha256:49ddf71a5f8e23b59c039a65bd64a2ed16232c31a47790b2273e1b05c3c971d5",
+    effectId: {
+      processInstanceId: "Instance_1",
+      elementId: "CreateRelationshipLinkTask",
+      activation: 1,
+    },
+    result: {
+      kind: "bpmnError",
+      code: "LinkLimitReachedError",
+      message: "Link limit reached",
+      localPatch: [{
+        name: "newLinkId",
+        value: { kind: "null" },
+      }],
+    },
+  };
+  assert.equal(
+    canonicalStimulusEncoding(stimulus),
+    '["completeEffect","complete-effect-sha256:49ddf71a5f8e23b59c039a65bd64a2ed16232c31a47790b2273e1b05c3c971d5",["Instance_1","CreateRelationshipLinkTask",1],["bpmnError","LinkLimitReachedError",["some","Link limit reached"],[["newLinkId",["null"]]]]]',
+  );
+  assert.equal(
+    contentBoundUpdateId(stimulus),
+    "bpmn-command-sha256:01a0ceb7728092785d29d40533f67a3a200f95705793e95cce03947ee4d8e3ac",
+  );
+});
+
 test("derives the scenario-identical timer command inside the Workflow boundary", () => {
   const timer = {
     id: {

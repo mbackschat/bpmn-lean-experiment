@@ -21,6 +21,7 @@ import org.bpmnlean.cibseven.ScenarioProtocol.TimerJob;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerOccurrenceId;
 import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
@@ -141,22 +142,32 @@ final class CibSevenScenarioStateProjector {
   }
 
   private List<VariableBinding> observeProcessVariables(String engineInstanceId) {
-    var variables =
-        processEngine
-            .getHistoryService()
-            .createHistoricVariableInstanceQuery()
-            .processInstanceId(engineInstanceId)
-            .variableName("myDocumentReference")
-            .list();
-    if (variables.isEmpty()) {
-      return List.of();
+    return List.of("myDocumentReference", "relationshipLinkId").stream()
+        .flatMap(
+            name ->
+                processEngine
+                    .getHistoryService()
+                    .createHistoricVariableInstanceQuery()
+                    .processInstanceId(engineInstanceId)
+                    .variableName(name)
+                    .list()
+                    .stream()
+                    .map(variable -> projectVariable(name, variable.getValue())))
+        .sorted(
+            (left, right) ->
+                WireStrings.compare(left.name(), right.name()))
+        .toList();
+  }
+
+  private VariableBinding projectVariable(String name, Object value) {
+    if (value == null) {
+      return new VariableBinding(name, new NullValue());
     }
-    if (variables.size() != 1 || !(variables.getFirst().getValue() instanceof String value)) {
-      throw new IllegalStateException(
-          "CreateDocument Process output must be one string variable");
+    if (value instanceof String stringValue) {
+      return new VariableBinding(name, new StringValue(stringValue));
     }
-    return List.of(
-        new VariableBinding("myDocumentReference", new StringValue(value)));
+    throw new IllegalStateException(
+        "Canonical Process variable must be string or null: " + name);
   }
 
   CleanupProjection observeCleanup() {

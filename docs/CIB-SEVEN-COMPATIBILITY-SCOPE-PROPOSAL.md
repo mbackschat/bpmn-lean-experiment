@@ -8,6 +8,22 @@ Which Camunda/CIB Seven BPMN extensions and execution APIs should this project t
 
 The pinned-source findings and family inventory are in [CIB Seven BPMN extensions and execution-API research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md). This proposal selects project boundaries; it does not authorize a semantic capsule, dependency, Java runtime, expression engine, or production API implementation.
 
+## Layer role
+
+CIB Seven compatibility is an overlay on the vendor-neutral BPMN execution core, not the first or highest layer of the product. Standard BPMN propositions remain usable without a CIB profile. This document selects only the CIB syntax, interpretations, extensions, configurations, and host relations that a named compatibility profile adds.
+
+A12 Workflows sits above this layer as a downstream adoption target. Its corpus may justify prioritizing one CIB surface, but A12 handler names, Java APIs, integration façades, and model-specific shapes belong to an A12 adoption adapter or exact compatibility fixture. They do not become generic CIB semantics.
+
+Do not create or expand a CIB profile merely because a BPMN capsule exists. Add CIB work when at least one of these conditions holds:
+
+- BPMN leaves a material operational choice and the selected profile adopts CIB's choice;
+- the source uses a selected `camunda:*` extension;
+- a behavioral compatibility claim needs a pinned separating observation;
+- a CIB host mechanism or configuration can change the bounded public result;
+- an A12 adoption requirement cannot be expressed through an already selected CIB contract.
+
+Where standard BPMN behavior is sufficiently precise and no compatibility promise needs a new engine fact, the BPMN capsule may close without new CIB extension scope. Existing CIB evidence can still serve as a bounded oracle observation when its failure mode and fidelity are stated.
+
 ## Recommended compatibility claim
 
 The owner adopted this durable target:
@@ -121,9 +137,11 @@ The second mode must fail fast on unsupported API calls and document class-loadi
 
 ## Migration-target consequence
 
-The product target is A12 Workflows `release/2025.06`, not one downstream application and not every CIB feature speculatively. The defined [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) inventories its maintained BPMN elements, extension bindings, `DelegateExecution` calls, variables, expressions, scripts, listeners, errors, engine integration, and REST/JMS façade consumers. The A12 Full Stack Project Template is the canonical downstream-project blueprint, while its Workflows-enabled materialization remains a required future integration fixture.
+The downstream adoption target is A12 Workflows `release/2025.06`, not one consuming application and not every CIB feature speculatively. The defined [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) inventories its maintained BPMN elements, extension bindings, `DelegateExecution` calls, variables, expressions, scripts, listeners, errors, engine integration, and REST/JMS façade consumers. The A12 Full Stack Project Template is the canonical downstream-project blueprint, while its Workflows-enabled materialization remains a required future integration fixture.
 
-The inventory promotes typed variables and input/output mappings, an exact deterministic expression subset, bean-token Service Task admission without the probe-only implementation URN, `BpmnError`, a Java-friendly delegate bridge, User Task assignment/forms, and message correlation. It keeps arbitrary `camunda:class`, external tasks, connectors, Call Activities, timers, and multi-instance deferred because they are absent from the defined product corpus. These priorities do not move semantics into the Worker or authorize general compatibility.
+The inventory prioritizes reusable BPMN mechanisms first and the necessary CIB overlay second. Typed variables and input/output mappings, conditional routing, message correlation, boundary Error behavior, and User Task lifecycle are lower-layer mechanisms with A12 consumers; bean-token bindings, assignment/form extensions, exact expression subsets, and delegate bridging are CIB or A12 adoption work layered on top. Absence from the A12 corpus does not remove a construct from the ultimate BPMN conformance target, and presence does not move A12 semantics into the engine.
+
+The `CreateDocument` and boundary-error slices intentionally test the complete stack once at two difficult effect/data/fault seams. They are not a mandate to add a dedicated semantic path for every A12 model. Later models that reuse the same BPMN and CIB contracts should be handled by profile/adoption configuration and regression evidence.
 
 A12 Workflows builds against CIB Seven `2.0.0`, while the current project profiles execute CIB Seven `2.2.0`. The first target-specific preflight must preserve those as distinct profiles unless bounded source and behavioral evidence establishes equivalence for the used subset.
 

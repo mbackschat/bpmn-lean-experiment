@@ -2,13 +2,15 @@
 
 ## Mission
 
-Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ultimately satisfies OMG Process Execution Conformance.
+Build a Temporal-hosted BPMN 2.0.2 execution engine that imports Process diagrams and ultimately satisfies OMG Process Execution Conformance. Standards coverage is the primary engine roadmap: the reusable semantic model, Lean account, TypeScript core, and Temporal refinement must be meaningful without CIB Seven or A12.
 
-The driving product goal is to replace A12 Workflows `release/2025.06`, the main A12 Process product layered on CIB Seven, with a Temporal-hosted, Lean-assured implementation. A12 Workflows exposes maintained BPMN behavior, Java/Kotlin delegates, expressions, integration APIs, and engine-backed services to downstream A12 projects; it is the product compatibility target, not one representative consuming application. The A12 Full Stack Project Template is the canonical downstream-project blueprint against which integration must eventually be demonstrated.
+CIB Seven compatibility is a versioned overlay on that BPMN engine. It selects and classifies CIB interpretations, extensions, configuration-specific realizations, limitations, and evidenced deviations without allowing CIB host mechanisms to define the vendor-neutral BPMN core.
 
-The goal is an A12 Workflows-level drop-in replacement where evidence permits it, not an unqualified CIB Process Engine replacement. Migration ease is measured against the defined [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md): unchanged model-admission coverage, unmodified delegate coverage through the bounded Java bridge, supported Java/REST/JMS façade calls, blueprint integration, and a classified migration disposition for the remainder. Every unsupported model, delegate API, expression, script, listener, engine integration, or transaction assumption receives an explicit migration path rather than being hidden by an aggregate compatibility label.
+The ultimate downstream adoption goal is to replace A12 Workflows `release/2025.06`, the main A12 Process product layered on CIB Seven, with this Temporal-hosted, Lean-assured engine plus a separately bounded A12 adoption adapter. A12 Workflows exposes maintained BPMN behavior, Java/Kotlin delegates, expressions, integration APIs, and engine-backed services to downstream A12 projects; it is the first product adoption target, not the semantic definition of the engine and not one representative consuming application. The A12 Full Stack Project Template is the canonical downstream-project blueprint against which the adoption layer must eventually be demonstrated.
 
-The project pursues that goal through four independent components:
+The A12 corpus and integration surface are prioritization and acceptance inputs. They may cause a BPMN mechanism or CIB overlay to be worked earlier, but A12 bean names, APIs, data shapes, licensing, and deployment assumptions remain outside the reusable engine. Migration ease is measured separately against the defined [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md): unchanged model-admission coverage, unmodified delegate coverage through a bounded Java bridge, supported Java/REST/JMS façade calls, blueprint integration, and a classified migration disposition for the remainder. Every unsupported model, delegate API, expression, script, listener, engine integration, or transaction assumption receives an explicit migration path rather than being hidden by an aggregate compatibility label.
+
+The project pursues these goals through four assurance and execution components:
 
 1. a versioned CIB Seven semantic profile;
 2. an executable Lean reference interpreter;
@@ -16,6 +18,38 @@ The project pursues that goal through four independent components:
 4. a Temporal durability adapter continuously checked through differential, refinement, and replay testing.
 
 The complete supplied architecture contract is the [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md). The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the prominent [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md). This document owns the project-local constitution.
+
+## Layered product architecture
+
+The product stack has three semantic and adoption layers with one-way dependency:
+
+```text
+A12 Workflows adoption adapter and migration tooling
+        ↓ uses
+selected CIB Seven compatibility profiles
+        ↓ refine or extend
+vendor-neutral BPMN 2.0.2 execution core
+        ↓ hosted by
+Temporal durability and effect infrastructure
+```
+
+| Layer | Owns | Must not own |
+|---|---|---|
+| BPMN execution core | Standard Process structure and lifecycle, control flow, Activities, Events, scopes, variables, public semantic observations, and host-independent commands | Camunda extension QNames, CIB jobs/retries/incidents, A12 handlers or APIs, Temporal attempts, or product-specific model shapes |
+| CIB Seven compatibility profile | Classified interpretations and gap resolutions, selected `camunda:*` source extensions, CIB configuration, transaction/variable behavior, jobs/retries/incidents, and bounded behavioral compatibility evidence | General BPMN authority, unqualified engine compatibility, A12 integration APIs, or product-specific business semantics |
+| A12 Workflows adoption | Exact maintained models, handler/delegate binding, JVM Activity Workers, façade adaptation, migration reports, blueprint integration, and A12-specific acceptance evidence | Changes to BPMN meaning, silent promotion of CIB behavior into the BPMN core, or A12 runtime/license dependencies in this MIT repository |
+
+A representative vertical slice may deliberately cross all three layers when needed to prove that source admission, semantics, CIB realization, Temporal hosting, and downstream binding compose. `CreateDocument` and the typed boundary-error work are such feasibility slices. They do not establish a policy of implementing every A12 model independently across every layer.
+
+After a seam is proven, work proceeds by reusable semantic mechanism. A model that uses already implemented BPMN and CIB mechanisms should normally add only adoption-layer configuration and compatibility regression evidence. A new full semantic capsule is justified only by a new BPMN proposition, a newly selected CIB relationship, or a material Temporal refinement risk.
+
+Coverage is accounted separately:
+
+1. BPMN coverage counts reviewed Process Execution requirements and reusable standard mechanisms;
+2. CIB coverage counts classified source extensions and behavioral relationships for named profiles;
+3. A12 adoption counts unchanged models, handler/delegate compatibility, façade operations, and classified migration steps.
+
+No aggregate percentage may combine these denominators. A12 adoption is the ultimate product test, while BPMN coverage remains the primary implementation roadmap and CIB work is added when a standards ambiguity, selected compatibility claim, or downstream need forces it.
 
 ## Authority model
 
@@ -34,12 +68,14 @@ Raw CIB output never becomes Lean authority automatically, and differential mism
 
 | Component | Responsibility | Explicit limit |
 |---|---|---|
-| Semantic profile | Select reviewed meaning, compatibility target, configuration, feature surface, observation boundary, interpretations, extensions, and deviations | It is not an engine build or a generic document-format version |
+| BPMN semantic profile | Select one bounded reading of the normative Process requirement, including explicit resolution of a standard gap or inconsistency | It contains no CIB extension or A12 product binding unless a separately named overlay selects it |
+| CIB Seven compatibility profile | Select a pinned release, configuration, source extensions, host realization, observation boundary, and classified relation to the BPMN account | It is not the vendor-neutral BPMN core, an engine build, or an unqualified compatibility promise |
 | BPMN source boundary | Preserve exact bytes, validate and admit source, and produce a checked project-owned BPMN graph | Parser objects and CMOF facts do not define execution behavior |
 | Semantic Process IL | Lower the checked graph into a bounded language of typed semantic mechanisms with source provenance | It is not a mirror of the BPMN metamodel, a universal BPMN language, or mutable runtime state |
 | Lean reference interpreter | Give the selected capsule executable operational meaning and prove reusable laws | It does not automatically prove CIB, XML parsing, TypeScript, Temporal, databases, or effects |
 | TypeScript semantic core | Implement production semantic transitions as a separately written, deterministic realization of the reviewed account | It performs no I/O and has no CIB or Temporal dependency, and it is not an independent choice of operational account |
 | Temporal adapter | Persist semantic state, deliver inputs, and host declared effects and waits durably | Hidden Workflow work may not redefine BPMN-visible behavior |
+| A12 adoption adapter | Bind exact A12 models, handlers, JVM Workers, and client façades to stable BPMN/CIB contracts and report migration gaps | It does not enter the semantic core, redefine profiles, or become a runtime dependency of this MIT repository |
 | Assurance pipeline | Compare canonical consequences, detect seeded disagreement, check isolation, and test Temporal refinement/replay | Finite evidence never implies universal conformance |
 
 The preserved handoff calls the TypeScript component a “reducer.” This project calls it the **semantic core** and names its public transition operation `applyStimulus`. The boundary is a semantic transition system; the terminology avoids an unnecessary Redux association.
@@ -194,4 +230,5 @@ A semantic capsule is closed only when:
 7. Temporal’s observable behavior refines the core and live histories replay;
 8. harness, semantic, and infrastructure outcomes remain separate;
 9. all public claims and exclusions match [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md);
-10. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed.
+10. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed;
+11. every rule is assigned to the BPMN core, a selected CIB overlay, or downstream adoption, and an existing mechanism is reused instead of adding a model-specific semantic path.

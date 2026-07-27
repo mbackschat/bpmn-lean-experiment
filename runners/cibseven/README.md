@@ -62,6 +62,7 @@ The package script supplies the exact replacement opt-in. The command executes a
 | [CibSevenEffectProjector.java](src/main/java/org/bpmnlean/cibseven/CibSevenEffectProjector.java) | Public job-definition/deployed-model projection for the exact effect wait |
 | [CibSevenEffectProbe.java](src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | Test-local plain and fail-after-mutation Service Task delegate behavior |
 | [CibSevenServiceTaskScenarioRunnerTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskScenarioRunnerTest.java) | Ordinary plain-success and raw retry/re-execution scenario-runner evidence |
+| [CibSevenBoundaryErrorPhaseZeroProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java) | Packaged `2.0.0` boundary-error calibration, including the caught output-mapping and unmatched rollback counterexamples |
 | [CibSevenTestEngine.java](src/test/java/org/bpmnlean/cibseven/CibSevenTestEngine.java) | Shared isolated test-engine configuration for the bounded probes |
 | [PvmDefinitionProjector.java](src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) | Read-only diagnostic definition projection |
 | [CibSevenOracleMain.java](src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | Persistent JSON-lines boundary |

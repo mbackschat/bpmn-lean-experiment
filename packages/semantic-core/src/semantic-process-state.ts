@@ -5,7 +5,9 @@ import type {
   UserTaskInstanceId,
   VariableBinding,
 } from "./contract.js";
+import type { DeepReadonly } from "./deep-readonly.js";
 import type {
+  BpmnErrorRoute,
   EffectDescriptor,
   VariableMapping,
 } from "./semantic-process-contract.js";
@@ -17,58 +19,59 @@ export enum ControlStateKind {
   Completed = "completed",
 }
 
-type NotStartedControl = Readonly<{
+type NotStartedControl = DeepReadonly<{
   kind: ControlStateKind.NotStarted;
 }>;
 
-type InstancedControl = Readonly<{
+type InstancedControl = DeepReadonly<{
   kind: ControlStateKind.Running | ControlStateKind.Completed;
   instanceId: string;
 }>;
 
 export type ControlState = NotStartedControl | InstancedControl;
 
-export type ControlPlaceTokens = Readonly<{
+export type ControlPlaceTokens = DeepReadonly<{
   placeId: string;
   multiplicity: number;
 }>;
 
-export type SemanticUserTaskWait = Readonly<{
+export type SemanticUserTaskWait = DeepReadonly<{
   id: UserTaskInstanceId;
   name: string | null;
   output: string;
 }>;
 
-export type SemanticTimerWait = Readonly<{
+export type SemanticTimerWait = DeepReadonly<{
   id: TimerOccurrenceId;
   deadlineMs: number;
   output: string;
 }>;
 
-export type SemanticEffectWait = Readonly<{
+export type SemanticEffectWait = DeepReadonly<{
   id: EffectOccurrenceId;
   descriptor: EffectDescriptor;
-  arguments: ReadonlyArray<VariableBinding>;
-  outputMappings: ReadonlyArray<VariableMapping>;
+  arguments: VariableBinding[];
+  outputMappings: VariableMapping[];
+  bpmnErrorRoute: BpmnErrorRoute | null;
   output: string;
 }>;
 
-type ActivationCounter = Readonly<{
+type ActivationCounter = DeepReadonly<{
   elementId: string;
   count: number;
 }>;
 
-export type RuntimeState = Readonly<{
+export type RuntimeState = DeepReadonly<{
   control: ControlState;
   initiationPending: boolean;
-  controlTokens: ReadonlyArray<ControlPlaceTokens>;
-  userTaskWaits: ReadonlyArray<SemanticUserTaskWait>;
-  timerWaits: ReadonlyArray<SemanticTimerWait>;
-  effectWaits: ReadonlyArray<SemanticEffectWait>;
-  processVariables: ReadonlyArray<VariableBinding>;
-  taskActivations: ReadonlyArray<ActivationCounter>;
-  timerActivations: ReadonlyArray<ActivationCounter>;
-  effectActivations: ReadonlyArray<ActivationCounter>;
+  controlTokens: ControlPlaceTokens[];
+  userTaskWaits: SemanticUserTaskWait[];
+  timerWaits: SemanticTimerWait[];
+  effectWaits: SemanticEffectWait[];
+  processVariables: VariableBinding[];
+  taskActivations: ActivationCounter[];
+  timerActivations: ActivationCounter[];
+  effectActivations: ActivationCounter[];
   endOccurrences: number;
   logicalTimeMs: number;
 }>;

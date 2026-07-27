@@ -1,0 +1,158 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "a12-boundary-error-caught",
+    "sha256": "bf82687beb536d16d472aa8ae7a991311b03f9d8ed9a4fcca93afb39438aab6b"
+  },
+  "profile": {
+    "id": "cibseven-2.0.0-a12-boundary-error-draft",
+    "sha256": "4710c53a11808cee39c6976ffb09e9e312812dd76fa6f09d5eca874c82110ef7"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.0.0",
+    "engineRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "taskQueries": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "tasks": [
+          {
+            "elementId": "ExpectedUserTaskAfterBPMNError",
+            "name": "Expected User Task After BPMN Error"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-boundary-user-task",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-boundary-user-task",
+        "jobs": []
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "handler": "createRelationshipLinkDelegate",
+        "arguments": [
+          {
+            "name": "relationshipModel",
+            "value": {
+              "kind": "string",
+              "value": "RelationshipModel"
+            }
+          }
+        ],
+        "localPatch": [
+          {
+            "name": "newLinkId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-boundary-error",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ExpectedUserTaskAfterBPMNError",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ExpectedUserTaskAfterBPMNError",
+              "activation": 1
+            },
+            "name": "Expected User Task After BPMN Error",
+            "state": "active"
+          }
+        ],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ExpectedUserTaskAfterBPMNError",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-boundary-user-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

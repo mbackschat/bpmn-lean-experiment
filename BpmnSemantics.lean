@@ -5,6 +5,7 @@ import BpmnSemantics.Conformance
 import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.ServiceTaskEffectConformance
 import BpmnSemantics.CreateDocumentDataConformance
+import BpmnSemantics.BoundaryErrorConformance
 import BpmnSemantics.UserTaskInteractionConformance
 
 /-! Root of the BPMN semantic contract library.

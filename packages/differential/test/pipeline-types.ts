@@ -34,6 +34,7 @@ export type TemporalCaseRelation =
 export const CibCaseRelation = Object.freeze({
   ExactSemantic: "exactSemantic",
   SynchronousFinalState: "synchronousFinalState",
+  SynchronousBoundaryError: "synchronousBoundaryError",
 });
 
 export type CibCaseRelation =
@@ -70,6 +71,7 @@ export type PipelineCase = Readonly<{
   completionDelivery: TemporalCompletionDelivery;
   temporalRelation: TemporalCaseRelation;
   duplicateFirstCompletion?: boolean;
+  hasEffectExecution?: boolean;
   effectScheduleSubstitution?: boolean;
   cibEffectRetrySchedule?: boolean;
   replayIsolation?: boolean;

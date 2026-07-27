@@ -1,5 +1,6 @@
 import type {
   CheckedProcess,
+  DeepReadonly,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
@@ -19,12 +20,12 @@ export enum BpmnSourceDiagnosticCode {
   UnsupportedModel = "unsupportedModel",
 }
 
-export type BpmnSourceDiagnostic = Readonly<{
+export type BpmnSourceDiagnostic = DeepReadonly<{
   code: BpmnSourceDiagnosticCode;
   evidence: string;
 }>;
 
-export type BpmnSourceIdentity = Readonly<{
+export type BpmnSourceIdentity = DeepReadonly<{
   kind: "bpmnSource";
   id: string;
   sha256: string;
@@ -33,11 +34,17 @@ export type BpmnSourceIdentity = Readonly<{
   decodedAs: "UTF-8" | null;
 }>;
 
-export type BpmnSourceLimits = Readonly<{
+export type BpmnSourceLimits = DeepReadonly<{
   maxBytes: number;
   parserDeadlineMs: number;
 }>;
 
+/**
+ * Compilation snapshots `bytes` before asynchronous parsing.
+ *
+ * This contract is intentionally shallow: TypeScript cannot make a
+ * `Uint8Array` deeply immutable because its mutation methods remain callable.
+ */
 export type CompileBpmnToSemanticProcessRequest = Readonly<{
   bytes: Uint8Array;
   sourceId: string;
@@ -46,13 +53,13 @@ export type CompileBpmnToSemanticProcessRequest = Readonly<{
   limits: BpmnSourceLimits;
 }>;
 
-type ExactSourceCapture = Readonly<{
+type ExactSourceCapture = DeepReadonly<{
   source: BpmnSourceIdentity;
   copyExactBytes: () => Uint8Array;
 }>;
 
 export type AcceptedBpmnCompilation = ExactSourceCapture &
-  Readonly<{
+  DeepReadonly<{
     status: BpmnCompilationStatus.Accepted;
     diagnostics: readonly [];
     checkedProcess: CheckedProcess;
@@ -60,9 +67,9 @@ export type AcceptedBpmnCompilation = ExactSourceCapture &
   }>;
 
 export type RejectedBpmnCompilation = ExactSourceCapture &
-  Readonly<{
+  DeepReadonly<{
     status: BpmnCompilationStatus.Rejected;
-    diagnostics: ReadonlyArray<BpmnSourceDiagnostic>;
+    diagnostics: BpmnSourceDiagnostic[];
     checkedProcess: undefined;
     semanticProcess: undefined;
   }>;

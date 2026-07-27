@@ -15,7 +15,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
   | .intermediateCatchTimerEvent id _
-  | .serviceTask id _ _ _ _
+  | .serviceTask id _ _ _ _ _
   | .parallelGateway id _
   | .noneEndEvent id => id
 
@@ -49,6 +49,17 @@ private def outgoingPlaces (source : CheckedProcess) (nodeId : NodeId) :
 private def firstPlace (places : List ControlPlaceId) : ControlPlaceId :=
   places.head?.getD ⟨""⟩
 
+private def lowerBpmnErrorRoute
+    (route : Option CheckedBpmnErrorRoute) : Option BpmnErrorRoute :=
+  route.map fun route =>
+    { code := route.code
+      output := flowControlPlaceId route.outputFlowId
+      origin :=
+        { boundaryEventId := route.boundaryEventId
+          errorDefinitionId := route.errorDefinitionId
+          errorElementId := route.errorElementId
+          sequenceFlowId := route.outputFlowId } }
+
 private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperation
   | .noneStartEvent id =>
       .initiate
@@ -70,7 +81,8 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
         (firstPlace (outgoingPlaces source id))
         { elementId := id
           durationMs := if durationLiteral = "PT1S" then 1000 else 0 }
-  | .serviceTask id implementation sourceBinding inputMappings outputMappings =>
+  | .serviceTask id implementation sourceBinding inputMappings outputMappings
+      bpmnErrorRoute =>
       .awaitEffect
         (nodeOperationId id)
         { elementId := id }
@@ -82,9 +94,12 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
               handler :=
                 match sourceBinding with
                 | .probe .. => "bpmnLeanEffectHandler"
-                | .a12CreateDocument .. => "createDocumentDelegate" }
+                | .a12CreateDocument .. => "createDocumentDelegate"
+                | .a12BoundaryError .. =>
+                    "createRelationshipLinkDelegate" }
           inputMappings
           outputMappings }
+        (lowerBpmnErrorRoute bpmnErrorRoute)
   | .parallelGateway id .diverging =>
       .duplicate
         (nodeOperationId id)
@@ -164,6 +179,7 @@ private def exactProbeBinding : ServiceTaskSourceBinding → Bool
         asyncNamespace = "http://camunda.org/schema/1.0/bpmn" &&
         asyncValue = "true"
   | .a12CreateDocument .. => false
+  | .a12BoundaryError .. => false
 
 private def exactA12CreateDocumentBinding : ServiceTaskSourceBinding → Bool
   | .a12CreateDocument delegateNamespace delegateValue
@@ -176,6 +192,21 @@ private def exactA12CreateDocumentBinding : ServiceTaskSourceBinding → Bool
         outputName = "myDocumentReference" &&
         outputBody = "${newDocRef}"
   | .probe .. => false
+  | .a12BoundaryError .. => false
+
+private def exactA12BoundaryErrorBinding : ServiceTaskSourceBinding → Bool
+  | .a12BoundaryError delegateNamespace delegateValue implementationValue
+      inputOutputNamespace inputName inputBody outputName outputBody =>
+      delegateNamespace = "http://camunda.org/schema/1.0/bpmn" &&
+        delegateValue = "#{createRelationshipLinkDelegate}" &&
+        implementationValue = "urn:bpmn-lean:a12-delegate:v1" &&
+        inputOutputNamespace = "http://camunda.org/schema/1.0/bpmn" &&
+        inputName = "relationshipModel" &&
+        inputBody = "RelationshipModel" &&
+        outputName = "relationshipLinkId" &&
+        outputBody = "${newLinkId}"
+  | .probe .. => false
+  | .a12CreateDocument .. => false
 
 private def exactA12InputMappings : List VariableMapping → Bool
   | [{ target := "documentModelName"
@@ -187,6 +218,30 @@ private def exactA12OutputMappings : List VariableMapping → Bool
        expression := .localVariable "newDocRef" }] => true
   | _ => false
 
+private def exactBoundaryInputMappings : List VariableMapping → Bool
+  | [{ target := "relationshipModel"
+       expression := .stringLiteral "RelationshipModel" }] => true
+  | _ => false
+
+private def exactBoundaryOutputMappings : List VariableMapping → Bool
+  | [{ target := "relationshipLinkId"
+       expression := .localVariable "newLinkId" }] => true
+  | _ => false
+
+private def exactCheckedBpmnErrorRoute (serviceId : NodeId) :
+    Option CheckedBpmnErrorRoute → Bool
+  | some route =>
+      route.boundaryEventId.value = "BoundaryEvent_LinkLimitReached" &&
+        route.boundaryEventName = some "Link Limit Reached Boundary" &&
+        route.attachedToRef = serviceId &&
+        route.errorDefinitionId.value =
+          "ErrorEventDefinition_LinkLimitReached" &&
+        route.errorElementId.value = "Error_LinkLimitReached" &&
+        route.errorName = some "Link Limit Reached" &&
+        route.code = "LinkLimitReachedError" &&
+        route.outputFlowId.value = "Flow_ErrorToUserTask"
+  | none => false
+
 private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -196,15 +251,22 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .intermediateCatchTimerEvent id durationLiteral =>
       durationLiteral = "PT1S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
-  | .serviceTask id implementation binding inputMappings outputMappings =>
+  | .serviceTask id implementation binding inputMappings outputMappings route =>
       ((implementation = "urn:bpmn-lean:effect:probe-v1" &&
           exactProbeBinding binding &&
           inputMappings.isEmpty &&
-          outputMappings.isEmpty) ||
+          outputMappings.isEmpty &&
+          route.isNone) ||
         (implementation = "urn:bpmn-lean:a12-delegate:v1" &&
           exactA12CreateDocumentBinding binding &&
           exactA12InputMappings inputMappings &&
-          exactA12OutputMappings outputMappings)) &&
+          exactA12OutputMappings outputMappings &&
+          route.isNone) ||
+        (implementation = "urn:bpmn-lean:a12-delegate:v1" &&
+          exactA12BoundaryErrorBinding binding &&
+          exactBoundaryInputMappings inputMappings &&
+          exactBoundaryOutputMappings outputMappings &&
+          exactCheckedBpmnErrorRoute id route)) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .parallelGateway id .diverging =>
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
@@ -230,7 +292,7 @@ private def timerIds (nodes : List CheckedNode) : List NodeId :=
 
 private def effectIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
-    | .serviceTask id _ _ _ _ => some id
+    | .serviceTask id _ _ _ _ _ => some id
     | _ => none
 
 private def divergingGatewayIds (nodes : List CheckedNode) : List NodeId :=
@@ -272,6 +334,22 @@ private def boundedTopology (source : CheckedProcess) : Bool :=
         source.sequenceFlows.length = 2 &&
         hasFlow source.sequenceFlows start effect &&
         hasFlow source.sequenceFlows effect endNode
+  | [start], [task], [], [effect], [], [], [endA, endB] =>
+      let route := source.nodes.findSome? fun
+        | .serviceTask id _ _ _ _ (some route) =>
+            if id = effect then some route else none
+        | _ => none
+      source.nodes.length = 5 &&
+        source.sequenceFlows.length = 4 &&
+        hasFlow source.sequenceFlows start effect &&
+        (hasFlow source.sequenceFlows effect endA ||
+          hasFlow source.sequenceFlows effect endB) &&
+        (match route with
+          | some route =>
+              hasFlow source.sequenceFlows route.boundaryEventId task &&
+                (hasFlow source.sequenceFlows task endA ||
+                  hasFlow source.sequenceFlows task endB)
+          | none => false)
   | [start], [taskA, taskB], [], [], [fork], [join], [endNode] =>
       source.nodes.length = 6 &&
         source.sequenceFlows.length = 6 &&
@@ -294,7 +372,11 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
     source.nodes.all fun node => nonempty node.id.value &&
     source.sequenceFlows.all fun flow =>
       nonempty flow.id.value &&
-        nodeExists source.nodes flow.sourceId &&
+        (nodeExists source.nodes flow.sourceId ||
+          source.nodes.any fun
+            | .serviceTask _ _ _ _ _ (some route) =>
+                decide (route.boundaryEventId = flow.sourceId)
+            | _ => false) &&
         nodeExists source.nodes flow.targetId &&
         decide (flow.sourceId ≠ flow.targetId) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
@@ -304,7 +386,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
   | .awaitUserTask id _ _ _ _
   | .awaitTimer id _ _ _ _
-  | .awaitEffect id _ _ _ _
+  | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _
   | .terminate id _ _ => id
@@ -314,6 +396,20 @@ private def placeExists (places : List ControlPlace) (id : ControlPlaceId) : Boo
 
 private def sortedDistinctPlaceIds (ids : List ControlPlaceId) : Bool :=
   strictlySortedStrings (ids.map fun id => id.value)
+
+private def exactBpmnErrorRoute (places : List ControlPlace)
+    (route : Option BpmnErrorRoute) : Bool :=
+  match route with
+  | none => true
+  | some route =>
+      route.code = "LinkLimitReachedError" &&
+        route.origin.boundaryEventId.value =
+          "BoundaryEvent_LinkLimitReached" &&
+        route.origin.errorDefinitionId.value =
+          "ErrorEventDefinition_LinkLimitReached" &&
+        route.origin.errorElementId.value = "Error_LinkLimitReached" &&
+        route.origin.sequenceFlowId.value = "Flow_ErrorToUserTask" &&
+        placeExists places route.output
 
 private def operationWellFormed (places : List ControlPlace) :
     SemanticOperation → Bool
@@ -336,7 +432,7 @@ private def operationWellFormed (places : List ControlPlace) :
         timer.durationMs = 1000 &&
         placeExists places input &&
         placeExists places output
-  | .awaitEffect id origin input output effect =>
+  | .awaitEffect id origin input output effect bpmnErrorRoute =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
         nonempty effect.elementId.value &&
@@ -344,13 +440,21 @@ private def operationWellFormed (places : List ControlPlace) :
         ((effect.descriptor.protocol = "urn:bpmn-lean:effect:probe-v1" &&
             effect.descriptor.handler = "bpmnLeanEffectHandler" &&
             effect.inputMappings.isEmpty &&
-            effect.outputMappings.isEmpty) ||
+            effect.outputMappings.isEmpty &&
+            bpmnErrorRoute.isNone) ||
           (effect.descriptor.protocol = "urn:bpmn-lean:a12-delegate:v1" &&
             effect.descriptor.handler = "createDocumentDelegate" &&
             exactA12InputMappings effect.inputMappings &&
-            exactA12OutputMappings effect.outputMappings)) &&
+            exactA12OutputMappings effect.outputMappings &&
+            bpmnErrorRoute.isNone) ||
+          (effect.descriptor.protocol = "urn:bpmn-lean:a12-delegate:v1" &&
+            effect.descriptor.handler = "createRelationshipLinkDelegate" &&
+            exactBoundaryInputMappings effect.inputMappings &&
+            exactBoundaryOutputMappings effect.outputMappings &&
+            !bpmnErrorRoute.isNone)) &&
         placeExists places input &&
-        placeExists places output
+        placeExists places output &&
+        exactBpmnErrorRoute places bpmnErrorRoute
   | .duplicate id origin input outputs =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

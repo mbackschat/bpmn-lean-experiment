@@ -11,12 +11,13 @@ sequential_bpmn_path="$project_root/scenarios/user-task-discovery-completion/pro
 parallel_bpmn_path="$project_root/scenarios/parallel-fork-join/process.bpmn"
 timer_bpmn_path="$project_root/scenarios/intermediate-catch-timer/process.bpmn"
 service_task_bpmn_path="$project_root/scenarios/service-task-effect/process.bpmn"
+boundary_error_bpmn_path="$project_root/scenarios/boundary-error/process.bpmn"
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
 
 test -x "$java_home/bin/java"
 test -f "$maven_settings"
 
-for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$service_task_bpmn_path" "$parallel_probe_path"; do
+for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$service_task_bpmn_path" "$boundary_error_bpmn_path" "$parallel_probe_path"; do
   if test -f "$xsd_path"; then
     xmllint --noout --schema "$xsd_path" "$bpmn_path"
   else
@@ -24,15 +25,23 @@ for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path
   fi
 done
 
-set -- \
-  -s "$maven_settings" \
-  -f "$runner_dir/pom.xml" \
-  --no-transfer-progress \
-  -Dstyle.color=never \
-  test
+run_tests() {
+  set -- \
+    -s "$maven_settings" \
+    -f "$runner_dir/pom.xml" \
+    --no-transfer-progress \
+    -Dstyle.color=never \
+    "$@" \
+    test
 
-if test -n "${BPMN_MAVEN_REPO_LOCAL:-}"; then
-  set -- "-Dmaven.repo.local=$BPMN_MAVEN_REPO_LOCAL" "$@"
-fi
+  if test -n "${BPMN_MAVEN_REPO_LOCAL:-}"; then
+    set -- "-Dmaven.repo.local=$BPMN_MAVEN_REPO_LOCAL" "$@"
+  fi
 
-JAVA_HOME="$java_home" "$runner_dir/mvnw" "$@"
+  JAVA_HOME="$java_home" "$runner_dir/mvnw" "$@"
+}
+
+run_tests
+run_tests \
+  -Dcibseven.version=2.0.0 \
+  -Dtest=CibSevenBoundaryErrorPhaseZeroProbeTest,CibSevenBoundaryErrorScenarioRunnerTest

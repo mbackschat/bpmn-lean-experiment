@@ -3,6 +3,7 @@ import {
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type {
+  DeepReadonly,
   EffectDescriptor,
   EffectExecutionResult,
   VariableBinding,
@@ -16,21 +17,21 @@ export enum EffectExecutionSchedule {
 export { EffectExecutionResultKind };
 export type { EffectExecutionResult };
 
-export type EffectRequest = EffectDescriptor & Readonly<{
+export type EffectRequest = EffectDescriptor & DeepReadonly<{
   idempotencyKey: string;
-  arguments: ReadonlyArray<VariableBinding>;
+  arguments: VariableBinding[];
 }>;
 
-export type EffectActivities = Readonly<{
+export type EffectActivities = DeepReadonly<{
   executeBpmnEffect(
     request: EffectRequest,
   ): Promise<EffectExecutionResult>;
 }>;
 
-export type EffectProbeEvidence = Readonly<{
+export type EffectProbeEvidence = DeepReadonly<{
   invocations: number;
   mutations: number;
-  keys: ReadonlyArray<string>;
+  keys: string[];
 }>;
 
 /**
@@ -98,7 +99,7 @@ export class EffectProbeStore {
   }
 }
 
-type EffectProbeRegistration = Readonly<{
+type EffectProbeRegistration = DeepReadonly<{
   request: EffectRequest;
   execute(request: EffectRequest): Promise<EffectExecutionResult>;
 }>;
@@ -170,9 +171,15 @@ function requireEffectRequest(
       request.handler === "createDocumentDelegate" &&
       hasCreateDocumentArguments(request.arguments);
     if (!isCreateDocument) {
-      throw new TypeError(
-        "Effect request must contain one admitted protocol, handler, and argument contract",
-      );
+      const isBoundaryError =
+        request.protocol === "urn:bpmn-lean:a12-delegate:v1" &&
+        request.handler === "createRelationshipLinkDelegate" &&
+        hasBoundaryErrorArguments(request.arguments);
+      if (!isBoundaryError) {
+        throw new TypeError(
+          "Effect request must contain one admitted protocol, handler, and argument contract",
+        );
+      }
     }
   }
   if (
@@ -203,10 +210,34 @@ function effectResultFor(
       ],
     };
   }
+  if (request.handler === "createRelationshipLinkDelegate") {
+    return {
+      kind: EffectExecutionResultKind.BpmnError,
+      code: "LinkLimitReachedError",
+      message: "Link limit reached",
+      localPatch: [
+        {
+          name: "newLinkId",
+          value: {
+            kind: VariableValueKind.Null,
+          },
+        },
+      ],
+    };
+  }
   return {
     kind: EffectExecutionResultKind.Success,
     localPatch: [],
   };
+}
+
+function hasBoundaryErrorArguments(
+  arguments_: ReadonlyArray<VariableBinding>,
+): boolean {
+  return arguments_.length === 1 &&
+    arguments_[0]?.name === "relationshipModel" &&
+    arguments_[0]?.value.kind === VariableValueKind.String &&
+    arguments_[0]?.value.value === "RelationshipModel";
 }
 
 function hasCreateDocumentArguments(

@@ -33,6 +33,7 @@ import type {
   TemporalScenarioRunnerOptions,
   TemporalTimerBypassMutationExecution,
   TemporalSharedEffectExecutions,
+  TemporalUnhandledBpmnErrorExecution,
   TemporalTimeSkippingRunnerOptions,
 } from "./contracts.js";
 import {
@@ -51,6 +52,9 @@ import {
   runEffectScenario,
   runEffectScenariosWithSharedStore,
 } from "./effect-scenario-execution.js";
+import {
+  runUnhandledBpmnError,
+} from "./boundary-error-scenario-execution.js";
 import {
   requireDurableTimerHistory,
   reconcileHarnessTraceEvidence,
@@ -236,6 +240,14 @@ export class TemporalScenarioRunner {
       "Workflow wait-state observation",
     );
 
+    const completions = requireCompletionStimuli(scenario);
+    const firstCompletion = completions[0];
+    if (
+      options.effectExecutionSchedule !== undefined &&
+      firstCompletion !== undefined
+    ) {
+      await this.waitForOpenUserTask(handle, firstCompletion);
+    }
     const openUserTasksAtWait = await withDeadline(
       handle.query<ReadonlyArray<OpenUserTask>>(
         bpmnOpenUserTasksQueryName,
@@ -253,7 +265,6 @@ export class TemporalScenarioRunner {
       }
       await this.workerHost.restartDuringEffect(handle, effectProbeStore);
     }
-    const completions = requireCompletionStimuli(scenario);
     const delivery = await deliverCompletions(
       this.environment.client.workflow,
       handle,
@@ -398,6 +409,8 @@ export class TemporalScenarioRunner {
       scenario,
       semanticProcess,
       workflowId,
+      (handle, completion) =>
+        this.waitForOpenUserTask(handle, completion),
     );
   }
 
@@ -406,11 +419,14 @@ export class TemporalScenarioRunner {
     semanticProcess: SemanticProcessProgram,
     workflowId: string,
   ): Promise<TemporalEffectBypassMutationExecution> {
+    this.assertAvailable();
     return runEffectBypassMutation(
       this.environment,
       scenario,
       semanticProcess,
       workflowId,
+      (handle, completion) =>
+        this.waitForOpenUserTask(handle, completion),
     );
   }
 
@@ -444,6 +460,22 @@ export class TemporalScenarioRunner {
           options,
           store,
         ),
+    );
+  }
+
+  async runUnhandledBpmnError(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalUnhandledBpmnErrorExecution> {
+    this.assertAvailable();
+    return runUnhandledBpmnError(
+      this.environment,
+      this.effectProbeRegistry,
+      scenario,
+      semanticProcess,
+      workflowId,
+      (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
     );
   }
 
@@ -517,6 +549,43 @@ export class TemporalScenarioRunner {
     throw normalizeError(
       latestError,
       `Workflow trace did not reach ${minimumLength} observations`,
+    );
+  }
+
+  private async waitForOpenUserTask(
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+    completion: CompleteUserTaskInstanceStimulus,
+  ): Promise<void> {
+    let latestError: unknown;
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      this.workerHost.assertHealthy();
+      try {
+        const openUserTasks = await withDeadline(
+          handle.query<ReadonlyArray<OpenUserTask>>(
+            bpmnOpenUserTasksQueryName,
+          ),
+          operationDeadlineMs,
+          "Workflow open User Tasks Query",
+        );
+        if (
+          openUserTasks.some(
+            ({ id }) =>
+              id.processInstanceId ===
+                completion.taskId.processInstanceId &&
+              id.elementId === completion.taskId.elementId &&
+              id.activation === completion.taskId.activation,
+          )
+        ) {
+          return;
+        }
+      } catch (error: unknown) {
+        latestError = error;
+      }
+      await delay(50);
+    }
+    throw normalizeError(
+      latestError,
+      `Workflow did not expose User Task ${completion.taskId.elementId} activation ${completion.taskId.activation}`,
     );
   }
 

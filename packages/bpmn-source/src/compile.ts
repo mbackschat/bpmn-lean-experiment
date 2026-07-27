@@ -17,6 +17,10 @@ import {
   compileCheckedProcess,
 } from "./checked-process-compiler.js";
 import {
+  a12BoundaryErrorProfile,
+  compileA12BoundaryError,
+} from "./a12-boundary-error-source.js";
+import {
   a12CreateDocumentProfile,
   compileA12CreateDocument,
 } from "./a12-create-document-source.js";
@@ -114,7 +118,9 @@ export async function compileBpmnToSemanticProcess(
   }
 
   const projection =
-    request.semanticProfile === a12CreateDocumentProfile
+    request.semanticProfile === a12BoundaryErrorProfile
+      ? compileA12BoundaryError(imported.rootElement, source())
+      : request.semanticProfile === a12CreateDocumentProfile
       ? compileA12CreateDocument(imported.rootElement, source())
       : compileCheckedProcess(
           imported.rootElement,

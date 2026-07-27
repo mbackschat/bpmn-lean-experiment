@@ -1,0 +1,76 @@
+{
+  "kind": "scenario",
+  "id": "a12-boundary-error-caught",
+  "profile": "cibseven-2.0.0-a12-boundary-error-draft",
+  "bpmn": {
+    "id": "a12-boundary-error",
+    "relativePath": "scenarios/boundary-error/process.bpmn",
+    "sha256": "68ad931204e62da12494766393b380026addb1e230d5a3a64205e655831f62b6"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-boundary-error",
+      "processId": "Process_BoundaryError",
+      "instanceId": "Instance_1"
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:49ddf71a5f8e23b59c039a65bd64a2ed16232c31a47790b2273e1b05c3c971d5",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CreateRelationshipLinkTask",
+        "activation": 1
+      },
+      "result": {
+        "kind": "bpmnError",
+        "code": "LinkLimitReachedError",
+        "message": "Link limit reached",
+        "localPatch": [
+          {
+            "name": "newLinkId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-boundary-user-task",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ExpectedUserTaskAfterBPMNError",
+        "activation": 1
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.1",
+      "BPMN 2.0.2 §10.4.3",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "cibRefs": [
+      "CIB-AGR-0005",
+      "CIB-EXT-0003",
+      "CIB-EXT-0004",
+      "CIB-OP-0003",
+      "CIB-CFG-0004"
+    ]
+  }
+}

@@ -74,6 +74,26 @@ inductive ServiceTaskSourceBinding where
       (inputParameterBody : String)
       (outputParameterName : String)
       (outputParameterBody : String)
+  | a12BoundaryError
+      (delegateExpressionNamespace : String)
+      (delegateExpressionValue : String)
+      (implementationValue : String)
+      (inputOutputNamespace : String)
+      (inputParameterName : String)
+      (inputParameterBody : String)
+      (outputParameterName : String)
+      (outputParameterBody : String)
+  deriving Repr, DecidableEq
+
+structure CheckedBpmnErrorRoute where
+  boundaryEventId : NodeId
+  boundaryEventName : Option String
+  attachedToRef : NodeId
+  errorDefinitionId : NodeId
+  errorElementId : NodeId
+  errorName : Option String
+  code : String
+  outputFlowId : SequenceFlowId
   deriving Repr, DecidableEq
 
 inductive CheckedNode where
@@ -86,6 +106,7 @@ inductive CheckedNode where
       (sourceBinding : ServiceTaskSourceBinding)
       (inputMappings : List VariableMapping)
       (outputMappings : List VariableMapping)
+      (bpmnErrorRoute : Option CheckedBpmnErrorRoute)
   | parallelGateway (id : NodeId) (direction : GatewayDirection)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
@@ -140,6 +161,19 @@ structure EffectDefinition where
   outputMappings : List VariableMapping
   deriving Repr, DecidableEq
 
+structure BpmnErrorRouteOrigin where
+  boundaryEventId : NodeId
+  errorDefinitionId : NodeId
+  errorElementId : NodeId
+  sequenceFlowId : SequenceFlowId
+  deriving Repr, DecidableEq
+
+structure BpmnErrorRoute where
+  code : String
+  output : ControlPlaceId
+  origin : BpmnErrorRouteOrigin
+  deriving Repr, DecidableEq
+
 inductive SemanticOperation where
   | initiate
       (id : OperationId)
@@ -163,6 +197,7 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (effect : EffectDefinition)
+      (bpmnErrorRoute : Option BpmnErrorRoute)
   | duplicate
       (id : OperationId)
       (origin : BpmnElementOrigin)

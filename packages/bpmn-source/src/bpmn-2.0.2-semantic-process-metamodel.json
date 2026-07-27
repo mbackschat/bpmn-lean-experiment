@@ -11,7 +11,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, UserTask, ServiceTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ServiceTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
@@ -19,7 +19,10 @@
       "CatchEvent and ThrowEvent event-definition containment",
       "TimerEventDefinition timeDuration expression containment",
       "StartEvent.isInterrupting default",
-      "Gateway.gatewayDirection type and default"
+      "Gateway.gatewayDirection type and default",
+      "BaseElement.id and Definitions.rootElements identity and containment",
+      "BoundaryEvent attachment and interrupting default",
+      "ErrorEventDefinition.errorRef and Error name/code identity"
     ],
     "absent": [
       "complete BPMN20 metamodel",
@@ -34,6 +37,9 @@
     "startEventType": "bpmn:StartEvent",
     "intermediateCatchEventType": "bpmn:IntermediateCatchEvent",
     "timerEventDefinitionType": "bpmn:TimerEventDefinition",
+    "boundaryEventType": "bpmn:BoundaryEvent",
+    "errorEventDefinitionType": "bpmn:ErrorEventDefinition",
+    "errorType": "bpmn:Error",
     "formalExpressionType": "bpmn:FormalExpression",
     "userTaskType": "bpmn:UserTask",
     "serviceTaskType": "bpmn:ServiceTask",
@@ -71,6 +77,24 @@
       "name": "TimerEventDefinition",
       "directSuperClasses": [
         "EventDefinition"
+      ]
+    },
+    {
+      "name": "BoundaryEvent",
+      "directSuperClasses": [
+        "CatchEvent"
+      ]
+    },
+    {
+      "name": "ErrorEventDefinition",
+      "directSuperClasses": [
+        "EventDefinition"
+      ]
+    },
+    {
+      "name": "Error",
+      "directSuperClasses": [
+        "RootElement"
       ]
     },
     {
@@ -168,6 +192,22 @@
   ],
   "properties": [
     {
+      "owner": "BaseElement",
+      "name": "id",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Definitions",
+      "name": "rootElements",
+      "type": "RootElement",
+      "lower": 0,
+      "upper": "*",
+      "containment": true
+    },
+    {
       "owner": "Process",
       "name": "isExecutable",
       "type": "Boolean",
@@ -239,6 +279,47 @@
       "upper": 1,
       "containment": false,
       "default": true
+    },
+    {
+      "owner": "BoundaryEvent",
+      "name": "cancelActivity",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": true
+    },
+    {
+      "owner": "BoundaryEvent",
+      "name": "attachedToRef",
+      "type": "Activity",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "ErrorEventDefinition",
+      "name": "errorRef",
+      "type": "Error",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Error",
+      "name": "name",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Error",
+      "name": "errorCode",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
     },
     {
       "owner": "Gateway",

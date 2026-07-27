@@ -191,6 +191,7 @@ function projectCreateDocument(
     kind: CheckedNodeKind.ServiceTask,
     id,
     implementation: protocol,
+    bpmnErrorRoute: null,
     sourceBinding: {
       delegateExpressionAttribute: {
         namespace: camundaNamespace,

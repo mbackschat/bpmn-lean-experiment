@@ -1,4 +1,8 @@
-import { StimulusKind } from "@bpmn-lean/semantic-core";
+import {
+  EffectExecutionResultKind,
+  StimulusKind,
+  VariableValueKind,
+} from "@bpmn-lean/semantic-core";
 import type {
   CompleteEffectStimulus,
   EffectExecutionResult,
@@ -88,10 +92,24 @@ export function completeEffectStimulus(
 function effectExecutionResultTuple(
   result: EffectExecutionResult,
 ): ReadonlyArray<CanonicalTupleValue> {
-  return [
-    result.kind,
-    result.localPatch.map(variableBindingTuple),
-  ];
+  switch (result.kind) {
+    case EffectExecutionResultKind.Success:
+      return [
+        result.kind,
+        result.localPatch.map(variableBindingTuple),
+      ];
+    case EffectExecutionResultKind.BpmnError:
+      return [
+        result.kind,
+        result.code,
+        result.message === null
+          ? ["none"]
+          : ["some", result.message],
+        result.localPatch.map(variableBindingTuple),
+      ];
+    default:
+      return assertNever(result);
+  }
 }
 
 function variableBindingTuple(
@@ -99,6 +117,25 @@ function variableBindingTuple(
 ): ReadonlyArray<CanonicalTupleValue> {
   return [
     binding.name,
-    [binding.value.kind, binding.value.value],
+    variableValueTuple(binding),
   ];
+}
+
+function variableValueTuple(
+  binding: VariableBinding,
+): ReadonlyArray<CanonicalTupleValue> {
+  switch (binding.value.kind) {
+    case VariableValueKind.String:
+      return [binding.value.kind, binding.value.value];
+    case VariableValueKind.Null:
+      return [binding.value.kind];
+    default:
+      return assertNever(binding.value);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(
+    `Unsupported effect transport variant: ${JSON.stringify(value)}`,
+  );
 }

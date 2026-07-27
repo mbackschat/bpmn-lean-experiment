@@ -16,22 +16,39 @@ def evaluateInputMappings : List VariableMapping →
       some [{ name := target, value := .string value }]
   | _ => none
 
-def applyEffectResult
+def applyEffectPatch
     (_arguments : List VariableBinding)
     (outputMappings : List VariableMapping)
     (processVariables : List VariableBinding)
-    (result : EffectExecutionResult) : Option (List VariableBinding) :=
-  match outputMappings, result with
-  | [], .success [] => some processVariables
+    (localPatch : List VariableBinding)
+    (allowNull : Bool) : Option (List VariableBinding) :=
+  match outputMappings, localPatch with
+  | [], [] => some processVariables
   | [{ target, expression := .localVariable source }],
-      .success [{ name, value := .string value }] =>
-      if source = name then
+      [{ name, value }] =>
+      if source = name &&
+          (match value with
+            | .string _ => true
+            | .null => allowNull) then
         some
-          ({ name := target, value := .string value } ::
+          ({ name := target, value } ::
             processVariables.filter fun binding =>
               decide (binding.name ≠ target))
       else
         none
   | _, _ => none
+
+def applyEffectResult
+    (arguments : List VariableBinding)
+    (outputMappings : List VariableMapping)
+    (processVariables : List VariableBinding)
+    (result : EffectExecutionResult) : Option (List VariableBinding) :=
+  match result with
+  | .success localPatch =>
+      applyEffectPatch arguments outputMappings processVariables
+        localPatch false
+  | .bpmnError _ _ localPatch =>
+      applyEffectPatch arguments outputMappings processVariables
+        localPatch true
 
 end BpmnSemantics.SemanticProcess

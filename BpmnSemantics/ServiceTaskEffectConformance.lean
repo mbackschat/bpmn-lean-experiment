@@ -33,6 +33,7 @@ def checkedProcess : CheckedProcess :=
             "true")
           []
           []
+          none
       , .noneStartEvent ⟨"StartEvent_1"⟩ ]
     sequenceFlows :=
       [ { id := ⟨"Flow_ServiceToEnd"⟩
@@ -69,6 +70,7 @@ def program : Program :=
             descriptor
             inputMappings := []
             outputMappings := [] }
+          none
       , .initiate
           ⟨"operation:StartEvent_1"⟩
           { elementId := ⟨"StartEvent_1"⟩ }
@@ -86,7 +88,8 @@ def effectWait : EffectWait :=
     descriptor
     arguments := []
     outputMappings := []
-    output := ⟨"place:Flow_ServiceToEnd"⟩ }
+    output := ⟨"place:Flow_ServiceToEnd"⟩
+    bpmnErrorRoute := none }
 
 def scenario : Scenario :=
   { kind := .scenario

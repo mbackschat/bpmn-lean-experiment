@@ -24,6 +24,22 @@ Agreement with CIB Seven does not by itself prove BPMN conformance. BPMN conform
 
 The working presumption is that CIB Seven implements BPMN faithfully, operationalizes underspecified or inconsistent areas, and adds explicit engine extensions. The [CIB–BPMN relationship register](CIB-BPMN-RELATION-REGISTER.md) records those categories separately and keeps any evidence-backed candidate or confirmed normative deviation prominent; CIB specificity or extension is never classified as deviation by default.
 
+## Layering and coverage accounting
+
+BPMN Process Execution coverage is the primary implementation roadmap. The reusable engine is specified and implemented in standard BPMN terms first; a CIB Seven profile may then refine an underspecified choice, select an engine extension, or record a bounded compatibility relation. A12 Workflows is a downstream adoption target that may prioritize which BPMN requirements and CIB overlays are addressed first, but it is not a BPMN authority or a substitute conformance denominator.
+
+The project therefore maintains three separate views:
+
+| View | Denominator and owner | Effect on work |
+|---|---|---|
+| BPMN Process Execution coverage | Reviewed normative requirements in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), eventually expanded to the complete applicable Process Execution corpus | Drives reusable semantic mechanisms, admission, Lean, the TypeScript core, and Temporal refinement |
+| CIB Seven profile coverage | Classified relationships and extension families in the [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) and named profiles | Added on demand when a BPMN ambiguity, selected compatibility promise, host-realization question, or downstream source extension requires it |
+| A12 Workflows adoption | Exact models, delegates, façade calls, and migration dispositions in the [A12 compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) | Prioritizes lower-layer work and later verifies the separately bounded adoption adapter |
+
+These figures must never be merged. A model admitted unchanged is not an additional BPMN conformance point; a BPMN rule implemented without the target's extension binding is not A12 adoption; and a CIB observation does not count twice as both source of a profile rule and independent confirmation of that rule.
+
+A representative vertical slice may exercise all layers to establish feasibility. Once its seams are proven, coverage expands by semantic mechanism rather than by reproducing the entire Lean/core/Temporal/CIB stack for every downstream model. Additional CIB work is required only when it supplies a distinct classified proposition or host-realization check.
+
 ## Normative route
 
 | Source area | Project use |

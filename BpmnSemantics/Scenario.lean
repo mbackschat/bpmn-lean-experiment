@@ -49,6 +49,7 @@ structure EffectDescriptor where
 
 inductive VariableValue where
   | string (value : String)
+  | null
   deriving Repr, DecidableEq
 
 structure VariableBinding where
@@ -58,6 +59,10 @@ structure VariableBinding where
 
 inductive EffectExecutionResult where
   | success (localPatch : List VariableBinding)
+  | bpmnError
+      (code : String)
+      (message : Option String)
+      (localPatch : List VariableBinding)
   deriving Repr, DecidableEq
 
 /-- User Task lifecycle states exposed by the current bounded interaction capsule. -/

@@ -2,6 +2,7 @@ import type {
   CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  DeepReadonly,
   OpenEffect,
   OpenTimer,
   OpenUserTask,
@@ -24,7 +25,7 @@ export const bpmnOpenUserTasksQueryName = "bpmn-open-user-tasks";
 export const bpmnCompleteUserTaskUpdateName = "bpmn-complete-user-task";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
-export type CompletedProcessReceipt = Readonly<{
+export type CompletedProcessReceipt = DeepReadonly<{
   definition: SemanticProcessIdentity;
   processId: string;
   processInstanceId: string;
@@ -40,17 +41,17 @@ export enum ProcessCommandResultKind {
 }
 
 export type ProcessCommandResult =
-  | Readonly<{
+  | DeepReadonly<{
       kind: ProcessCommandResultKind.Semantic;
       commandId: string;
       outcome: CommandOutcome;
     }>
-  | Readonly<{
+  | DeepReadonly<{
       kind: ProcessCommandResultKind.ProcessClosed;
       commandId: string;
       receipt: CompletedProcessReceipt;
     }>
-  | Readonly<{
+  | DeepReadonly<{
       kind: ProcessCommandResultKind.ProcessUnknown;
       commandId: string;
       processInstanceId: string;
@@ -61,12 +62,12 @@ export type BpmnProcessWorkflow = (
   semanticProcess: SemanticProcessProgram,
 ) => Promise<CompletedProcessReceipt>;
 
-export type TemporalScenarioRunnerOptions = Readonly<{
+export type TemporalScenarioRunnerOptions = DeepReadonly<{
   cliVersion: string;
   downloadDirectory: string;
 }>;
 
-export type TemporalTimeSkippingRunnerOptions = Readonly<{
+export type TemporalTimeSkippingRunnerOptions = DeepReadonly<{
   downloadDirectory: string;
 }>;
 
@@ -77,7 +78,7 @@ export enum TemporalCompletionDelivery {
   Concurrent = "concurrent",
 }
 
-export type TemporalScenarioExecutionOptions = Readonly<{
+export type TemporalScenarioExecutionOptions = DeepReadonly<{
   workflowId: string;
   completionDelivery: TemporalCompletionDelivery;
   duplicateFirstCompletion?: boolean;
@@ -86,23 +87,23 @@ export type TemporalScenarioExecutionOptions = Readonly<{
   effectExecutionSchedule?: EffectExecutionSchedule;
 }>;
 
-export type TemporalScenarioBatchItem = Readonly<{
+export type TemporalScenarioBatchItem = DeepReadonly<{
   scenario: Scenario;
   semanticProcess: SemanticProcessProgram;
   options: TemporalScenarioExecutionOptions;
 }>;
 
-export type TemporalHistory = Readonly<{
-  events: ReadonlyArray<unknown>;
+export type TemporalHistory = DeepReadonly<{
+  events: unknown[];
 }>;
 
-export type TemporalReplayItem = Readonly<{
+export type TemporalReplayItem = DeepReadonly<{
   history: unknown;
   workflowId: string;
 }>;
 
-export type TemporalScenarioExecution = Readonly<{
-  waitTrace: ReadonlyArray<CanonicalObservation>;
+export type TemporalScenarioExecution = DeepReadonly<{
+  waitTrace: CanonicalObservation[];
   interactionEvidence: TemporalInteractionEvidence;
   result: ScenarioResult;
   receipt: CompletedProcessReceipt | null;
@@ -110,7 +111,7 @@ export type TemporalScenarioExecution = Readonly<{
   effectProbeEvidence: EffectProbeEvidence | null;
 }>;
 
-export type TemporalTimerBypassMutationExecution = Readonly<{
+export type TemporalTimerBypassMutationExecution = DeepReadonly<{
   result: ScenarioResult;
   receipt: CompletedProcessReceipt;
   history: TemporalHistory;
@@ -119,26 +120,32 @@ export type TemporalTimerBypassMutationExecution = Readonly<{
 export type TemporalEffectBypassMutationExecution =
   TemporalTimerBypassMutationExecution;
 
-export type TemporalEffectFailureExecution = Readonly<{
+export type TemporalEffectFailureExecution = DeepReadonly<{
   failureType: "BPMN_EFFECT_EXECUTION_EXHAUSTED";
-  lastCommittedTrace: ReadonlyArray<CanonicalObservation>;
+  lastCommittedTrace: CanonicalObservation[];
   history: TemporalHistory;
   effectProbeEvidence: EffectProbeEvidence;
 }>;
 
-export type TemporalSharedEffectExecutions = Readonly<{
-  executions: ReadonlyArray<TemporalScenarioExecution>;
+export type TemporalUnhandledBpmnErrorExecution = DeepReadonly<{
+  failureType: "BPMN_UNHANDLED_BPMN_ERROR";
+  lastCommittedTrace: CanonicalObservation[];
+  history: TemporalHistory;
+  effectProbeEvidence: EffectProbeEvidence;
+  returnedResult: import("@bpmn-lean/semantic-core").EffectExecutionResult;
+}>;
+
+export type TemporalSharedEffectExecutions = DeepReadonly<{
+  executions: TemporalScenarioExecution[];
   effectProbeEvidence: EffectProbeEvidence;
 }>;
 
-export type TemporalInteractionEvidence = Readonly<{
-  openUserTasksAtWait: ReadonlyArray<OpenUserTask>;
-  openTimersAtWait: ReadonlyArray<OpenTimer>;
-  openEffectsAtWait: ReadonlyArray<OpenEffect>;
-  openUserTasksAfterCompletions: ReadonlyArray<
-    ReadonlyArray<OpenUserTask>
-  >;
-  completionOutcomes: ReadonlyArray<CommandOutcome>;
+export type TemporalInteractionEvidence = DeepReadonly<{
+  openUserTasksAtWait: OpenUserTask[];
+  openTimersAtWait: OpenTimer[];
+  openEffectsAtWait: OpenEffect[];
+  openUserTasksAfterCompletions: OpenUserTask[][];
+  completionOutcomes: CommandOutcome[];
   duplicateCompletionOutcome: CommandOutcome | null;
   postTerminalResult: ProcessCommandResult | null;
 }>;

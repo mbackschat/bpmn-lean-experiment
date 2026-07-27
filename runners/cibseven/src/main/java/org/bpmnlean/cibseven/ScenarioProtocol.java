@@ -287,15 +287,18 @@ public final class ScenarioProtocol {
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
-    @JsonSubTypes.Type(value = StringValue.class, name = "string")
+    @JsonSubTypes.Type(value = StringValue.class, name = "string"),
+    @JsonSubTypes.Type(value = NullValue.class, name = "null")
   })
-  public sealed interface VariableValue permits StringValue {}
+  public sealed interface VariableValue permits StringValue, NullValue {}
 
   public record StringValue(String value) implements VariableValue {
     public StringValue {
       Objects.requireNonNull(value, "value");
     }
   }
+
+  public record NullValue() implements VariableValue {}
 
   public record VariableBinding(String name, VariableValue value) {
     public VariableBinding {
@@ -328,13 +331,32 @@ public final class ScenarioProtocol {
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
-    @JsonSubTypes.Type(value = SuccessfulEffectResult.class, name = "success")
+    @JsonSubTypes.Type(value = SuccessfulEffectResult.class, name = "success"),
+    @JsonSubTypes.Type(value = BpmnErrorEffectResult.class, name = "bpmnError")
   })
-  public sealed interface EffectExecutionResult permits SuccessfulEffectResult {}
+  public sealed interface EffectExecutionResult
+      permits SuccessfulEffectResult, BpmnErrorEffectResult {}
 
   public record SuccessfulEffectResult(List<VariableBinding> localPatch)
       implements EffectExecutionResult {
     public SuccessfulEffectResult {
+      localPatch = List.copyOf(localPatch);
+    }
+  }
+
+  public record BpmnErrorEffectResult(
+      String code,
+      String message,
+      List<VariableBinding> localPatch)
+      implements EffectExecutionResult {
+    public BpmnErrorEffectResult {
+      if (code == null || code.isEmpty()) {
+        throw new IllegalArgumentException("BPMN Error code must be non-empty");
+      }
+      if (message != null && message.isEmpty()) {
+        throw new IllegalArgumentException(
+            "BPMN Error message must be null or non-empty");
+      }
       localPatch = List.copyOf(localPatch);
     }
   }

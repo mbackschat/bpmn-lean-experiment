@@ -70,6 +70,7 @@ test(
         "intermediate-catch-timer-pt1s",
         "service-task-effect-success",
         "a12-create-document-data",
+        "a12-boundary-error-caught",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
@@ -91,6 +92,12 @@ test(
           "expected wait trace",
         ),
       );
+      const firstCallerWaitState =
+        caseEvidence.primaryTemporalResult.trace.find(
+          (observation): observation is StateObservation =>
+            observation.kind === CanonicalObservationKind.State &&
+            observation.openUserTasks.length > 0,
+        ) ?? expectedWaitState;
       assert.equal(caseReport.scenario.id, pipelineCase.id);
       assert.equal(caseEvidence.scenarioId, pipelineCase.id);
       assert.equal(
@@ -102,6 +109,11 @@ test(
         caseReport.scenario.id === "user-task-stale-completion";
       const isSynchronousCreateDocument =
         caseReport.scenario.id === "a12-create-document-data";
+      const isSynchronousBoundaryError =
+        caseReport.scenario.id === "a12-boundary-error-caught";
+      const isSynchronousCibHost =
+        isSynchronousCreateDocument ||
+        isSynchronousBoundaryError;
       assert.equal(
         caseReport.comparison.targets.includes(
           DifferentialTarget.Temporal,
@@ -112,9 +124,9 @@ test(
         caseReport.comparison.targets.includes(
           DifferentialTarget.CibSeven,
         ),
-        !isSynchronousCreateDocument,
+        !isSynchronousCibHost,
       );
-      if (isSynchronousCreateDocument) {
+      if (isSynchronousCibHost) {
         assert.deepEqual(caseReport.cibHostComparison, {
           kind: ComparisonKind.Agreement,
           targets: [
@@ -162,7 +174,7 @@ test(
 
       assert.deepEqual(caseReport.injectedDisagreement, {
         kind: ComparisonKind.Disagreement,
-        referenceTarget: isSynchronousCreateDocument
+        referenceTarget: isSynchronousCibHost
           ? DifferentialTarget.Lean
           : DifferentialTarget.CibSeven,
         candidateTarget: DifferentialTarget.SemanticCore,
@@ -172,7 +184,7 @@ test(
       assert.notEqual(caseEvidence.temporalInteractionEvidence, null);
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.openUserTasksAtWait,
-        expectedWaitState.openUserTasks,
+        firstCallerWaitState.openUserTasks,
       );
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.openTimersAtWait,
@@ -230,9 +242,7 @@ test(
           ),
           true,
         );
-        if (isSynchronousCreateDocument) {
-          assert.equal(caseEvidence.cibEffectRetryEvidence, null);
-        } else {
+        if (pipelineCase.cibEffectRetrySchedule === true) {
           assert.deepEqual(caseEvidence.cibEffectRetryEvidence, {
             afterCommandId: caseEvidence.expectedDerivedEffectCommandId,
             schedule: "failAfterMutationOnce",
@@ -241,6 +251,8 @@ test(
             initialRetries: 3,
             retriesAfterFirstFailure: 2,
           });
+        } else {
+          assert.equal(caseEvidence.cibEffectRetryEvidence, null);
         }
         assert.notEqual(caseEvidence.primaryEffectProbeEvidence, null);
         assert.notEqual(caseEvidence.isolationEffectProbeEvidence, null);
@@ -262,7 +274,7 @@ test(
         );
         assert.equal(
           caseEvidence.isolationEffectProbeEvidence.invocations,
-          2,
+          pipelineCase.effectScheduleSubstitution === true ? 2 : 1,
         );
         assert.equal(
           caseEvidence.isolationEffectProbeEvidence.mutations,
@@ -275,7 +287,7 @@ test(
       }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 11,
+      liveHistories: 12,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
@@ -289,7 +301,7 @@ test(
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 18);
+    assert.equal(report.isolation.temporalWorkflowIds.length, 20);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,

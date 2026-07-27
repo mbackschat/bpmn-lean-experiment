@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, payload-free Service Task effect, and CreateDocument data capsules.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, payload-free Service Task effect, CreateDocument data, and interrupting boundary-error capsules.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, two exact Service Task bindings, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, three exact Service Task source bindings, one exact attached interrupting Error route, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -58,104 +58,141 @@ The source component retains the exact admitted BPMN XML bytes, content digest, 
 
 The checked BPMN graph is a project-owned, source-facing representation of the admitted subset. It preserves BPMN element and Sequence Flow identities and records only structural facts established during admission. It contains no runtime token counts, active User Task occurrences, commands, scheduler choices, or Temporal identity.
 
-The first contract is:
+The first contract uses the project-owned `DeepReadonly<T>` utility so the shape stays readable while every nested object, array, and tuple remains immutable:
 
 ```ts
-interface CheckedProcess {
-  readonly kind: "checkedProcess";
-  readonly identity: {
-    readonly semanticProfile: string;
-    readonly sourceId: string;
-    readonly sourceSha256: string;
+type CheckedProcess = DeepReadonly<{
+  kind: "checkedProcess";
+  identity: {
+    semanticProfile: string;
+    sourceId: string;
+    sourceSha256: string;
   };
-  readonly processId: string;
-  readonly nodes: ReadonlyArray<CheckedNode>;
-  readonly sequenceFlows: ReadonlyArray<CheckedSequenceFlow>;
-}
+  processId: string;
+  nodes: CheckedNode[];
+  sequenceFlows: CheckedSequenceFlow[];
+}>;
 
-type MappingExpression =
-  | { readonly kind: "stringLiteral"; readonly value: string }
-  | { readonly kind: "localVariable"; readonly name: string };
+type MappingExpression = DeepReadonly<
+  | { kind: "stringLiteral"; value: string }
+  | { kind: "localVariable"; name: string }
+>;
 
-interface VariableMapping {
-  readonly target: string;
-  readonly expression: MappingExpression;
-}
+type VariableMapping = DeepReadonly<{
+  target: string;
+  expression: MappingExpression;
+}>;
 
-interface CheckedServiceTaskBase {
-  readonly kind: "serviceTask";
-  readonly id: string;
-  readonly inputMappings: ReadonlyArray<VariableMapping>;
-  readonly outputMappings: ReadonlyArray<VariableMapping>;
-}
+type CheckedBpmnErrorRoute = DeepReadonly<{
+  boundaryEventId: string;
+  boundaryEventName: string | null;
+  attachedToRef: string;
+  errorDefinitionId: string;
+  errorElementId: string;
+  errorName: string | null;
+  code: string;
+  outputFlowId: string;
+}>;
+
+type CheckedServiceTaskBase = DeepReadonly<{
+  kind: "serviceTask";
+  id: string;
+  inputMappings: VariableMapping[];
+  outputMappings: VariableMapping[];
+  bpmnErrorRoute: CheckedBpmnErrorRoute | null;
+}>;
 
 type CheckedServiceTask =
-  | (CheckedServiceTaskBase & {
-      readonly implementation: "urn:bpmn-lean:effect:probe-v1";
-      readonly sourceBinding: {
-        readonly delegateExpressionAttribute: {
-          readonly namespace: "http://camunda.org/schema/1.0/bpmn";
-          readonly value: "${bpmnLeanEffectHandler}";
+  | (CheckedServiceTaskBase & DeepReadonly<{
+      implementation: "urn:bpmn-lean:effect:probe-v1";
+      sourceBinding: {
+        delegateExpressionAttribute: {
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          value: "${bpmnLeanEffectHandler}";
         };
-        readonly asyncBeforeAttribute: {
-          readonly namespace: "http://camunda.org/schema/1.0/bpmn";
-          readonly value: "true";
-        };
-      };
-    })
-  | (CheckedServiceTaskBase & {
-      readonly implementation: "urn:bpmn-lean:a12-delegate:v1";
-      readonly sourceBinding: {
-        readonly delegateExpressionAttribute: {
-          readonly namespace: "http://camunda.org/schema/1.0/bpmn";
-          readonly value: "${createDocumentDelegate}";
-        };
-        readonly protocolSource: "semanticProfile";
-        readonly inputOutputElement: {
-          readonly namespace: "http://camunda.org/schema/1.0/bpmn";
-          readonly inputParameter: {
-            readonly name: "documentModelName";
-            readonly body: "MyDocumentModel";
-          };
-          readonly outputParameter: {
-            readonly name: "myDocumentReference";
-            readonly body: "${newDocRef}";
-          };
+        asyncBeforeAttribute: {
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          value: "true";
         };
       };
-    });
+    }>)
+  | (CheckedServiceTaskBase & DeepReadonly<{
+      implementation: "urn:bpmn-lean:a12-delegate:v1";
+      sourceBinding: {
+        delegateExpressionAttribute: {
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          value: "${createDocumentDelegate}";
+        };
+        protocolSource: "semanticProfile";
+        inputOutputElement: {
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          inputParameter: {
+            name: "documentModelName";
+            body: "MyDocumentModel";
+          };
+          outputParameter: {
+            name: "myDocumentReference";
+            body: "${newDocRef}";
+          };
+        };
+      };
+    }>)
+  | (CheckedServiceTaskBase & DeepReadonly<{
+      implementation: "urn:bpmn-lean:a12-delegate:v1";
+      sourceBinding: {
+        delegateExpressionAttribute: {
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          value: "#{createRelationshipLinkDelegate}";
+        };
+        implementationAttribute: {
+          value: "urn:bpmn-lean:a12-delegate:v1";
+        };
+        inputOutputElement: {
+          namespace: "http://camunda.org/schema/1.0/bpmn";
+          inputParameter: {
+            name: "relationshipModel";
+            body: "RelationshipModel";
+          };
+          outputParameter: {
+            name: "relationshipLinkId";
+            body: "${newLinkId}";
+          };
+        };
+      };
+    }>);
 
-type CheckedNode =
+type CheckedNode = DeepReadonly<
   | {
-      readonly kind: "noneStartEvent";
-      readonly id: string;
+      kind: "noneStartEvent";
+      id: string;
     }
   | {
-      readonly kind: "userTask";
-      readonly id: string;
-      readonly name: string | null;
+      kind: "userTask";
+      id: string;
+      name: string | null;
     }
   | {
-      readonly kind: "intermediateCatchTimerEvent";
-      readonly id: string;
-      readonly durationLiteral: "PT1S";
+      kind: "intermediateCatchTimerEvent";
+      id: string;
+      durationLiteral: "PT1S";
     }
   | CheckedServiceTask
   | {
-      readonly kind: "parallelGateway";
-      readonly id: string;
-      readonly direction: "diverging" | "converging";
+      kind: "parallelGateway";
+      id: string;
+      direction: "diverging" | "converging";
     }
   | {
-      readonly kind: "noneEndEvent";
-      readonly id: string;
-    };
+      kind: "noneEndEvent";
+      id: string;
+    }
+>;
 
-interface CheckedSequenceFlow {
-  readonly id: string;
-  readonly sourceId: string;
-  readonly targetId: string;
-}
+type CheckedSequenceFlow = DeepReadonly<{
+  id: string;
+  sourceId: string;
+  targetId: string;
+}>;
 ```
 
 `CheckedProcess` means that parsing, supported-element admission, reference resolution, gateway-direction classification, profile membership, and bounded structural checks have succeeded. A rejected document does not produce this artifact.
@@ -165,92 +202,107 @@ interface CheckedSequenceFlow {
 The Semantic Process program is an immutable, content-bound definition. It contains control places and operations but no mutable execution state.
 
 ```ts
-interface SemanticProcessProgram {
-  readonly kind: "semanticProcess";
-  readonly identity: {
-    readonly compiler: "bpmn-source-semantic-process";
-    readonly semanticProfile: string;
-    readonly sourceId: string;
-    readonly sourceSha256: string;
+type SemanticProcessProgram = DeepReadonly<{
+  kind: "semanticProcess";
+  identity: {
+    compiler: "bpmn-source-semantic-process";
+    semanticProfile: string;
+    sourceId: string;
+    sourceSha256: string;
   };
-  readonly processId: string;
-  readonly controlPlaces: ReadonlyArray<ControlPlace>;
-  readonly operations: ReadonlyArray<SemanticOperation>;
-}
+  processId: string;
+  controlPlaces: ControlPlace[];
+  operations: SemanticOperation[];
+}>;
 
-interface ControlPlace {
-  readonly id: string;
-  readonly origin: {
-    readonly kind: "bpmnSequenceFlow";
-    readonly elementId: string;
+type ControlPlace = DeepReadonly<{
+  id: string;
+  origin: {
+    kind: "bpmnSequenceFlow";
+    elementId: string;
   };
-}
+}>;
 
-interface OperationBase {
-  readonly id: string;
-  readonly origin: {
-    readonly kind: "bpmnElement";
-    readonly elementId: string;
+type OperationBase = DeepReadonly<{
+  id: string;
+  origin: {
+    kind: "bpmnElement";
+    elementId: string;
   };
-}
+}>;
 
-interface EffectDescriptor {
-  readonly protocol:
+type EffectDescriptor = DeepReadonly<{
+  protocol:
     | "urn:bpmn-lean:effect:probe-v1"
     | "urn:bpmn-lean:a12-delegate:v1";
-  readonly handler:
+  handler:
     | "bpmnLeanEffectHandler"
-    | "createDocumentDelegate";
-}
+    | "createDocumentDelegate"
+    | "createRelationshipLinkDelegate";
+}>;
 
-type SemanticOperation =
+type BpmnErrorRoute = DeepReadonly<{
+  code: string;
+  output: string;
+  origin: {
+    kind: "bpmnElement";
+    boundaryEventId: string;
+    errorDefinitionId: string;
+    errorElementId: string;
+    sequenceFlowId: string;
+  };
+}>;
+
+type SemanticOperation = DeepReadonly<
   | (OperationBase & {
-      readonly kind: "initiate";
-      readonly output: string;
+      kind: "initiate";
+      output: string;
     })
   | (OperationBase & {
-      readonly kind: "awaitUserTask";
-      readonly input: string;
-      readonly output: string;
-      readonly task: {
-        readonly elementId: string;
-        readonly name: string | null;
+      kind: "awaitUserTask";
+      input: string;
+      output: string;
+      task: {
+        elementId: string;
+        name: string | null;
       };
     })
   | (OperationBase & {
-      readonly kind: "awaitTimer";
-      readonly input: string;
-      readonly output: string;
-      readonly timer: {
-        readonly elementId: string;
-        readonly durationMs: 1000;
+      kind: "awaitTimer";
+      input: string;
+      output: string;
+      timer: {
+        elementId: string;
+        durationMs: 1000;
       };
     })
   | (OperationBase & {
-      readonly kind: "awaitEffect";
-      readonly input: string;
-      readonly output: string;
-      readonly effect: {
-        readonly elementId: string;
-        readonly descriptor: EffectDescriptor;
-        readonly inputMappings: ReadonlyArray<VariableMapping>;
-        readonly outputMappings: ReadonlyArray<VariableMapping>;
+      kind: "awaitEffect";
+      input: string;
+      output: string;
+      effect: {
+        elementId: string;
+        descriptor: EffectDescriptor;
+        inputMappings: VariableMapping[];
+        outputMappings: VariableMapping[];
       };
+      bpmnErrorRoute: BpmnErrorRoute | null;
     })
   | (OperationBase & {
-      readonly kind: "duplicate";
-      readonly input: string;
-      readonly outputs: readonly [string, string, ...string[]];
+      kind: "duplicate";
+      input: string;
+      outputs: [string, string, ...string[]];
     })
   | (OperationBase & {
-      readonly kind: "synchronize";
-      readonly inputs: readonly [string, string, ...string[]];
-      readonly output: string;
+      kind: "synchronize";
+      inputs: [string, string, ...string[]];
+      output: string;
     })
   | (OperationBase & {
-      readonly kind: "terminate";
-      readonly input: string;
-    });
+      kind: "terminate";
+      input: string;
+    })
+>;
 ```
 
 String identifiers are wire representations, not permission to treat distinct identifier domains interchangeably in Lean or implementation code. Lean must use distinct types for process, node, Sequence Flow, operation, control-place, task-definition, and task-occurrence identifiers where those domains can be confused.
@@ -279,6 +331,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
 | exact payload-free Service Task binding | `awaitEffect` with the probe protocol/handler descriptor and empty mappings |
 | exact A12-shaped CreateDocument binding and mappings | `awaitEffect` with the profile protocol, source handler, normalized literal input, and local-reference output mapping |
+| exact A12-shaped interrupting boundary Error binding | `awaitEffect` with the profile protocol, deferred source handler, normalized mapping pair, and one committed `bpmnErrorRoute` |
 | diverging Parallel Gateway | `duplicate` |
 | converging Parallel Gateway | `synchronize` |
 | none End Event | `terminate` |
@@ -316,13 +369,15 @@ Internal closure stops at the timer wait. An exact `fireTimer` stimulus commits 
 
 The exact `PT1S` lexical value remains in the checked graph; Lean and TypeScript lower it independently to `1000`. Physical clock origin, scheduler latency, CIB job identity, and Temporal timer identity do not enter the program or runtime semantics. The complete rule and race-free refinement boundary belong to the [Intermediate Catch Timer capsule](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md).
 
-### External effect wait and bounded data mapping
+### External effect wait, bounded data mapping, and typed business error
 
 `awaitEffect` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token, evaluates the admitted pure input mappings, and commits one effect occurrence containing full identity, descriptor, immutable arguments, output mappings, and the output control place.
 
-The payload-free Service Task has empty mappings and accepts only the empty successful result. The CreateDocument slice evaluates one string literal into Activity-local argument `documentModelName`. A matching `completeEffect` accepts only the exact typed local string patch required by the active operation. It applies the operation's output mapping to Process scope, removes the effect wait and Activity-local state, adds one output token, and resumes closure. A malformed patch or mismatched occurrence rejects with exact state preservation.
+The payload-free Service Task has empty mappings and accepts only the empty successful result. The CreateDocument slice evaluates one string literal into Activity-local argument `documentModelName`. A matching successful `completeEffect` accepts only the exact typed local patch required by the active operation. It applies the operation's output mapping to Process scope, removes the effect wait and Activity-local state, adds one normal output token, and resumes closure. A malformed patch or mismatched occurrence rejects with exact state preservation.
 
-The Worker never receives mutable Process state and never selects Process output names. Descriptor, arguments, result, and output mapping remain separate contracts. The exact bounded rules and host relation belong to the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) and [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md).
+The boundary-error slice extends the same operation with one immutable exact-code Error route and extends variable values with a closed `string`/`null` union. A matching `bpmnError` result carries a validated Activity-local patch and optional non-empty message. Under the selected CIB-specific profile, the evaluator atomically installs the patch, applies the program-owned output mapping, removes the effect wait and Activity-local state, abandons the normal output, adds the boundary-route token, and resumes closure. An occurrence mismatch, non-matching Error code, or malformed patch rejects with exact state preservation. The Error route stays definition-only; code and message do not enter canonical state.
+
+The Worker never receives mutable Process state and never selects Process output names. Descriptor, arguments, result, output mapping, and Error route remain separate contracts. The exact bounded rules and host relations belong to the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md), [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md), and [boundary-error spec](capsules/BOUNDARY-ERROR-SPEC.md).
 
 ### Parallel duplication
 
@@ -357,6 +412,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
 - every admitted `awaitEffect` has a profile-permitted descriptor and the exact mapping pair for that descriptor;
 - mapping targets are nonempty and unique, literal inputs remain exact strings, and local-variable outputs refer only to the admitted result-local name;
+- every non-null `bpmnErrorRoute` has a nonempty exact code, a distinct existing boundary output, complete source provenance, and the exact profile-permitted handler/mapping combination;
 - the current profile has exactly one `initiate`;
 - each control place has only the producer and consumer shapes permitted by the current lowering;
 - every operation and control place is reachable from initiation and can reach termination under the structural graph;
@@ -438,26 +494,27 @@ The maintained implementation supports exactly:
 - one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
 - one exact Service Task binding under its single-token success-only effect capsule;
 - one exact A12-shaped CreateDocument Service Task with one literal string input and one local-reference output mapping;
+- one exact A12-shaped Service Task with the same bounded mapping mechanism and one attached exact-code interrupting Error route;
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;
 - none End Events permitted by the capsules;
 - `initiate`, `awaitUserTask`, `awaitTimer`, `awaitEffect`, `duplicate`, `synchronize`, and `terminate`;
 - token multiplicity per Sequence Flow;
-- semantic task, timer, and effect occurrence identity, string-only Process/Activity-local data for the exact mapping slice, logical time, and command closure;
+- semantic task, timer, and effect occurrence identity, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
 - the canonical observation boundary including `openTimers`, effect arguments in `openEffects`, and Process `variables`.
 
-The sequential User Task, balanced parallel, Intermediate Catch Timer, payload-free Service Task, and CreateDocument fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, Intermediate Catch Timer, payload-free Service Task, CreateDocument, and boundary-error fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
 The following remain unsupported:
 
 - general BPMN 2.0.2 import or conformance;
-- event subtypes beyond the admitted none Start, exact normal-flow `PT1S` Intermediate Catch Timer, and none End Events;
-- other timer forms, boundary events, messages, signals, errors, escalation, cancellation, compensation, and terminate semantics;
+- event subtypes beyond the admitted none Start, exact normal-flow `PT1S` Intermediate Catch Timer, exact attached interrupting Error route, and none End Events;
+- other timer forms, other boundary Events, catch-all or propagated Errors, Error throws, Error End Events, messages, signals, escalation, cancellation, compensation, and terminate semantics;
 - subprocess scopes, call activities, transactions, event subprocesses, and propagation;
 - exclusive, inclusive, complex, and event-based gateways;
-- loops, multi-instance activities, conditions, general expressions, non-string data, general variables or scopes, and mappings beyond the exact CreateDocument pair;
-- host-side external-effect execution and effect mechanisms beyond the approved success-only capsule;
+- loops, multi-instance activities, conditions, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond the two exact pairs;
+- host-side external-effect execution and effect mechanisms beyond the approved success and typed boundary-error capsules;
 - generated TypeScript as semantic authority;
 - optimization, bytecode, code generation, migration, and durable-version compatibility;
 - a separate CIB-compatible parallel profile.
@@ -467,14 +524,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, timer, payload-free effect, and CreateDocument exact-source fixtures lower deterministically;
+- sequential, parallel, timer, payload-free effect, CreateDocument, and boundary-error exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the reviewed preservation statement remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, timer, payload-free effect, and CreateDocument data/mapping separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, timer, payload-free effect, CreateDocument data/mapping, and boundary-error separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

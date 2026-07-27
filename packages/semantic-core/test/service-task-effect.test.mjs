@@ -58,6 +58,7 @@ const effectProgram = {
         inputMappings: [],
         outputMappings: [],
       },
+      bpmnErrorRoute: null,
     },
     {
       ...operationBase("StartEvent_1"),
@@ -133,6 +134,7 @@ test("start closes at one structured effect intent without producing output", ()
       descriptor,
       arguments: [],
       outputMappings: [],
+      bpmnErrorRoute: null,
       output: "place:Flow_ServiceToEnd",
     },
   ]);

@@ -383,6 +383,7 @@ function projectServiceTask(
     implementation: effectProtocol,
     inputMappings: [],
     outputMappings: [],
+    bpmnErrorRoute: null,
     sourceBinding: {
       delegateExpressionAttribute: {
         namespace: camundaNamespace,

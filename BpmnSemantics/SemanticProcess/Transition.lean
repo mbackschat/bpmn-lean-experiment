@@ -38,6 +38,7 @@ structure EffectWait where
   arguments : List VariableBinding
   outputMappings : List VariableMapping
   output : ControlPlaceId
+  bpmnErrorRoute : Option BpmnErrorRoute
   deriving Repr, DecidableEq
 
 structure TaskActivation where
@@ -168,7 +169,8 @@ private def activateTimer (state : RuntimeState) (instanceId : SemanticId)
       setTimerActivationCount state.timerActivations timer.elementId activation }
 
 private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
-    (input output : ControlPlaceId) (effect : EffectDefinition) : RuntimeState :=
+    (input output : ControlPlaceId) (effect : EffectDefinition)
+    (bpmnErrorRoute : Option BpmnErrorRoute) : RuntimeState :=
   let activation := effectActivationCount state effect.elementId + 1
   let arguments := (evaluateInputMappings effect.inputMappings).getD []
   { state with
@@ -180,7 +182,8 @@ private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
         descriptor := effect.descriptor
         arguments
         outputMappings := effect.outputMappings
-        output } :: state.effectWaits
+        output
+        bpmnErrorRoute } :: state.effectWaits
     effectActivations :=
       setEffectActivationCount state.effectActivations
         effect.elementId activation }
@@ -233,14 +236,15 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
         (.awaitTimer id origin input output timer)
         state
         (activateTimer state instanceId input output timer)
-  | awaitEffect (id origin input output effect) (state : RuntimeState)
+  | awaitEffect (id origin input output effect bpmnErrorRoute)
+      (state : RuntimeState)
       (instanceId : SemanticId)
       (running : state.control = .running instanceId)
       (enabled : hasToken state input = true) :
       OperationStep
-        (.awaitEffect id origin input output effect)
+        (.awaitEffect id origin input output effect bpmnErrorRoute)
         state
-        (activateEffect state instanceId input output effect)
+        (activateEffect state instanceId input output effect bpmnErrorRoute)
   | duplicate (id origin input outputs) (state : RuntimeState)
       (enabled : hasToken state input = true) :
       OperationStep
@@ -292,11 +296,13 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
             none
       | .notStarted
       | .completed _ => none
-  | .awaitEffect _ _ input output effect =>
+  | .awaitEffect _ _ input output effect bpmnErrorRoute =>
       match state.control with
       | .running instanceId =>
           if hasToken state input then
-            some (activateEffect state instanceId input output effect)
+            some
+              (activateEffect state instanceId input output effect
+                bpmnErrorRoute)
           else
             none
       | .notStarted
@@ -354,7 +360,7 @@ theorem fire_sound (operation : SemanticOperation)
             exact .awaitTimer id origin input output timer before
               instanceId controlEq enabled
           · simp [fire?, controlEq, enabled] at result
-  | awaitEffect id origin input output effect =>
+  | awaitEffect id origin input output effect bpmnErrorRoute =>
       cases controlEq : before.control with
       | notStarted => simp [fire?, controlEq] at result
       | completed instanceId => simp [fire?, controlEq] at result
@@ -362,7 +368,7 @@ theorem fire_sound (operation : SemanticOperation)
           by_cases enabled : hasToken before input = true
           · simp [fire?, controlEq, enabled] at result
             subst after
-            exact .awaitEffect id origin input output effect before
+            exact .awaitEffect id origin input output effect bpmnErrorRoute before
               instanceId controlEq enabled
           · simp [fire?, controlEq, enabled] at result
   | duplicate id origin input outputs =>

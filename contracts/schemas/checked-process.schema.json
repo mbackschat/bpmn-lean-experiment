@@ -87,6 +87,9 @@
             },
             {
               "$ref": "#/$defs/a12CreateDocumentServiceTask"
+            },
+            {
+              "$ref": "#/$defs/a12BoundaryErrorServiceTask"
             }
           ]
         },
@@ -183,7 +186,8 @@
         "implementation",
         "sourceBinding",
         "inputMappings",
-        "outputMappings"
+        "outputMappings",
+        "bpmnErrorRoute"
       ],
       "properties": {
         "kind": {
@@ -203,6 +207,9 @@
         },
         "outputMappings": {
           "const": []
+        },
+        "bpmnErrorRoute": {
+          "type": "null"
         }
       }
     },
@@ -257,7 +264,8 @@
         "implementation",
         "sourceBinding",
         "inputMappings",
-        "outputMappings"
+        "outputMappings",
+        "bpmnErrorRoute"
       ],
       "properties": {
         "kind": {
@@ -293,6 +301,9 @@
               }
             }
           ]
+        },
+        "bpmnErrorRoute": {
+          "type": "null"
         }
       }
     },
@@ -372,6 +383,186 @@
               "const": "${newDocRef}"
             }
           }
+        }
+      }
+    },
+    "a12BoundaryErrorServiceTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "implementation",
+        "sourceBinding",
+        "inputMappings",
+        "outputMappings",
+        "bpmnErrorRoute"
+      ],
+      "properties": {
+        "kind": {
+          "const": "serviceTask"
+        },
+        "id": {
+          "const": "CreateRelationshipLinkTask"
+        },
+        "implementation": {
+          "const": "urn:bpmn-lean:a12-delegate:v1"
+        },
+        "sourceBinding": {
+          "$ref": "#/$defs/a12BoundaryErrorSourceBinding"
+        },
+        "inputMappings": {
+          "const": [
+            {
+              "target": "relationshipModel",
+              "expression": {
+                "kind": "stringLiteral",
+                "value": "RelationshipModel"
+              }
+            }
+          ]
+        },
+        "outputMappings": {
+          "const": [
+            {
+              "target": "relationshipLinkId",
+              "expression": {
+                "kind": "localVariable",
+                "name": "newLinkId"
+              }
+            }
+          ]
+        },
+        "bpmnErrorRoute": {
+          "$ref": "#/$defs/a12BoundaryErrorRoute"
+        }
+      }
+    },
+    "a12BoundaryErrorSourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "delegateExpressionAttribute",
+        "implementationAttribute",
+        "inputOutputElement"
+      ],
+      "properties": {
+        "delegateExpressionAttribute": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "namespace",
+            "value"
+          ],
+          "properties": {
+            "namespace": {
+              "const": "http://camunda.org/schema/1.0/bpmn"
+            },
+            "value": {
+              "const": "#{createRelationshipLinkDelegate}"
+            }
+          }
+        },
+        "implementationAttribute": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "const": "urn:bpmn-lean:a12-delegate:v1"
+            }
+          }
+        },
+        "inputOutputElement": {
+          "$ref": "#/$defs/a12BoundaryErrorInputOutputElement"
+        }
+      }
+    },
+    "a12BoundaryErrorInputOutputElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "inputParameter",
+        "outputParameter"
+      ],
+      "properties": {
+        "namespace": {
+          "const": "http://camunda.org/schema/1.0/bpmn"
+        },
+        "inputParameter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "body"
+          ],
+          "properties": {
+            "name": {
+              "const": "relationshipModel"
+            },
+            "body": {
+              "const": "RelationshipModel"
+            }
+          }
+        },
+        "outputParameter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "body"
+          ],
+          "properties": {
+            "name": {
+              "const": "relationshipLinkId"
+            },
+            "body": {
+              "const": "${newLinkId}"
+            }
+          }
+        }
+      }
+    },
+    "a12BoundaryErrorRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boundaryEventId",
+        "boundaryEventName",
+        "attachedToRef",
+        "errorDefinitionId",
+        "errorElementId",
+        "errorName",
+        "code",
+        "outputFlowId"
+      ],
+      "properties": {
+        "boundaryEventId": {
+          "const": "BoundaryEvent_LinkLimitReached"
+        },
+        "boundaryEventName": {
+          "const": "Link Limit Reached Boundary"
+        },
+        "attachedToRef": {
+          "const": "CreateRelationshipLinkTask"
+        },
+        "errorDefinitionId": {
+          "const": "ErrorEventDefinition_LinkLimitReached"
+        },
+        "errorElementId": {
+          "const": "Error_LinkLimitReached"
+        },
+        "errorName": {
+          "const": "Link Limit Reached"
+        },
+        "code": {
+          "const": "LinkLimitReachedError"
+        },
+        "outputFlowId": {
+          "const": "Flow_ErrorToUserTask"
         }
       }
     },

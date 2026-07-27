@@ -71,6 +71,15 @@ const createDocumentResult = Object.freeze({
     },
   ],
 });
+const boundaryErrorResult = Object.freeze({
+  kind: "bpmnError",
+  code: "LinkLimitReachedError",
+  message: "Link limit reached",
+  localPatch: [{
+    name: "newLinkId",
+    value: { kind: "null" },
+  }],
+});
 
 test("encodes and digests the complete committed effect intent", () => {
   const result = { kind: "success", localPatch: [] };
@@ -125,6 +134,42 @@ test("content-binds CreateDocument arguments and typed result bytes", () => {
     ),
     "complete-effect-sha256:f596120e7c23b39e80a25da929e64ee8c5a311a0f8281a132833d6afd33f4c88",
   );
+});
+
+test("domain-separates the exact typed BPMN Error result", () => {
+  const occurrence = {
+    processInstanceId: "Instance_1",
+    elementId: "CreateRelationshipLinkTask",
+    activation: 1,
+  };
+  assert.equal(
+    canonicalCompleteEffectEncoding(occurrence, boundaryErrorResult),
+    '["completeEffect",["Instance_1","CreateRelationshipLinkTask",1],["bpmnError","LinkLimitReachedError",["some","Link limit reached"],[["newLinkId",["null"]]]]]',
+  );
+  assert.equal(
+    completeEffectCommandId(occurrence, boundaryErrorResult),
+    "complete-effect-sha256:49ddf71a5f8e23b59c039a65bd64a2ed16232c31a47790b2273e1b05c3c971d5",
+  );
+
+  const variants = [
+    { ...boundaryErrorResult, code: "RelationshipLinkageError" },
+    { ...boundaryErrorResult, message: null },
+    { ...boundaryErrorResult, message: "" },
+    { ...boundaryErrorResult, localPatch: [] },
+    {
+      ...boundaryErrorResult,
+      localPatch: [{
+        name: "newLinkId",
+        value: { kind: "string", value: "" },
+      }],
+    },
+  ];
+  for (const variant of variants) {
+    assert.notEqual(
+      completeEffectCommandId(occurrence, boundaryErrorResult),
+      completeEffectCommandId(occurrence, variant),
+    );
+  }
 });
 
 test("argument and result omission mutations collapse discriminating pairs", () => {

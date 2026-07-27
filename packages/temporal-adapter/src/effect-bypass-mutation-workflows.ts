@@ -27,19 +27,33 @@ export function runBpmnProcessEffectBypassMutation(
       );
     },
     async (request) => ({
-      kind: EffectExecutionResultKind.Success,
-      localPatch:
-        request.handler === "createDocumentDelegate"
-          ? [
+      ...(request.handler === "createRelationshipLinkDelegate"
+        ? {
+            kind: EffectExecutionResultKind.BpmnError,
+            code: "LinkLimitReachedError",
+            message: "Link limit reached",
+            localPatch: [
               {
-                name: "newDocRef",
-                value: {
-                  kind: VariableValueKind.String,
-                  value: "Document:42",
-                },
+                name: "newLinkId",
+                value: { kind: VariableValueKind.Null },
               },
-            ]
-          : [],
+            ],
+          }
+        : {
+            kind: EffectExecutionResultKind.Success,
+            localPatch:
+              request.handler === "createDocumentDelegate"
+                ? [
+                    {
+                      name: "newDocRef",
+                      value: {
+                        kind: VariableValueKind.String,
+                        value: "Document:42",
+                      },
+                    },
+                  ]
+                : [],
+          }),
     }),
   );
 }

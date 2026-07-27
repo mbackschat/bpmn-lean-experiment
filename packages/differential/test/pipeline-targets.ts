@@ -342,10 +342,11 @@ function temporalOptions(
     ...(pipelineCase.duplicateFirstCompletion === true
       ? { duplicateFirstCompletion: true }
       : {}),
-    ...(pipelineCase.effectScheduleSubstitution === true
+    ...(pipelineCase.hasEffectExecution === true
       ? {
           effectExecutionSchedule:
-            suffix === "isolation"
+            pipelineCase.effectScheduleSubstitution === true &&
+              suffix === "isolation"
               ? EffectExecutionSchedule.FailAfterMutationOnce
               : EffectExecutionSchedule.PlainSuccess,
         }

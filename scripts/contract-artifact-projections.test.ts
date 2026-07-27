@@ -30,7 +30,6 @@ import {
 import type {
   MutableDefinitionArtifacts,
 } from "./contract-artifact-test-fixtures.ts";
-
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 test("rejects a meaningful invalid task-projection mutation", async () => {
@@ -191,6 +190,51 @@ test("binds the synchronous CreateDocument mapping facts to final Process data",
   assert.throws(
     () => verifyArtifactSet(mutated),
     /does not establish the exact CreateDocument contract/,
+  );
+});
+
+test("binds the caught boundary Error local null to mapped Process data", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const createDocument = required(
+    artifactSets.find(
+      ({ scenario }) => scenario.id === "a12-create-document-data",
+    ),
+    "CreateDocument artifact set",
+  );
+  const boundaryError = required(
+    artifactSets.find(
+      ({ scenario }) => scenario.id === "a12-boundary-error-caught",
+    ),
+    "boundary-error artifact set",
+  );
+  const mutated = cloneArtifactSet(boundaryError);
+  const mapping = requiredAt(
+    required(
+      mutated.evidence.producerObservations.mappingExecutions,
+      "mapping executions",
+    ),
+    0,
+    "mapping execution",
+  );
+  const stringValue = requiredAt(
+    required(
+      createDocument.evidence.producerObservations.mappingExecutions,
+      "CreateDocument mapping executions",
+    ),
+    0,
+    "CreateDocument mapping execution",
+  ).localPatch[0]?.value;
+  if (stringValue?.kind !== "string") {
+    throw new Error("CreateDocument local patch must be a string");
+  }
+  mapping.localPatch[0] = {
+    name: "newLinkId",
+    value: structuredClone(stringValue),
+  };
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /does not establish the exact boundary-error contract/,
   );
 });
 

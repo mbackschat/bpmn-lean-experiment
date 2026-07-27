@@ -3,6 +3,7 @@ import type {
   OpenEffect,
   VariableBinding,
 } from "./contract.js";
+import type { DeepReadonly } from "./deep-readonly.js";
 import type {
   EffectDescriptor,
   SemanticProcessProgram,
@@ -13,18 +14,18 @@ import type {
  *
  * This is deliberately not SemanticProcessIdentity: compiler is excluded and processId is included.
  */
-export type EffectDefinitionKey = Readonly<{
+export type EffectDefinitionKey = DeepReadonly<{
   semanticProfile: string;
   sourceId: string;
   sourceSha256: string;
   processId: string;
 }>;
 
-export type EffectTransportMaterial = Readonly<{
+export type EffectTransportMaterial = DeepReadonly<{
   definition: EffectDefinitionKey;
   occurrence: EffectOccurrenceId;
   descriptor: EffectDescriptor;
-  arguments: ReadonlyArray<VariableBinding>;
+  arguments: VariableBinding[];
 }>;
 
 /**

@@ -104,11 +104,28 @@ function lowerNode(
             handler:
               node.implementation === "urn:bpmn-lean:effect:probe-v1"
                 ? "bpmnLeanEffectHandler"
+                : node.sourceBinding.delegateExpressionAttribute.value ===
+                    "#{createRelationshipLinkDelegate}"
+                ? "createRelationshipLinkDelegate"
                 : "createDocumentDelegate",
           },
           inputMappings: node.inputMappings,
           outputMappings: node.outputMappings,
         },
+        bpmnErrorRoute: node.bpmnErrorRoute === null
+          ? null
+          : {
+              code: node.bpmnErrorRoute.code,
+              output: placeId(node.bpmnErrorRoute.outputFlowId),
+              origin: {
+                kind: SemanticOriginKind.BpmnElement,
+                boundaryEventId: node.bpmnErrorRoute.boundaryEventId,
+                errorDefinitionId:
+                  node.bpmnErrorRoute.errorDefinitionId,
+                errorElementId: node.bpmnErrorRoute.errorElementId,
+                sequenceFlowId: node.bpmnErrorRoute.outputFlowId,
+              },
+            },
       };
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {

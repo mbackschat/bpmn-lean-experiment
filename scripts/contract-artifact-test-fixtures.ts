@@ -256,6 +256,7 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
           implementation: descriptor.protocol,
           inputMappings: [],
           outputMappings: [],
+          bpmnErrorRoute: null,
           sourceBinding: {
             delegateExpressionAttribute: {
               namespace: "http://camunda.org/schema/1.0/bpmn",
@@ -306,6 +307,7 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
             inputMappings: [],
             outputMappings: [],
           },
+          bpmnErrorRoute: null,
         }),
         operation("StartEvent_1", "initiate", {
           output: "place:Flow_StartToService",

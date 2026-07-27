@@ -97,6 +97,12 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/create-document-data/cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/boundary-error/scenario.json",
+    evidenceRelativePath:
+      "scenarios/boundary-error/cibseven-evidence.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

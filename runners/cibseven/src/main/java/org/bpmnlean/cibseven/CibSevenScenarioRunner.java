@@ -69,6 +69,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private static final Object PROCESS_GLOBAL_CLOCK_LOCK = new Object();
   private static final String CREATE_DOCUMENT_PROFILE =
       "cibseven-2.0.0-a12-create-document-draft";
+  private static final String BOUNDARY_ERROR_PROFILE =
+      "cibseven-2.0.0-a12-boundary-error-draft";
   private static final String H2_VERSION = "2.3.232";
   private static final EnumSet<ObservationKind> SUPPORTED_OBSERVATIONS =
       EnumSet.of(
@@ -91,6 +93,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private final CibSevenScenarioStateProjector stateProjector;
   private final CibSevenEffectProbe effectProbe;
   private final CibSevenCreateDocumentProbe createDocumentProbe;
+  private final CibSevenBoundaryErrorProbe boundaryErrorProbe;
   private final long startupNanos;
   private boolean closed;
 
@@ -99,6 +102,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       ProcessEngineConfigurationImpl configuration,
       CibSevenEffectProbe effectProbe,
       CibSevenCreateDocumentProbe createDocumentProbe,
+      CibSevenBoundaryErrorProbe boundaryErrorProbe,
       long startupNanos) {
     this.processEngine = processEngine;
     this.release = CibSevenRelease.current();
@@ -106,6 +110,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     this.pvmProjector = new PvmDefinitionProjector();
     this.effectProbe = effectProbe;
     this.createDocumentProbe = createDocumentProbe;
+    this.boundaryErrorProbe = boundaryErrorProbe;
     var userTaskProjector = new CibSevenUserTaskProjector();
     var effectProjector = new CibSevenEffectProjector();
     this.commandExecutor =
@@ -132,18 +137,22 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     engineConfiguration.setEnforceHistoryTimeToLive(true);
     var effectProbe = new CibSevenEffectProbe();
     var createDocumentProbe = new CibSevenCreateDocumentProbe();
+    var boundaryErrorProbe = new CibSevenBoundaryErrorProbe();
     engineConfiguration.setBeans(
         Map.of(
             CibSevenEffectProjector.HANDLER_BEAN,
             effectProbe,
             CibSevenCreateDocumentProbe.HANDLER_BEAN,
-            createDocumentProbe));
+            createDocumentProbe,
+            CibSevenBoundaryErrorProbe.HANDLER_BEAN,
+            boundaryErrorProbe));
     var engine = engineConfiguration.buildProcessEngine();
     return new CibSevenScenarioRunner(
         engine,
         engineConfiguration,
         effectProbe,
         createDocumentProbe,
+        boundaryErrorProbe,
         positiveElapsedSince(startedAt));
   }
 
@@ -160,6 +169,9 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     synchronized (PROCESS_GLOBAL_CLOCK_LOCK) {
       effectProbe.beginExecution(effectSchedule);
       createDocumentProbe.beginExecution();
+      if (BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
+        boundaryErrorProbe.beginExecution(scenario);
+      }
       return runWithProcessGlobalClock(scenario, projectRoot, effectSchedule);
     }
   }
@@ -239,6 +251,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             trace.add(new CommandObservation(start.commandId(), COMMITTED));
             if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
               mappingExecutions.add(createDocumentProbe.snapshot(start.commandId()));
+            } else if (BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
+              mappingExecutions.add(boundaryErrorProbe.snapshot(start.commandId()));
             }
 
             var projectionStartedAt = System.nanoTime();
@@ -309,6 +323,11 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
               requireSynchronousCreateDocumentCompletion(engineInstanceId);
               createDocumentProbe.requireSuccessfulExecution();
+              break;
+            }
+            if (BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
+              requireSynchronousBoundaryErrorCatch(engineInstanceId);
+              boundaryErrorProbe.requireCaughtExecution();
               break;
             }
             var completeStartedAt = System.nanoTime();
@@ -431,6 +450,20 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
         != 0) {
       throw new IllegalStateException(
           "CIB CreateDocument did not complete in the synchronous start command");
+    }
+  }
+
+  private void requireSynchronousBoundaryErrorCatch(String engineInstanceId) {
+    var tasks =
+        processEngine
+            .getTaskService()
+            .createTaskQuery()
+            .processInstanceId(engineInstanceId)
+            .taskDefinitionKey("ExpectedUserTaskAfterBPMNError")
+            .list();
+    if (tasks.size() != 1) {
+      throw new IllegalStateException(
+          "CIB boundary Error did not synchronously reach its User Task");
     }
   }
 
