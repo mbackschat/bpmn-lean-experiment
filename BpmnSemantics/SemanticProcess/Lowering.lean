@@ -15,7 +15,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
   | .intermediateCatchTimerEvent id _
-  | .serviceTask id _ _ _ _ _
+  | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .noneEndEvent id => id
 
@@ -70,7 +70,7 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
         (firstPlace (outgoingPlaces source id))
         { elementId := id
           durationMs := if durationLiteral = "PT1S" then 1000 else 0 }
-  | .serviceTask id implementation _ _ _ _ =>
+  | .serviceTask id implementation sourceBinding inputMappings outputMappings =>
       .awaitEffect
         (nodeOperationId id)
         { elementId := id }
@@ -79,7 +79,12 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
         { elementId := id
           descriptor :=
             { protocol := implementation
-              handler := "bpmnLeanEffectHandler" } }
+              handler :=
+                match sourceBinding with
+                | .probe .. => "bpmnLeanEffectHandler"
+                | .a12CreateDocument .. => "createDocumentDelegate" }
+          inputMappings
+          outputMappings }
   | .parallelGateway id .diverging =>
       .duplicate
         (nodeOperationId id)
@@ -152,6 +157,36 @@ private def hasFlow (flows : List CheckedSequenceFlow) (source target : NodeId) 
 private def nodeExists (nodes : List CheckedNode) (id : NodeId) : Bool :=
   nodes.any fun node => decide (node.id = id)
 
+private def exactProbeBinding : ServiceTaskSourceBinding → Bool
+  | .probe delegateNamespace delegateValue asyncNamespace asyncValue =>
+      delegateNamespace = "http://camunda.org/schema/1.0/bpmn" &&
+        delegateValue = "${bpmnLeanEffectHandler}" &&
+        asyncNamespace = "http://camunda.org/schema/1.0/bpmn" &&
+        asyncValue = "true"
+  | .a12CreateDocument .. => false
+
+private def exactA12CreateDocumentBinding : ServiceTaskSourceBinding → Bool
+  | .a12CreateDocument delegateNamespace delegateValue
+      inputOutputNamespace inputName inputBody outputName outputBody =>
+      delegateNamespace = "http://camunda.org/schema/1.0/bpmn" &&
+        delegateValue = "${createDocumentDelegate}" &&
+        inputOutputNamespace = "http://camunda.org/schema/1.0/bpmn" &&
+        inputName = "documentModelName" &&
+        inputBody = "MyDocumentModel" &&
+        outputName = "myDocumentReference" &&
+        outputBody = "${newDocRef}"
+  | .probe .. => false
+
+private def exactA12InputMappings : List VariableMapping → Bool
+  | [{ target := "documentModelName"
+       expression := .stringLiteral "MyDocumentModel" }] => true
+  | _ => false
+
+private def exactA12OutputMappings : List VariableMapping → Bool
+  | [{ target := "myDocumentReference"
+       expression := .localVariable "newDocRef" }] => true
+  | _ => false
+
 private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -161,15 +196,15 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .intermediateCatchTimerEvent id durationLiteral =>
       durationLiteral = "PT1S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
-  | .serviceTask id implementation
-      delegateExpressionNamespace delegateExpressionValue
-      asyncBeforeNamespace asyncBeforeValue =>
-      implementation = "urn:bpmn-lean:effect:probe-v1" &&
-        delegateExpressionNamespace =
-          "http://camunda.org/schema/1.0/bpmn" &&
-        delegateExpressionValue = "${bpmnLeanEffectHandler}" &&
-        asyncBeforeNamespace = "http://camunda.org/schema/1.0/bpmn" &&
-        asyncBeforeValue = "true" &&
+  | .serviceTask id implementation binding inputMappings outputMappings =>
+      ((implementation = "urn:bpmn-lean:effect:probe-v1" &&
+          exactProbeBinding binding &&
+          inputMappings.isEmpty &&
+          outputMappings.isEmpty) ||
+        (implementation = "urn:bpmn-lean:a12-delegate:v1" &&
+          exactA12CreateDocumentBinding binding &&
+          exactA12InputMappings inputMappings &&
+          exactA12OutputMappings outputMappings)) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .parallelGateway id .diverging =>
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
@@ -195,7 +230,7 @@ private def timerIds (nodes : List CheckedNode) : List NodeId :=
 
 private def effectIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
-    | .serviceTask id _ _ _ _ _ => some id
+    | .serviceTask id _ _ _ _ => some id
     | _ => none
 
 private def divergingGatewayIds (nodes : List CheckedNode) : List NodeId :=
@@ -306,8 +341,14 @@ private def operationWellFormed (places : List ControlPlace) :
         nonempty origin.elementId.value &&
         nonempty effect.elementId.value &&
         decide (origin.elementId = effect.elementId) &&
-        effect.descriptor.protocol = "urn:bpmn-lean:effect:probe-v1" &&
-        effect.descriptor.handler = "bpmnLeanEffectHandler" &&
+        ((effect.descriptor.protocol = "urn:bpmn-lean:effect:probe-v1" &&
+            effect.descriptor.handler = "bpmnLeanEffectHandler" &&
+            effect.inputMappings.isEmpty &&
+            effect.outputMappings.isEmpty) ||
+          (effect.descriptor.protocol = "urn:bpmn-lean:a12-delegate:v1" &&
+            effect.descriptor.handler = "createDocumentDelegate" &&
+            exactA12InputMappings effect.inputMappings &&
+            exactA12OutputMappings effect.outputMappings)) &&
         placeExists places input &&
         placeExists places output
   | .duplicate id origin input outputs =>
@@ -356,4 +397,3 @@ def definitionBindingValid (source : CheckedProcess) (program : Program) : Bool 
 
 
 end BpmnSemantics.SemanticProcess
-

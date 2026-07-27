@@ -238,18 +238,90 @@
       }
     },
     "effectDescriptor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "handler"
+          ],
+          "properties": {
+            "protocol": {
+              "const": "urn:bpmn-lean:effect:probe-v1"
+            },
+            "handler": {
+              "const": "bpmnLeanEffectHandler"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "handler"
+          ],
+          "properties": {
+            "protocol": {
+              "const": "urn:bpmn-lean:a12-delegate:v1"
+            },
+            "handler": {
+              "const": "createDocumentDelegate"
+            }
+          }
+        }
+      ]
+    },
+    "mappingExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "stringLiteral"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "const": "localVariable"
+            },
+            "name": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        }
+      ]
+    },
+    "variableMapping": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "protocol",
-        "handler"
+        "target",
+        "expression"
       ],
       "properties": {
-        "protocol": {
-          "const": "urn:bpmn-lean:effect:probe-v1"
+        "target": {
+          "$ref": "#/$defs/nonemptyString"
         },
-        "handler": {
-          "const": "bpmnLeanEffectHandler"
+        "expression": {
+          "$ref": "#/$defs/mappingExpression"
         }
       }
     },
@@ -258,7 +330,9 @@
       "additionalProperties": false,
       "required": [
         "elementId",
-        "descriptor"
+        "descriptor",
+        "inputMappings",
+        "outputMappings"
       ],
       "properties": {
         "elementId": {
@@ -266,6 +340,18 @@
         },
         "descriptor": {
           "$ref": "#/$defs/effectDescriptor"
+        },
+        "inputMappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableMapping"
+          }
+        },
+        "outputMappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableMapping"
+          }
         }
       }
     },

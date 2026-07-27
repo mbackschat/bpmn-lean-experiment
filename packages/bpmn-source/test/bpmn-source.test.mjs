@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
@@ -21,6 +21,10 @@ const bpmnUrl = new URL(
 );
 const serviceTaskProbeUrl = new URL(
   "../../../scenarios/service-task-effect/process.bpmn",
+  import.meta.url,
+);
+const createDocumentUrl = new URL(
+  "../../../scenarios/create-document-data/process.bpmn",
   import.meta.url,
 );
 const scenario = JSON.parse(await readFile(scenarioUrl, "utf8"));
@@ -268,6 +272,152 @@ test("admits the exact Service Task source and foreign attributes without parser
     "${bpmnLeanEffectHandler}",
   );
   assert.equal(serviceTask.$attrs["camunda:asyncBefore"], "true");
+});
+
+test("admits the A12 CreateDocument source shape without rewriting metadata or mappings", async () => {
+  const sourceBytes = await readFile(createDocumentUrl);
+  const result = await compileBpmnToSemanticProcess({
+    bytes: sourceBytes,
+    sourceId: "a12-create-document-data",
+    semanticProfile: "cibseven-2.0.0-a12-create-document-draft",
+    limits,
+  });
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(result.diagnostics, []);
+  assert.deepEqual([...result.copyExactBytes()], [...sourceBytes]);
+  assert.deepEqual(
+    result.checkedProcess.nodes.find(
+      ({ kind }) => kind === CheckedNodeKind.ServiceTask,
+    ),
+    {
+      kind: CheckedNodeKind.ServiceTask,
+      id: "CreateDocument",
+      implementation: "urn:bpmn-lean:a12-delegate:v1",
+      sourceBinding: {
+        delegateExpressionAttribute: {
+          namespace: "http://camunda.org/schema/1.0/bpmn",
+          value: "${createDocumentDelegate}",
+        },
+        protocolSource: "semanticProfile",
+        inputOutputElement: {
+          namespace: "http://camunda.org/schema/1.0/bpmn",
+          inputParameter: {
+            name: "documentModelName",
+            body: "MyDocumentModel",
+          },
+          outputParameter: {
+            name: "myDocumentReference",
+            body: "${newDocRef}",
+          },
+        },
+      },
+      inputMappings: [
+        {
+          target: "documentModelName",
+          expression: {
+            kind: "stringLiteral",
+            value: "MyDocumentModel",
+          },
+        },
+      ],
+      outputMappings: [
+        {
+          target: "myDocumentReference",
+          expression: {
+            kind: "localVariable",
+            name: "newDocRef",
+          },
+        },
+      ],
+    },
+  );
+  assert.deepEqual(
+    result.semanticProcess.operations.find(
+      ({ kind }) => kind === SemanticOperationKind.AwaitEffect,
+    )?.effect,
+    {
+      elementId: "CreateDocument",
+      descriptor: {
+        protocol: "urn:bpmn-lean:a12-delegate:v1",
+        handler: "createDocumentDelegate",
+      },
+      inputMappings: [
+        {
+          target: "documentModelName",
+          expression: {
+            kind: "stringLiteral",
+            value: "MyDocumentModel",
+          },
+        },
+      ],
+      outputMappings: [
+        {
+          target: "myDocumentReference",
+          expression: {
+            kind: "localVariable",
+            name: "newDocRef",
+          },
+        },
+      ],
+    },
+  );
+});
+
+test("rejects executable drift outside the exact A12 CreateDocument profile", async () => {
+  const source = await readFile(createDocumentUrl, "utf8");
+  const mutations = [
+    source.replace(
+      "${createDocumentDelegate}",
+      "${createDocumentDelegate.execute()}",
+    ),
+    source.replace(
+      'camunda:delegateExpression="${createDocumentDelegate}"',
+      'camunda:delegateExpression="${createDocumentDelegate}" camunda:class="example.Hostile"',
+    ),
+    source.replace('name="documentModelName"', 'name="otherInput"'),
+    source.replace(">MyDocumentModel<", ">OtherModel<"),
+    source.replace("${newDocRef}", "${result.newDocRef}"),
+    source.replace(
+      "</camunda:inputOutput>",
+      '<camunda:inputParameter name="extra">value</camunda:inputParameter></camunda:inputOutput>',
+    ),
+  ];
+
+  for (const mutation of mutations) {
+    const result = await compileBpmnToSemanticProcess({
+      bytes: new TextEncoder().encode(mutation),
+      sourceId: "a12-create-document-data",
+      semanticProfile: "cibseven-2.0.0-a12-create-document-draft",
+      limits,
+    });
+    assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  }
+});
+
+test("admits the registered A12 CreateDocument checkout unchanged when available", async (context) => {
+  const targetUrl = new URL(
+    "../../../../oss/a12/a12-workflows/workflows-engine/src/testFixtures/resources/bpmn/CreateDocument.bpmn",
+    import.meta.url,
+  );
+  try {
+    await access(targetUrl);
+  } catch {
+    context.skip("registered A12 Workflows checkout is unavailable");
+    return;
+  }
+
+  const sourceBytes = await readFile(targetUrl);
+  const result = await compileBpmnToSemanticProcess({
+    bytes: sourceBytes,
+    sourceId: "a12-workflows-create-document",
+    semanticProfile: "cibseven-2.0.0-a12-create-document-draft",
+    limits,
+  });
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(result.diagnostics, []);
+  assert.deepEqual([...result.copyExactBytes()], [...sourceBytes]);
 });
 
 test("enforces the caller-provided byte limit before parsing", async () => {

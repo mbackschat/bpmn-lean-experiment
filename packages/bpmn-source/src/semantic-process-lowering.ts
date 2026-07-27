@@ -101,8 +101,13 @@ function lowerNode(
           elementId: node.id,
           descriptor: {
             protocol: node.implementation,
-            handler: "bpmnLeanEffectHandler",
+            handler:
+              node.implementation === "urn:bpmn-lean:effect:probe-v1"
+                ? "bpmnLeanEffectHandler"
+                : "createDocumentDelegate",
           },
+          inputMappings: node.inputMappings,
+          outputMappings: node.outputMappings,
         },
       };
     case CheckedNodeKind.ParallelGateway:

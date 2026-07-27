@@ -16,11 +16,76 @@ export enum GatewayDirection {
   Converging = "converging",
 }
 
+export enum MappingExpressionKind {
+  StringLiteral = "stringLiteral",
+  LocalVariable = "localVariable",
+}
+
+export type MappingExpression =
+  | Readonly<{
+      kind: MappingExpressionKind.StringLiteral;
+      value: string;
+    }>
+  | Readonly<{
+      kind: MappingExpressionKind.LocalVariable;
+      name: string;
+    }>;
+
+export type VariableMapping = Readonly<{
+  target: string;
+  expression: MappingExpression;
+}>;
+
 export type CheckedProcessIdentity = Readonly<{
   semanticProfile: string;
   sourceId: string;
   sourceSha256: string;
 }>;
+
+type CheckedServiceTaskBase = Readonly<{
+  kind: CheckedNodeKind.ServiceTask;
+  id: string;
+  inputMappings: ReadonlyArray<VariableMapping>;
+  outputMappings: ReadonlyArray<VariableMapping>;
+}>;
+
+type ProbeServiceTask = CheckedServiceTaskBase &
+  Readonly<{
+    implementation: "urn:bpmn-lean:effect:probe-v1";
+    sourceBinding: Readonly<{
+      delegateExpressionAttribute: Readonly<{
+        namespace: "http://camunda.org/schema/1.0/bpmn";
+        value: "${bpmnLeanEffectHandler}";
+      }>;
+      asyncBeforeAttribute: Readonly<{
+        namespace: "http://camunda.org/schema/1.0/bpmn";
+        value: "true";
+      }>;
+    }>;
+  }>;
+
+type A12CreateDocumentServiceTask = CheckedServiceTaskBase &
+  Readonly<{
+    implementation: "urn:bpmn-lean:a12-delegate:v1";
+    sourceBinding: Readonly<{
+      delegateExpressionAttribute: Readonly<{
+        namespace: "http://camunda.org/schema/1.0/bpmn";
+        value: "${createDocumentDelegate}";
+      }>;
+      protocolSource: "semanticProfile";
+      inputOutputElement: Readonly<{
+        namespace: "http://camunda.org/schema/1.0/bpmn";
+        inputParameter: Readonly<{
+          name: "documentModelName";
+          body: "MyDocumentModel";
+        }>;
+        outputParameter: Readonly<{
+          name: "myDocumentReference";
+          body: "${newDocRef}";
+        }>;
+      }>;
+    }>;
+  }>;
 
 export type CheckedNode =
   | Readonly<{
@@ -37,21 +102,8 @@ export type CheckedNode =
       id: string;
       durationLiteral: "PT1S";
     }>
-  | Readonly<{
-      kind: CheckedNodeKind.ServiceTask;
-      id: string;
-      implementation: "urn:bpmn-lean:effect:probe-v1";
-      sourceBinding: Readonly<{
-        delegateExpressionAttribute: Readonly<{
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          value: "${bpmnLeanEffectHandler}";
-        }>;
-        asyncBeforeAttribute: Readonly<{
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          value: "true";
-        }>;
-      }>;
-    }>
+  | ProbeServiceTask
+  | A12CreateDocumentServiceTask
   | Readonly<{
       kind: CheckedNodeKind.ParallelGateway;
       id: string;
@@ -122,8 +174,10 @@ export type ControlPlace = Readonly<{
 }>;
 
 export type EffectDescriptor = Readonly<{
-  protocol: "urn:bpmn-lean:effect:probe-v1";
-  handler: "bpmnLeanEffectHandler";
+  protocol:
+    | "urn:bpmn-lean:effect:probe-v1"
+    | "urn:bpmn-lean:a12-delegate:v1";
+  handler: "bpmnLeanEffectHandler" | "createDocumentDelegate";
 }>;
 
 type OperationBase = Readonly<{
@@ -165,6 +219,8 @@ export type SemanticOperation =
         effect: Readonly<{
           elementId: string;
           descriptor: EffectDescriptor;
+          inputMappings: ReadonlyArray<VariableMapping>;
+          outputMappings: ReadonlyArray<VariableMapping>;
         }>;
       }>)
   | (OperationBase &

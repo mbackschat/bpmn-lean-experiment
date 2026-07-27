@@ -20,13 +20,21 @@ import type {
   BpmnSourceDiagnostic,
   BpmnSourceIdentity,
 } from "./contracts.js";
+import {
+  asElement,
+  asElementArray,
+  hasOnlyOwnKeys,
+  readForeignAttributes,
+  readId,
+} from "./moddle-graph.js";
+import type {
+  ElementRecord,
+} from "./moddle-graph.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
 const effectProtocol = "urn:bpmn-lean:effect:probe-v1";
 const effectHandlerExpression = "${bpmnLeanEffectHandler}";
-
-type ElementRecord = Record<string, unknown>;
 
 type CheckedCompilationProjection =
   | Readonly<{
@@ -373,6 +381,8 @@ function projectServiceTask(
     kind: CheckedNodeKind.ServiceTask,
     id,
     implementation: effectProtocol,
+    inputMappings: [],
+    outputMappings: [],
     sourceBinding: {
       delegateExpressionAttribute: {
         namespace: camundaNamespace,
@@ -384,40 +394,6 @@ function projectServiceTask(
       },
     },
   };
-}
-
-function readForeignAttributes(
-  element: ElementRecord,
-  definitions: ElementRecord,
-): ReadonlyMap<string, string> | undefined {
-  const rawAttributes = asElement(element.$attrs);
-  const namespaceAttributes = asElement(definitions.$attrs);
-  if (rawAttributes === undefined || namespaceAttributes === undefined) {
-    return undefined;
-  }
-  const expanded = new Map<string, string>();
-  for (const [qualifiedName, value] of Object.entries(rawAttributes)) {
-    const separator = qualifiedName.indexOf(":");
-    if (
-      separator <= 0 ||
-      separator === qualifiedName.length - 1 ||
-      typeof value !== "string"
-    ) {
-      return undefined;
-    }
-    const prefix = qualifiedName.slice(0, separator);
-    const localName = qualifiedName.slice(separator + 1);
-    const namespace = namespaceAttributes[`xmlns:${prefix}`];
-    if (typeof namespace !== "string") {
-      return undefined;
-    }
-    const expandedName = `${namespace}#${localName}`;
-    if (expanded.has(expandedName)) {
-      return undefined;
-    }
-    expanded.set(expandedName, value);
-  }
-  return expanded;
 }
 
 function isExactPt1sTimerEvent(element: ElementRecord): boolean {
@@ -455,22 +431,6 @@ function isExactPt1sTimerEvent(element: ElementRecord): boolean {
   );
 }
 
-function asElement(value: unknown): ElementRecord | undefined {
-  return typeof value === "object" && value !== null
-    ? (value as ElementRecord)
-    : undefined;
-}
-
-function asElementArray(value: unknown): ReadonlyArray<ElementRecord> | undefined {
-  if (!Array.isArray(value)) {
-    return undefined;
-  }
-  const elements = value.map(asElement);
-  return elements.every((element) => element !== undefined)
-    ? (elements as ReadonlyArray<ElementRecord>)
-    : undefined;
-}
-
 function elementsOfType(
   elements: ReadonlyArray<ElementRecord>,
   type: string,
@@ -478,22 +438,8 @@ function elementsOfType(
   return elements.filter((element) => element.$type === type);
 }
 
-function hasOnlyOwnKeys(
-  element: ElementRecord,
-  allowedKeys: ReadonlyArray<string>,
-): boolean {
-  const allowed = new Set(allowedKeys);
-  return Object.keys(element).every((key) => allowed.has(key));
-}
-
 function isPlainFlowNode(element: ElementRecord): boolean {
   return hasOnlyOwnKeys(element, ["$type", "id", "name"]);
-}
-
-function readId(element: ElementRecord): string | undefined {
-  return typeof element.id === "string" && element.id.length > 0
-    ? element.id
-    : undefined;
 }
 
 function readOptionalName(

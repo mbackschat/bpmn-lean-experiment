@@ -26,10 +26,13 @@ def checkedProcess : CheckedProcess :=
       , .serviceTask
           ⟨"ServiceTask_Record"⟩
           "urn:bpmn-lean:effect:probe-v1"
-          "http://camunda.org/schema/1.0/bpmn"
-          "${bpmnLeanEffectHandler}"
-          "http://camunda.org/schema/1.0/bpmn"
-          "true"
+          (.probe
+            "http://camunda.org/schema/1.0/bpmn"
+            "${bpmnLeanEffectHandler}"
+            "http://camunda.org/schema/1.0/bpmn"
+            "true")
+          []
+          []
       , .noneStartEvent ⟨"StartEvent_1"⟩ ]
     sequenceFlows :=
       [ { id := ⟨"Flow_ServiceToEnd"⟩
@@ -63,7 +66,9 @@ def program : Program :=
           ⟨"place:Flow_StartToService"⟩
           ⟨"place:Flow_ServiceToEnd"⟩
           { elementId := ⟨"ServiceTask_Record"⟩
-            descriptor }
+            descriptor
+            inputMappings := []
+            outputMappings := [] }
       , .initiate
           ⟨"operation:StartEvent_1"⟩
           { elementId := ⟨"StartEvent_1"⟩ }

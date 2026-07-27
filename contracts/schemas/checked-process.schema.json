@@ -81,28 +81,14 @@
           }
         },
         {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "id",
-            "implementation",
-            "sourceBinding"
-          ],
-          "properties": {
-            "kind": {
-              "const": "serviceTask"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/probeServiceTask"
             },
-            "id": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "implementation": {
-              "const": "urn:bpmn-lean:effect:probe-v1"
-            },
-            "sourceBinding": {
-              "$ref": "#/$defs/serviceTaskSourceBinding"
+            {
+              "$ref": "#/$defs/a12CreateDocumentServiceTask"
             }
-          }
+          ]
         },
         {
           "type": "object",
@@ -188,7 +174,39 @@
         }
       ]
     },
-    "serviceTaskSourceBinding": {
+    "probeServiceTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "implementation",
+        "sourceBinding",
+        "inputMappings",
+        "outputMappings"
+      ],
+      "properties": {
+        "kind": {
+          "const": "serviceTask"
+        },
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "implementation": {
+          "const": "urn:bpmn-lean:effect:probe-v1"
+        },
+        "sourceBinding": {
+          "$ref": "#/$defs/probeServiceTaskSourceBinding"
+        },
+        "inputMappings": {
+          "const": []
+        },
+        "outputMappings": {
+          "const": []
+        }
+      }
+    },
+    "probeServiceTaskSourceBinding": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -225,6 +243,133 @@
             },
             "value": {
               "const": "true"
+            }
+          }
+        }
+      }
+    },
+    "a12CreateDocumentServiceTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "implementation",
+        "sourceBinding",
+        "inputMappings",
+        "outputMappings"
+      ],
+      "properties": {
+        "kind": {
+          "const": "serviceTask"
+        },
+        "id": {
+          "const": "CreateDocument"
+        },
+        "implementation": {
+          "const": "urn:bpmn-lean:a12-delegate:v1"
+        },
+        "sourceBinding": {
+          "$ref": "#/$defs/a12CreateDocumentSourceBinding"
+        },
+        "inputMappings": {
+          "const": [
+            {
+              "target": "documentModelName",
+              "expression": {
+                "kind": "stringLiteral",
+                "value": "MyDocumentModel"
+              }
+            }
+          ]
+        },
+        "outputMappings": {
+          "const": [
+            {
+              "target": "myDocumentReference",
+              "expression": {
+                "kind": "localVariable",
+                "name": "newDocRef"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "a12CreateDocumentSourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "delegateExpressionAttribute",
+        "protocolSource",
+        "inputOutputElement"
+      ],
+      "properties": {
+        "delegateExpressionAttribute": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "namespace",
+            "value"
+          ],
+          "properties": {
+            "namespace": {
+              "const": "http://camunda.org/schema/1.0/bpmn"
+            },
+            "value": {
+              "const": "${createDocumentDelegate}"
+            }
+          }
+        },
+        "protocolSource": {
+          "const": "semanticProfile"
+        },
+        "inputOutputElement": {
+          "$ref": "#/$defs/a12InputOutputElement"
+        }
+      }
+    },
+    "a12InputOutputElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "inputParameter",
+        "outputParameter"
+      ],
+      "properties": {
+        "namespace": {
+          "const": "http://camunda.org/schema/1.0/bpmn"
+        },
+        "inputParameter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "body"
+          ],
+          "properties": {
+            "name": {
+              "const": "documentModelName"
+            },
+            "body": {
+              "const": "MyDocumentModel"
+            }
+          }
+        },
+        "outputParameter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "body"
+          ],
+          "properties": {
+            "name": {
+              "const": "myDocumentReference"
+            },
+            "body": {
+              "const": "${newDocRef}"
             }
           }
         }

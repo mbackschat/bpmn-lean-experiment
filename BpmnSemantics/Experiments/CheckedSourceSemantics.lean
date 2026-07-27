@@ -57,7 +57,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
   | .intermediateCatchTimerEvent id _
-  | .serviceTask id _ _ _ _ _
+  | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .noneEndEvent id => id
 
@@ -205,7 +205,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
       | .notStarted
       | .completed _ => none
   | .intermediateCatchTimerEvent _ _ => none
-  | .serviceTask _ _ _ _ _ _ => none
+  | .serviceTask _ _ _ _ _ => none
   | .parallelGateway id .diverging =>
       let input := firstFlowId (incomingFlowIds source id)
       if hasToken state input then

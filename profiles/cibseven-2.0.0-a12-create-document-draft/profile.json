@@ -1,0 +1,84 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.0.0-a12-create-document-draft",
+  "status": "immutable",
+  "claim": "a12-create-document-string-success-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.0.0",
+    "revision": "57ed69550f1c9c2619b9711d8877418bb084a371"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "service-task",
+      "string-variable",
+      "literal-input-mapping",
+      "local-variable-output-mapping",
+      "successful-effect-result",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "camunda-delegate-expression-exact-bean-token",
+      "camunda-input-output-exact-create-document"
+    ],
+    "relationships": [
+      "CIB-EXT-0002",
+      "CIB-OP-0002",
+      "CIB-CFG-0003"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "non-string-values",
+    "general-variables",
+    "general-juel",
+    "arbitrary-beans",
+    "java-class-loading",
+    "delegate-execution-compatibility",
+    "field-injection",
+    "general-data-associations",
+    "bpmn-operation",
+    "messages",
+    "service-faults",
+    "bpmn-errors",
+    "boundary-events",
+    "incidents-as-semantic-outcomes",
+    "retry-exhaustion-semantics",
+    "rollback-equivalence",
+    "compensation",
+    "cancellation",
+    "multiple-effects",
+    "effect-races",
+    "external-tasks",
+    "scripts",
+    "listeners"
+  ]
+}

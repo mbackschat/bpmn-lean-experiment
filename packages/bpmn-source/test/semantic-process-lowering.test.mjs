@@ -171,6 +171,8 @@ test("retains the exact Service Task binding and lowers one effect wait", async 
       kind: CheckedNodeKind.ServiceTask,
       id: "ServiceTask_Record",
       implementation: "urn:bpmn-lean:effect:probe-v1",
+      inputMappings: [],
+      outputMappings: [],
       sourceBinding: {
         delegateExpressionAttribute: {
           namespace: "http://camunda.org/schema/1.0/bpmn",
@@ -202,6 +204,8 @@ test("retains the exact Service Task binding and lowers one effect wait", async 
           protocol: "urn:bpmn-lean:effect:probe-v1",
           handler: "bpmnLeanEffectHandler",
         },
+        inputMappings: [],
+        outputMappings: [],
       },
     },
   );

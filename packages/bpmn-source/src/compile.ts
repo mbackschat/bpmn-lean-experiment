@@ -17,6 +17,10 @@ import {
   compileCheckedProcess,
 } from "./checked-process-compiler.js";
 import {
+  a12CreateDocumentProfile,
+  compileA12CreateDocument,
+} from "./a12-create-document-source.js";
+import {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
 
@@ -109,11 +113,14 @@ export async function compileBpmnToSemanticProcess(
     return reject(imported.warnings);
   }
 
-  const projection = compileCheckedProcess(
-    imported.rootElement,
-    source(),
-    request.semanticProfile,
-  );
+  const projection =
+    request.semanticProfile === a12CreateDocumentProfile
+      ? compileA12CreateDocument(imported.rootElement, source())
+      : compileCheckedProcess(
+          imported.rootElement,
+          source(),
+          request.semanticProfile,
+        );
   if (projection.diagnostic !== undefined) {
     return reject([projection.diagnostic]);
   }

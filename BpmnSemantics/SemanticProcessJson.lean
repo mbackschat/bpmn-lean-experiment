@@ -183,6 +183,25 @@ private def decodeSourceIdentity (json : Json) :
       sourceId := ⟨← stringField json "sourceId"⟩
       sourceSha256 := ← stringField json "sourceSha256" }
 
+private def decodeMappingExpression (json : Json) :
+    Except String MappingExpression := do
+  let kind ← stringField json "kind"
+  match kind with
+  | "stringLiteral" =>
+      requireObjectShape json ["kind", "value"]
+      pure (.stringLiteral (← stringField json "value"))
+  | "localVariable" =>
+      requireObjectShape json ["kind", "name"]
+      pure (.localVariable (← stringField json "name"))
+  | _ => throw s!"unsupported mapping expression {kind}"
+
+private def decodeVariableMapping (json : Json) :
+    Except String VariableMapping := do
+  requireObjectShape json ["expression", "target"]
+  pure
+    { target := ← stringField json "target"
+      expression := ← decodeMappingExpression (← field json "expression") }
+
 private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   let kind ← stringField json "kind"
   match kind with
@@ -203,22 +222,54 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← stringField json "durationLiteral"))
   | "serviceTask" =>
       requireObjectShape json
-        ["id", "implementation", "kind", "sourceBinding"]
+        ["id", "implementation", "inputMappings", "kind", "outputMappings",
+          "sourceBinding"]
+      let implementation ← stringField json "implementation"
       let binding ← field json "sourceBinding"
-      requireObjectShape binding
-        ["asyncBeforeAttribute", "delegateExpressionAttribute"]
       let delegateExpression ← field binding "delegateExpressionAttribute"
       requireObjectShape delegateExpression ["namespace", "value"]
-      let asyncBefore ← field binding "asyncBeforeAttribute"
-      requireObjectShape asyncBefore ["namespace", "value"]
+      let sourceBinding ←
+        match implementation with
+        | "urn:bpmn-lean:effect:probe-v1" => do
+            requireObjectShape binding
+              ["asyncBeforeAttribute", "delegateExpressionAttribute"]
+            let asyncBefore ← field binding "asyncBeforeAttribute"
+            requireObjectShape asyncBefore ["namespace", "value"]
+            pure
+              (.probe
+                (← stringField delegateExpression "namespace")
+                (← stringField delegateExpression "value")
+                (← stringField asyncBefore "namespace")
+                (← stringField asyncBefore "value"))
+        | "urn:bpmn-lean:a12-delegate:v1" => do
+            requireObjectShape binding
+              ["delegateExpressionAttribute", "inputOutputElement",
+                "protocolSource"]
+            expectStringField binding "protocolSource" "semanticProfile"
+            let inputOutput ← field binding "inputOutputElement"
+            requireObjectShape inputOutput
+              ["inputParameter", "namespace", "outputParameter"]
+            let inputParameter ← field inputOutput "inputParameter"
+            let outputParameter ← field inputOutput "outputParameter"
+            requireObjectShape inputParameter ["body", "name"]
+            requireObjectShape outputParameter ["body", "name"]
+            pure
+              (.a12CreateDocument
+                (← stringField delegateExpression "namespace")
+                (← stringField delegateExpression "value")
+                (← stringField inputOutput "namespace")
+                (← stringField inputParameter "name")
+                (← stringField inputParameter "body")
+                (← stringField outputParameter "name")
+                (← stringField outputParameter "body"))
+        | _ => throw s!"unsupported Service Task implementation {implementation}"
       pure
         (.serviceTask
           ⟨← stringField json "id"⟩
-          (← stringField json "implementation")
-          (← stringField delegateExpression "namespace")
-          (← stringField delegateExpression "value")
-          (← stringField asyncBefore "namespace")
-          (← stringField asyncBefore "value"))
+          implementation
+          sourceBinding
+          (← decodeArray decodeVariableMapping (← field json "inputMappings"))
+          (← decodeArray decodeVariableMapping (← field json "outputMappings")))
   | "parallelGateway" =>
       requireObjectShape json ["direction", "id", "kind"]
       let direction ← stringField json "direction"
@@ -305,10 +356,15 @@ private def decodeEffectDescriptor (json : Json) :
 
 private def decodeEffectDefinition (json : Json) :
     Except String EffectDefinition := do
-  requireObjectShape json ["descriptor", "elementId"]
+  requireObjectShape json
+    ["descriptor", "elementId", "inputMappings", "outputMappings"]
   pure
     { elementId := ⟨← stringField json "elementId"⟩
-      descriptor := ← decodeEffectDescriptor (← field json "descriptor") }
+      descriptor := ← decodeEffectDescriptor (← field json "descriptor")
+      inputMappings :=
+        ← decodeArray decodeVariableMapping (← field json "inputMappings")
+      outputMappings :=
+        ← decodeArray decodeVariableMapping (← field json "outputMappings") }
 
 private def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=

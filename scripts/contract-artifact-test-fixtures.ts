@@ -254,6 +254,8 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
           kind: "serviceTask",
           id: "ServiceTask_Record",
           implementation: descriptor.protocol,
+          inputMappings: [],
+          outputMappings: [],
           sourceBinding: {
             delegateExpressionAttribute: {
               namespace: "http://camunda.org/schema/1.0/bpmn",
@@ -301,6 +303,8 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
           effect: {
             elementId: "ServiceTask_Record",
             descriptor,
+            inputMappings: [],
+            outputMappings: [],
           },
         }),
         operation("StartEvent_1", "initiate", {

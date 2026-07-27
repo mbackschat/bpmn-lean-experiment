@@ -2,11 +2,11 @@
 
 ## Status
 
-**Owner-approved on 2026-07-27; implementation pending.**
+**Owner-approved on 2026-07-27; source admission and static cross-language lowering implemented, runtime semantics and host evidence pending.**
 
-This capsule proposes the smallest semantic and compatibility contract needed to admit the maintained A12 Workflows `CreateDocument.bpmn` source unchanged while preserving the project's single TypeScript semantic core, Temporal Activity boundary, and Lean assurance model.
+This capsule defines the smallest semantic and compatibility contract needed to admit the maintained A12 Workflows `CreateDocument.bpmn` source unchanged while preserving the project's single TypeScript semantic core, Temporal Activity boundary, and Lean assurance model.
 
-The [CIB Seven 2.0 target assessment](../research/CIB-SEVEN-A12-BASELINE-RESEARCH.md) owns release comparison. The [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns the product denominator. This proposal does not approve implementation, a JVM Worker, general variables, general JUEL, or a compatibility claim.
+The [CIB Seven 2.0 target assessment](../research/CIB-SEVEN-A12-BASELINE-RESEARCH.md) owns release comparison. The [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns the product denominator. Owner approval authorizes this bounded implementation; it does not authorize a JVM Worker, general variables, general JUEL, or a broader compatibility claim.
 
 ## Question
 

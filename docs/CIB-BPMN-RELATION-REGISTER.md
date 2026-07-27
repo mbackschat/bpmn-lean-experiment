@@ -21,11 +21,11 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Reviewed normative agreements | 4 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
-| Permitted operational details | 1 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Permitted operational details | 2 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 0 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 1 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
-| Configuration-specific realizations | 2 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Selected CIB extensions | 2 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Configuration-specific realizations | 3 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
@@ -148,6 +148,18 @@ The selected extension is a host realization, not an independent derivation of t
 
 **Boundary:** This entry claims no general JUEL, arbitrary bean, Java class, `JavaDelegate`, `DelegateExecution`, field injection, listener, variable, service-fault, incident, external-task, or Process Engine API compatibility.
 
+### CIB-EXT-0002 — exact A12 CreateDocument delegate and input/output mapping
+
+**Status:** Selected bounded extension
+
+The A12 CreateDocument profile admits exactly `{http://camunda.org/schema/1.0/bpmn}delegateExpression="${createDocumentDelegate}"`, one `camunda:inputOutput` element, literal input parameter `documentModelName = "MyDocumentModel"`, and output parameter `myDocumentReference = ${newDocRef}`. The project profile supplies protocol identity `urn:bpmn-lean:a12-delegate:v1`; that URI is not read from the maintained BPMN source.
+
+CIB Seven `2.0.0` resolves the exact bean token, provides the mapped literal to the delegate, reads the delegate-written Activity-local `newDocRef`, and maps it into Process variable `myDocumentReference`. The selected extension is lexical and behavioral only for this one string-valued successful path. The token is not evaluated as a general JUEL expression by the project.
+
+**Evidence:** [CreateDocument capsule](capsules/CREATE-DOCUMENT-DATA-PROPOSAL.md), [CIB Seven 2.0 target assessment](research/CIB-SEVEN-A12-BASELINE-RESEARCH.md), [A12 target profile](../profiles/cibseven-2.0.0-a12-create-document-draft/README.md), and the mandatory project-authored equivalent fixture plus optional unchanged-source gate.
+
+**Boundary:** This entry claims no general input/output mapping, expression language, arbitrary variable, bean, delegate, `DelegateExecution`, Java binary, failure, transaction rollback, Script Task, listener, or engine-API compatibility.
+
 ### Research queue
 
 | Hint | Status | Required investigation |
@@ -171,6 +183,16 @@ The oracle adapter therefore maps the one live CIB task to project-owned identit
 
 This mapping preserves the BPMN-visible lifecycle under `CIB-AGR-0002` while avoiding false identity equivalence across CIB, Lean, TypeScript, and Temporal. Evidence and exact exclusions are in the [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [the consistency probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConsistencyProbeTest.java), and [CIB runner documentation](../runners/cibseven/README.md).
 
+### CIB-OP-0002 — synchronous CIB delegate transaction mapped to a durable effect boundary
+
+**Status:** Reviewed operational mapping
+
+CIB Seven `2.0.0` executes the selected CreateDocument delegate and its input/output mappings synchronously inside the command transaction. It exposes no committed intermediate state corresponding to the project's effect intent or in-flight Temporal Activity. The project semantic core instead commits an effect wait and immutable arguments before the Temporal adapter performs the external effect, then applies one validated result patch and output mapping.
+
+For the approved success-only capsule, both accounts agree on admitted input and final Process variables. The CIB execution is a host-realization check for those boundary observations, not an independent derivation of the project intermediate state. Failure atomicity, rollback after an external mutation, cancellation, and fault delivery are deliberately excluded and require separate semantic decisions.
+
+**Evidence:** [CreateDocument capsule](capsules/CREATE-DOCUMENT-DATA-PROPOSAL.md) and the [A12 target profile](../profiles/cibseven-2.0.0-a12-create-document-draft/README.md).
+
 ## Configuration-specific register
 
 ### CIB-CFG-0001 — pinned Milestone 0 oracle environment
@@ -188,6 +210,14 @@ This is a profile constraint, not evidence that CIB differs from BPMN. It does n
 Under `CIB-CFG-0001`, automatic job execution is disabled. Starting the exact `CIB-EXT-0001` Process creates one immediately executable async-before continuation job with no due date. The harness deliberately leaves that job waiting until the explicit Service Task effect schedule releases it through the public job API. Plain success executes it once; the fail-after-mutation schedule observes public retry decrement from three to two and executes the same durable job again without administrative retry changes.
 
 The waiting interval is a harness scheduling input and the job is a CIB host construct. Neither is BPMN logical time, effect intent, or caller interaction. The content-bound retained result uses plain success; retry and re-execution details remain raw producer evidence.
+
+### CIB-CFG-0003 — pinned A12 CIB Seven 2.0.0 oracle environment
+
+**Status:** Reviewed configuration dependency
+
+The A12 CreateDocument profile pins CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371`, Java 21, H2 `2.3.232`, disabled automatic job execution, an explicit clock, audit history, and default history TTL `P180D`. This identity is distinct from every `2.2.0` profile and evidence envelope even where selected engine source files are byte-identical.
+
+The synchronous CreateDocument path does not use a continuation job, but the full environment remains pinned so deployment, history, cleanup, and later comparisons are reproducible. Passing a `2.2.0` behavioral probe under a dependency override is not evidence for this profile.
 
 ## Audit of previously visited findings
 

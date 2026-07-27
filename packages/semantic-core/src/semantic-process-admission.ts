@@ -319,13 +319,14 @@ function isWellFormedOperation(
         isPlaceReference(value.input, placeIds) &&
         isPlaceReference(value.output, placeIds) &&
         isRecord(value.effect) &&
-        hasOnlyKeys(value.effect, ["elementId", "descriptor"]) &&
+        hasOnlyKeys(value.effect, [
+          "elementId",
+          "descriptor",
+          "inputMappings",
+          "outputMappings",
+        ]) &&
         value.effect.elementId === value.origin.elementId &&
-        isRecord(value.effect.descriptor) &&
-        hasOnlyKeys(value.effect.descriptor, ["protocol", "handler"]) &&
-        value.effect.descriptor.protocol ===
-          "urn:bpmn-lean:effect:probe-v1" &&
-        value.effect.descriptor.handler === "bpmnLeanEffectHandler"
+        isSupportedEffectContract(value.effect)
       );
     case SemanticOperationKind.Duplicate:
       return (
@@ -359,6 +360,59 @@ function isWellFormedOperation(
     default:
       return false;
   }
+}
+
+function isSupportedEffectContract(effect: Record<string, unknown>): boolean {
+  if (
+    !isRecord(effect.descriptor) ||
+    !hasOnlyKeys(effect.descriptor, ["protocol", "handler"]) ||
+    !Array.isArray(effect.inputMappings) ||
+    !Array.isArray(effect.outputMappings)
+  ) {
+    return false;
+  }
+  if (
+    effect.descriptor.protocol === "urn:bpmn-lean:effect:probe-v1" &&
+    effect.descriptor.handler === "bpmnLeanEffectHandler"
+  ) {
+    return effect.inputMappings.length === 0 &&
+      effect.outputMappings.length === 0;
+  }
+  return effect.descriptor.protocol ===
+      "urn:bpmn-lean:a12-delegate:v1" &&
+    effect.descriptor.handler === "createDocumentDelegate" &&
+    isExactMapping(
+      effect.inputMappings,
+      "documentModelName",
+      "stringLiteral",
+      "value",
+      "MyDocumentModel",
+    ) &&
+    isExactMapping(
+      effect.outputMappings,
+      "myDocumentReference",
+      "localVariable",
+      "name",
+      "newDocRef",
+    );
+}
+
+function isExactMapping(
+  mappings: ReadonlyArray<unknown>,
+  target: string,
+  kind: string,
+  valueField: "name" | "value",
+  value: string,
+): boolean {
+  const mapping = mappings[0];
+  return mappings.length === 1 &&
+    isRecord(mapping) &&
+    hasOnlyKeys(mapping, ["target", "expression"]) &&
+    mapping.target === target &&
+    isRecord(mapping.expression) &&
+    hasOnlyKeys(mapping.expression, ["kind", valueField]) &&
+    mapping.expression.kind === kind &&
+    mapping.expression[valueField] === value;
 }
 
 function isSupportedScenario(value: unknown): value is Scenario {

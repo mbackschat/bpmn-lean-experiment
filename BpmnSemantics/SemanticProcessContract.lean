@@ -50,6 +50,32 @@ inductive GatewayDirection where
   | converging
   deriving Repr, DecidableEq
 
+inductive MappingExpression where
+  | stringLiteral (value : String)
+  | localVariable (name : String)
+  deriving Repr, DecidableEq
+
+structure VariableMapping where
+  target : String
+  expression : MappingExpression
+  deriving Repr, DecidableEq
+
+inductive ServiceTaskSourceBinding where
+  | probe
+      (delegateExpressionNamespace : String)
+      (delegateExpressionValue : String)
+      (asyncBeforeNamespace : String)
+      (asyncBeforeValue : String)
+  | a12CreateDocument
+      (delegateExpressionNamespace : String)
+      (delegateExpressionValue : String)
+      (inputOutputNamespace : String)
+      (inputParameterName : String)
+      (inputParameterBody : String)
+      (outputParameterName : String)
+      (outputParameterBody : String)
+  deriving Repr, DecidableEq
+
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | userTask (id : NodeId) (name : Option String)
@@ -57,10 +83,9 @@ inductive CheckedNode where
   | serviceTask
       (id : NodeId)
       (implementation : String)
-      (delegateExpressionNamespace : String)
-      (delegateExpressionValue : String)
-      (asyncBeforeNamespace : String)
-      (asyncBeforeValue : String)
+      (sourceBinding : ServiceTaskSourceBinding)
+      (inputMappings : List VariableMapping)
+      (outputMappings : List VariableMapping)
   | parallelGateway (id : NodeId) (direction : GatewayDirection)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
@@ -111,6 +136,8 @@ structure TimerDefinition where
 structure EffectDefinition where
   elementId : NodeId
   descriptor : EffectDescriptor
+  inputMappings : List VariableMapping
+  outputMappings : List VariableMapping
   deriving Repr, DecidableEq
 
 inductive SemanticOperation where
