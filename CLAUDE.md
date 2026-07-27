@@ -11,7 +11,7 @@ Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ult
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-The driving CIB Seven solution-replacement goal and its inventory-based migration measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#mission). Use the actual target solution’s models, Java delegates, expressions, and API consumers to prioritize compatibility work; do not optimize only for abstract feature coverage.
+The A12 Workflows product-replacement goal and its inventory-based migration measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#mission). Use the maintained A12 Workflows product surface and its downstream full-stack blueprint to prioritize compatibility work; do not optimize only for abstract feature coverage or treat the target as one representative customer application.
 
 The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and active sequencing and decisions belong in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 

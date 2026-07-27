@@ -121,9 +121,11 @@ The second mode must fail fast on unsupported API calls and document class-loadi
 
 ## Migration-target consequence
 
-The driving product goal is replacing an actual CIB Seven solution, not implementing every deferred CIB feature speculatively. The selected Worker and façade boundaries therefore need a read-only inventory of that solution’s BPMN elements, extension bindings, `DelegateExecution` calls, variables, expressions, listeners, errors, incidents, and Java/REST API consumers.
+The product target is A12 Workflows `release/2025.06`, not one downstream application and not every CIB feature speculatively. The defined [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) inventories its maintained BPMN elements, extension bindings, `DelegateExecution` calls, variables, expressions, scripts, listeners, errors, engine integration, and REST/JMS façade consumers. The A12 Full Stack Project Template is the canonical downstream-project blueprint, while its Workflows-enabled materialization remains a required future integration fixture.
 
-That inventory defines the migration denominator and re-prioritizes the dispositions above. It can move variables, exact expression subsets, `BpmnError`, listeners, or delegate APIs earlier when the target actually uses them, but it does not move those semantics into the Worker or authorize general compatibility.
+The inventory promotes typed variables and input/output mappings, an exact deterministic expression subset, bean-token Service Task admission without the probe-only implementation URN, `BpmnError`, a Java-friendly delegate bridge, User Task assignment/forms, and message correlation. It keeps arbitrary `camunda:class`, external tasks, connectors, Call Activities, timers, and multi-instance deferred because they are absent from the defined product corpus. These priorities do not move semantics into the Worker or authorize general compatibility.
+
+A12 Workflows builds against CIB Seven `2.0.0`, while the current project profiles execute CIB Seven `2.2.0`. The first target-specific preflight must preserve those as distinct profiles unless bounded source and behavioral evidence establishes equivalence for the used subset.
 
 ## Interpreter and Worker language boundary
 

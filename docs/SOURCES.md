@@ -24,6 +24,19 @@ The following checkouts under `~/Projects/oss` were cloned specifically for this
 
 The pre-existing A12 sibling checkouts were not cloned for this project and therefore are not part of this registry. Their exact inspected revisions and roles remain recorded in their owning sections below. `claudian`, `defender`, and `monkey2` are explicitly outside this project's research scope.
 
+## A12 Workflows product target
+
+The project compatibility target and canonical downstream blueprint are checked out read-only under the shared A12 reference tree:
+
+| Local checkout | Repository and inspected revision | License and project role |
+|---|---|---|
+| [`a12/a12-workflows`](../../oss/a12/a12-workflows) | `mgm-tp/a12-workflows`, branch `release/2025.06`, revision `bb79e490ecc1bfebfb959c79edb44264aa003060` | EUPL-1.2 or commercial; A12 Workflows is the product compatibility target layered on CIB Seven for downstream A12 projects |
+| [`a12/a12-full-stack-project-template`](../../oss/a12/a12-full-stack-project-template) | `mgm-tp/a12-full-stack-project-template`, branch `release/2025.06`, revision `5083b5cd2b99dbc6b58da8124a00407c1e4e5e0d` | EUPL-1.2 or commercial; canonical downstream-project blueprint and future Workflows-enabled integration fixture |
+
+A12 Workflows `release/2025.06` declares CIB Seven `2.0.0`. The local CIB checkout has tag `v2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371`, but current project profiles execute published CIB Seven `2.2.0`; no target-specific behavioral equivalence is claimed. The [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns the defined product denominator and resulting priorities.
+
+Both A12 repositories remain external research and compatibility inputs. Do not copy, vendor, redistribute, or relicense their EUPL/commercial source as project-authored MIT material.
+
 ## Project license audit
 
 Project-authored code and documentation are released under the root [MIT License](../LICENSE). The current dependency surface permits that choice:

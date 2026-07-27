@@ -4,9 +4,9 @@
 
 Build a Temporal-hosted adapter that imports BPMN 2.0.2 Process diagrams and ultimately satisfies OMG Process Execution Conformance.
 
-The driving product goal is to replace an existing CIB Seven solution—its BPMN Processes plus selected Java delegates, expressions, and integration code—with a Temporal-hosted, Lean-assured implementation. Migration should preserve admitted model source where feasible, run supported Java business logic behind explicit adapters, and provide classified migration steps for every unsupported remainder. The target is easy, evidence-backed migration, not an unqualified Process Engine drop-in claim.
+The driving product goal is to replace A12 Workflows `release/2025.06`, the main A12 Process product layered on CIB Seven, with a Temporal-hosted, Lean-assured implementation. A12 Workflows exposes maintained BPMN behavior, Java/Kotlin delegates, expressions, integration APIs, and engine-backed services to downstream A12 projects; it is the product compatibility target, not one representative consuming application. The A12 Full Stack Project Template is the canonical downstream-project blueprint against which integration must eventually be demonstrated.
 
-Migration ease is measured against a defined inventory of the actual target solution: unchanged model-admission coverage, unmodified delegate coverage through the bounded Java bridge, supported Java/REST façade calls, and a classified migration disposition for the remainder. Do not publish percentages before that inventory defines the denominator.
+The goal is an A12 Workflows-level drop-in replacement where evidence permits it, not an unqualified CIB Process Engine replacement. Migration ease is measured against the defined [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md): unchanged model-admission coverage, unmodified delegate coverage through the bounded Java bridge, supported Java/REST/JMS façade calls, blueprint integration, and a classified migration disposition for the remainder. Every unsupported model, delegate API, expression, script, listener, engine integration, or transaction assumption receives an explicit migration path rather than being hidden by an aggregate compatibility label.
 
 The project pursues that goal through four independent components:
 

@@ -10,6 +10,7 @@ Read the smallest relevant document before changing a boundary:
 | Declarative semantics, reference interpreters, SpecTec mechanization experiments, portable conformance scripts, and transferable WebAssembly practices | [WebAssembly semantics architecture and BPMN transfer](WEBASSEMBLY-SEMANTICS-RESEARCH.md) |
 | Lean semantic capsules, retained evidence, checked non-laws, and specification synchronization | [Process transfer from `a12-kernel-lean`](A12-KERNEL-LEAN-PROCESS-RESEARCH.md) |
 | Camunda/CIB Seven BPMN extensions, Java delegates and beans, expressions, scripts, FEEL, external tasks, and compatibility levels | [CIB Seven extensions and execution APIs](CIB-SEVEN-EXTENSIONS-RESEARCH.md) |
+| A12 Workflows product corpus, delegate/API surface, downstream blueprint, and migration priorities | [A12 Workflows compatibility ledger](A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) |
 | Temporal replay, messaging, retries, versioning, and adapter boundaries | [Temporal execution model](TEMPORAL-EXECUTION-RESEARCH.md) |
 | TLA+, behavioral equivalence, model checking, and auxiliary formal tools | [TLA+ and bisimulation research](TLA-AND-BISIMULATION-RESEARCH.md) |
 | CIB Seven and Temporal source instrumentation | [Reference instrumentation](../REFERENCE-INSTRUMENTATION-POLICY.md) |
