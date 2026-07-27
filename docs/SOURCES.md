@@ -4,6 +4,26 @@ This document owns source provenance and controlled reference navigation. Refere
 
 Local external reference trees are checked out under `~/Projects/oss`. Treat that location as a portable workspace convention rather than source identity: the repository and revision recorded for each source below remain authoritative, and the checkouts remain read-only research inputs unless an explicitly named experiment follows the instrumentation policy.
 
+## Project-created local reference checkouts
+
+The following checkouts under `~/Projects/oss` were cloned specifically for this project. Future research must inspect the applicable trees rather than relying only on remembered summaries or web search. The links are root-relative workspace navigation; the repository and evidence revision remain the source identity.
+
+| Local checkout | Repository and evidence revision | Project role |
+|---|---|---|
+| [`cibseven/cibseven`](../../oss/cibseven/cibseven) | `cibseven/cibseven` at `5a45b47ea22688d774de97277c3ff7013f54fdd2` | Pinned complete CIB Seven source oracle and diagnostic reference |
+| [`temporal/sdk-typescript`](../../oss/temporal/sdk-typescript) | `temporalio/sdk-typescript` at `2595d1b62cf5c3ff1748df0df2f9b303902bb31c` | TypeScript SDK implementation evidence |
+| [`temporal/samples-typescript`](../../oss/temporal/samples-typescript) | `temporalio/samples-typescript` at `fb0aa23d75394a132646de883842dfacdacd5aa0` | Concrete Workflow, Activity, testing, and interpreter examples |
+| [`temporal/documentation`](../../oss/temporal/documentation) | `temporalio/documentation` at `16c1899a0380eaf3457a0b163b2b2232c39a5d` | Temporal behavior and operational contract documentation |
+| [`bpmn-io/bpmn-moddle`](../../oss/bpmn-io/bpmn-moddle) | `bpmn-io/bpmn-moddle` at `47d8f75eed773829f20537adbb7086b290096006` | BPMN XML and metamodel implementation reference |
+| [`bpmn-miwg/bpmn-miwg-test-suite`](../../oss/bpmn-miwg/bpmn-miwg-test-suite) | `bpmn-miwg/bpmn-miwg-test-suite` at `cb2629519cee6280ab521f99dc46a9815a221a35` | BPMN interchange corpus |
+| [`uniba-dsg/betsy`](../../oss/uniba-dsg/betsy) | `uniba-dsg/betsy` at `fd402415665e914ba7e4d9948de66c4156f08bab` | Historical cross-engine execution cases |
+| [`fuml-reference-implementation`](../../oss/fuml-reference-implementation) | `ModelDriven/fUML-Reference-Implementation` at `45e506336d4cd56965d4ad3b684149245f899f3a` | Executable semantic-representation reference |
+| [`webassembly-spec`](../../oss/webassembly-spec) | `WebAssembly/spec` at `dfa3f32a881aecc60a8c792da3c25787ccb15572` | Specification/interpreter/conformance-workbench precedent |
+| [`wasm-spectec`](../../oss/wasm-spectec) | `Wasm-DSL/spectec` at `acc6e834ff403c82554d081237f327346190ad96` | SpecTec development and multi-backend mechanization evidence |
+| [`spectec`](../../oss/spectec) | `zilinc/spectec` at `6191426aeaa1e9a30f2372526b5d1018eb34f0ac` | Generated Lean/Isabelle experiment evidence |
+
+The pre-existing A12 sibling checkouts were not cloned for this project and therefore are not part of this registry. Their exact inspected revisions and roles remain recorded in their owning sections below. `claudian`, `defender`, and `monkey2` are explicitly outside this project's research scope.
+
 ## Project license audit
 
 Project-authored code and documentation are released under the root [MIT License](../LICENSE). The current dependency surface permits that choice:
