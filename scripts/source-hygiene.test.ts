@@ -1,0 +1,223 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import {
+  existsSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import test from "node:test";
+
+const reviewTarget = 600;
+const hardCeiling = 1_000;
+
+const reviewedLargeFiles = new Map<string, string>();
+const leanUmbrellaModules = [
+  "BpmnSemantics.lean",
+  "BpmnSemantics/SemanticProcess.lean",
+] as const;
+
+type SourceMeasurement = Readonly<{
+  path: string;
+  lines: number;
+}>;
+
+type SourceHygieneAssessment = Readonly<{
+  hardViolations: ReadonlyArray<SourceMeasurement>;
+  unreviewed: ReadonlyArray<SourceMeasurement>;
+  invalidReviews: ReadonlyArray<string>;
+}>;
+
+function worktreeSourceFiles(): string[] {
+  return execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard"],
+    { encoding: "utf8" },
+  )
+    .split("\n")
+    .filter((path) => /\.(?:java|lean|mjs|ts)$/u.test(path))
+    .filter((path) => !path.includes("/dist/"));
+}
+
+function nonblankLines(path: string): number {
+  return readFileSync(path, "utf8")
+    .split(/\r?\n/u)
+    .filter((line) => line.trim().length > 0).length;
+}
+
+function uncommentedLeanSource(source: string): string {
+  let result = "";
+  let blockDepth = 0;
+  for (let index = 0; index < source.length; index += 1) {
+    const pair = source.slice(index, index + 2);
+    if (blockDepth > 0) {
+      if (pair === "/-") {
+        blockDepth += 1;
+        index += 1;
+      } else if (pair === "-/") {
+        blockDepth -= 1;
+        index += 1;
+      } else if (source[index] === "\n") {
+        result += "\n";
+      }
+      continue;
+    }
+    if (pair === "/-") {
+      blockDepth = 1;
+      index += 1;
+    } else if (pair === "--") {
+      const newline = source.indexOf("\n", index + 2);
+      if (newline === -1) {
+        break;
+      }
+      result += "\n";
+      index = newline;
+    } else {
+      result += source[index];
+    }
+  }
+  if (blockDepth !== 0) {
+    throw new SyntaxError("unterminated Lean block comment");
+  }
+  return result;
+}
+
+function assessLeanUmbrella(path: string, source: string): string | null {
+  const executableLines = uncommentedLeanSource(source)
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const invalidLine = executableLines.find(
+    (line) => !/^import [A-Za-z0-9_.]+$/u.test(line),
+  );
+  return invalidLine === undefined
+    ? null
+    : `${path}: import-only umbrella contains ${JSON.stringify(invalidLine)}`;
+}
+
+function assessSourceHygiene(
+  measurements: ReadonlyArray<SourceMeasurement>,
+  reviews: ReadonlyMap<string, string>,
+): SourceHygieneAssessment {
+  const hardViolations = measurements.filter(({ lines }) => lines > hardCeiling);
+  const unreviewed = measurements.filter(
+    ({ path, lines }) => lines > reviewTarget && !reviews.has(path),
+  );
+  const invalidReviews: string[] = [];
+  for (const [path, rationale] of reviews) {
+    const measurement = measurements.find((candidate) => candidate.path === path);
+    if (rationale.trim().length === 0) {
+      invalidReviews.push(`${path}: empty rationale`);
+    } else if (measurement === undefined) {
+      invalidReviews.push(`${path}: stale or untracked path`);
+    } else if (measurement.lines <= reviewTarget) {
+      invalidReviews.push(`${path}: no longer exceeds the review target`);
+    } else if (measurement.lines > hardCeiling) {
+      invalidReviews.push(`${path}: cannot exempt the hard ceiling`);
+    }
+  }
+  return { hardViolations, unreviewed, invalidReviews };
+}
+
+test("the source-hygiene policy rejects every regression class", () => {
+  const measurements = [
+    { path: "clean.ts", lines: reviewTarget },
+    { path: "review.ts", lines: reviewTarget + 1 },
+    { path: "ceiling.java", lines: hardCeiling },
+    { path: "over.lean", lines: hardCeiling + 1 },
+  ];
+  const assessment = assessSourceHygiene(
+    measurements,
+    new Map([
+      ["review.ts", "one cohesive boundary"],
+      ["ceiling.java", "one cohesive boundary"],
+      ["stale.ts", "obsolete"],
+      ["clean.ts", "obsolete"],
+      ["over.lean", "not permitted"],
+    ]),
+  );
+
+  assert.deepEqual(assessment.hardViolations, [
+    { path: "over.lean", lines: hardCeiling + 1 },
+  ]);
+  assert.deepEqual(assessment.unreviewed, []);
+  assert.deepEqual(assessment.invalidReviews, [
+    "stale.ts: stale or untracked path",
+    "clean.ts: no longer exceeds the review target",
+    "over.lean: cannot exempt the hard ceiling",
+  ]);
+});
+
+test("source enumeration includes non-ignored files before commit", () => {
+  const pendingSource = ".source-hygiene-pending-probe.ts";
+  assert.equal(
+    existsSync(pendingSource),
+    false,
+    `${pendingSource} is reserved for the source-hygiene self-test`,
+  );
+  writeFileSync(pendingSource, "export {};\n", "utf8");
+  try {
+    assert.equal(worktreeSourceFiles().includes(pendingSource), true);
+  } finally {
+    unlinkSync(pendingSource);
+  }
+});
+
+test("Lean umbrellas reject executable declarations", () => {
+  assert.equal(
+    assessLeanUmbrella(
+      "Umbrella.lean",
+      "import Example.Core\n\n/-! Public imports. -/\n",
+    ),
+    null,
+  );
+  assert.equal(
+    assessLeanUmbrella(
+      "Umbrella.lean",
+      "import Example.Core\n\ndef hiddenDefinition := 1\n",
+    ),
+    'Umbrella.lean: import-only umbrella contains "def hiddenDefinition := 1"',
+  );
+});
+
+test("hand-written source respects reviewed module-size boundaries", () => {
+  const sourceFiles = worktreeSourceFiles();
+  const measurements = sourceFiles.map((path) => ({
+    path,
+    lines: nonblankLines(path),
+  }));
+  const assessment = assessSourceHygiene(
+    measurements,
+    reviewedLargeFiles,
+  );
+
+  assert.deepEqual(
+    assessment.hardViolations,
+    [],
+    `hand-written source exceeds the ${hardCeiling}-nonblank-line hard ceiling`,
+  );
+  assert.deepEqual(
+    assessment.unreviewed,
+    [],
+    `source above the ${reviewTarget}-line review target needs a cohesive split or a narrow reviewed justification`,
+  );
+  assert.deepEqual(
+    assessment.invalidReviews,
+    [],
+    "reviewed-large-file entries must be current, necessary, and below the hard ceiling",
+  );
+  const umbrellaViolations = leanUmbrellaModules.flatMap((path) => {
+    assert.equal(
+      sourceFiles.includes(path),
+      true,
+      `${path} must remain a tracked or pending source file`,
+    );
+    const violation = assessLeanUmbrella(path, readFileSync(path, "utf8"));
+    return violation === null ? [] : [violation];
+  });
+  assert.deepEqual(
+    umbrellaViolations,
+    [],
+    "Lean umbrella modules must contain only imports, comments, and whitespace",
+  );
+});

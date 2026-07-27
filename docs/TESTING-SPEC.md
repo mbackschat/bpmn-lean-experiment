@@ -11,9 +11,11 @@ Run from the repository root:
 git status --short
 ```
 
-`verify.sh` validates contract artifacts, strictly type-checks the directly executed TypeScript harnesses without emitting JavaScript, checks synchronized documentation fragments and the BPMN XML, builds and tests Lean, emits Lean results, tests the TypeScript core and BPMN importer, runs the pinned CIB oracle, tests the differential comparator and infrastructure guards, runs the focused Temporal refinement/history/replay gate, and runs the prepared complete pipeline.
+`verify.sh` validates contract artifacts, strictly type-checks the directly executed TypeScript harnesses without emitting JavaScript, enforces source-hygiene boundaries, checks synchronized documentation fragments and the BPMN XML, builds and tests Lean, emits Lean results, tests the TypeScript core and BPMN importer, runs the pinned CIB oracle, tests the differential comparator and infrastructure guards, runs the focused Temporal refinement/history/replay gate, and runs the prepared complete pipeline.
 
 The infrastructure guard enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names from [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), and resolves every project-authored local Markdown link.
+
+The source-hygiene guard counts nonblank lines in tracked and non-ignored pending hand-written Lean, TypeScript, JavaScript, and Java source, so a new oversized file fails before staging or commit. It fails above the 1000-line hard ceiling and requires every 600–999-line file to carry an owner-approved narrow cohesion rationale in the guard; agents may not add their own exceptions. It also keeps the exact Lean umbrella modules import-only. Its policy self-test locks the review threshold, hard ceiling, pending-file enumeration, stale-entry rejection, non-exemptible ceiling, and executable-content rejection in an umbrella. This measurement is a stop signal, not a substitute for the responsibility, class, and function review required by [CLAUDE.md](../CLAUDE.md#code-hygiene-and-module-boundaries).
 
 pnpm 11's implicit virtual-store choice is execution-context-sensitive: ordinary execution may select the shared global projection while `CI=true` selects the repository-local projection. This repository deliberately runs verification in CI mode and may reuse the same worktree for ordinary developer commands, so relying on that implicit choice would make one `node_modules` alternate between incompatible layouts. [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) therefore pins the supported CI-oriented `enableGlobalVirtualStore: false` mode, keeping the dependency projection isolated under the repository-local `node_modules/.pnpm` while the content-addressable package store remains shared. The infrastructure gate removes possible overrides, checks the effective value with and without `CI=true`, and executes a bare `./scripts/pnpm.sh run check:doc-fragments`; an unexpected install-state purge or reinstall attempt is a gate failure.
 
@@ -39,6 +41,7 @@ git diff --check
 | Optional timer time-skipping calibration | `./scripts/pnpm.sh run test:timer-time-skipping` |
 | Pipeline orchestration or any cross-target contract | `./scripts/pnpm.sh run test:pipeline` |
 | Directly executed TypeScript harness or utility | `./scripts/pnpm.sh run check:harness-types` plus its applicable runtime gate |
+| Source ownership, module boundary, or structural refactor | `./scripts/pnpm.sh run check:source-hygiene` plus the narrow language gate |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` |
 | Provisional representation experiment | `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike` |
 | Checked-source relation experiment | `lake build checkCheckedSourceRelationExperiment && lake exe checkCheckedSourceRelationExperiment` |

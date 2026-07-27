@@ -122,7 +122,7 @@ Lean holds an independent operational account: immutable model definition, runti
 
 Lean also turns semantic review questions into general checked laws. The central User Task identity law is pulled directly from the compiling Lean module:
 
-<!-- source-fragment: BpmnSemantics/SemanticProcess.lean#task-identity-law -->
+<!-- source-fragment: BpmnSemantics/SemanticProcess/Execution.lean#task-identity-law -->
 ```lean
 theorem task_identity_mismatch_is_rejected
     (program : Program) (wait : UserTaskWait)
@@ -267,7 +267,7 @@ Every primary live history is replayed in one Worker before the clean in-memory 
 
 Each target returns the same language-neutral canonical result shape. The comparator uses CIB Seven as the declared profile reference and compares Lean, the semantic core, and Temporal without majority voting:
 
-<!-- source-fragment: packages/differential/test/pipeline-harness.ts#four-target-comparison -->
+<!-- source-fragment: packages/differential/test/pipeline-comparison.ts#four-target-comparison -->
 ```js
 const comparison = compareTargetResults(
   {
@@ -280,7 +280,7 @@ const comparison = compareTargetResults(
 
 Agreement alone is weak if the projection or comparator cannot notice the semantic distinction being claimed. Every new evidence projection therefore needs a meaningful seeded mutation:
 
-<!-- source-fragment: packages/differential/test/pipeline-harness.ts#seeded-disagreement -->
+<!-- source-fragment: packages/differential/test/pipeline-comparison.ts#seeded-disagreement -->
 ```js
 const injectedResult = mutableClone(semanticCoreResult);
 pipelineCase.injectMutation(injectedResult);

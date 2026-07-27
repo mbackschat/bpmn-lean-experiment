@@ -84,8 +84,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private final ProcessEngine processEngine;
   private final ProcessEngineConfigurationImpl configuration;
   private final PvmDefinitionProjector pvmProjector;
-  private final CibSevenUserTaskProjector userTaskProjector;
-  private final CibSevenEffectProjector effectProjector;
+  private final CibSevenScenarioCommandExecutor commandExecutor;
+  private final CibSevenScenarioStateProjector stateProjector;
   private final CibSevenEffectProbe effectProbe;
   private final long startupNanos;
   private boolean closed;
@@ -98,9 +98,15 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     this.processEngine = processEngine;
     this.configuration = configuration;
     this.pvmProjector = new PvmDefinitionProjector();
-    this.userTaskProjector = new CibSevenUserTaskProjector();
-    this.effectProjector = new CibSevenEffectProjector();
     this.effectProbe = effectProbe;
+    var userTaskProjector = new CibSevenUserTaskProjector();
+    var effectProjector = new CibSevenEffectProjector();
+    this.commandExecutor =
+        new CibSevenScenarioCommandExecutor(
+            processEngine, effectProjector, effectProbe, LOGICAL_EPOCH);
+    this.stateProjector =
+        new CibSevenScenarioStateProjector(
+            processEngine, userTaskProjector, effectProjector, LOGICAL_EPOCH);
     this.startupNanos = startupNanos;
   }
 
@@ -219,7 +225,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
             var projectionStartedAt = System.nanoTime();
             var observed =
-                observeState(
+                stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
                     start.commandId());
@@ -233,13 +239,14 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             requireStarted(engineInstanceId, stableInstanceId);
             var completeStartedAt = System.nanoTime();
             var outcome =
-                completeUserTaskInstance(engineInstanceId, stableInstanceId, complete);
+                commandExecutor.completeUserTaskInstance(
+                    engineInstanceId, stableInstanceId, complete);
             timings.completeNanos = positiveElapsedSince(completeStartedAt);
             trace.add(new CommandObservation(complete.commandId(), outcome));
 
             var projectionStartedAt = System.nanoTime();
             var observed =
-                observeState(
+                stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
                     complete.commandId());
@@ -258,13 +265,13 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             requireStarted(engineInstanceId, stableInstanceId);
             var completeStartedAt = System.nanoTime();
             var outcome =
-                fireTimer(engineInstanceId, stableInstanceId, fire);
+                commandExecutor.fireTimer(engineInstanceId, stableInstanceId, fire);
             timings.completeNanos = positiveElapsedSince(completeStartedAt);
             trace.add(new CommandObservation(fire.commandId(), outcome));
 
             var projectionStartedAt = System.nanoTime();
             var observed =
-                observeState(
+                stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
                     fire.commandId());
@@ -283,7 +290,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             requireStarted(engineInstanceId, stableInstanceId);
             var completeStartedAt = System.nanoTime();
             var execution =
-                completeEffect(
+                commandExecutor.completeEffect(
                     engineInstanceId,
                     stableInstanceId,
                     complete,
@@ -296,7 +303,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
             var projectionStartedAt = System.nanoTime();
             var observed =
-                observeState(
+                stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
                     complete.commandId());
@@ -321,7 +328,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
               .getRepositoryService()
               .deleteDeployment(deploymentId, true, true, true);
         }
-        cleanup = observeCleanup();
+        cleanup = stateProjector.observeCleanup();
         timings.cleanupNanos = positiveElapsedSince(cleanupStartedAt);
       } finally {
         timings.totalNanos = positiveElapsedSince(totalStartedAt);
@@ -390,273 +397,6 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     return (StartProcessStimulus) scenario.stimuli().getFirst();
   }
 
-  private CommandOutcome completeUserTaskInstance(
-      String engineInstanceId,
-      String stableInstanceId,
-      CompleteUserTaskInstanceStimulus complete) {
-    var taskId = complete.taskId();
-    if (!taskId.processInstanceId().equals(stableInstanceId)
-        || taskId.activation() != 1) {
-      return REJECTED;
-    }
-    var tasks =
-        processEngine
-            .getTaskService()
-            .createTaskQuery()
-            .processInstanceId(engineInstanceId)
-            .taskDefinitionKey(taskId.elementId())
-            .list();
-    if (tasks.size() != 1) {
-      return REJECTED;
-    }
-    processEngine.getTaskService().complete(tasks.getFirst().getId());
-    return COMMITTED;
-  }
-
-  /**
-   * Advances the controlled clock only after proving the selected timer job is ineligible, then
-   * executes it only after the engine's executable query admits the same job.
-   */
-  private CommandOutcome fireTimer(
-      String engineInstanceId,
-      String stableInstanceId,
-      FireTimerStimulus fire) {
-    var timerId = fire.timerId();
-    if (!timerId.processInstanceId().equals(stableInstanceId)
-        || timerId.activation() != 1) {
-      return REJECTED;
-    }
-    var jobs =
-        processEngine
-            .getManagementService()
-            .createJobQuery()
-            .processInstanceId(engineInstanceId)
-            .activityId(timerId.elementId())
-            .timers()
-            .list();
-    if (jobs.size() != 1) {
-      return REJECTED;
-    }
-    var job = jobs.getFirst();
-    var dueDateDeltaMs = job.getDuedate().getTime() - LOGICAL_EPOCH.getTime();
-    if (dueDateDeltaMs != fire.logicalTimeMs()) {
-      return REJECTED;
-    }
-    var management = processEngine.getManagementService();
-    if (management.createJobQuery().jobId(job.getId()).executable().count() != 0) {
-      throw new IllegalStateException(
-          "Timer job was executable before the controlled clock reached its due date");
-    }
-    ClockUtil.setCurrentTime(new Date(LOGICAL_EPOCH.getTime() + fire.logicalTimeMs()));
-    var executable =
-        management.createJobQuery().jobId(job.getId()).executable().singleResult();
-    if (executable == null) {
-      throw new IllegalStateException(
-          "Timer job was not executable when the controlled clock reached its due date");
-    }
-    management.executeJob(executable.getId());
-    return COMMITTED;
-  }
-
-  private EffectCompletion completeEffect(
-      String engineInstanceId,
-      String stableInstanceId,
-      CompleteEffectStimulus complete,
-      CibEffectExecutionSchedule schedule) {
-    var submitted = complete.effectId();
-    if (!submitted.processInstanceId().equals(stableInstanceId)
-        || submitted.activation() != 1) {
-      return new EffectCompletion(REJECTED, null);
-    }
-    var waits = effectProjector.project(processEngine, engineInstanceId, stableInstanceId);
-    if (waits.size() != 1
-        || !waits.getFirst().openEffect().id().equals(submitted)) {
-      return new EffectCompletion(REJECTED, null);
-    }
-    var wait = waits.getFirst();
-    var management = processEngine.getManagementService();
-    var initialRetries = wait.evidence().retries();
-    Long retriesAfterFirstFailure = null;
-    try {
-      management.executeJob(wait.jobId());
-    } catch (RuntimeException failure) {
-      if (schedule != CibEffectExecutionSchedule.FAIL_AFTER_MUTATION_ONCE) {
-        throw failure;
-      }
-      var failedJob = management.createJobQuery().jobId(wait.jobId()).singleResult();
-      if (failedJob == null || failedJob.getRetries() != initialRetries - 1) {
-        throw new IllegalStateException(
-            "CIB did not retain and decrement the failed Service Task job",
-            failure);
-      }
-      retriesAfterFirstFailure = (long) failedJob.getRetries();
-      if (management.createJobQuery().jobId(wait.jobId()).executable().count() != 1) {
-        throw new IllegalStateException(
-            "CIB failed Service Task job was not publicly executable",
-            failure);
-      }
-      management.executeJob(wait.jobId());
-    }
-    if (management.createJobQuery().jobId(wait.jobId()).count() != 0) {
-      throw new IllegalStateException("CIB retained the Service Task job after success");
-    }
-    return new EffectCompletion(
-        COMMITTED,
-        new EffectExecutionSnapshot(
-            complete.commandId(),
-            schedule.wireValue(),
-            effectProbe.invocations(),
-            effectProbe.mutations(),
-            initialRetries,
-            retriesAfterFirstFailure));
-  }
-
-  private ObservedState observeState(
-      String engineInstanceId,
-      String stableInstanceId,
-      String afterCommandId) {
-    var isRunning =
-        processEngine
-                .getRuntimeService()
-                .createProcessInstanceQuery()
-                .processInstanceId(engineInstanceId)
-                .count()
-            == 1;
-    var tasks =
-        isRunning
-            ? processEngine
-                .getTaskService()
-                .createTaskQuery()
-                .processInstanceId(engineInstanceId)
-                .list()
-            : List.<Task>of();
-    var hostTasks =
-        tasks.stream()
-            .map(task -> new HostUserTask(task.getTaskDefinitionKey(), task.getName()))
-            .toList();
-    var taskQuery =
-        new TaskQuerySnapshot(
-            afterCommandId,
-            hostTasks.stream()
-                .map(task -> new TaskQueryTask(task.elementId(), task.name()))
-                .toList());
-    var activeWaits = userTaskProjector.activeWaits(hostTasks);
-    var openUserTasks =
-        userTaskProjector.openUserTasks(stableInstanceId, hostTasks);
-    var enabledInteractions =
-        openUserTasks.stream()
-            .<EnabledInteraction>map(
-                task -> new CompleteUserTaskInstanceInteraction(task.id()))
-            .toList();
-    var timerJobSnapshot = observeTimerJobs(engineInstanceId, afterCommandId, isRunning);
-    var openTimers =
-        timerJobSnapshot.jobs().stream()
-            .map(
-                job ->
-                    new OpenTimer(
-                        new TimerOccurrenceId(
-                            stableInstanceId,
-                            job.elementId(),
-                            1),
-                        job.dueDateDeltaMs()))
-            .toList();
-    var timerWaits =
-        openTimers.stream()
-            .map(timer -> new ScenarioProtocol.ActiveWait(
-                timer.id().elementId(), TIMER, 1))
-            .toList();
-    var projectedEffects =
-        isRunning
-            ? effectProjector.project(
-                processEngine, engineInstanceId, stableInstanceId)
-            : List.<CibSevenEffectProjector.ProjectedEffectWait>of();
-    var openEffects =
-        projectedEffects.stream().map(CibSevenEffectProjector.ProjectedEffectWait::openEffect).toList();
-    var effectWaits =
-        openEffects.stream()
-            .map(effect -> new ScenarioProtocol.ActiveWait(
-                effect.id().elementId(), EFFECT, 1))
-            .toList();
-    var allWaits = new ArrayList<>(activeWaits);
-    allWaits.addAll(timerWaits);
-    allWaits.addAll(effectWaits);
-    allWaits.sort(
-        (left, right) -> WireStrings.compare(left.elementId(), right.elementId()));
-    var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
-    return new ObservedState(
-        new StateObservation(
-            stableInstanceId,
-            isRunning ? RUNNING : COMPLETED,
-            allWaits,
-            openUserTasks,
-            openTimers,
-            openEffects,
-            enabledInteractions,
-            logicalTimeMs),
-        taskQuery,
-        timerJobSnapshot,
-        new EffectJobSnapshot(
-            afterCommandId,
-            projectedEffects.stream()
-                .map(CibSevenEffectProjector.ProjectedEffectWait::evidence)
-                .toList()));
-  }
-
-  private TimerJobSnapshot observeTimerJobs(
-      String engineInstanceId,
-      String afterCommandId,
-      boolean isRunning) {
-    if (!isRunning) {
-      return new TimerJobSnapshot(afterCommandId, List.of());
-    }
-    var management = processEngine.getManagementService();
-    var jobs =
-        management
-            .createJobQuery()
-            .processInstanceId(engineInstanceId)
-            .timers()
-            .list();
-    var projected =
-        jobs.stream()
-            .map(
-                job -> {
-                  var definition =
-                      management
-                          .createJobDefinitionQuery()
-                          .jobDefinitionId(job.getJobDefinitionId())
-                          .singleResult();
-                  if (definition == null) {
-                    throw new IllegalStateException(
-                        "Timer job has no job definition " + job.getJobDefinitionId());
-                  }
-                  return new TimerJob(
-                      definition.getActivityId(),
-                      job.getDuedate().getTime() - LOGICAL_EPOCH.getTime(),
-                      management
-                              .createJobQuery()
-                              .jobId(job.getId())
-                              .executable()
-                              .count()
-                          == 1);
-                })
-            .sorted((left, right) -> WireStrings.compare(left.elementId(), right.elementId()))
-            .toList();
-    return new TimerJobSnapshot(afterCommandId, projected);
-  }
-
-  private CleanupProjection observeCleanup() {
-    return new CleanupProjection(
-        processEngine.getRepositoryService().createDeploymentQuery().count(),
-        processEngine.getRepositoryService().createProcessDefinitionQuery().count(),
-        processEngine.getRuntimeService().createProcessInstanceQuery().count(),
-        processEngine.getTaskService().createTaskQuery().count(),
-        processEngine.getManagementService().createJobQuery().count(),
-        processEngine.getRuntimeService().createIncidentQuery().count(),
-        processEngine
-            .getHistoryService()
-            .createHistoricProcessInstanceQuery()
-            .count());
-  }
 
   private static void requireStarted(String engineInstanceId, String stableInstanceId) {
     if (engineInstanceId == null || stableInstanceId == null) {
@@ -692,15 +432,6 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private static long positiveElapsedSince(long startedAt) {
     return Math.max(1, System.nanoTime() - startedAt);
   }
-
-  private record ObservedState(
-      StateObservation state,
-      TaskQuerySnapshot taskQuery,
-      TimerJobSnapshot timerJobs,
-      EffectJobSnapshot effectJobs) {}
-
-  private record EffectCompletion(
-      CommandOutcome outcome, EffectExecutionSnapshot evidence) {}
 
   private void ensureOpen() {
     if (closed) {

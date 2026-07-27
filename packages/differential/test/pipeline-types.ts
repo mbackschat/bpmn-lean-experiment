@@ -1,0 +1,166 @@
+/**
+ * Shared in-memory contracts for the four-target differential pipeline.
+ */
+import type {
+  AcceptedBpmnCompilation,
+} from "@bpmn-lean/bpmn-source";
+import type {
+  CanonicalObservation,
+  Scenario,
+  ScenarioResult,
+  SemanticProcessProgram,
+} from "@bpmn-lean/semantic-core";
+import {
+  DisagreementKind,
+} from "@bpmn-lean/differential";
+import type {
+  ScenarioDisagreement,
+} from "@bpmn-lean/differential";
+import {
+  TemporalCompletionDelivery,
+} from "@bpmn-lean/temporal-adapter";
+import type {
+  TemporalScenarioExecution,
+} from "@bpmn-lean/temporal-adapter";
+
+export const TemporalCaseRelation = Object.freeze({
+  ExactSemantic: "exactSemantic",
+  PostTerminalClosed: "postTerminalClosed",
+});
+
+export type TemporalCaseRelation =
+  typeof TemporalCaseRelation[keyof typeof TemporalCaseRelation];
+
+export type DeepMutable<T> =
+  T extends (...args: never[]) => unknown
+    ? T
+    : T extends ReadonlyArray<infer Item>
+      ? Array<DeepMutable<Item>>
+      : T extends object
+        ? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
+        : T;
+
+export type MutableScenarioResult = DeepMutable<ScenarioResult>;
+export type MutableStateObservation = Extract<
+  DeepMutable<CanonicalObservation>,
+  { kind: "state" }
+>;
+export type ObservationValueDisagreement = Extract<
+  ScenarioDisagreement,
+  { kind: typeof DisagreementKind.ObservationValue }
+>;
+
+export type PipelineCase = Readonly<{
+  id: string;
+  scenarioRelativePath: string;
+  evidenceRelativePath: string;
+  bpmnRelativePath: string;
+  workflowIdPrefix: string;
+  expectedWaitTraceLength: number;
+  completionDelivery: TemporalCompletionDelivery;
+  temporalRelation: TemporalCaseRelation;
+  duplicateFirstCompletion?: boolean;
+  effectScheduleSubstitution?: boolean;
+  replayIsolation?: boolean;
+  injectMutation: (result: MutableScenarioResult) => void;
+  expectedInjectedDisagreement: ObservationValueDisagreement;
+}>;
+
+export type RetainedEvidence = Readonly<{
+  result: ScenarioResult;
+}>;
+
+export type PipelineContext = Readonly<{
+  pipelineCase: PipelineCase;
+  scenario: Scenario;
+  retainedEvidence: RetainedEvidence;
+  checkedProcess: AcceptedBpmnCompilation["checkedProcess"];
+  semanticProcess: SemanticProcessProgram;
+}>;
+
+export type LeanDefinitionRecord = Readonly<{
+  scenarioId: string;
+  checkedProcess: AcceptedBpmnCompilation["checkedProcess"];
+  semanticProcess: SemanticProcessProgram;
+}>;
+
+export type LeanResultRecord = Readonly<{
+  scenarioId: string;
+  scenario: Scenario;
+  definitionBinding: Readonly<{
+    kind: "leanDefinitionBinding";
+    sourceSha256: string;
+    semanticProfile: string;
+    programMatchesLeanLowering: boolean;
+  }>;
+  result: ScenarioResult;
+}>;
+
+export type CibEffectExecution = Readonly<{
+  afterCommandId: string;
+  schedule: string;
+  invocations: number;
+  mutations: number;
+  initialRetries: number;
+  retriesAfterFirstFailure: number | null;
+}>;
+
+export type CibPipelineResult = Readonly<{
+  scenarioId: string;
+  outcome: ScenarioResult["outcome"];
+  trace: ScenarioResult["trace"];
+  diagnostics: Readonly<{
+    startupNanos: number;
+    phases: Readonly<{
+      waitProjectionNanos: number;
+      completionProjectionNanos: number;
+      totalNanos: number;
+    }>;
+    effectExecutions?: ReadonlyArray<CibEffectExecution>;
+    cleanup: Readonly<Record<string, number>>;
+  }>;
+}>;
+
+export type TargetBatch<Result> = Readonly<{
+  results: ReadonlyMap<string, Result>;
+  totalMs: number;
+}>;
+
+export type TemporalCaseExecution = Readonly<{
+  primary: TemporalScenarioExecution;
+  isolation: TemporalScenarioExecution;
+}>;
+
+export type TemporalTargetBatch =
+  TargetBatch<TemporalCaseExecution> & Readonly<{
+    workflowIds: ReadonlyArray<string>;
+  }>;
+
+export type PipelineTargets = Readonly<{
+  cib: TargetBatch<CibPipelineResult>;
+  lean: TargetBatch<ScenarioResult>;
+  leanDefinitionMutation: Readonly<{
+    kind: "rejected";
+    mutation: "operationOrigin";
+  }>;
+  leanScenarioMutation: Readonly<{
+    kind: "rejected";
+    mutation: "scenarioExtraField";
+  }>;
+  leanProvenanceMutation: Readonly<{
+    kind: "rejected";
+    mutation: "parallelControlPlaceProvenanceErasure";
+  }>;
+  core: TargetBatch<ScenarioResult>;
+  temporal: TemporalTargetBatch;
+  cibEffectRetry: TargetBatch<CibPipelineResult> | null;
+}>;
+
+export type ProjectedTargets = Readonly<{
+  cibResult: CibPipelineResult;
+  canonicalCib: ScenarioResult;
+  leanResult: ScenarioResult;
+  semanticCoreResult: ScenarioResult;
+  temporalResult: TemporalCaseExecution;
+  cibEffectRetryResult: CibPipelineResult | null;
+}>;
