@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed; owner decision required.**
+**Owner-approved on 2026-07-27; implementation pending.**
 
 This capsule proposes the smallest semantic and compatibility contract needed to admit the maintained A12 Workflows `CreateDocument.bpmn` source unchanged while preserving the project's single TypeScript semantic core, Temporal Activity boundary, and Lean assurance model.
 
@@ -279,16 +279,18 @@ The nearest host counterexample is an Activity that returns `newDocRef` but the 
 - explicit successful-transaction fidelity row and a retained negative assertion that failure/rollback equivalence is not claimed;
 - complete applicable gate within existing budgets.
 
-## Decisions requested
+## Approved decisions
 
-1. Approve a distinct CIB Seven `2.0.0` A12 target profile for this capsule; do not merge it with `2.2.0`.
-2. Approve the exact unchanged `CreateDocument` source shape with profile-supplied protocol `urn:bpmn-lean:a12-delegate:v1` and source handler `createDocumentDelegate`.
-3. Approve string-only typed values, one Process scope, one Activity-local scope, literal input mapping, and exact simple local-variable output reference.
-4. Approve committed effect arguments, one validated Activity-local success patch, and core-owned output mapping to canonical Process variables.
-5. Approve transport identity extended by committed arguments and completion-command identity extended by the typed patch.
-6. Approve success-only final-observation refinement while explicitly rejecting failure/rollback transaction equivalence.
-7. Approve the two-part fixture strategy: mandatory project-authored equivalent plus optional exact external target gate until redistribution authority is supplied.
-8. Place typed `BpmnError` and boundary-error semantics immediately after this data contract; do not implement them here.
+The owner approved all eight selections:
+
+1. a distinct CIB Seven `2.0.0` A12 target profile for this capsule, without merging it with `2.2.0`;
+2. the exact unchanged `CreateDocument` source shape with profile-supplied protocol `urn:bpmn-lean:a12-delegate:v1` and source handler `createDocumentDelegate`;
+3. string-only typed values, one Process scope, one Activity-local scope, literal input mapping, and exact simple local-variable output reference;
+4. committed effect arguments, one validated Activity-local success patch, and core-owned output mapping to canonical Process variables;
+5. transport identity extended by committed arguments and completion-command identity extended by the typed patch;
+6. success-only final-observation refinement while explicitly rejecting failure/rollback transaction equivalence;
+7. the two-part fixture strategy: mandatory project-authored equivalent plus optional exact external target gate until redistribution authority is supplied;
+8. typed `BpmnError` and boundary-error semantics immediately after this data contract, without implementing them here.
 
 ## Stop conditions
 
