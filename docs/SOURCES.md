@@ -22,7 +22,7 @@ The following checkouts under `~/Projects/oss` were cloned specifically for this
 | [`wasm-spectec`](../../oss/wasm-spectec) | `Wasm-DSL/spectec` at `acc6e834ff403c82554d081237f327346190ad96` | SpecTec development and multi-backend mechanization evidence |
 | [`spectec`](../../oss/spectec) | `zilinc/spectec` at `6191426aeaa1e9a30f2372526b5d1018eb34f0ac` | Generated Lean/Isabelle experiment evidence |
 
-The pre-existing A12 sibling checkouts were not cloned for this project and therefore are not part of this registry. Their exact inspected revisions and roles remain recorded in their owning sections below. `claudian`, `defender`, and `monkey2` are explicitly outside this project's research scope.
+The pre-existing A12 sibling checkouts were not cloned for this project and therefore are not part of this registry. Their exact inspected revisions and roles remain recorded in their owning sections below. Ignore unknown or unregistered repositories and folders; local presence alone never makes a tree a project research input.
 
 ## A12 Workflows product target
 

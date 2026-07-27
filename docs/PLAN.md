@@ -24,7 +24,7 @@ The driving product goal is recorded in [PROJECT-DESIGN.md](PROJECT-DESIGN.md): 
 
 The substantial pipeline, contract-artifact, retained-evidence replacement, Java-resolution, strict-JSON, and bounded-process harnesses now execute directly from TypeScript under Node 24. A mandatory strict no-emit gate resolves workspace packages to their source trees rather than ignored build output. Direct MIT-licensed Node declarations provide the host API types; their type-only `undici-types` dependency adds no runtime component. Small package tests and calibration/documentation utilities remain JavaScript where direct TypeScript would add extension churn without a material boundary check.
 
-The `../oss` root has been inspected and the project-created external research checkouts are explicitly navigable from [SOURCES.md](SOURCES.md). The owner excluded `claudian`, `defender`, and `monkey2`. A12 Workflows is the product replacement target, A12 Full Stack Project Template is its canonical downstream blueprint, `cibseven/cibseven` is the pinned engine oracle, and the remaining registered trees are standards, SDK, corpus, or semantic-workbench references.
+The `../oss` root has been inspected and the project-created external research checkouts are explicitly navigable from [SOURCES.md](SOURCES.md). Unknown or unregistered repositories and folders are ignored. A12 Workflows is the product replacement target, A12 Full Stack Project Template is its canonical downstream blueprint, `cibseven/cibseven` is the pinned engine oracle, and the remaining registered trees are standards, SDK, corpus, or semantic-workbench references.
 
 The active implementation boundary is [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
