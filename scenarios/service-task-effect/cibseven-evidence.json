@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-success",
-    "sha256": "ac41165aa41aacda7059d12a25fc484831d9567cc2f76f8ad5519eb8a835acf3"
+    "sha256": "7768df0062062df6c7ee0fcb0a303d75f3476cd7c8de80198afa7be605a9c440"
   },
   "profile": {
     "id": "cibseven-2.2.0-service-task-effect-draft",
-    "sha256": "7b43b8569474c77b03be8ba5363355469d20ca0c730c9521cc46fb3bab2f830c"
+    "sha256": "8c82e2b29074eb6aed262c88a3ba0050f2710cc4b8dd9e7bad4c52617bf9eae7"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -23,7 +23,7 @@
         "tasks": []
       },
       {
-        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
         "tasks": []
       }
     ],
@@ -33,7 +33,7 @@
         "jobs": []
       },
       {
-        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
         "jobs": []
       }
     ],
@@ -53,13 +53,13 @@
         ]
       },
       {
-        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
         "jobs": []
       }
     ],
     "effectExecutions": [
       {
-        "afterCommandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
         "schedule": "plainSuccess",
         "invocations": 1,
         "mutations": 1,
@@ -109,15 +109,17 @@
             "descriptor": {
               "protocol": "urn:bpmn-lean:effect:probe-v1",
               "handler": "bpmnLeanEffectHandler"
-            }
+            },
+            "arguments": []
           }
         ],
+        "variables": [],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       },
       {
         "kind": "command",
-        "commandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+        "commandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
         "outcome": "committed"
       },
       {
@@ -128,6 +130,7 @@
         "openUserTasks": [],
         "openTimers": [],
         "openEffects": [],
+        "variables": [],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       }

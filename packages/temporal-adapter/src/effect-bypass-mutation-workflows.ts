@@ -1,6 +1,7 @@
-import type {
-  SemanticProcessProgram,
-  StartProcessStimulus,
+import {
+  VariableValueKind,
+  type SemanticProcessProgram,
+  type StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
 
 import type {
@@ -25,6 +26,20 @@ export function runBpmnProcessEffectBypassMutation(
         "Effect-bypass mutation does not host timer waits",
       );
     },
-    async () => ({ kind: EffectExecutionResultKind.Success }),
+    async (request) => ({
+      kind: EffectExecutionResultKind.Success,
+      localPatch:
+        request.handler === "createDocumentDelegate"
+          ? [
+              {
+                name: "newDocRef",
+                value: {
+                  kind: VariableValueKind.String,
+                  value: "Document:42",
+                },
+              },
+            ]
+          : [],
+    }),
   );
 }

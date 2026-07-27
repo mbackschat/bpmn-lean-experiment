@@ -7,7 +7,6 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
-import { fileURLToPath } from "node:url";
 
 import {
   BpmnCompilationStatus,
@@ -17,7 +16,6 @@ import type {
   BpmnCompilationResult,
 } from "@bpmn-lean/bpmn-source";
 import {
-  compareCanonicalStrings,
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -38,12 +36,26 @@ import type {
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
 } from "@bpmn-lean/temporal-adapter";
-import { runCommand } from "../../../scripts/run-command.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 
+export {
+  runCibTargetGroups,
+  runCibTargets,
+} from "./pipeline-cib-targets.ts";
+export {
+  elapsedMs,
+  runProcess,
+} from "./pipeline-target-support.ts";
+import {
+  elapsedMs,
+  indexExactRecords,
+  mutableClone,
+  projectRoot,
+  readJson,
+  runProcess,
+} from "./pipeline-target-support.ts";
 import type {
   CibPipelineResult,
-  DeepMutable,
   LeanDefinitionRecord,
   LeanResultRecord,
   PipelineCase,
@@ -55,35 +67,7 @@ import type {
   TemporalTargetBatch,
 } from "./pipeline-types.ts";
 
-const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const leanExecutable = "emitSemanticProcessResults";
-
-function mutableClone<T>(value: T): DeepMutable<T> {
-  return structuredClone(value) as DeepMutable<T>;
-}
-
-export function elapsedMs(started: number): number {
-  return performance.now() - started;
-}
-
-async function readJson<Value>(filePath: string): Promise<Value> {
-  return parseStrictJson<Value>(
-    await readFile(filePath, "utf8"),
-    filePath,
-  );
-}
-
-export function runProcess(
-  command: string,
-  args: ReadonlyArray<string>,
-  timeoutMs: number,
-) {
-  return runCommand(command, args, {
-    cwd: projectRoot,
-    env: process.env,
-    timeoutMs,
-  });
-}
 
 export function canonicalCibResult(
   cibResult: CibPipelineResult,
@@ -102,87 +86,6 @@ export function requireUniqueCaseIds(cases: ReadonlyArray<PipelineCase>): void {
   if (new Set(ids).size !== ids.length) {
     throw new TypeError("Pipeline case IDs must be unique");
   }
-}
-
-function indexExactRecords<Record extends Readonly<{ scenarioId: string }>>(
-  records: ReadonlyArray<Record>,
-  expectedIds: ReadonlyArray<string>,
-  targetName: string,
-): ReadonlyMap<string, Record> {
-  if (records.length !== expectedIds.length) {
-    throw new Error(
-      `${targetName} returned ${records.length} results for ${expectedIds.length} scenarios`,
-    );
-  }
-  const indexed = new Map<string, Record>();
-  for (const record of records) {
-    const scenarioId = record?.scenarioId;
-    if (typeof scenarioId !== "string" || scenarioId.length === 0) {
-      throw new TypeError(`${targetName} result has no scenario identity`);
-    }
-    if (indexed.has(scenarioId)) {
-      throw new TypeError(
-        `${targetName} returned duplicate scenario ${scenarioId}`,
-      );
-    }
-    indexed.set(scenarioId, record);
-  }
-  const actualIds = [...indexed.keys()].sort(compareCanonicalStrings);
-  const requiredIds = [...expectedIds].sort(compareCanonicalStrings);
-  if (JSON.stringify(actualIds) !== JSON.stringify(requiredIds)) {
-    throw new Error(
-      `${targetName} scenario identities do not match the batch`,
-    );
-  }
-  return indexed;
-}
-
-export async function runCibTargets(
-  scenarios: ReadonlyArray<Scenario>,
-  inputPath: string,
-  outputPath: string,
-  effectSchedule = EffectExecutionSchedule.PlainSuccess,
-): Promise<TargetBatch<CibPipelineResult>> {
-  const started = performance.now();
-  await writeFile(
-    inputPath,
-    `${scenarios.map((scenario) => JSON.stringify(scenario)).join("\n")}\n`,
-    "utf8",
-  );
-  await runProcess(
-    "runners/cibseven/mvnw",
-    [
-      "-s",
-      "runners/cibseven/maven-settings.xml",
-      "-f",
-      "runners/cibseven/pom.xml",
-      "--no-transfer-progress",
-      "-Dstyle.color=never",
-      "-Dtest=CibSevenPipelineExportBridge",
-      `-Dbpmn.pipeline.projectRoot=${projectRoot}`,
-      `-Dbpmn.pipeline.input=${inputPath}`,
-      `-Dbpmn.pipeline.output=${outputPath}`,
-      `-Dbpmn.pipeline.effectSchedule=${effectSchedule}`,
-      "test",
-    ],
-    30_000,
-  );
-  const records = (await readFile(outputPath, "utf8"))
-    .split("\n")
-    .filter((line) => line.length > 0)
-    .map((line, index) =>
-      parseStrictJson<CibPipelineResult>(
-        line,
-        `CIB result line ${index + 1}`,
-      ));
-  return {
-    results: indexExactRecords(
-      records,
-      scenarios.map(({ id }) => id),
-      "CIB Seven",
-    ),
-    totalMs: elapsedMs(started),
-  };
 }
 
 function leanDefinitionRecords(

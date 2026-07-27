@@ -269,13 +269,24 @@ Each target returns the same language-neutral canonical result shape. The compar
 
 <!-- source-fragment: packages/differential/test/pipeline-comparison.ts#four-target-comparison -->
 ```js
-const comparison = compareTargetResults(
-  {
-    target: DifferentialTarget.CibSeven,
-    result: canonicalCib,
-  },
-  semanticCandidates,
-);
+const comparison =
+  pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
+    ? compareTargetResults(
+        {
+          target: DifferentialTarget.CibSeven,
+          result: canonicalCib,
+        },
+        semanticCandidates,
+      )
+    : compareTargetResults(
+        {
+          target: DifferentialTarget.Lean,
+          result: leanResult,
+        },
+        semanticCandidates.filter(
+          ({ target }) => target !== DifferentialTarget.Lean,
+        ),
+      );
 ```
 
 Agreement alone is weak if the projection or comparator cannot notice the semantic distinction being claimed. Every new evidence projection therefore needs a meaningful seeded mutation:
@@ -284,11 +295,18 @@ Agreement alone is weak if the projection or comparator cannot notice the semant
 ```js
 const injectedResult = mutableClone(semanticCoreResult);
 pipelineCase.injectMutation(injectedResult);
+const injectedReference =
+  pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
+    ? {
+        target: DifferentialTarget.CibSeven,
+        result: canonicalCib,
+      }
+    : {
+        target: DifferentialTarget.Lean,
+        result: leanResult,
+      };
 const injectedDisagreement = compareTargetResults(
-  {
-    target: DifferentialTarget.CibSeven,
-    result: canonicalCib,
-  },
+  injectedReference,
   [
     {
       target: DifferentialTarget.SemanticCore,
@@ -358,4 +376,4 @@ The MVP itself does not establish general BPMN parsing or execution, OMG conform
 
 The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, stale rejection with a live sibling, and the duplicate-left/no-right non-law. Content-bound CIB evidence calibrates both balanced completion orders and the live-sibling stale witness.
 
-The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The eight-case pipeline connects these capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
+The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md) adds one string-only argument/result/output-mapping path with a separate synchronous CIB `2.0.0` final-state relation. The nine-case pipeline connects these capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).

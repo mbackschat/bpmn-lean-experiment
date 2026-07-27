@@ -9,6 +9,7 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectExecutionSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
+import org.bpmnlean.cibseven.ScenarioProtocol.SuccessfulEffectResult;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
 
@@ -104,6 +105,10 @@ final class CibSevenScenarioCommandExecutor {
       String stableInstanceId,
       CompleteEffectStimulus complete,
       CibEffectExecutionSchedule schedule) {
+    if (!(complete.result() instanceof SuccessfulEffectResult result)
+        || !result.localPatch().isEmpty()) {
+      return new EffectCompletion(REJECTED, null);
+    }
     var submitted = complete.effectId();
     if (!submitted.processInstanceId().equals(stableInstanceId)
         || submitted.activation() != 1) {

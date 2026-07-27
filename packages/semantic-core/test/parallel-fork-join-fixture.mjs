@@ -89,6 +89,7 @@ export const parallelScenario = {
     ObservationRequestKind.OpenUserTasks,
     ObservationRequestKind.OpenTimers,
     ObservationRequestKind.OpenEffects,
+    ObservationRequestKind.Variables,
     ObservationRequestKind.EnabledInteractions,
     ObservationRequestKind.LogicalTime,
   ],

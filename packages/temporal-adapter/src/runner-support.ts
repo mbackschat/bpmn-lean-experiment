@@ -280,7 +280,8 @@ export function requireOptionalEffectExecution(
   }
   if (
     !isDeepStrictEqual(openEffect.id, completion.effectId) ||
-    completion.commandId !== completeEffectCommandId(openEffect.id)
+    completion.commandId !==
+      completeEffectCommandId(openEffect.id, completion.result)
   ) {
     throw new TypeError(
       "Scenario effect completion is not content-bound to the committed intent",
@@ -294,6 +295,7 @@ export function requireOptionalEffectExecution(
     request: {
       ...material.descriptor,
       idempotencyKey: effectTransportKey(material),
+      arguments: material.arguments,
     },
     schedule,
   };
@@ -412,6 +414,7 @@ export function isCompletedProcessReceipt(
       "openUserTasks",
       "openTimers",
       "openEffects",
+      "variables",
       "enabledInteractions",
       "logicalTimeMs",
     ]) &&
@@ -426,6 +429,7 @@ export function isCompletedProcessReceipt(
     finalState.openTimers.length === 0 &&
     Array.isArray(finalState.openEffects) &&
     finalState.openEffects.length === 0 &&
+    Array.isArray(finalState.variables) &&
     Array.isArray(finalState.enabledInteractions) &&
     finalState.enabledInteractions.length === 0 &&
     Number.isSafeInteger(finalState.logicalTimeMs) &&

@@ -325,6 +325,45 @@ export function verifyProducerProjection(evidence: CibSevenEvidence): void {
       );
     }
   }
+
+  const mappingExecutions =
+    evidence.producerObservations.mappingExecutions ?? [];
+  if (mappingExecutions.length > 0) {
+    const execution = mappingExecutions[0];
+    const finalState = [...evidence.result.trace].reverse().find(
+      (observation) => observation.kind === "state",
+    );
+    if (
+      mappingExecutions.length !== 1 ||
+      execution === undefined ||
+      execution.afterCommandId !== "start-create-document" ||
+      execution.handler !== "createDocumentDelegate" ||
+      execution.invocations !== 1 ||
+      !isDeepStrictEqual(execution.arguments, [
+        {
+          name: "documentModelName",
+          value: { kind: "string", value: "MyDocumentModel" },
+        },
+      ]) ||
+      !isDeepStrictEqual(execution.localPatch, [
+        {
+          name: "newDocRef",
+          value: { kind: "string", value: "Document:42" },
+        },
+      ]) ||
+      finalState?.kind !== "state" ||
+      !isDeepStrictEqual(finalState.variables, [
+        {
+          name: "myDocumentReference",
+          value: { kind: "string", value: "Document:42" },
+        },
+      ])
+    ) {
+      throw new Error(
+        "retained CIB mapping evidence does not establish the exact CreateDocument contract",
+      );
+    }
+  }
 }
 
 function statesWithEmptyEffectSnapshots(
@@ -366,6 +405,7 @@ function projectEffectJobs(
       protocol: job.protocol,
       handler: job.handler,
     },
+    arguments: [],
   }));
   return { activeWaits, openEffects };
 }

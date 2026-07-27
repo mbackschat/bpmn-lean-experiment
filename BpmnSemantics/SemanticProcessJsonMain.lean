@@ -63,10 +63,28 @@ private def effectDescriptorJson (descriptor : EffectDescriptor) : Json :=
     [ ("protocol", toJson descriptor.protocol)
     , ("handler", toJson descriptor.handler) ]
 
+private def variableValueJson : VariableValue → Json
+  | .string value =>
+      Json.mkObj
+        [ ("kind", toJson "string")
+        , ("value", toJson value) ]
+
+private def variableBindingJson (binding : VariableBinding) : Json :=
+  Json.mkObj
+    [ ("name", toJson binding.name)
+    , ("value", variableValueJson binding.value) ]
+
+private def effectExecutionResultJson : EffectExecutionResult → Json
+  | .success localPatch =>
+      Json.mkObj
+        [ ("kind", toJson "success")
+        , ("localPatch", jsonArray (localPatch.map variableBindingJson)) ]
+
 private def openEffectJson (effect : OpenEffect) : Json :=
   Json.mkObj
     [ ("id", occurrenceIdJson effect.id)
-    , ("descriptor", effectDescriptorJson effect.descriptor) ]
+    , ("descriptor", effectDescriptorJson effect.descriptor)
+    , ("arguments", jsonArray (effect.arguments.map variableBindingJson)) ]
 
 private def enabledInteractionJson : EnabledInteraction → Json
   | .completeUserTaskInstance taskId =>
@@ -83,6 +101,7 @@ private def stateObservationJson (state : StateObservation) : Json :=
     , ("openUserTasks", jsonArray (state.openUserTasks.map openUserTaskJson))
     , ("openTimers", jsonArray (state.openTimers.map openTimerJson))
     , ("openEffects", jsonArray (state.openEffects.map openEffectJson))
+    , ("variables", jsonArray (state.variables.map variableBindingJson))
     , ("enabledInteractions",
         jsonArray (state.enabledInteractions.map enabledInteractionJson))
     , ("logicalTimeMs", toJson state.logicalTimeMs) ]
@@ -136,11 +155,12 @@ private def stimulusJson : Stimulus → Json
         , ("commandId", toJson commandId.value)
         , ("timerId", occurrenceIdJson timerId)
         , ("logicalTimeMs", toJson logicalTimeMs) ]
-  | .completeEffect commandId effectId =>
+  | .completeEffect commandId effectId result =>
       Json.mkObj
         [ ("kind", toJson "completeEffect")
         , ("commandId", toJson commandId.value)
-        , ("effectId", occurrenceIdJson effectId) ]
+        , ("effectId", occurrenceIdJson effectId)
+        , ("result", effectExecutionResultJson result) ]
 
 private def observationKindJson : ObservationKind → Json
   | .deployment => toJson "deployment"
@@ -150,6 +170,7 @@ private def observationKindJson : ObservationKind → Json
   | .openUserTasks => toJson "openUserTasks"
   | .openTimers => toJson "openTimers"
   | .openEffects => toJson "openEffects"
+  | .variables => toJson "variables"
   | .enabledInteractions => toJson "enabledInteractions"
   | .logicalTime => toJson "logicalTime"
 

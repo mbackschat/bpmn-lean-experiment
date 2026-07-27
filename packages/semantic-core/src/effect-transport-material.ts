@@ -1,6 +1,7 @@
 import type {
   EffectOccurrenceId,
   OpenEffect,
+  VariableBinding,
 } from "./contract.js";
 import type {
   EffectDescriptor,
@@ -23,6 +24,7 @@ export type EffectTransportMaterial = Readonly<{
   definition: EffectDefinitionKey;
   occurrence: EffectOccurrenceId;
   descriptor: EffectDescriptor;
+  arguments: ReadonlyArray<VariableBinding>;
 }>;
 
 /**
@@ -43,5 +45,6 @@ export function projectEffectTransportMaterial(
     },
     occurrence: effect.id,
     descriptor: effect.descriptor,
+    arguments: effect.arguments,
   };
 }

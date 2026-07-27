@@ -50,6 +50,7 @@
     "openUserTasks",
     "openTimers",
     "openEffects",
+    "variables",
     "enabledInteractions",
     "logicalTime"
   ],

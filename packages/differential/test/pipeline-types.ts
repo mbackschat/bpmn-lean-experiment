@@ -31,6 +31,14 @@ export const TemporalCaseRelation = Object.freeze({
 export type TemporalCaseRelation =
   typeof TemporalCaseRelation[keyof typeof TemporalCaseRelation];
 
+export const CibCaseRelation = Object.freeze({
+  ExactSemantic: "exactSemantic",
+  SynchronousFinalState: "synchronousFinalState",
+});
+
+export type CibCaseRelation =
+  typeof CibCaseRelation[keyof typeof CibCaseRelation];
+
 export type DeepMutable<T> =
   T extends (...args: never[]) => unknown
     ? T
@@ -56,11 +64,14 @@ export type PipelineCase = Readonly<{
   evidenceRelativePath: string;
   bpmnRelativePath: string;
   workflowIdPrefix: string;
+  cibVersion: "2.0.0" | "2.2.0";
+  cibRelation: CibCaseRelation;
   expectedWaitTraceLength: number;
   completionDelivery: TemporalCompletionDelivery;
   temporalRelation: TemporalCaseRelation;
   duplicateFirstCompletion?: boolean;
   effectScheduleSubstitution?: boolean;
+  cibEffectRetrySchedule?: boolean;
   replayIsolation?: boolean;
   injectMutation: (result: MutableScenarioResult) => void;
   expectedInjectedDisagreement: ObservationValueDisagreement;
@@ -117,6 +128,13 @@ export type CibPipelineResult = Readonly<{
       totalNanos: number;
     }>;
     effectExecutions?: ReadonlyArray<CibEffectExecution>;
+    mappingExecutions?: ReadonlyArray<Readonly<{
+      afterCommandId: string;
+      handler: string;
+      arguments: ReadonlyArray<unknown>;
+      localPatch: ReadonlyArray<unknown>;
+      invocations: number;
+    }>>;
     cleanup: Readonly<Record<string, number>>;
   }>;
 }>;

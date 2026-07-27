@@ -1,13 +1,18 @@
-import {
-  StimulusKind,
-} from "@bpmn-lean/semantic-core";
+import { StimulusKind } from "@bpmn-lean/semantic-core";
 import type {
   CompleteEffectStimulus,
+  EffectExecutionResult,
   EffectOccurrenceId,
   EffectTransportMaterial,
+  VariableBinding,
 } from "@bpmn-lean/semantic-core";
 
-import { canonicalTypedTupleEncoding } from "./canonical-encoding.js";
+import {
+  canonicalTypedTupleEncoding,
+} from "./canonical-encoding.js";
+import type {
+  CanonicalTupleValue,
+} from "./canonical-encoding.js";
 import { deterministicSha256Hex } from "./deterministic-sha256.js";
 
 export function canonicalEffectTransportEncoding(
@@ -30,6 +35,7 @@ export function canonicalEffectTransportEncoding(
       material.descriptor.protocol,
       material.descriptor.handler,
     ],
+    material.arguments.map(variableBindingTuple),
   ]);
 }
 
@@ -43,6 +49,7 @@ export function effectTransportKey(
 
 export function canonicalCompleteEffectEncoding(
   effectId: EffectOccurrenceId,
+  result: EffectExecutionResult,
 ): string {
   return canonicalTypedTupleEncoding([
     StimulusKind.CompleteEffect,
@@ -51,23 +58,47 @@ export function canonicalCompleteEffectEncoding(
       effectId.elementId,
       effectId.activation,
     ],
+    effectExecutionResultTuple(result),
   ]);
 }
 
 export function completeEffectCommandId(
   effectId: EffectOccurrenceId,
+  result: EffectExecutionResult,
 ): string {
   return `complete-effect-sha256:${
-    deterministicSha256Hex(canonicalCompleteEffectEncoding(effectId))
+    deterministicSha256Hex(
+      canonicalCompleteEffectEncoding(effectId, result),
+    )
   }`;
 }
 
 export function completeEffectStimulus(
   effectId: EffectOccurrenceId,
+  result: EffectExecutionResult,
 ): CompleteEffectStimulus {
   return {
     kind: StimulusKind.CompleteEffect,
-    commandId: completeEffectCommandId(effectId),
+    commandId: completeEffectCommandId(effectId, result),
     effectId,
+    result,
   };
+}
+
+function effectExecutionResultTuple(
+  result: EffectExecutionResult,
+): ReadonlyArray<CanonicalTupleValue> {
+  return [
+    result.kind,
+    result.localPatch.map(variableBindingTuple),
+  ];
+}
+
+function variableBindingTuple(
+  binding: VariableBinding,
+): ReadonlyArray<CanonicalTupleValue> {
+  return [
+    binding.name,
+    [binding.value.kind, binding.value.value],
+  ];
 }

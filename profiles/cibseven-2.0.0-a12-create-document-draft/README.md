@@ -7,3 +7,5 @@ The source supplies `{http://camunda.org/schema/1.0/bpmn}delegateExpression="${c
 CIB Seven executes the synchronous delegate and mappings atomically inside one engine transaction. The project effect wait, committed arguments, Activity result, and output-mapping boundary are therefore a Temporal-hosted refinement under `CIB-OP-0002`, not independently observed intermediate CIB states.
 
 The profile makes no claim about non-string values, arbitrary variables or beans, Java binary compatibility, failures, rollback equivalence, BPMN Errors, scripts, listeners, incidents, or external tasks.
+
+The [CreateDocument specification](../../docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md) owns the bounded semantics and fidelity relation. Mandatory gates use the project-authored MIT fixture and fresh content-bound `2.0.0` evidence; the registered external EUPL-1.2 A12 source remains an optional exact-byte admission input and is never copied, linked, or used as a runtime dependency.

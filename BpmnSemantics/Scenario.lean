@@ -47,6 +47,19 @@ structure EffectDescriptor where
   handler : String
   deriving Repr, DecidableEq
 
+inductive VariableValue where
+  | string (value : String)
+  deriving Repr, DecidableEq
+
+structure VariableBinding where
+  name : String
+  value : VariableValue
+  deriving Repr, DecidableEq
+
+inductive EffectExecutionResult where
+  | success (localPatch : List VariableBinding)
+  deriving Repr, DecidableEq
+
 /-- User Task lifecycle states exposed by the current bounded interaction capsule. -/
 inductive UserTaskLifecycleState where
   | active
@@ -69,7 +82,10 @@ inductive Stimulus where
   | startProcess (commandId : SemanticId) (processId : SemanticId) (instanceId : SemanticId)
   | completeUserTaskInstance (commandId : SemanticId) (taskId : UserTaskInstanceId)
   | fireTimer (commandId : SemanticId) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
-  | completeEffect (commandId : SemanticId) (effectId : EffectOccurrenceId)
+  | completeEffect
+      (commandId : SemanticId)
+      (effectId : EffectOccurrenceId)
+      (result : EffectExecutionResult)
   deriving Repr, DecidableEq
 
 /-- Process status visible through the canonical observation boundary. -/
@@ -103,6 +119,7 @@ structure OpenTimer where
 structure OpenEffect where
   id : EffectOccurrenceId
   descriptor : EffectDescriptor
+  arguments : List VariableBinding
   deriving Repr, DecidableEq
 
 /-- Canonical state projection at one observation point. -/
@@ -113,6 +130,7 @@ structure StateObservation where
   openUserTasks : List OpenUserTask
   openTimers : List OpenTimer
   openEffects : List OpenEffect
+  variables : List VariableBinding
   enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
@@ -133,6 +151,7 @@ inductive ObservationKind where
   | openUserTasks
   | openTimers
   | openEffects
+  | variables
   | enabledInteractions
   | logicalTime
   deriving Repr, DecidableEq

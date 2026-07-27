@@ -3,96 +3,47 @@ import {
   StimulusKind,
 } from "./contract.js";
 import type {
-  EffectOccurrenceId,
-  OccurrenceId,
   Stimulus,
-  TimerOccurrenceId,
-  UserTaskInstanceId,
 } from "./contract.js";
 import {
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
 import type {
-  EffectDescriptor,
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  compareCanonicalStrings,
-} from "./wire.js";
+  applyEffectResult,
+  evaluateInputMappings,
+} from "./semantic-process-data.js";
+import {
+  addToken,
+  compareEffectWaits,
+  compareTimerWaits,
+  compareUserTaskWaits,
+  ControlStateKind,
+  removeToken,
+  sameOccurrence,
+  setActivationCount,
+  tokenMultiplicity,
+} from "./semantic-process-state.js";
+import type {
+  RuntimeState,
+} from "./semantic-process-state.js";
+import { compareCanonicalStrings } from "./wire.js";
 
-export enum ControlStateKind {
-  NotStarted = "notStarted",
-  Running = "running",
-  Completed = "completed",
-}
-
-type NotStartedControl = Readonly<{
-  kind: ControlStateKind.NotStarted;
-}>;
-
-type InstancedControl = Readonly<{
-  kind: ControlStateKind.Running | ControlStateKind.Completed;
-  instanceId: string;
-}>;
-
-export type ControlState = NotStartedControl | InstancedControl;
-
-export type ControlPlaceTokens = Readonly<{
-  placeId: string;
-  multiplicity: number;
-}>;
-
-export type SemanticUserTaskWait = Readonly<{
-  id: UserTaskInstanceId;
-  name: string | null;
-  output: string;
-}>;
-
-export type SemanticTimerWait = Readonly<{
-  id: TimerOccurrenceId;
-  deadlineMs: number;
-  output: string;
-}>;
-
-export type SemanticEffectWait = Readonly<{
-  id: EffectOccurrenceId;
-  descriptor: EffectDescriptor;
-  output: string;
-}>;
-
-type ActivationCounter = Readonly<{
-  elementId: string;
-  count: number;
-}>;
-
-export type RuntimeState = Readonly<{
-  control: ControlState;
-  initiationPending: boolean;
-  controlTokens: ReadonlyArray<ControlPlaceTokens>;
-  userTaskWaits: ReadonlyArray<SemanticUserTaskWait>;
-  timerWaits: ReadonlyArray<SemanticTimerWait>;
-  effectWaits: ReadonlyArray<SemanticEffectWait>;
-  taskActivations: ReadonlyArray<ActivationCounter>;
-  timerActivations: ReadonlyArray<ActivationCounter>;
-  effectActivations: ReadonlyArray<ActivationCounter>;
-  endOccurrences: number;
-  logicalTimeMs: number;
-}>;
-
-export const initialState: RuntimeState = {
-  control: { kind: ControlStateKind.NotStarted },
-  initiationPending: false,
-  controlTokens: [],
-  userTaskWaits: [],
-  timerWaits: [],
-  effectWaits: [],
-  taskActivations: [],
-  timerActivations: [],
-  effectActivations: [],
-  endOccurrences: 0,
-  logicalTimeMs: 0,
-};
+export {
+  ControlStateKind,
+  initialState,
+} from "./semantic-process-state.js";
+export type {
+  ControlPlaceTokens,
+  ControlState,
+  RuntimeState,
+  SemanticEffectWait,
+  SemanticTimerWait,
+  SemanticUserTaskWait,
+} from "./semantic-process-state.js";
 
 type SemanticCommandOutcome =
   | CommandOutcome.Committed
@@ -200,6 +151,15 @@ function admit(
       ) {
         return { outcome: CommandOutcome.Rejected, state };
       }
+      const processVariables = applyEffectResult(
+        wait.arguments,
+        wait.outputMappings,
+        state.processVariables,
+        stimulus.result,
+      );
+      if (processVariables === null) {
+        return { outcome: CommandOutcome.Rejected, state };
+      }
       return {
         outcome: CommandOutcome.Committed,
         state: {
@@ -208,6 +168,7 @@ function admit(
           effectWaits: state.effectWaits.filter(
             (candidate) => candidate !== wait,
           ),
+          processVariables,
         },
       };
     }
@@ -234,7 +195,7 @@ function internalStep(
       } => candidate.successor !== null,
     )
     .sort(({ operation: left }, { operation: right }) =>
-      compareStrings(left.id, right.id)
+      compareCanonicalStrings(left.id, right.id)
     );
   return enabled[0]?.successor ?? null;
 }
@@ -314,7 +275,7 @@ function createUserTaskWait(
         name: operation.task.name,
         output: operation.output,
       },
-    ].sort(compareWaits),
+    ].sort(compareUserTaskWaits),
     taskActivations: setActivationCount(
       state.taskActivations,
       operation.task.elementId,
@@ -390,6 +351,8 @@ function createEffectWait(
           activation,
         },
         descriptor: operation.effect.descriptor,
+        arguments: evaluateInputMappings(operation.effect.inputMappings),
+        outputMappings: operation.effect.outputMappings,
         output: operation.output,
       },
     ].sort(compareEffectWaits),
@@ -516,105 +479,6 @@ export function applyStimulus(
   }
 }
 // end::apply-stimulus[]
-
-function addToken(
-  tokens: ReadonlyArray<ControlPlaceTokens>,
-  placeId: string,
-): ReadonlyArray<ControlPlaceTokens> {
-  const current = tokenMultiplicity(tokens, placeId);
-  return [
-    ...tokens.filter((token) => token.placeId !== placeId),
-    { placeId, multiplicity: current + 1 },
-  ].sort(compareTokenPlaces);
-}
-
-function removeToken(
-  tokens: ReadonlyArray<ControlPlaceTokens>,
-  placeId: string,
-): ReadonlyArray<ControlPlaceTokens> {
-  const current = tokenMultiplicity(tokens, placeId);
-  if (current <= 1) {
-    return tokens.filter((token) => token.placeId !== placeId);
-  }
-  return tokens.map((token) =>
-    token.placeId === placeId
-      ? { ...token, multiplicity: token.multiplicity - 1 }
-      : token
-  );
-}
-
-function tokenMultiplicity(
-  tokens: ReadonlyArray<ControlPlaceTokens>,
-  placeId: string,
-): number {
-  return tokens.find((token) => token.placeId === placeId)?.multiplicity ?? 0;
-}
-
-function setActivationCount(
-  counters: ReadonlyArray<ActivationCounter>,
-  elementId: string,
-  count: number,
-): ReadonlyArray<ActivationCounter> {
-  return [
-    ...counters.filter((counter) => counter.elementId !== elementId),
-    { elementId, count },
-  ].sort((left, right) =>
-    compareCanonicalStrings(left.elementId, right.elementId)
-  );
-}
-
-function sameOccurrence(
-  left: OccurrenceId,
-  right: OccurrenceId,
-): boolean {
-  return (
-    left.processInstanceId === right.processInstanceId &&
-    left.elementId === right.elementId &&
-    left.activation === right.activation
-  );
-}
-
-function compareTokenPlaces(
-  left: ControlPlaceTokens,
-  right: ControlPlaceTokens,
-): number {
-  return compareCanonicalStrings(left.placeId, right.placeId);
-}
-
-function compareWaits(
-  left: SemanticUserTaskWait,
-  right: SemanticUserTaskWait,
-): number {
-  return compareOccurrences(left.id, right.id);
-}
-
-function compareTimerWaits(
-  left: SemanticTimerWait,
-  right: SemanticTimerWait,
-): number {
-  return compareOccurrences(left.id, right.id);
-}
-
-function compareEffectWaits(
-  left: SemanticEffectWait,
-  right: SemanticEffectWait,
-): number {
-  return compareOccurrences(left.id, right.id);
-}
-
-function compareOccurrences(left: OccurrenceId, right: OccurrenceId): number {
-  if (left.processInstanceId !== right.processInstanceId) {
-    return compareStrings(left.processInstanceId, right.processInstanceId);
-  }
-  if (left.elementId !== right.elementId) {
-    return compareStrings(left.elementId, right.elementId);
-  }
-  return left.activation - right.activation;
-}
-
-function compareStrings(left: string, right: string): number {
-  return compareCanonicalStrings(left, right);
-}
 
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported semantic variant: ${JSON.stringify(value)}`);

@@ -27,6 +27,7 @@ import type {
   SemanticOperation,
   SemanticProcessProgram,
   StateObservation,
+  VariableBinding,
 } from "../packages/semantic-core/src/index.ts";
 
 import {
@@ -90,6 +91,12 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/service-task-effect/cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/create-document-data/scenario.json",
+    evidenceRelativePath:
+      "scenarios/create-document-data/cibseven-evidence.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{
@@ -111,6 +118,7 @@ type SemanticProfile = Readonly<{
   kind: "semanticProfile";
   id: string;
   oracle: Readonly<{
+    version: string;
     revision: string;
   }>;
   bpmn: Readonly<{
@@ -164,11 +172,20 @@ type EffectExecutionSnapshot = Readonly<{
   retriesAfterFirstFailure: number | null;
 }>;
 
+export type MappingExecutionSnapshot = Readonly<{
+  afterCommandId: string;
+  handler: string;
+  arguments: ReadonlyArray<VariableBinding>;
+  localPatch: ReadonlyArray<VariableBinding>;
+  invocations: number;
+}>;
+
 export type CibSevenEvidence = Readonly<{
   kind: "cibSevenScenarioEvidence";
   scenario: ContentIdentity;
   profile: ContentIdentity;
   producer: Readonly<{
+    engineVersion: string;
     engineRevision: string;
   }>;
   producerObservations: Readonly<{
@@ -176,6 +193,7 @@ export type CibSevenEvidence = Readonly<{
     timerJobs: ReadonlyArray<TimerJobSnapshot>;
     effectJobs?: ReadonlyArray<EffectJobSnapshot>;
     effectExecutions?: ReadonlyArray<EffectExecutionSnapshot>;
+    mappingExecutions?: ReadonlyArray<MappingExecutionSnapshot>;
   }>;
   result: ScenarioResult;
 }>;
@@ -381,6 +399,7 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
     throw new Error("evidence profile digest does not match");
   }
   if (
+    evidence.producer.engineVersion !== profile.oracle.version ||
     evidence.producer.engineRevision !== profile.oracle.revision ||
     evidence.producer.engineRevision !== scenario.provenance.cibRevision
   ) {

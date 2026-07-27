@@ -156,7 +156,7 @@ The A12 CreateDocument profile admits exactly `{http://camunda.org/schema/1.0/bp
 
 CIB Seven `2.0.0` resolves the exact bean token, provides the mapped literal to the delegate, reads the delegate-written Activity-local `newDocRef`, and maps it into Process variable `myDocumentReference`. The selected extension is lexical and behavioral only for this one string-valued successful path. The token is not evaluated as a general JUEL expression by the project.
 
-**Evidence:** [CreateDocument capsule](capsules/CREATE-DOCUMENT-DATA-PROPOSAL.md), [CIB Seven 2.0 target assessment](research/CIB-SEVEN-A12-BASELINE-RESEARCH.md), [A12 target profile](../profiles/cibseven-2.0.0-a12-create-document-draft/README.md), and the mandatory project-authored equivalent fixture plus optional unchanged-source gate.
+**Evidence:** [CreateDocument specification](capsules/CREATE-DOCUMENT-DATA-SPEC.md), [CIB Seven 2.0 target assessment](research/CIB-SEVEN-A12-BASELINE-RESEARCH.md), [A12 target profile](../profiles/cibseven-2.0.0-a12-create-document-draft/README.md), [packaged-engine runner test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenCreateDocumentScenarioRunnerTest.java), mandatory project-authored equivalent fixture, fresh content-bound `2.0.0` evidence, and the optional unchanged-source gate.
 
 **Boundary:** This entry claims no general input/output mapping, expression language, arbitrary variable, bean, delegate, `DelegateExecution`, Java binary, failure, transaction rollback, Script Task, listener, or engine-API compatibility.
 
@@ -191,7 +191,7 @@ CIB Seven `2.0.0` executes the selected CreateDocument delegate and its input/ou
 
 For the approved success-only capsule, both accounts agree on admitted input and final Process variables. The CIB execution is a host-realization check for those boundary observations, not an independent derivation of the project intermediate state. Failure atomicity, rollback after an external mutation, cancellation, and fault delivery are deliberately excluded and require separate semantic decisions.
 
-**Evidence:** [CreateDocument capsule](capsules/CREATE-DOCUMENT-DATA-PROPOSAL.md) and the [A12 target profile](../profiles/cibseven-2.0.0-a12-create-document-draft/README.md).
+**Evidence:** [CreateDocument specification](capsules/CREATE-DOCUMENT-DATA-SPEC.md), [packaged-engine runner test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenCreateDocumentScenarioRunnerTest.java), [content-bound `2.0.0` evidence](../scenarios/create-document-data/cibseven-evidence.json), and the [A12 target profile](../profiles/cibseven-2.0.0-a12-create-document-draft/README.md).
 
 ## Configuration-specific register
 

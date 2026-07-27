@@ -55,6 +55,8 @@ const effectProgram = {
       effect: {
         elementId: "ServiceTask_Record",
         descriptor,
+        inputMappings: [],
+        outputMappings: [],
       },
     },
     {
@@ -82,6 +84,10 @@ const complete = Object.freeze({
   kind: StimulusKind.CompleteEffect,
   commandId: "complete-effect",
   effectId,
+  result: {
+    kind: "success",
+    localPatch: [],
+  },
 });
 
 const effectScenario = {
@@ -102,6 +108,7 @@ const effectScenario = {
     ObservationRequestKind.OpenUserTasks,
     ObservationRequestKind.OpenTimers,
     ObservationRequestKind.OpenEffects,
+    ObservationRequestKind.Variables,
     ObservationRequestKind.EnabledInteractions,
     ObservationRequestKind.LogicalTime,
   ],
@@ -124,6 +131,8 @@ test("start closes at one structured effect intent without producing output", ()
     {
       id: effectId,
       descriptor,
+      arguments: [],
+      outputMappings: [],
       output: "place:Flow_ServiceToEnd",
     },
   ]);
@@ -191,7 +200,8 @@ test("scenario exposes the effect intent without a caller interaction", () => {
     ],
     openUserTasks: [],
     openTimers: [],
-    openEffects: [{ id: effectId, descriptor }],
+    openEffects: [{ id: effectId, descriptor, arguments: [] }],
+    variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,
   });
@@ -203,6 +213,7 @@ test("scenario exposes the effect intent without a caller interaction", () => {
     openUserTasks: [],
     openTimers: [],
     openEffects: [],
+    variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,
   });
@@ -224,6 +235,7 @@ test("projects transport material only from admitted definition and committed in
       },
       occurrence: effectId,
       descriptor,
+      arguments: [],
     },
   );
 });

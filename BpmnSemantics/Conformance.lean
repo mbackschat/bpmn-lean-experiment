@@ -47,6 +47,7 @@ def contractScenario : Scenario :=
       , .openUserTasks
       , .openTimers
       , .openEffects
+      , .variables
       , .enabledInteractions
       , .logicalTime ]
     provenance :=

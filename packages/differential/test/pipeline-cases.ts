@@ -13,6 +13,7 @@ import {
 } from "@bpmn-lean/temporal-adapter";
 
 import {
+  CibCaseRelation,
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import type {
@@ -136,6 +137,26 @@ function runningObservation(
   return observation;
 }
 
+function mutateFinalProcessVariable(
+  result: MutableScenarioResult,
+): void {
+  const finalState = [...result.trace].reverse().find(
+    (observation): observation is MutableStateObservation =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Completed,
+  );
+  const binding = finalState?.variables[0];
+  if (
+    finalState === undefined ||
+    binding?.value.kind !== "string"
+  ) {
+    throw new Error(
+      "CreateDocument calibration requires one final string variable",
+    );
+  }
+  binding.value.value = `${binding.value.value}-mutated`;
+}
+
 function interactionCase(
   id: string,
   scenarioFile: string,
@@ -151,6 +172,8 @@ function interactionCase(
     bpmnRelativePath:
       "scenarios/user-task-discovery-completion/process.bpmn",
     workflowIdPrefix: id,
+    cibVersion: "2.2.0",
+    cibRelation: CibCaseRelation.ExactSemantic,
     expectedWaitTraceLength: 3,
     completionDelivery:
       options.completionDelivery ??
@@ -183,6 +206,8 @@ function parallelCase(
       `scenarios/parallel-fork-join/${evidenceFile}`,
     bpmnRelativePath: "scenarios/parallel-fork-join/process.bpmn",
     workflowIdPrefix: id,
+    cibVersion: "2.2.0",
+    cibRelation: CibCaseRelation.ExactSemantic,
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
@@ -208,6 +233,8 @@ function timerCase(): PipelineCase {
     bpmnRelativePath:
       "scenarios/intermediate-catch-timer/process.bpmn",
     workflowIdPrefix: "intermediate-catch-timer-pt1s",
+    cibVersion: "2.2.0",
+    cibRelation: CibCaseRelation.ExactSemantic,
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
@@ -229,16 +256,44 @@ function effectCase(): PipelineCase {
       "scenarios/service-task-effect/cibseven-evidence.json",
     bpmnRelativePath: "scenarios/service-task-effect/process.bpmn",
     workflowIdPrefix: "service-task-effect-success",
+    cibVersion: "2.2.0",
+    cibRelation: CibCaseRelation.ExactSemantic,
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
     effectScheduleSubstitution: true,
+    cibEffectRetrySchedule: true,
     replayIsolation: true,
     injectMutation: mutateOpenEffectHandler,
     expectedInjectedDisagreement: observationValueDisagreement(
       "trace[2].openEffects[0].descriptor.handler",
       "bpmnLeanEffectHandler",
       "bpmnLeanEffectHandler-mutated",
+    ),
+  });
+}
+
+function createDocumentCase(): PipelineCase {
+  return Object.freeze({
+    id: "a12-create-document-data",
+    scenarioRelativePath:
+      "scenarios/create-document-data/scenario.json",
+    evidenceRelativePath:
+      "scenarios/create-document-data/cibseven-evidence.json",
+    bpmnRelativePath: "scenarios/create-document-data/process.bpmn",
+    workflowIdPrefix: "a12-create-document-data",
+    cibVersion: "2.0.0",
+    cibRelation: CibCaseRelation.SynchronousFinalState,
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    effectScheduleSubstitution: true,
+    replayIsolation: true,
+    injectMutation: mutateFinalProcessVariable,
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[4].variables[0].value.value",
+      "Document:42",
+      "Document:42-mutated",
     ),
   });
 }
@@ -289,4 +344,5 @@ export const pipelineCases = Object.freeze([
   ),
   timerCase(),
   effectCase(),
+  createDocumentCase(),
 ]);

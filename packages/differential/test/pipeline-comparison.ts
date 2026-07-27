@@ -25,6 +25,7 @@ import {
 } from "@bpmn-lean/temporal-adapter";
 
 import {
+  CibCaseRelation,
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import type {
@@ -130,14 +131,41 @@ export function compareCase(
     });
   }
   // tag::four-target-comparison[]
-  const comparison = compareTargetResults(
-    {
-      target: DifferentialTarget.CibSeven,
-      result: canonicalCib,
-    },
-    semanticCandidates,
-  );
+  const comparison =
+    pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
+      ? compareTargetResults(
+          {
+            target: DifferentialTarget.CibSeven,
+            result: canonicalCib,
+          },
+          semanticCandidates,
+        )
+      : compareTargetResults(
+          {
+            target: DifferentialTarget.Lean,
+            result: leanResult,
+          },
+          semanticCandidates.filter(
+            ({ target }) => target !== DifferentialTarget.Lean,
+          ),
+        );
   // end::four-target-comparison[]
+  const cibHostComparison =
+    pipelineCase.cibRelation ===
+      CibCaseRelation.SynchronousFinalState
+      ? compareTargetResults(
+          {
+            target: DifferentialTarget.CibSeven,
+            result: canonicalCib,
+          },
+          [
+            {
+              target: DifferentialTarget.Lean,
+              result: projectSynchronousHostResult(leanResult),
+            },
+          ],
+        )
+      : null;
   const expectedTemporalPrefix =
     pipelineCase.temporalRelation ===
       TemporalCaseRelation.PostTerminalClosed
@@ -199,7 +227,7 @@ export function compareCase(
       },
     ],
   );
-  if (pipelineCase.effectScheduleSubstitution === true) {
+  if (pipelineCase.cibEffectRetrySchedule === true) {
     if (cibEffectRetryResult === null) {
       throw new Error("Service Task case omitted the CIB retry execution");
     }
@@ -234,11 +262,18 @@ export function compareCase(
   // tag::seeded-disagreement[]
   const injectedResult = mutableClone(semanticCoreResult);
   pipelineCase.injectMutation(injectedResult);
+  const injectedReference =
+    pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
+      ? {
+          target: DifferentialTarget.CibSeven,
+          result: canonicalCib,
+        }
+      : {
+          target: DifferentialTarget.Lean,
+          result: leanResult,
+        };
   const injectedDisagreement = compareTargetResults(
-    {
-      target: DifferentialTarget.CibSeven,
-      result: canonicalCib,
-    },
+    injectedReference,
     [
       {
         target: DifferentialTarget.SemanticCore,
@@ -306,6 +341,7 @@ export function compareCase(
         cibRevision: scenario.provenance.cibRevision,
       },
       comparison,
+      cibHostComparison,
       temporalPrefixComparison,
       evidenceComparison,
       injectedDisagreement,
@@ -344,6 +380,31 @@ export function compareCase(
         null,
       cibCleanup: cibResult.diagnostics.cleanup,
     },
+  };
+}
+
+function projectSynchronousHostResult(
+  semanticResult: ScenarioResult,
+): ScenarioResult {
+  const deployment = semanticResult.trace[0];
+  const start = semanticResult.trace[1];
+  const finalState = [...semanticResult.trace].reverse().find(
+    (observation) =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Completed,
+  );
+  if (
+    deployment?.kind !== CanonicalObservationKind.Deployment ||
+    start?.kind !== CanonicalObservationKind.Command ||
+    finalState === undefined
+  ) {
+    throw new Error(
+      "Synchronous CIB host relation requires deployment, start, and final semantic state",
+    );
+  }
+  return {
+    outcome: semanticResult.outcome,
+    trace: [deployment, start, finalState],
   };
 }
 

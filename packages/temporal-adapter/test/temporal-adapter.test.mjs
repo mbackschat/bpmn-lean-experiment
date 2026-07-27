@@ -57,6 +57,9 @@ import {
 import {
   registerServiceTaskEffectTemporalTests,
 } from "./service-task-effect-temporal-tests.mjs";
+import {
+  registerCreateDocumentDataTemporalTests,
+} from "./create-document-data-temporal-tests.mjs";
 
 let runner;
 
@@ -283,3 +286,4 @@ test("batch execution rejects duplicate Workflow identities before start", async
 
 registerParallelTemporalTests(() => runner);
 registerServiceTaskEffectTemporalTests(() => runner);
+registerCreateDocumentDataTemporalTests(() => runner);

@@ -121,6 +121,7 @@ public final class ScenarioProtocol {
     OPEN_USER_TASKS("openUserTasks"),
     OPEN_TIMERS("openTimers"),
     OPEN_EFFECTS("openEffects"),
+    VARIABLES("variables"),
     ENABLED_INTERACTIONS("enabledInteractions"),
     LOGICAL_TIME("logicalTime");
 
@@ -284,6 +285,25 @@ public final class ScenarioProtocol {
     }
   }
 
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = StringValue.class, name = "string")
+  })
+  public sealed interface VariableValue permits StringValue {}
+
+  public record StringValue(String value) implements VariableValue {
+    public StringValue {
+      Objects.requireNonNull(value, "value");
+    }
+  }
+
+  public record VariableBinding(String name, VariableValue value) {
+    public VariableBinding {
+      Objects.requireNonNull(name, "name");
+      Objects.requireNonNull(value, "value");
+    }
+  }
+
   public record EffectOccurrenceId(
       String processInstanceId, String elementId, long activation) {
     public EffectOccurrenceId {
@@ -295,18 +315,38 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record OpenEffect(EffectOccurrenceId id, EffectDescriptor descriptor) {
+  public record OpenEffect(
+      EffectOccurrenceId id,
+      EffectDescriptor descriptor,
+      List<VariableBinding> arguments) {
     public OpenEffect {
       Objects.requireNonNull(id, "id");
       Objects.requireNonNull(descriptor, "descriptor");
+      arguments = List.copyOf(arguments);
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = SuccessfulEffectResult.class, name = "success")
+  })
+  public sealed interface EffectExecutionResult permits SuccessfulEffectResult {}
+
+  public record SuccessfulEffectResult(List<VariableBinding> localPatch)
+      implements EffectExecutionResult {
+    public SuccessfulEffectResult {
+      localPatch = List.copyOf(localPatch);
     }
   }
 
   public record CompleteEffectStimulus(
-      String commandId, EffectOccurrenceId effectId) implements Stimulus {
+      String commandId,
+      EffectOccurrenceId effectId,
+      EffectExecutionResult result) implements Stimulus {
     public CompleteEffectStimulus {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(effectId, "effectId");
+      Objects.requireNonNull(result, "result");
     }
   }
 
@@ -356,6 +396,7 @@ public final class ScenarioProtocol {
       List<OpenUserTask> openUserTasks,
       List<OpenTimer> openTimers,
       List<OpenEffect> openEffects,
+      List<VariableBinding> variables,
       List<EnabledInteraction> enabledInteractions,
       long logicalTimeMs)
       implements CanonicalObservation {
@@ -366,6 +407,7 @@ public final class ScenarioProtocol {
       openUserTasks = List.copyOf(openUserTasks);
       openTimers = List.copyOf(openTimers);
       openEffects = List.copyOf(openEffects);
+      variables = List.copyOf(variables);
       enabledInteractions = List.copyOf(enabledInteractions);
       if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
         throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");
@@ -436,6 +478,7 @@ public final class ScenarioProtocol {
       List<TimerJobSnapshot> timerJobs,
       List<EffectJobSnapshot> effectJobs,
       List<EffectExecutionSnapshot> effectExecutions,
+      List<MappingExecutionSnapshot> mappingExecutions,
       CleanupProjection cleanup) {
     public Diagnostics {
       Objects.requireNonNull(engineVersion, "engineVersion");
@@ -449,6 +492,7 @@ public final class ScenarioProtocol {
       timerJobs = List.copyOf(timerJobs);
       effectJobs = List.copyOf(effectJobs);
       effectExecutions = List.copyOf(effectExecutions);
+      mappingExecutions = List.copyOf(mappingExecutions);
       Objects.requireNonNull(cleanup, "cleanup");
     }
   }

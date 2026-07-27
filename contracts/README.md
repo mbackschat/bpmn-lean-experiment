@@ -15,9 +15,9 @@ This separation avoids routing every consumer through document-version switches 
 | Artifact | Identity and responsibility |
 |---|---|
 | Semantic profile | Stable `kind`; versioned semantic `id`; pinned CIB release/configuration, selected feature surface, observation boundary, and CIB–BPMN relationship references |
-| Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, and timer-firing stimuli, requested observations, and provenance |
-| Canonical result | Outcome plus canonical observation trace including semantic task and timer occurrences; no target-specific host data |
-| CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; canonical result |
+| Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, timer firing, and effect-result stimuli, requested observations, and provenance |
+| Canonical result | Outcome plus canonical observation trace including semantic task, timer, and effect occurrences and canonical Process variables; no target-specific host data |
+| CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; raw task/timer/effect/mapping observations plus canonical result |
 | Checked BPMN graph | Current `checkedProcess` contract; source-facing admitted graph with exact source/profile identity and no runtime semantics |
 | Semantic Process program | Current `semanticProcess` contract; compiler/source/profile identity, typed control places and operations, and no mutable runtime state |
 | Pipeline report | Stable `kind`; ephemeral verification report, provenance, comparisons, replay count, isolation, and timings |
@@ -43,10 +43,10 @@ Portable assertions are verifier-side claims over canonical results or relations
 ## Schemas
 
 - [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates the current draft profile artifact.
-- [scenario.schema.json](schemas/scenario.schema.json) validates the seven answer-free User Task, balanced-parallel, and Intermediate Catch Timer scenarios.
+- [scenario.schema.json](schemas/scenario.schema.json) validates the nine answer-free User Task, balanced-parallel, Intermediate Catch Timer, Service Task effect, and CreateDocument data scenarios.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.
 - [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.
 - [semantic-process.schema.json](schemas/semantic-process.schema.json) validates the immutable Semantic Process definition contract.
 
-The checked BPMN graph and Semantic Process schemas freeze the artifact boundaries from [the Semantic Process IL spec](../docs/SEMANTIC-PROCESS-IL-SPEC.md). The bounded source compiler produces both artifacts, while the sequential, balanced-parallel, and Intermediate Catch Timer execution paths consume only the Semantic Process program. The schemas validate transport shape; they do not establish lowering correspondence or operational semantics.
+The checked BPMN graph and Semantic Process schemas freeze the artifact boundaries from [the Semantic Process IL spec](../docs/SEMANTIC-PROCESS-IL-SPEC.md). The bounded source compiler produces both artifacts, while the sequential, balanced-parallel, Intermediate Catch Timer, payload-free Service Task, and CreateDocument data execution paths consume only the Semantic Process program. The schemas validate transport shape; they do not establish lowering correspondence or operational semantics.

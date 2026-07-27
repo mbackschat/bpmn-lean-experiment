@@ -268,6 +268,7 @@ export function parallelScenario(firstElementId, secondElementId) {
       ObservationRequestKind.OpenUserTasks,
       ObservationRequestKind.OpenTimers,
       ObservationRequestKind.OpenEffects,
+      ObservationRequestKind.Variables,
       ObservationRequestKind.EnabledInteractions,
       ObservationRequestKind.LogicalTime,
     ],

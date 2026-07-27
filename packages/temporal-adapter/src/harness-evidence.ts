@@ -5,6 +5,7 @@ import type {
   CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  EffectExecutionResult,
 } from "@bpmn-lean/semantic-core";
 import {
   CanonicalObservationKind,
@@ -171,6 +172,10 @@ export function requireDurableEffectActivityHistory(
   history: TemporalHistory,
   expectedRequest: EffectRequest,
   expectedAttempts: number,
+  expectedResult: EffectExecutionResult = {
+    kind: EffectExecutionResultKind.Success,
+    localPatch: [],
+  },
 ): void {
   if (
     !Number.isSafeInteger(expectedAttempts) ||
@@ -247,7 +252,7 @@ export function requireDurableEffectActivityHistory(
         resultPayloads[0],
         "Effect Activity completed result",
       ),
-      { kind: EffectExecutionResultKind.Success },
+      expectedResult,
     )
   ) {
     throw new TypeError(

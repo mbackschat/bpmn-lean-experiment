@@ -20,6 +20,8 @@ import org.bpmnlean.cibseven.ScenarioProtocol.TaskQueryTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerJob;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerOccurrenceId;
+import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
 import org.cibseven.bpm.engine.task.Task;
@@ -117,6 +119,7 @@ final class CibSevenScenarioStateProjector {
     allWaits.sort(
         (left, right) -> WireStrings.compare(left.elementId(), right.elementId()));
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - logicalEpoch.getTime();
+    var variables = observeProcessVariables(engineInstanceId);
     return new ObservedState(
         new StateObservation(
             stableInstanceId,
@@ -125,6 +128,7 @@ final class CibSevenScenarioStateProjector {
             openUserTasks,
             openTimers,
             openEffects,
+            variables,
             enabledInteractions,
             logicalTimeMs),
         taskQuery,
@@ -134,6 +138,25 @@ final class CibSevenScenarioStateProjector {
             projectedEffects.stream()
                 .map(CibSevenEffectProjector.ProjectedEffectWait::evidence)
                 .toList()));
+  }
+
+  private List<VariableBinding> observeProcessVariables(String engineInstanceId) {
+    var variables =
+        processEngine
+            .getHistoryService()
+            .createHistoricVariableInstanceQuery()
+            .processInstanceId(engineInstanceId)
+            .variableName("myDocumentReference")
+            .list();
+    if (variables.isEmpty()) {
+      return List.of();
+    }
+    if (variables.size() != 1 || !(variables.getFirst().getValue() instanceof String value)) {
+      throw new IllegalStateException(
+          "CreateDocument Process output must be one string variable");
+    }
+    return List.of(
+        new VariableBinding("myDocumentReference", new StringValue(value)));
   }
 
   CleanupProjection observeCleanup() {

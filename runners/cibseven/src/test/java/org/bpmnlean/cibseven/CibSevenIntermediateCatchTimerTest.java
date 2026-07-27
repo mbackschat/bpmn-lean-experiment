@@ -53,11 +53,13 @@ public class CibSevenIntermediateCatchTimerTest {
                   List.of(new OpenTimer(timerId, 1000)),
                   List.of(),
                   List.of(),
+                  List.of(),
                   0),
               new CommandObservation(FIRE_COMMAND_ID, COMMITTED),
               new StateObservation(
                   "Instance_1",
                   COMPLETED,
+                  List.of(),
                   List.of(),
                   List.of(),
                   List.of(),

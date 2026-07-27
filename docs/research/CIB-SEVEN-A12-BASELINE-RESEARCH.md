@@ -79,7 +79,7 @@ For the exact `CreateDocument` successful string-only path, share reviewed seman
 
 Do not infer broader A12 compatibility from the exact seam. Scripting, Java object serialization, Spring configuration, jobs, persistence, REST, plugins, and engine-internal consumers require their own `2.0.0` target assessments.
 
-The next bounded decision is the [CreateDocument data and mapping proposal](../capsules/CREATE-DOCUMENT-DATA-PROPOSAL.md). It selects the smallest typed variable, input/output mapping, expression, effect-patch, and successful transaction-refinement account capable of admitting the maintained model without source rewriting.
+The resulting bounded decision is the [CreateDocument data and mapping specification](../capsules/CREATE-DOCUMENT-DATA-SPEC.md). It selects the smallest typed variable, input/output mapping, expression, effect-patch, and successful transaction-refinement account capable of admitting the maintained model without source rewriting.
 
 ## Reopen conditions
 

@@ -55,7 +55,7 @@ test("uses structural document kinds without embedded schema counters", async ()
 test("keeps every target scenario answer-free and binds retained CIB evidence by content", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 
-  assert.equal(artifactSets.length, 8);
+  assert.equal(artifactSets.length, 9);
   for (const artifactSet of artifactSets) {
     assert.equal("calibration" in artifactSet.scenario, false);
     assert.equal(

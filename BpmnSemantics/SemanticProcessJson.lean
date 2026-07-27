@@ -97,6 +97,27 @@ private def decodeOccurrenceId (json : Json) :
       elementId := ⟨← stringField json "elementId"⟩
       activation }
 
+private def decodeVariableValue (json : Json) :
+    Except String VariableValue := do
+  requireObjectShape json ["kind", "value"]
+  expectStringField json "kind" "string"
+  pure (.string (← stringField json "value"))
+
+private def decodeVariableBinding (json : Json) :
+    Except String VariableBinding := do
+  requireObjectShape json ["name", "value"]
+  pure
+    { name := ← stringField json "name"
+      value := ← decodeVariableValue (← field json "value") }
+
+private def decodeEffectExecutionResult (json : Json) :
+    Except String EffectExecutionResult := do
+  requireObjectShape json ["kind", "localPatch"]
+  expectStringField json "kind" "success"
+  pure
+    (.success
+      (← decodeArray decodeVariableBinding (← field json "localPatch")))
+
 private def decodeStimulus (json : Json) : Except String Stimulus := do
   let kind ← stringField json "kind"
   match kind with
@@ -123,11 +144,12 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           (← decodeOccurrenceId (← field json "timerId"))
           (← decodeSafeNat (← field json "logicalTimeMs")))
   | "completeEffect" =>
-      requireObjectShape json ["commandId", "effectId", "kind"]
+      requireObjectShape json ["commandId", "effectId", "kind", "result"]
       pure
         (.completeEffect
           ⟨← stringField json "commandId"⟩
-          (← decodeOccurrenceId (← field json "effectId")))
+          (← decodeOccurrenceId (← field json "effectId"))
+          (← decodeEffectExecutionResult (← field json "result")))
   | _ => throw s!"unsupported scenario stimulus {kind}"
 
 private def decodeObservationKind (json : Json) :
@@ -140,6 +162,7 @@ private def decodeObservationKind (json : Json) :
   | "openUserTasks" => pure .openUserTasks
   | "openTimers" => pure .openTimers
   | "openEffects" => pure .openEffects
+  | "variables" => pure .variables
   | "enabledInteractions" => pure .enabledInteractions
   | "logicalTime" => pure .logicalTime
   | kind => throw s!"unsupported scenario observation {kind}"

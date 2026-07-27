@@ -17,6 +17,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 
 import {
+  isCompletedProcessReceipt,
   reconcileHarnessTraceEvidence,
 } from "../dist/index.js";
 
@@ -37,6 +38,7 @@ const completedState = {
   openUserTasks: [],
   openTimers: [],
   openEffects: [],
+  variables: [],
   enabledInteractions: [],
   logicalTimeMs: 0,
 };
@@ -64,6 +66,7 @@ const trace = [
     openUserTasks: [],
     openTimers: [],
     openEffects: [],
+    variables: [],
     enabledInteractions: [],
     logicalTimeMs: 0,
   },
@@ -86,6 +89,13 @@ const receipt = {
   processInstanceId: "Instance_1",
   finalState: completedState,
 };
+
+test("requires canonical Process variables in a completed receipt", () => {
+  assert.equal(isCompletedProcessReceipt(receipt), true);
+  const withoutVariables = structuredClone(receipt);
+  delete withoutVariables.finalState.variables;
+  assert.equal(isCompletedProcessReceipt(withoutVariables), false);
+});
 
 test("reconciles Query command outcomes and terminal state with durable history", () => {
   assert.doesNotThrow(() =>

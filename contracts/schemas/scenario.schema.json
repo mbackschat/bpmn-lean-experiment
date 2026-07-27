@@ -57,6 +57,7 @@
         "openUserTasks",
         "openTimers",
         "openEffects",
+        "variables",
         "enabledInteractions",
         "logicalTime"
       ]
@@ -260,7 +261,8 @@
       "required": [
         "kind",
         "commandId",
-        "effectId"
+        "effectId",
+        "result"
       ],
       "properties": {
         "kind": {
@@ -271,6 +273,60 @@
         },
         "effectId": {
           "$ref": "#/$defs/effectOccurrenceId"
+        },
+        "result": {
+          "$ref": "#/$defs/effectExecutionResult"
+        }
+      }
+    },
+    "variableValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "variableBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "value": {
+          "$ref": "#/$defs/variableValue"
+        }
+      }
+    },
+    "effectExecutionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "localPatch"
+      ],
+      "properties": {
+        "kind": {
+          "const": "success"
+        },
+        "localPatch": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableBinding"
+          }
         }
       }
     },
@@ -384,27 +440,48 @@
       }
     },
     "effectDescriptor": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "protocol",
-        "handler"
-      ],
-      "properties": {
-        "protocol": {
-          "const": "urn:bpmn-lean:effect:probe-v1"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "handler"
+          ],
+          "properties": {
+            "protocol": {
+              "const": "urn:bpmn-lean:effect:probe-v1"
+            },
+            "handler": {
+              "const": "bpmnLeanEffectHandler"
+            }
+          }
         },
-        "handler": {
-          "const": "bpmnLeanEffectHandler"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "handler"
+          ],
+          "properties": {
+            "protocol": {
+              "const": "urn:bpmn-lean:a12-delegate:v1"
+            },
+            "handler": {
+              "const": "createDocumentDelegate"
+            }
+          }
         }
-      }
+      ]
     },
     "openEffect": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
-        "descriptor"
+        "descriptor",
+        "arguments"
       ],
       "properties": {
         "id": {
@@ -412,6 +489,12 @@
         },
         "descriptor": {
           "$ref": "#/$defs/effectDescriptor"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableBinding"
+          }
         }
       }
     },
@@ -471,6 +554,7 @@
         "openUserTasks",
         "openTimers",
         "openEffects",
+        "variables",
         "enabledInteractions",
         "logicalTimeMs"
       ],
@@ -510,6 +594,12 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/openEffect"
+          }
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableBinding"
           }
         },
         "enabledInteractions": {

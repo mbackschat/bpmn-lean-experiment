@@ -329,7 +329,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
       | .notStarted
       | .completed _ => { outcome := .rejected, state }
   | .fireTimer _ _ _ => { outcome := .unsupported, state }
-  | .completeEffect _ _ => { outcome := .unsupported, state }
+  | .completeEffect _ _ _ => { outcome := .unsupported, state }
 
 def enabledTransitions (source : CheckedProcess)
     (state : SourceRuntimeState) :
@@ -450,6 +450,7 @@ def observeStableState (source : CheckedProcess)
           openUserTasks := tasks
           openTimers := []
           openEffects := []
+          variables := []
           enabledInteractions :=
             tasks.map fun task => .completeUserTaskInstance task.id
           logicalTimeMs := state.logicalTimeMs }
@@ -461,6 +462,7 @@ def observeStableState (source : CheckedProcess)
           openUserTasks := []
           openTimers := []
           openEffects := []
+          variables := []
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
 
@@ -468,7 +470,7 @@ def commandId : Stimulus → SemanticId
   | .startProcess id _ _
   | .completeUserTaskInstance id _
   | .fireTimer id _ _
-  | .completeEffect id _ => id
+  | .completeEffect id _ _ => id
 
 structure ScenarioExecution where
   outcome : ScenarioOutcome
@@ -528,6 +530,7 @@ def requiredObservations : List ObservationKind :=
   , .openUserTasks
   , .openTimers
   , .openEffects
+  , .variables
   , .enabledInteractions
   , .logicalTime ]
 

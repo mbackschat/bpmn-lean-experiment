@@ -54,6 +54,13 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.effectId.elementId,
           stimulus.effectId.activation,
         ],
+        [
+          stimulus.result.kind,
+          stimulus.result.localPatch.map((binding) => [
+            binding.name,
+            [binding.value.kind, binding.value.value],
+          ]),
+        ],
       ]);
     default:
       return assertNever(stimulus);

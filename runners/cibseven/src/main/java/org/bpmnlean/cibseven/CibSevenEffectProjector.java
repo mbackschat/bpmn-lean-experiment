@@ -69,7 +69,7 @@ final class CibSevenEffectProjector {
       projected.add(
           new ProjectedEffectWait(
               job.getId(),
-              new OpenEffect(occurrence, descriptor),
+              new OpenEffect(occurrence, descriptor, List.of()),
               new EffectJob(
                   definition.getActivityId(),
                   activation,

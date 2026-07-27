@@ -35,7 +35,7 @@ import {
   requireLeanProvenanceErasureRejection,
   requireLeanScenarioMutationRejection,
   requireUniqueCaseIds,
-  runCibTargets,
+  runCibTargetGroups,
   runCoreTargets,
   runLeanTargets,
   runProcess,
@@ -66,16 +66,6 @@ export async function runPipelineCases(
   const ingestionMs = elapsedMs(ingestionStarted);
   const temporaryDirectory = await mkdtemp(
     path.join(tmpdir(), "bpmn-differential-"),
-  );
-  const cibInputPath = path.join(temporaryDirectory, "cib-input.jsonl");
-  const cibOutputPath = path.join(temporaryDirectory, "cib-output.jsonl");
-  const cibEffectRetryInputPath = path.join(
-    temporaryDirectory,
-    "cib-effect-retry-input.jsonl",
-  );
-  const cibEffectRetryOutputPath = path.join(
-    temporaryDirectory,
-    "cib-effect-retry-output.jsonl",
   );
   const leanInputPath = path.join(
     temporaryDirectory,
@@ -130,7 +120,7 @@ export async function runPipelineCases(
     const core = runCoreTargets(contexts);
     const effectContexts = contexts.filter(
       ({ pipelineCase }) =>
-        pipelineCase.effectScheduleSubstitution === true,
+        pipelineCase.cibEffectRetrySchedule === true,
     );
     const [
       cib,
@@ -141,10 +131,10 @@ export async function runPipelineCases(
       temporal,
       cibEffectRetry,
     ] = await Promise.all([
-      runCibTargets(
-        contexts.map(({ scenario }) => scenario),
-        cibInputPath,
-        cibOutputPath,
+      runCibTargetGroups(
+        contexts,
+        temporaryDirectory,
+        "cib",
       ),
       runLeanTargets(contexts, leanInputPath),
       requireLeanDefinitionMutationRejection(
@@ -163,10 +153,10 @@ export async function runPipelineCases(
       runTemporalTargets(runner, contexts),
       effectContexts.length === 0
         ? null
-        : runCibTargets(
-            effectContexts.map(({ scenario }) => scenario),
-            cibEffectRetryInputPath,
-            cibEffectRetryOutputPath,
+        : runCibTargetGroups(
+            effectContexts,
+            temporaryDirectory,
+            "cib-effect-retry",
             EffectExecutionSchedule.FailAfterMutationOnce,
           ),
     ]);

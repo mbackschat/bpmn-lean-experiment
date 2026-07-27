@@ -16,11 +16,15 @@
     },
     {
       "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:490f047958adccc3d67516a5758fe2bb7ecd8683de10173c3a40816bb7f71eb1",
+      "commandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
       "effectId": {
         "processInstanceId": "Instance_1",
         "elementId": "ServiceTask_Record",
         "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
       }
     }
   ],
@@ -32,6 +36,7 @@
     "openUserTasks",
     "openTimers",
     "openEffects",
+    "variables",
     "enabledInteractions",
     "logicalTime"
   ],

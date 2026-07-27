@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-wrong-activation",
-    "sha256": "2c64b011bfe1671089291af01870a8a4b81a39553bb4f10726fa807d9c55fec3"
+    "sha256": "c912584322b3beb92f208ee4415817a1226897cebb0b58eea3947bbe9d2bbe1e"
   },
   "profile": {
     "id": "cibseven-2.2.0-user-task-draft",
-    "sha256": "28b1bbe88f6b120c290c0057f91730e0bd1dff0fa593d9b4749c5193878fa980"
+    "sha256": "f30b96607428e0546d169a47580d63c21e65734560d13136d6ac1fb8fd4e4a48"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -90,6 +90,7 @@
         ],
         "openTimers": [],
         "openEffects": [],
+        "variables": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -131,6 +132,7 @@
         ],
         "openTimers": [],
         "openEffects": [],
+        "variables": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",

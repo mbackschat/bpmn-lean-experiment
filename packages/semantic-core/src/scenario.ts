@@ -106,7 +106,11 @@ export function projectOpenEffects(
   state: RuntimeState,
 ): ReadonlyArray<OpenEffect> {
   return state.effectWaits
-    .map(({ id, descriptor }) => ({ id, descriptor }))
+    .map(({ id, descriptor, arguments: arguments_ }) => ({
+      id,
+      descriptor,
+      arguments: arguments_,
+    }))
     .sort(compareOpenOccurrences);
 }
 
@@ -125,6 +129,7 @@ function observeStableState(state: RuntimeState): StateObservation | null {
         openUserTasks: projectOpenUserTasks(state),
         openTimers: projectOpenTimers(state),
         openEffects: projectOpenEffects(state),
+        variables: state.processVariables,
         enabledInteractions: projectOpenUserTasks(state).map((task) => ({
           kind: StimulusKind.CompleteUserTaskInstance,
           taskId: task.id,

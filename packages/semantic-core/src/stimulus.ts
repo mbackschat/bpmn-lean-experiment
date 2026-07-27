@@ -1,10 +1,13 @@
 import {
+  EffectExecutionResultKind,
   StimulusKind,
+  VariableValueKind,
 } from "./contract.js";
 import type {
   Stimulus,
 } from "./contract.js";
 import {
+  compareCanonicalStrings,
   isWellFormedWireString,
 } from "./wire.js";
 
@@ -53,7 +56,8 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.effectId.processInstanceId ===
           right.effectId.processInstanceId &&
         left.effectId.elementId === right.effectId.elementId &&
-        left.effectId.activation === right.effectId.activation
+        left.effectId.activation === right.effectId.activation &&
+        sameEffectResult(left.result, right.result)
       );
     default:
       return assertNever(left);
@@ -116,13 +120,65 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
       );
     case StimulusKind.CompleteEffect:
       return (
-        hasOnlyKeys(value, ["kind", "commandId", "effectId"]) &&
+        hasOnlyKeys(value, ["kind", "commandId", "effectId", "result"]) &&
         isNonEmptyString(value.commandId) &&
-        isOccurrenceId(value.effectId)
+        isOccurrenceId(value.effectId) &&
+        isWellFormedEffectExecutionResult(value.result)
       );
     default:
       return false;
   }
+}
+
+function sameEffectResult(
+  left: import("./contract.js").EffectExecutionResult,
+  right: import("./contract.js").EffectExecutionResult,
+): boolean {
+  return left.kind === right.kind &&
+    left.localPatch.length === right.localPatch.length &&
+    left.localPatch.every((binding, index) => {
+      const candidate = right.localPatch[index];
+      return candidate !== undefined &&
+        binding.name === candidate.name &&
+        binding.value.kind === candidate.value.kind &&
+        binding.value.value === candidate.value.value;
+    });
+}
+
+export function isWellFormedEffectExecutionResult(
+  value: unknown,
+): value is import("./contract.js").EffectExecutionResult {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["kind", "localPatch"]) ||
+    value.kind !== EffectExecutionResultKind.Success ||
+    !Array.isArray(value.localPatch) ||
+    !value.localPatch.every(isVariableBinding)
+  ) {
+    return false;
+  }
+  const patch = value.localPatch as ReadonlyArray<
+    import("./contract.js").VariableBinding
+  >;
+  return patch.every((binding, index) =>
+      index === 0 ||
+      compareCanonicalStrings(
+        String(patch[index - 1]?.name),
+        binding.name,
+      ) < 0
+    );
+}
+
+function isVariableBinding(
+  value: unknown,
+): value is import("./contract.js").VariableBinding {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["name", "value"]) &&
+    isNonEmptyString(value.name) &&
+    isRecord(value.value) &&
+    hasOnlyKeys(value.value, ["kind", "value"]) &&
+    value.value.kind === VariableValueKind.String &&
+    isWellFormedWireString(value.value.value);
 }
 
 function isOccurrenceId(value: unknown): boolean {

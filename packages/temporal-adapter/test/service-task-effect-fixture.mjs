@@ -46,6 +46,8 @@ export function serviceTaskEffectInput(instanceId = "Instance_1") {
         effect: {
           elementId: "ServiceTask_Record",
           descriptor,
+          inputMappings: [],
+          outputMappings: [],
         },
       },
       {
@@ -80,8 +82,15 @@ export function serviceTaskEffectInput(instanceId = "Instance_1") {
         },
         {
           kind: StimulusKind.CompleteEffect,
-          commandId: completeEffectCommandId(effectId),
+          commandId: completeEffectCommandId(effectId, {
+            kind: "success",
+            localPatch: [],
+          }),
           effectId,
+          result: {
+            kind: "success",
+            localPatch: [],
+          },
         },
       ],
       observations: [
@@ -92,6 +101,7 @@ export function serviceTaskEffectInput(instanceId = "Instance_1") {
         ObservationRequestKind.OpenUserTasks,
         ObservationRequestKind.OpenTimers,
         ObservationRequestKind.OpenEffects,
+        ObservationRequestKind.Variables,
         ObservationRequestKind.EnabledInteractions,
         ObservationRequestKind.LogicalTime,
       ],
@@ -120,7 +130,9 @@ export function serviceTaskEffectRequest({ scenario, semanticProcess }) {
       },
       occurrence: effectId,
       descriptor,
+      arguments: [],
     }),
+    arguments: [],
   };
 }
 

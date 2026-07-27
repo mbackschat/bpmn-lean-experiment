@@ -51,6 +51,7 @@ type CibRunnerResult = Readonly<{
       jobs: ReadonlyArray<unknown>;
     }>>;
     effectExecutions: ReadonlyArray<unknown>;
+    mappingExecutions: ReadonlyArray<unknown>;
   }>;
 }>;
 
@@ -111,7 +112,8 @@ function requireCleanDiagnostics(
   }
   if (
     !Array.isArray(result.diagnostics.effectJobs) ||
-    !Array.isArray(result.diagnostics.effectExecutions)
+    !Array.isArray(result.diagnostics.effectExecutions) ||
+    !Array.isArray(result.diagnostics.mappingExecutions)
   ) {
     throw new Error(
       `CIB scenario ${result.scenarioId} omitted raw effect observations`,
@@ -122,9 +124,16 @@ function requireCleanDiagnostics(
 async function runCibBatch(
   scenarios: ReadonlyArray<Scenario>,
   temporaryDirectory: string,
+  engineVersion: string,
 ): Promise<ReadonlyArray<CibRunnerResult>> {
-  const inputPath = path.join(temporaryDirectory, "scenarios.jsonl");
-  const outputPath = path.join(temporaryDirectory, "results.jsonl");
+  const inputPath = path.join(
+    temporaryDirectory,
+    `scenarios-${engineVersion}.jsonl`,
+  );
+  const outputPath = path.join(
+    temporaryDirectory,
+    `results-${engineVersion}.jsonl`,
+  );
   await writeFile(
     inputPath,
     `${scenarios.map((scenario) => JSON.stringify(scenario)).join("\n")}\n`,
@@ -140,6 +149,7 @@ async function runCibBatch(
     "--no-transfer-progress",
     "-Dstyle.color=never",
     "-Dtest=CibSevenPipelineExportBridge",
+    `-Dcibseven.version=${engineVersion}`,
     `-Dbpmn.pipeline.projectRoot=${projectRoot}`,
     `-Dbpmn.pipeline.input=${inputPath}`,
     `-Dbpmn.pipeline.output=${outputPath}`,
@@ -188,10 +198,22 @@ async function replaceEvidence() {
     path.join(tmpdir(), "bpmn-cib-evidence-"),
   );
   try {
-    const results = await runCibBatch(
-      sources.map(({ scenario }) => scenario.value),
-      temporaryDirectory,
+    const sourcesByVersion = Map.groupBy(
+      sources,
+      ({ profile }) => profile.value.oracle.version,
     );
+    const results = (
+      await Promise.all(
+        [...sourcesByVersion.entries()].map(
+          ([engineVersion, versionSources]) =>
+            runCibBatch(
+              versionSources.map(({ scenario }) => scenario.value),
+              temporaryDirectory,
+              engineVersion,
+            ),
+        ),
+      )
+    ).flat();
     const byScenario = new Map<string, CibRunnerResult>(
       results.map(
         (result) => [result.scenarioId, result] as const,
@@ -250,6 +272,12 @@ async function replaceEvidence() {
                     effectJobs: result.diagnostics.effectJobs,
                     effectExecutions:
                       result.diagnostics.effectExecutions,
+                  }
+                : {}),
+              ...(result.diagnostics.mappingExecutions.length > 0
+                ? {
+                    mappingExecutions:
+                      result.diagnostics.mappingExecutions,
                   }
                 : {}),
             },

@@ -67,10 +67,34 @@ export type FireTimerStimulus = Readonly<{
 
 export type EffectOccurrenceId = OccurrenceId;
 
+export enum VariableValueKind {
+  String = "string",
+}
+
+export type VariableValue = Readonly<{
+  kind: VariableValueKind.String;
+  value: string;
+}>;
+
+export type VariableBinding = Readonly<{
+  name: string;
+  value: VariableValue;
+}>;
+
+export enum EffectExecutionResultKind {
+  Success = "success",
+}
+
+export type EffectExecutionResult = Readonly<{
+  kind: EffectExecutionResultKind.Success;
+  localPatch: ReadonlyArray<VariableBinding>;
+}>;
+
 export type CompleteEffectStimulus = Readonly<{
   kind: StimulusKind.CompleteEffect;
   commandId: string;
   effectId: EffectOccurrenceId;
+  result: EffectExecutionResult;
 }>;
 
 export type Stimulus =
@@ -99,6 +123,7 @@ export enum ObservationRequestKind {
   OpenUserTasks = "openUserTasks",
   OpenTimers = "openTimers",
   OpenEffects = "openEffects",
+  Variables = "variables",
   EnabledInteractions = "enabledInteractions",
   LogicalTime = "logicalTime",
 }
@@ -140,6 +165,7 @@ export type OpenTimer = Readonly<{
 export type OpenEffect = Readonly<{
   id: EffectOccurrenceId;
   descriptor: import("./semantic-process-contract.js").EffectDescriptor;
+  arguments: ReadonlyArray<VariableBinding>;
 }>;
 
 export type StateObservation = Readonly<{
@@ -150,6 +176,7 @@ export type StateObservation = Readonly<{
   openUserTasks: ReadonlyArray<OpenUserTask>;
   openTimers: ReadonlyArray<OpenTimer>;
   openEffects: ReadonlyArray<OpenEffect>;
+  variables: ReadonlyArray<VariableBinding>;
   enabledInteractions: ReadonlyArray<EnabledInteraction>;
   logicalTimeMs: number;
 }>;

@@ -55,7 +55,7 @@ function requireStateObservation(
 }
 
 test(
-  "runs the User Task, parallel, Timer, and Service Task witnesses through one batch",
+  "runs the admitted semantic capsules through release-bound target batches",
   { timeout: 45_000 },
   async () => {
     assert.deepEqual(
@@ -69,6 +69,7 @@ test(
         "parallel-fork-join-stale-a-while-b-active",
         "intermediate-catch-timer-pt1s",
         "service-task-effect-success",
+        "a12-create-document-data",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
@@ -99,12 +100,31 @@ test(
       );
       const isPostTerminal =
         caseReport.scenario.id === "user-task-stale-completion";
+      const isSynchronousCreateDocument =
+        caseReport.scenario.id === "a12-create-document-data";
       assert.equal(
         caseReport.comparison.targets.includes(
           DifferentialTarget.Temporal,
         ),
         !isPostTerminal,
       );
+      assert.equal(
+        caseReport.comparison.targets.includes(
+          DifferentialTarget.CibSeven,
+        ),
+        !isSynchronousCreateDocument,
+      );
+      if (isSynchronousCreateDocument) {
+        assert.deepEqual(caseReport.cibHostComparison, {
+          kind: ComparisonKind.Agreement,
+          targets: [
+            DifferentialTarget.CibSeven,
+            DifferentialTarget.Lean,
+          ],
+        });
+      } else {
+        assert.equal(caseReport.cibHostComparison, null);
+      }
       if (isPostTerminal) {
         assert.deepEqual(caseReport.temporalPrefixComparison, {
           kind: ComparisonKind.Agreement,
@@ -142,7 +162,9 @@ test(
 
       assert.deepEqual(caseReport.injectedDisagreement, {
         kind: ComparisonKind.Disagreement,
-        referenceTarget: DifferentialTarget.CibSeven,
+        referenceTarget: isSynchronousCreateDocument
+          ? DifferentialTarget.Lean
+          : DifferentialTarget.CibSeven,
         candidateTarget: DifferentialTarget.SemanticCore,
         disagreement: pipelineCase.expectedInjectedDisagreement,
       });
@@ -208,14 +230,18 @@ test(
           ),
           true,
         );
-        assert.deepEqual(caseEvidence.cibEffectRetryEvidence, {
-          afterCommandId: caseEvidence.expectedDerivedEffectCommandId,
-          schedule: "failAfterMutationOnce",
-          invocations: 2,
-          mutations: 1,
-          initialRetries: 3,
-          retriesAfterFirstFailure: 2,
-        });
+        if (isSynchronousCreateDocument) {
+          assert.equal(caseEvidence.cibEffectRetryEvidence, null);
+        } else {
+          assert.deepEqual(caseEvidence.cibEffectRetryEvidence, {
+            afterCommandId: caseEvidence.expectedDerivedEffectCommandId,
+            schedule: "failAfterMutationOnce",
+            invocations: 2,
+            mutations: 1,
+            initialRetries: 3,
+            retriesAfterFirstFailure: 2,
+          });
+        }
         assert.notEqual(caseEvidence.primaryEffectProbeEvidence, null);
         assert.notEqual(caseEvidence.isolationEffectProbeEvidence, null);
         if (
@@ -249,7 +275,7 @@ test(
       }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 9,
+      liveHistories: 11,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
@@ -263,7 +289,7 @@ test(
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 16);
+    assert.equal(report.isolation.temporalWorkflowIds.length, 18);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,

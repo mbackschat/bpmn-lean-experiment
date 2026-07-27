@@ -1,8 +1,8 @@
-# CreateDocument data and mapping proposal
+# CreateDocument data and mapping specification
 
-## Status
+## Role
 
-**Owner-approved on 2026-07-27; source admission and static cross-language lowering implemented, runtime semantics and host evidence pending.**
+This specification owns the approved bounded source, data, mapping, effect-result, host-refinement, evidence, and exclusion contract for the A12-shaped `CreateDocument` slice. Exact current implementation and evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).
 
 This capsule defines the smallest semantic and compatibility contract needed to admit the maintained A12 Workflows `CreateDocument.bpmn` source unchanged while preserving the project's single TypeScript semantic core, Temporal Activity boundary, and Lean assurance model.
 
@@ -49,11 +49,11 @@ The exact maintained source has:
 
 Numbers, booleans, null, lists, maps, documents, serialized Java objects, arbitrary variable names or scopes, duplicate names, process-input expressions, general JUEL, property or method access, coercion, bean invocation as expression evaluation, mutable expressions, Groovy, FreeMarker, Script Tasks, execution listeners, arbitrary delegates, Java binary compatibility, `DelegateExecution`, service faults, `BpmnError`, boundary events, incidents, retries as semantics, rollback equivalence, cancellation, multiple effects, and general input/output mapping are excluded.
 
-The next proposed semantic capsule after this one is typed `BpmnError` plus boundary-error handling. Four maintained A12 delegates supply that consumer. This proposal shapes its success result as an extensible union but does not add the error variant.
+The next proposed semantic capsule after this one is typed `BpmnError` plus boundary-error handling. Four maintained A12 delegates supply that consumer. This specification shapes its success result as an extensible union but does not add the error variant.
 
 ## Source and license boundary
 
-The target file remains in the registered A12 Workflows checkout under its EUPL-or-commercial license. It must not be copied into the MIT repository or relicensed by implication.
+The target file remains in the registered A12 Workflows checkout under its EUPL-1.2 license. It must not be copied into the MIT repository or relicensed by implication.
 
 The implementation may use:
 
@@ -247,7 +247,43 @@ The existing retry, idempotency, exhaustion, Worker-replacement, bypass, replay,
 
 CIB executes this source synchronously during Process start. Its lane therefore supplies final success, mapping, delegate-input/output, and transaction facts but no independent effect-in-flight state. The CIB intermediate projection remains adapter-decided; the final Process variable and successful completion are engine-observed.
 
-The nearest host counterexample is an Activity that returns `newDocRef` but the adapter writes `myDocumentReference` directly, bypassing the semantic mapping. Retained history plus a mapping-bypass mutation must detect that account.
+The nearest host counterexample is an Activity that returns `newDocRef` but the adapter writes the patch directly into Process scope, bypassing the semantic mapping. The Lean and TypeScript direct-patch-to-Process-scope non-law separates that account; retained Temporal history separately rejects an Activity bypass.
+
+## Runtime-only and synthetic constructs
+
+| Construct | Derivation and owner | Public projection | Lifecycle |
+|---|---|---|---|
+| Process variable scope | Semantic core from accepted effect results and admitted output mappings | Canonically sorted `variables` | Created empty at Process start, updated only by semantic mappings, retained through completion |
+| Activity-local scope | Semantic core from evaluated input mappings and an accepted typed result patch | Never projected as Process variables; committed inputs appear only as effect `arguments` | Created at effect activation, extended by one validated result, removed on completion |
+| Effect arguments | Semantic core from admitted literal input mapping before Activity scheduling | Immutable sorted `openEffects[].arguments` | Committed with the effect wait and removed with it |
+| Typed local result patch | Activity result validated by the semantic core | Appears in the content-bound `completeEffect` stimulus, not as an independent state field | Applied exactly once or rejected without mutation |
+| CIB execution-local variables and mapping transaction | CIB Seven `2.0.0` from the admitted extension binding | Raw mapping-execution evidence plus engine-observed final Process variable | Exists inside the synchronous start transaction; no committed effect-in-flight state |
+| Temporal Activity request and result | Adapter from committed intent and Activity Worker response | Durable history and harness evidence only | Request is stable across attempts; the result advances semantics only through ordinary `completeEffect` admission |
+
+## CIB fidelity labels
+
+| Claim | Fidelity |
+|---|---|
+| Exact delegate expression and input/output extension were deployed under CIB Seven `2.0.0` | Engine-observed deployment fact |
+| The delegate received `documentModelName = "MyDocumentModel"` | Probe-service-observed after engine input mapping |
+| The delegate wrote Activity-local `newDocRef = "Document:42"` | Probe-service-observed |
+| The Process completed with `myDocumentReference = "Document:42"` | Engine-observed history/final-state fact |
+| CIB has a committed effect intent or Activity-local wait corresponding to `openEffects` | No claim; CIB invokes and completes the synchronous Service Task inside one command transaction |
+| CIB and the project accounts choose the same transaction or rollback semantics | No claim; only the successful admitted boundary observations are related |
+
+The differential judgement is therefore not four independent semantic derivations. Lean and the TypeScript core implement the reviewed semantic account; Temporal supplies refinement evidence for that core; CIB contributes a synchronous host-realization check over deployment, accepted start, mapped delegate execution, final Process variable, and completion.
+
+## Rule-to-evidence matrix
+
+| Rule | Profile clause | Lean | CIB Seven `2.0.0` | TypeScript core | Temporal refinement | Negative or mutation guard |
+|---|---|---|---|---|---|---|
+| `CDATA-INPUT-01` | Exact literal `documentModelName` input mapping | `literal_input_commits_exact_arguments` and exact waiting trace | Delegate observes the one engine-mapped literal argument | Start commits exactly one immutable effect argument | Activity request is derived from committed arguments | Argument variation/omission changes or collides with transport identity as expected |
+| `CDATA-INTENT-01` | Profile protocol plus exact source handler and mappings | Exact waiting trace and successful mapping trace | No semantic-intent claim; synchronous host execution only | Observation and transport material derive from admitted program plus committed state | Retry, replay, and Worker replacement preserve the same request | Host-derived identity and Activity-bypass mutations fail |
+| `CDATA-PATCH-01` | Exact successful local `newDocRef` patch | `successful_result_maps_only_process_target` | Probe records one local write | Exact success patch commits | Typed Activity result produces one content-bound completion | Patch-field/value identity locks |
+| `CDATA-PATCH-REFUSE-01` | Closed one-field result contract | Quantified `invalid_patch_is_rejected` with missing, extra, and duplicate examples | No result-ingress claim | Missing, extra, duplicate, wrong-name, and wrong-type patches preserve state | No independent mismatch input; adapter forwards the typed Worker result | Malformed-patch tests preserve the exact wait |
+| `CDATA-OUTPUT-01` | Exact `${newDocRef}` output mapping | Exact final trace, output theorem, and direct-patch-to-Process-scope non-law | Engine maps local output to the Process variable | Core alone evaluates the output mapping and rejects direct patch naming as final scope | Adapter supplies only the typed local patch | Direct-patch mapping witness and Activity-bypass history mutation |
+| `CDATA-SCOPE-01` | Process/local scope contract | Exact final variable theorem and trace | Final Process history contains only the mapped target | Final observation contains only `myDocumentReference` | Completed receipt and Query trace agree on the final variable | Final-variable projection mutation fails |
+| `CDATA-TX-01` | Success-only `CIB-OP-0002` relation | Exact successful semantic trace | Synchronous start transaction reaches the selected final state | Two-step semantic effect trace reaches the same final state | Durable Activity/refinement trace reaches the same final state | Failure/rollback equivalence remains an explicit non-claim |
 
 ## Smallest witnesses
 
@@ -259,10 +295,10 @@ The nearest host counterexample is an Activity that returns `newDocRef` but the 
 | Changing the literal changes transport identity | Idempotency key omits effect arguments |
 | Changing the patch changes completion-command identity | Result content is not command-bound |
 | CIB `2.0.0` delegate observes the mapped input, sets local output, and final Process scope contains the mapped target | Source extension mapping is accepted syntactically but not executed |
-| Temporal Activity-bypass or output-mapping-bypass mutation fails | Pure final equality hides fabricated execution or host-owned mapping |
+| Temporal Activity-bypass mutation fails and the Lean/core direct-patch account produces `newDocRef` rather than mapped `myDocumentReference` | Pure final equality hides fabricated execution or host-owned mapping |
 | Scripted delegate failure after external mutation is not compared as semantic rollback | Successful equality is generalized into false transaction equivalence |
 
-## Evidence required before graduation
+## Required evidence
 
 - owner-approved CIB `2.0.0` A12 profile identity and exact relationship-register entries;
 - warning-free exact external-source admission with no rewrite, plus a project-authored equivalent mandatory fixture unless redistribution is separately authorized;
@@ -275,7 +311,7 @@ The nearest host counterexample is an Activity that returns `newDocRef` but the 
 - core-owned canonical argument and patch encoding with field-variation and omission mutations;
 - packaged CIB Seven `2.0.0` execution that observes delegate input, local output, final Process mapping, cleanup, and engine version;
 - fresh content-bound `2.0.0` evidence, never relabeled `2.2.0` evidence;
-- Temporal Activity request from committed arguments, typed result validation, semantic output mapping, retry/replay/Worker-replacement evidence, and mapping-bypass detection;
+- Temporal Activity request from committed arguments, typed result validation, semantic output mapping, retry/replay/Worker-replacement evidence, Activity-bypass detection, and the separate Lean/core direct-patch mapping discriminator;
 - explicit successful-transaction fidelity row and a retained negative assertion that failure/rollback equivalence is not claimed;
 - complete applicable gate within existing budgets.
 

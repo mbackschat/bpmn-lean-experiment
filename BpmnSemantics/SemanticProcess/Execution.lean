@@ -53,19 +53,66 @@ def fireTimer (state : RuntimeState) (timerId : TimerOccurrenceId)
       else
         none
 
-def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId) :
-    Option RuntimeState :=
-  match state.effectWaits.find? fun wait =>
-      decide (
-        wait.processInstanceId = effectId.processInstanceId &&
-          wait.elementId.value = effectId.elementId.value &&
-          wait.activation = effectId.activation) with
-  | none => none
-  | some wait =>
-      some
+def effectOccurrenceMatches (effectId : EffectOccurrenceId)
+    (wait : EffectWait) : Bool :=
+  decide (
+    wait.processInstanceId = effectId.processInstanceId &&
+      wait.elementId.value = effectId.elementId.value &&
+      wait.activation = effectId.activation)
+
+/-- Declarative account of one successful effect-result transition. It exposes occurrence matching and mapping validation as separate premises rather than defining validity through the executable transition. -/
+inductive EffectCompletionStep :
+    RuntimeState → EffectOccurrenceId → EffectExecutionResult →
+      RuntimeState → Prop where
+  | commit
+      (state : RuntimeState)
+      (effectId : EffectOccurrenceId)
+      (result : EffectExecutionResult)
+      (wait : EffectWait)
+      (processVariables : List VariableBinding)
+      (occurrence :
+        state.effectWaits.find? (effectOccurrenceMatches effectId) = some wait)
+      (mapping :
+        applyEffectResult wait.arguments wait.outputMappings
+          state.processVariables result = some processVariables) :
+      EffectCompletionStep state effectId result
         { state with
           effectWaits := state.effectWaits.erase wait
+          processVariables
           tokens := wait.output :: state.tokens }
+
+def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
+    (result : EffectExecutionResult) : Option RuntimeState :=
+  match state.effectWaits.find? (effectOccurrenceMatches effectId) with
+  | none => none
+  | some wait =>
+      match applyEffectResult wait.arguments wait.outputMappings
+          state.processVariables result with
+      | none => none
+      | some processVariables =>
+          some
+            { state with
+              effectWaits := state.effectWaits.erase wait
+              processVariables
+              tokens := wait.output :: state.tokens }
+
+/-- Every successful executable effect completion is permitted by the separately stated effect-result relation. -/
+theorem completeEffect_sound
+    (state successor : RuntimeState)
+    (effectId : EffectOccurrenceId)
+    (result : EffectExecutionResult)
+    (success : completeEffect state effectId result = some successor) :
+    EffectCompletionStep state effectId result successor := by
+  unfold completeEffect at success
+  split at success
+  · contradiction
+  · rename_i wait occurrence
+    split at success
+    · contradiction
+    · rename_i processVariables mapping
+      cases success
+      exact .commit state effectId result wait processVariables
+        occurrence mapping
 
 def runChoices (program : Program) : RuntimeState → List OperationId →
     Option RuntimeState
@@ -121,10 +168,10 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _ => { outcome := .rejected, state }
-  | .completeEffect _ effectId =>
+  | .completeEffect _ effectId result =>
       match state.control with
       | .running instanceId =>
-          match completeEffect state effectId with
+          match completeEffect state effectId result with
           | some successor =>
               if effectId.processInstanceId = instanceId then
                 { outcome := .committed, state := successor }
@@ -243,6 +290,28 @@ def singletonEffectWaitingState (wait : EffectWait)
     effectActivations :=
       [{ elementId := wait.elementId, count := wait.activation }]
     logicalTimeMs }
+
+/-- A matching effect result whose patch cannot satisfy the committed mapping contract is rejected with exact state preservation. -/
+theorem effect_result_mapping_failure_is_rejected
+    (program : Program) (wait : EffectWait)
+    (completionCommandId : SemanticId)
+    (result : EffectExecutionResult) (logicalTimeMs : Nat)
+    (invalid :
+      applyEffectResult wait.arguments wait.outputMappings
+        initialState.processVariables result = none) :
+    let effectId : EffectOccurrenceId :=
+      { processInstanceId := wait.processInstanceId
+        elementId := ⟨wait.elementId.value⟩
+        activation := wait.activation }
+    applyStimulus scenarioClosureLimit program
+        (singletonEffectWaitingState wait logicalTimeMs)
+        (.completeEffect completionCommandId effectId result) =
+      { outcome := .rejected
+        state := singletonEffectWaitingState wait logicalTimeMs
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  simp [applyStimulus, admitStimulus, completeEffect,
+    singletonEffectWaitingState, effectOccurrenceMatches, invalid]
 
 /-- Any mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 -- tag::task-identity-law[]
@@ -379,14 +448,15 @@ theorem timer_identity_or_time_mismatch_is_rejected
 theorem effect_identity_mismatch_is_rejected
     (program : Program) (wait : EffectWait)
     (completionCommandId : SemanticId)
-    (submittedEffectId : EffectOccurrenceId) (logicalTimeMs : Nat)
+    (submittedEffectId : EffectOccurrenceId)
+    (result : EffectExecutionResult) (logicalTimeMs : Nat)
     (mismatch :
       submittedEffectId.processInstanceId ≠ wait.processInstanceId ∨
       submittedEffectId.elementId.value ≠ wait.elementId.value ∨
       submittedEffectId.activation ≠ wait.activation) :
     applyStimulus scenarioClosureLimit program
         (singletonEffectWaitingState wait logicalTimeMs)
-        (.completeEffect completionCommandId submittedEffectId) =
+        (.completeEffect completionCommandId submittedEffectId result) =
       { outcome := .rejected
         state := singletonEffectWaitingState wait logicalTimeMs
         internalStepBoundExceeded := false
@@ -398,8 +468,11 @@ theorem effect_identity_mismatch_is_rejected
         wait.activation = submittedEffectId.activation) := by
       intro exactMatch
       exact processMismatch exactMatch.1.1.symm
+    have noOccurrence :
+        effectOccurrenceMatches submittedEffectId wait = false := by
+      simp [effectOccurrenceMatches, noMatch]
     simp [applyStimulus, admitStimulus, completeEffect,
-      singletonEffectWaitingState, noMatch]
+      singletonEffectWaitingState, noOccurrence]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedEffectId.processInstanceId ∧
@@ -407,15 +480,21 @@ theorem effect_identity_mismatch_is_rejected
           wait.activation = submittedEffectId.activation) := by
         intro exactMatch
         exact elementMismatch exactMatch.1.2.symm
+      have noOccurrence :
+          effectOccurrenceMatches submittedEffectId wait = false := by
+        simp [effectOccurrenceMatches, noMatch]
       simp [applyStimulus, admitStimulus, completeEffect,
-        singletonEffectWaitingState, noMatch]
+        singletonEffectWaitingState, noOccurrence]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedEffectId.processInstanceId ∧
             wait.elementId.value = submittedEffectId.elementId.value) ∧
           wait.activation = submittedEffectId.activation) := by
         intro exactMatch
         exact activationMismatch exactMatch.2.symm
+      have noOccurrence :
+          effectOccurrenceMatches submittedEffectId wait = false := by
+        simp [effectOccurrenceMatches, noMatch]
       simp [applyStimulus, admitStimulus, completeEffect,
-        singletonEffectWaitingState, noMatch]
+        singletonEffectWaitingState, noOccurrence]
 
 end BpmnSemantics.SemanticProcess

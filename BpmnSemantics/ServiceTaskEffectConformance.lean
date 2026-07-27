@@ -84,6 +84,8 @@ def effectWait : EffectWait :=
     elementId := ⟨effectId.elementId.value⟩
     activation := effectId.activation
     descriptor
+    arguments := []
+    outputMappings := []
     output := ⟨"place:Flow_ServiceToEnd"⟩ }
 
 def scenario : Scenario :=
@@ -100,7 +102,7 @@ def scenario : Scenario :=
           ⟨"start-process"⟩
           ⟨"Process_ServiceTaskEffectProbe"⟩
           ⟨"Instance_1"⟩
-      , .completeEffect ⟨"complete-effect"⟩ effectId ]
+      , .completeEffect ⟨"complete-effect"⟩ effectId (.success []) ]
     observations :=
       [ .deployment
       , .commandResults
@@ -109,6 +111,7 @@ def scenario : Scenario :=
       , .openUserTasks
       , .openTimers
       , .openEffects
+      , .variables
       , .enabledInteractions
       , .logicalTime ]
     provenance :=
@@ -125,7 +128,8 @@ def waitingObservation : StateObservation :=
           multiplicity := 1 } ]
     openUserTasks := []
     openTimers := []
-    openEffects := [{ id := effectId, descriptor }]
+    openEffects := [{ id := effectId, descriptor, arguments := [] }]
+    variables := []
     enabledInteractions := []
     logicalTimeMs := 0 }
 
@@ -136,6 +140,7 @@ def completedObservation : StateObservation :=
     openUserTasks := []
     openTimers := []
     openEffects := []
+    variables := []
     enabledInteractions := []
     logicalTimeMs := 0 }
 
@@ -167,14 +172,14 @@ example :
     applyStimulus scenarioClosureLimit program
         (singletonEffectWaitingState effectWait)
         (.completeEffect ⟨"wrong-activation"⟩
-          { effectId with activation := 2 }) =
+          { effectId with activation := 2 } (.success [])) =
       { outcome := .rejected
         state := singletonEffectWaitingState effectWait
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } :=
   effect_identity_mismatch_is_rejected
     program effectWait ⟨"wrong-activation"⟩
-    { effectId with activation := 2 } 0 (by decide)
+    { effectId with activation := 2 } (.success []) 0 (by decide)
 
 /-- Executable wrong account: accepting an arbitrary result would advance even when no effect occurrence was ever activated. -/
 private def acceptAnyEffectResult (state : RuntimeState)
@@ -184,7 +189,7 @@ private def acceptAnyEffectResult (state : RuntimeState)
 theorem accept_any_effect_result_is_a_non_law :
     let before := runningStartState ⟨"Instance_1"⟩
     let submitted :=
-      Stimulus.completeEffect ⟨"never-activated"⟩ effectId
+      Stimulus.completeEffect ⟨"never-activated"⟩ effectId (.success [])
     (acceptAnyEffectResult before ⟨"place:Flow_ServiceToEnd"⟩).tokens =
         [⟨"place:Flow_ServiceToEnd"⟩] ∧
       applyStimulus scenarioClosureLimit program before submitted =

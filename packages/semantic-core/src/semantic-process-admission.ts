@@ -33,6 +33,7 @@ const supportedObservations = Object.freeze([
   ObservationRequestKind.OpenUserTasks,
   ObservationRequestKind.OpenTimers,
   ObservationRequestKind.OpenEffects,
+  ObservationRequestKind.Variables,
   ObservationRequestKind.EnabledInteractions,
   ObservationRequestKind.LogicalTime,
 ]);

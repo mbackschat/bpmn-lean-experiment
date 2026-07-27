@@ -22,7 +22,8 @@ One intentionally invalid fixture reaches the current parser-failure path. Rejec
 |---|---:|---|
 | Physical BPMN files | 62 | 12 documentation, 42 engine fixtures, 8 migration fixtures |
 | Distinct exact-byte BPMN models | 50 | Documentation duplicates are counted once |
-| Current unchanged static source admission | 1 of 50 | Exact `CreateDocument.bpmn` under its dedicated CIB Seven `2.0.0` profile; zero models have closed product execution evidence |
+| Current unchanged static source admission | 1 of 50 | Exact `CreateDocument.bpmn` under its dedicated CIB Seven `2.0.0` profile |
+| Closed exact-model product execution | 0 of 50 | The project-authored equivalent closes the bounded semantics and host relation, but the external source plus an A12 delegate or migration adapter have not run end to end |
 | A12 Full Stack Project Template BPMN files | 0 | The base blueprint does not materialize its Workflows variant |
 
 ## BPMN surface
@@ -117,10 +118,10 @@ The full-stack template is the canonical downstream blueprint, but the inspected
 
 ## Coverage interpretation
 
-The inventory-time unchanged-admission baseline was 0 of 50 distinct A12 Workflows models: 48 produced `unsupportedModel`, 18 produced `parserWarning`, and one produced `parserFailure`, with overlapping diagnostics. The dedicated CreateDocument source projector now admits that one maintained model unchanged and preserves its exact binding/mapping data through TypeScript and Lean lowering. This is 1-of-50 static source admission but still 0-of-50 closed product execution evidence: runtime variable semantics, CIB `2.0.0`, Temporal refinement, and the A12 Worker or explicit migration adapter remain open.
+The inventory-time unchanged-admission baseline was 0 of 50 distinct A12 Workflows models: 48 produced `unsupportedModel`, 18 produced `parserWarning`, and one produced `parserFailure`, with overlapping diagnostics. The dedicated CreateDocument source projector now admits that one maintained model unchanged and preserves its exact binding/mapping data through TypeScript and Lean lowering. The project-authored MIT equivalent closes the bounded string runtime, fresh packaged CIB `2.0.0` host relation, and Temporal refinement without copying A12 source. This remains 1-of-50 static source admission and 0-of-50 closed exact-model product execution because the external EUPL-1.2 model and an A12 delegate or explicit migration adapter have not executed as one end-to-end path.
 
 “Drop-in” is qualified at the A12 Workflows product boundary. A model, handler, or client is drop-in only when the exact source or public contract is accepted unchanged and its bounded behavior is evidenced. Anything requiring a source rewrite, API rewrite, unsupported `DelegateExecution` call, engine plugin, or changed transaction model receives an explicit migration disposition; no aggregate label may hide those differences.
 
 ## Next decision input
 
-The owner approved the distinct CIB Seven `2.0.0` target and the smallest typed variable, input/output mapping, effect-patch, and transaction-classification contract for `CreateDocument.bpmn`. Static source admission and lowering are implemented. The next checkpoint is runtime semantic closure, followed by CIB `2.0.0` and Temporal evidence. `BpmnError`, the Java-friendly Worker bridge, task/message façades, scripts, and listeners follow from that contract in the order above.
+The owner-approved [CreateDocument contract](../capsules/CREATE-DOCUMENT-DATA-SPEC.md) closes static admission, lowering, bounded string semantics, the project-authored equivalent's CIB `2.0.0` host evidence, and Temporal refinement while retaining the exact external-source and license boundary. Typed `BpmnError` plus boundary-error handling is the next semantic decision; the Java-friendly Worker bridge, task/message façades, scripts, and listeners follow from that contract in the order above.

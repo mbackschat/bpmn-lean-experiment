@@ -67,7 +67,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private static final Date LOGICAL_EPOCH = new Date(0);
   private static final Object PROCESS_GLOBAL_CLOCK_LOCK = new Object();
-  private static final String CIBSEVEN_VERSION = "2.2.0";
+  private static final String CREATE_DOCUMENT_PROFILE =
+      "cibseven-2.0.0-a12-create-document-draft";
   private static final String H2_VERSION = "2.3.232";
   private static final EnumSet<ObservationKind> SUPPORTED_OBSERVATIONS =
       EnumSet.of(
@@ -78,15 +79,18 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           ObservationKind.OPEN_USER_TASKS,
           ObservationKind.OPEN_TIMERS,
           ObservationKind.OPEN_EFFECTS,
+          ObservationKind.VARIABLES,
           ObservationKind.ENABLED_INTERACTIONS,
           ObservationKind.LOGICAL_TIME);
 
   private final ProcessEngine processEngine;
+  private final CibSevenRelease release;
   private final ProcessEngineConfigurationImpl configuration;
   private final PvmDefinitionProjector pvmProjector;
   private final CibSevenScenarioCommandExecutor commandExecutor;
   private final CibSevenScenarioStateProjector stateProjector;
   private final CibSevenEffectProbe effectProbe;
+  private final CibSevenCreateDocumentProbe createDocumentProbe;
   private final long startupNanos;
   private boolean closed;
 
@@ -94,11 +98,14 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       ProcessEngine processEngine,
       ProcessEngineConfigurationImpl configuration,
       CibSevenEffectProbe effectProbe,
+      CibSevenCreateDocumentProbe createDocumentProbe,
       long startupNanos) {
     this.processEngine = processEngine;
+    this.release = CibSevenRelease.current();
     this.configuration = configuration;
     this.pvmProjector = new PvmDefinitionProjector();
     this.effectProbe = effectProbe;
+    this.createDocumentProbe = createDocumentProbe;
     var userTaskProjector = new CibSevenUserTaskProjector();
     var effectProjector = new CibSevenEffectProjector();
     this.commandExecutor =
@@ -124,13 +131,19 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     engineConfiguration.setHistoryTimeToLive("P180D");
     engineConfiguration.setEnforceHistoryTimeToLive(true);
     var effectProbe = new CibSevenEffectProbe();
+    var createDocumentProbe = new CibSevenCreateDocumentProbe();
     engineConfiguration.setBeans(
-        Map.of(CibSevenEffectProjector.HANDLER_BEAN, effectProbe));
+        Map.of(
+            CibSevenEffectProjector.HANDLER_BEAN,
+            effectProbe,
+            CibSevenCreateDocumentProbe.HANDLER_BEAN,
+            createDocumentProbe));
     var engine = engineConfiguration.buildProcessEngine();
     return new CibSevenScenarioRunner(
         engine,
         engineConfiguration,
         effectProbe,
+        createDocumentProbe,
         positiveElapsedSince(startedAt));
   }
 
@@ -146,6 +159,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       throws IOException {
     synchronized (PROCESS_GLOBAL_CLOCK_LOCK) {
       effectProbe.beginExecution(effectSchedule);
+      createDocumentProbe.beginExecution();
       return runWithProcessGlobalClock(scenario, projectRoot, effectSchedule);
     }
   }
@@ -170,6 +184,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var timerJobs = new ArrayList<TimerJobSnapshot>();
     var effectJobs = new ArrayList<EffectJobSnapshot>();
     var effectExecutions = new ArrayList<EffectExecutionSnapshot>();
+    var mappingExecutions = new ArrayList<MappingExecutionSnapshot>();
     String deploymentId = null;
     String engineInstanceId = null;
     String stableInstanceId = null;
@@ -222,6 +237,9 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             engineInstanceId = processInstance.getId();
             stableInstanceId = start.instanceId();
             trace.add(new CommandObservation(start.commandId(), COMMITTED));
+            if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
+              mappingExecutions.add(createDocumentProbe.snapshot(start.commandId()));
+            }
 
             var projectionStartedAt = System.nanoTime();
             var observed =
@@ -288,6 +306,11 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           }
           case CompleteEffectStimulus complete -> {
             requireStarted(engineInstanceId, stableInstanceId);
+            if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
+              requireSynchronousCreateDocumentCompletion(engineInstanceId);
+              createDocumentProbe.requireSuccessfulExecution();
+              break;
+            }
             var completeStartedAt = System.nanoTime();
             var execution =
                 commandExecutor.completeEffect(
@@ -342,7 +365,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
         new SemanticOutcome(scenarioOutcome),
         trace,
         new Diagnostics(
-            CIBSEVEN_VERSION,
+            release.version(),
             H2_VERSION,
             startupNanos,
             timings.freeze(),
@@ -351,6 +374,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             timerJobs,
             effectJobs,
             effectExecutions,
+            mappingExecutions,
             Objects.requireNonNull(cleanup, "cleanup")));
   }
 
@@ -367,6 +391,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private void validateScenario(ScenarioDefinition scenario) {
     Objects.requireNonNull(scenario, "scenario");
+    release.requireScenarioRevision(scenario);
     if (!ScenarioProtocol.SCENARIO_KIND.equals(scenario.kind())
         || scenario.profile().isBlank()) {
       throw new IllegalArgumentException("Scenario kind and profile identity are required");
@@ -397,6 +422,17 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     return (StartProcessStimulus) scenario.stimuli().getFirst();
   }
 
+  private void requireSynchronousCreateDocumentCompletion(String engineInstanceId) {
+    if (processEngine
+            .getRuntimeService()
+            .createProcessInstanceQuery()
+            .processInstanceId(engineInstanceId)
+            .count()
+        != 0) {
+      throw new IllegalStateException(
+          "CIB CreateDocument did not complete in the synchronous start command");
+    }
+  }
 
   private static void requireStarted(String engineInstanceId, String stableInstanceId) {
     if (engineInstanceId == null || stableInstanceId == null) {

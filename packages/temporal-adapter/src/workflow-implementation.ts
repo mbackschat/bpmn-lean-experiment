@@ -9,6 +9,7 @@ import {
   deployProcess,
   initialState,
   isWellFormedStimulus,
+  isWellFormedEffectExecutionResult,
   projectEffectTransportMaterial,
   projectOpenEffects,
   projectOpenTimers,
@@ -49,9 +50,6 @@ import type {
 import type {
   EffectExecutionResult,
   EffectRequest,
-} from "./effect-probe.js";
-import {
-  EffectExecutionResultKind,
 } from "./effect-probe.js";
 import {
   completeEffectStimulus,
@@ -199,6 +197,7 @@ export async function runBpmnProcessWithHostEffects(
         const request: EffectRequest = {
           ...material.descriptor,
           idempotencyKey: effectTransportKey(material),
+          arguments: material.arguments,
         };
         let result: EffectExecutionResult;
         try {
@@ -219,7 +218,7 @@ export async function runBpmnProcessWithHostEffects(
             error,
           );
         }
-        if (!isEffectExecutionSuccess(result)) {
+        if (!isWellFormedEffectExecutionResult(result)) {
           throw ApplicationFailure.nonRetryable(
             "Effect Activity returned an invalid result",
             "BpmnEffectExecutionResultInvalid",
@@ -228,7 +227,7 @@ export async function runBpmnProcessWithHostEffects(
         enqueueStimulus(
           acceptedStimuli,
           pendingStimuli,
-          completeEffectStimulus(effect.id),
+          completeEffectStimulus(effect.id, result),
         );
       }
     }
@@ -273,18 +272,6 @@ export async function runBpmnProcessWithHostEffects(
     processInstanceId: start.instanceId,
     finalState: requireCompletedState(trace, start.instanceId),
   };
-}
-
-function isEffectExecutionSuccess(
-  value: unknown,
-): value is EffectExecutionResult {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    Object.keys(value).length === 1 &&
-    "kind" in value &&
-    value.kind === EffectExecutionResultKind.Success
-  );
 }
 
 function enqueueStimulus(

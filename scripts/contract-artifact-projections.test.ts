@@ -161,6 +161,39 @@ test("detects a Service Task effect-binding projection mutation", async () => {
   );
 });
 
+test("binds the synchronous CreateDocument mapping facts to final Process data", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const createDocument = required(
+    artifactSets.find(
+      ({ scenario }) => scenario.id === "a12-create-document-data",
+    ),
+    "CreateDocument artifact set",
+  );
+  const mutated = cloneArtifactSet(createDocument);
+  const mapping = requiredAt(
+    required(
+      mutated.evidence.producerObservations.mappingExecutions,
+      "mapping executions",
+    ),
+    0,
+    "mapping execution",
+  );
+  const localPatch = requiredAt(
+    mapping.localPatch,
+    0,
+    "mapping local patch",
+  );
+  if (localPatch.value.kind !== "string") {
+    throw new Error("CreateDocument local patch must be a string");
+  }
+  localPatch.value.value = "Document:wrong";
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /does not establish the exact CreateDocument contract/,
+  );
+});
+
 test("requires every semantic profile to identify its reviewed CIB-BPMN relationships", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 

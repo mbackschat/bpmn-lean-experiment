@@ -1,5 +1,11 @@
+import {
+  EffectExecutionResultKind,
+  VariableValueKind,
+} from "@bpmn-lean/semantic-core";
 import type {
   EffectDescriptor,
+  EffectExecutionResult,
+  VariableBinding,
 } from "@bpmn-lean/semantic-core";
 
 export enum EffectExecutionSchedule {
@@ -7,16 +13,12 @@ export enum EffectExecutionSchedule {
   FailAfterMutationOnce = "failAfterMutationOnce",
 }
 
-export enum EffectExecutionResultKind {
-  Success = "success",
-}
+export { EffectExecutionResultKind };
+export type { EffectExecutionResult };
 
 export type EffectRequest = EffectDescriptor & Readonly<{
   idempotencyKey: string;
-}>;
-
-export type EffectExecutionResult = Readonly<{
-  kind: EffectExecutionResultKind.Success;
+  arguments: ReadonlyArray<VariableBinding>;
 }>;
 
 export type EffectActivities = Readonly<{
@@ -71,14 +73,14 @@ export class EffectProbeStore {
 
     switch (schedule) {
       case EffectExecutionSchedule.PlainSuccess:
-        return { kind: EffectExecutionResultKind.Success };
+        return effectResultFor(request);
       case EffectExecutionSchedule.FailAfterMutationOnce:
         if (!wasMutated) {
           throw new Error(
             "Probe failed after external mutation and before completion acknowledgement",
           );
         }
-        return { kind: EffectExecutionResultKind.Success };
+        return effectResultFor(request);
       default:
         return assertNever(schedule);
     }
@@ -161,14 +163,59 @@ function requireEffectRequest(
   if (
     request.protocol !== "urn:bpmn-lean:effect:probe-v1" ||
     request.handler !== "bpmnLeanEffectHandler" ||
+    request.arguments.length !== 0
+  ) {
+    const isCreateDocument =
+      request.protocol === "urn:bpmn-lean:a12-delegate:v1" &&
+      request.handler === "createDocumentDelegate" &&
+      hasCreateDocumentArguments(request.arguments);
+    if (!isCreateDocument) {
+      throw new TypeError(
+        "Effect request must contain one admitted protocol, handler, and argument contract",
+      );
+    }
+  }
+  if (
     !/^effect-transport-sha256:[0-9a-f]{64}$/u.test(
       request.idempotencyKey,
     )
   ) {
     throw new TypeError(
-      "Effect request must contain the admitted protocol, handler, and transport key",
+      "Effect request must contain one content-bound transport key",
     );
   }
+}
+
+function effectResultFor(
+  request: EffectRequest,
+): EffectExecutionResult {
+  if (request.handler === "createDocumentDelegate") {
+    return {
+      kind: EffectExecutionResultKind.Success,
+      localPatch: [
+        {
+          name: "newDocRef",
+          value: {
+            kind: VariableValueKind.String,
+            value: "Document:42",
+          },
+        },
+      ],
+    };
+  }
+  return {
+    kind: EffectExecutionResultKind.Success,
+    localPatch: [],
+  };
+}
+
+function hasCreateDocumentArguments(
+  arguments_: ReadonlyArray<VariableBinding>,
+): boolean {
+  return arguments_.length === 1 &&
+    arguments_[0]?.name === "documentModelName" &&
+    arguments_[0]?.value.kind === VariableValueKind.String &&
+    arguments_[0]?.value.value === "MyDocumentModel";
 }
 
 function assertNever(value: never): never {

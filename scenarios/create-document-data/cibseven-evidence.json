@@ -1,0 +1,98 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "a12-create-document-data",
+    "sha256": "02772c3623e5a3cec34f5a93f8243a12419517a95b3ac1ebc3aea0e4cfd55b95"
+  },
+  "profile": {
+    "id": "cibseven-2.0.0-a12-create-document-draft",
+    "sha256": "6ddff576a0dbcf067c15b50acf73f0ce779691b3d4c8a33664fe5cd4c25c0286"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.0.0",
+    "engineRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "taskQueries": [
+      {
+        "afterCommandId": "start-create-document",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-create-document",
+        "jobs": []
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-create-document",
+        "handler": "createDocumentDelegate",
+        "arguments": [
+          {
+            "name": "documentModelName",
+            "value": {
+              "kind": "string",
+              "value": "MyDocumentModel"
+            }
+          }
+        ],
+        "localPatch": [
+          {
+            "name": "newDocRef",
+            "value": {
+              "kind": "string",
+              "value": "Document:42"
+            }
+          }
+        ],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-create-document",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "myDocumentReference",
+            "value": {
+              "kind": "string",
+              "value": "Document:42"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

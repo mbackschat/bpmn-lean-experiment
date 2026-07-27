@@ -39,7 +39,10 @@
           "const": "CIB Seven"
         },
         "engineVersion": {
-          "const": "2.2.0"
+          "enum": [
+            "2.0.0",
+            "2.2.0"
+          ]
         },
         "engineRevision": {
           "type": "string",
@@ -86,6 +89,12 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/effectExecutionSnapshot"
+          }
+        },
+        "mappingExecutions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mappingExecutionSnapshot"
           }
         }
       }
@@ -314,6 +323,44 @@
             "null"
           ],
           "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "mappingExecutionSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "handler",
+        "arguments",
+        "localPatch",
+        "invocations"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "handler": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/variableBinding"
+          }
+        },
+        "localPatch": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/variableBinding"
+          }
+        },
+        "invocations": {
+          "type": "integer",
+          "minimum": 1,
           "maximum": 9007199254740991
         }
       }

@@ -13,7 +13,7 @@ private def commandId : Stimulus → SemanticId
   | .startProcess id _ _
   | .completeUserTaskInstance id _
   | .fireTimer id _ _
-  | .completeEffect id _ => id
+  | .completeEffect id _ _ => id
 
 private def taskDefinitions (program : Program) : List UserTaskDefinition :=
   program.operations.filterMap fun
@@ -103,7 +103,8 @@ private def openEffects (program : Program) (state : RuntimeState) :
             { processInstanceId := wait.processInstanceId
               elementId := ⟨effect.elementId.value⟩
               activation := wait.activation }
-          descriptor := wait.descriptor }
+          descriptor := wait.descriptor
+          arguments := wait.arguments }
 
 /-- Project canonical state projection, defined only for started semantic Process instances. -/
 def observeStableState (program : Program) (state : RuntimeState) :
@@ -119,6 +120,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openUserTasks := tasks
           openTimers := openTimers program state
           openEffects := openEffects program state
+          variables := state.processVariables
           enabledInteractions :=
             tasks.map fun task => .completeUserTaskInstance task.id
           logicalTimeMs := state.logicalTimeMs }
@@ -130,6 +132,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openUserTasks := []
           openTimers := []
           openEffects := []
+          variables := state.processVariables
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
 
@@ -194,6 +197,7 @@ private def requiredObservations : List ObservationKind :=
   , .openUserTasks
   , .openTimers
   , .openEffects
+  , .variables
   , .enabledInteractions
   , .logicalTime ]
 

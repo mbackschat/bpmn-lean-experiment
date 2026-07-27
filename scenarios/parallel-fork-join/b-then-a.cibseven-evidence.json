@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-fork-join-b-then-a",
-    "sha256": "e0db1c13a97bbf61f3ab32a642493053c1d198c27f6a9b20728f60db0da8317d"
+    "sha256": "c4f52a5555c9f510298e29a9a30d6843febed3060fd40c8393c15b8f00b9e35a"
   },
   "profile": {
     "id": "parallel-fork-join-draft",
-    "sha256": "cc4067ecd6dd7781575bbad464d98928a8529f12a7d863320331e045d80019db"
+    "sha256": "5b7e357092e2e2b8c3c0759a5c660d5d6a656deea4352500409cf42753d6ed1e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -116,6 +116,7 @@
         ],
         "openTimers": [],
         "openEffects": [],
+        "variables": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -165,6 +166,7 @@
         ],
         "openTimers": [],
         "openEffects": [],
+        "variables": [],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -190,6 +192,7 @@
         "openUserTasks": [],
         "openTimers": [],
         "openEffects": [],
+        "variables": [],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       }

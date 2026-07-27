@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.Data
 
 /-! # Semantic Process internal transitions
 
@@ -35,6 +35,8 @@ structure EffectWait where
   elementId : NodeId
   activation : Nat
   descriptor : EffectDescriptor
+  arguments : List VariableBinding
+  outputMappings : List VariableMapping
   output : ControlPlaceId
   deriving Repr, DecidableEq
 
@@ -60,6 +62,7 @@ structure RuntimeState where
   waits : List UserTaskWait
   timerWaits : List TimerWait
   effectWaits : List EffectWait
+  processVariables : List VariableBinding
   activations : List TaskActivation
   timerActivations : List TimerActivation
   effectActivations : List EffectActivation
@@ -74,6 +77,7 @@ def initialState : RuntimeState :=
     waits := []
     timerWaits := []
     effectWaits := []
+    processVariables := []
     activations := []
     timerActivations := []
     effectActivations := []
@@ -166,6 +170,7 @@ private def activateTimer (state : RuntimeState) (instanceId : SemanticId)
 private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
     (input output : ControlPlaceId) (effect : EffectDefinition) : RuntimeState :=
   let activation := effectActivationCount state effect.elementId + 1
+  let arguments := (evaluateInputMappings effect.inputMappings).getD []
   { state with
     tokens := removeToken state.tokens input
     effectWaits :=
@@ -173,6 +178,8 @@ private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
         elementId := effect.elementId
         activation
         descriptor := effect.descriptor
+        arguments
+        outputMappings := effect.outputMappings
         output } :: state.effectWaits
     effectActivations :=
       setEffectActivationCount state.effectActivations
@@ -419,4 +426,3 @@ theorem step_sound :
 
 
 end BpmnSemantics.SemanticProcess
-
