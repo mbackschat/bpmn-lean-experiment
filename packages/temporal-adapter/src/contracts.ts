@@ -78,13 +78,18 @@ export enum TemporalCompletionDelivery {
   Concurrent = "concurrent",
 }
 
+export enum TemporalExecutionSchedule {
+  Normal = "normal",
+  DuplicateFirstCompletion = "duplicateFirstCompletion",
+  WorkerDownAtTimerDue = "workerDownAtTimerDue",
+  WorkerDownAtEffectPending = "workerDownAtEffectPending",
+}
+
 export type TemporalScenarioExecutionOptions = DeepReadonly<{
   workflowId: string;
   completionDelivery: TemporalCompletionDelivery;
-  duplicateFirstCompletion?: boolean;
-  workerDownAtTimerDue?: boolean;
-  workerDownAtEffectPending?: boolean;
-  effectExecutionSchedule?: EffectExecutionSchedule;
+  executionSchedule: TemporalExecutionSchedule;
+  effectExecutionSchedule: EffectExecutionSchedule | null;
 }>;
 
 export type TemporalScenarioBatchItem = DeepReadonly<{

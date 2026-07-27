@@ -25,7 +25,9 @@ import {
 } from "@bpmn-lean/temporal-adapter";
 
 import {
+  CibEffectExecutionSchedule,
   CibCaseRelation,
+  PipelineReplaySelection,
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import type {
@@ -242,7 +244,10 @@ export function compareCase(
       },
     ],
   );
-  if (pipelineCase.cibEffectRetrySchedule === true) {
+  if (
+    pipelineCase.cibEffectExecutionSchedule ===
+      CibEffectExecutionSchedule.FailAfterMutationOnce
+  ) {
     if (cibEffectRetryResult === null) {
       throw new Error("Service Task case omitted the CIB retry execution");
     }
@@ -507,7 +512,8 @@ export async function replayEvidence(
         history: temporal.primary.history,
         workflowId: `${context.pipelineCase.workflowIdPrefix}-live-replay`,
       },
-      ...(context.pipelineCase.replayIsolation === true
+      ...(context.pipelineCase.replaySelection ===
+        PipelineReplaySelection.PrimaryAndIsolation
         ? [{
             history: temporal.isolation.history,
             workflowId:

@@ -12,6 +12,7 @@ import {
 import {
   EffectExecutionSchedule,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
   effectTransportKey,
   requireDurableEffectActivityHistory,
 } from "../dist/index.js";
@@ -38,6 +39,7 @@ export function registerBoundaryErrorTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "boundary-error-caught",
         completionDelivery: TemporalCompletionDelivery.Ordered,
+        executionSchedule: TemporalExecutionSchedule.Normal,
         effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
       }),
       15_000,

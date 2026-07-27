@@ -11,6 +11,7 @@ import {
 import {
   EffectExecutionSchedule,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
   effectTransportKey,
   requireDurableEffectActivityHistory,
 } from "../dist/index.js";
@@ -37,6 +38,7 @@ export function registerCreateDocumentDataTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "create-document-data-retry",
         completionDelivery: TemporalCompletionDelivery.Ordered,
+        executionSchedule: TemporalExecutionSchedule.Normal,
         effectExecutionSchedule:
           EffectExecutionSchedule.FailAfterMutationOnce,
       }),
@@ -82,8 +84,9 @@ export function registerCreateDocumentDataTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "create-document-data-worker-replacement",
         completionDelivery: TemporalCompletionDelivery.Ordered,
+        executionSchedule:
+          TemporalExecutionSchedule.WorkerDownAtEffectPending,
         effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
-        workerDownAtEffectPending: true,
       }),
       15_000,
       "CreateDocument Worker-replacement execution",

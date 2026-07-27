@@ -22,6 +22,7 @@ import {
   EffectExecutionSchedule,
   ProcessCommandResultKind,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
   TemporalScenarioRunner,
   isCompletedProcessReceipt,
   requireDurableEffectActivityHistory,
@@ -95,7 +96,11 @@ test("one clean server executes, captures, and replays the current capsule", asy
           index === 2
             ? TemporalCompletionDelivery.PostTerminal
             : TemporalCompletionDelivery.Ordered,
-        duplicateFirstCompletion: index === 2,
+        executionSchedule:
+          index === 2
+            ? TemporalExecutionSchedule.DuplicateFirstCompletion
+            : TemporalExecutionSchedule.Normal,
+        effectExecutionSchedule: null,
       },
     }),
   );
@@ -202,7 +207,8 @@ test("durable timer survives Worker absence at due time and replays exactly", as
     runner.runScenario(input.scenario, input.semanticProcess, {
       workflowId: "intermediate-catch-timer-worker-restart",
       completionDelivery: TemporalCompletionDelivery.Ordered,
-      workerDownAtTimerDue: true,
+      executionSchedule: TemporalExecutionSchedule.WorkerDownAtTimerDue,
+      effectExecutionSchedule: null,
     }),
     15_000,
     "Intermediate Catch Timer Worker-restart execution",
@@ -277,6 +283,8 @@ test("batch execution rejects duplicate Workflow identities before start", async
     options: {
       workflowId: "duplicate-workflow-id",
       completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.Normal,
+      effectExecutionSchedule: null,
     },
   };
 

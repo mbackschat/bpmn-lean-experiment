@@ -6,6 +6,7 @@ import type {
 } from "@bpmn-lean/bpmn-source";
 import type {
   CanonicalObservation,
+  DeepReadonly,
   Scenario,
   ScenarioResult,
   SemanticProcessProgram,
@@ -17,7 +18,9 @@ import type {
   ScenarioDisagreement,
 } from "@bpmn-lean/differential";
 import {
+  EffectExecutionSchedule,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "@bpmn-lean/temporal-adapter";
 import type {
   TemporalScenarioExecution,
@@ -59,7 +62,32 @@ export type ObservationValueDisagreement = Extract<
   { kind: typeof DisagreementKind.ObservationValue }
 >;
 
-export type PipelineCase = Readonly<{
+export const CibEffectExecutionSchedule = {
+  None: "none",
+  FailAfterMutationOnce: "failAfterMutationOnce",
+} as const;
+
+export type CibEffectExecutionSchedule =
+  typeof CibEffectExecutionSchedule[
+    keyof typeof CibEffectExecutionSchedule
+  ];
+
+export const PipelineReplaySelection = {
+  Primary: "primary",
+  PrimaryAndIsolation: "primaryAndIsolation",
+} as const;
+
+export type PipelineReplaySelection =
+  typeof PipelineReplaySelection[
+    keyof typeof PipelineReplaySelection
+  ];
+
+export type TemporalEffectSchedulePair = DeepReadonly<{
+  primary: EffectExecutionSchedule;
+  isolation: EffectExecutionSchedule;
+}>;
+
+export type PipelineCase = DeepReadonly<{
   id: string;
   scenarioRelativePath: string;
   evidenceRelativePath: string;
@@ -70,11 +98,10 @@ export type PipelineCase = Readonly<{
   expectedWaitTraceLength: number;
   completionDelivery: TemporalCompletionDelivery;
   temporalRelation: TemporalCaseRelation;
-  duplicateFirstCompletion?: boolean;
-  hasEffectExecution?: boolean;
-  effectScheduleSubstitution?: boolean;
-  cibEffectRetrySchedule?: boolean;
-  replayIsolation?: boolean;
+  executionSchedule: TemporalExecutionSchedule;
+  effectSchedules: TemporalEffectSchedulePair | null;
+  cibEffectExecutionSchedule: CibEffectExecutionSchedule;
+  replaySelection: PipelineReplaySelection;
   injectMutation: (result: MutableScenarioResult) => void;
   expectedInjectedDisagreement: ObservationValueDisagreement;
 }>;

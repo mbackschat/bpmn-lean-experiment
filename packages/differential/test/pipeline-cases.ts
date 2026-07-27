@@ -10,11 +10,15 @@ import {
   DisagreementKind,
 } from "@bpmn-lean/differential";
 import {
+  EffectExecutionSchedule,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "@bpmn-lean/temporal-adapter";
 
 import {
+  CibEffectExecutionSchedule,
   CibCaseRelation,
+  PipelineReplaySelection,
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import type {
@@ -28,7 +32,7 @@ import type {
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
   temporalRelation?: PipelineCase["temporalRelation"];
-  duplicateFirstCompletion?: boolean;
+  executionSchedule?: TemporalExecutionSchedule;
 }>;
 
 type ParallelCaseOptions = Readonly<{
@@ -204,8 +208,12 @@ function interactionCase(
     temporalRelation:
       options.temporalRelation ??
       TemporalCaseRelation.ExactSemantic,
-    duplicateFirstCompletion:
-      options.duplicateFirstCompletion === true,
+    executionSchedule:
+      options.executionSchedule ??
+      TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
+    replaySelection: PipelineReplaySelection.Primary,
     injectMutation: mutateOpenTaskActivation,
     expectedInjectedDisagreement: observationValueDisagreement(
       "trace[2].openUserTasks[0].id.activation",
@@ -234,6 +242,10 @@ function parallelCase(
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
+    replaySelection: PipelineReplaySelection.Primary,
     injectMutation:
       options.injectMutation ?? omitOneParallelOpenTask,
     expectedInjectedDisagreement:
@@ -261,6 +273,10 @@ function timerCase(): PipelineCase {
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
+    replaySelection: PipelineReplaySelection.Primary,
     injectMutation: mutateOpenTimerDeadline,
     expectedInjectedDisagreement: observationValueDisagreement(
       "trace[2].openTimers[0].deadlineMs",
@@ -284,10 +300,14 @@ function effectCase(): PipelineCase {
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
-    hasEffectExecution: true,
-    effectScheduleSubstitution: true,
-    cibEffectRetrySchedule: true,
-    replayIsolation: true,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: {
+      primary: EffectExecutionSchedule.PlainSuccess,
+      isolation: EffectExecutionSchedule.FailAfterMutationOnce,
+    },
+    cibEffectExecutionSchedule:
+      CibEffectExecutionSchedule.FailAfterMutationOnce,
+    replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
     injectMutation: mutateOpenEffectHandler,
     expectedInjectedDisagreement: observationValueDisagreement(
       "trace[2].openEffects[0].descriptor.handler",
@@ -311,9 +331,13 @@ function createDocumentCase(): PipelineCase {
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
-    hasEffectExecution: true,
-    effectScheduleSubstitution: true,
-    replayIsolation: true,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: {
+      primary: EffectExecutionSchedule.PlainSuccess,
+      isolation: EffectExecutionSchedule.FailAfterMutationOnce,
+    },
+    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
+    replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
     injectMutation: mutateFinalProcessVariable,
     expectedInjectedDisagreement: observationValueDisagreement(
       "trace[4].variables[0].value.value",
@@ -337,7 +361,13 @@ function boundaryErrorCase(): PipelineCase {
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
-    hasEffectExecution: true,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: {
+      primary: EffectExecutionSchedule.PlainSuccess,
+      isolation: EffectExecutionSchedule.PlainSuccess,
+    },
+    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
+    replaySelection: PipelineReplaySelection.Primary,
     injectMutation: mutateBoundaryErrorProcessVariable,
     expectedInjectedDisagreement: observationValueDisagreement(
       "trace[4].variables[0].value.kind",
@@ -365,7 +395,8 @@ export const pipelineCases = Object.freeze([
     {
       completionDelivery: TemporalCompletionDelivery.PostTerminal,
       temporalRelation: TemporalCaseRelation.PostTerminalClosed,
-      duplicateFirstCompletion: true,
+      executionSchedule:
+        TemporalExecutionSchedule.DuplicateFirstCompletion,
     },
   ),
   parallelCase(

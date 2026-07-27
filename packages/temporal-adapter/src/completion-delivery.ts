@@ -24,6 +24,7 @@ import {
   bpmnOpenUserTasksQueryName,
   ProcessCommandResultKind,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
@@ -62,6 +63,9 @@ export async function deliverCompletions(
   options: TemporalScenarioExecutionOptions,
   assertWorkerHealthy: () => void,
 ): Promise<CompletionDeliveryEvidence> {
+  const duplicateFirstCompletion =
+    options.executionSchedule ===
+      TemporalExecutionSchedule.DuplicateFirstCompletion;
   switch (options.completionDelivery) {
     case TemporalCompletionDelivery.Ordered:
       return deliverOrderedCompletions(
@@ -69,7 +73,7 @@ export async function deliverCompletions(
         handle,
         processInstanceId,
         completions,
-        options.duplicateFirstCompletion === true,
+        duplicateFirstCompletion,
         assertWorkerHealthy,
       );
     case TemporalCompletionDelivery.PostTerminal:
@@ -78,7 +82,7 @@ export async function deliverCompletions(
         handle,
         processInstanceId,
         completions,
-        options.duplicateFirstCompletion === true,
+        duplicateFirstCompletion,
         assertWorkerHealthy,
       );
     case TemporalCompletionDelivery.AcceptedBatch:
@@ -87,7 +91,7 @@ export async function deliverCompletions(
         handle,
         processInstanceId,
         completions,
-        options.duplicateFirstCompletion === true,
+        duplicateFirstCompletion,
       );
     case TemporalCompletionDelivery.Concurrent:
       return deliverConcurrentCompletions(

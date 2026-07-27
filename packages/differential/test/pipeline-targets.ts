@@ -27,8 +27,6 @@ import {
   requireScenarioBinding,
 } from "@bpmn-lean/differential";
 import {
-  EffectExecutionSchedule,
-  TemporalCompletionDelivery,
   TemporalScenarioRunner,
 } from "@bpmn-lean/temporal-adapter";
 import type {
@@ -339,18 +337,9 @@ function temporalOptions(
   return {
     workflowId: `${pipelineCase.workflowIdPrefix}-${suffix}`,
     completionDelivery: pipelineCase.completionDelivery,
-    ...(pipelineCase.duplicateFirstCompletion === true
-      ? { duplicateFirstCompletion: true }
-      : {}),
-    ...(pipelineCase.hasEffectExecution === true
-      ? {
-          effectExecutionSchedule:
-            pipelineCase.effectScheduleSubstitution === true &&
-              suffix === "isolation"
-              ? EffectExecutionSchedule.FailAfterMutationOnce
-              : EffectExecutionSchedule.PlainSuccess,
-        }
-      : {}),
+    executionSchedule: pipelineCase.executionSchedule,
+    effectExecutionSchedule:
+      pipelineCase.effectSchedules?.[suffix] ?? null,
   };
 }
 

@@ -10,6 +10,7 @@ import {
 import {
   EffectExecutionSchedule,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
   requireDurableEffectActivityHistory,
   requireExhaustedEffectActivityHistory,
 } from "../dist/index.js";
@@ -30,6 +31,7 @@ export function registerServiceTaskEffectTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "service-task-effect-plain",
         completionDelivery: TemporalCompletionDelivery.Ordered,
+        executionSchedule: TemporalExecutionSchedule.Normal,
         effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
       }),
       15_000,
@@ -39,6 +41,7 @@ export function registerServiceTaskEffectTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "service-task-effect-retried",
         completionDelivery: TemporalCompletionDelivery.Ordered,
+        executionSchedule: TemporalExecutionSchedule.Normal,
         effectExecutionSchedule:
           EffectExecutionSchedule.FailAfterMutationOnce,
       }),
@@ -92,8 +95,9 @@ export function registerServiceTaskEffectTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "service-task-effect-worker-replacement",
         completionDelivery: TemporalCompletionDelivery.Ordered,
+        executionSchedule:
+          TemporalExecutionSchedule.WorkerDownAtEffectPending,
         effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
-        workerDownAtEffectPending: true,
       }),
       15_000,
       "Service Task Worker-replacement execution",
@@ -190,6 +194,7 @@ export function registerServiceTaskEffectTemporalTests(getRunner) {
           options: {
             workflowId: "service-task-effect-shared-store-1",
             completionDelivery: TemporalCompletionDelivery.Ordered,
+            executionSchedule: TemporalExecutionSchedule.Normal,
             effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
           },
         },
@@ -198,6 +203,7 @@ export function registerServiceTaskEffectTemporalTests(getRunner) {
           options: {
             workflowId: "service-task-effect-shared-store-2",
             completionDelivery: TemporalCompletionDelivery.Ordered,
+            executionSchedule: TemporalExecutionSchedule.Normal,
             effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
           },
         },

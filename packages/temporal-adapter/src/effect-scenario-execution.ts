@@ -23,6 +23,7 @@ import {
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
@@ -81,7 +82,8 @@ export async function runEffectScenario(
         effectExecution.schedule,
       );
       if (
-        options.workerDownAtEffectPending === true &&
+        options.executionSchedule ===
+          TemporalExecutionSchedule.WorkerDownAtEffectPending &&
         firstInvocation
       ) {
         firstInvocation = false;
@@ -124,6 +126,7 @@ export async function runEffectExhaustion(
   const options: TemporalScenarioExecutionOptions = {
     workflowId,
     completionDelivery: TemporalCompletionDelivery.Ordered,
+    executionSchedule: TemporalExecutionSchedule.Normal,
     effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
   };
   const effectExecution = requireOptionalEffectExecution(

@@ -22,6 +22,7 @@ import {
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
@@ -62,6 +63,7 @@ export async function runUnhandledBpmnError(
     {
       workflowId,
       completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.Normal,
       effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
     },
   );

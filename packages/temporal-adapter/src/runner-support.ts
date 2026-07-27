@@ -34,6 +34,7 @@ import {
 import {
   ProcessCommandResultKind,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   CompletedProcessReceipt,
@@ -85,23 +86,41 @@ export function validateExecutionOptions(
   scenario: Scenario,
   options: TemporalScenarioExecutionOptions,
 ): void {
+  switch (options.executionSchedule) {
+    case TemporalExecutionSchedule.Normal:
+    case TemporalExecutionSchedule.DuplicateFirstCompletion:
+    case TemporalExecutionSchedule.WorkerDownAtTimerDue:
+    case TemporalExecutionSchedule.WorkerDownAtEffectPending:
+      break;
+    default:
+      assertNever(options.executionSchedule);
+  }
   const timer = requireOptionalTimerStimulus(scenario);
   if (timer !== undefined) {
     if (
       options.completionDelivery !== TemporalCompletionDelivery.Ordered ||
-      options.duplicateFirstCompletion === true
+      (
+        options.executionSchedule !==
+          TemporalExecutionSchedule.Normal &&
+        options.executionSchedule !==
+          TemporalExecutionSchedule.WorkerDownAtTimerDue
+      )
     ) {
       throw new TypeError(
         "Timer scenarios use internally derived ordered firing without caller duplication",
       );
     }
-  } else if (options.workerDownAtTimerDue === true) {
+  } else if (
+    options.executionSchedule ===
+      TemporalExecutionSchedule.WorkerDownAtTimerDue
+  ) {
     throw new TypeError(
       "Worker-down-at-due scheduling requires one timer stimulus",
     );
   }
   if (
-    options.workerDownAtEffectPending === true &&
+    options.executionSchedule ===
+      TemporalExecutionSchedule.WorkerDownAtEffectPending &&
     options.effectExecutionSchedule !==
       EffectExecutionSchedule.PlainSuccess
   ) {
@@ -121,7 +140,10 @@ export function validateExecutionOptions(
       }
       break;
     case TemporalCompletionDelivery.Concurrent:
-      if (options.duplicateFirstCompletion === true) {
+      if (
+        options.executionSchedule ===
+          TemporalExecutionSchedule.DuplicateFirstCompletion
+      ) {
         throw new TypeError(
           "Concurrent completion delivery cannot also duplicate one completion",
         );
@@ -132,7 +154,10 @@ export function validateExecutionOptions(
         `Unsupported completion delivery: ${String(options.completionDelivery)}`,
       );
   }
-  if (options.duplicateFirstCompletion !== true) {
+  if (
+    options.executionSchedule !==
+      TemporalExecutionSchedule.DuplicateFirstCompletion
+  ) {
     return;
   }
   const firstCompletion = scenario.stimuli
@@ -228,7 +253,7 @@ export function requireOptionalEffectExecution(
     }
   });
   if (effects.length === 0) {
-    if (options.effectExecutionSchedule !== undefined) {
+    if (options.effectExecutionSchedule !== null) {
       throw new TypeError(
         "An effect execution schedule requires one completeEffect stimulus",
       );
@@ -245,7 +270,7 @@ export function requireOptionalEffectExecution(
     case EffectExecutionSchedule.PlainSuccess:
     case EffectExecutionSchedule.FailAfterMutationOnce:
       break;
-    case undefined:
+    case null:
       throw new TypeError(
         "Effect scenarios require an explicit host execution schedule",
       );

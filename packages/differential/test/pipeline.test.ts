@@ -11,6 +11,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   ProcessCommandResultKind,
+  EffectExecutionSchedule,
 } from "@bpmn-lean/temporal-adapter";
 
 import {
@@ -18,6 +19,9 @@ import {
   DifferentialTarget,
 } from "@bpmn-lean/differential";
 
+import {
+  CibEffectExecutionSchedule,
+} from "./pipeline-types.ts";
 import {
   pipelineCases,
   runPipelineCases,
@@ -242,7 +246,10 @@ test(
           ),
           true,
         );
-        if (pipelineCase.cibEffectRetrySchedule === true) {
+        if (
+          pipelineCase.cibEffectExecutionSchedule ===
+            CibEffectExecutionSchedule.FailAfterMutationOnce
+        ) {
           assert.deepEqual(caseEvidence.cibEffectRetryEvidence, {
             afterCommandId: caseEvidence.expectedDerivedEffectCommandId,
             schedule: "failAfterMutationOnce",
@@ -274,7 +281,10 @@ test(
         );
         assert.equal(
           caseEvidence.isolationEffectProbeEvidence.invocations,
-          pipelineCase.effectScheduleSubstitution === true ? 2 : 1,
+          pipelineCase.effectSchedules?.isolation ===
+            EffectExecutionSchedule.FailAfterMutationOnce
+            ? 2
+            : 1,
         );
         assert.equal(
           caseEvidence.isolationEffectProbeEvidence.mutations,

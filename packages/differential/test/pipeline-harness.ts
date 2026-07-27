@@ -29,6 +29,9 @@ import type {
   PipelineTargets,
 } from "./pipeline-types.ts";
 import {
+  CibEffectExecutionSchedule,
+} from "./pipeline-types.ts";
+import {
   elapsedMs,
   loadAndCompileCases,
   requireLeanDefinitionMutationRejection,
@@ -120,7 +123,8 @@ export async function runPipelineCases(
     const core = runCoreTargets(contexts);
     const effectContexts = contexts.filter(
       ({ pipelineCase }) =>
-        pipelineCase.cibEffectRetrySchedule === true,
+        pipelineCase.cibEffectExecutionSchedule ===
+          CibEffectExecutionSchedule.FailAfterMutationOnce,
     );
     const [
       cib,

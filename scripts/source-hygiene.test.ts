@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import {
+  execFileSync,
+  spawnSync,
+} from "node:child_process";
 import {
   existsSync,
   readFileSync,
@@ -95,6 +98,59 @@ function assessLeanUmbrella(path: string, source: string): string | null {
     : `${path}: import-only umbrella contains ${JSON.stringify(invalidLine)}`;
 }
 
+function directTypeScriptHarnessFiles(): string[] {
+  const shownConfig: unknown = JSON.parse(
+    execFileSync(
+      "./node_modules/.bin/tsc",
+      ["--showConfig", "-p", "tsconfig.harness.json"],
+      { encoding: "utf8" },
+    ),
+  );
+  if (
+    shownConfig === null ||
+    typeof shownConfig !== "object" ||
+    !("files" in shownConfig) ||
+    !Array.isArray(shownConfig.files) ||
+    !shownConfig.files.every((path) => typeof path === "string")
+  ) {
+    throw new TypeError(
+      "TypeScript --showConfig did not return a string file list",
+    );
+  }
+  return shownConfig.files.filter((path) => !path.endsWith(".d.ts"));
+}
+
+function erasableSyntaxDiagnostics(
+  paths: ReadonlyArray<string>,
+): string[] {
+  const result = spawnSync(
+    "./node_modules/.bin/tsc",
+    [
+      "--noEmit",
+      "--noResolve",
+      "--erasableSyntaxOnly",
+      "--skipLibCheck",
+      "--target",
+      "ESNext",
+      "--module",
+      "NodeNext",
+      "--moduleResolution",
+      "NodeNext",
+      ...paths,
+    ],
+    {
+      encoding: "utf8",
+      maxBuffer: 4 * 1024 * 1024,
+    },
+  );
+  if (result.error !== undefined) {
+    throw result.error;
+  }
+  return `${result.stdout}${result.stderr}`
+    .split(/\r?\n/u)
+    .filter((line) => line.includes("error TS1294:"));
+}
+
 function assessSourceHygiene(
   measurements: ReadonlyArray<SourceMeasurement>,
   reviews: ReadonlyMap<string, string>,
@@ -177,6 +233,34 @@ test("Lean umbrellas reject executable declarations", () => {
       "import Example.Core\n\ndef hiddenDefinition := 1\n",
     ),
     'Umbrella.lean: import-only umbrella contains "def hiddenDefinition := 1"',
+  );
+});
+
+test("direct TypeScript rejects syntax that Node cannot erase", () => {
+  const pendingSource = ".erasable-syntax-pending-probe.ts";
+  assert.equal(existsSync(pendingSource), false);
+  writeFileSync(
+    pendingSource,
+    "enum InvalidDirectSyntax { Value = 'value' }\n",
+    "utf8",
+  );
+  try {
+    assert.deepEqual(
+      erasableSyntaxDiagnostics([pendingSource]),
+      [
+        `${pendingSource}(1,6): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.`,
+      ],
+    );
+  } finally {
+    unlinkSync(pendingSource);
+  }
+});
+
+test("direct TypeScript harnesses use only erasable syntax", () => {
+  assert.deepEqual(
+    erasableSyntaxDiagnostics(directTypeScriptHarnessFiles()),
+    [],
+    "Node executes harness TypeScript without a transform step",
   );
 });
 

@@ -19,6 +19,7 @@ import {
   bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
@@ -243,7 +244,7 @@ export class TemporalScenarioRunner {
     const completions = requireCompletionStimuli(scenario);
     const firstCompletion = completions[0];
     if (
-      options.effectExecutionSchedule !== undefined &&
+      options.effectExecutionSchedule !== null &&
       firstCompletion !== undefined
     ) {
       await this.waitForOpenUserTask(handle, firstCompletion);
@@ -257,7 +258,10 @@ export class TemporalScenarioRunner {
     );
     const openTimersAtWait = openTimersInTrace(waitTrace);
     const openEffectsAtWait = openEffectsInTrace(waitTrace);
-    if (options.workerDownAtEffectPending === true) {
+    if (
+      options.executionSchedule ===
+        TemporalExecutionSchedule.WorkerDownAtEffectPending
+    ) {
       if (effectProbeStore === undefined) {
         throw new TypeError(
           "Worker-down effect scheduling has no probe store",
@@ -280,7 +284,10 @@ export class TemporalScenarioRunner {
     const timerStimulus = requireOptionalTimerStimulus(scenario);
     let timerReceipt: CompletedProcessReceipt | undefined;
     if (timerStimulus !== undefined) {
-      if (options.workerDownAtTimerDue === true) {
+      if (
+        options.executionSchedule ===
+          TemporalExecutionSchedule.WorkerDownAtTimerDue
+      ) {
         await this.workerHost.restartAfterTimerDue(handle, timerStimulus);
       }
       timerReceipt = requireCompletedProcessReceipt(
@@ -292,7 +299,7 @@ export class TemporalScenarioRunner {
       );
     }
     let effectReceipt: CompletedProcessReceipt | undefined;
-    if (options.effectExecutionSchedule !== undefined) {
+    if (options.effectExecutionSchedule !== null) {
       effectReceipt = requireCompletedProcessReceipt(
         await withDeadline(
           handle.result(),

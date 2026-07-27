@@ -23,6 +23,7 @@ import {
 import {
   bpmnTraceQueryName,
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
@@ -109,6 +110,7 @@ export async function runEffectBypassMutation(
   requireOptionalEffectExecution(scenario, semanticProcess, {
     workflowId,
     completionDelivery: TemporalCompletionDelivery.Ordered,
+    executionSchedule: TemporalExecutionSchedule.Normal,
     effectExecutionSchedule: EffectExecutionSchedule.PlainSuccess,
   });
   return runBypassMutation(

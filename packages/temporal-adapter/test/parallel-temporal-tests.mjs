@@ -11,6 +11,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import {
   TemporalCompletionDelivery,
+  TemporalExecutionSchedule,
   isCompletedProcessReceipt,
 } from "../dist/index.js";
 import {
@@ -33,6 +34,8 @@ export function registerParallelTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "user-task-concurrent-race",
         completionDelivery: TemporalCompletionDelivery.AcceptedBatch,
+        executionSchedule: TemporalExecutionSchedule.Normal,
+        effectExecutionSchedule: null,
       }),
       15_000,
       "User Task concurrent completion race",
@@ -76,7 +79,11 @@ export function registerParallelTemporalTests(getRunner) {
           options: {
             workflowId: `parallel-ordered-${index}`,
             completionDelivery: TemporalCompletionDelivery.Ordered,
-            duplicateFirstCompletion: index === 0,
+            executionSchedule:
+              index === 0
+                ? TemporalExecutionSchedule.DuplicateFirstCompletion
+                : TemporalExecutionSchedule.Normal,
+            effectExecutionSchedule: null,
           },
         })),
       ),
@@ -140,6 +147,8 @@ export function registerParallelTemporalTests(getRunner) {
       getRunner().runScenario(input.scenario, input.semanticProcess, {
         workflowId: "parallel-concurrent",
         completionDelivery: TemporalCompletionDelivery.Concurrent,
+        executionSchedule: TemporalExecutionSchedule.Normal,
+        effectExecutionSchedule: null,
       }),
       15_000,
       "parallel concurrent interaction",
