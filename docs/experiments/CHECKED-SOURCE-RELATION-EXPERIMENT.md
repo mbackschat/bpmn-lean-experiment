@@ -1,12 +1,12 @@
 # Checked-source relation experiment
 
-**Status:** Executed; unresolved boundary recorded; not adopted
+**Status:** Stage 1 proof checkpoint completed; full preservation remains unresolved and not adopted
 
 **Question:** Can a direct token-game account over `CheckedProcess` support a run-level observational lowering-preservation theorem for the current five Semantic Process operations without reusing lowering or IL execution as source semantics?
 
 **Claim boundary:** The source relation is a second transcription of the reviewed capsule account and can lock lowering correspondence. It is not an independent BPMN authority. Normative/profile review and CIB evidence remain responsible for validating the selected account.
 
-The production proof boundary remains recorded in the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md). The provisional direct account and countermodel remain solely in the separately gated experiments lane.
+The production proof boundary remains recorded in the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md). The provisional direct account, bounded correspondence checkpoint, and countermodel remain solely in the separately gated experiments lane.
 
 ## Competing accounts
 
@@ -34,9 +34,11 @@ The renamed endpoint-agreement check is also a finite regression guard for the e
 
 ## Executed direct account
 
-[CheckedSourceSemantics.lean](../../BpmnSemantics/Experiments/CheckedSourceSemantics.lean) defines a separate source control state, Sequence-Flow token multiset, source User Task waits, per-task activation state, and direct checked-node transition relation for none Start Event, User Task, diverging and converging Parallel Gateway, and none End Event. `fireNode_sound` proves every executable source-node transition is permitted by that relation. Source admission, supported closure, canonical observation, and scenario execution are implemented without importing Semantic Process lowering or execution.
+[CheckedSourceSemantics.lean](../../BpmnSemantics/Experiments/CheckedSourceSemantics.lean) is now an import-only façade over responsibility-specific [state](../../BpmnSemantics/Experiments/CheckedSourceState.lean), [transition](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean), and [scenario](../../BpmnSemantics/Experiments/CheckedSourceScenario.lean) modules. They define a separate source control state, Sequence-Flow token multiset, source User Task waits, per-task activation state, and direct checked-node transition relation for none Start Event, User Task, diverging and converging Parallel Gateway, and none End Event. `fireNode_sound` proves every executable source-node transition is permitted by that relation. Source admission, supported closure, canonical observation, and scenario execution remain independent of Semantic Process lowering and execution.
 
-[CheckedSourceRelation.lean](../../BpmnSemantics/Experiments/CheckedSourceRelation.lean) contains only the deliberately wrong lowerer, retained-fixture controls, admitted renamed graph, and public divergence check. [CheckedSourceRelationMain.lean](../../BpmnSemantics/Experiments/CheckedSourceRelationMain.lean) is the focused executable gate.
+[CheckedSourceCorrespondence.lean](../../BpmnSemantics/Experiments/CheckedSourceCorrespondence.lean) is the Stage 1 target-side bridge. It proves that adding the exact production `operation:` prefix preserves and reflects String order, maps direct source state into the production runtime representation, and checks exact enabled-operation identifiers and successor states at the four automatic boundaries of a two-User-Task serial chain. The target list is reconstructed from the production `fire?` operation evaluator because production `enabledTransitions` remains private; Stage 1 neither changes that visibility nor claims closure correspondence.
+
+[CheckedSourceRelation.lean](../../BpmnSemantics/Experiments/CheckedSourceRelation.lean) contains only the deliberately wrong lowerer, retained-fixture controls, admitted renamed graph, and public divergence check. [CheckedSourceRelationMain.lean](../../BpmnSemantics/Experiments/CheckedSourceRelationMain.lean) is the focused executable gate for both the Stage 1 correspondence checkpoint and the retained positional-lowering discriminator.
 
 ## Red/green evidence
 
@@ -49,6 +51,8 @@ lake exe checkCheckedSourceRelationExperiment
 
 Both commands passed, and the executable reported `Checked-source relation experiment checks passed.` The gate comprises approximately 700 lines across the source account, witness, and main. It requires all six retained fixtures to survive the mutation, the direct source account to agree with correct endpoint-based lowering on the renamed graph, and the same source result to disagree with positional lowering.
 
+The 2026-07-28 Stage 1 red build first failed because the new correspondence module was absent. The responsibility split then exposed a stale Service Task constructor pattern in this separately gated lane; it was corrected to the current checked-source shape without adding Service Task semantics. The green gate proves the general constant-prefix ordering lemma and the bounded four-state selector correspondence. The responsibility split leaves every hand-written module below 300 nonblank lines. The new or materially rewritten Lean proof surface is below the approved 250-line ceiling; moved definitions are not counted as new proof surface.
+
 ## Precise unresolved boundary
 
 The attempted correspondence layer defined the source-to-program runtime mapping, proved injectivity of the `place:` Sequence-Flow encoding, and proved mapping lemmas for token removal and production. At that point the experiment had exceeded the agreed approximate 700-line boundary without reaching the run theorem.
@@ -57,7 +61,7 @@ The remaining proof was not a single mechanical induction. It still required:
 
 - extracting nonempty incoming/outgoing Flow facts for every checked node from the private bounded well-formedness conjunction so the source Flow default and IL control-place default could be related only on admitted graphs;
 - relating source wait lookup/erase and activation-count updates to the mapped IL runtime;
-- proving that the complete `enabledTransitions` lists correspond in node/operation order;
+- generalizing the Stage 1 two-segment enabled-transition check to every state admitted by the structured derivation, including wait-family mappings and parallel choices;
 - proving that the two independent User Task choices and recursive `closeSupported` results correspond at every fuel value;
 - relating external admission, stable observation projection, and rejected-command state preservation;
 - performing the final stimulus-list induction over projected observations.
@@ -72,13 +76,13 @@ Completing that bridge would exceed the authorized effort boundary or require re
 
 ## Result
 
-**Not adopted.** The direct source account and fixture-coincidental witness are useful executable discriminators and remain provisional in `BpmnSemantics/Experiments/`. The run-level observational lowering-preservation theorem remains unproved, so the IL proof boundary and capsule rule-to-evidence rows do not graduate.
+**Stage 1 completed; full account not adopted.** The direct source account and fixture-coincidental witness remain provisional in `BpmnSemantics/Experiments/`. The early ordering and two-segment selector obligations closed without production changes, but the run-level observational lowering-preservation theorem remains unproved, so the IL proof boundary and capsule rule-to-evidence rows do not graduate.
 
 The program-derived account remains rejected as circular. The permanent-proof-boundary account also remains rejected by owner decision; this experiment records an unresolved implementation boundary rather than silently selecting that alternative.
 
 ## Frozen experiment policy
 
-This result is frozen at the current five-operation discriminator. New semantic capsules may keep the experiment compiling, but must not extend `CheckedSourceSemantics.lean` while the preservation boundary remains frozen.
+The owner reopened the experiment on 2026-07-28 for Stage 1 of the compositional-admission trigger. Stage 1 is now complete and the experiment is frozen again at the current five-operation discriminator. New semantic capsules may keep these modules compiling, but must not extend their source semantics unless a later proof stage is explicitly authorized.
 
 Reopen the experiment only when:
 

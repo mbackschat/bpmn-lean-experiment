@@ -1,4 +1,5 @@
 import BpmnSemantics.Experiments.CheckedSourceRelation
+import BpmnSemantics.Experiments.CheckedSourceCorrespondence
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelationMain — checked-source relation experiment gate
 
@@ -6,6 +7,7 @@ This executable retains the fixture-coincidental positional-lowering countermode
 -/
 
 open BpmnSemantics.Experiments.CheckedSourceRelation
+open BpmnSemantics.Experiments.CheckedSourceCorrespondence
 
 private def requireTrue (condition : Bool) (message : String) : IO Unit :=
   if condition then
@@ -14,6 +16,8 @@ private def requireTrue (condition : Bool) (message : String) : IO Unit :=
     throw (IO.userError message)
 
 def main : IO Unit := do
+  requireTrue twoSegmentEnabledTransitionsCorrespond
+    "two-segment source and lowered-program enabled transitions diverge"
   requireTrue retainedFixturesSurvivePositionalLowering
     "positional-lowering mutation no longer leaves every retained fixture lock green"
   requireTrue renamedCountermodelDiverges

@@ -1,91 +1,144 @@
 # Compositional BPMN admission and lowering proposal
 
-**Status:** Draft; assessment complete; owner decision required before implementation
+**Status:** Owner-approved on 2026-07-28; Stage 1 completed within its 250-line stop; Stage 2 is not authorized
 
 ## Decision question
 
-Should the project replace its named whole-model topology checks with a bounded structural composition rule for already implemented BPMN mechanisms, while preserving exact lowering, avoiding accidental scheduler semantics, and reopening the checked-source preservation proof before widened admission ships?
+Should the project replace named whole-model topology checks with a profile-conditional structured-composition rule for already implemented BPMN mechanisms, while preserving exact lowering and closing observational checked-source preservation before widened admission ships?
 
-The recommendation is **yes, under the selected structured-composition account below**. Do not implement arbitrary acyclic graph admission and do not begin another exact A12 model path.
+The recommendation is **yes, under the bounded structured-composition account below**. Arbitrary acyclic admission remains rejected. The first grammar admits repeated serial User Tasks and balanced two-User-Task regions, but globally permits at most one Intermediate Catch Timer and at most one Service Task effect.
 
 ## Why this decision is forced now
 
-The current source layer already projects supported BPMN nodes and Sequence Flows independently, and lowering already maps each checked node to a reusable Semantic Process operation. The growth bottleneck is a second, whole-model check that recognizes only named fixtures: one sequential wait, one balanced two-User-Task fork/join, and two separately compiled target-shaped models. The semantic-core admission layer repeats the same shape lock over the lowered program.
+The source layer already projects supported BPMN nodes and Sequence Flows independently, and lowering already maps each checked node by source/target endpoint to a reusable Semantic Process operation. Named whole-model matchers in TypeScript and Lean now constrain BPMN coverage more than the implemented mechanisms do.
 
-Removing those locks without a replacement would be unsound. The TypeScript closure currently selects the canonically smallest enabled internal operation, while Lean admits one enabled operation or the specifically checked independent two-User-Task activation pair and rejects other simultaneous choices. For a wider graph, operation identifier order could therefore become observable TypeScript behavior even though BPMN never assigned it that authority.
+Deleting those matchers without a replacement would be unsound. The strongest discriminator is closure, not identifier order: every segment selected below reaches a semantic wait after at most four internal steps, independently of chain length, while an arbitrary acyclic cascade of automatic forks can require more than the fixed closure fuel of eight.
 
-The [frozen checked-source experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md#frozen-experiment-policy) also has an explicit reopen trigger: observational lowering preservation must close before admission widens beyond the fixture-pinned topologies. This proposal does not waive that condition.
+Arbitrary acyclic admission would also assign unreviewed meaning to uncontrolled Activity fan-in. BPMN21-268 records that multiple uncontrolled incoming Sequence Flows may activate an Activity multiple times; this project has not selected or evidenced that account.
+
+The [frozen checked-source experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md#frozen-experiment-policy) has an explicit reopen trigger: observational lowering preservation must close before admission widens beyond fixture-pinned topologies. The owner approval reopened that bounded experiment through Stage 1 only; later stages retain their explicit checkpoints.
 
 ## Required scope
 
-The first compositional profile admits one private executable Process with:
+The first composed profile admits one private executable Process with:
 
 - exactly one None Start Event and one None End Event;
 - one or more serial segments;
-- a serial segment that is either one admitted wait node or one exact balanced two-User-Task parallel region;
-- wait nodes limited to the already reviewed plain User Task, exact `PT1S` Intermediate Catch Timer, or exact payload-free Service Task protocol/handler binding;
+- each segment either one admitted wait node or one exact balanced two-User-Task parallel region;
+- any number of distinct serial User Task nodes and balanced User Task regions;
+- at most one exact `PT1S` Intermediate Catch Timer in the entire Process;
+- at most one exact payload-free Service Task protocol/handler binding in the entire Process;
 - unconditional Sequence Flows with distinct IDs and exact source/target references;
-- a finite acyclic graph in which every node and Flow is reachable from the Start Event and can reach the End Event;
-- the current per-node arity, source-shape, namespace, warning, and exact-byte profile checks;
-- stable closure paths whose only simultaneous internal transitions are the already reviewed independent two-User-Task activations;
-- one new composed draft semantic profile that names the selected union of already reviewed BPMN rules, existing CIB relationship IDs, source restrictions, observation boundary, and pinned oracle environment; combining capsule profiles is a fresh reviewed claim, not an automatic union of their IDs.
+- a finite acyclic graph in which every node and Flow is reachable from Start and can reach End;
+- exact per-node arity, source-shape, namespace, parser-warning, and exact-byte checks;
+- no simultaneous internal transition except the reviewed pair of disjoint User Task activations;
+- one new composed profile with an explicitly selected feature set, exclusions, comparison mode, CIB relationships, observation boundary, and pinned oracle environment.
 
-In compact form, the admitted graph language is:
+In compact summary form:
 
 ```text
-Process       ::= NoneStart Segment+ NoneEnd
-Segment       ::= Wait | ParallelUserPair
-Wait          ::= UserTask | TimerPT1S | PayloadFreeServiceTask
+Process          ::= NoneStart Segment+ NoneEnd
+Segment          ::= Wait | ParallelUserPair
+Wait             ::= UserTask | TimerPT1S | PayloadFreeServiceTask
 ParallelUserPair ::= ParallelFork (UserTask || UserTask) ParallelJoin
+
+Global constraint: count(TimerPT1S) ≤ 1 ∧ count(PayloadFreeServiceTask) ≤ 1
 ```
 
-This grammar describes a checked property of the existing graph wire format. It does not introduce a second region AST, generated TypeScript, a topology opcode, or a runtime compatibility branch.
+The grammar is explanatory shorthand, not the normative representation or validator. The normative admission proposition is the conjunction of exact node arity, reference integrity, reachability, co-reachability, acyclicity, supported node kinds, global Timer/effect cardinalities, and exact gateway region shape. Under those facts, gateway endpoints force one complete, non-overlapping decomposition; the validator does not search for or choose among decompositions.
+
+The existing checked graph remains the source contract. No region AST, topology opcode, generated source, runtime compatibility branch, or second authoritative representation is introduced.
+
+## Exact arity contract
+
+TypeScript source admission must add explicit, diagnostic-producing checks before the existing whole-topology matcher is removed:
+
+| Node kind | Incoming | Outgoing |
+|---|---:|---:|
+| None Start Event | 0 | 1 |
+| None End Event | 1 | 0 |
+| User Task | 1 | 1 |
+| Intermediate Catch Timer | 1 | 1 |
+| Service Task | 1 | 1 |
+| Diverging Parallel Gateway | 1 | 2 |
+| Converging Parallel Gateway | 2 | 1 |
+
+Lean already has the corresponding checked-node arity predicate. The TypeScript lowering helper that expects a single Flow is not an admission check: a thrown `TypeError` is an infrastructure failure and cannot substitute for a source rejection with a precise diagnostic.
+
+## Profile-conditional admission
+
+Admission must become a function of the declared semantic profile before any shape is widened.
+
+- Each existing generic profile retains its current exact topology and feature surface.
+- The new composed profile alone selects the structured grammar in this document.
+- The two exact A12 profile compilers remain separately dispatched and gain no generic composed surface.
+- TypeScript checked-source admission, Lean `checkedWellFormed`, TypeScript `isWellFormedSemanticProcessProgram`, and TypeScript `hasSupportedExecutionSurface` must all enforce the same profile-selected capability. Temporal continues to enter only through `supportsSemanticProcessExecution`.
+- The existing TypeScript lock that admits a structurally compatible unknown profile is replaced with a rejection lock; a profile string is semantic authority, not an inert identity label.
+
+This closes a latent current defect: the generic compiler can otherwise accept a balanced User Task parallel program while stamped with the timer profile, despite that profile excluding User Tasks and gateways.
+
+## Composed profile construction
+
+All four constituent `2.2.0` profiles pin the same CIB Seven revision and byte-identical environment, so their configuration facts are jointly satisfiable. The new artifact is nevertheless a reviewed composition, not a JSON union:
+
+- `features` is a selected set of the mechanisms admitted by this grammar;
+- `excluded` is recomputed for the composed boundary, because unioning constituent exclusions would exclude the features being composed;
+- `comparison.semanticConcurrency` is `true` because the admitted whole model may contain one parallel region; this does not assert concurrency in each serial segment;
+- relationships are selected as `CIB-AGR-0001`, `CIB-AGR-0002`, `CIB-AGR-0003`, `CIB-AGR-0004`, `CIB-OP-0001`, `CIB-CFG-0001`, `CIB-EXT-0001`, and `CIB-CFG-0002`, subject to their existing fidelity limits;
+- candidate deviation `CIB-DEV-0001` remains disclosed by the parallel capsule but is not imported into the composed compatibility claim.
+
+The artifact begins with `status: "draft"` during red implementation. Before retained composed evidence is adopted, its exact content is frozen as an immutable calibration artifact. That artifact status does not graduate the semantic capsule or establish a production deployment/history compatibility baseline.
 
 ## Optional scope
 
-None in the first implementation. In particular, admitting a longer chain is not authorization to add another node kind, expression form, trigger, mapping language, or CIB extension.
+None in the first implementation. A longer admitted chain does not authorize another node kind, Timer, Service Task, expression, mapping language, trigger, or CIB extension.
 
 ## Excluded scope
 
-- arbitrary directed acyclic graphs, unstructured or nested parallelism, loops, multiple starts or ends, implicit Activity fan-out/fan-in, and simultaneous automatic transitions not covered by an existing commutation law;
+- a second Timer or Service Task effect, sequential Timer clock accumulation, effect repetition, and every Timer/effect race;
+- arbitrary directed acyclic graphs, unstructured or nested parallelism, loops, multiple starts or ends, implicit Activity fan-out/fan-in, and simultaneous automatic transitions outside the reviewed disjoint User Task pair;
+- zero-segment `None Start → None End`;
 - conditional/default Sequence Flow, Exclusive/Inclusive/Event-Based/Complex Gateway, messages/correlation, nested scopes, Sub-Processes, Call Activities, event subprocesses, compensation, and multi-instance behavior;
-- the profile-scoped boundary-error route, because its attached scope/interrupt relation is not an ordinary serial graph segment;
+- the profile-scoped boundary-error route, because its attached scope and interrupt relation is not an ordinary serial graph segment;
 - A12 CreateDocument mappings, other target-specific source shapes, or an A12 adapter;
 - general expressions, variables, mappings, scripts, assignments, or Service Task bindings;
 - a new dependency, wire format, IL operation, Temporal Workflow, previously unreviewed CIB behavior, broad CIB compatibility claim, or percentage-complete claim.
 
-The exact boundary-error and CreateDocument compilers remain bounded adoption/profile paths until the corresponding general scope and data mechanisms are reviewed. They must not be used as reasons to leak target-specific records into the generic graph contract.
+The exact boundary-error and CreateDocument compilers remain bounded adoption/profile paths. Three separate source compilers are a temporary pre-release shape, not a target architecture; reassess their shared data/scope boundary when general mappings and scope mechanisms are admitted.
 
 ## Competing accounts
 
 | Account | Benefit | Failure mode | Decision |
 |---|---|---|---|
-| Keep named whole-model topologies | Smallest immediate proof and test surface | Every new composition needs another compiler/admission branch; BPMN coverage grows model by model | Reject as the roadmap architecture |
-| Admit every acyclic graph over current node kinds | Maximizes syntactic reuse | Makes current TypeScript operation-ID order an accidental scheduler, exceeds current Lean closure account, and admits unreviewed BPMN fan-in/fan-out behavior | Reject |
-| Admit the structured composition grammar above | Removes whole-model fixture matching while reusing only closed mechanisms; has a statically bounded closure account | Requires a real graph validator, independent program validation, and reopening the preservation proof | Select |
-| Introduce a region/tree wire representation | Makes structured composition explicit | Creates a second authoritative representation and obscures exact BPMN Sequence Flow identity | Reject for the first implementation |
+| Keep named whole-model topologies | Smallest immediate proof and test surface | Every composition creates another compiler/admission branch | Reject as roadmap architecture |
+| Admit every acyclic graph over current node kinds | Maximizes syntactic reuse | Unbounded automatic closure, unreviewed uncontrolled fan-in, and incompatible multiple-enabledness accounts | Reject |
+| Admit the structured grammar above | Removes fixture matching while preserving a fixed closure bound and reviewed waits | Requires profile-conditional validation and reopened preservation proof | Select |
+| Introduce a region/tree wire representation | Makes structured composition explicit | Creates a second authoritative representation and obscures exact Sequence Flow identity | Reject for this implementation |
 
 ## Source-admission contract
 
-Admission proves the graph properties, rather than recognizing selected identifier sets or model names. The source result remains the existing canonical `CheckedProcess`: exact source identity, Process ID, sorted checked nodes, and sorted Sequence Flows.
+Admission proves graph properties instead of recognizing selected identifiers or model names. The source result remains the canonical `CheckedProcess`: exact source identity, Process ID, sorted checked nodes, and sorted Sequence Flows.
 
-The validator must establish:
+The validator establishes:
 
 1. reference integrity and global identifier uniqueness;
-2. the one-Start/one-End boundary and the exact per-kind arities;
+2. exact one-Start/one-End boundary and per-kind arities;
 3. reachability from Start and co-reachability to End;
 4. acyclicity;
-5. a complete non-overlapping decomposition into serial wait segments and exact two-User-Task parallel regions;
-6. absence of conditional/default flow and of unsupported or extra executable content;
-7. a stable-closure bound for every segment, with no unresolved simultaneous internal transition.
+5. the unique complete decomposition into serial wait segments and exact two-User-Task parallel regions;
+6. the global one-Timer and one-Service-Task bounds;
+7. absence of conditional/default Flow and unsupported executable content;
+8. the stable closure bound and permitted multiple-enabledness property.
 
-A failure is source admission rejection with a precise diagnostic, never a runtime semantic outcome. Canonical sorting is serialization behavior only; it cannot decide flow, scheduling, or choice.
+Both a `conditionExpression` and a gateway `default` reference receive dedicated hostile-source witnesses; raw-object own-key enumeration is not accepted as proof that reference-valued defaults are absent.
 
-## Lowering contract
+A failure is a source admission rejection with a precise diagnostic, never a runtime semantic outcome or thrown lowering error. Canonical sorting is serialization behavior only.
 
-The existing element-local account is retained:
+## Lowering and program-validation contract
 
-- one control place per admitted Sequence Flow, preserving exact Flow identity;
+Existing endpoint-indexed lowering is retained:
+
+- one control place per Sequence Flow;
 - None Start → `initiate`;
 - User Task → `awaitUserTask`;
 - exact timer → `awaitTimer`;
@@ -94,43 +147,61 @@ The existing element-local account is retained:
 - converging Parallel Gateway → `synchronize`;
 - None End → `terminate`.
 
-Lowering looks up inputs and outputs by checked source/target endpoints and never by positional order. It does not perform reachability, choose a runtime order, execute closure, or reconstruct the structured decomposition. Exact checked-source identity and exact lowering equality remain admission requirements.
+Lowering selects inputs and outputs by checked source/target endpoints, never positional order. It does not perform reachability, choose runtime scheduling, execute closure, or reconstruct the decomposition.
 
-Before widened program admission ships, standalone `programWellFormed` must independently check the corresponding reference, reachability, acyclicity, producer/consumer, arity, and stable-closure obligations. Exact equality with a checked-source lowering remains required, but must no longer be the only source of those program facts.
+Before widened admission ships, Lean `programWellFormed`, TypeScript `isWellFormedSemanticProcessProgram`, and TypeScript `hasSupportedExecutionSurface` independently check the corresponding profile, reference, reachability, acyclicity, producer/consumer, arity, cardinality, and stable-closure obligations. Exact equality with checked-source lowering remains required, but is not their only source of structural facts.
 
 ## Execution and closure contract
 
-For the selected grammar, each stable state has either:
+For the selected grammar, each internal-closure state has either no enabled transition, one enabled transition, or the reviewed disjoint pair of User Task activations.
 
-- no enabled internal transition;
-- one enabled internal transition; or
-- the already reviewed pair of disjoint User Task activations, whose canonical stable observation is order-independent.
+The required Lean lemma `structuredClosureStepsLeFour` proves that closure from any admitted stable boundary performs at most four internal steps:
 
-The implementation must state and check that property directly. TypeScript must not select one of several unsupported enabled operations by identifier order. Lean must retain a declarative closure relation separate from the executable selector and prove that the selector is sound for the admitted structured graph.
+- at Process start, the longest case is `initiate → duplicate → awaitUserTask → awaitUserTask`;
+- between segments, the longest case is `synchronize → duplicate → awaitUserTask → awaitUserTask`.
 
-The current fixed closure fuel may remain only if the admitted grammar proves that every stable closure stays within it. Otherwise the proposal returns for an explicit model-derived fuel contract; implementation may not silently raise the constant.
+The fixed production closure fuel of eight therefore remains unchanged. A long schema-valid cascade of automatic gateways is retained as an admission-negative witness: it exceeds the structural grammar and is rejected before evaluation rather than absorbed by more fuel.
 
-No new Temporal mechanism is required: the Workflow continues to host committed semantic-core state, timers, and effects under their existing contracts. A new mixed scenario is nevertheless required to prove that the existing host loop follows a program composed from more than one previously isolated segment.
+TypeScript must reject unsupported multiple-enabledness instead of selecting the lowest operation ID. Lean retains a declarative closure relation distinct from the executable selector and proves selector soundness over the admitted grammar.
 
-## Language-specific design discipline
+Under unique control-place producer/consumer facts, enabled disjoint internal operations are expected to commute at the canonical projection. Prove this as a positive law with exact hypotheses, or return with a real public non-commuting counterexample. Internal first-step order alone is not a separating observation and cannot justify admission policy.
 
-The TypeScript implementation uses immutable checked data, closed discriminated node/segment results, small pure graph predicates, exhaustive switches, and `unknown`-to-domain narrowing at the importer boundary. It must not introduce a class hierarchy, builder, registry, generic “processor,” optional-boolean mode bag, or unchecked cast to encode the grammar.
+No new Temporal mechanism is required. The Workflow continues to host committed semantic-core state, timers, and effects under existing contracts.
 
-The Lean implementation expresses structured admission as an inductive proposition over checked graph facts, with a total executable decision procedure and a soundness theorem connecting the Boolean result to that proposition. Graph, lowering, closure, and observation lemmas stay in their owning modules. Concrete `by decide` fixtures lock examples and mutations; quantified reachability, decomposition, and closure properties require named lemmas with useful hypotheses.
+## Language-specific discipline
 
-Neither language copies the other language’s internal representation. They agree through the existing checked graph, Semantic Process contract, scenarios, and canonical observations.
+TypeScript uses immutable checked data, closed discriminated validation results, small pure graph predicates, exhaustive switches, and `unknown`-to-domain narrowing at the import boundary. It must not introduce a class hierarchy, builder, registry, generic processor, optional-boolean mode bag, or unchecked cast for this grammar.
 
-## Feasibility and proof effort
+Lean expresses structured admission as an inductive derivation over checked graph facts, with a total executable decision procedure and a soundness theorem. The proof route is induction on that structured-admission derivation, not unrestricted raw-graph induction.
 
-The graph validator and existing node-local lowerer are the smaller part of this work. The dominant cost is the triggered preservation obligation: the frozen experiment still lacks enabled-transition, closure, admission, observation, and stimulus-run correspondence, and the mixed grammar also requires direct source-side Timer and Service Task clauses.
+The existing `BpmnSemantics/Experiments/CheckedSourceSemantics.lean` is split by responsibility before extension. A closed preservation theorem graduates to a production module such as `BpmnSemantics/SemanticProcess/Preservation.lean` and is imported by the ordinary conformance gate; only mutation discriminators remain in `Experiments/`.
 
-The recommended proof effort stop is approximately 1,800 additional or materially rewritten nonblank Lean lines across cohesive modules, with every module still respecting the repository’s 600-line review target. This reflects roughly one-and-a-half to three times the original 700-line experiment budget plus the two additional wait families. If the theorem has not closed within that bound, or proof convenience demands changing production semantics or representations, the acceptable result is a precise unresolved boundary and no widened admission. Independent review should challenge this estimate before owner approval.
+Neither language copies the other’s internal representation. They agree through checked graph identity, exact lowering, scenarios, and canonical observations.
+
+## Staged proof effort boundary
+
+Approximately 1,800 additional or materially rewritten nonblank Lean lines is a ceiling, not an estimate of guaranteed closure. The bottom-up range is wider because the repository has no external graph, reachability, finite-set, or permutation library.
+
+Work stops at each stage if its named obligation does not close within its sub-budget:
+
+| Stage | Obligation | Ceiling |
+|---|---|---:|
+| 1 | Split the frozen source module; prove constant-`"operation:"` prefix order preservation and two-segment `enabledTransitions` correspondence | 250 |
+| 2 | Fuel-bounded reachability/co-reachability/acyclicity, unique structured decomposition, executable-decider soundness, and strengthened program validation | 500 |
+| 3 | Direct source Timer/effect clauses, closure selector soundness, and `structuredClosureStepsLeFour` | 350 |
+| 4 | State mapping, full enabled/closure correspondence, admission/observation preservation, and stimulus-list induction | 700 |
+
+Stage 1 is the early kill decision because the previous experiment stopped at enabled-transition correspondence. Lean lowering does not sort operations while TypeScript does, so the prefix/order lemma must close on a two-segment chain before graph infrastructure is funded.
+
+Stage 1 completed without changing production semantics, representations, observation, or visibility. The direct source account was split into state, transition, and scenario modules; a general constant-prefix order theorem elaborates; and the direct selector agrees with the lowered production operation evaluator on operation identity and successor state at every automatic boundary of a two-segment User Task chain. The [experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) owns the exact claim and remaining boundary. Stage 2 requires a new owner checkpoint.
+
+No hand-written source module may exceed the 600-nonblank-line review target. Proof convenience may not change `closeSupported`, `enabledTransitions`, canonical observation, wire contracts, production semantics, or representations. Failure at a stage records the exact unresolved boundary and leaves admission unchanged.
 
 ## Separating witnesses
 
-### Positive mixed-composition witness
+### Positive mixed composition
 
-Admit and execute a project-authored neutral model:
+Admit and execute:
 
 ```text
 None Start
@@ -144,60 +215,68 @@ None Start
   → None End
 ```
 
-This model is outside every current named topology while using no new semantic mechanism. Exact observations must show each stable wait, the order-independent parallel pair, the timer’s existing logical-time contract, the existing effect intent/result contract, and final completion. Lean and TypeScript execute independently; Temporal refines the same committed results. Whole-model CIB execution may supply the existing timer and Service Task host observations, but it does not define the composition account or count as a new independent semantic authority.
+Lean and TypeScript execute the answer-free scenario independently. Temporal refines the same committed semantic results and derives Timer/effect stimuli only from committed state.
 
-### Negative structure witnesses
+The composed profile gets one fresh content-bound whole-model CIB evidence envelope under the new profile ID. It is generated only by the explicit replacement command after the profile is frozen. A retained mutation removes the Timer wait after User Task A completion and must make the comparison fail. CIB supplies host realization and existing per-mechanism calibration; it does not define structured composition or become another semantic authority.
 
-Each of the following must be schema-valid checked input and must fail admission for the intended reason:
+### Negative structure and source witnesses
 
-- a cycle;
-- a disconnected but otherwise valid-looking node;
-- a node reachable from Start that cannot reach End;
+Admission rejects:
+
+- `None Start → None End` with no segment;
+- a cycle, disconnected node, or node that cannot reach End;
+- wrong arity on each supported non-gateway node;
 - an unbalanced fork or join;
-- nested parallel regions that enable two automatic fork operations concurrently;
-- a parallel region containing a Timer or Service Task rather than the admitted User Task pair;
-- a conditional Sequence Flow;
-- a boundary-event source presented as an ordinary serial segment;
-- the same graph with one source/target endpoint changed while canonical array order remains valid.
+- a long cascade of automatic gateways whose closure would exceed eight;
+- sibling fork operations created by an outer fork whose two branches each begin with a fork;
+- a parallel region containing a Timer or Service Task;
+- a second Timer or a second Service Task anywhere in the Process;
+- uncontrolled multiple incoming Sequence Flows to an Activity;
+- both a conditional Flow and a gateway default-Flow reference;
+- a boundary-event source, as a cheap upstream defense rather than a discriminator;
+- one changed source/target endpoint with canonical array order preserved.
 
-### Accidental-order witness
+### Multiple-enabledness divergence
 
-A deliberately over-broad admission mutation accepts the nested-parallel graph whose two internal forks are simultaneously enabled. The retained check must demonstrate that renaming operation IDs can change the current TypeScript first step while BPMN source structure is unchanged, and that the selected structured validator rejects the graph before execution. This proves why acyclic alone is insufficient.
+An over-broad admission mutation retains a graph with unsupported simultaneous enabled operations. Lean reports `ambiguousChoice`; TypeScript currently progresses by sorted operation ID. This is retained under its honest claim: it exposes incompatible implementation accounts outside admitted structure. It does not by itself distinguish structured admission from arbitrary acyclic admission.
 
-### Lowering witness
+### Lowering discriminator
 
-Retain the renamed positional-pairing counter-model from the checked-source experiment. The widened preservation proof must quantify over the selected structured grammar, and the fixture-coincidental positional lowering must still diverge on its adversarial renamed graph while endpoint lowering agrees.
+Retain the renamed positional-record counter-model from the checked-source experiment. The widened preservation theorem quantifies over this structured grammar, endpoint lowering agrees with the direct source account, and fixture-coincidental positional pairing still diverges on the adversarial renamed graph.
 
 ## Required evidence before adoption
 
-1. Normative requirements and exact exclusions are added to the BPMN ledger; the composed semantic profile references only existing reviewed CIB relationships unless the on-demand gate identifies a genuinely new one.
-2. TypeScript source admission accepts the mixed witness and rejects every structure mutation with a precise diagnostic.
-3. Lean has an idiomatic declarative structured-admission proposition, executable checker soundness, strengthened `programWellFormed`, closure soundness, and useful laws for the mixed witness’s constituent mechanisms.
-4. The frozen checked-source experiment is reopened by explicit owner approval, and observational lowering preservation closes for the selected structured grammar before widened admission ships.
-5. Exact checked-source/lowering equality and the retained positional-lowering discriminator stay green.
-6. Lean and TypeScript produce exact canonical agreement for the mixed scenario; the nearest checked non-law is retained.
-7. Temporal runs the mixed program through the existing semantic-lifetime Workflow, derives timer/effect stimuli only from committed state, verifies durable history, and replays the execution.
-8. Applicable retained CIB evidence remains content-bound; no evidence is regenerated merely because source admission changed.
-9. A mutation that restores operation-ID-based choice or bypasses structured admission makes the focused gate fail.
-10. Source-hygiene limits, feedback budgets, and the complete repository gate remain green without dependency or budget changes.
+1. The BPMN ledger records the structured-chain, closure-bound, controlled fan-in, and profile-composition requirements and exact exclusions.
+2. Profile-conditional TypeScript and Lean source admission retains every existing profile boundary, accepts the mixed witness only under the composed profile, and rejects every hostile witness with a diagnostic.
+3. The new composed profile contains the selected features, resolved exclusions, global concurrency flag, exact relationships, fidelity limits, oracle revision, and environment.
+4. The mixed scenario has fresh content-bound CIB evidence and a meaningful Timer-wait projection mutation; existing evidence remains byte-identical.
+5. TypeScript and Lean standalone program validation owns the widened structural facts.
+6. Stage 1 closes before graph implementation proceeds, and every later proof stage closes within its budget.
+7. The final production preservation theorem proves observational lowering preservation over the selected structured-admission derivation.
+8. `structuredClosureStepsLeFour`, the disjoint-step commutation law, the long-gateway rejection, the uncontrolled-fan-in rejection, and the honest Lean/TypeScript ambiguity divergence are retained.
+9. Lean and TypeScript have exact mixed-scenario agreement, including kind-first canonical wait ordering; the nearest checked non-law remains explicit.
+10. Temporal runs and replays the mixed program through the existing semantic-lifetime Workflow with exact timer/effect mechanism evidence.
+11. The positional-lowering discriminator, source-hygiene limits, feedback budgets, and complete repository gate remain green without a new dependency or budget change.
 
 ## Stop conditions
 
 Stop and return for owner direction if:
 
-- the selected mixed graph requires a new semantic operation or new meaning for an existing operation;
-- exact BPMN semantics require admitting a shape outside the selected grammar;
-- closure equivalence requires treating canonical identifier order as semantic choice;
-- the preservation theorem cannot close within a separately approved effort bound;
-- `programWellFormed` cannot establish the widened structural obligations without changing the wire contract;
-- the generic compiler needs A12 source, types, names, or runtime code;
-- a new CIB extension, dependency, profile beyond the approved composed artifact, feedback-budget change, or Temporal mechanism is required.
+- the mixed graph requires a new semantic operation or new meaning for an existing operation;
+- a second Timer/effect or new clock-composition proposition becomes necessary;
+- exact BPMN semantics requires a shape outside this grammar;
+- canonical identifier order would become semantic scheduling;
+- any proof stage exceeds its approved sub-budget or requires production-semantic changes;
+- independent program validation requires a wire-contract change;
+- generic compilation needs A12 source, names, types, or runtime code;
+- a new CIB extension, relationship, dependency, feedback-budget change, or Temporal mechanism is required.
 
-## Decisions requested
+## Approved decisions
 
-1. Approve the structured-composition account and reject arbitrary acyclic admission.
-2. Approve the exact first grammar and exclusions above.
-3. Approve one composed draft semantic-profile artifact whose meaning is the reviewed union described above; do not infer profile composition from matching engine versions.
-4. Approve reopening the checked-source preservation experiment as a prerequisite, with a separately stated effort bound before implementation begins.
-5. Approve the positive mixed model and negative/accidental-order witnesses as the acceptance discriminator.
-6. Keep the Exclusive Gateway and conditional Sequence Flow capsule next after this admission decision is implemented and reviewed; do not begin that capsule as part of this proposal.
+1. Approve structured composition and reject arbitrary acyclic admission.
+2. Approve the revised grammar: `Segment+`, globally at most one Timer and one Service Task, explicit TypeScript arity checks, unique decomposition, closure bound four, and profile-conditional admission.
+3. Approve one explicitly composed `2.2.0` profile with selected—not unioned—features, exclusions, comparison mode, relationships, and one fresh retained CIB envelope.
+4. Approve reopening and first splitting the checked-source experiment, with graduation of any closed theorem out of `Experiments/`.
+5. Approve the revised witness set: mixed model, long-gateway closure rejection, BPMN21-268 uncontrolled fan-in rejection, honest Lean/TypeScript ambiguity divergence, positive disjoint-step commutation law, and retained positional-lowering discriminator.
+6. Approve the four-stage 1,800-line ceiling and stage-1 early kill gate.
+7. Keep Exclusive Gateway and conditional Sequence Flow next after this admission work is adopted and reviewed; do not begin that capsule here.
