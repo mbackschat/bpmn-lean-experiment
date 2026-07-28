@@ -8,4 +8,6 @@ The [parallel fork/join spec](../docs/capsules/PARALLEL-FORK-JOIN-SPEC.md) owns 
 
 The project is pre-release. Artifact-shape changes replace the current schema and all consumers together; they do not create parallel profiles. A new profile `id` is required only when reviewed semantic meaning, compatibility target, configuration, feature surface, interpretation, extension, deviation, or observation boundary changes.
 
-The first immutable profile must define the evolution and compatibility policy required by the [architecture and assurance handoff](../docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md). Until then, no retained Temporal history or speculative legacy reader constrains the design.
+`status: "immutable"` means that an exact calibration artifact used by retained evidence is frozen; it does not mean the enclosing semantic capsule is no longer an evidence-closed draft or that a production deployment/history baseline exists. Some pre-release profile IDs retain their original `-draft` identity after their content is frozen because renaming an evidence-bound profile would create a different semantic identity rather than clarify its status.
+
+The first immutable production deployment/history baseline must define the evolution and compatibility policy required by the [architecture and assurance handoff](../docs/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md). Until then, no retained Temporal history or speculative legacy reader constrains the design.
