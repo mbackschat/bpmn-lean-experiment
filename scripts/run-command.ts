@@ -12,6 +12,8 @@ export type RunCommandResult = Readonly<{
   stderr: string;
 }>;
 
+type TerminationReason = "timeout" | NodeJS.Signals;
+
 function validateDuration(
   value: number,
   name: string,
@@ -50,7 +52,7 @@ export async function runCommand(
 
   let timeoutTimer: NodeJS.Timeout | undefined;
   let forceKillTimer: NodeJS.Timeout | undefined;
-  let timedOut = false;
+  let terminationReason: TerminationReason | undefined;
 
   function signalProcessGroup(signal: NodeJS.Signals): void {
     try {
@@ -68,13 +70,39 @@ export async function runCommand(
     }
   }
 
+  function beginTermination(reason: TerminationReason): void {
+    if (terminationReason !== undefined) {
+      return;
+    }
+    terminationReason = reason;
+    signalProcessGroup(reason === "timeout" ? "SIGTERM" : reason);
+    forceKillTimer = setTimeout(() => {
+      signalProcessGroup("SIGKILL");
+    }, terminationGraceMs);
+  }
+
+  const forwardedSignals = ["SIGHUP", "SIGINT", "SIGTERM"] as const;
+  const signalHandlers = forwardedSignals.map((signal) => {
+    const handler = () => beginTermination(signal);
+    process.once(signal, handler);
+    return { handler, signal };
+  });
+
   const completion = new Promise<RunCommandResult>((resolve, reject) => {
     child.once("error", reject);
     child.once("close", (code, signal) => {
-      if (timedOut) {
+      if (terminationReason === "timeout") {
         reject(
           new Error(
             `${command} exceeded ${options.timeoutMs}ms\n${stdout}${stderr}`,
+          ),
+        );
+        return;
+      }
+      if (terminationReason !== undefined) {
+        reject(
+          new Error(
+            `${command} interrupted by ${terminationReason}\n${stdout}${stderr}`,
           ),
         );
         return;
@@ -90,28 +118,15 @@ export async function runCommand(
       );
     });
     timeoutTimer = setTimeout(() => {
-      timedOut = true;
       try {
-        signalProcessGroup("SIGTERM");
+        beginTermination("timeout");
       } catch (error) {
         reject(
           new Error(`Failed to terminate timed-out ${command}`, {
             cause: error,
           }),
         );
-        return;
       }
-      forceKillTimer = setTimeout(() => {
-        try {
-          signalProcessGroup("SIGKILL");
-        } catch (error) {
-          reject(
-            new Error(`Failed to kill timed-out ${command}`, {
-              cause: error,
-            }),
-          );
-        }
-      }, terminationGraceMs);
     }, options.timeoutMs);
   });
 
@@ -120,5 +135,8 @@ export async function runCommand(
   } finally {
     clearTimeout(timeoutTimer);
     clearTimeout(forceKillTimer);
+    for (const { handler, signal } of signalHandlers) {
+      process.removeListener(signal, handler);
+    }
   }
 }

@@ -97,19 +97,17 @@ The test class exercises successful, wrong-activation, and stale completion. Thi
 
 <!-- source-fragment: runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java#cib-user-task-probe -->
 ```java
-try (var runner = CibSevenScenarioRunner.create()) {
-  var rejected = runner.run(wrongScenario, PROJECT_ROOT);
-  var stale = runner.run(staleScenario, PROJECT_ROOT);
+var rejected = runner.run(wrongScenario, PROJECT_ROOT);
+var stale = runner.run(staleScenario, PROJECT_ROOT);
 
-  assertEquals(wrongEvidence.outcome(), rejected.outcome());
-  assertEquals(wrongEvidence.trace(), rejected.trace());
-  assertEquals(staleEvidence.outcome(), stale.outcome());
-  assertEquals(staleEvidence.trace(), stale.trace());
-  assertEquals(rejected.trace().get(2), rejected.trace().get(4));
-  assertEquals(stale.trace().get(4), stale.trace().get(6));
-  assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
-  assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
-}
+assertEquals(wrongEvidence.outcome(), rejected.outcome());
+assertEquals(wrongEvidence.trace(), rejected.trace());
+assertEquals(staleEvidence.outcome(), stale.outcome());
+assertEquals(staleEvidence.trace(), stale.trace());
+assertEquals(rejected.trace().get(2), rejected.trace().get(4));
+assertEquals(stale.trace().get(4), stale.trace().get(6));
+assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
+assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
 ```
 
 The generated CIB task ID, database rows, and PVM execution identities are excluded from canonical comparison. They are host details, not portable BPMN task identity. A separate PVM projection remains diagnostic because it is useful for understanding CIB without making its internals the compatibility contract.

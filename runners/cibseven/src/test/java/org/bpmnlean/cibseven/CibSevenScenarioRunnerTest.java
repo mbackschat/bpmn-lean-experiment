@@ -22,6 +22,8 @@ import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.TransitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskInstanceId;
 import org.cibseven.bpm.engine.ProcessEngine;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CibSevenScenarioRunnerTest {
@@ -33,6 +35,17 @@ public class CibSevenScenarioRunnerTest {
       PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion");
   private static final Path PARALLEL_ROOT =
       PROJECT_ROOT.resolve("scenarios/parallel-fork-join");
+  private static CibSevenScenarioRunner runner;
+
+  @BeforeClass
+  public static void createRunner() {
+    runner = CibSevenScenarioRunner.create();
+  }
+
+  @AfterClass
+  public static void closeRunner() {
+    runner.close();
+  }
 
   @Test
   public void calibratesCurrentUserTaskScenarioAndCleansEveryRun() throws Exception {
@@ -44,28 +57,26 @@ public class CibSevenScenarioRunnerTest {
     assertEquals(new SemanticOutcome(COMMITTED), evidence.outcome());
     assertEquals(ScenarioProtocol.SCENARIO_KIND, scenario.kind());
 
-    try (var runner = CibSevenScenarioRunner.create()) {
-      var first = runner.run(scenario, PROJECT_ROOT);
-      var second = runner.run(scenario, PROJECT_ROOT);
+    var first = runner.run(scenario, PROJECT_ROOT);
+    var second = runner.run(scenario, PROJECT_ROOT);
 
-      assertEquals(ScenarioProtocol.SCENARIO_RESULT_KIND, first.kind());
-      assertEquals(new SemanticOutcome(COMMITTED), first.outcome());
-      assertEquals(expectedTrace, first.trace());
-      assertEquals(expectedTrace, second.trace());
-      assertEquals(expectedProjection(), first.diagnostics().pvmDefinition());
-      assertEquals(first.diagnostics().pvmDefinition(), second.diagnostics().pvmDefinition());
-      assertEquals(ScenarioProtocol.CleanupProjection.clean(), first.diagnostics().cleanup());
-      assertEquals(ScenarioProtocol.CleanupProjection.clean(), second.diagnostics().cleanup());
-      assertEquals(
-          ProcessEngine.class.getPackage().getImplementationVersion(),
-          first.diagnostics().engineVersion());
-      assertEquals(
-          Class.forName("org.h2.Driver").getPackage().getImplementationVersion(),
-          first.diagnostics().databaseVersion());
-      assertTrue(first.diagnostics().startupNanos() > 0);
-      assertTrue(first.diagnostics().phases().totalNanos() > 0);
-      assertTrue(second.diagnostics().phases().totalNanos() > 0);
-    }
+    assertEquals(ScenarioProtocol.SCENARIO_RESULT_KIND, first.kind());
+    assertEquals(new SemanticOutcome(COMMITTED), first.outcome());
+    assertEquals(expectedTrace, first.trace());
+    assertEquals(expectedTrace, second.trace());
+    assertEquals(expectedProjection(), first.diagnostics().pvmDefinition());
+    assertEquals(first.diagnostics().pvmDefinition(), second.diagnostics().pvmDefinition());
+    assertEquals(ScenarioProtocol.CleanupProjection.clean(), first.diagnostics().cleanup());
+    assertEquals(ScenarioProtocol.CleanupProjection.clean(), second.diagnostics().cleanup());
+    assertEquals(
+        ProcessEngine.class.getPackage().getImplementationVersion(),
+        first.diagnostics().engineVersion());
+    assertEquals(
+        Class.forName("org.h2.Driver").getPackage().getImplementationVersion(),
+        first.diagnostics().databaseVersion());
+    assertTrue(first.diagnostics().startupNanos() > 0);
+    assertTrue(first.diagnostics().phases().totalNanos() > 0);
+    assertTrue(second.diagnostics().phases().totalNanos() > 0);
   }
 
   @Test
@@ -83,19 +94,17 @@ public class CibSevenScenarioRunnerTest {
             CAPSULE_ROOT.resolve("stale-completion.cibseven-evidence.json"));
 
     // tag::cib-user-task-probe[]
-    try (var runner = CibSevenScenarioRunner.create()) {
-      var rejected = runner.run(wrongScenario, PROJECT_ROOT);
-      var stale = runner.run(staleScenario, PROJECT_ROOT);
+    var rejected = runner.run(wrongScenario, PROJECT_ROOT);
+    var stale = runner.run(staleScenario, PROJECT_ROOT);
 
-      assertEquals(wrongEvidence.outcome(), rejected.outcome());
-      assertEquals(wrongEvidence.trace(), rejected.trace());
-      assertEquals(staleEvidence.outcome(), stale.outcome());
-      assertEquals(staleEvidence.trace(), stale.trace());
-      assertEquals(rejected.trace().get(2), rejected.trace().get(4));
-      assertEquals(stale.trace().get(4), stale.trace().get(6));
-      assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
-      assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
-    }
+    assertEquals(wrongEvidence.outcome(), rejected.outcome());
+    assertEquals(wrongEvidence.trace(), rejected.trace());
+    assertEquals(staleEvidence.outcome(), stale.outcome());
+    assertEquals(staleEvidence.trace(), stale.trace());
+    assertEquals(rejected.trace().get(2), rejected.trace().get(4));
+    assertEquals(stale.trace().get(4), stale.trace().get(6));
+    assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
+    assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
     // end::cib-user-task-probe[]
   }
 
@@ -113,29 +122,27 @@ public class CibSevenScenarioRunnerTest {
         ScenarioJson.readEvidenceResult(
             PARALLEL_ROOT.resolve("b-then-a.cibseven-evidence.json"));
 
-    try (var runner = CibSevenScenarioRunner.create()) {
-      var aThenBResult = runner.run(aThenB, PROJECT_ROOT);
-      var bThenAResult = runner.run(bThenA, PROJECT_ROOT);
+    var aThenBResult = runner.run(aThenB, PROJECT_ROOT);
+    var bThenAResult = runner.run(bThenA, PROJECT_ROOT);
 
-      assertEquals(
-          expectedParallelTrace("UserTask_A", "UserTask_B", "B"),
-          aThenBResult.trace());
-      assertEquals(
-          expectedParallelTrace("UserTask_B", "UserTask_A", "A"),
-          bThenAResult.trace());
-      assertEquals(aThenBEvidence.trace(), aThenBResult.trace());
-      assertEquals(bThenAEvidence.trace(), bThenAResult.trace());
-      assertEquals(aThenBEvidence.outcome(), aThenBResult.outcome());
-      assertEquals(bThenAEvidence.outcome(), bThenAResult.outcome());
-      assertEquals(aThenBResult.trace().get(2), bThenAResult.trace().get(2));
-      assertEquals(aThenBResult.trace().get(6), bThenAResult.trace().get(6));
-      assertEquals(
-          ScenarioProtocol.CleanupProjection.clean(),
-          aThenBResult.diagnostics().cleanup());
-      assertEquals(
-          ScenarioProtocol.CleanupProjection.clean(),
-          bThenAResult.diagnostics().cleanup());
-    }
+    assertEquals(
+        expectedParallelTrace("UserTask_A", "UserTask_B", "B"),
+        aThenBResult.trace());
+    assertEquals(
+        expectedParallelTrace("UserTask_B", "UserTask_A", "A"),
+        bThenAResult.trace());
+    assertEquals(aThenBEvidence.trace(), aThenBResult.trace());
+    assertEquals(bThenAEvidence.trace(), bThenAResult.trace());
+    assertEquals(aThenBEvidence.outcome(), aThenBResult.outcome());
+    assertEquals(bThenAEvidence.outcome(), bThenAResult.outcome());
+    assertEquals(aThenBResult.trace().get(2), bThenAResult.trace().get(2));
+    assertEquals(aThenBResult.trace().get(6), bThenAResult.trace().get(6));
+    assertEquals(
+        ScenarioProtocol.CleanupProjection.clean(),
+        aThenBResult.diagnostics().cleanup());
+    assertEquals(
+        ScenarioProtocol.CleanupProjection.clean(),
+        bThenAResult.diagnostics().cleanup());
   }
 
   private static List<ScenarioProtocol.CanonicalObservation> expectedCommittedTrace() {

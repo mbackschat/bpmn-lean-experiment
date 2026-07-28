@@ -2,11 +2,14 @@ package org.bpmnlean.cibseven;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.bpmnlean.cibseven.CibSevenBoundaryErrorProbeEngine.CAUGHT_CODE;
+import static org.bpmnlean.cibseven.CibSevenBoundaryErrorProbeEngine.ERROR_MESSAGE;
+import static org.bpmnlean.cibseven.CibSevenBoundaryErrorProbeEngine.HANDLER;
+import static org.bpmnlean.cibseven.CibSevenBoundaryErrorProbeEngine.PROCESS_ID;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,13 +17,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import org.bpmnlean.cibseven.CibSevenBoundaryErrorProbeEngine.BoundaryErrorDelegate;
+import org.bpmnlean.cibseven.CibSevenBoundaryErrorProbeEngine.ProbeMode;
+import org.bpmnlean.cibseven.CibSevenBoundaryErrorProbeEngine.ProbeSession;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineException;
-import org.cibseven.bpm.engine.delegate.BpmnError;
-import org.cibseven.bpm.engine.delegate.DelegateExecution;
-import org.cibseven.bpm.engine.delegate.JavaDelegate;
-import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParse;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -39,16 +42,26 @@ public final class CibSevenBoundaryErrorPhaseZeroProbeTest {
       PROJECT_ROOT.resolve(
           "../oss/a12/a12-workflows/workflows-engine/src/testFixtures/resources/bpmn/"
               + "TestProcessWithRelationshipModeledDocumentModels_DocRef.bpmn");
-  private static final String PROCESS_ID = "Process_BoundaryError";
   private static final String SERVICE_TASK_ID = "CreateRelationshipLinkTask";
-  private static final String HANDLER = "createRelationshipLinkDelegate";
   private static final String HANDLER_EXPRESSION = "#{" + HANDLER + "}";
   private static final String PROTOCOL = "urn:bpmn-lean:a12-delegate:v1";
-  private static final String CAUGHT_CODE = "LinkLimitReachedError";
-  private static final String UNMATCHED_CODE = "RelationshipLinkageError";
-  private static final String ERROR_MESSAGE = "Link limit reached";
   private static final String BOUNDARY_TASK_ID =
       "ExpectedUserTaskAfterBPMNError";
+  private static CibSevenBoundaryErrorProbeEngine probeEngine;
+
+  @BeforeClass
+  public static void createProbeEngineForPackagedRelease() {
+    if (isPackagedBoundaryErrorRelease()) {
+      probeEngine = new CibSevenBoundaryErrorProbeEngine();
+    }
+  }
+
+  @AfterClass
+  public static void closeProbeEngine() {
+    if (probeEngine != null) {
+      probeEngine.close();
+    }
+  }
 
   @Test
   public void derivesTheExactProfileAndMapsSuccessfulOutput() throws Exception {
@@ -182,7 +195,7 @@ public final class CibSevenBoundaryErrorPhaseZeroProbeTest {
 
   private static ExecutionObservation execute(
       ProbeMode mode, String source) throws Exception {
-    try (var session = ProbeSession.open(mode, source)) {
+    try (var session = openSession(mode, source)) {
       var processInstance =
           session.engine().getRuntimeService().startProcessInstanceByKey(PROCESS_ID);
       return observe(
@@ -195,7 +208,7 @@ public final class CibSevenBoundaryErrorPhaseZeroProbeTest {
 
   private static UnmatchedObservation executeUnmatched(String source)
       throws Exception {
-    try (var session = ProbeSession.open(ProbeMode.UNMATCHED, source)) {
+    try (var session = openSession(ProbeMode.UNMATCHED, source)) {
       var engine = session.engine();
       var failure =
           assertThrows(
@@ -221,7 +234,7 @@ public final class CibSevenBoundaryErrorPhaseZeroProbeTest {
 
   private static MappingFreeUnmatchedObservation
       executeUnmatchedWithoutOutputMapping(String source) throws Exception {
-    try (var session = ProbeSession.open(ProbeMode.UNMATCHED, source)) {
+    try (var session = openSession(ProbeMode.UNMATCHED, source)) {
       var engine = session.engine();
       var processInstance =
           engine.getRuntimeService().startProcessInstanceByKey(PROCESS_ID);
@@ -427,137 +440,14 @@ public final class CibSevenBoundaryErrorPhaseZeroProbeTest {
     return count;
   }
 
-  private enum ProbeMode {
-    SUCCESS,
-    CAUGHT_CODE_ONLY,
-    CAUGHT_WITH_MESSAGE,
-    CAUGHT_TARGET_NULL,
-    UNMATCHED
+  private static ProbeSession openSession(ProbeMode mode, String source) {
+    assumeTrue(isPackagedBoundaryErrorRelease());
+    return probeEngine.deploy(mode, source);
   }
 
-  private static final class BoundaryErrorDelegate implements JavaDelegate {
-
-    private final ProbeMode mode;
-    private int invocations;
-    private String input;
-    private String message;
-
-    private BoundaryErrorDelegate(ProbeMode mode) {
-      this.mode = mode;
-    }
-
-    @Override
-    public void execute(DelegateExecution execution) {
-      invocations += 1;
-      input = (String) execution.getVariableLocal("relationshipModel");
-      switch (mode) {
-        case SUCCESS -> execution.setVariableLocal("newLinkId", "Link:42");
-        case CAUGHT_CODE_ONLY -> {
-          execution.setVariableLocal("newLinkId", "must-not-map");
-          throw new BpmnError(CAUGHT_CODE);
-        }
-        case CAUGHT_WITH_MESSAGE -> {
-          execution.setVariableLocal("newLinkId", "must-not-map");
-          message = ERROR_MESSAGE;
-          throw new BpmnError(CAUGHT_CODE, message);
-        }
-        case CAUGHT_TARGET_NULL -> {
-          execution.setVariableLocal("newLinkId", null);
-          throw new BpmnError(CAUGHT_CODE);
-        }
-        case UNMATCHED -> {
-          execution.setVariableLocal("newLinkId", "must-not-map");
-          throw new BpmnError(UNMATCHED_CODE, "Relationship linkage failed");
-        }
-      }
-    }
-
-    int invocations() {
-      return invocations;
-    }
-
-    String input() {
-      return input;
-    }
-
-    String message() {
-      return message;
-    }
-  }
-
-  private record ProbeSession(
-      ProcessEngine engine,
-      String deploymentId,
-      BoundaryErrorDelegate delegate)
-      implements AutoCloseable {
-
-    static ProbeSession open(ProbeMode mode, String source) {
-      assumeTrue(
-          "2.0.0".equals(
-              ProcessEngine.class.getPackage().getImplementationVersion()));
-      var delegate = new BoundaryErrorDelegate(mode);
-      var capturedParse = new AtomicReference<BpmnParse>();
-      var engine =
-          CibSevenTestEngine.create(
-              "boundary-error-" + mode.name().toLowerCase(),
-              configuration -> {
-                configuration.setBeans(Map.of(HANDLER, delegate));
-                configuration.setBpmnParseFactory(
-                    parser -> {
-                      var parse = new BpmnParse(parser);
-                      capturedParse.set(parse);
-                      return parse;
-                    });
-              });
-      String deploymentId = null;
-      try {
-        deploymentId =
-            engine
-                .getRepositoryService()
-                .createDeployment()
-                .addString("boundary-error-probe.bpmn", source)
-                .deploy()
-                .getId();
-        assertNotNull(capturedParse.get());
-        assertFalse(capturedParse.get().hasWarnings());
-        var definition =
-            engine
-                .getRepositoryService()
-                .createProcessDefinitionQuery()
-                .processDefinitionKey(PROCESS_ID)
-                .singleResult();
-        assertNotNull(definition);
-        return new ProbeSession(engine, deploymentId, delegate);
-      } catch (RuntimeException failure) {
-        if (deploymentId != null) {
-          engine
-              .getRepositoryService()
-              .deleteDeployment(deploymentId, true, true, true);
-        }
-        engine.close();
-        throw failure;
-      }
-    }
-
-    CibSevenBoundaryErrorProfileProjector.ProfileProjection profile() {
-      var definition =
-          engine
-              .getRepositoryService()
-              .createProcessDefinitionQuery()
-              .processDefinitionKey(PROCESS_ID)
-              .singleResult();
-      assertNotNull(definition);
-      return CibSevenBoundaryErrorProfileProjector.project(
-          engine, definition.getId());
-    }
-
-    @Override
-    public void close() {
-      engine
-          .getRepositoryService()
-          .deleteDeployment(deploymentId, true, true, true);
-      engine.close();
-    }
+  private static boolean isPackagedBoundaryErrorRelease() {
+    return "2.0.0".equals(
+        ProcessEngine.class.getPackage().getImplementationVersion());
   }
 
   private record ExecutionObservation(
