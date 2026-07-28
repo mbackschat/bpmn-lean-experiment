@@ -75,6 +75,12 @@ export type ScenarioStep =
   | TerminalScenarioStep
   | HarnessFailureScenarioStep;
 
+const waitKindOrder = {
+  [WaitKind.UserTask]: 0,
+  [WaitKind.Timer]: 1,
+  [WaitKind.Effect]: 2,
+} as const satisfies Record<WaitKind, number>;
+
 export type ScenarioDeployment = DeepReadonly<{
   outcome: CommandOutcome.Committed | CommandOutcome.Unsupported;
   observation: Extract<
@@ -188,12 +194,12 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
         multiplicity,
       }),
     ),
-  ]
-    .sort((left, right) =>
-      left.elementId === right.elementId
-        ? compareStrings(left.kind, right.kind)
-        : compareStrings(left.elementId, right.elementId)
-    );
+  ].sort((left, right) => {
+    const kindOrder = waitKindOrder[left.kind] - waitKindOrder[right.kind];
+    return kindOrder === 0
+      ? compareStrings(left.elementId, right.elementId)
+      : kindOrder;
+  });
 }
 
 function compareOpenOccurrences(

@@ -182,12 +182,13 @@ After the technical gate is green but before marking a milestone or semantic cap
 2. ask whether all targets could agree because they share one flawed assumption, fixture, projection, or calibration source;
 3. confirm every canonical observation depends only on admitted definition/runtime state and explicit semantic inputs, never on future scenario commands, host IDs, or expected output;
 4. identify the nearest realistic counterexample and require either a checked non-law or an executable negative witness;
-5. assess whether each Lean theorem has useful hypotheses and reusable semantic content rather than only proving one concrete serialized result;
-6. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
-7. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
-8. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
-9. ask whether this capsule cost materially less than the previous comparable capsule in code, documents, and wall time; if not, remove one identified process weight before starting the next capsule;
-10. decide whether the result changes the next best step.
+5. confirm every claimed separating witness differs at the approved public observation boundary; a hidden microstep, storage order, or evaluator choice is not a discriminator unless the contract exposes it;
+6. assess whether each Lean theorem has useful hypotheses and reusable semantic content rather than only proving one concrete serialized result;
+7. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
+8. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
+9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
+10. ask whether this capsule cost materially less than the previous comparable capsule in code, documents, and wall time; if not, remove one identified process weight before starting the next capsule;
+11. decide whether the result changes the next best step.
 
 Turn every escaped issue into either a reusable review question or an executable guard. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 

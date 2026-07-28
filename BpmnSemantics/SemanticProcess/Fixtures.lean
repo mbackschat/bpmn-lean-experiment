@@ -224,6 +224,82 @@ theorem token_projection_ignores_storage_permutation :
       projectTokenMultiplicities parallelProgram excessJoinState := by
   decide
 
+/-- This synthetic state is deliberately outside current admission: it locks the cross-language canonical order before mixed wait kinds become reachable. -/
+private def mixedWaitProjectionProgram : Program :=
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := ⟨"projection-order-test"⟩
+        sourceId := ⟨"projection-order-test"⟩
+        sourceSha256 := "projection-order-test" }
+    processId := ⟨"Process_ProjectionOrder"⟩
+    controlPlaces := []
+    operations :=
+      [ .awaitUserTask
+          ⟨"operation:Z_UserTask"⟩
+          { elementId := ⟨"Z_UserTask"⟩ }
+          ⟨"place:user-input"⟩
+          ⟨"place:user-output"⟩
+          { id := ⟨"Z_UserTask"⟩, name := some "Z" }
+      , .awaitTimer
+          ⟨"operation:A_Timer"⟩
+          { elementId := ⟨"A_Timer"⟩ }
+          ⟨"place:timer-input"⟩
+          ⟨"place:timer-output"⟩
+          { elementId := ⟨"A_Timer"⟩, durationMs := 1000 }
+      , .awaitEffect
+          ⟨"operation:M_Effect"⟩
+          { elementId := ⟨"M_Effect"⟩ }
+          ⟨"place:effect-input"⟩
+          ⟨"place:effect-output"⟩
+          { elementId := ⟨"M_Effect"⟩
+            descriptor :=
+              { protocol := "urn:bpmn-lean:effect:probe-v1"
+                handler := "bpmnLeanEffectHandler" }
+            inputMappings := []
+            outputMappings := [] }
+          none ] }
+
+private def mixedWaitProjectionState : RuntimeState :=
+  { initialState with
+    control := .running ⟨"Instance_ProjectionOrder"⟩
+    waits :=
+      [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          task := { id := ⟨"Z_UserTask"⟩, name := some "Z" }
+          activation := 1
+          output := ⟨"place:user-output"⟩ } ]
+    timerWaits :=
+      [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          elementId := ⟨"A_Timer"⟩
+          activation := 1
+          deadlineMs := 1000
+          output := ⟨"place:timer-output"⟩ } ]
+    effectWaits :=
+      [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          elementId := ⟨"M_Effect"⟩
+          activation := 1
+          descriptor :=
+            { protocol := "urn:bpmn-lean:effect:probe-v1"
+              handler := "bpmnLeanEffectHandler" }
+          arguments := []
+          outputMappings := []
+          output := ⟨"place:effect-output"⟩
+          bpmnErrorRoute := none } ] }
+
+theorem active_wait_projection_orders_by_kind_then_element_id :
+    (observeStableState mixedWaitProjectionProgram mixedWaitProjectionState).map
+        (·.activeWaits) =
+      some
+        [ { elementId := ⟨"Z_UserTask"⟩
+            kind := .userTask
+            multiplicity := 1 }
+        , { elementId := ⟨"A_Timer"⟩
+            kind := .timer
+            multiplicity := 1 }
+        , { elementId := ⟨"M_Effect"⟩
+            kind := .effect
+            multiplicity := 1 } ] := by
+  decide
+
 /-- The nearest count-based join proposition is false for two offers on only the left incoming flow. -/
 theorem duplicate_left_no_right_non_law :
     countBasedJoinReady duplicateLeftNoRightState parallelJoinInputs = true ∧

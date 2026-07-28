@@ -2,13 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
   ProcessStatus,
+  ScenarioStepKind,
   ScenarioOutcomeKind,
   SemanticOperationKind,
   StimulusKind,
   WaitKind,
+  advanceScenario,
   applyInternalOperation,
   applyStimulus,
   deployScenario,
@@ -190,6 +193,58 @@ test("task projection ignores internal wait storage order", () => {
     projectOpenUserTasks(state).map(({ id }) => id),
     [taskId("UserTask_A"), taskId("UserTask_B")],
   );
+});
+
+test("active wait projection orders by semantic kind before element ID", () => {
+  const state = {
+    ...runningState([]),
+    userTaskWaits: [wait("Z_UserTask", "Z")],
+    timerWaits: [
+      {
+        id: taskId("A_Timer"),
+        deadlineMs: 1000,
+        output: "place:Flow_TimerToEnd",
+      },
+    ],
+    effectWaits: [
+      {
+        id: taskId("M_Effect"),
+        descriptor: {
+          protocol: "urn:bpmn-lean:effect:probe-v1",
+          handler: "bpmnLeanEffectHandler",
+        },
+        arguments: [],
+        outputMappings: [],
+        bpmnErrorRoute: null,
+        output: "place:Flow_EffectToEnd",
+      },
+    ],
+  };
+  const step = advanceScenario(parallelProgram, state, {
+    kind: StimulusKind.CompleteUserTaskInstance,
+    commandId: "reject-missing-task",
+    taskId: taskId("Missing_UserTask"),
+  });
+
+  assert.equal(step.kind, ScenarioStepKind.Terminal);
+  assert.equal(step.observations[1].kind, CanonicalObservationKind.State);
+  assert.deepEqual(step.observations[1].activeWaits, [
+    {
+      elementId: "Z_UserTask",
+      kind: WaitKind.UserTask,
+      multiplicity: 1,
+    },
+    {
+      elementId: "A_Timer",
+      kind: WaitKind.Timer,
+      multiplicity: 1,
+    },
+    {
+      elementId: "M_Effect",
+      kind: WaitKind.Effect,
+      multiplicity: 1,
+    },
+  ]);
 });
 
 test("internal closure ignores operation collection order", () => {
