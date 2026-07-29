@@ -1,6 +1,6 @@
 # Checked-source relation experiment
 
-**Status:** Stage 1 proof checkpoint completed; full preservation remains unresolved and not adopted
+**Status:** Stage 1 completed; Stage 2 retained its graph-validation half; Stage 2b stopped inside its 250-line ceiling after closing declarative decomposition but not fuel-complete acyclicity; Stage 3 remains unapproved; full preservation remains unresolved and not adopted
 
 **Question:** Can a direct token-game account over `CheckedProcess` support a run-level observational lowering-preservation theorem for the current five Semantic Process operations without reusing lowering or IL execution as source semantics?
 
@@ -20,7 +20,7 @@ The experiment covers only the currently admitted none Start Event, User Task, d
 
 The theorem compares public observations after each supported stimulus. It does not require identical source and target runtime states, validate the selected BPMN account independently, prove the XML parser, add a dependency, change a wire contract, or introduce timers, Activities, or additional BPMN elements.
 
-`programWellFormed` independently omits reachability, acyclicity, and producer/consumer-shape checks. Admitted artifacts currently obtain those guarantees transitively through checked-source validation and exact lowering equality. This experiment neither fixes nor depends on that separate gap.
+Before Stage 2, `programWellFormed` omitted independent reachability, acyclicity, and producer/consumer-shape checks. The retained graph-validation half of Stage 2 now establishes those executable program checks without widening source admission or changing semantic execution.
 
 ## Separating witness
 
@@ -40,6 +40,10 @@ The renamed endpoint-agreement check is also a finite regression guard for the e
 
 [CheckedSourceRelation.lean](../../BpmnSemantics/Experiments/CheckedSourceRelation.lean) contains only the deliberately wrong lowerer, retained-fixture controls, admitted renamed graph, and public divergence check. [CheckedSourceRelationMain.lean](../../BpmnSemantics/Experiments/CheckedSourceRelationMain.lean) is the focused executable gate for both the Stage 1 correspondence checkpoint and the retained positional-lowering discriminator.
 
+[GraphValidation.lean](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) owns finite-fuel breadth-first reachability, co-reachability, and cycle checks plus operation-graph construction. The standalone program validator now requires every control place to have exactly one producer and one consumer, every operation to be reachable from the single initiation operation and able to reach a termination operation, and the finite operation graph to be acyclic. A disconnected but formerly accepted User Task island is the retained red/green discriminator.
+
+[CheckedSourceAdmission.lean](../../BpmnSemantics/Experiments/CheckedSourceAdmission.lean) owns the provisional Stage 2 source graph checks and executable decomposition probe. The decider checks unique node and Flow identities, exact references and node arities, executable finite reachability/co-reachability/acyclicity predicates, deterministic serial-wait or balanced-two-User-Task parsing, at least one segment, complete node coverage, exact `PT1S` and payload-free probe surfaces, and global one-Timer/one-Service-Task bounds. Kernel-checked witnesses accept a two-User-Task serial chain and the balanced parallel fixture while rejecting `PT5M`, mapped or arbitrarily bound Service Tasks, a Service Task with a boundary route, Start-to-End, a disconnected cycle, a second Timer, and the disconnected program.
+
 ## Red/green evidence
 
 The first focused build failed because `BpmnSemantics.Experiments.CheckedSourceRelation` did not exist. After the provisional source account and discriminator were added:
@@ -53,9 +57,15 @@ Both commands passed, and the executable reported `Checked-source relation exper
 
 The 2026-07-28 Stage 1 red build first failed because the new correspondence module was absent. The responsibility split then exposed a stale Service Task constructor pattern in this separately gated lane; it was corrected to the current checked-source shape without adding Service Task semantics. The green gate proves the general constant-prefix ordering lemma and the bounded four-state selector correspondence. The responsibility split leaves every hand-written module below 300 nonblank lines. The new or materially rewritten Lean proof surface is below the approved 250-line ceiling; moved definitions are not counted as new proof surface.
 
+The 2026-07-29 Stage 2 red build proved that the old standalone `programWellFormed` accepted a disconnected User Task island whose control places had no producer or consumer path from initiation. The root fix added reusable finite graph checks and connected them to program validation, then added the executable structured-source probe and positive/negative witnesses including a direct two-node finite-cycle check. Independent review confirmed the graph predicates and program integration, but rejected the decomposition proof surface: `StructuredChain` was inhabited for every list, the claimed soundness theorem only repackaged the parser's own checks, and the claimed uniqueness theorem was `Option.some` injectivity for one deterministic function call. It also demonstrated that permuting parallel Sequence Flows exchanges the parser's left/right task fields.
+
+The vacuous derivation and the two overclaimed theorems were removed. The four escaped grammar surfaces now reject explicitly, and the structural witnesses use kernel `decide` instead of `native_decide`. The retained graph/probe work remains within the approved 500-line ceiling and source hygiene remains exception-free.
+
 ## Precise unresolved boundary
 
-The attempted correspondence layer defined the source-to-program runtime mapping, proved injectivity of the `place:` Sequence-Flow encoding, and proved mapping lemmas for token removal and production. At that point the experiment had exceeded the agreed approximate 700-line boundary without reaching the run theorem.
+The earlier attempted correspondence layer defined the source-to-program runtime mapping, proved injectivity of the `place:` Sequence-Flow encoding, and proved mapping lemmas for token removal and production. At that point the experiment had exceeded the agreed approximate 700-line boundary without reaching the run theorem.
+
+Stage 2b closes the earlier tail-decomposition boundary with a declarative `SegmentAt source entry segment exit` relation, inductive `ChainFrom source entry segments finish` relation, executable-tail-parser soundness, and genuine graph-derived uniqueness stated through an equivalence that permits exchange of a parallel pair's branches. The executable reachability result is sound with respect to an inductive edge-path relation. The remaining unresolved graph boundary is the converse: no theorem proves that every declarative path in the finite checked graph is detected by `reachableWithin` at vertex-count fuel. Without that fuel-adequacy result, `acyclicWithin = true` cannot soundly yield declarative acyclicity. A separate wrapper obligation also remains: successful `parseProcess?`/`structuredDecomposition?` has not been related to `ChainFrom` together with its single-Start, matching-End, and complete-node-coverage facts.
 
 The remaining proof was not a single mechanical induction. It still required:
 
@@ -76,13 +86,13 @@ Completing that bridge would exceed the authorized effort boundary or require re
 
 ## Result
 
-**Stage 1 completed; full account not adopted.** The direct source account and fixture-coincidental witness remain provisional in `BpmnSemantics/Experiments/`. The early ordering and two-segment selector obligations closed without production changes, but the run-level observational lowering-preservation theorem remains unproved, so the IL proof boundary and capsule rule-to-evidence rows do not graduate.
+**Stage 1 completed; Stage 2 and Stage 2b stopped; full account not adopted.** The direct source account and fixture-coincidental witness remain provisional in `BpmnSemantics/Experiments/`. Ordering, the two-segment selector checkpoint, graph infrastructure, executable grammar probe, standalone program graph validation, declarative tail decomposition, tail-parser soundness, branch-exchange uniqueness, and positive reachability soundness are retained. Whole-process-wrapper soundness, fuel completeness, declarative acyclicity, direct Timer/effect clauses, closure-selector soundness, the four-step closure theorem, generalized correspondence, and the run-level observational lowering-preservation theorem remain unproved, so the IL proof boundary and capsule rule-to-evidence rows do not graduate.
 
 The program-derived account remains rejected as circular. The permanent-proof-boundary account also remains rejected by owner decision; this experiment records an unresolved implementation boundary rather than silently selecting that alternative.
 
 ## Frozen experiment policy
 
-The owner reopened the experiment on 2026-07-28 for Stage 1 of the compositional-admission trigger. Stage 1 is now complete and the experiment is frozen again at the current five-operation discriminator. New semantic capsules may keep these modules compiling, but must not extend their source semantics unless a later proof stage is explicitly authorized.
+The owner reopened the experiment on 2026-07-28 for Stage 1 of the compositional-admission trigger and approved Stage 2 on 2026-07-29 under its existing 500-line ceiling and stop conditions. Independent review triggered the decomposition stop condition while accepting the graph-validation half. The owner approved Stage 2b on 2026-07-29 under a separate 250-line ceiling for the declarative relation, parser soundness, uniqueness up to branch exchange, and graph bridges. Stage 2b remained below that ceiling and stopped when fuel-complete reachability and declarative acyclicity could not close honestly in the remaining budget. The exact Stage 2b delta is not auditable because Stage 2 had no committed or recorded file-count baseline; future staged ceilings require one. Independent review accepted the retained results and the stop. Keeping the partial result compiling is permitted; extending it or beginning direct Timer/effect source semantics, Stage 3, or production source-admission widening requires a new owner decision.
 
 Reopen the experiment only when:
 

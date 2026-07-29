@@ -1,6 +1,6 @@
 # Compositional BPMN admission and lowering proposal
 
-**Status:** Owner-approved on 2026-07-28; Stage 1 completed within its 250-line stop; Stage 2 is not authorized
+**Status:** Owner-approved on 2026-07-28; Stage 1 completed; Stage 2 stopped at its 500-line decomposition boundary after the graph-validation half closed; Stage 2b stopped inside its separate 250-line ceiling after closing declarative decomposition but not fuel-complete acyclicity; Stage 3 and production admission widening remain unapproved
 
 ## Decision question
 
@@ -45,7 +45,7 @@ ParallelUserPair ::= ParallelFork (UserTask || UserTask) ParallelJoin
 Global constraint: count(TimerPT1S) ≤ 1 ∧ count(PayloadFreeServiceTask) ≤ 1
 ```
 
-The grammar is explanatory shorthand, not the normative representation or validator. The normative admission proposition is the conjunction of exact node arity, reference integrity, reachability, co-reachability, acyclicity, supported node kinds, global Timer/effect cardinalities, and exact gateway region shape. Under those facts, gateway endpoints force one complete, non-overlapping decomposition; the validator does not search for or choose among decompositions.
+The grammar is explanatory shorthand, not the normative representation or validator. The intended normative admission proposition is the conjunction of exact node arity, reference integrity, reachability, co-reachability, acyclicity, supported node kinds, global Timer/effect cardinalities, and exact gateway region shape. A declarative relation over those graph facts must show that each admitted source has one complete, non-overlapping decomposition, stated up to exchange of the two parallel branches. The Stage 2 executable parser does not establish that result: it currently chooses branch order from the Sequence Flow list.
 
 The existing checked graph remains the source contract. No region AST, topology opcode, generated source, runtime compatibility branch, or second authoritative representation is introduced.
 
@@ -125,7 +125,7 @@ The validator establishes:
 2. exact one-Start/one-End boundary and per-kind arities;
 3. reachability from Start and co-reachability to End;
 4. acyclicity;
-5. the unique complete decomposition into serial wait segments and exact two-User-Task parallel regions;
+5. one complete decomposition into serial wait segments and exact two-User-Task parallel regions, plus a proof that the graph facts determine it up to parallel-branch exchange;
 6. the global one-Timer and one-Service-Task bounds;
 7. absence of conditional/default Flow and unsupported executable content;
 8. the stable closure bound and permitted multiple-enabledness property.
@@ -193,7 +193,13 @@ Work stops at each stage if its named obligation does not close within its sub-b
 
 Stage 1 is the early kill decision because the previous experiment stopped at enabled-transition correspondence. Lean lowering does not sort operations while TypeScript does, so the prefix/order lemma must close on a two-segment chain before graph infrastructure is funded.
 
-Stage 1 completed without changing production semantics, representations, observation, or visibility. The direct source account was split into state, transition, and scenario modules; a general constant-prefix order theorem elaborates; and the direct selector agrees with the lowered production operation evaluator on operation identity and successor state at every automatic boundary of a two-segment User Task chain. The [experiment record](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) owns the exact claim and remaining boundary. Stage 2 requires a new owner checkpoint.
+Stage 1 completed without changing production semantics, representations, observation, or visibility. The direct source account was split into state, transition, and scenario modules; a general constant-prefix order theorem elaborates; and the direct selector agrees with the lowered production operation evaluator on operation identity and successor state at every automatic boundary of a two-segment User Task chain.
+
+Stage 2 reached its stop condition on 2026-07-29. Its graph-validation half is retained: a reusable fuel-bounded validator checks reachability, co-reachability, cycles, and exact control-place producer/consumer shape, and standalone `programWellFormed` uses it. The experimental executable parser checks source arity and references, finite graph predicates, the serial-wait/balanced-pair shape, nonempty composition, exact `PT1S` and payload-free probe surfaces, and global one-Timer/one-Service-Task bounds. Kernel-checked witnesses cover the admitted serial/parallel shapes, the four excluded wait surfaces, zero segments, a disconnected cycle, a second Timer, a finite cycle, and a disconnected program.
+
+The original Stage 2 decomposition half was not adopted. The reviewed `StructuredChain` proposition related only a list to its own cons structure, the former soundness theorem repackaged the executable predicates, and the former uniqueness theorem proved only that one deterministic function call cannot return two different values. Sequence Flow list permutation can exchange the parser's left/right task fields without changing the graph. Those declarations and claims were removed.
+
+Stage 2b retained genuine `SegmentAt` and inductive `ChainFrom` relations over checked graph facts, parser soundness from the executable tail parser into `ChainFrom`, and graph-derived decomposition uniqueness expressed through an order-insensitive parallel-segment equivalence. The executable reachability result also has a non-tautological soundness bridge into an inductive edge-path relation. Independent review accepted those results and the stop. The round remained below its 250-line ceiling, but no exact Stage 2b delta is claimed because Stage 2 and Stage 2b shared an uncommitted tree and therefore have no reproducible intermediate baseline. The remaining ceiling could not honestly prove that finite vertex fuel detects every declarative path and therefore could not derive declarative acyclicity from a negative bounded search. No theorem yet bridges the whole `parseProcess?`/`structuredDecomposition?` wrapper—including single Start, matching End, and complete node coverage—to `ChainFrom`. Equating “not detected within fuel” with “no path exists” would reproduce the circular proof defect this stage exists to remove. The useful declarations remain experimental, no production source-admission or execution behavior was widened, TypeScript program validation remains weaker than Lean's standalone graph backstop, and Stage 3 is not authorized.
 
 No hand-written source module may exceed the 600-nonblank-line review target. Proof convenience may not change `closeSupported`, `enabledTransitions`, canonical observation, wire contracts, production semantics, or representations. Failure at a stage records the exact unresolved boundary and leaves admission unchanged.
 

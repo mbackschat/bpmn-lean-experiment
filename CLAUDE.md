@@ -188,7 +188,8 @@ After the technical gate is green but before marking a milestone or semantic cap
 8. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
 10. ask whether this capsule cost materially less than the previous comparable capsule in code, documents, and wall time; if not, remove one identified process weight before starting the next capsule;
-11. decide whether the result changes the next best step.
+11. decide whether the result changes the next best step;
+12. request an independent review before crossing a strategically material semantic, proof, admission, compatibility, or architecture checkpoint when correlated assumptions or claim-strength errors could survive the executable gates. Routine implementation does not require this extra review.
 
 Turn every escaped issue into either a reusable review question or an executable guard. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 
@@ -203,6 +204,8 @@ A bounded spike requires competing accounts and a witness capable of separating 
 An architecture experiment may measure an implementation choice only after a named consumer or standing proof/refinement obligation forces that choice. The existence of a product consumer is an input to the experiment, not an outcome that implementation can discover. Do not interpose a speculative architecture experiment ahead of approved capsule work when its deciding fact is an unmade product decision.
 
 Do not generalize after one consumer. Retain a provisional implementation only while it remains a useful discriminator.
+
+Before measuring a staged line ceiling, anchor the preceding stage to a commit or record a reproducible baseline of exact files and nonblank counts. Do not publish an exact per-stage delta that can be reconstructed only from prose or an uncommitted mixed-stage tree.
 
 ### Dependencies
 

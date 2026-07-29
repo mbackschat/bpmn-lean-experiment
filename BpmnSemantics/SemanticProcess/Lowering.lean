@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.GraphValidation
 
 /-! # BpmnSemantics.SemanticProcess — bounded lowering and operational semantics
 
@@ -369,8 +369,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
     nonempty source.processId.value &&
     strictlySortedStrings (source.nodes.map fun node => node.id.value) &&
     strictlySortedStrings (source.sequenceFlows.map fun flow => flow.id.value) &&
-    source.nodes.all fun node => nonempty node.id.value &&
-    source.sequenceFlows.all fun flow =>
+    source.nodes.all (fun node => nonempty node.id.value) &&
+    source.sequenceFlows.all (fun flow =>
       nonempty flow.id.value &&
         (nodeExists source.nodes flow.sourceId ||
           source.nodes.any fun
@@ -378,7 +378,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                 decide (route.boundaryEventId = flow.sourceId)
             | _ => false) &&
         nodeExists source.nodes flow.targetId &&
-        decide (flow.sourceId ≠ flow.targetId) &&
+        decide (flow.sourceId ≠ flow.targetId)) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
     boundedTopology source
 
@@ -488,10 +488,11 @@ def programWellFormed (program : Program) : Bool :=
     !program.operations.isEmpty &&
     strictlySortedStrings (program.controlPlaces.map fun place => place.id.value) &&
     strictlySortedStrings (program.operations.map fun operation => operation.id.value) &&
-    program.controlPlaces.all fun place =>
-      nonempty place.id.value && nonempty place.origin.elementId.value &&
+    program.controlPlaces.all (fun place =>
+      nonempty place.id.value && nonempty place.origin.elementId.value) &&
     program.operations.all (operationWellFormed program.controlPlaces) &&
-    (program.operations.filter isInitiate).length = 1
+    (program.operations.filter isInitiate).length = 1 &&
+    programGraphWellFormed program
 
 /-- Artifact admission requires both independent validators and exact canonical lowering equality. -/
 def definitionBindingValid (source : CheckedProcess) (program : Program) : Bool :=
