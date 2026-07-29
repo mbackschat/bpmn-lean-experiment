@@ -3,7 +3,6 @@ import {
   execFileSync,
   spawnSync,
 } from "node:child_process";
-import { createHash } from "node:crypto";
 import {
   existsSync,
   readFileSync,
@@ -16,60 +15,6 @@ const reviewTarget = 600;
 const hardCeiling = 1_000;
 
 const reviewedLargeFiles = new Map<string, string>();
-const lockedLegacyJavaScriptScripts = new Map<
-  string,
-  Readonly<{ sha256: string; rationale: string }>
->([
-  [
-    "scripts/check-bpmn-semantic-process-metamodel.mjs",
-    {
-      sha256: "91df8e953b8ca13f86cdacaf5059c67324e8c44b954cfa7707c1266a69cc2c58",
-      rationale: "small metamodel calibration utility",
-    },
-  ],
-  [
-    "scripts/markdown-code-fragments.mjs",
-    {
-      sha256: "328575d9c8f97976b2bcca6f9f2a9ca1857d0d10c72e0d9e28c9dbd42021d8cc",
-      rationale: "existing documentation synchronization utility",
-    },
-  ],
-  [
-    "scripts/markdown-code-fragments.test.mjs",
-    {
-      sha256: "145d4395812a9d55d4e3d6bedbe89666544965388afe44ebf0d20d2812b1541c",
-      rationale: "small documentation synchronization test",
-    },
-  ],
-  [
-    "scripts/markdown-links.test.mjs",
-    {
-      sha256: "0f031382c9d9080d1da1872fe783314378ddca7fe9e0c300be9158e72c22773d",
-      rationale: "small documentation-link test",
-    },
-  ],
-  [
-    "scripts/pnpm-project-config.test.mjs",
-    {
-      sha256: "c72633f670663072de7b5d42d624115a755294f93d65bf075efb01adf7e41915",
-      rationale: "small pnpm configuration test",
-    },
-  ],
-  [
-    "scripts/pre-release-architecture.test.mjs",
-    {
-      sha256: "091b04692686cdf4762092afbdb1e97c2fc26742eb04cec69a4cc4128db5faf9",
-      rationale: "small pre-release architecture test",
-    },
-  ],
-  [
-    "scripts/test-bpmn-source-miwg.mjs",
-    {
-      sha256: "c3eaf21f6d98f3169a041625f8780e2b00ade54739c057f701904a0558953861",
-      rationale: "small optional MIWG calibration utility",
-    },
-  ],
-]);
 const leanUmbrellaModules = [
   "BpmnSemantics.lean",
   "BpmnSemantics/SemanticProcess.lean",
@@ -86,13 +31,6 @@ type SourceHygieneAssessment = Readonly<{
   invalidReviews: ReadonlyArray<string>;
 }>;
 
-type LegacyJavaScriptAssessment = Readonly<{
-  unregistered: ReadonlyArray<string>;
-  staleLocks: ReadonlyArray<string>;
-  changed: ReadonlyArray<string>;
-  invalidRationales: ReadonlyArray<string>;
-}>;
-
 function worktreeSourceFiles(): string[] {
   return execFileSync(
     "git",
@@ -100,7 +38,7 @@ function worktreeSourceFiles(): string[] {
     { encoding: "utf8" },
   )
     .split("\n")
-    .filter((path) => /\.(?:java|lean|mjs|ts)$/u.test(path))
+    .filter((path) => /\.(?:c?js|java|lean|mjs|ts)$/u.test(path))
     .filter((path) => !path.includes("/dist/"));
 }
 
@@ -110,33 +48,15 @@ function nonblankLines(path: string): number {
     .filter((line) => line.trim().length > 0).length;
 }
 
-function sha256(path: string): string {
-  return createHash("sha256").update(readFileSync(path)).digest("hex");
-}
-
-function assessLegacyJavaScript(
-  files: ReadonlyArray<string>,
-  locks: ReadonlyMap<
-    string,
-    Readonly<{ sha256: string; rationale: string }>
-  >,
-  digest: (path: string) => string,
-): LegacyJavaScriptAssessment {
-  const fileSet = new Set(files);
-  const unregistered = files.filter((path) => !locks.has(path));
-  const staleLocks: string[] = [];
-  const changed: string[] = [];
-  const invalidRationales: string[] = [];
-  for (const [path, lock] of locks) {
-    if (!fileSet.has(path)) {
-      staleLocks.push(path);
-    } else if (lock.rationale.trim().length === 0) {
-      invalidRationales.push(path);
-    } else if (digest(path) !== lock.sha256) {
-      changed.push(path);
-    }
-  }
-  return { unregistered, staleLocks, changed, invalidRationales };
+/**
+ * Project-authored JavaScript modules, in enumeration order.
+ *
+ * There is no allowlist: every hand-written module in this repository is strict
+ * TypeScript checked by a no-emit gate, so any `.js`, `.cjs`, or `.mjs` file is
+ * an unchecked execution path regardless of its size or role.
+ */
+function javaScriptModules(files: ReadonlyArray<string>): string[] {
+  return files.filter((path) => /\.(?:c?js|mjs)$/u.test(path));
 }
 
 function uncommentedLeanSource(source: string): string {
@@ -310,71 +230,30 @@ test("source enumeration includes non-ignored files before commit", () => {
   }
 });
 
-test("the legacy JavaScript lock rejects every migration regression class", () => {
-  const assessment = assessLegacyJavaScript(
-    [
-      "scripts/locked.mjs",
-      "scripts/changed.mjs",
-      "scripts/new.mjs",
-      "scripts/empty-rationale.mjs",
-    ],
-    new Map([
-      [
-        "scripts/locked.mjs",
-        { sha256: "locked", rationale: "small retained caller" },
-      ],
-      [
-        "scripts/changed.mjs",
-        { sha256: "before", rationale: "small retained caller" },
-      ],
-      [
-        "scripts/stale.mjs",
-        { sha256: "stale", rationale: "small retained caller" },
-      ],
-      [
-        "scripts/empty-rationale.mjs",
-        { sha256: "empty", rationale: "" },
-      ],
+test("the JavaScript-module policy admits no extension and no location", () => {
+  assert.deepEqual(
+    javaScriptModules([
+      "packages/semantic-core/test/fixture.mjs",
+      "packages/semantic-core/test/fixture.ts",
+      "scripts/harness.cjs",
+      "scripts/harness.js",
+      "scripts/harness.ts",
+      "BpmnSemantics/Core.lean",
+      "runners/cibseven/src/main/java/Runner.java",
     ]),
-    (path) => {
-      switch (path) {
-        case "scripts/locked.mjs":
-          return "locked";
-        case "scripts/changed.mjs":
-          return "after";
-        default:
-          return path;
-      }
-    },
+    [
+      "packages/semantic-core/test/fixture.mjs",
+      "scripts/harness.cjs",
+      "scripts/harness.js",
+    ],
   );
-
-  assert.deepEqual(assessment, {
-    unregistered: ["scripts/new.mjs"],
-    staleLocks: ["scripts/stale.mjs"],
-    changed: ["scripts/changed.mjs"],
-    invalidRationales: ["scripts/empty-rationale.mjs"],
-  });
 });
 
-test("retained script-level JavaScript stays exact-byte locked", () => {
-  const files = worktreeSourceFiles()
-    .filter((path) => path.startsWith("scripts/") && path.endsWith(".mjs"))
-    .sort();
-  const assessment = assessLegacyJavaScript(
-    files,
-    lockedLegacyJavaScriptScripts,
-    sha256,
-  );
-
+test("no project-authored JavaScript module remains", () => {
   assert.deepEqual(
-    assessment,
-    {
-      unregistered: [],
-      staleLocks: [],
-      changed: [],
-      invalidRationales: [],
-    },
-    "new or modified script-level JavaScript must migrate to the strict direct TypeScript gate; changing this owner-reviewed exact-byte lock requires explicit approval",
+    javaScriptModules(worktreeSourceFiles()).sort(),
+    [],
+    "hand-written modules must be strict TypeScript covered by a no-emit gate; JavaScript has no reviewed exception",
   );
 });
 

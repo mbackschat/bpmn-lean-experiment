@@ -22,7 +22,7 @@ The question separates BPMN-visible command outcomes from Temporal host lifecycl
 
 The probe uses the exact sequential scenario, admitted Semantic Process program, installed Temporal TypeScript SDK `1.21.0`, and cached Temporal CLI `v1.8.1`. The pinned source revisions and licenses are recorded in [SOURCES.md](../SOURCES.md).
 
-The executable witness is [production-lifecycle.test.mjs](../../packages/temporal-adapter/test/production-lifecycle.test.mjs) and runs inside the focused Temporal gate:
+The executable witness is [production-lifecycle.test.ts](../../packages/temporal-adapter/test/production-lifecycle.test.ts) and runs inside the focused Temporal gate:
 
 ```sh
 ./scripts/pnpm.sh run test:temporal

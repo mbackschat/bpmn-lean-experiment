@@ -34,23 +34,13 @@
     "verbatimModuleSyntax": true
   },
   "include": [
+    "packages/bpmn-source/calibration/*.ts",
     "packages/bpmn-source/src/bpmn-moddle.d.ts",
+    "packages/bpmn-source/test/*.ts",
     "packages/differential/test/*.ts",
-    "scripts/contract-artifacts.ts",
-    "scripts/contract-artifact-consistency.ts",
-    "scripts/contract-artifact-test-fixtures.ts",
-    "scripts/contract-artifacts.test.ts",
-    "scripts/contract-artifact-projections.test.ts",
-    "scripts/contract-definition-artifacts.test.ts",
-    "scripts/java-home.ts",
-    "scripts/java-home.test.ts",
-    "scripts/replace-cibseven-evidence.ts",
-    "scripts/replace-cibseven-evidence.test.ts",
-    "scripts/run-command.ts",
-    "scripts/run-command.test.ts",
-    "scripts/source-hygiene.test.ts",
-    "scripts/strict-json.ts",
-    "scripts/test-pipeline.ts",
-    "scripts/verification-entrypoint.test.ts"
+    "packages/semantic-core/test/*.ts",
+    "packages/temporal-adapter/calibration/*.ts",
+    "packages/temporal-adapter/test/*.ts",
+    "scripts/*.ts"
   ]
 }
