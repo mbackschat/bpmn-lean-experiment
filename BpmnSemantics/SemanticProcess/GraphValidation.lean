@@ -12,6 +12,7 @@ structure GraphEdge (α : Type) where
   target : α
   deriving Repr, DecidableEq
 
+/-- Distinct direct successors of the current frontier. -/
 def successors [DecidableEq α] (edges : List (GraphEdge α))
     (frontier : List α) : List α :=
   (edges.filterMap fun edge =>
@@ -26,9 +27,13 @@ def reachableNodesWithin [DecidableEq α] (edges : List (GraphEdge α)) :
           !visited.contains node
       reachableNodesWithin edges fuel next (visited ++ next)
 
+def reachedSet [DecidableEq α] (edges : List (GraphEdge α)) (fuel : Nat)
+    (source : α) : List α :=
+  reachableNodesWithin edges fuel [source] [source]
+
 def reachableWithin [DecidableEq α] (edges : List (GraphEdge α))
     (fuel : Nat) (source target : α) : Bool :=
-  (reachableNodesWithin edges fuel [source] [source]).contains target
+  (reachedSet edges fuel source).contains target
 
 def allReachableWithin [DecidableEq α] (nodes : List α)
     (edges : List (GraphEdge α)) (fuel : Nat) (source : α) : Bool :=
@@ -40,22 +45,18 @@ def allCoreachableWithin [DecidableEq α] (nodes : List α)
     nodes.all fun node =>
       targets.any (reachableWithin edges fuel node)
 
-/-- No admitted edge may return to its source within the supplied search fuel. -/
+/-- Negative bounded-search witness account. Without a saturation certificate, failure to find a return path does not prove its absence. -/
 def acyclicWithin [DecidableEq α] (edges : List (GraphEdge α))
     (fuel : Nat) : Bool :=
   edges.all fun edge =>
     !reachableWithin edges fuel edge.target edge.source
 
-def reachedSet [DecidableEq α] (edges : List (GraphEdge α)) (fuel : Nat)
-    (source : α) : List α :=
-  reachableNodesWithin edges fuel [source] [source]
-
 /-- Post-search certificate that every edge from a reached node stays in the reached set. -/
 def reachedClosed [DecidableEq α] (edges : List (GraphEdge α)) (fuel : Nat)
     (source : α) : Bool :=
+  let reached := reachedSet edges fuel source
   edges.all fun edge =>
-    !(reachedSet edges fuel source).contains edge.source ||
-      (reachedSet edges fuel source).contains edge.target
+    !reached.contains edge.source || reached.contains edge.target
 
 /-- Cycle rejection backed by a checked saturation certificate for every return search. -/
 def acyclicClosed [DecidableEq α] (edges : List (GraphEdge α))

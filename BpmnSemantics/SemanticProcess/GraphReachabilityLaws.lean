@@ -63,7 +63,7 @@ theorem reachableWithin_sound [DecidableEq α]
     intro node equal
     subst node
     exact .refl source
-  · simpa [reachableWithin] using accepted
+  · simpa [reachableWithin, reachedSet] using accepted
 
 private theorem visited_subset_reachableNodesWithin [DecidableEq α]
     (edges : List (GraphEdge α)) (target : α) :
