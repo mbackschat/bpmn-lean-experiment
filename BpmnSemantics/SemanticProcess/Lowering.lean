@@ -11,14 +11,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-def CheckedNode.id : CheckedNode → NodeId
-  | .noneStartEvent id
-  | .userTask id _
-  | .intermediateCatchTimerEvent id _
-  | .serviceTask id _ _ _ _ _
-  | .parallelGateway id _
-  | .noneEndEvent id => id
-
 def CheckedSequenceFlow.toControlPlace (flow : CheckedSequenceFlow) :
     ControlPlace :=
   { id := ⟨"place:" ++ flow.id.value⟩
@@ -381,15 +373,6 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
         decide (flow.sourceId ≠ flow.targetId)) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
     boundedTopology source
-
-def SemanticOperation.id : SemanticOperation → OperationId
-  | .initiate id _ _
-  | .awaitUserTask id _ _ _ _
-  | .awaitTimer id _ _ _ _
-  | .awaitEffect id _ _ _ _ _
-  | .duplicate id _ _ _
-  | .synchronize id _ _ _
-  | .terminate id _ _ => id
 
 private def placeExists (places : List ControlPlace) (id : ControlPlaceId) : Bool :=
   places.any fun place => decide (place.id = id)

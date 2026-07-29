@@ -9,14 +9,6 @@ namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 
 open BpmnSemantics.SemanticProcess
 
-private def nodeId : CheckedNode → NodeId
-  | .noneStartEvent id
-  | .userTask id _
-  | .intermediateCatchTimerEvent id _
-  | .serviceTask id _ _ _ _ _
-  | .parallelGateway id _
-  | .noneEndEvent id => id
-
 private def sourceEdges (source : CheckedProcess) :
     List (GraphEdge NodeId) :=
   source.sequenceFlows.map fun flow =>
@@ -37,7 +29,7 @@ def outgoingFlows (source : CheckedProcess) (id : NodeId) :
 
 def nodeAt (source : CheckedProcess) (id : NodeId) :
     Option CheckedNode :=
-  source.nodes.find? fun node => decide (nodeId node = id)
+  source.nodes.find? fun node => decide (node.id = id)
 
 private def nodeExists (source : CheckedProcess) (id : NodeId) : Bool :=
   (nodeAt source id).isSome
@@ -74,7 +66,7 @@ private def endIds (source : CheckedProcess) : List NodeId :=
 
 /-- Finite graph facts used by the structured derivation, separate from topology recognition. -/
 def sourceGraphWellFormed (source : CheckedProcess) : Bool :=
-  let nodes := source.nodes.map nodeId
+  let nodes := source.nodes.map (·.id)
   let edges := sourceEdges source
   let fuel := nodes.length
   match startIds source, endIds source with
@@ -351,7 +343,7 @@ private def coversEveryNode (source : CheckedProcess)
     (visited : List NodeId) : Bool :=
   visited.length = source.nodes.length &&
     allDistinct visited &&
-    source.nodes.all fun node => visited.contains (nodeId node)
+    source.nodes.all fun node => visited.contains node.id
 
 private def parseProcess? (source : CheckedProcess) :
     Option StructuredDecomposition :=

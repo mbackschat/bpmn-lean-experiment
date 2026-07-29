@@ -105,15 +105,6 @@ def acyclicWithin [DecidableEq α] (edges : List (GraphEdge α))
   edges.all fun edge =>
     !reachableWithin edges fuel edge.target edge.source
 
-private def operationId : SemanticOperation → OperationId
-  | .initiate id _ _
-  | .awaitUserTask id _ _ _ _
-  | .awaitTimer id _ _ _ _
-  | .awaitEffect id _ _ _ _ _
-  | .duplicate id _ _ _
-  | .synchronize id _ _ _
-  | .terminate id _ _ => id
-
 private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiate .. => []
   | .awaitUserTask _ _ input _ _
@@ -137,7 +128,7 @@ private def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
     if (operationOutputs operation).contains place then
-      some (operationId operation)
+      some operation.id
     else
       none
 
@@ -145,7 +136,7 @@ private def consumers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
     if (operationInputs operation).contains place then
-      some (operationId operation)
+      some operation.id
     else
       none
 
@@ -169,7 +160,7 @@ private def terminateIds (operations : List SemanticOperation) :
 
 /-- Standalone graph backstop for decoded programs, independent of lowering equality. -/
 def programGraphWellFormed (program : Program) : Bool :=
-  let operationIds := program.operations.map operationId
+  let operationIds := program.operations.map (·.id)
   let starts := initiateIds program.operations
   let ends := terminateIds program.operations
   match starts with

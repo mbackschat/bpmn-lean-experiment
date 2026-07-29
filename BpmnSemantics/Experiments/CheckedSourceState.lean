@@ -53,14 +53,6 @@ def runningStartState (instanceId : SemanticId) : SourceRuntimeState :=
     control := .running instanceId
     initiationPending := true }
 
-def CheckedNode.id : CheckedNode → NodeId
-  | .noneStartEvent id
-  | .userTask id _
-  | .intermediateCatchTimerEvent id _
-  | .serviceTask id _ _ _ _ _
-  | .parallelGateway id _
-  | .noneEndEvent id => id
-
 def incomingFlowIds (source : CheckedProcess) (nodeId : NodeId) :
     List SequenceFlowId :=
   source.sequenceFlows.filterMap fun flow =>
