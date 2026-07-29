@@ -1,6 +1,6 @@
 # Compositional BPMN admission and lowering proposal
 
-**Status:** Owner-approved on 2026-07-28; Stage 1 completed; Stage 2 stopped at its 500-line decomposition boundary after the graph-validation half closed; Stage 2b stopped inside its separate 250-line ceiling after closing declarative decomposition but not fuel-complete acyclicity; Stage 2c completed at 229 new nonblank Lean lines; Stage 2d independently accepted after required gate and saturation-cost amendments at 127 new or materially rewritten nonblank Lean lines; revised Stage 3a independently accepted and post-review cleanup closes at 276 new or materially rewritten nonblank Lean lines; every later Stage 3 sub-stage and production admission widening remain unapproved
+**Status:** Owner-approved on 2026-07-28; Stage 1 completed; Stage 2 stopped at its 500-line decomposition boundary after the graph-validation half closed; Stage 2b stopped inside its separate 250-line ceiling after closing declarative decomposition but not fuel-complete acyclicity; Stage 2c completed at 229 new nonblank Lean lines; Stage 2d independently accepted after required gate and saturation-cost amendments at 127 new or materially rewritten nonblank Lean lines; revised Stage 3a independently accepted and post-review cleanup closes at 276 new or materially rewritten nonblank Lean lines; Stage 3b is amended for independent acceptance at 298 new or materially rewritten nonblank Lean lines, excluding 11 relocated lines; every later Stage 3 sub-stage and production admission widening remain unapproved
 
 ## Decision question
 
@@ -189,7 +189,8 @@ Work stops at each stage if its named obligation does not close within its sub-b
 | 1 | Split the frozen source module; prove constant-`"operation:"` prefix order preservation and two-segment `enabledTransitions` correspondence | 250 |
 | 2 | Fuel-bounded reachability/co-reachability/acyclicity, unique structured decomposition, executable-decider soundness, and strengthened program validation | 500 |
 | 3a | Single-token frontier flow bridge, order-independent isolation, graph-fact extraction, exact enabled-list characterization, and non-vacuity witnesses | 300 |
-| 3b–3d | Deferred original Stage 3 obligations: direct Timer/effect clauses, closure-selector soundness, commutation, closure fuel stability, and `structuredClosureStepsLeFour` | Not authorized; ceiling unset |
+| 3b | Two-token parallel-frontier localization up to `List.Perm`, shared token-absence refactor, order discriminators, and kernel witnesses | 340 |
+| 3c–3e | Deferred original Stage 3 obligations: direct Timer/effect clauses, closure-selector soundness, commutation, closure fuel stability, and `structuredClosureStepsLeFour` | Not authorized; ceiling unset |
 | 4 | State mapping, full enabled/closure correspondence, admission/observation preservation, and stimulus-list induction | 700 |
 
 Stage 1 is the early kill decision because the previous experiment stopped at enabled-transition correspondence. Lean lowering does not sort operations while TypeScript does, so the prefix/order lemma must close on a two-segment chain before graph infrastructure is funded.
@@ -215,9 +216,21 @@ Independent review returned the original bundled Stage 3 for revision after comp
 | `CheckedSourceRelationMain.lean` delta | +5 / −0 | +5 / −0 |
 | Total new or materially rewritten nonblank lines | 277 | 276 |
 
-The ceiling convention counts nonblank added or materially rewritten Lean lines against the named anchor. A partial layer counts its content declarations; when recorded as a standalone compiling-module checkpoint, it also counts the module-closing `end`.
+The ceiling convention counts nonblank added or materially rewritten Lean lines against the named anchor. A partial layer counts its content declarations; when recorded as a standalone compiling-module checkpoint, it also counts the module-closing `end`. Following Stage 1 and Stage 2d, byte-identical relocations of existing code are excluded from the count, whether the relocation crosses modules or stays inside one; the published figure names the exclusion and its size.
 
-Stage 3a establishes only the serial single-token frontier. It does not establish the two-token parallel frontier, closure-selector soundness, commutation, closure fuel stability, the four-step bound, Timer/effect source semantics, source-to-program correspondence, or any production-admission result. The original Stage 3 bundle is superseded; Stage 3b, Stage 3c, Stage 3d, optional Stage 2e, Stage 4, and every production admission change require separate owner decisions.
+The owner authorized Stage 3b from commit `362f91f` under a 340-new-or-materially-rewritten-nonblank-Lean-line ceiling. A shared refactor extracts permutation-aware token absence, incoming-Flow untokenedness, and arity-based node disabling while preserving the accepted Stage 3a theorem statements and axiom footprints. The new `enabledTransitionsAtTwoTokens` theorem states that a well-formed two-token frontier aimed at two distinct member nodes yields a `List.Perm` of the two nodes' `fireNode?` contributions; exact equality is kernel-refuted both by reversing only the graph's node collection and by exchanging the theorem's anchors on the unmodified fixture. The `filterMap` pair-isolation route adds the explicitly reviewed `Classical.choice` axiom through Lean core's erase/permutation lemmas. The forked frontier supplies a quantified both-branch witness, a half-ready join supplies a one-contribution witness, and ready-join plus initiation-pending witnesses refute the theorem's own permutation conclusion at those two argument instances, showing the distinct-target and settled-initiation hypotheses are load-bearing.
+
+| Stage 3b Lean file | Baseline at `362f91f` | Amended checkpoint | Added / removed | Relocated, excluded | New or materially rewritten |
+|---|---:|---:|---:|---:|---:|
+| `CheckedSourceFrontier.lean` | 211 | 245 | 62 / 28 | 11 | 51 |
+| `CheckedSourceParallelFrontier.lean` | 0 | 113 | 113 / 0 | 0 | 113 |
+| `CheckedSourceFrontierConformance.lean` | 60 | 192 | 134 / 2 | 0 | 134 |
+| `CheckedSourceRelationMain.lean` | 32 | 32 | 0 / 0 | 0 | 0 |
+| Total | 303 | 582 | 309 / 30 | 11 | 298 |
+
+The excluded 11 lines are the byte-identical `disabledOffFrontier` docstring, nine-line signature, and `sourceGraphFacts` binding, relocated below the extracted `nodeDisabled` inside the same module; Git renders that relocation as delete-plus-add rather than as context. Both the raw 309 and the convention-applied 298 sit under the 340-line ceiling, so the exclusion does not decide ceiling compliance.
+
+Stage 3a establishes the single-token frontier and Stage 3b establishes only two-token localization up to permutation. Stage 3b does not prove that either target fires, exactly-two enabledness, closure-selector soundness, commutation, closure fuel stability, the four-step bound, Timer/effect source semantics, source-to-program correspondence, or any production-admission result. In particular, `closeSupported` currently advances the head of `enabledTransitions` after accepting an independent pair, so the experiment still inherits `source.nodes` order as its internal scheduling choice; the permutation theorem deliberately does not bless or compose with that choice. The original Stage 3 bundle is superseded; Stages 3c–3e, optional Stage 2e, Stage 4, and every production admission change require separate owner decisions.
 
 No hand-written source module may exceed the 600-nonblank-line review target. Proof convenience may not change `closeSupported`, `enabledTransitions`, canonical observation, wire contracts, production semantics, or representations. Failure at a stage records the exact unresolved boundary and leaves admission unchanged.
 

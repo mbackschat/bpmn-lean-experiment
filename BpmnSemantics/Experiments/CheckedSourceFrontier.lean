@@ -1,9 +1,13 @@
 import BpmnSemantics.Experiments.CheckedSourceTransition
 import BpmnSemantics.Experiments.CheckedSourceGraph
 
-/-! # Single-token checked-source frontiers
+/-! # Shared checked-source frontier laws and single-token frontiers
 
-This module owns order-independent facts about enabled checked-source transitions at a single Sequence Flow token, plus the generic distinct-key and `filterMap` isolation laws used by that account. It bridges the graph and transition vocabularies without depending on structured decomposition or parser state.
+This module owns two things. First, the frontier laws that are independent of how many tokens a state carries: the graph/transition vocabulary bridges, the generic distinct-key and `filterMap` isolation laws, the extracted graph identifier and arity facts, permutation-aware token absence in `incomingUntokened`, and arity-based node disabling in `nodeDisabled`. Second, the order-independent characterization of enabled checked-source transitions at a single Sequence Flow token, built from those laws.
+
+`incomingUntokened` and `nodeDisabled` are quantified over an arbitrary token list and are consumed by the two-token account in `CheckedSourceParallelFrontier` as well as by the single-token account here. A frontier stage at any other token count extends these shared laws instead of re-deriving them.
+
+Nothing here depends on structured decomposition or parser state.
 -/
 
 namespace BpmnSemantics.Experiments.CheckedSourceFrontier
@@ -121,28 +125,44 @@ theorem sourceGraphFacts (source : CheckedProcess)
     exact ⟨nodeIds, flowIds, fun node member => arity node member⟩
   · simp at wellFormed
 
-private theorem hasToken_off_frontier (state : SourceRuntimeState)
-    (tokenId other : SequenceFlowId) (single : state.tokens = [tokenId])
-    (distinct : other ≠ tokenId) : hasToken state other = false := by
-  simp [hasToken, tokenMultiplicity, single, Ne.symm distinct]
+private theorem untokenedCount (other : SequenceFlowId) :
+    ∀ tokens : List SequenceFlowId, other ∉ tokens →
+      (tokens.filter fun token => decide (token = other)).length = 0
+  | [], _ => rfl
+  | token :: rest, absent => by
+      have headDiffers : ¬ token = other := fun equal =>
+        absent (equal ▸ List.mem_cons_self)
+      have restAbsent : other ∉ rest := fun member =>
+        absent (List.mem_cons_of_mem _ member)
+      simp [headDiffers, untokenedCount other rest restAbsent]
 
-private theorem incomingHasNoToken (source : CheckedProcess)
-    (state : SourceRuntimeState) (flow : CheckedSequenceFlow) (nodeId : NodeId)
+/-- A Sequence Flow absent from a permutation-equivalent token list carries no token. -/
+private theorem hasToken_absent (state : SourceRuntimeState)
+    (tokens : List SequenceFlowId) (perm : state.tokens.Perm tokens)
+    (other : SequenceFlowId) (absent : other ∉ tokens) :
+    hasToken state other = false := by
+  have counts := (perm.filter fun token => decide (token = other)).length_eq
+  simp [hasToken, tokenMultiplicity, counts, untokenedCount other tokens absent]
+
+/-- Every incoming Flow of a node that no listed token Flow targets is untokened. -/
+theorem incomingUntokened (source : CheckedProcess) (state : SourceRuntimeState)
+    (tokenedFlows : List CheckedSequenceFlow) (nodeId : NodeId)
     (flowIds : allDistinct (source.sequenceFlows.map (·.id)) = true)
-    (flowMember : flow ∈ source.sequenceFlows)
-    (offFrontier : nodeId ≠ flow.targetId)
-    (singleToken : state.tokens = [flow.id]) :
+    (tokenedMember : ∀ flow ∈ tokenedFlows, flow ∈ source.sequenceFlows)
+    (offFrontier : ∀ flow ∈ tokenedFlows, nodeId ≠ flow.targetId)
+    (perm : state.tokens.Perm (tokenedFlows.map (·.id))) :
     ∀ incoming ∈ incomingFlows source nodeId, hasToken state incoming.id = false := by
   intro incoming member
   rw [incomingFlows, List.mem_filter] at member
   obtain ⟨incomingMember, targets⟩ := member
   have targetsEq : incoming.targetId = nodeId := by simpa using targets
-  refine hasToken_off_frontier state flow.id incoming.id singleToken ?_
-  intro identical
-  have same : incoming = flow :=
+  refine hasToken_absent state _ perm incoming.id ?_
+  intro listed
+  obtain ⟨tokened, tokenedMemberOf, idEq⟩ := List.mem_map.mp listed
+  have same : incoming = tokened :=
     key_injective_on_members (·.id) source.sequenceFlows flowIds incoming
-      incomingMember flow flowMember identical
-  exact offFrontier (by rw [← targetsEq, same])
+      incomingMember tokened (tokenedMember tokened tokenedMemberOf) idEq.symm
+  exact offFrontier tokened tokenedMemberOf (by rw [← targetsEq, same])
 
 private theorem firstIncomingDisabled (source : CheckedProcess)
     (state : SourceRuntimeState) (nodeId : NodeId)
@@ -168,20 +188,14 @@ private theorem allIncomingDisabled (source : CheckedProcess)
         noToken head (by rw [listEq]; exact List.mem_cons_self)
       simp [headDisabled]
 
-/-- Every checked node away from the token's target is disabled, independently of node order. -/
-theorem disabledOffFrontier (source : CheckedProcess) (state : SourceRuntimeState)
-    (flow : CheckedSequenceFlow) (candidate : CheckedNode)
-    (wellFormed : sourceGraphWellFormed source = true)
-    (flowMember : flow ∈ source.sequenceFlows)
-    (candidateMember : candidate ∈ source.nodes)
-    (offFrontier : candidate.id ≠ flow.targetId)
-    (singleToken : state.tokens = [flow.id])
+/-- A checked node with valid arity, no incoming token, and settled initiation cannot fire. Settled initiation is load-bearing rather than defensive: a none Start Event fires from the pending-initiation flag and not from an incoming token, so the arity and token premises alone do not disable it. -/
+theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
+    (candidate : CheckedNode)
+    (candidateArity : nodeArityValid source candidate = true)
+    (noToken : ∀ incoming ∈ incomingFlows source candidate.id,
+      hasToken state incoming.id = false)
     (notPending : state.initiationPending = false) :
     fireNode? source candidate state = none := by
-  have facts := sourceGraphFacts source wellFormed
-  have candidateArity := facts.arityValid candidate candidateMember
-  have noToken := incomingHasNoToken source state flow candidate.id facts.flowIdsDistinct
-    flowMember offFrontier singleToken
   cases candidate with
   | noneStartEvent id => simp [fireNode?, notPending]
   | intermediateCatchTimerEvent id duration => rfl
@@ -203,6 +217,30 @@ theorem disabledOffFrontier (source : CheckedProcess) (state : SourceRuntimeStat
       | converging =>
           simp only [nodeArityValid, Bool.and_eq_true, decide_eq_true_eq] at candidateArity
           simp [fireNode?, allIncomingDisabled source state id noToken candidateArity.1]
+
+/-- Every checked node away from the token's target is disabled, independently of node order. -/
+theorem disabledOffFrontier (source : CheckedProcess) (state : SourceRuntimeState)
+    (flow : CheckedSequenceFlow) (candidate : CheckedNode)
+    (wellFormed : sourceGraphWellFormed source = true)
+    (flowMember : flow ∈ source.sequenceFlows)
+    (candidateMember : candidate ∈ source.nodes)
+    (offFrontier : candidate.id ≠ flow.targetId)
+    (singleToken : state.tokens = [flow.id])
+    (notPending : state.initiationPending = false) :
+    fireNode? source candidate state = none := by
+  have facts := sourceGraphFacts source wellFormed
+  refine nodeDisabled source state candidate
+    (facts.arityValid candidate candidateMember) ?_ notPending
+  refine incomingUntokened source state [flow] candidate.id facts.flowIdsDistinct
+    ?_ ?_ (by simp [singleToken])
+  · intro other member
+    rcases List.mem_cons.mp member with rfl | member
+    · exact flowMember
+    · cases member
+  · intro other member
+    rcases List.mem_cons.mp member with rfl | member
+    · exact offFrontier
+    · cases member
 
 /-- At a single-token frontier, the enabled-transition list is exactly the contribution of the targeted node. The graph and runtime-shape premises contain no parser result, selector result, or collection-order constraint. -/
 theorem enabledTransitionsAtSingleToken (source : CheckedProcess)

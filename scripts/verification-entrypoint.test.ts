@@ -12,6 +12,12 @@ const checkedSourceRelationMainPath = fileURLToPath(
     import.meta.url,
   ),
 );
+const checkedSourceFrontierConformancePath = fileURLToPath(
+  new URL(
+    "../BpmnSemantics/Experiments/CheckedSourceFrontierConformance.lean",
+    import.meta.url,
+  ),
+);
 
 async function readNonemptyLines(path: string): Promise<readonly string[]> {
   const source = await readFile(path, "utf8");
@@ -58,5 +64,12 @@ test("the checked-source proof target imports both Stage 3a frontier modules", a
   await assertLineOccursOnce(
     checkedSourceRelationMainPath,
     "import BpmnSemantics.Experiments.CheckedSourceFrontierConformance",
+  );
+});
+
+test("frontier conformance imports the Stage 3b parallel-frontier module", async () => {
+  await assertLineOccursOnce(
+    checkedSourceFrontierConformancePath,
+    "import BpmnSemantics.Experiments.CheckedSourceParallelFrontier",
   );
 });
