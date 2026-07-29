@@ -80,7 +80,7 @@ def sourceGraphWellFormed (source : CheckedProcess) : Bool :=
         source.nodes.all (nodeArityValid source) &&
         allReachableWithin nodes edges fuel start &&
         allCoreachableWithin nodes edges fuel [finish] &&
-        acyclicWithin edges fuel
+        acyclicClosed edges fuel
   | _, _ => false
 
 end BpmnSemantics.Experiments.CheckedSourceAdmission

@@ -1,6 +1,7 @@
 import BpmnSemantics.Experiments.CheckedSourceRelation
 import BpmnSemantics.Experiments.CheckedSourceCorrespondence
 import BpmnSemantics.Experiments.CheckedSourceAdmission
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelationMain — checked-source relation experiment gate
 

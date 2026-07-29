@@ -148,6 +148,28 @@ theorem composedWaitSurfaceIsExact :
         (exactProbeServiceNode (some excludedBoundaryRoute)) = false := by
   decide
 
+private def threeCycle : List (GraphEdge NodeId) :=
+  [ { source := ⟨"A"⟩, target := ⟨"B"⟩ }
+  , { source := ⟨"B"⟩, target := ⟨"C"⟩ }
+  , { source := ⟨"C"⟩, target := ⟨"A"⟩ } ]
+
+/-- One search round misses the three-edge return path. -/
+theorem boundedSearchWronglyAccepts :
+    acyclicWithin threeCycle 1 = true := by decide
+
+/-- Saturation certification rejects the same under-fueled search. -/
+theorem saturationCertifiedRejects :
+    acyclicClosed threeCycle 1 = false := by decide
+
+/-- Vertex-count fuel is a control showing that the retained witness is not a live fixture defect. -/
+theorem bothRejectAtVertexFuel :
+    acyclicWithin threeCycle 3 = false ∧
+      acyclicClosed threeCycle 3 = false := by decide
+
+/-- Two search rounds already expose the return path in the old predicate. -/
+theorem boundedSearchCorrectAtTwo :
+    acyclicWithin threeCycle 2 = false := by decide
+
 private def graphPredicateChecks : Bool :=
   let forward : List (GraphEdge NodeId) :=
     [{ source := ⟨"A"⟩, target := ⟨"B"⟩ }]
@@ -160,6 +182,11 @@ private def graphPredicateChecks : Bool :=
 
 def stageTwoAdmissionChecks : Bool :=
   graphPredicateChecks &&
+    acyclicWithin threeCycle 1 &&
+    !acyclicClosed threeCycle 1 &&
+    !acyclicWithin threeCycle 2 &&
+    !acyclicWithin threeCycle 3 &&
+    !acyclicClosed threeCycle 3 &&
     composedNodeSurfaceValid
       (.intermediateCatchTimerEvent ⟨"Timer"⟩ "PT1S") &&
     !composedNodeSurfaceValid

@@ -142,6 +142,12 @@ def renamedCountermodelDiverges : Bool :=
         runScenario (positionalLowerCheckedProcess renamedCountermodel)
           renamedCountermodelScenario)
 
+/-- The retained positional-lowering discriminator remains structurally admissible. -/
+theorem positionalCountermodelProgramIsAccepted :
+    programWellFormed (positionalLowerCheckedProcess renamedCountermodel) =
+      true := by
+  decide
+
 def renamedCountermodelMatchesEndpointLowering : Bool :=
   decide (
     CheckedSourceSemantics.runScenarioWithClosureLimit scenarioClosureLimit
