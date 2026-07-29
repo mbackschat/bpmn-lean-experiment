@@ -39,10 +39,14 @@ test("default verification includes the focused Temporal history gate", async ()
   );
 });
 
-test("default verification compiles the checked-source proof experiment", async () => {
+test("default verification builds and executes the checked-source proof experiment", async () => {
   await assertLineOccursOnce(
     verifyScriptPath,
     "lake build checkCheckedSourceRelationExperiment",
+  );
+  await assertLineOccursOnce(
+    verifyScriptPath,
+    "lake exe checkCheckedSourceRelationExperiment",
   );
 });
 

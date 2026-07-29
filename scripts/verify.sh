@@ -22,6 +22,7 @@ fi
 lake build
 lake test
 lake build checkCheckedSourceRelationExperiment
+lake exe checkCheckedSourceRelationExperiment
 lake build emitSemanticProcessResults
 ./scripts/pnpm.sh run test:semantic-core
 ./scripts/pnpm.sh run test:bpmn-source
