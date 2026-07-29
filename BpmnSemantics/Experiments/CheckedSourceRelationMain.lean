@@ -1,6 +1,8 @@
 import BpmnSemantics.Experiments.CheckedSourceRelation
 import BpmnSemantics.Experiments.CheckedSourceCorrespondence
 import BpmnSemantics.Experiments.CheckedSourceAdmission
+import BpmnSemantics.Experiments.CheckedSourceFrontier
+import BpmnSemantics.Experiments.CheckedSourceFrontierConformance
 import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelationMain — checked-source relation experiment gate
@@ -11,6 +13,7 @@ This executable retains the fixture-coincidental positional-lowering countermode
 open BpmnSemantics.Experiments.CheckedSourceRelation
 open BpmnSemantics.Experiments.CheckedSourceCorrespondence
 open BpmnSemantics.Experiments.CheckedSourceAdmission
+open BpmnSemantics.Experiments.CheckedSourceFrontierConformance
 
 private def requireTrue (condition : Bool) (message : String) : IO Unit :=
   if condition then
@@ -23,6 +26,8 @@ def main : IO Unit := do
     "two-segment source and lowered-program enabled transitions diverge"
   requireTrue stageTwoAdmissionChecks
     "Stage 2 graph validation or structured-admission witnesses failed"
+  requireTrue stageThreeAFrontierChecks
+    "Stage 3a single-token frontier witnesses failed"
   requireTrue retainedFixturesSurvivePositionalLowering
     "positional-lowering mutation no longer leaves every retained fixture lock green"
   requireTrue renamedCountermodelDiverges

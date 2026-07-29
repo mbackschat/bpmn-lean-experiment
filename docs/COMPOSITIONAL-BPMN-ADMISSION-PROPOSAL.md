@@ -1,6 +1,6 @@
 # Compositional BPMN admission and lowering proposal
 
-**Status:** Owner-approved on 2026-07-28; Stage 1 completed; Stage 2 stopped at its 500-line decomposition boundary after the graph-validation half closed; Stage 2b stopped inside its separate 250-line ceiling after closing declarative decomposition but not fuel-complete acyclicity; Stage 2c completed at 229 new nonblank Lean lines; Stage 2d independently accepted after required gate and saturation-cost amendments at 127 new or materially rewritten nonblank Lean lines; Stage 3 and production admission widening remain unapproved
+**Status:** Owner-approved on 2026-07-28; Stage 1 completed; Stage 2 stopped at its 500-line decomposition boundary after the graph-validation half closed; Stage 2b stopped inside its separate 250-line ceiling after closing declarative decomposition but not fuel-complete acyclicity; Stage 2c completed at 229 new nonblank Lean lines; Stage 2d independently accepted after required gate and saturation-cost amendments at 127 new or materially rewritten nonblank Lean lines; revised Stage 3a independently accepted and post-review cleanup closes at 276 new or materially rewritten nonblank Lean lines; every later Stage 3 sub-stage and production admission widening remain unapproved
 
 ## Decision question
 
@@ -188,7 +188,8 @@ Work stops at each stage if its named obligation does not close within its sub-b
 |---|---|---:|
 | 1 | Split the frozen source module; prove constant-`"operation:"` prefix order preservation and two-segment `enabledTransitions` correspondence | 250 |
 | 2 | Fuel-bounded reachability/co-reachability/acyclicity, unique structured decomposition, executable-decider soundness, and strengthened program validation | 500 |
-| 3 | Direct source Timer/effect clauses, closure selector soundness, and `structuredClosureStepsLeFour` | 350 |
+| 3a | Single-token frontier flow bridge, order-independent isolation, graph-fact extraction, exact enabled-list characterization, and non-vacuity witnesses | 300 |
+| 3b–3d | Deferred original Stage 3 obligations: direct Timer/effect clauses, closure-selector soundness, commutation, closure fuel stability, and `structuredClosureStepsLeFour` | Not authorized; ceiling unset |
 | 4 | State mapping, full enabled/closure correspondence, admission/observation preservation, and stimulus-list induction | 700 |
 
 Stage 1 is the early kill decision because the previous experiment stopped at enabled-transition correspondence. Lean lowering does not sort operations while TypeScript does, so the prefix/order lemma must close on a two-segment chain before graph infrastructure is funded.
@@ -204,6 +205,19 @@ Stage 2b retained genuine `SegmentAt` and inductive `ChainFrom` relations over c
 Owner-approved Stage 2c closed the whole-process boundary from commit `d025e3d` under a 230-new-nonblank-line ceiling. The 229-line proof module keeps parser state private and exports one `WholeProcessDecompositionFacts` proposition containing the graph/profile facts, unique Start and End, a nonempty graph-derived chain, complete distinct node coverage, complete Sequence Flow coverage, and unique Flow-source ownership. The separately quantified canonical-chain corollary compares the parsed chain with any independently supplied `ChainFrom` derivation. The experiment modules are split by graph, executable decomposition, declarative chain, whole-process coverage, and witness responsibility; no module approaches the source-hygiene limit.
 
 Stage 2d completed at 127 new or materially rewritten nonblank Lean lines under its separate 150-line ceiling and was independently accepted after two required amendments. The default gate now compiles the proof experiment, and the saturation certificate computes each source's reached set once rather than once per edge membership test. It replaces unsound reliance on a negative bounded search with an executable saturation certificate, proves that every declarative path lies in a certified closed reached set, and derives declarative return-path exclusion and reachability antisymmetry for accepted graphs. The retained fuel-one three-node cycle separates the predicates: the old bounded predicate accepts, the saturation-certified predicate rejects, and both reject at vertex-count control fuel. All seven accepted program witnesses remain explicit and green. Vertex-count fuel adequacy is deferred to optional Stage 2e because it establishes decider completeness against false rejection rather than admission soundness.
+
+Independent review returned the original bundled Stage 3 for revision after compiled probes showed that its Timer, effect, closure, commutation, and four-step obligations could not fit the former 350-line ceiling. The owner authorized only revised Stage 3a from commit `bb6b149`: the source-state and graph Flow vocabularies now have direct bridges, reusable distinct-key and list-order-independent `filterMap` isolation laws expose the required collection reasoning, `sourceGraphWellFormed` yields the exact identifier and arity facts used by the proof, and `enabledTransitionsAtSingleToken` characterizes the enabled list solely from graph and runtime-frontier facts. Kernel-checked parallel-process witnesses establish that a token before the fork enables exactly the fork while one branch-output token before the join enables nothing. The graph bridge, collection laws, and graph-fact extraction contain 109 nonblank lines; the standalone compiling checkpoint includes its closing namespace line and therefore records 110. Independent review accepted the theorem, witnesses, scope, and 277-line accounting with no blocker. Reusing the existing parallel fixture instance identifier removes one duplicated line, so the post-review implementation closes at 276 new or materially rewritten nonblank Lean lines under the 300-line ceiling.
+
+| Stage 3a Lean file | Independently reviewed snapshot | Post-review checkpoint |
+|---|---:|---:|
+| `CheckedSourceFrontier.lean` | 211 | 211 |
+| `CheckedSourceFrontierConformance.lean` | 61 | 60 |
+| `CheckedSourceRelationMain.lean` delta | +5 / −0 | +5 / −0 |
+| Total new or materially rewritten nonblank lines | 277 | 276 |
+
+The ceiling convention counts nonblank added or materially rewritten Lean lines against the named anchor. A partial layer counts its content declarations; when recorded as a standalone compiling-module checkpoint, it also counts the module-closing `end`.
+
+Stage 3a establishes only the serial single-token frontier. It does not establish the two-token parallel frontier, closure-selector soundness, commutation, closure fuel stability, the four-step bound, Timer/effect source semantics, source-to-program correspondence, or any production-admission result. The original Stage 3 bundle is superseded; Stage 3b, Stage 3c, Stage 3d, optional Stage 2e, Stage 4, and every production admission change require separate owner decisions.
 
 No hand-written source module may exceed the 600-nonblank-line review target. Proof convenience may not change `closeSupported`, `enabledTransitions`, canonical observation, wire contracts, production semantics, or representations. Failure at a stage records the exact unresolved boundary and leaves admission unchanged.
 
