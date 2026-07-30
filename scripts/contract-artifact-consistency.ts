@@ -23,6 +23,15 @@ import {
   requireUnicodeScalarString,
 } from "./strict-json.ts";
 
+const activeWaitKindRank = {
+  userTask: 0,
+  timer: 1,
+  effect: 2,
+} as const satisfies Record<
+  StateObservation["activeWaits"][number]["kind"],
+  number
+>;
+
 function compareIds(
   left: Readonly<{ id: string }>,
   right: Readonly<{ id: string }>,
@@ -278,8 +287,13 @@ export function verifyProducerProjection(evidence: CibSevenEvidence): void {
       ...taskProjection.activeWaits,
       ...timerProjection.activeWaits,
       ...effectProjection.activeWaits,
-    ].sort((left, right) =>
-      compareStrings(left.elementId, right.elementId));
+    ].sort((left, right) => {
+      const kindComparison =
+        activeWaitKindRank[left.kind] - activeWaitKindRank[right.kind];
+      return kindComparison === 0
+        ? compareStrings(left.elementId, right.elementId)
+        : kindComparison;
+    });
     const expectedByField: Pick<
       StateObservation,
       | "activeWaits"

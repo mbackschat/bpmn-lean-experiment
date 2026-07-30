@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  targetNamespace="https://bpmn-lean.org/cibseven/command-executor-test">
+  <process id="MultiInstanceUserTask" isExecutable="true">
+    <startEvent id="Start" />
+    <sequenceFlow id="StartToTask" sourceRef="Start" targetRef="RepeatedTask" />
+    <userTask id="RepeatedTask">
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality>2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <sequenceFlow id="TaskToEnd" sourceRef="RepeatedTask" targetRef="End" />
+    <endEvent id="End" />
+  </process>
+</definitions>

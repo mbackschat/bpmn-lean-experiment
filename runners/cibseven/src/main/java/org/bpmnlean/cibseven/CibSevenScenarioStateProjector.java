@@ -2,10 +2,7 @@ package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
-import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.EFFECT;
-import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.TIMER;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
@@ -33,16 +30,19 @@ final class CibSevenScenarioStateProjector {
   private final ProcessEngine processEngine;
   private final CibSevenUserTaskProjector userTaskProjector;
   private final CibSevenEffectProjector effectProjector;
+  private final CibSevenActiveWaitProjector activeWaitProjector;
   private final Date logicalEpoch;
 
   CibSevenScenarioStateProjector(
       ProcessEngine processEngine,
       CibSevenUserTaskProjector userTaskProjector,
       CibSevenEffectProjector effectProjector,
+      CibSevenActiveWaitProjector activeWaitProjector,
       Date logicalEpoch) {
     this.processEngine = processEngine;
     this.userTaskProjector = userTaskProjector;
     this.effectProjector = effectProjector;
+    this.activeWaitProjector = activeWaitProjector;
     this.logicalEpoch = logicalEpoch;
   }
 
@@ -50,9 +50,18 @@ final class CibSevenScenarioStateProjector {
       String engineInstanceId,
       String stableInstanceId,
       String afterCommandId) {
+    var runtime = processEngine.getRuntimeService();
+    var childInstances =
+        runtime
+            .createProcessInstanceQuery()
+            .superProcessInstanceId(engineInstanceId)
+            .count();
+    if (childInstances != 0) {
+      throw new IllegalStateException(
+          "Bounded CIB projection does not support child Process instances");
+    }
     var isRunning =
-        processEngine
-                .getRuntimeService()
+        runtime
                 .createProcessInstanceQuery()
                 .processInstanceId(engineInstanceId)
                 .count()
@@ -95,11 +104,6 @@ final class CibSevenScenarioStateProjector {
                             1),
                         job.dueDateDeltaMs()))
             .toList();
-    var timerWaits =
-        openTimers.stream()
-            .map(timer -> new ScenarioProtocol.ActiveWait(
-                timer.id().elementId(), TIMER, 1))
-            .toList();
     var projectedEffects =
         isRunning
             ? effectProjector.project(
@@ -109,16 +113,8 @@ final class CibSevenScenarioStateProjector {
         projectedEffects.stream()
             .map(CibSevenEffectProjector.ProjectedEffectWait::openEffect)
             .toList();
-    var effectWaits =
-        openEffects.stream()
-            .map(effect -> new ScenarioProtocol.ActiveWait(
-                effect.id().elementId(), EFFECT, 1))
-            .toList();
-    var allWaits = new ArrayList<>(activeWaits);
-    allWaits.addAll(timerWaits);
-    allWaits.addAll(effectWaits);
-    allWaits.sort(
-        (left, right) -> WireStrings.compare(left.elementId(), right.elementId()));
+    var allWaits =
+        activeWaitProjector.project(activeWaits, openTimers, openEffects);
     var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - logicalEpoch.getTime();
     var variables = observeProcessVariables(engineInstanceId);
     return new ObservedState(

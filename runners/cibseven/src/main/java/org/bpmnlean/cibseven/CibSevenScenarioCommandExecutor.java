@@ -48,8 +48,13 @@ final class CibSevenScenarioCommandExecutor {
             .processInstanceId(engineInstanceId)
             .taskDefinitionKey(taskId.elementId())
             .list();
-    if (tasks.size() != 1) {
+    if (tasks.isEmpty()) {
       return REJECTED;
+    }
+    if (tasks.size() > 1) {
+      throw new IllegalStateException(
+          "Repeated active User Task element requires activation-ordinal derivation: "
+              + taskId.elementId());
     }
     processEngine.getTaskService().complete(tasks.getFirst().getId());
     return COMMITTED;
@@ -107,7 +112,8 @@ final class CibSevenScenarioCommandExecutor {
       CibEffectExecutionSchedule schedule) {
     if (!(complete.result() instanceof SuccessfulEffectResult result)
         || !result.localPatch().isEmpty()) {
-      return new EffectCompletion(REJECTED, null);
+      throw new IllegalStateException(
+          "Bounded asynchronous CIB effect execution supports only payload-free success");
     }
     var submitted = complete.effectId();
     if (!submitted.processInstanceId().equals(stableInstanceId)

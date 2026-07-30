@@ -113,12 +113,17 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     this.boundaryErrorProbe = boundaryErrorProbe;
     var userTaskProjector = new CibSevenUserTaskProjector();
     var effectProjector = new CibSevenEffectProjector();
+    var activeWaitProjector = new CibSevenActiveWaitProjector();
     this.commandExecutor =
         new CibSevenScenarioCommandExecutor(
             processEngine, effectProjector, effectProbe, LOGICAL_EPOCH);
     this.stateProjector =
         new CibSevenScenarioStateProjector(
-            processEngine, userTaskProjector, effectProjector, LOGICAL_EPOCH);
+            processEngine,
+            userTaskProjector,
+            effectProjector,
+            activeWaitProjector,
+            LOGICAL_EPOCH);
     this.startupNanos = startupNanos;
   }
 
@@ -320,6 +325,11 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           }
           case CompleteEffectStimulus complete -> {
             requireStarted(engineInstanceId, stableInstanceId);
+            // These profiles execute the effect and mapping synchronously during start, so CIB has
+            // no effect-completion command outcome or mid-effect state to observe. The differential
+            // harness compensates explicitly through CibCaseRelation.SynchronousFinalState and
+            // CibCaseRelation.SynchronousBoundaryError; this break leaves completeEffect a no-op in
+            // the CIB trace and continues with the scenario's next stimulus.
             if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
               requireSynchronousCreateDocumentCompletion(engineInstanceId);
               createDocumentProbe.requireSuccessfulExecution();

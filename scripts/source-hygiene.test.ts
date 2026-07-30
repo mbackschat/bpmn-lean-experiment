@@ -133,6 +133,7 @@ function directTypeScriptHarnessFiles(): string[] {
 
 function erasableSyntaxDiagnostics(
   paths: ReadonlyArray<string>,
+  environment: NodeJS.ProcessEnv = process.env,
 ): string[] {
   const result = spawnSync(
     "./node_modules/.bin/tsc",
@@ -140,6 +141,8 @@ function erasableSyntaxDiagnostics(
       "--noEmit",
       "--noResolve",
       "--erasableSyntaxOnly",
+      "--pretty",
+      "false",
       "--skipLibCheck",
       "--target",
       "ESNext",
@@ -151,6 +154,7 @@ function erasableSyntaxDiagnostics(
     ],
     {
       encoding: "utf8",
+      env: environment,
       maxBuffer: 4 * 1024 * 1024,
     },
   );
@@ -285,6 +289,31 @@ test("direct TypeScript rejects syntax that Node cannot erase", () => {
   try {
     assert.deepEqual(
       erasableSyntaxDiagnostics([pendingSource]),
+      [
+        `${pendingSource}(1,6): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.`,
+      ],
+    );
+  } finally {
+    unlinkSync(pendingSource);
+  }
+});
+
+test("direct TypeScript syntax rejection is color-independent", () => {
+  const pendingSource = ".erasable-syntax-color-pending-probe.ts";
+  const colorEnvironment: NodeJS.ProcessEnv = {
+    ...process.env,
+    FORCE_COLOR: "3",
+  };
+  delete colorEnvironment.NO_COLOR;
+  assert.equal(existsSync(pendingSource), false);
+  writeFileSync(
+    pendingSource,
+    "enum InvalidDirectSyntax { Value = 'value' }\n",
+    "utf8",
+  );
+  try {
+    assert.deepEqual(
+      erasableSyntaxDiagnostics([pendingSource], colorEnvironment),
       [
         `${pendingSource}(1,6): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.`,
       ],

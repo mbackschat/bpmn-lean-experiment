@@ -22,6 +22,7 @@ import {
   requireAwaitUserTask,
   requireCheckedUserTask,
   requireMutableState,
+  requireState,
   requireServiceTask,
   requireUserTaskCompletion,
   semanticOperationKind,
@@ -83,6 +84,105 @@ test("derives canonical parallel tasks independently of producer query order", a
     () => verifyArtifactSet(dropped),
     /producer observation projection does not match canonical/,
   );
+});
+
+test("reconstructs mixed waits in semantic kind-then-element order", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const parallel = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "parallel-fork-join-a-then-b",
+    ),
+    "parallel artifact set",
+  );
+  const mixed = cloneArtifactSet(parallel);
+  const state = requireMutableState(mixed.evidence.result.trace[2]);
+  const timerKind = requiredAt(
+    requireState(
+      required(
+        artifactSets.find(
+          ({ scenario }) => scenario.id === "intermediate-catch-timer-pt1s",
+        ),
+        "timer artifact set",
+      ).evidence.result.trace[2],
+    ).activeWaits,
+    0,
+    "timer active waits",
+  ).kind;
+  const effectKind = requiredAt(
+    requireState(
+      required(
+        artifactSets.find(
+          ({ scenario }) => scenario.id === "service-task-effect-success",
+        ),
+        "effect artifact set",
+      ).evidence.result.trace[2],
+    ).activeWaits,
+    0,
+    "effect active waits",
+  ).kind;
+  mixed.evidence.producerObservations.effectJobs =
+    mixed.evidence.producerObservations.timerJobs.map(
+      ({ afterCommandId }) => ({ afterCommandId, jobs: [] }),
+    );
+  const timerSnapshot = requiredAt(
+    mixed.evidence.producerObservations.timerJobs,
+    0,
+    "timer snapshots",
+  );
+  const effectSnapshot = requiredAt(
+    mixed.evidence.producerObservations.effectJobs,
+    0,
+    "effect snapshots",
+  );
+  timerSnapshot.jobs.push({
+    elementId: "A_Timer",
+    dueDateDeltaMs: 1000,
+    executable: false,
+  });
+  effectSnapshot.jobs.push({
+    elementId: "M_Effect",
+    activation: 1,
+    protocol: "urn:bpmn-lean:effect:probe-v1",
+    handler: "bpmnLeanEffectHandler",
+    retries: 3,
+    executable: true,
+    dueDatePresent: false,
+  });
+  state.activeWaits.push(
+    {
+      elementId: "A_Timer",
+      kind: timerKind,
+      multiplicity: 1,
+    },
+    {
+      elementId: "M_Effect",
+      kind: effectKind,
+      multiplicity: 1,
+    },
+  );
+  state.openTimers.push({
+    id: {
+      processInstanceId: state.instanceId,
+      elementId: "A_Timer",
+      activation: 1,
+    },
+    deadlineMs: 1000,
+  });
+  state.openEffects.push({
+    id: {
+      processInstanceId: state.instanceId,
+      elementId: "M_Effect",
+      activation: 1,
+    },
+    descriptor: {
+      protocol: "urn:bpmn-lean:effect:probe-v1",
+      handler: "bpmnLeanEffectHandler",
+    },
+    arguments: [],
+  });
+
+  assert.doesNotThrow(() => verifyArtifactSet(mixed));
 });
 
 test("detects a missing live sibling after stale parallel completion", async () => {

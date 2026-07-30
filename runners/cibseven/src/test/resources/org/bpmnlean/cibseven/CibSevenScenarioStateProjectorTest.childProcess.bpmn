@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  targetNamespace="https://bpmn-lean.org/cibseven/projector-test">
+  <process id="ProjectorParent" isExecutable="true">
+    <startEvent id="ParentStart" />
+    <sequenceFlow id="ParentToCall" sourceRef="ParentStart" targetRef="CallChild" />
+    <callActivity id="CallChild" calledElement="ProjectorChild" />
+    <sequenceFlow id="CallToEnd" sourceRef="CallChild" targetRef="ParentEnd" />
+    <endEvent id="ParentEnd" />
+  </process>
+  <process id="ProjectorChild" isExecutable="true">
+    <startEvent id="ChildStart" />
+    <sequenceFlow id="ChildToTask" sourceRef="ChildStart" targetRef="ChildTask" />
+    <userTask id="ChildTask" name="Child task" />
+    <sequenceFlow id="TaskToChildEnd" sourceRef="ChildTask" targetRef="ChildEnd" />
+    <endEvent id="ChildEnd" />
+  </process>
+</definitions>
