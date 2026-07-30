@@ -257,6 +257,23 @@ The public evidence pattern across Camunda 7, Camunda 8, Flowable, Activiti, jBP
 
 These engines are useful for discovering ambiguity and constructing hostile separating cases. They cannot vote on the standard, override the pinned CIB oracle, or substitute for the Lean and Temporal assurance lanes. Additional large checkouts are deferred until a requirement needs one that CIB, MIWG, or Betsy does not already supply.
 
+## Parallel independent research effort
+
+Colleague-authored review of this project's architecture and feasibility summary, inspected as local read-only documents on 2026-07-29 and 2026-07-30. External authorship; the documents are retained outside this repository and are deliberately neither committed nor summarized here. Their content digests are recorded so that a later citation can be bound to the exact text reviewed:
+
+| Inspected document | SHA-256 |
+|---|---|
+| `bpmn-lean-experiment-review-grounded.md` | `a5966df6ef39529218a164ac38f73220e6034ed2b2b8c5c355f14f69d92d2f7c` |
+| `sema-enabled-apply-schedule-split.md` | `9628047a2e0832bc09bbe2a0481bf6b94f77cbeeda5b8bf94ff7109fad3611c8` |
+
+**Standing: unvalidated external design input. It is not a semantic authority and is not evidence for any claim in this project.** Nothing in it may be carried on its authority. A suggestion from it may be acted on only after this project independently establishes the underlying fact from its own source, gates, or normative review, and the result is then recorded as this project's finding in the owning document rather than as an external one.
+
+Two reasons for that standing, both established after the review was written. The owner has confirmed that the workload profile underpinning its central argument was a hypothetical illustration rather than a recorded requirement. Independent re-check separately found that the same argument measured the wrong unit for this architecture. Neither the argument nor its corrected arithmetic is retained here, and the deferral it bore on was already recorded in [PLAN.md](PLAN.md).
+
+Third-party product assessments, comparative substrate claims, effort estimates, and tool or prover comparisons appearing in the review are explicitly **not** carried into this repository. Where this project needs such an assessment it produces its own under the applicable [research owner](research/README.md).
+
+One durable takeaway is retained, as this project's own and about form rather than content. The review labels the confidence of individual claims and closes by listing those most likely to be wrong, which is good practice worth borrowing. But it attaches no label to *premise selection*, so a hypothetical premise carried a chain of individually-labelled reasoning to a confident conclusion. Per-claim confidence labels do not protect against an unlabelled premise, and a document that reads as rigorous is not thereby grounded. [TESTING-SPEC.md](TESTING-SPEC.md) owns evidence-lane discipline; this is its review-reading counterpart.
+
 ## Documentation-discipline precedent
 
 Read-only checkout: [mbackschat/a12-dmkits at `446e668`](https://github.com/mbackschat/a12-dmkits/tree/446e668de19e86447458f89a89ee201affce1ee0)
