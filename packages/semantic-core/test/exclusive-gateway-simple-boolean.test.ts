@@ -17,6 +17,7 @@ import {
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type {
+  SemanticOperation,
   SemanticProcessProgram,
   SimpleBooleanExpression,
   VariableBinding,
@@ -239,6 +240,38 @@ test("requires three start-closure steps and reports a smaller bound", () => {
   assert.deepEqual(short.state.controlTokens, [
     { placeId: "place:Flow_First", multiplicity: 1 },
   ]);
+});
+
+test("rejects an extra initiation branch before it creates multiple-enabledness", () => {
+  const original = choiceProgram(literal(true), literal(false));
+  const extraTerminate = {
+    ...operationBase("End_Extra"),
+    kind: SemanticOperationKind.Terminate,
+    input: "place:Flow_Extra",
+  } as const satisfies SemanticOperation;
+  const extraInitiate = {
+    ...operationBase("Start_Extra"),
+    kind: SemanticOperationKind.Initiate,
+    output: "place:Flow_Extra",
+  } as const satisfies SemanticOperation;
+  const mutated: SemanticProcessProgram = {
+    ...original,
+    controlPlaces: [
+      ...original.controlPlaces,
+      controlPlace("Flow_Extra"),
+    ].toSorted(({ id: left }, { id: right }) =>
+      left < right ? -1 : left > right ? 1 : 0
+    ),
+    operations: [
+      ...original.operations,
+      extraTerminate,
+      extraInitiate,
+    ].toSorted(({ id: left }, { id: right }) =>
+      left < right ? -1 : left > right ? 1 : 0
+    ),
+  };
+
+  assert.equal(supportsSemanticProcessExecution(start, mutated), false);
 });
 
 test("rejects a branch origin that differs from its control place", () => {

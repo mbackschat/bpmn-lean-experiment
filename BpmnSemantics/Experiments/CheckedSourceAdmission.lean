@@ -118,6 +118,10 @@ private def exactProbeServiceNode (route : Option CheckedBpmnErrorRoute := none)
       operation := "urn:bpmn-lean:effect-operation:probe-v1" }
     [] [] route
 
+private def excludedExclusiveGateway : CheckedNode :=
+  .exclusiveGateway ⟨"Choice"⟩
+    [⟨"Flow_First"⟩, ⟨"Flow_Second"⟩] ⟨"Flow_Default"⟩
+
 private def excludedBoundaryRoute : CheckedBpmnErrorRoute :=
   { boundaryEventId := ⟨"BoundaryError"⟩
     boundaryEventName := none
@@ -147,6 +151,12 @@ theorem composedWaitSurfaceIsExact :
           [] [] none) = false ∧
       composedNodeSurfaceValid
         (exactProbeServiceNode (some excludedBoundaryRoute)) = false := by
+  decide
+
+/-- Expanding the production checked-node union does not silently expand the frozen structured-admission experiment. -/
+theorem exclusiveGatewayRemainsOutsideFrozenExperiment :
+    nodeArityValid twoSegmentSource excludedExclusiveGateway = false ∧
+      composedNodeSurfaceValid excludedExclusiveGateway = false := by
   decide
 
 private def threeCycle : List (GraphEdge NodeId) :=
@@ -193,6 +203,8 @@ def stageTwoAdmissionChecks : Bool :=
     !composedNodeSurfaceValid
       (.intermediateCatchTimerEvent ⟨"Timer"⟩ "PT5M") &&
     composedNodeSurfaceValid exactProbeServiceNode &&
+    !nodeArityValid twoSegmentSource excludedExclusiveGateway &&
+    !composedNodeSurfaceValid excludedExclusiveGateway &&
     !composedNodeSurfaceValid
       (exactProbeServiceNode (some excludedBoundaryRoute)) &&
     structuredAdmissionDecider twoSegmentSource &&

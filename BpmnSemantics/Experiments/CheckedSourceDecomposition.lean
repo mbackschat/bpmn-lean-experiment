@@ -91,6 +91,7 @@ def parseFrom (source : CheckedProcess) :
           | _ => none
       | some (.noneStartEvent _)
       | some (.parallelGateway _ .converging)
+      | some (.exclusiveGateway ..)
       | none => none
 
 def coversEveryNode (source : CheckedProcess)
@@ -128,6 +129,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
         inputMappings.isEmpty &&
         outputMappings.isEmpty &&
         route.isNone
+  | .exclusiveGateway .. => false
   | _ => true
 
 def profileChecks (source : CheckedProcess) : Bool :=

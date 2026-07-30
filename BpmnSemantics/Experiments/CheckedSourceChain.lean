@@ -165,6 +165,8 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | serviceTask id descriptor inputs outputs route =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
+        | exclusiveGateway id candidateFlowIds defaultFlowId =>
+            simp [parseFrom, nodeResult] at result
         | parallelGateway gatewayNode direction =>
             cases direction with
             | converging => simp [parseFrom, nodeResult] at result

@@ -53,6 +53,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .parallelGateway id .converging =>
       (incomingFlows source id).length = 2 &&
         (outgoingFlows source id).length = 1
+  | .exclusiveGateway _ _ _ => false
 
 def startIds (source : CheckedProcess) : List NodeId :=
   source.nodes.filterMap fun
