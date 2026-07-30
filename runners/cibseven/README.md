@@ -63,6 +63,8 @@ The package script supplies the exact replacement opt-in. The command executes a
 | [CibSevenEffectProbe.java](src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | Test-local plain and fail-after-mutation Service Task delegate behavior |
 | [CibSevenServiceTaskScenarioRunnerTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskScenarioRunnerTest.java) | Ordinary plain-success and raw retry/re-execution scenario-runner evidence |
 | [CibSevenBoundaryErrorPhaseZeroProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java) | Packaged `2.0.0` boundary-error calibration, including the caught output-mapping and unmatched rollback counterexamples |
+| [CibSevenExclusiveGatewayJuelProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java) | Packaged `2.0.0` Exclusive Gateway calibration for JUEL delimiter/context behavior, Sequence Flow declaration order, first-true short-circuit, default selection, result typing, failure, and command rollback |
+| [CibSevenIsolatedJuelRuntimeProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenIsolatedJuelRuntimeProbeTest.java) | Direct pinned-JUEL feasibility probe for immutable root/array/list/map data with no Process Engine, bean, function, method, or writable-property surface |
 | [CibSevenTestEngine.java](src/test/java/org/bpmnlean/cibseven/CibSevenTestEngine.java) | Shared isolated test-engine configuration for the bounded probes |
 | [PvmDefinitionProjector.java](src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) | Read-only diagnostic definition projection |
 | [CibSevenOracleMain.java](src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | Persistent JSON-lines boundary |

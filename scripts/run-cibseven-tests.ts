@@ -51,5 +51,5 @@ async function runTests(extraArguments: readonly string[]): Promise<void> {
 await runTests([]);
 await runTests([
   "-Dcibseven.version=2.0.0",
-  "-Dtest=CibSevenBoundaryErrorPhaseZeroProbeTest,CibSevenBoundaryErrorScenarioRunnerTest",
+  "-Dtest=CibSevenBoundaryErrorPhaseZeroProbeTest,CibSevenBoundaryErrorScenarioRunnerTest,CibSevenExclusiveGatewayJuelProbeTest,CibSevenIsolatedJuelRuntimeProbeTest",
 ]);
