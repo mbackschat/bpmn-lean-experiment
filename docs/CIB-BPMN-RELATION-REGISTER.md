@@ -22,12 +22,12 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 5 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
-| Permitted operational details | 3 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Reviewed normative agreements | 6 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Permitted operational details | 4 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 0 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | Selected CIB extensions | 4 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
-| Configuration-specific realizations | 4 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Configuration-specific realizations | 5 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
@@ -142,13 +142,35 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** This establishes only one exact code, one attached interrupting handler, one flat Process, and one same-command synchronous CIB host realization. Catch-all handling, nested propagation, Error End Events, multiple handlers, general faults, and unhandled Error behavior remain outside this agreement.
 
-## Interpretation register
+### CIB-AGR-0006 — divergent Exclusive Gateway first-true and default routing
 
-No CIB gap resolution has yet been approved as a project semantic-profile decision.
+**Status:** Reviewed bounded agreement; production capsule unimplemented
+
+**BPMN basis:** BPMN 2.0.2 Clause 13.4.2 and Table 13.2 require a divergent Exclusive Gateway to evaluate outgoing conditional Sequence Flows in a defined order, select the first condition that evaluates true, and select the default Sequence Flow only when every condition is false.
+
+**Pinned CIB observation:** CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371` selects the first true non-default Sequence Flow, does not evaluate a later failing condition after an earlier true result, and selects the declared default after both reviewed conditions evaluate false. The selected branch is visible through its distinct User Task.
+
+**Evidence:** [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), [packaged-engine JUEL gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java), and [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md).
+
+**Boundary:** Candidate order is the selected interpretation `CIB-INT-0001`; JUEL evaluation is configuration-specific under `CIB-CFG-0005`; synchronous command rollback is mapped by `CIB-OP-0004`. This agreement does not cover a missing default, converging or mixed gateways, more than two conditions, conditional flow from another Flow Node, arbitrary JUEL, nested data, or a production project implementation.
+
+## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.
 
 The [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md#import-and-admission-policy) already records specification questions involving omitted `Process.isExecutable`, import/export wording, `Import.location`, incomplete interchange versus executable admission, and multi-instance wording. Those are BPMN-source issues awaiting feature-specific CIB probes, not CIB deviations and not yet approved `CIB-INT` entries.
+
+### CIB-INT-0001 — Exclusive Gateway candidate order is XML Sequence Flow declaration order
+
+**Status:** Selected bounded interpretation; production capsule unimplemented
+
+BPMN requires a defined order for outgoing conditional Sequence Flows but the portable XML does not require a gateway's `<outgoing>` references to be ordered. CIB Seven `2.0.0` constructs transitions while parsing process-level `<sequenceFlow>` elements and its Exclusive Gateway behavior iterates those transitions in that declaration order.
+
+The selected profile therefore orders candidates by XML `sequenceFlow` declaration order, not by the order of gateway `<outgoing>` references, element ID, or project collection order. The checked BPMN graph retains both exact Sequence Flow identity and declaration position so Lean can independently check the lowering order.
+
+**Evidence:** The [packaged-engine JUEL gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java) deliberately reverses gateway `<outgoing>` references while keeping declaration order fixed and observes the declaration-first branch. The pinned source path and selected project rule are recorded in the [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md).
+
+**Boundary:** This interpretation is limited to the admitted divergent Exclusive Gateway slice. It is not a general order for other Flow Nodes, event races, parallel scheduling, or runtime occurrences.
 
 ## Extension register
 
@@ -206,7 +228,7 @@ CIB Seven `2.0.0` executes the attached Service Task's Camunda output parameters
 
 | Hint | Status | Required investigation |
 |---|---|---|
-| Java class, delegate-expression, expression, field-injection, and bean execution | Family inventoried in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); read-only JUEL evaluator ownership selected, exact behavior unclassified | For the first read-only condition slice, use the actual pinned CIB JUEL runtime behind the proposed Java Activity boundary and keep project handler binding, Java class loading, dependency injection, `JavaDelegate`, `DelegateExecution`, bean/method capability, mutation, and engine services separate. Add a classified relationship entry only after the exact source/context/value/error subset and pinned behavior are reviewed. |
+| Java class, delegate-expression, expression, field-injection, and bean execution | Family inventoried in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); first read-only condition slice classified by `CIB-AGR-0006`, `CIB-INT-0001`, `CIB-OP-0004`, and `CIB-CFG-0005` | Keep project handler binding, Java class loading, dependency injection, `JavaDelegate`, `DelegateExecution`, bean/method capability, mutation, engine services, and every expression context beyond the selected root-variable slice separate. |
 | Script Task and script-bearing extensions | Family inventoried; disposition pending | Separate read-only JUEL, variable mutation, capability-bearing expressions, effectful scripts, and versioned engine-compatible scripts. Pin language, runtime, security, variables, results, limits, and dependencies before selection. |
 | FEEL | Not selected as a substitute for the target JUEL surface | The pinned CIB FEEL integrations belong to DMN. Reopen only for a concrete DMN or explicitly FEEL-declared consumer with its own pinned runtime, result mapping, and CIB calibration. |
 | External-task execution associated with a BPMN Service Task | Deferred alternative; not an adopted extension record | Reopen only for a concrete consumer of the topic, fetch-and-lock, lease, completion, failure, retry, and incident protocol. |
@@ -247,6 +269,18 @@ The project instead commits an effect intent, runs a Temporal Activity, and rece
 
 **Boundary:** This mapping compares the admitted final host observations while retaining different host transaction boundaries. It does not claim rollback equivalence, an independent CIB semantic effect-intent state, Java exception transport through Temporal, or compatibility for unmatched Errors.
 
+### CIB-OP-0004 — synchronous JUEL command rollback mapped to speculative semantic commitment
+
+**Status:** Selected operational mapping; production capsule unimplemented
+
+CIB Seven `2.0.0` evaluates a conditional Sequence Flow synchronously inside the command that completes the preceding User Task or starts the Process. When evaluation fails, the engine command rolls back: the preceding User Task remains available after failed completion, while a failure during Process start leaves no runtime or historic Process instance.
+
+The proposed project host does not treat JUEL as an application effect or expose speculative semantic state while an asynchronous evaluator Activity is pending. It persists a private suspended continuation rather than relying on an Update handler's call stack or mutating the committed core state; the single semantic loop invokes and awaits the Activity, the originating handler remains pending for its command result, and public Queries continue to expose the last committed semantic state. A valid evaluation receipt commits completion plus routing atomically; a typed JUEL error discards the continuation and returns `rolledBack` with the exact pre-command state.
+
+**Evidence:** [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), [packaged-engine gateway rollback probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java), and the [Temporal hosting preflight](research/TEMPORAL-EXECUTION-RESEARCH.md#profile-selected-expression-evaluation-activities).
+
+**Boundary:** The private continuation is a project durability mechanism, not a CIB or BPMN public state. Syntax rejection remains an admission failure; Temporal Worker loss, timeout, malformed transport, cancellation, and exhausted retries remain infrastructure or adapter failures. This mapping does not authorize a general transaction emulator, arbitrary expression side effects, or rollback of external effects.
+
 ## Configuration-specific register
 
 ### CIB-CFG-0001 — pinned Milestone 0 oracle environment
@@ -285,6 +319,18 @@ The mapping-free phase-zero control isolates that default: the Process has no re
 
 **Evidence:** [Boundary-error specification](capsules/BOUNDARY-ERROR-SPEC.md) and the seven-test [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java).
 
+### CIB-CFG-0005 — pinned read-only JUEL condition environment
+
+**Status:** Selected bounded configuration; production capsule unimplemented
+
+The first conditional-routing profile uses `org.cibseven.bpm.juel:cibseven-juel:2.0.0`, matching pinned CIB Seven `2.0.0`, over a complete immutable Process-scope context whose values are only `string | null`. The evaluator exposes exact root-variable lookup and no bean, property-on-Java-object, method, function, class, `execution`, Process Engine service, Spring, file, network, or mutation capability.
+
+The condition result must be a non-null Java `Boolean`. Exact `${...}` and `#{...}` source is retained. Parse-only validation occurs before Workflow start; runtime unresolved identifiers, unsupported capabilities, non-Boolean results, and bounded evaluation failures are returned as typed profile errors.
+
+**Evidence:** [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), [isolated CIB JUEL runtime probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIsolatedJuelRuntimeProbeTest.java), and [packaged-engine gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java).
+
+**Boundary:** This selection does not admit nested objects, collections, numbers, Boolean Process variables, Java objects, arbitrary JUEL, input/output mappings, forms, scripts, listeners, bean resolution, or general CIB expression compatibility. The proposed dependencies remain unapproved and absent from production code.
+
 ## Audit of previously visited findings
 
 | Previously visited finding | Classification | Reason |
@@ -299,6 +345,7 @@ The mapping-free phase-zero control isolates that default: the Process has no re
 | Count-only versus incoming-edge-provenance join state | `CIB-DEV-0001` candidate deviation | The normative per-incoming-flow requirement, schema-valid separating model, pinned source mechanism, bounded pristine-lane probe, owner-approved profile meaning, and balanced four-target impact establish a public conflict; immutable negative-probe evidence remains open |
 | Literal `PT1S` normal-flow Intermediate Catch Timer | `CIB-AGR-0004` under `CIB-CFG-0001` | Controlled-clock evidence observes wait creation, ineligibility before due time, eligibility at the due date, due transition, and completion; logical deadline projection remains adapter-derived |
 | Exact delegate-expression bean plus async-before Service Task execution | `CIB-EXT-0001` under `CIB-CFG-0002` | The exact expanded-QName pair, bean resolution, immediately executable continuation job, plain completion, packaged retry decrement, and test-local one-mutation re-execution are executable; the semantic effect-in-flight projection remains adapter-decided |
+| Divergent Exclusive Gateway condition order, first-true short circuit, default routing, and failed-command rollback | `CIB-AGR-0006`, `CIB-INT-0001`, `CIB-OP-0004`, and `CIB-CFG-0005` | Public CIB deployment, task, selected-branch, history, and rollback observations distinguish the selected bounded account; the shared JUEL implementation remains one correlated truth lane |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
 | External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |
 

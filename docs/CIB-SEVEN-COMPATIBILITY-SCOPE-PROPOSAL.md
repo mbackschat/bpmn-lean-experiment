@@ -1,6 +1,6 @@
 # CIB Seven compatibility scope proposal
 
-**Status:** Owner-approved on 2026-07-26 and amended on 2026-07-30 with the profile-selected JUEL delegation direction; no JUEL dependency, Java evaluator Worker, expression wire contract, or production implementation is approved
+**Status:** Owner-approved on 2026-07-26 and amended on 2026-07-30 with the profile-selected JUEL delegation direction and first Exclusive Gateway condition capsule; no JUEL dependency, Java evaluator Worker, expression wire artifact, or production implementation is approved
 
 ## Question
 
@@ -54,7 +54,7 @@ Compatibility claims remain level-specific:
 | Existing CIB Seven `JavaDelegate` binaries | **Deferred compatibility lane** | Requires an isolated Java executor and an exact `DelegateExecution` API disposition; assess after typed variables and a Java-worker deployment need exist |
 | Existing original Camunda 7 delegate binaries | **Deferred separately** | `org.camunda` and `org.cibseven` package identities differ; support would require a distinct bridge or dual API surface |
 | Full `DelegateExecution`, `ActivityBehavior`, Process Engine services, REST and plugin compatibility | **Non-goal for the current product architecture** | This would reproduce engine internals and host identities that the semantic-core boundary deliberately excludes; reconsider only through a separately funded compatibility program |
-| Read-only JUEL/Unified EL over typed Process data | **Selected architecture direction; capsule and dependency approval required** | Supply exact source and complete approved context to the pinned CIB JUEL runtime behind a Java Activity; Lean and TypeScript consume a bound result and do not implement JUEL |
+| Read-only JUEL/Unified EL over typed Process data | **First bounded capsule approved; dependency approval required** | Supply exact source and complete approved `string | null` Process context to the pinned CIB JUEL runtime behind a Java Activity; Lean and TypeScript consume a bound result and do not implement JUEL |
 | General JUEL methods, beans, `execution`, mutation, or engine-service access | **Deferred separate capability lanes** | Data evaluation, typed variable patches, bean/application capabilities, and Process Engine services have different authority, security, rollback, and effect boundaries |
 | FEEL | **Not selected as the project-native replacement for JUEL** | The target BPMN expressions use JUEL and the pinned CIB FEEL integrations belong to DMN; reopen only for a concrete DMN or explicitly selected FEEL-language profile |
 | BPMN Script Task with a pure deterministic language subset | **Future profile-specific candidate after typed variables** | Use the exact selected language runtime; do not create a project language merely to obtain Script Task coverage |
@@ -205,7 +205,7 @@ Keep four execution classes distinct:
 
 The project does not implement a grammar, AST, evaluator, optimizer, or transpiler merely to obtain BPMN or CIB coverage. It provides the exact source, language/profile identity, complete visible typed context, and expected result boundary; the selected language runtime owns parsing and evaluation. Lean and the TypeScript semantic core validate the result binding and implement the consuming BPMN rule conditional on that result.
 
-The first selected direction is read-only CIB JUEL. Its complete Process-scope context preserves presence versus explicit null and contains no `execution`, bean, function, method, Process Engine service, or arbitrary Java object. One batched gateway request preserves the candidate-flow order and short-circuit rule established by the future pinned-CIB capsule while the semantic core, not the evaluator, selects the outgoing Sequence Flow; source-order first-true behavior remains a hypothesis until that probe.
+The first selected direction is read-only CIB JUEL under the owner-approved [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md). Its complete Process-scope context preserves presence versus explicit null, admits only `string | null` values, and contains no `execution`, bean, function, method, Process Engine service, or arbitrary Java object. One batched gateway request preserves XML `sequenceFlow` declaration order and first-true short circuit while the semantic core, not the evaluator, selects the outgoing Sequence Flow. The pinned source and packaged-engine probes establish that bounded profile account.
 
 The existing `MappingExpression.stringLiteral` and exact `MappingExpression.localVariable` cases remain only for their implemented mapping capsules. The literal case is ordinary data. The local-variable case is a direct binding lookup under exact-token admission, not general JUEL; it must not grow. A future CIB JUEL mapping capsule replaces it atomically or retains an explicit exact-token equivalence, with no parallel selectable evaluator for the same source.
 
@@ -235,7 +235,7 @@ The durable compatibility claim and interpreter/Worker language boundary are rec
 
 The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) implements the exact delegate-expression pair under its bounded success-only semantic account.
 
-Apart from the completed bounded Service Task work and its phase-zero probe, no new dependency, Java evaluator Worker, JUEL expression contract, script engine, or evidence replacement is approved by this document.
+Apart from the completed bounded Service Task work and its phase-zero probe, this document approves only the bounded JUEL architecture and linked Exclusive Gateway proposal. No new dependency, Java evaluator Worker, executable JUEL wire artifact, script engine, or evidence replacement is approved.
 
 ## Approved owner decisions
 

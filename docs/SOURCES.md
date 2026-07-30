@@ -57,7 +57,7 @@ Project-authored code and documentation are released under the root [MIT License
 | Maven wrapper and build plugins | Wrapper `3.2.0`, Maven `3.8.8`, Compiler Plugin `3.14.1`, and Surefire Plugin `3.5.4` are Apache-2.0 | The wrapper script/JAR is retained under its upstream license; build tooling is isolated to the Java oracle |
 | CIB Seven oracle graph | CIB engine `2.2.0` and most transitives are Apache-2.0; the resolved graph also contains MIT and BSD-3-Clause components | External Java oracle only; no CIB type or algorithm enters Lean, the semantic core, or project-authored semantic authority |
 | H2 `2.3.232` | Dual MPL-2.0 or EPL-1.0 | External in-memory oracle database; compatible with distribution of MIT-licensed project source |
-| Jackson `2.21.2` | Apache-2.0 | External Java JSON transport implementation |
+| Jackson `2.21.2` | Apache-2.0 | External Java JSON transport implementation in the existing local CIB oracle; a 2026-07-30 advisory scan found that this patch is no longer suitable for a new runtime graph, so any upgrade remains an explicit dependency decision |
 | JUnit `4.13.2` and Hamcrest | EPL-1.0 and BSD-3-Clause | Test-only Java oracle dependencies |
 | Temporal, MIWG, Betsy, fUML, and other research trees | Separate checkouts under their own upstream terms | Evidence inputs only; they are not project dependencies and are not relicensed |
 | OMG BPMN corpus | Copyrighted external material retained only in ignored local paths | Excluded from the MIT-licensed tracked repository material |
@@ -97,7 +97,7 @@ Pinned baseline checkout: [cibseven/cibseven at `5a45b47`](https://github.com/ci
 - License: Apache-2.0
 - Role: complete executable behavioral oracle source and diagnostic reference, never a semantic-core dependency
 
-The read-only JUEL feasibility check inspected the published Maven Central artifact [`org.cibseven.bpm.juel:cibseven-juel:2.0.0`](https://repo1.maven.org/maven2/org/cibseven/bpm/juel/cibseven-juel/2.0.0/cibseven-juel-2.0.0.jar), corresponding to source tag [`v2.0.0`](https://github.com/cibseven/cibseven/tree/57ed69550f1c9c2619b9711d8877418bb084a371). The Apache-2.0 jar has SHA-256 `f0d5c3c35e98ff9cf9aaf2bf12b2f81e10d6fbea5144039810e827dd5b5d8453`; its published POM shades Jakarta EL `4.0.0` into the CIB namespace. It is present only in the user's external Maven cache for the bounded feasibility probe and is not a project dependency, lockfile entry, redistributed artifact, or approved runtime. The [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns the adoption prerequisites.
+The read-only JUEL feasibility check inspected the published Maven Central artifact [`org.cibseven.bpm.juel:cibseven-juel:2.0.0`](https://repo1.maven.org/maven2/org/cibseven/bpm/juel/cibseven-juel/2.0.0/cibseven-juel-2.0.0.jar), corresponding to source tag [`v2.0.0`](https://github.com/cibseven/cibseven/tree/57ed69550f1c9c2619b9711d8877418bb084a371). The Apache-2.0 jar has SHA-256 `f0d5c3c35e98ff9cf9aaf2bf12b2f81e10d6fbea5144039810e827dd5b5d8453`; its published POM shades Jakarta EL `4.0.0` into the CIB namespace. It is present only in the user's external Maven cache for the bounded feasibility probe and candidate graph audit and is not a project dependency, lockfile entry, redistributed artifact, or approved runtime. The [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns the adoption prerequisites.
 
 The checked-out `main` revision exactly matches the source revision named by the handoff.
 
@@ -113,6 +113,33 @@ The core BPMN Java and resource trees, and the BPMN model-API Java and resource 
 The core execution corpus at both revisions contains 261 Java files, 1,808 explicit `@Test` methods, and 1,144 paired BPMN fixtures under `engine/src/test/.../bpmn`. The entire engine test resource tree contains 1,947 BPMN models. Most of this evidence is inherited from Camunda 7.22; the CIB fork adds only one core BPMN test class and five net engine fixtures relative to that baseline.
 
 CIB’s [implemented-standards page](https://docs.cibseven.org/manual/latest/introduction/implemented-standards/) claims support for BPMN 2.0, while its [BPMN implementation reference](https://docs.cibseven.org/manual/latest/reference/bpmn20/) documents product coverage. Neither the repository nor the documentation declares BPMN 2.0.2 Process Execution Conformance, an OMG certificate, or passage of an OMG execution TCK. Its executable corpus is the compatibility oracle for a pinned CIB profile, not proof of the independent standards claim.
+
+## Candidate Java JUEL evaluator Worker
+
+The owner-approved [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) proposes an isolated Java Temporal Activity Worker but adopts no dependency. The candidate graph was resolved from Maven Central on 2026-07-30 with direct runtime roots [`org.cibseven.bpm.juel:cibseven-juel:2.0.0`](https://repo1.maven.org/maven2/org/cibseven/bpm/juel/cibseven-juel/2.0.0/) and [`io.temporal:temporal-sdk:1.35.0`](https://repo1.maven.org/maven2/io/temporal/temporal-sdk/1.35.0/), plus build-time import of [`com.fasterxml.jackson:jackson-bom:2.21.5`](https://repo1.maven.org/maven2/com/fasterxml/jackson/jackson-bom/2.21.5/). Temporal Java SDK [`v1.35.0`](https://github.com/temporalio/sdk-java/releases/tag/v1.35.0) is the inspected released source line. Direct artifact integrity is:
+
+| Artifact | SHA-256 |
+|---|---|
+| `cibseven-juel-2.0.0.jar` | `f0d5c3c35e98ff9cf9aaf2bf12b2f81e10d6fbea5144039810e827dd5b5d8453` |
+| `temporal-sdk-1.35.0.jar` | `b6d903f5fecbc36ddffae3b6005bf6abd70ba4cc3a8bab37a1dfbbbb855e5009` |
+| `jackson-bom-2.21.5.pom` | `57fe22dec659de0655357fad0582ef7c8b2fe5a8906a6f1ff1bcbbd1e4554846` |
+
+The resolved runtime graph contains exactly 38 jars:
+
+- JUEL: `org.cibseven.bpm.juel:cibseven-juel:2.0.0`.
+- Temporal and Nexus: `io.temporal:temporal-sdk:1.35.0`, `io.temporal:temporal-serviceclient:1.35.0`, and `io.nexusrpc:nexus-sdk:0.5.0-alpha`.
+- gRPC: `io.grpc:grpc-api:1.76.0`, `grpc-stub:1.76.0`, `grpc-netty-shaded:1.76.0`, `grpc-util:1.76.0`, `grpc-core:1.76.0`, `grpc-context:1.76.0`, `grpc-protobuf:1.76.0`, `grpc-protobuf-lite:1.76.0`, `grpc-services:1.76.0`, and `grpc-inprocess:1.76.0`.
+- Protobuf: `com.google.protobuf:protobuf-java:3.25.8`, `com.google.protobuf:protobuf-java-util:3.25.8`, and `com.google.api.grpc:proto-google-common-protos:2.59.2`.
+- Jackson: `com.fasterxml.jackson.core:jackson-databind:2.21.5`, `jackson-annotations:2.21`, `jackson-core:2.21.5`, `com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.5`, and `jackson-datatype-jdk8:2.21.5`.
+- Guava family: `com.google.guava:guava:33.4.8-android`, `failureaccess:1.0.3`, `listenablefuture:9999.0-empty-to-avoid-conflict-with-guava`, `org.jspecify:jspecify:1.0.0`, `com.google.errorprone:error_prone_annotations:2.36.0`, and `com.google.j2objc:j2objc-annotations:3.0.0`.
+- Metrics and serialization support: `com.uber.m3:tally-core:0.13.0`, `org.slf4j:slf4j-api:1.7.36`, `com.google.code.gson:gson:2.10.1`, `io.micrometer:micrometer-core:1.9.9`, `org.hdrhistogram:HdrHistogram:2.1.12`, and `org.latencyutils:LatencyUtils:2.0.3`.
+- Annotations and instrumentation: `com.google.code.findbugs:jsr305:3.0.2`, `org.codehaus.mojo:animal-sniffer-annotations:1.24`, `com.google.android:annotations:4.1.1.4`, and `io.perfmark:perfmark-api:0.27.0`.
+
+The aggregate SHA-256 over sorted `group:artifact:version:scope sha256(jar)` lines is `6925110b2e869eae35aa47234d352ae3d4db3537a7d86630c8254abd5b62c918`. Published metadata reports only Apache-2.0, BSD-3-Clause, BSD-2-Clause/CC0, CC0, and MIT across this graph. An OSV batch query for every exact Maven coordinate returned no known advisory on 2026-07-30.
+
+Temporal SDK `1.35.0` otherwise resolves Jackson `2.15.4`; that unaligned family and the existing oracle's direct `jackson-databind:2.21.2` each returned current advisories in the same scan. The candidate therefore imports Jackson BOM `2.21.5`, whose complete aligned runtime family returned no known advisory. The new Worker graph and the existing oracle upgrade are separate dependency decisions and must not be smuggled into documentation work.
+
+The graph is cached only under ignored external Maven storage and is not a project dependency, lockfile entry, or redistributed artifact. Its runtime role is confined to the Java evaluator Worker: CIB JUEL parses and evaluates the approved read-only expression profile; Temporal SDK hosts the Activity and payload boundary; Jackson serializes that boundary. Removing the Java module and task-queue registration removes the complete graph and leaves Lean, the checked BPMN graph, the pure TypeScript semantic core, and vendor-neutral conditional-choice semantics intact.
 
 ## Temporal TypeScript SDK
 

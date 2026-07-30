@@ -155,7 +155,7 @@ BPMN `FormalExpression` names an expression language; BPMN does not require this
 
 The project therefore does not build a project-native expression evaluator merely to obtain BPMN or CIB coverage. Exact source text, language/profile identity, complete visible context, absence versus explicit null, and a content-bound result form the boundary. The selected runtime owns parsing, its internal AST, operators, coercion, property resolution, and evaluation.
 
-The first selected direction is a read-only CIB JUEL compatibility capsule using the exact pinned CIB JUEL implementation behind a normal Java Temporal Activity Worker. Lean and the pure TypeScript semantic core model the evaluation request and bound result as an explicit semantic input and prove or test the consuming transition conditional on that result. They do not execute JUEL or independently confirm expression truth. The core, not the evaluator or Temporal adapter, validates ordered candidate identity and applies gateway, mapping, loop, or event semantics.
+The first selected direction is the owner-approved [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), a read-only CIB JUEL compatibility capsule using the exact pinned CIB JUEL implementation behind a normal Java Temporal Activity Worker. Lean and the pure TypeScript semantic core model the evaluation request and bound result as an explicit semantic input and prove or test the consuming transition conditional on that result. They do not execute JUEL or independently confirm expression truth. The core, not the evaluator or Temporal adapter, validates ordered candidate identity and applies gateway, mapping, loop, or event semantics.
 
 This is a narrow authority delegation: the profile-selected runtime is authoritative only for its language result. It does not become BPMN authority, choose a Sequence Flow, mutate semantic state directly, define variable visibility, or supply host identity. CIB and the project evaluator share the JUEL implementation and therefore form one correlated expression-truth account even when separate engine integration checks remain useful.
 
@@ -165,7 +165,7 @@ The existing exact `MappingExpression.localVariable` form remains a bounded dire
 
 Other language families remain separately selected profiles. BPMN 2.0.2 declares XPath as its default expression language, while DMN/FEEL, Groovy scripts, and FreeMarker templates have different value, capability, failure, and hosting contracts. Do not extract a universal multi-language framework until a second implemented consumer demonstrates the same contract.
 
-The selected JUEL boundary, exclusions, dependency candidate, and required Temporal preflight are owned by the [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md).
+The [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns the reusable evaluator boundary and exclusions; the [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) owns the first value domain, consuming rules, dependency candidate, and Temporal preflight.
 
 ## CIB compatibility and polyglot effect execution
 

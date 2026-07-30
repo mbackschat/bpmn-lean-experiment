@@ -85,7 +85,24 @@ The 50-model corpus contains 233 expression occurrences with 79 distinct exact s
 
 The Script Task corpus contains 10 Groovy scripts in 7 models. The scripts read and mutate variables and nested document structures, intentionally throw failures, and in one migration fixture start another Process through Process Engine services. Extension scripts add Groovy execution listeners and FreeMarker input templates. Groovy/JSR-223 compatibility, FreeMarker templating, and bounded deterministic expressions therefore require separate dispositions and evidence.
 
-The scoped runtime foundation is implemented. The next expression work classifies the 79 exact strings into read-only data evaluation, variable mutation, and bean/`execution`/engine-service capability calls. Read-only CIB expressions use the actual pinned JUEL runtime with a complete approved context; the project does not build a replacement grammar, AST, or evaluator. Mutation returns a future typed patch, while engine/application calls remain explicit effects or adoption capabilities. Groovy, FreeMarker, listeners, and DMN/FEEL keep separate language and capability dispositions; FEEL is not observed in this expression denominator and is not a substitute for the target’s JUEL surface.
+The scoped runtime foundation is implemented. The 79 exact strings are split by consumer before implementation: read-only condition evaluation, read-only mapping/template evaluation, variable mutation, and bean/`execution`/engine-service capability calls are not one feature. Read-only CIB expressions use the actual pinned JUEL runtime with a complete approved context; the project does not build a replacement grammar, AST, or evaluator. Mutation returns a future typed patch, while engine/application calls remain explicit effects or adoption capabilities. Groovy, FreeMarker, listeners, and DMN/FEEL keep separate language and capability dispositions; FEEL is not observed in this expression denominator and is not a substitute for the target’s JUEL surface.
+
+### Conditional expression denominator
+
+Across the 50 distinct exact-byte models, 8 models contain 16 `conditionExpression` occurrences comprising 11 distinct exact strings. Those conditions activate 10 divergent Exclusive Gateway decisions. The physical 62-file tree contains 19 occurrences because three documentation assets duplicate engine fixtures; the adoption denominator counts each exact-byte model once.
+
+The condition strings have a maximum decoded UTF-8 length of 91 bytes. Their capability classes are:
+
+| Condition class | Occurrences | First context consequence |
+|---|---:|---|
+| Boolean literal | 1 | No variable value required |
+| Root variable compared with null | 8 | Requires complete Process-scope presence/null context over the current `string | null` domain |
+| Nested truth test or negation | 2 | Requires a nested Boolean-capable data domain, outside the first capsule |
+| Nested string comparison | 3 | Requires nested map/object data, outside the first capsule |
+| Nested value inequality | 1 | Requires nested typed data and comparison, outside the first capsule |
+| Nested Boolean comparison | 1 | Requires nested Boolean data, outside the first capsule |
+
+The first [Exclusive Gateway conditional-routing proposal](../capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) therefore selects only complete Process-scope `string | null` context. That domain is sufficient for 9 of 16 condition occurrences, 5 of 11 exact strings, and 4 of 8 condition-bearing models without adding nested target data to the BPMN core. These are language/context coverage figures, not unchanged-model admission or execution figures.
 
 ## Delegate and effect surface
 

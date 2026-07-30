@@ -293,9 +293,11 @@ Activities can still support a User Task by publishing a task to an external tas
 
 The selected [CIB JUEL direction](../JUEL-EVALUATION-ARCHITECTURE-DECISION.md) uses the actual pinned Java JUEL implementation rather than a project-authored parser or evaluator. Because neither the TypeScript Workflow sandbox nor the pure semantic core may load that Java runtime, the intended host is a normal Java Temporal Activity Worker on a dedicated evaluator boundary. A Local Activity or a JVM subprocess spawned by the Workflow Worker is not selected.
 
-For an Exclusive Gateway activation, the Workflow should schedule one content-bound Activity request carrying the ordered non-default condition sources and the complete approved visible variable context. The Java evaluator applies the ordering and short-circuit account fixed by the future pinned-CIB capsule and returns the corresponding condition-result prefix; source-order first-true behavior remains the initial hypothesis until that probe. It does not select the outgoing Sequence Flow. The semantic core validates request identity, candidate order, and the receipt before applying the separately approved gateway/default-flow rule.
+For an Exclusive Gateway activation, the Workflow should schedule one content-bound Activity request carrying the ordered non-default condition sources and the complete approved visible variable context. The Java evaluator applies XML `sequenceFlow` declaration order and first-true short circuit as fixed by the owner-approved [Exclusive Gateway condition proposal](../capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), then returns the corresponding condition-result prefix. It does not select the outgoing Sequence Flow. The semantic core validates request identity, candidate order, complete context, and receipt before applying the separately approved gateway/default-flow rule.
 
-Activity retry is hidden transport work only while evaluation is read-only and the request is immutable. The capsule must fix timeout, retry, cancellation, duplicate execution, unavailable-Worker, syntax, resolution, coercion, non-Boolean, and malformed-result behavior before implementation. The recorded Activity result supplies replay; replay must not call JUEL again for a completed activation. One evaluator Activity creates durable Event History work per activation, unlike pure internal closure, and that cost must be measured without converting Temporal Events into BPMN semantic steps.
+Activity retry is hidden transport work only while evaluation is read-only and the request is immutable. The proposal selects start-to-close 2 seconds, schedule-to-close 10 seconds, two attempts, fixed 100-millisecond retry backoff, no heartbeat, typed non-retryable evaluation results, and separate infrastructure failure. The recorded Activity result supplies replay; replay must not call JUEL again for a completed activation. One evaluator Activity creates durable Event History work per activation, unlike pure internal closure, and that cost must be measured without converting Temporal Events into BPMN semantic steps.
+
+CIB's pristine public deployment, task, branch, history, and rollback outcomes are sufficient for the first capsule's differentiating oracle claims. They do not expose the evaluator's complete internal resolver context or every evaluated prefix as raw public facts. A locally instrumented CIB branch may answer those diagnostic questions, but only under the [reference-instrumentation policy](../REFERENCE-INSTRUMENTATION-POLICY.md), with the exact base and patch recorded and neutral scenarios shadow-compared against the pristine pinned engine; instrumentation does not become a second evidence lane or production authority.
 
 ### Querying open tasks
 
@@ -600,9 +602,9 @@ Operational repair can change what work executes. If such features are enabled i
 | Query | Adopted for diagnostic trace and exact known-Workflow task discovery | Convenient read-only projection, but not durable observation authority |
 | Update | Adopted for the bounded User Task completion API | Durable request-response returns the semantic core’s typed command outcome |
 | Durable timers | Adopted for the exact Intermediate Catch Timer capsule | Physical wakeup mechanism behind semantic-core-owned occurrence, deadline, eligibility, and logical-time semantics |
-| Activities | Adopted for bounded Service Task effects; selected hosting direction for future CIB JUEL evaluation | I/O and external-runtime boundary with retries, timeouts, idempotency, result-binding, and replay obligations |
+| Activities | Adopted for bounded Service Task effects; selected by the owner-approved but unimplemented CIB JUEL condition capsule | I/O and external-runtime boundary with retries, timeouts, idempotency, result-binding, and replay obligations |
 | Cancellation scopes | Adopt as adapter mechanism | Useful structured cancellation, never BPMN semantic authority |
-| Continue-As-New | Plan early, implement when needed | Required for bounded history; must be observation-transparent |
+| Continue-As-New | Deferred; reopen only for measured history pressure and an explicit owner decision | Not implied by the qualitative history-cost boundary; if adopted later, it must be observation-transparent |
 | Replay tests | Adopted for same-gate live histories | Directly guard current deterministic hosting; retained replay begins with an approved durable baseline |
 | Patching | Defer until a durable baseline and incompatible change exist | Compatibility mechanism, not useful for disposable prototype history |
 | Worker Versioning | Defer deployment choice | Production concern; does not replace replay fixtures |
@@ -744,7 +746,7 @@ The following decisions remain unapproved:
 8. The production task-discovery architecture beyond exact Query by known Workflow ID.
 9. The global command-envelope, identity, authorization, form, variable, and Search Attribute registry boundaries beyond the bounded completion command.
 10. The production canonical-observation API beyond the harness-only extraction contract in the [production Workflow lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
-11. The exact Java Activity request/result contract, retry, timeout, cancellation, task-queue, payload-converter, cross-SDK compatibility, and error classification for pinned JUEL evaluation.
+11. The executable Java/TypeScript shared schema, payload-converter proof, task-queue registration, cross-SDK compatibility evidence, and Worker deployment unit for the policy selected by the [Exclusive Gateway condition proposal](../capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md).
 
 ## Architectural invariants derived from Temporal
 
