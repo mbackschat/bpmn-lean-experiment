@@ -3,7 +3,7 @@
 set -eu
 
 required_node_version="24.18.0"
-required_pnpm_version="11.17.0"
+required_pnpm_version="11.18.0"
 homebrew_node_bin="/opt/homebrew/opt/node@24/bin"
 homebrew_pnpm_bin="/opt/homebrew/opt/pnpm/bin"
 
@@ -24,20 +24,23 @@ if test "$active_node_version" != "$required_node_version"; then
   fi
 fi
 
+pnpm_executable=""
 active_pnpm_version=""
 if command -v pnpm >/dev/null 2>&1; then
-  active_pnpm_version=$(pnpm --version)
+  pnpm_executable=$(command -v pnpm)
+  active_pnpm_version=$("$pnpm_executable" --pm-on-fail=ignore --version)
 fi
 
 if test "$active_pnpm_version" != "$required_pnpm_version"; then
   if test -x "$homebrew_pnpm_bin/pnpm" &&
-      test "$("$homebrew_pnpm_bin/pnpm" --version)" = "$required_pnpm_version"; then
-    PATH="$homebrew_pnpm_bin:$PATH"
-    export PATH
+      test "$("$homebrew_pnpm_bin/pnpm" --pm-on-fail=ignore --version)" = "$required_pnpm_version"; then
+    pnpm_executable="$homebrew_pnpm_bin/pnpm"
   else
     echo "pnpm $required_pnpm_version is required." >&2
     exit 1
   fi
 fi
 
-exec pnpm "$@"
+# The wrapper owns exact CLI selection. Letting pnpm honor packageManager again
+# here can recursively download the already-validated version and hang offline.
+exec "$pnpm_executable" --pm-on-fail=ignore "$@"

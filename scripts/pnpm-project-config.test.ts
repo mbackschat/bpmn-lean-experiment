@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { runCommand } from "./run-command.ts";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 
-function configuredVirtualStoreMode(ci: string | undefined): string {
+function pnpmEnvironment(ci: string | undefined): NodeJS.ProcessEnv {
   const environment = { ...process.env };
   delete environment.pnpm_config_enable_global_virtual_store;
   delete environment.PNPM_CONFIG_ENABLE_GLOBAL_VIRTUAL_STORE;
@@ -14,37 +17,78 @@ function configuredVirtualStoreMode(ci: string | undefined): string {
   } else {
     environment.CI = ci;
   }
-
-  return execFileSync(
-    "./scripts/pnpm.sh",
-    ["config", "get", "enableGlobalVirtualStore"],
-    {
-      cwd: projectRoot,
-      encoding: "utf8",
-      env: environment,
-    },
-  ).trim();
+  return environment;
 }
 
-test("pins the repository-local virtual store in ordinary and CI execution", () => {
-  assert.equal(configuredVirtualStoreMode(undefined), "false");
-  assert.equal(configuredVirtualStoreMode("true"), "false");
+async function runPnpm(
+  args: readonly string[],
+  environment: NodeJS.ProcessEnv,
+): Promise<string> {
+  const result = await runCommand(
+    "./scripts/pnpm.sh",
+    args,
+    {
+      cwd: projectRoot,
+      env: environment,
+      timeoutMs: 10_000,
+    },
+  );
+  return result.stdout.trim();
+}
 
-  assert.doesNotThrow(() => {
-    const environment = { ...process.env };
-    delete environment.CI;
-    delete environment.pnpm_config_enable_global_virtual_store;
-    delete environment.PNPM_CONFIG_ENABLE_GLOBAL_VIRTUAL_STORE;
+test("pins the repository-local virtual store in ordinary and CI execution", async () => {
+  assert.equal(
+    await runPnpm(
+      ["config", "get", "enableGlobalVirtualStore"],
+      pnpmEnvironment(undefined),
+    ),
+    "false",
+  );
+  assert.equal(
+    await runPnpm(
+      ["config", "get", "enableGlobalVirtualStore"],
+      pnpmEnvironment("true"),
+    ),
+    "false",
+  );
 
-    execFileSync(
-      "./scripts/pnpm.sh",
-      ["run", "check:doc-fragments"],
-      {
-        cwd: projectRoot,
-        encoding: "utf8",
-        env: environment,
-        stdio: "pipe",
-      },
-    );
+  await runPnpm(
+    ["run", "check:doc-fragments"],
+    pnpmEnvironment(undefined),
+  );
+});
+
+test("disables pnpm CLI self-switching for version discovery and dispatch", async (context) => {
+  const fixtureDirectory = await mkdtemp(
+    path.join(tmpdir(), "bpmn-pnpm-wrapper-"),
+  );
+  context.after(async () => {
+    await rm(fixtureDirectory, { force: true, recursive: true });
   });
+  const fakePnpmPath = path.join(fixtureDirectory, "pnpm");
+  await writeFile(
+    fakePnpmPath,
+    `#!/bin/sh
+set -eu
+if test "\${1-}" != "--pm-on-fail=ignore"; then
+  sleep 60
+  exit 97
+fi
+shift
+if test "\${1-}" = "--version"; then
+  printf '%s\\n' '11.18.0'
+  exit 0
+fi
+printf 'dispatched:%s\\n' "$*"
+`,
+    "utf8",
+  );
+  await chmod(fakePnpmPath, 0o755);
+  const environment = pnpmEnvironment(undefined);
+  environment.PATH = `${fixtureDirectory}:${environment.PATH ?? ""}`;
+
+  assert.equal(
+    await runPnpm(["config", "get", "sentinel"], environment),
+    "dispatched:config get sentinel",
+  );
 });

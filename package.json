@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "packageManager": "pnpm@11.17.0",
+  "packageManager": "pnpm@11.18.0",
   "engines": {
     "node": "24.18.0",
-    "pnpm": "11.17.0"
+    "pnpm": "11.18.0"
   },
   "scripts": {
     "build:semantic-core": "tsc -p packages/semantic-core/tsconfig.json",
