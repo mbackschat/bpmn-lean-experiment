@@ -73,7 +73,7 @@ Raw CIB output never becomes Lean authority automatically, and differential mism
 | BPMN source boundary | Preserve exact bytes, validate and admit source, and produce a checked project-owned BPMN graph | Parser objects and CMOF facts do not define execution behavior |
 | Semantic Process IL | Lower the checked graph into a bounded language of typed semantic mechanisms with source provenance | It is not a mirror of the BPMN metamodel, a universal BPMN language, or mutable runtime state |
 | Lean reference interpreter | Give the selected capsule executable operational meaning and prove reusable laws | It does not automatically prove CIB, XML parsing, TypeScript, Temporal, databases, or effects |
-| TypeScript semantic core | Implement production semantic transitions as a separately written, deterministic realization of the reviewed account | It performs no I/O and has no CIB or Temporal dependency, and it is not an independent choice of operational account |
+| TypeScript semantic core | Implement production semantic transitions as a separately written, deterministic realization of the reviewed account | It performs no I/O, parses or evaluates no profile-selected expression language, has no CIB or Temporal dependency, and is not an independent choice of operational account |
 | Temporal adapter | Persist semantic state, deliver inputs, and host declared effects and waits durably | Hidden Workflow work may not redefine BPMN-visible behavior |
 | A12 adoption adapter | Bind exact A12 models, handlers, JVM Workers, and client façades to stable BPMN/CIB contracts and report migration gaps | It does not enter the semantic core, redefine profiles, or become a runtime dependency of this MIT repository |
 | Assurance pipeline | Compare canonical consequences, detect seeded disagreement, check isolation, and test Temporal refinement/replay | Finite evidence never implies universal conformance |
@@ -88,6 +88,7 @@ Every capsule must therefore complete a Temporal hosting/refinement preflight af
 
 - the Temporal ingress and acknowledgement mechanism for every external semantic stimulus;
 - how semantic waits, timers, subscriptions, effects, and cancellations remain core-owned state while Temporal provides durable wakeup or I/O;
+- how any profile-selected expression evaluator receives an exact context and returns a content-bound result without letting the adapter choose BPMN control flow;
 - the relation between committed core state and Workflow state, including which host steps are hidden;
 - command serialization, permitted semantic order, handler interleaving, duplicate delivery, idempotency, and retry boundaries;
 - completion, failure, cancellation, Continue-As-New, and post-completion command behavior;
@@ -148,11 +149,29 @@ This choice preserves one inspectable model representation, avoids generating a 
 
 Generated TypeScript is not prohibited. It may later serve as a derived diagnostic, specialization, optimization, or packaging artifact after explicit equivalence and replay evidence. It is never the semantic authority by construction.
 
+## Profile-selected expression evaluation
+
+BPMN `FormalExpression` names an expression language; BPMN does not require this project to invent one language, grammar, AST, or evaluator. The vendor-neutral semantic account owns when evaluation occurs, the visible scope and typed context, the required result type, failure consequences, and the BPMN transition that consumes the result. A selected profile owns the exact language and runtime.
+
+The project therefore does not build a project-native expression evaluator merely to obtain BPMN or CIB coverage. Exact source text, language/profile identity, complete visible context, absence versus explicit null, and a content-bound result form the boundary. The selected runtime owns parsing, its internal AST, operators, coercion, property resolution, and evaluation.
+
+The first selected direction is a read-only CIB JUEL compatibility capsule using the exact pinned CIB JUEL implementation behind a normal Java Temporal Activity Worker. Lean and the pure TypeScript semantic core model the evaluation request and bound result as an explicit semantic input and prove or test the consuming transition conditional on that result. They do not execute JUEL or independently confirm expression truth. The core, not the evaluator or Temporal adapter, validates ordered candidate identity and applies gateway, mapping, loop, or event semantics.
+
+This is a narrow authority delegation: the profile-selected runtime is authoritative only for its language result. It does not become BPMN authority, choose a Sequence Flow, mutate semantic state directly, define variable visibility, or supply host identity. CIB and the project evaluator share the JUEL implementation and therefore form one correlated expression-truth account even when separate engine integration checks remain useful.
+
+Read-only data evaluation, variable mutation, and engine/application-service calls are separate capability classes. A read-only context contains only the exact closed JSON-like value domain selected by its capsule. Mutation returns a typed patch for semantic-core validation. Service calls use explicit effects or downstream adoption capabilities. Beans, `execution`, Java objects, functions, methods, file/network access, Groovy, FreeMarker, DMN/FEEL, and standard XPath do not enter the first JUEL capsule by implication.
+
+The existing exact `MappingExpression.localVariable` form remains a bounded direct lookup for two implemented mapping capsules, not a general expression language. It may not grow into a JUEL subset. A future CIB mapping-expression capsule must replace it atomically with pinned-runtime evaluation or retain a separately evidenced exact-token equivalence; it may not leave two selectable evaluation accounts for the same admitted source.
+
+Other language families remain separately selected profiles. BPMN 2.0.2 declares XPath as its default expression language, while DMN/FEEL, Groovy scripts, and FreeMarker templates have different value, capability, failure, and hosting contracts. Do not extract a universal multi-language framework until a second implemented consumer demonstrates the same contract.
+
+The selected JUEL boundary, exclusions, dependency candidate, and required Temporal preflight are owned by the [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md).
+
 ## CIB compatibility and polyglot effect execution
 
 The project targets explicitly selected source and behavioral compatibility with versioned CIB Seven profiles. It does not target drop-in replacement of the Process Engine Java, REST, plugin, persistence, deployment, or administration APIs. Every compatibility claim names its source syntax, feature surface, behavior, configuration, observation boundary, and evidence; an unqualified “CIB-compatible” claim is prohibited.
 
-Camunda/CIB extension syntax is admitted only through exact profile-selected BPMN contexts, expanded namespace QNames, and value shapes. Source/profile admission normalizes an admitted binding to profile-registered opaque protocol and operation identities validated as safe strings. Camunda namespaces and source tokens remain in exact source/profile evidence; A12 bean or Worker bindings remain in the downstream adoption layer. The checked graph, Semantic Process IL, Lean, and pure TypeScript core contain only the neutral identities and generic source-derived semantic data needed to verify neutral graph-to-program lowering. Java classes, JUEL objects, engine jobs, retries, host identities, and A12 business literals never become semantic authority merely because the source or oracle uses them. The approved family dispositions and reopen conditions remain in [the CIB Seven compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md).
+Camunda/CIB extension syntax is admitted only through exact profile-selected BPMN contexts, expanded namespace QNames, and value shapes. Source/profile admission normalizes an admitted binding to profile-registered opaque protocol and operation identities validated as safe strings. Camunda namespaces and source tokens remain in exact source/profile evidence; A12 bean or Worker bindings remain in the downstream adoption layer. The checked graph, Semantic Process IL, Lean, and pure TypeScript core contain only the neutral identities and generic source-derived semantic data needed to verify neutral graph-to-program lowering. Java classes, JUEL objects, engine jobs, retries, host identities, and A12 business literals never become semantic authority merely because the source or oracle uses them. Only an explicitly selected language profile may make a pinned evaluator authoritative for its bounded expression result, under the isolation above. The approved family dispositions and reopen conditions remain in [the CIB Seven compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md).
 
 The TypeScript semantic core and TypeScript Temporal Workflow remain the single production interpreter account. Committed effect intents cross a versioned language-neutral Activity protocol that may be executed by TypeScript or JVM Workers. A Worker performs external computation; it never mutates Process state directly or independently chooses semantic identity. It returns a typed result or future typed variable patch for validation and commitment by the semantic core.
 
@@ -236,3 +255,4 @@ A semantic capsule is closed only when:
 9. all public claims and exclusions match [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md);
 10. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed;
 11. every rule is assigned to the BPMN core, a selected CIB overlay, or downstream adoption, and an existing mechanism is reused instead of adding a model-specific semantic path.
+12. any external language evaluator is pinned and capability-bounded, its context and result are content-bound, its evidence correlation is stated, and Lean/TypeScript claims stop at the consuming transition unless expression truth is actually formalized.

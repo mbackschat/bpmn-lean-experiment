@@ -97,6 +97,8 @@ Pinned baseline checkout: [cibseven/cibseven at `5a45b47`](https://github.com/ci
 - License: Apache-2.0
 - Role: complete executable behavioral oracle source and diagnostic reference, never a semantic-core dependency
 
+The read-only JUEL feasibility check inspected the published Maven Central artifact [`org.cibseven.bpm.juel:cibseven-juel:2.0.0`](https://repo1.maven.org/maven2/org/cibseven/bpm/juel/cibseven-juel/2.0.0/cibseven-juel-2.0.0.jar), corresponding to source tag [`v2.0.0`](https://github.com/cibseven/cibseven/tree/57ed69550f1c9c2619b9711d8877418bb084a371). The Apache-2.0 jar has SHA-256 `f0d5c3c35e98ff9cf9aaf2bf12b2f81e10d6fbea5144039810e827dd5b5d8453`; its published POM shades Jakarta EL `4.0.0` into the CIB namespace. It is present only in the user's external Maven cache for the bounded feasibility probe and is not a project dependency, lockfile entry, redistributed artifact, or approved runtime. The [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns the adoption prerequisites.
+
 The checked-out `main` revision exactly matches the source revision named by the handoff.
 
 The core BPMN Java and resource trees, and the BPMN model-API Java and resource trees, are byte-identical between CIB Seven `v2.2.0` and the investigated `main` revision. The initial executable oracle can therefore use the published release without losing any core BPMN test evidence found on `main`.

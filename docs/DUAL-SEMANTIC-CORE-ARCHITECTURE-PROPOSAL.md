@@ -204,7 +204,7 @@ Variables and expressions move closer to the migration critical path:
 - a typed effect input/result variable-patch contract is therefore central to delegate migration rather than optional polish;
 - the exact target inventory, not generic CIB capability, should determine the first supported expression and variable subset.
 
-After the inventory, assess the smallest exact expression subset covering the target solution. Keep project-native deterministic expression semantics separate from CIB JUEL compatibility and keep effectful or untrusted evaluation outside Workflow code.
+After the inventory, assess the smallest exact expression subset covering the target solution. For a selected CIB JUEL profile, delegate parsing and evaluation to the actual pinned JUEL runtime behind an Activity boundary; do not build a project-native JUEL grammar, AST, or evaluator. Keep mutation and capability-bearing expressions outside the read-only profile and keep all evaluation outside Workflow code.
 
 `BpmnError` usage in the target inventory may force error-result and boundary-event capsules earlier than the generic BPMN sequence would. That remains a profile and semantic decision, not an Activity exception-mapping shortcut.
 

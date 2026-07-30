@@ -45,6 +45,8 @@ The thirteen rows make roadmap scope visible without claiming line-by-line corpu
 
 The dependency graph deliberately exposes why “another BPMN element” is often not a small unit. Cycles identify semantics that must be reviewed together, such as Process/Event instantiation and Activity/scope interruption; they are not an implementation order. Exclusive Gateway work depends on exact expression and Sequence Flow decisions; Message Events depend on Collaboration/correlation and Process identity; Sub-Processes depend on Activity, Event, scope, and data lifetime; compensation depends on nearly every stateful family below it.
 
+`BPMN-MECH-EXPRESSION-01` does not require one project-authored grammar, AST, or evaluator. The vendor-neutral account owns the evaluation point, visible semantic context, typed result or failure, and consuming BPMN transition; an approved language profile may delegate parsing and evaluation to its exact runtime. The first selected CIB direction is the [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), which remains unimplemented and does not change this family's `unsupported` disposition.
+
 ## Reviewed requirements
 
 | Requirement ID | Normative source | Machine-readable anchor | Requirement or conflict | Disposition | Owning semantic decision | Evidence status |

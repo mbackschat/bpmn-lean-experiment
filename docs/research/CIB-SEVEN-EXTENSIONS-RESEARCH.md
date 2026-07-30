@@ -1,6 +1,6 @@
 # CIB Seven BPMN extensions and execution-API research
 
-**Status:** Research result; family-level inventory complete for the pinned CIB Seven source, durable compatibility scope approved, individual behavioral lanes selected only by approved capsules
+**Status:** Research result; family-level inventory complete for the pinned CIB Seven source, durable compatibility scope and read-only JUEL delegation direction approved, individual behavioral lanes selected only by approved capsules
 
 **Scope:** The Camunda BPMN extension namespace retained by CIB Seven, Service Task execution bindings, Java delegates and beans, expressions, Script Tasks, FEEL, external tasks, and the compatibility claims each mechanism would require.
 
@@ -87,6 +87,20 @@ CIB’s delegate-expression and ordinary expression paths use JUEL/Unified EL. I
 
 An exact expression such as `${bpmnLeanEffectHandler}` can be treated structurally as one selected binding token and normalized to a project handler identifier. Doing that does not implement JUEL. General delegate expressions include property and method resolution, overload and coercion rules, bean lifecycle, variable lookup and shadowing, errors, and potentially side effects.
 
+The CIB Seven `2.0.0` release publishes `org.cibseven.bpm.juel:cibseven-juel:2.0.0` as a standalone jar containing the parser, tree builder, internal AST, coercion, expression factory, and a relocated Jakarta EL API. [SOURCES.md](../SOURCES.md#cib-seven) owns the exact artifact and source provenance, license, POM/shading fact, local-cache boundary, and verified digest.
+
+A read-only feasibility probe supplied variables through the JUEL context and let that artifact parse and evaluate the exact source. It distinguished an explicitly present null from an absent identifier, evaluated scalar equality and null checks, and resolved a nested property from map-shaped data. This establishes that the project can provide context while the selected library owns AST construction and evaluation. It does not establish a safe general resolver, a Temporal Worker, a production dependency, a CIB command-rollback account, or a complete target expression subset.
+
+The TypeScript Workflow cannot load this Java artifact. The clean host boundary is a normal Java Temporal Activity Worker that receives an immutable request, evaluates against a capability-closed context, and returns a content-bound result. A gateway batch must retain candidate Sequence Flow order and stop after the first true result; returning only a selected Flow would move gateway semantics into the evaluator.
+
+The approved direction therefore separates three JUEL surfaces:
+
+- **read-only data evaluation:** exact source plus complete approved Process-scope context to the pinned runtime;
+- **variable mutation:** a separately approved evaluator result containing a typed patch for semantic-core validation;
+- **bean, `execution`, or engine-service access:** an explicit effect or downstream adoption capability, not a data context.
+
+The project builds no JUEL grammar, AST, evaluator, or transpiler. Lean and TypeScript implement the consuming BPMN transition conditional on the bound result. Because CIB and the proposed Worker use the same JUEL implementation, they form one correlated account for expression truth; CIB integration evidence can still test resolver context, source-order short-circuit, error/rollback behavior, and default flow.
+
 Bean compatibility is therefore a useful roadmap target, but it needs two layers:
 
 - a project-owned handler registry whose stable identifier is portable across TypeScript and Java executors;
@@ -100,9 +114,9 @@ BPMN supplies the Script Task and its `scriptFormat` plus script body. CIB addit
 
 Language availability is deployment-specific. The engine build has test/runtime integrations for languages such as Groovy, GraalJS, Jython, and JRuby, but those engines are not guaranteed by the CIB core artifact and are not present in this project’s current oracle dependency graph. Caching, automatic variable storage, host access, file/network I/O, and engine-specific compatibility settings materially affect behavior.
 
-The project should distinguish:
+The project distinguishes:
 
-- **pure expressions:** deterministic calculations over typed semantic data, suitable for Lean and the pure semantic core after a variable/value model exists;
+- **profile-selected read-only expressions:** exact language runtime evaluation over approved typed semantic data, with Lean and the pure semantic core owning the consuming transition rather than reimplementing the language;
 - **effectful or untrusted scripts:** external execution hosted as an Activity/effect, returning a typed result or variable patch;
 - **engine-compatible scripts:** execution through a specifically versioned language engine and security profile, which is a separate compatibility target.
 
@@ -112,7 +126,7 @@ Arbitrary scripts must never execute in Temporal Workflow code or in the pure se
 
 CIB’s BPMN delegate expressions use JUEL. The pinned repository’s FEEL integrations live under the DMN engine (`feel-juel` and `feel-scala`); they are not the Service Task delegate-expression implementation and are not in the current oracle runner dependency graph.
 
-FEEL remains an attractive project-native expression candidate because it has a process-friendly value model and can be bounded to deterministic evaluation. Adopting it for BPMN conditions, mappings, or script-like calculations would nevertheless be a deliberate project profile choice. It requires an exact FEEL version/subset, value and null/error semantics, allowed functions, time behavior, parser/evaluator strategy, Lean account, TypeScript correspondence, and CIB calibration. It cannot be advertised as compatibility with `camunda:delegateExpression`.
+FEEL is not selected as a project-native substitute for the target's JUEL expressions. A future Business Rule Task/DMN or explicitly FEEL-language profile may select an exact FEEL runtime, value domain, null/error semantics, allowed functions, time behavior, and result contract. That remains a separate language and compatibility claim and cannot be advertised as `camunda:delegateExpression` compatibility.
 
 ## Compatibility levels
 

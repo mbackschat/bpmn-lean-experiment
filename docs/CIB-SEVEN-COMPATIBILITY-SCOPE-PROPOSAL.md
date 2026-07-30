@@ -1,6 +1,6 @@
 # CIB Seven compatibility scope proposal
 
-**Status:** Owner-approved on 2026-07-26 with the binding-identity, phase-zero evidence, and documentation-ownership conditions recorded below; the bounded phase-zero probe is authorized, but no dependency or production implementation is approved
+**Status:** Owner-approved on 2026-07-26 and amended on 2026-07-30 with the profile-selected JUEL delegation direction; no JUEL dependency, Java evaluator Worker, expression wire contract, or production implementation is approved
 
 ## Question
 
@@ -54,14 +54,16 @@ Compatibility claims remain level-specific:
 | Existing CIB Seven `JavaDelegate` binaries | **Deferred compatibility lane** | Requires an isolated Java executor and an exact `DelegateExecution` API disposition; assess after typed variables and a Java-worker deployment need exist |
 | Existing original Camunda 7 delegate binaries | **Deferred separately** | `org.camunda` and `org.cibseven` package identities differ; support would require a distinct bridge or dual API surface |
 | Full `DelegateExecution`, `ActivityBehavior`, Process Engine services, REST and plugin compatibility | **Non-goal for the current product architecture** | This would reproduce engine internals and host identities that the semantic-core boundary deliberately excludes; reconsider only through a separately funded compatibility program |
-| General JUEL/Unified EL | **Deferred** | Requires exact grammar, coercion, bean/property/method resolution, variable scope and error semantics; the selected literal expression is not general evaluation |
-| Bounded deterministic FEEL | **Future semantic candidate after typed variables** | Potential project-native expression language, but not CIB Service Task expression compatibility; requires a dedicated profile/capsule and dependency decision |
-| BPMN Script Task with a pure deterministic language subset | **Future candidate after typed variables** | May enter semantic evaluation only when language, values, errors, functions and determinism are formally bounded |
+| Read-only JUEL/Unified EL over typed Process data | **Selected architecture direction; capsule and dependency approval required** | Supply exact source and complete approved context to the pinned CIB JUEL runtime behind a Java Activity; Lean and TypeScript consume a bound result and do not implement JUEL |
+| General JUEL methods, beans, `execution`, mutation, or engine-service access | **Deferred separate capability lanes** | Data evaluation, typed variable patches, bean/application capabilities, and Process Engine services have different authority, security, rollback, and effect boundaries |
+| FEEL | **Not selected as the project-native replacement for JUEL** | The target BPMN expressions use JUEL and the pinned CIB FEEL integrations belong to DMN; reopen only for a concrete DMN or explicitly selected FEEL-language profile |
+| BPMN Script Task with a pure deterministic language subset | **Future profile-specific candidate after typed variables** | Use the exact selected language runtime; do not create a project language merely to obtain Script Task coverage |
 | Effectful or untrusted scripts | **Deferred Activity/effect hosting** | Must execute outside Workflow and semantic core under a pinned sandbox/capability profile |
 | Generic JSR-223, Groovy, JavaScript, Python or Ruby script compatibility | **Deferred compatibility lane** | Language engines and security behavior are deployment-specific and dependency-bearing |
 | External-task topic/fetch-and-lock protocol | **Deferred** | Valuable migration surface, but adds locks, leases, worker identity, failure, retries and incidents; reopen for an external-worker consumer |
 | Async continuations and job retry extensions | **Capsule-selected only** | Host realization and evidence, never automatic semantic facts; each use needs a CIB configuration and fidelity classification |
-| Field injection and input/output mappings | **Deferred** | Require handler object lifecycle, expressions, typed variables, scopes and result propagation |
+| Exact literal and one local-reference input/output mappings | **Implemented bounded slices** | The current direct mapping representation is not general JUEL and must not grow into one; a future JUEL mapping capsule replaces it or proves an exact-token equivalence |
+| Field injection and general input/output mappings | **Deferred** | Require handler object lifecycle, profile-selected expression evaluation, typed values, scopes, result propagation, and a transaction/failure decision |
 | Execution/task listeners | **Deferred** | New lifecycle hook ordering and mutable callback contexts require separate semantics and evidence |
 | Forms, assignees, candidates, dates and identity extensions | **Deferred to User Task profiles** | Not part of effect execution; reopen with identity/form consumers |
 | Call Activity, decision and case bindings | **Deferred** | Require deployment/version/tenant identity and DMN/CMMN decisions |
@@ -90,7 +92,7 @@ The standard `implementation="urn:bpmn-lean:effect:probe-v1"` and the extension 
 
 Requiring the project URN is deliberately a probe-fixture profile choice. A real existing CIB document ordinarily carries its Camunda binding without this project URN, so the pair is not the future general migration-admission rule. Any migration profile that infers or supplies protocol identity must make that mapping explicit, versioned, and separately evidenced. A second business effect under the same protocol receives a different handler rather than a new protocol URI.
 
-Lean, Semantic Process IL, the TypeScript semantic core, and Temporal Workflow code never parse or evaluate JUEL and never contain a CIB Java class. The Temporal Activity Worker selects the test handler through adapter configuration. A future public registry may reuse the stable handler identifier, but this capsule does not generalize or publish that registry without a non-test consumer.
+Lean, Semantic Process IL, the TypeScript semantic core, and Temporal Workflow code never parse or evaluate JUEL and never contain a CIB Java class. The Temporal Activity Worker selects the test handler through adapter configuration. The separately proposed JUEL evaluator also preserves this boundary: an isolated Java Activity Worker invokes the pinned runtime and returns a typed, content-bound result. A future public registry may reuse the stable handler identifier, but this capsule does not generalize or publish that registry without a non-test consumer.
 
 This is deliberate source compatibility, not Java API compatibility. Hostile variants such as method expressions, property paths, whitespace-normalized alternatives, another bean name, `camunda:field`, `camunda:expression`, or another extension context remain rejected.
 
@@ -192,17 +194,26 @@ Any failure returns to this scope document for owner review. It must not be reso
 
 ## Expression and script direction
 
-Keep three execution classes distinct:
+Keep four execution classes distinct:
 
-| Class | Owner | Candidate language/runtime |
+| Class | Semantic owner | Evaluation runtime |
 |---|---|---|
-| Pure deterministic expression | Lean and semantic core | A future exact FEEL subset after typed values and variables |
-| External or nondeterministic computation | Adapter Activity/effect | Project handler, isolated script executor, or Java bridge |
-| CIB compatibility expression/script | Versioned compatibility adapter | Exact JUEL or named script engine and security profile |
+| Read-only CIB expression over approved typed data | BPMN consumer owns evaluation point, context, result type, and state transition; CIB profile owns language | Exact pinned `cibseven-juel`, invoked outside Workflow code |
+| Mutating expression | Semantic core validates and commits a typed patch | Exact profile runtime returns a patch and never mutates core state directly |
+| Engine/application capability call | Explicit effect or downstream adoption contract | Java handler, bean bridge, or another isolated capability host |
+| Script, template, or decision language | Separate language/profile capsule | Exact Groovy/JSR-223, FreeMarker, XPath, or DMN/FEEL runtime as selected |
 
-FEEL is recommended for later assessment as the project-native deterministic language because it is closer to process data than embedding JavaScript or JUEL object invocation. That recommendation does not authorize FEEL now and does not treat FEEL as the language of `camunda:delegateExpression`.
+The project does not implement a grammar, AST, evaluator, optimizer, or transpiler merely to obtain BPMN or CIB coverage. It provides the exact source, language/profile identity, complete visible typed context, and expected result boundary; the selected language runtime owns parsing and evaluation. Lean and the TypeScript semantic core validate the result binding and implement the consuming BPMN rule conditional on that result.
+
+The first selected direction is read-only CIB JUEL. Its complete Process-scope context preserves presence versus explicit null and contains no `execution`, bean, function, method, Process Engine service, or arbitrary Java object. One batched gateway request preserves the candidate-flow order and short-circuit rule established by the future pinned-CIB capsule while the semantic core, not the evaluator, selects the outgoing Sequence Flow; source-order first-true behavior remains a hypothesis until that probe.
+
+The existing `MappingExpression.stringLiteral` and exact `MappingExpression.localVariable` cases remain only for their implemented mapping capsules. The literal case is ordinary data. The local-variable case is a direct binding lookup under exact-token admission, not general JUEL; it must not grow. A future CIB JUEL mapping capsule replaces it atomically or retains an explicit exact-token equivalence, with no parallel selectable evaluator for the same source.
+
+FEEL is not selected as a project-native substitute. The target corpus does not use it for these BPMN expressions, and the pinned CIB integrations belong to DMN. XPath, DMN/FEEL, Groovy, and FreeMarker remain separate language profiles rather than variants hidden behind an early universal expression framework.
 
 Arbitrary scripts remain outside Workflow and the pure semantic core even if a future compatibility adapter accepts their source. Their declared capabilities, file/network/host access, deterministic inputs, timeout, memory limit, engine version, dependency graph, result typing, and retry/idempotency behavior must be explicit.
+
+The selected request/result boundary, evidence limits, dependency candidate, and Temporal preflight are in the [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md).
 
 ## Claim discipline
 
@@ -224,19 +235,20 @@ The durable compatibility claim and interpreter/Worker language boundary are rec
 
 The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) implements the exact delegate-expression pair under its bounded success-only semantic account.
 
-Apart from the bounded phase-zero probe, no production implementation, dependency, Java Worker, expression engine, script engine, or evidence replacement is approved by this document.
+Apart from the completed bounded Service Task work and its phase-zero probe, no new dependency, Java evaluator Worker, JUEL expression contract, script engine, or evidence replacement is approved by this document.
 
 ## Approved owner decisions
 
-The owner approved all six decisions:
+The owner approved these seven decisions:
 
 1. target selected source and behavioral compatibility, not general CIB engine API replacement;
 2. use project-owned handler identities and effect contracts as the primary replacement API;
 3. retain the TypeScript semantic core and Workflow while placing TypeScript and JVM Activity Workers behind one versioned language-neutral effect protocol;
 4. use the exact delegate-expression bean token for the bounded Service Task capsule without claiming general JUEL;
-5. keep Java delegate binaries, general beans/JUEL, scripts, FEEL, and external tasks as separately reopened compatibility lanes under the dispositions above;
+5. keep Java delegate binaries, capability-bearing JUEL/beans, scripts, FEEL, and external tasks as separately reopened compatibility lanes under the dispositions above;
 6. treat full Process Engine Java/REST/plugin compatibility as a non-goal unless a separately funded compatibility program is approved.
+7. for the first read-only CIB expression capsule, provide complete approved context to the actual pinned JUEL runtime behind a Java Activity, build no project AST/evaluator, keep mutation and engine-service calls separate, and require an explicit dependency decision before implementation.
 
 ## Reopen conditions
 
-Reopen this scope before claiming a compatibility level not named here; admitting a new extension family or context; changing the exact Service Task binding pair; moving semantic interpretation out of the TypeScript core and Workflow; adding a Java/Kotlin Worker or compatibility API; accepting general JUEL, scripts, FEEL, or external-task protocols; or expanding the Process Engine API non-goal. Reopen the second-interpreter account only for the exact non-Temporal embedded JVM product trigger recorded in the [rejected dual-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md#reopen-trigger).
+Reopen this scope before claiming a compatibility level not named here; admitting a new extension family or context; changing the exact Service Task binding pair; adding a Java/Kotlin Worker or compatibility API; admitting a JUEL capability beyond the approved read-only context; selecting scripts, FEEL, or external-task protocols; letting an evaluator or adapter choose BPMN control flow or mutate semantic state; or expanding the Process Engine API non-goal. Reopen the second-interpreter account only for the exact non-Temporal embedded JVM product trigger recorded in the [rejected dual-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md#reopen-trigger).

@@ -142,6 +142,8 @@ type CheckedSequenceFlow = DeepReadonly<{
 }>;
 ```
 
+`MappingExpression.localVariable` is the implemented direct-lookup representation for two exact admitted JUEL-shaped output tokens; it is not a general expression language. It must not grow operators, paths, coercion, conditions, or other JUEL syntax. A future CIB JUEL mapping capsule must atomically replace this shortcut with pinned-runtime evaluation or retain one explicit exact-token equivalence under a single owner; pre-release production code must not expose two selectable evaluation accounts for the same source.
+
 `CheckedProcess` means that parsing, supported-element admission, reference resolution, gateway-direction classification, profile membership, and bounded structural checks have succeeded. A rejected document does not produce this artifact.
 
 The source/profile boundary validates each admitted Camunda binding and maps it to a registered neutral `protocol`/`operation` descriptor before producing the checked graph. Exact namespaces, lexical source tokens, and downstream A12 bean identities remain in source/profile evidence and do not enter the checked graph. Mapping names and literal bodies remain ordinary source-derived data because the checked graph and Lean lowering need them for the generic typed mapping mechanism; they are not lower-layer admission discriminators.
@@ -455,6 +457,7 @@ The following remain unsupported:
 - subprocess scopes, call activities, transactions, event subprocesses, and propagation;
 - exclusive, inclusive, complex, and event-based gateways;
 - loops, multi-instance activities, conditions, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond the two exact pairs;
+- JUEL parsing or evaluation, conditional-evaluation receipts, and any profile-selected expression runtime;
 - host-side external-effect execution and effect mechanisms beyond the approved success and typed boundary-error capsules;
 - generated TypeScript as semantic authority;
 - optimization, bytecode, code generation, migration, and durable-version compatibility;

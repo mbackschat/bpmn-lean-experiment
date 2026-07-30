@@ -85,7 +85,7 @@ The 50-model corpus contains 233 expression occurrences with 79 distinct exact s
 
 The Script Task corpus contains 10 Groovy scripts in 7 models. The scripts read and mutate variables and nested document structures, intentionally throw failures, and in one migration fixture start another Process through Process Engine services. Extension scripts add Groovy execution listeners and FreeMarker input templates. Groovy/JSR-223 compatibility, FreeMarker templating, and bounded deterministic expressions therefore require separate dispositions and evidence.
 
-The immediate research order is: define typed variable values, scopes, and input/output patches; classify the 79 exact expression strings by the smallest evaluable subset; separate read-only deterministic expressions from mutations and engine-service calls; then decide Groovy, FreeMarker, and listener migration. FEEL is not observed in this denominator and remains a future language choice rather than a substitute for the target’s actual expression surface.
+The scoped runtime foundation is implemented. The next expression work classifies the 79 exact strings into read-only data evaluation, variable mutation, and bean/`execution`/engine-service capability calls. Read-only CIB expressions use the actual pinned JUEL runtime with a complete approved context; the project does not build a replacement grammar, AST, or evaluator. Mutation returns a future typed patch, while engine/application calls remain explicit effects or adoption capabilities. Groovy, FreeMarker, listeners, and DMN/FEEL keep separate language and capability dispositions; FEEL is not observed in this expression denominator and is not a substitute for the target’s JUEL surface.
 
 ## Delegate and effect surface
 
@@ -111,7 +111,7 @@ The full-stack template is the canonical downstream blueprint, but the inspected
 |---|---|---|
 | CIB Seven `2.0.0` target alignment | Assess first | Existing semantic profiles pin `2.2.0`; source and executable revisions may not be merged silently |
 | Typed variables, scopes, and input/output mapping | Promote to next research item | Present in 43 of 50 distinct models and required by delegates, conditions, forms, messages, and errors |
-| Exact target expression subset | Promote with variables | 233 occurrences and 79 exact strings define a bounded, inspectable denominator |
+| Exact target read-only JUEL subset | Promote after scoped data | Classify the 233 occurrences and 79 exact strings by capability, then evaluate the selected read-only set through pinned JUEL rather than a project AST/evaluator |
 | Bean-token Service Task admission | Promote | All 38 Service Tasks use simple delegate-expression bean tokens and no `implementation` URI |
 | Synchronous Service Task transaction boundary | Assess with the first target path | 23 of 38 Service Tasks have neither async flag; Temporal Activity durability cannot be described as the same transaction model |
 | `BpmnError` and boundary error behavior | Promote immediately after variable/effect patches | Four production delegates throw it and three models contain error event definitions |
@@ -120,7 +120,7 @@ The full-stack template is the canonical downstream blueprint, but the inspected
 | Message correlation and send-message façade | Promote after variables | Eight models and the product client supply concrete consumers |
 | Groovy Script Tasks and execution listeners | Defer behind variables/errors but keep product-critical | The corpus is real, but unrestricted engine-service calls require a larger sandbox and migration decision |
 | FreeMarker input templates | Defer behind typed mapping | Six extension-script occurrences depend on the variable and serialization contract |
-| Business Rule Task/DMN | Defer behind variables and expressions | Three concrete models justify later bounded research |
+| Business Rule Task/DMN | Defer behind the read-only JUEL and gateway capsules | Three concrete models justify a later separately pinned DMN/FEEL runtime and result-mapping contract |
 | General `camunda:class`, external tasks, connectors, Call Activities, timers, and multi-instance | Keep deferred | Absent from the defined product corpus at this revision |
 | Generic CIB engine API, plugin, REST, and webapp replacement | Separate compatibility program | The target is A12 Workflows-level replacement; these surfaces exceed the current semantic architecture and cannot be implied by “drop-in” |
 
