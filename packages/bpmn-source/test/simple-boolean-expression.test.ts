@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
@@ -191,6 +192,31 @@ test("retains declaration order and lowers the exact conditional choice", async 
       },
     },
   );
+});
+
+test("compiles the content-bound standards-profile scenario", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../scenarios/exclusive-gateway-simple-boolean/process.bpmn",
+      import.meta.url,
+    ),
+  );
+  const result = await compileBpmnToSemanticProcess({
+    bytes: source,
+    sourceId: "simple-boolean-exclusive-gateway-process",
+    expectedSha256:
+      "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
+    semanticProfile: profile,
+    limits,
+  });
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  if (result.status === BpmnCompilationStatus.Accepted) {
+    assert.equal(
+      result.semanticProcess.processId,
+      "Process_SimpleBooleanChoice",
+    );
+  }
 });
 
 test("rejects implicit XPath, per-expression override, and invalid default conditions", async () => {

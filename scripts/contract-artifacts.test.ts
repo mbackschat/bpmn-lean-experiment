@@ -6,8 +6,10 @@ import { fileURLToPath } from "node:url";
 import {
   compareCanonicalStrings,
   readAndVerifyArtifactSets,
+  readAndVerifyNormativeArtifactSets,
   verifyArtifactSet,
   verifyDefinitionArtifacts,
+  verifyNormativeArtifactSet,
 } from "./contract-artifacts.ts";
 import {
   bindScenarioBytes,
@@ -32,6 +34,49 @@ import type {
 } from "./contract-artifact-test-fixtures.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+test("separates normative profile authority from executable CIB oracle authority", async () => {
+  const artifactSets =
+    await readAndVerifyNormativeArtifactSets(projectRoot);
+  assert.equal(artifactSets.length, 1);
+  const artifactSet = requiredAt(
+    artifactSets,
+    0,
+    "normative artifact sets",
+  );
+  assert.equal(
+    artifactSet.profile.normativeAuthority.name,
+    "OMG Business Process Model and Notation",
+  );
+  assert.equal(
+    "oracle" in artifactSet.profile,
+    false,
+  );
+  assert.equal(
+    "environment" in artifactSet.profile,
+    false,
+  );
+  assert.equal("calibration" in artifactSet.scenario, false);
+
+  const mixedAuthority = {
+    ...artifactSet,
+    profile: {
+      ...artifactSet.profile,
+      oracle: {
+        name: "forbidden second authority",
+        version: "1",
+        revision: "0".repeat(40),
+      },
+      environment: {},
+    },
+  };
+  assert.throws(
+    () => verifyNormativeArtifactSet(
+      mixedAuthority as unknown as typeof artifactSet,
+    ),
+    /profile schema validation failed/,
+  );
+});
 
 test("uses structural document kinds without embedded schema counters", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);

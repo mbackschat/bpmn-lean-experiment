@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { artifactCases } from "./contract-artifacts.ts";
+import { artifactCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { runCommand } from "./run-command.ts";
 import { parseStrictJson } from "./strict-json.ts";

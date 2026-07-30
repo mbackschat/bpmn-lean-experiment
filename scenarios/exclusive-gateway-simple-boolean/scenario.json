@@ -1,0 +1,50 @@
+{
+  "kind": "scenario",
+  "id": "exclusive-gateway-simple-boolean-first-true",
+  "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+  "bpmn": {
+    "id": "simple-boolean-exclusive-gateway-process",
+    "relativePath": "scenarios/exclusive-gateway-simple-boolean/process.bpmn",
+    "sha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-simple-boolean-choice",
+      "processId": "Process_SimpleBooleanChoice",
+      "instanceId": "SimpleBooleanInstance_1"
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-first-branch",
+      "taskId": {
+        "processInstanceId": "SimpleBooleanInstance_1",
+        "elementId": "Task_First",
+        "activation": 1
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 13.4.2",
+      "BPMN 2.0.2 Table 13.2"
+    ],
+    "cibRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ExclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java#parseSequenceFlow"
+    ]
+  }
+}

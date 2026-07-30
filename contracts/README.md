@@ -6,7 +6,7 @@ This directory owns language-neutral JSON Schemas for artifacts and canonical va
 
 The project is pre-release and keeps exactly one current representation of each wire contract. A breaking contract change replaces its producers, consumers, fixtures, schemas, and tests atomically. Parallel legacy readers, embedded format counters, compatibility switches, migration functions, and retained Temporal history baselines are deliberately absent until a first durable release boundary is approved.
 
-Each document has a stable structural discriminator such as `semanticProfile`, `scenario`, or `cibSevenScenarioEvidence`. JSON Schema `$id` identifies the current schema itself. A semantic profile’s `id` identifies its reviewed behavioral meaning and compatibility target; changing that meaning requires a new profile identity even when the JSON shape is unchanged.
+Each document has a stable structural discriminator such as `semanticProfile`, `scenario`, or `cibSevenScenarioEvidence`. JSON Schema `$id` identifies the current schema itself. A semantic profile’s `id` identifies its reviewed behavioral meaning and declared normative or executable-oracle authority; changing that meaning or authority requires a new profile identity even when the JSON shape is unchanged.
 
 This separation avoids routing every consumer through document-version switches while preserving the identity that actually matters to semantic claims. When production persistence or an immutable Temporal history baseline exists, compatibility must be designed from concrete retained artifacts and explicit migration/replay tests rather than speculative early formats.
 
@@ -14,7 +14,7 @@ This separation avoids routing every consumer through document-version switches 
 
 | Artifact | Identity and responsibility |
 |---|---|
-| Semantic profile | Stable `kind`; versioned semantic `id`; pinned CIB release/configuration, selected feature surface, observation boundary, CIB–BPMN relationship references, and optional exact-source-binding-to-neutral-effect registrations |
+| Semantic profile | Stable `kind`; versioned semantic `id`; exactly one normative authority or pinned executable oracle/configuration; selected feature surface, observation boundary, CIB–BPMN relationship references, and optional exact-source-binding-to-neutral-effect registrations |
 | Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, timer firing, and effect-result stimuli, requested observations, and provenance |
 | Canonical result | Outcome plus canonical observation trace including semantic task, timer, and effect occurrences and canonical Process variables; no target-specific host data |
 | CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; raw runtime/history state-query, task, timer, effect, and mapping observations plus canonical result |
@@ -42,8 +42,8 @@ Portable assertions are verifier-side claims over canonical results or relations
 
 ## Schemas
 
-- [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates the current draft profile artifact.
-- [scenario.schema.json](schemas/scenario.schema.json) validates the nine answer-free User Task, balanced-parallel, Intermediate Catch Timer, Service Task effect, and CreateDocument data scenarios.
+- [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates current draft profiles with exactly one normative or executable-oracle authority.
+- [scenario.schema.json](schemas/scenario.schema.json) validates the eleven answer-free User Task, balanced-parallel, Intermediate Catch Timer, Service Task effect, CreateDocument data, boundary-error, and Simple Boolean Exclusive Gateway scenarios.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.
 - [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.

@@ -1,0 +1,71 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-simple-boolean-exclusive-gateway",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 13.4.2",
+      "Table 13.2"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "exclusive-gateway-divergence",
+      "ordered-conditional-sequence-flow",
+      "conditionless-default-sequence-flow",
+      "formal-expression",
+      "simple-boolean-expression-v1",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0006",
+      "CIB-INT-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-juel-compatibility-claim",
+    "xpath",
+    "juel",
+    "feel",
+    "scripts",
+    "expression-coercion",
+    "expression-side-effects",
+    "boolean-process-variables",
+    "numbers",
+    "nested-data",
+    "more-than-two-conditional-candidates",
+    "missing-default-sequence-flow",
+    "converging-exclusive-gateway",
+    "mixed-exclusive-gateway",
+    "branch-tail-merge",
+    "loops",
+    "parallel-interaction",
+    "a12-adoption-coverage"
+  ]
+}

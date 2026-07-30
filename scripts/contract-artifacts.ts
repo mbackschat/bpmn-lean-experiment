@@ -11,6 +11,14 @@ import {
 } from "./contract-artifact-consistency.ts";
 export { compareCanonicalStrings } from "./contract-artifact-consistency.ts";
 import {
+  artifactCases,
+  normativeArtifactCases,
+} from "./contract-artifact-cases.ts";
+import type {
+  ArtifactCase,
+  NormativeArtifactCase,
+} from "./contract-artifact-cases.ts";
+import {
   verifyProducerProjection,
 } from "./contract-cib-evidence-projection.ts";
 import { Ajv2020 } from "ajv/dist/2020.js";
@@ -44,74 +52,6 @@ const profileSchemaId = `${schemaBaseId}/semantic-profile.schema.json`;
 const checkedProcessSchemaId = `${schemaBaseId}/checked-process.schema.json`;
 const semanticProcessSchemaId = `${schemaBaseId}/semantic-process.schema.json`;
 
-export const artifactCases = Object.freeze([
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-discovery-completion/scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-discovery-completion/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-discovery-completion/wrong-activation.scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-discovery-completion/wrong-activation.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-discovery-completion/stale-completion.scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-discovery-completion/stale-completion.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-fork-join/a-then-b.scenario.json",
-    evidenceRelativePath:
-      "scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-fork-join/b-then-a.scenario.json",
-    evidenceRelativePath:
-      "scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-fork-join/stale-a-while-b-active.scenario.json",
-    evidenceRelativePath:
-      "scenarios/parallel-fork-join/stale-a-while-b-active.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/intermediate-catch-timer/scenario.json",
-    evidenceRelativePath:
-      "scenarios/intermediate-catch-timer/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/service-task-effect/scenario.json",
-    evidenceRelativePath:
-      "scenarios/service-task-effect/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/create-document-data/scenario.json",
-    evidenceRelativePath:
-      "scenarios/create-document-data/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/boundary-error/scenario.json",
-    evidenceRelativePath:
-      "scenarios/boundary-error/cibseven-evidence.json",
-  }),
-]);
-
-export type ArtifactCase = Readonly<{
-  scenarioRelativePath: string;
-  evidenceRelativePath: string;
-}>;
-
 type JsonDocument<Value> = Readonly<{
   bytes: Buffer;
   value: Value;
@@ -122,18 +62,32 @@ type ContentIdentity = Readonly<{
   sha256: string;
 }>;
 
-type SemanticProfile = Readonly<{
+type SemanticProfileBase = Readonly<{
   kind: "semanticProfile";
   id: string;
-  oracle: Readonly<{
-    version: string;
-    revision: string;
-  }>;
   bpmn: Readonly<{
     relationships: ReadonlyArray<string>;
   }>;
   observations: ReadonlyArray<string>;
 }>;
+
+type CibSemanticProfile = SemanticProfileBase & Readonly<{
+  oracle: Readonly<{
+    version: string;
+    revision: string;
+  }>;
+  environment: Readonly<Record<string, unknown>>;
+}>;
+
+type NormativeSemanticProfile = SemanticProfileBase & Readonly<{
+  normativeAuthority: Readonly<{
+    name: string;
+    version: string;
+    references: ReadonlyArray<string>;
+  }>;
+}>;
+
+type SemanticProfile = CibSemanticProfile | NormativeSemanticProfile;
 
 export type TaskQueryTask = Readonly<{
   elementId: string;
@@ -227,13 +181,23 @@ export type DefinitionArtifacts = Readonly<{
 export type ArtifactSet = ArtifactCase & Readonly<{
   validator: Ajv2020;
   registeredRelationshipIds: ReadonlySet<string>;
-  profile: SemanticProfile;
+  profile: CibSemanticProfile;
   profileBytes: Buffer;
   scenario: Scenario;
   scenarioBytes: Buffer;
   evidence: CibSevenEvidence;
   bpmnBytes: Buffer;
 }>;
+
+export type NormativeArtifactSet =
+  NormativeArtifactCase & Readonly<{
+    validator: Ajv2020;
+    registeredRelationshipIds: ReadonlySet<string>;
+    profile: NormativeSemanticProfile;
+    scenario: Scenario;
+    scenarioBytes: Buffer;
+    bpmnBytes: Buffer;
+  }>;
 
 type ArtifactContext = Readonly<{
   validator: Ajv2020;
@@ -389,31 +353,27 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
     bpmnBytes,
     registeredRelationshipIds,
   } = artifactSet;
-  validateWith(validator, profileSchemaId, "profile", profile);
-  validateWith(validator, scenarioSchemaId, "scenario", scenario);
+  verifyProfile(
+    validator,
+    registeredRelationshipIds,
+    profile,
+  );
+  verifyScenarioSourceBinding(
+    validator,
+    profile,
+    scenario,
+    scenarioBytes,
+    bpmnBytes,
+  );
   validateWith(validator, evidenceSchemaId, "evidence", evidence);
 
-  if (
-    !isDeepStrictEqual(
-      parseStrictJson<Scenario>(
-        scenarioBytes.toString("utf8"),
-        "scenario source bytes",
-      ),
-      scenario,
-    )
-  ) {
-    throw new Error("scenario value does not match its exact source bytes");
-  }
   if (evidence.scenario.id !== scenario.id) {
     throw new Error("evidence scenario identity does not match");
   }
   if (evidence.scenario.sha256 !== sha256(scenarioBytes)) {
     throw new Error("evidence scenario digest does not match");
   }
-  if (
-    profile.id !== scenario.profile ||
-    evidence.profile.id !== scenario.profile
-  ) {
+  if (evidence.profile.id !== scenario.profile) {
     throw new Error("profile identity does not match across artifacts");
   }
   if (evidence.profile.sha256 !== sha256(profileBytes)) {
@@ -426,13 +386,20 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
   ) {
     throw new Error("CIB revision does not match across artifacts");
   }
-  if (
-    !scenario.observations.every((observation) =>
-      profile.observations.includes(observation),
-    )
-  ) {
-    throw new Error("scenario requests an observation outside its profile");
+  const start = scenario.stimuli[0];
+  if (start?.kind !== "startProcess") {
+    throw new Error("verified scenario omitted its start Process stimulus");
   }
+  verifyProducerProjection(evidence, start.instanceId);
+  return artifactSet;
+}
+
+function verifyProfile(
+  validator: Ajv2020,
+  registeredRelationshipIds: ReadonlySet<string>,
+  profile: SemanticProfile,
+): void {
+  validateWith(validator, profileSchemaId, "profile", profile);
   for (const relationshipId of profile.bpmn.relationships) {
     if (!registeredRelationshipIds.has(relationshipId)) {
       throw new Error(
@@ -440,19 +407,65 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
       );
     }
   }
+}
+
+function verifyScenarioSourceBinding(
+  validator: Ajv2020,
+  profile: SemanticProfile,
+  scenario: Scenario,
+  scenarioBytes: Buffer,
+  bpmnBytes: Buffer,
+): void {
+  validateWith(validator, scenarioSchemaId, "scenario", scenario);
+  if (
+    !isDeepStrictEqual(
+      parseStrictJson<Scenario>(
+        scenarioBytes.toString("utf8"),
+        "scenario source bytes",
+      ),
+      scenario,
+    )
+  ) {
+    throw new Error("scenario value does not match its exact source bytes");
+  }
+  if (profile.id !== scenario.profile) {
+    throw new Error("profile identity does not match scenario");
+  }
+  if (
+    !scenario.observations.every((observation) =>
+      profile.observations.includes(observation),
+    )
+  ) {
+    throw new Error("scenario requests an observation outside its profile");
+  }
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
   }
   const startStimuli = scenario.stimuli.filter(
     (stimulus) => stimulus.kind === "startProcess",
   );
-  const start = startStimuli[0];
-  if (startStimuli.length !== 1 || start === undefined) {
+  if (startStimuli.length !== 1) {
     throw new Error(
       "scenario must contain exactly one start Process stimulus",
     );
   }
-  verifyProducerProjection(evidence, start.instanceId);
+}
+
+export function verifyNormativeArtifactSet(
+  artifactSet: NormativeArtifactSet,
+): NormativeArtifactSet {
+  verifyProfile(
+    artifactSet.validator,
+    artifactSet.registeredRelationshipIds,
+    artifactSet.profile,
+  );
+  verifyScenarioSourceBinding(
+    artifactSet.validator,
+    artifactSet.profile,
+    artifactSet.scenario,
+    artifactSet.scenarioBytes,
+    artifactSet.bpmnBytes,
+  );
   return artifactSet;
 }
 
@@ -484,7 +497,7 @@ async function readArtifactSet(
     scenarioDocument.value.bpmn.relativePath,
   );
   const [profileDocument, bpmnBytes] = await Promise.all([
-    readJsonDocument<SemanticProfile>(profilePath),
+    readJsonDocument<CibSemanticProfile>(profilePath),
     readFile(bpmnPath),
   ]);
   return verifyArtifactSet({
@@ -517,11 +530,66 @@ export async function readAndVerifyArtifactSets(
   );
 }
 
+async function readNormativeArtifactSet(
+  projectRoot: string,
+  artifactCase: NormativeArtifactCase,
+  context: ArtifactContext,
+): Promise<NormativeArtifactSet> {
+  const scenarioPath = resolveInside(
+    projectRoot,
+    artifactCase.scenarioRelativePath,
+  );
+  const scenarioDocument = await readJsonDocument<Scenario>(
+    scenarioPath,
+  );
+  const profilePath = resolveInside(
+    projectRoot,
+    `profiles/${scenarioDocument.value.profile}/profile.json`,
+  );
+  const bpmnPath = resolveInside(
+    projectRoot,
+    scenarioDocument.value.bpmn.relativePath,
+  );
+  const [profileDocument, bpmnBytes] = await Promise.all([
+    readJsonDocument<NormativeSemanticProfile>(profilePath),
+    readFile(bpmnPath),
+  ]);
+  return verifyNormativeArtifactSet({
+    ...artifactCase,
+    validator: context.validator,
+    registeredRelationshipIds: context.registeredRelationshipIds,
+    profile: profileDocument.value,
+    scenario: scenarioDocument.value,
+    scenarioBytes: scenarioDocument.bytes,
+    bpmnBytes,
+  });
+}
+
+export async function readAndVerifyNormativeArtifactSets(
+  projectRoot: string,
+): Promise<ReadonlyArray<NormativeArtifactSet>> {
+  const [validator, registeredRelationshipIds] = await Promise.all([
+    validatorFor(projectRoot),
+    readRegisteredRelationshipIds(projectRoot),
+  ]);
+  return Promise.all(
+    normativeArtifactCases.map((artifactCase) =>
+      readNormativeArtifactSet(projectRoot, artifactCase, {
+        validator,
+        registeredRelationshipIds,
+      }),
+    ),
+  );
+}
+
 const invokedPath = process.argv[1] && path.resolve(process.argv[1]);
 if (invokedPath === fileURLToPath(import.meta.url)) {
   const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const [artifactSets, normativeArtifactSets] = await Promise.all([
+    readAndVerifyArtifactSets(projectRoot),
+    readAndVerifyNormativeArtifactSets(projectRoot),
+  ]);
   process.stdout.write(
-    `verified ${artifactSets.length} scenario/evidence artifact sets\n`,
+    `verified ${artifactSets.length} scenario/evidence artifact sets and ${normativeArtifactSets.length} normative scenario/profile sets\n`,
   );
 }

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SimpleBooleanChoice"
+  targetNamespace="https://bpmn-lean.local/scenarios/exclusive-gateway-simple-boolean"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="Process_SimpleBooleanChoice" name="Simple Boolean choice" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Choice" gatewayDirection="Diverging" default="Flow_Default">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Default</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Second</bpmn:outgoing>
+      <bpmn:outgoing>Flow_First</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_First" name="First branch">
+      <bpmn:incoming>Flow_First</bpmn:incoming>
+      <bpmn:outgoing>Flow_First_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Second" name="Second branch">
+      <bpmn:incoming>Flow_Second</bpmn:incoming>
+      <bpmn:outgoing>Flow_Second_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Default" name="Default branch">
+      <bpmn:incoming>Flow_Default</bpmn:incoming>
+      <bpmn:outgoing>Flow_Default_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_First">
+      <bpmn:incoming>Flow_First_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Second">
+      <bpmn:incoming>Flow_Second_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Default">
+      <bpmn:incoming>Flow_Default_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Choice"/>
+    <bpmn:sequenceFlow id="Flow_First" sourceRef="Choice" targetRef="Task_First">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Second" sourceRef="Choice" targetRef="Task_Second">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">isPresent(route)</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Default" sourceRef="Choice" targetRef="Task_Default"/>
+    <bpmn:sequenceFlow id="Flow_First_End" sourceRef="Task_First" targetRef="End_First"/>
+    <bpmn:sequenceFlow id="Flow_Second_End" sourceRef="Task_Second" targetRef="End_Second"/>
+    <bpmn:sequenceFlow id="Flow_Default_End" sourceRef="Task_Default" targetRef="End_Default"/>
+  </bpmn:process>
+</bpmn:definitions>
