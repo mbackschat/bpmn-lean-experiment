@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  targetNamespace="urn:bpmn-lean:juel-probe">
+  <bpmn:process id="Process_SourceOrder" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway" default="Flow_Default">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Default</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Second</bpmn:outgoing>
+      <bpmn:outgoing>Flow_First</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_First">
+      <bpmn:incoming>Flow_First</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Second">
+      <bpmn:incoming>Flow_Second</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Default">
+      <bpmn:incoming>Flow_Default</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Gateway"/>
+    <bpmn:sequenceFlow id="Flow_First" sourceRef="Gateway" targetRef="Task_First">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${first != null}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Second" sourceRef="Gateway" targetRef="Task_Second">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${second != null}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Default" sourceRef="Gateway" targetRef="Task_Default"/>
+  </bpmn:process>
+</bpmn:definitions>

@@ -55,7 +55,7 @@ Project-authored code and documentation are released under the root [MIT License
 | Temporal CLI `v1.8.1` | MIT; downloaded from the official Temporal distribution endpoint and Git-ignored | Full local development server for M0.5 integration tests; exact binary is cached locally and not redistributed |
 | Temporal time-skipping Test Server selected by SDK `1.21.0` | Apache-2.0; downloaded by `@temporalio/testing` under its SDK-version-bound `default` selector and Git-ignored | Optional timer calibration only; cached locally, not redistributed, and removable with `test:timer-time-skipping` |
 | Maven wrapper and build plugins | Wrapper `3.2.0`, Maven `3.8.8`, Compiler Plugin `3.14.1`, and Surefire Plugin `3.5.4` are Apache-2.0 | The wrapper script/JAR is retained under its upstream license; build tooling is isolated to the Java oracle |
-| CIB Seven oracle graph | CIB engine `2.2.0` and most transitives are Apache-2.0; the resolved graph also contains MIT and BSD-3-Clause components | External Java oracle only; no CIB type or algorithm enters Lean, the semantic core, or project-authored semantic authority |
+| CIB Seven oracle graph | CIB engine `2.2.0`, directly declared test-scope `cibseven-bpmn-model` at the matching release, and most transitives are Apache-2.0; the resolved graph also contains MIT and BSD-3-Clause components | External Java oracle and typed probe-fixture construction only; the model artifact was already engine-transitive, so the direct declaration adds no resolved artifact, and no CIB type or algorithm enters Lean, the semantic core, or project-authored semantic authority |
 | H2 `2.3.232` | Dual MPL-2.0 or EPL-1.0 | External in-memory oracle database; compatible with distribution of MIT-licensed project source |
 | Jackson `2.21.2` | Apache-2.0 | External Java JSON transport implementation in the existing local CIB oracle; a 2026-07-30 advisory scan found that this patch is no longer suitable for a new runtime graph, so any upgrade remains an explicit dependency decision |
 | JUnit `4.13.2` and Hamcrest | EPL-1.0 and BSD-3-Clause | Test-only Java oracle dependencies |
@@ -101,6 +101,8 @@ The read-only JUEL feasibility check inspected the published Maven Central artif
 
 The checked-out `main` revision exactly matches the source revision named by the handoff.
 
+The CIB oracle runner directly declares `org.cibseven.bpm.model:cibseven-bpmn-model` at the same version as `cibseven-engine` for test-scope BPMN construction. The artifact was already a transitive engine dependency, so this declaration changes dependency ownership rather than the resolved graph. Ordinary Exclusive Gateway probes use a project helper that can construct only the exact two-condition-plus-default profile shape. The lexical declaration-order witness remains literal XML, and the excluded language-qualified control uses a private typed-model helper that explicitly registers the BPMN namespace and writes a qualified formal-expression type. The pristine engine and model artifacts remain unmodified.
+
 The core BPMN Java and resource trees, and the BPMN model-API Java and resource trees, are byte-identical between CIB Seven `v2.2.0` and the investigated `main` revision. The initial executable oracle can therefore use the published release without losing any core BPMN test evidence found on `main`.
 
 | Test tree | Git tree identity |
@@ -116,7 +118,7 @@ CIB’s [implemented-standards page](https://docs.cibseven.org/manual/latest/int
 
 ## Candidate Java JUEL evaluator Worker
 
-The owner-approved [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) proposes an isolated Java Temporal Activity Worker but adopts no dependency. The candidate graph was resolved from Maven Central on 2026-07-30 with direct runtime roots [`org.cibseven.bpm.juel:cibseven-juel:2.0.0`](https://repo1.maven.org/maven2/org/cibseven/bpm/juel/cibseven-juel/2.0.0/) and [`io.temporal:temporal-sdk:1.35.0`](https://repo1.maven.org/maven2/io/temporal/temporal-sdk/1.35.0/), plus build-time import of [`com.fasterxml.jackson:jackson-bom:2.21.5`](https://repo1.maven.org/maven2/com/fasterxml/jackson/jackson-bom/2.21.5/). Temporal Java SDK [`v1.35.0`](https://github.com/temporalio/sdk-java/releases/tag/v1.35.0) is the inspected released source line. Direct artifact integrity is:
+The owner-approved [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) selects an isolated Java Temporal Activity Worker. Independent review verified this exact dependency record and the owner approved the set on 2026-07-30; the dependencies remain uncommitted until the implementation change adopts them. The candidate graph was resolved from Maven Central on 2026-07-30 with direct runtime roots [`org.cibseven.bpm.juel:cibseven-juel:2.0.0`](https://repo1.maven.org/maven2/org/cibseven/bpm/juel/cibseven-juel/2.0.0/) and [`io.temporal:temporal-sdk:1.35.0`](https://repo1.maven.org/maven2/io/temporal/temporal-sdk/1.35.0/), plus build-time import of [`com.fasterxml.jackson:jackson-bom:2.21.5`](https://repo1.maven.org/maven2/com/fasterxml/jackson/jackson-bom/2.21.5/). Temporal Java SDK [`v1.35.0`](https://github.com/temporalio/sdk-java/releases/tag/v1.35.0) is the inspected released source line. Direct artifact integrity is:
 
 | Artifact | SHA-256 |
 |---|---|

@@ -12,10 +12,11 @@ timer_bpmn_path="$project_root/scenarios/intermediate-catch-timer/process.bpmn"
 service_task_bpmn_path="$project_root/scenarios/service-task-effect/process.bpmn"
 boundary_error_bpmn_path="$project_root/scenarios/boundary-error/process.bpmn"
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
+juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/exclusive-gateway-source-order.bpmn"
 
 test -f "$maven_settings"
 
-for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$service_task_bpmn_path" "$boundary_error_bpmn_path" "$parallel_probe_path"; do
+for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$service_task_bpmn_path" "$boundary_error_bpmn_path" "$parallel_probe_path" "$juel_gateway_order_probe_path"; do
   if test -f "$xsd_path"; then
     xmllint --noout --schema "$xsd_path" "$bpmn_path"
   else

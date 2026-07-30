@@ -1,73 +1,51 @@
 package org.bpmnlean.cibseven;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.bpmnlean.cibseven.CibSevenExclusiveGatewayModels.ConditionalBranch;
+import org.bpmnlean.cibseven.CibSevenExclusiveGatewayModels.DefaultBranch;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineException;
+import org.cibseven.bpm.model.bpmn.Bpmn;
+import org.cibseven.bpm.model.bpmn.BpmnModelInstance;
+import org.cibseven.bpm.model.bpmn.instance.ConditionExpression;
+import org.cibseven.bpm.model.bpmn.instance.SequenceFlow;
 import org.junit.Test;
 
 /**
- * Establishes the packaged CIB Seven 2.0 Exclusive Gateway facts needed before selecting a
- * read-only JUEL condition profile.
+ * Establishes the packaged CIB Seven 2.0 Exclusive Gateway facts needed by the read-only JUEL
+ * condition profile.
  *
- * <p>The project-authored sources deliberately vary Sequence Flow declaration order independently
- * of the gateway's outgoing-reference order. Runtime failures are checked at the public command
- * boundary so a failed condition cannot be mistaken for a committed semantic outcome.
+ * <p>Ordinary behavioral probes use CIB Seven's typed BPMN Model API and the exact admitted
+ * two-condition-plus-default shape. The declaration-order witness remains literal XML because its
+ * discriminating fact is the disagreement between two lexical orders. Runtime failures are checked
+ * at the public command boundary so a failed condition cannot be mistaken for committed state.
  */
 public final class CibSevenExclusiveGatewayJuelProbeTest {
+
+  private static final String SOURCE_ORDER_RESOURCE =
+      "org/bpmnlean/cibseven/exclusive-gateway-source-order.bpmn";
+  private static final String BPMN_NAMESPACE =
+      "http://www.omg.org/spec/BPMN/20100524/MODEL";
 
   @Test
   public void followsSequenceFlowDeclarationOrderAndStopsAtTheFirstTrueCondition() {
     requireTargetRelease();
-    var source =
-        process(
-            "Process_SourceOrder",
-            null,
-            List.of("Flow_Unreached", "Flow_Selected"),
-            List.of(
-                conditional("Flow_Selected", "Task_Selected", "${selected}"),
-                conditional("Flow_Unreached", "Task_Unreached", "${missing}")));
 
-    try (var session = deploy("juel-source-order", source)) {
+    try (var session = deployClasspath("juel-source-order", SOURCE_ORDER_RESOURCE)) {
       var instance =
           session
               .engine()
               .getRuntimeService()
               .startProcessInstanceByKey(
-                  "Process_SourceOrder", Map.of("selected", true));
-
-      assertEquals(
-          List.of("Task_Selected"),
-          activeTaskKeys(session.engine(), instance.getId()));
-    }
-  }
-
-  @Test
-  public void doesNotUseGatewayOutgoingReferenceOrderWhenSelectingAmongTrueConditions() {
-    requireTargetRelease();
-    var source =
-        process(
-            "Process_TwoTrue",
-            null,
-            List.of("Flow_Second", "Flow_First"),
-            List.of(
-                conditional("Flow_First", "Task_First", "${first}"),
-                conditional("Flow_Second", "Task_Second", "${second}")));
-
-    try (var session = deploy("juel-two-true", source)) {
-      var instance =
-          session
-              .engine()
-              .getRuntimeService()
-              .startProcessInstanceByKey(
-                  "Process_TwoTrue", Map.of("first", true, "second", true));
+                  "Process_SourceOrder", Map.of("first", "present"));
 
       assertEquals(
           List.of("Task_First"),
@@ -76,23 +54,64 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
   }
 
   @Test
-  public void reachesTheDeclaredDefaultOnlyAfterEveryConditionIsFalse() {
+  public void doesNotUseGatewayOutgoingReferenceOrderWhenBothConditionsAreTrue() {
     requireTargetRelease();
-    var source =
-        process(
-            "Process_Default",
-            "Flow_Default",
-            List.of("Flow_Default", "Flow_False"),
-            List.of(
-                conditional("Flow_False", "Task_False", "${false}"),
-                defaultFlow("Flow_Default", "Task_Default")));
 
-    try (var session = deploy("juel-default", source)) {
+    try (var session = deployClasspath("juel-two-true", SOURCE_ORDER_RESOURCE)) {
       var instance =
           session
               .engine()
               .getRuntimeService()
-              .startProcessInstanceByKey("Process_Default");
+              .startProcessInstanceByKey(
+                  "Process_SourceOrder",
+                  Map.of("first", "present", "second", "present"));
+
+      assertEquals(
+          List.of("Task_First"),
+          activeTaskKeys(session.engine(), instance.getId()));
+    }
+  }
+
+  @Test
+  public void selectsTheSecondConditionAfterTheFirstEvaluatesFalse() {
+    requireTargetRelease();
+    var model =
+        profileProcess(
+            "Process_Second",
+            "${first != null}",
+            "${second != null}");
+    var variables = variablesWithNulls("first");
+    variables.put("second", "present");
+
+    try (var session = deployModel("juel-second", model)) {
+      var instance =
+          session
+              .engine()
+              .getRuntimeService()
+              .startProcessInstanceByKey("Process_Second", variables);
+
+      assertEquals(
+          List.of("Task_Second"),
+          activeTaskKeys(session.engine(), instance.getId()));
+    }
+  }
+
+  @Test
+  public void reachesTheDeclaredDefaultOnlyAfterEveryConditionIsFalse() {
+    requireTargetRelease();
+    var model =
+        profileProcess(
+            "Process_Default",
+            "${first != null}",
+            "${second != null}");
+    var variables = variablesWithNulls("first", "second");
+
+    try (var session = deployModel("juel-default", model)) {
+      var instance =
+          session
+              .engine()
+              .getRuntimeService()
+              .startProcessInstanceByKey("Process_Default", variables);
 
       assertEquals(
           List.of("Task_Default"),
@@ -101,44 +120,27 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
   }
 
   @Test
-  public void evaluatesBothJuelDelimitersAndNestedReadOnlyMapProperties() {
+  public void treatsImmediateAndDeferredDelimitersEquallyWithinTheProfileDomain() {
     requireTargetRelease();
     var immediate =
-        process(
+        profileProcess(
             "Process_Immediate",
-            "Flow_ImmediateDefault",
-            List.of("Flow_Immediate", "Flow_ImmediateDefault"),
-            List.of(
-                conditional(
-                    "Flow_Immediate",
-                    "Task_Immediate",
-                    "${document.accepted}"),
-                defaultFlow(
-                    "Flow_ImmediateDefault",
-                    "Task_ImmediateDefault")));
+            "${value != null}",
+            "${other != null}");
     var deferred =
-        process(
+        profileProcess(
             "Process_Deferred",
-            "Flow_DeferredDefault",
-            List.of("Flow_Deferred", "Flow_DeferredDefault"),
-            List.of(
-                conditional(
-                    "Flow_Deferred",
-                    "Task_Deferred",
-                    "#{document.accepted}"),
-                defaultFlow(
-                    "Flow_DeferredDefault",
-                    "Task_DeferredDefault")));
+            "#{value != null}",
+            "#{other != null}");
+    var variables = variablesWithNulls("other");
+    variables.put("value", "present");
 
     try (var session =
-        deploy(
+        deployModels(
             "juel-delimiters",
             Map.of(
                 "immediate.bpmn", immediate,
                 "deferred.bpmn", deferred))) {
-      var variables =
-          Map.<String, Object>of(
-              "document", Map.of("accepted", true));
       var immediateInstance =
           session
               .engine()
@@ -151,10 +153,10 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
               .startProcessInstanceByKey("Process_Deferred", variables);
 
       assertEquals(
-          List.of("Task_Immediate"),
+          List.of("Task_First"),
           activeTaskKeys(session.engine(), immediateInstance.getId()));
       assertEquals(
-          List.of("Task_Deferred"),
+          List.of("Task_First"),
           activeTaskKeys(session.engine(), deferredInstance.getId()));
     }
   }
@@ -162,68 +164,86 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
   @Test
   public void distinguishesPresentNullFromAnAbsentRootBinding() {
     requireTargetRelease();
-    var source =
-        process(
+    var model =
+        profileProcess(
             "Process_Null",
-            "Flow_NotNull",
-            List.of("Flow_Null", "Flow_NotNull"),
-            List.of(
-                conditional("Flow_Null", "Task_Null", "${value == null}"),
-                defaultFlow("Flow_NotNull", "Task_NotNull")));
-    var variables = new HashMap<String, Object>();
-    variables.put("value", null);
+            "${value == null}",
+            "${other != null}");
+    var presentNull = variablesWithNulls("value", "other");
 
-    try (var session = deploy("juel-null", source)) {
+    try (var session = deployModel("juel-null", model)) {
       var instance =
           session
               .engine()
               .getRuntimeService()
-              .startProcessInstanceByKey("Process_Null", variables);
+              .startProcessInstanceByKey("Process_Null", presentNull);
       assertEquals(
-          List.of("Task_Null"),
+          List.of("Task_First"),
           activeTaskKeys(session.engine(), instance.getId()));
     }
 
-    requireRolledBackStart("juel-absent", source, Map.of(), "Unknown property");
+    requireRolledBackStart(
+        "juel-absent",
+        "Process_Null",
+        model,
+        variablesWithNulls("other"),
+        "Unknown property");
   }
 
   @Test
   public void rejectsAStringResultInsteadOfCoercingItToBooleanAndRollsBack() {
     requireTargetRelease();
-    var source =
-        process(
+    var model =
+        profileProcess(
             "Process_NonBoolean",
-            "Flow_Default",
-            List.of("Flow_Value", "Flow_Default"),
-            List.of(
-                conditional("Flow_Value", "Task_Value", "${value}"),
-                defaultFlow("Flow_Default", "Task_Default")));
+            "${value}",
+            "${other != null}");
+    var variables = variablesWithNulls("other");
+    variables.put("value", "true");
 
     requireRolledBackStart(
         "juel-non-boolean",
-        source,
-        Map.of("value", "true"),
+        "Process_NonBoolean",
+        model,
+        variables,
+        "condition expression returns non-Boolean");
+  }
+
+  @Test
+  public void treatsDelimiterFreeTrueAsANonBooleanString() {
+    requireTargetRelease();
+    var model =
+        profileProcess(
+            "Process_LiteralText",
+            "true",
+            "${other != null}");
+
+    requireRolledBackStart(
+        "juel-literal-text",
+        "Process_LiteralText",
+        model,
+        variablesWithNulls("other"),
         "condition expression returns non-Boolean");
   }
 
   @Test
   public void rollsBackFailedUserTaskCompletionToTheSameCommittedWait() {
     requireTargetRelease();
-    var source =
-        processAfterUserTask(
+    var model =
+        CibSevenExclusiveGatewayModels.processAfterUserTask(
             "Process_UserTaskRollback",
-            "Flow_Default",
-            List.of("Flow_Failure", "Flow_Default"),
-            List.of(
-                conditional("Flow_Failure", "Task_Selected", "${missing != null}"),
-                defaultFlow("Flow_Default", "Task_Default")));
+            branch("Flow_First", "Task_First", "${missing != null}"),
+            branch("Flow_Second", "Task_Second", "${other != null}"),
+            fallback());
+    var initialVariables = variablesWithNulls("other");
 
-    try (var session = deploy("juel-user-task-rollback", source)) {
+    try (var session = deployModel("juel-user-task-rollback", model)) {
       var instance =
           session
               .engine()
               .getRuntimeService()
-              .startProcessInstanceByKey("Process_UserTaskRollback");
+              .startProcessInstanceByKey(
+                  "Process_UserTaskRollback", initialVariables);
       var task =
           session
               .engine()
@@ -247,7 +267,7 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
           .setVariable(instance.getId(), "missing", "present");
       session.engine().getTaskService().complete(task.getId());
       assertEquals(
-          List.of("Task_Selected"),
+          List.of("Task_First"),
           activeTaskKeys(session.engine(), instance.getId()));
     }
   }
@@ -255,64 +275,58 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
   @Test
   public void stopsOnAnEarlierResolutionFailureWithoutTryingALaterTrueFlow() {
     requireTargetRelease();
-    var source =
-        process(
+    var model =
+        profileProcess(
             "Process_EarlierFailure",
-            null,
-            List.of("Flow_Later", "Flow_Failure"),
-            List.of(
-                conditional("Flow_Failure", "Task_Failure", "${missing}"),
-                conditional("Flow_Later", "Task_Later", "${later}")));
+            "${missing != null}",
+            "${later != null}");
 
     requireRolledBackStart(
         "juel-earlier-failure",
-        source,
-        Map.of("later", true),
+        "Process_EarlierFailure",
+        model,
+        Map.of("later", "present"),
         "Unknown property");
   }
 
   @Test
   public void rejectsInvalidJuelDuringDeploymentWithoutRetainingADefinition() {
     requireTargetRelease();
-    var engine = CibSevenTestEngine.create("juel-syntax");
-    try {
-      var source =
-          process(
-              "Process_Syntax",
-              "Flow_Default",
-              List.of("Flow_Invalid", "Flow_Default"),
-              List.of(
-                  conditional("Flow_Invalid", "Task_Invalid", "${"),
-                  defaultFlow("Flow_Default", "Task_Default")));
+    var model =
+        profileProcess(
+            "Process_Syntax",
+            "${",
+            "${other != null}");
 
-      assertThrows(
-          ProcessEngineException.class,
-          () ->
-              engine
-                  .getRepositoryService()
-                  .createDeployment()
-                  .addString("syntax.bpmn", source)
-                  .deploy());
+    requireRejectedDeployment("juel-syntax", model);
+  }
+
+  @Test
+  public void routesALanguageQualifiedConditionToScriptHandling() {
+    requireTargetRelease();
+    var model =
+        profileProcess(
+            "Process_Language",
+            "${first != null}",
+            "${second != null}");
+    qualifyAsScriptCondition(
+        model, "Flow_First", "unsupported-language");
+    var source = Bpmn.convertToString(model);
+
+    assertTrue(
+        source,
+        source.contains(":type=\"bpmn:tFormalExpression\""));
+    assertTrue(source, source.contains("language=\"unsupported-language\""));
+
+    try (var session = deployModel("juel-language", model)) {
       assertEquals(
-          0,
-          engine
+          1,
+          session
+              .engine()
               .getRepositoryService()
               .createProcessDefinitionQuery()
               .count());
-      assertEquals(
-          0,
-          engine.getRepositoryService().createDeploymentQuery().count());
-    } finally {
-      engine.close();
-    }
-  }
 
-  private static void requireRolledBackStart(
-      String name,
-      String source,
-      Map<String, Object> variables,
-      String messageFragment) {
-    try (var session = deploy(name, source)) {
       var failure =
           assertThrows(
               ProcessEngineException.class,
@@ -321,7 +335,158 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
                       .engine()
                       .getRuntimeService()
                       .startProcessInstanceByKey(
-                          processId(source), variables));
+                          "Process_Language",
+                          Map.of("first", "present", "second", "present")));
+      assertTrue(
+          failure.getMessage(),
+          failure.getMessage().contains("unsupported-language"));
+      assertEquals(
+          0,
+          session
+              .engine()
+              .getRuntimeService()
+              .createProcessInstanceQuery()
+              .count());
+    }
+  }
+
+  @Test
+  public void rejectsAConditionOnTheDeclaredDefaultFlowAtDeployment() {
+    requireTargetRelease();
+    var model =
+        profileProcess(
+            "Process_ConditionalDefault",
+            "${first != null}",
+            "${second != null}");
+    var defaultCondition = model.newInstance(ConditionExpression.class);
+    defaultCondition.setTextContent("${fallback != null}");
+    sequenceFlow(model, "Flow_Default").setConditionExpression(defaultCondition);
+
+    requireRejectedDeployment("juel-conditional-default", model);
+  }
+
+  @Test
+  public void modelBuilderProducesTheAdmittedTypeAbsentConditionShape() {
+    requireTargetRelease();
+    var model =
+        profileProcess(
+            "Process_ModelShape",
+            "${first != null}",
+            "${second != null}");
+    var source = Bpmn.convertToString(model);
+
+    assertEquals(
+        "tFormalExpression",
+        condition(model, "Flow_First").getType());
+    assertFalse(source, source.contains(":type="));
+    assertFalse(source, source.contains("camunda:resource"));
+    assertFalse(source, source.contains("language="));
+  }
+
+  private static BpmnModelInstance profileProcess(
+      String processId, String firstExpression, String secondExpression) {
+    return CibSevenExclusiveGatewayModels.process(
+        processId,
+        branch("Flow_First", "Task_First", firstExpression),
+        branch("Flow_Second", "Task_Second", secondExpression),
+        fallback());
+  }
+
+  private static ConditionalBranch branch(
+      String sequenceFlowId, String taskId, String expression) {
+    return new ConditionalBranch(sequenceFlowId, taskId, expression);
+  }
+
+  private static DefaultBranch fallback() {
+    return new DefaultBranch("Flow_Default", "Task_Default");
+  }
+
+  private static ConditionExpression condition(
+      BpmnModelInstance model, String sequenceFlowId) {
+    return sequenceFlow(model, sequenceFlowId).getConditionExpression();
+  }
+
+  private static void qualifyAsScriptCondition(
+      BpmnModelInstance model,
+      String sequenceFlowId,
+      String language) {
+    model
+        .getDefinitions()
+        .getDomElement()
+        .registerNamespace("bpmn", BPMN_NAMESPACE);
+    var condition = condition(model, sequenceFlowId);
+    condition.setType("bpmn:tFormalExpression");
+    condition.setLanguage(language);
+  }
+
+  private static SequenceFlow sequenceFlow(
+      BpmnModelInstance model, String sequenceFlowId) {
+    return model.getModelElementById(sequenceFlowId);
+  }
+
+  private static Map<String, Object> variablesWithNulls(String... names) {
+    var variables = new HashMap<String, Object>();
+    for (var name : names) {
+      variables.put(name, null);
+    }
+    return variables;
+  }
+
+  private static List<String> activeTaskKeys(
+      ProcessEngine engine, String processInstanceId) {
+    return engine
+        .getTaskService()
+        .createTaskQuery()
+        .processInstanceId(processInstanceId)
+        .list()
+        .stream()
+        .map(task -> task.getTaskDefinitionKey())
+        .sorted()
+        .toList();
+  }
+
+  private static ProbeSession deployClasspath(String name, String resource) {
+    var engine = CibSevenTestEngine.create(name);
+    var deployment =
+        engine
+            .getRepositoryService()
+            .createDeployment()
+            .addClasspathResource(resource)
+            .deploy();
+    return new ProbeSession(engine, deployment.getId());
+  }
+
+  private static ProbeSession deployModel(
+      String name, BpmnModelInstance model) {
+    return deployModels(name, Map.of(name + ".bpmn", model));
+  }
+
+  private static ProbeSession deployModels(
+      String name, Map<String, BpmnModelInstance> models) {
+    var engine = CibSevenTestEngine.create(name);
+    var builder = engine.getRepositoryService().createDeployment();
+    for (var model : models.entrySet()) {
+      builder.addModelInstance(model.getKey(), model.getValue());
+    }
+    var deployment = builder.deploy();
+    return new ProbeSession(engine, deployment.getId());
+  }
+
+  private static void requireRolledBackStart(
+      String name,
+      String processId,
+      BpmnModelInstance model,
+      Map<String, Object> variables,
+      String messageFragment) {
+    try (var session = deployModel(name, model)) {
+      var failure =
+          assertThrows(
+              ProcessEngineException.class,
+              () ->
+                  session
+                      .engine()
+                      .getRuntimeService()
+                      .startProcessInstanceByKey(processId, variables));
       assertTrue(failure.getMessage(), failure.getMessage().contains(messageFragment));
       assertEquals(
           0,
@@ -354,173 +519,30 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
     }
   }
 
-  private static List<String> activeTaskKeys(
-      ProcessEngine engine, String processInstanceId) {
-    return engine
-        .getTaskService()
-        .createTaskQuery()
-        .processInstanceId(processInstanceId)
-        .list()
-        .stream()
-        .map(task -> task.getTaskDefinitionKey())
-        .sorted()
-        .toList();
-  }
-
-  private static ProbeSession deploy(String name, String source) {
-    return deploy(name, Map.of(name + ".bpmn", source));
-  }
-
-  private static ProbeSession deploy(
-      String name, Map<String, String> resources) {
+  private static void requireRejectedDeployment(
+      String name, BpmnModelInstance model) {
     var engine = CibSevenTestEngine.create(name);
-    var builder = engine.getRepositoryService().createDeployment();
-    for (var resource : resources.entrySet()) {
-      builder.addString(resource.getKey(), resource.getValue());
+    try {
+      assertThrows(
+          ProcessEngineException.class,
+          () ->
+              engine
+                  .getRepositoryService()
+                  .createDeployment()
+                  .addModelInstance(name + ".bpmn", model)
+                  .deploy());
+      assertEquals(
+          0,
+          engine
+              .getRepositoryService()
+              .createProcessDefinitionQuery()
+              .count());
+      assertEquals(
+          0,
+          engine.getRepositoryService().createDeploymentQuery().count());
+    } finally {
+      engine.close();
     }
-    var deployment = builder.deploy();
-    return new ProbeSession(engine, deployment.getId());
-  }
-
-  private static String processId(String source) {
-    var marker = "<bpmn:process id=\"";
-    var start = source.indexOf(marker);
-    if (start < 0) {
-      throw new IllegalArgumentException("Process source has no Process id");
-    }
-    var valueStart = start + marker.length();
-    var valueEnd = source.indexOf('"', valueStart);
-    return source.substring(valueStart, valueEnd);
-  }
-
-  private static String process(
-      String processId,
-      String defaultFlowId,
-      List<String> outgoingReferences,
-      List<Flow> declaredFlows) {
-    return process(
-        processId,
-        defaultFlowId,
-        outgoingReferences,
-        declaredFlows,
-        false);
-  }
-
-  private static String processAfterUserTask(
-      String processId,
-      String defaultFlowId,
-      List<String> outgoingReferences,
-      List<Flow> declaredFlows) {
-    return process(
-        processId,
-        defaultFlowId,
-        outgoingReferences,
-        declaredFlows,
-        true);
-  }
-
-  private static String process(
-      String processId,
-      String defaultFlowId,
-      List<String> outgoingReferences,
-      List<Flow> declaredFlows,
-      boolean includePrecedingUserTask) {
-    var gatewayDefault =
-        defaultFlowId == null ? "" : " default=\"" + defaultFlowId + "\"";
-    var gatewayIncoming =
-        includePrecedingUserTask ? "Flow_ToGateway" : "Flow_Start";
-    var precedingTask =
-        includePrecedingUserTask
-            ? """
-                <bpmn:userTask id="Task_Before">
-                  <bpmn:incoming>Flow_Start</bpmn:incoming>
-                  <bpmn:outgoing>Flow_ToGateway</bpmn:outgoing>
-                </bpmn:userTask>
-              """
-            : "";
-    var incomingFlows =
-        includePrecedingUserTask
-            ? """
-                <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Task_Before"/>
-                <bpmn:sequenceFlow id="Flow_ToGateway" sourceRef="Task_Before" targetRef="Gateway"/>
-              """
-            : """
-                <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Gateway"/>
-              """;
-    var outgoing = new StringBuilder();
-    for (var flowId : outgoingReferences) {
-      outgoing
-          .append("      <bpmn:outgoing>")
-          .append(flowId)
-          .append("</bpmn:outgoing>\n");
-    }
-    var tasks = new StringBuilder();
-    var flows = new StringBuilder();
-    for (var flow : declaredFlows) {
-      tasks
-          .append("    <bpmn:userTask id=\"")
-          .append(flow.taskId())
-          .append("\">\n")
-          .append("      <bpmn:incoming>")
-          .append(flow.id())
-          .append("</bpmn:incoming>\n")
-          .append("    </bpmn:userTask>\n");
-      flows
-          .append("    <bpmn:sequenceFlow id=\"")
-          .append(flow.id())
-          .append("\" sourceRef=\"Gateway\" targetRef=\"")
-          .append(flow.taskId())
-          .append("\">");
-      if (flow.expression() == null) {
-        flows.append("</bpmn:sequenceFlow>\n");
-      } else {
-        flows
-            .append("\n")
-            .append(
-                "      <bpmn:conditionExpression"
-                    + " xsi:type=\"bpmn:tFormalExpression\">")
-            .append(flow.expression())
-            .append("</bpmn:conditionExpression>\n")
-            .append("    </bpmn:sequenceFlow>\n");
-      }
-    }
-
-    return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <bpmn:definitions
-          xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          targetNamespace="urn:bpmn-lean:juel-probe">
-          <bpmn:process id="%s" isExecutable="true">
-            <bpmn:startEvent id="Start">
-              <bpmn:outgoing>Flow_Start</bpmn:outgoing>
-            </bpmn:startEvent>
-        %s
-            <bpmn:exclusiveGateway id="Gateway"%s>
-              <bpmn:incoming>%s</bpmn:incoming>
-        %s    </bpmn:exclusiveGateway>
-        %s%s
-        %s  </bpmn:process>
-        </bpmn:definitions>
-        """
-        .formatted(
-            processId,
-            precedingTask,
-            gatewayDefault,
-            gatewayIncoming,
-            outgoing,
-            tasks,
-            incomingFlows,
-            flows);
-  }
-
-  private static Flow conditional(
-      String id, String taskId, String expression) {
-    return new Flow(id, taskId, expression);
-  }
-
-  private static Flow defaultFlow(String id, String taskId) {
-    return new Flow(id, taskId, null);
   }
 
   private static void requireTargetRelease() {
@@ -528,8 +550,6 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
         "2.0.0".equals(
             ProcessEngine.class.getPackage().getImplementationVersion()));
   }
-
-  private record Flow(String id, String taskId, String expression) {}
 
   private record ProbeSession(ProcessEngine engine, String deploymentId)
       implements AutoCloseable {

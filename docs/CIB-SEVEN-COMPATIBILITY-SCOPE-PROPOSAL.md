@@ -1,12 +1,12 @@
 # CIB Seven compatibility scope proposal
 
-**Status:** Owner-approved on 2026-07-26 and amended on 2026-07-30 with the profile-selected JUEL delegation direction and first Exclusive Gateway condition capsule; no JUEL dependency, Java evaluator Worker, expression wire artifact, or production implementation is approved
+**Status:** Owner-approved on 2026-07-26 and amended on 2026-07-30 with the profile-selected JUEL delegation direction, first Exclusive Gateway condition capsule, and exact dependency set; dependency adoption, the Java evaluator Worker, expression wire artifact, and production implementation remain incomplete
 
 ## Question
 
 Which Camunda/CIB Seven BPMN extensions and execution APIs should this project treat as current scope, deliberate future scope, deferred compatibility work, or non-goals?
 
-The pinned-source findings and family inventory are in [CIB Seven BPMN extensions and execution-API research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md). This proposal selects project boundaries; it does not authorize a semantic capsule, dependency, Java runtime, expression engine, or production API implementation.
+The pinned-source findings and family inventory are in [CIB Seven BPMN extensions and execution-API research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md). This proposal selects project boundaries. The linked capsule and its exact dependency set are separately approved; this document does not itself authorize another semantic capsule, Java runtime, expression engine, or production API implementation.
 
 ## Layer role
 
@@ -54,7 +54,7 @@ Compatibility claims remain level-specific:
 | Existing CIB Seven `JavaDelegate` binaries | **Deferred compatibility lane** | Requires an isolated Java executor and an exact `DelegateExecution` API disposition; assess after typed variables and a Java-worker deployment need exist |
 | Existing original Camunda 7 delegate binaries | **Deferred separately** | `org.camunda` and `org.cibseven` package identities differ; support would require a distinct bridge or dual API surface |
 | Full `DelegateExecution`, `ActivityBehavior`, Process Engine services, REST and plugin compatibility | **Non-goal for the current product architecture** | This would reproduce engine internals and host identities that the semantic-core boundary deliberately excludes; reconsider only through a separately funded compatibility program |
-| Read-only JUEL/Unified EL over typed Process data | **First bounded capsule approved; dependency approval required** | Supply exact source and complete approved `string | null` Process context to the pinned CIB JUEL runtime behind a Java Activity; Lean and TypeScript consume a bound result and do not implement JUEL |
+| Read-only JUEL/Unified EL over typed Process data | **First bounded capsule and exact dependency set approved; adoption pending** | Supply exact source and the complete approved Process context as canonical tagged String/Null bindings to the pinned CIB JUEL runtime behind a Java Activity; Lean and TypeScript consume a bound result and do not implement JUEL |
 | General JUEL methods, beans, `execution`, mutation, or engine-service access | **Deferred separate capability lanes** | Data evaluation, typed variable patches, bean/application capabilities, and Process Engine services have different authority, security, rollback, and effect boundaries |
 | FEEL | **Not selected as the project-native replacement for JUEL** | The target BPMN expressions use JUEL and the pinned CIB FEEL integrations belong to DMN; reopen only for a concrete DMN or explicitly selected FEEL-language profile |
 | BPMN Script Task with a pure deterministic language subset | **Future profile-specific candidate after typed variables** | Use the exact selected language runtime; do not create a project language merely to obtain Script Task coverage |
@@ -180,7 +180,7 @@ The language options have these dispositions:
 
 If a JVM Worker is implemented, begin with a Java-friendly project handler API. The Worker itself may later be written in Kotlin, but its public contract must avoid Kotlin-specific types so ordinary Java handlers remain first-class. The first cross-language preflight should use plain Java unless Kotlin supplies a separately demonstrated capability, because Java directly tests the migration target without adding the Kotlin compiler, standard library, and build plugin.
 
-A Java Worker, Temporal Java SDK, Kotlin toolchain, CIB/Camunda API artifact, payload converter, or deployment unit is a new dependency or infrastructure decision. The approved scope puts the polyglot boundary in strategic scope but does not approve any of those additions.
+A Java Worker, Temporal Java SDK, Kotlin toolchain, CIB/Camunda API artifact, payload converter, or deployment unit is a new dependency or infrastructure decision. The approved scope puts the polyglot boundary in strategic scope. The linked Exclusive Gateway capsule separately approves only its recorded CIB JUEL, Temporal Java SDK, and Jackson BOM set; another Worker technology, payload converter, or deployment unit still requires its own decision.
 
 ## Phase-zero evidence condition
 
@@ -205,7 +205,7 @@ Keep four execution classes distinct:
 
 The project does not implement a grammar, AST, evaluator, optimizer, or transpiler merely to obtain BPMN or CIB coverage. It provides the exact source, language/profile identity, complete visible typed context, and expected result boundary; the selected language runtime owns parsing and evaluation. Lean and the TypeScript semantic core validate the result binding and implement the consuming BPMN rule conditional on that result.
 
-The first selected direction is read-only CIB JUEL under the owner-approved [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md). Its complete Process-scope context preserves presence versus explicit null, admits only `string | null` values, and contains no `execution`, bean, function, method, Process Engine service, or arbitrary Java object. One batched gateway request preserves XML `sequenceFlow` declaration order and first-true short circuit while the semantic core, not the evaluator, selects the outgoing Sequence Flow. The pinned source and packaged-engine probes establish that bounded profile account.
+The first selected direction is read-only CIB JUEL under the owner-approved [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md). Its complete Process-scope context preserves presence versus explicit null and reuses the canonical tagged String/Null variable contract; only after strict boundary validation does the Java evaluator convert those values to Java `String` or `null`. The context contains no `execution`, bean, function, method, Process Engine service, or arbitrary Java object. One batched gateway request preserves XML `sequenceFlow` declaration order and first-true short circuit while the semantic core, not the evaluator, selects the outgoing Sequence Flow. The pinned source and packaged-engine probes establish the broader engine behavior; the capsule-owned exact-profile witnesses separately establish the admitted source shapes and value domain.
 
 The existing `MappingExpression.stringLiteral` and exact `MappingExpression.localVariable` cases remain only for their implemented mapping capsules. The literal case is ordinary data. The local-variable case is a direct binding lookup under exact-token admission, not general JUEL; it must not grow. A future CIB JUEL mapping capsule replaces it atomically or retains an explicit exact-token equivalence, with no parallel selectable evaluator for the same source.
 
@@ -235,7 +235,7 @@ The durable compatibility claim and interpreter/Worker language boundary are rec
 
 The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) implements the exact delegate-expression pair under its bounded success-only semantic account.
 
-Apart from the completed bounded Service Task work and its phase-zero probe, this document approves only the bounded JUEL architecture and linked Exclusive Gateway proposal. No new dependency, Java evaluator Worker, executable JUEL wire artifact, script engine, or evidence replacement is approved.
+Apart from the completed bounded Service Task work and its phase-zero probe, this document approves only the bounded JUEL architecture and linked Exclusive Gateway proposal. The proposal's exact dependency set is owner-approved but not yet adopted. The Java evaluator Worker, executable JUEL wire artifact, script engine, and evidence replacement remain unimplemented and receive no broader authorization here.
 
 ## Approved owner decisions
 
@@ -247,7 +247,7 @@ The owner approved these seven decisions:
 4. use the exact delegate-expression bean token for the bounded Service Task capsule without claiming general JUEL;
 5. keep Java delegate binaries, capability-bearing JUEL/beans, scripts, FEEL, and external tasks as separately reopened compatibility lanes under the dispositions above;
 6. treat full Process Engine Java/REST/plugin compatibility as a non-goal unless a separately funded compatibility program is approved.
-7. for the first read-only CIB expression capsule, provide complete approved context to the actual pinned JUEL runtime behind a Java Activity, build no project AST/evaluator, keep mutation and engine-service calls separate, and require an explicit dependency decision before implementation.
+7. for the first read-only CIB expression capsule, provide complete approved context to the actual pinned JUEL runtime behind a Java Activity, build no project AST/evaluator, keep mutation and engine-service calls separate, and adopt only the explicitly approved dependency set recorded by that capsule.
 
 ## Reopen conditions
 

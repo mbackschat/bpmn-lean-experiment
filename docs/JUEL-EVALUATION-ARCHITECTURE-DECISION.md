@@ -2,13 +2,13 @@
 
 ## Status
 
-**Owner-selected architecture decision on 2026-07-30; the first Exclusive Gateway capsule is owner-approved, while its dependencies, Java Activity Worker, wire contracts, and production implementation remain unapproved.**
+**Owner-selected architecture decision on 2026-07-30; the first Exclusive Gateway capsule and its reviewed dependency set are owner-approved, while the dependencies remain uncommitted and the Java Activity Worker, wire contracts, and production implementation remain absent.**
 
 ## Question
 
 How should a selected CIB Seven profile evaluate read-only JUEL expressions without creating a project-owned expression language, parser, abstract syntax tree, or evaluator?
 
-This decision answers the evaluator-ownership and hosting question. The [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) now owns the first complete expression set, value domain, consuming semantics, and hosting preflight. Neither document authorizes a dependency or production implementation.
+This decision answers the evaluator-ownership and hosting question. The [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) owns the first complete expression set, value domain, consuming semantics, and hosting preflight. The exact reviewed dependency set was separately approved after independent review; this decision does not itself adopt it or claim an implementation.
 
 ## Layer and authority
 
@@ -64,11 +64,11 @@ The evaluator returns condition results, not a selected Sequence Flow. Under the
 
 The semantic core validates candidate identity and order and applies the separately approved gateway rule. If the pinned profile stops at the first true condition, evaluating later conditions is forbidden because a later expression may fail or invoke behavior that CIB would not reach.
 
-This decision alone authorizes no new Semantic Process IL operation. The owner-approved capsule proposes one generic `choose` operation, treats external evaluation as a private suspended command rather than a public wait, completes the Temporal preflight, and names the targeted closure-limit and multiple-enabledness obligations. Production work remains blocked on dependency approval and red/green implementation.
+This decision alone authorizes no new Semantic Process IL operation. The owner-approved capsule proposes one generic `choose` operation, treats external evaluation as a private suspended command rather than a public wait, completes the Temporal preflight, and names the targeted closure-limit and multiple-enabledness obligations. Dependency adoption and red/green implementation remain pending.
 
 ## Selected private contract boundary
 
-The capsule fixes the exact semantic fields, result-prefix invariant, typed error classes, and identity bindings. The concrete shared JSON Schema remains production work. Its minimum shape is:
+The capsule fixes the exact semantic fields, result-prefix invariant, one evaluation-error arm, diagnostic boundary, and identity bindings. The concrete shared JSON Schema remains production work. Its minimum shape is:
 
 ```ts
 type JuelConditionRequest = DeepReadonly<{
@@ -81,10 +81,7 @@ type JuelConditionRequest = DeepReadonly<{
     expression: string;
   }[];
   defaultSequenceFlowId: string;
-  processVariables: readonly {
-    name: string;
-    value: JuelContextValue;
-  }[];
+  processVariables: readonly VariableBinding[];
 }>;
 
 type JuelConditionResult = DeepReadonly<
@@ -100,29 +97,34 @@ type JuelConditionResult = DeepReadonly<
       kind: "evaluationError";
       requestDigest: string;
       sequenceFlowId: string;
-      error: JuelEvaluationError;
+      diagnostic: {
+        code: "propertyResolution" | "methodResolution" | "nonBooleanResult" | "runtimeFailure";
+        message: string | null;
+      } | null;
     }
 >;
 ```
 
-For the first capsule, `JuelContextValue` is exactly `string | null`; absence is represented by no binding. `JuelEvaluationError` is the closed set `unresolvedIdentifier | unsupportedCapability | nonBooleanResult | evaluationFailure`. The result is the ordered false prefix ending with the first true result, or the complete all-false candidate list. The request digest binds profile, definition, semantic Process instance, gateway operation and activation, candidates, exact expressions, default, and the complete Process-scope context. Host IDs, Activity attempts, task queues, and Java class names do not enter the semantic request.
+For the first capsule, `VariableBinding` and tagged `VariableValue.String | VariableValue.Null` are the existing canonical variable contract; absence is represented by no binding. The Java evaluator converts those two variants to Java `String | null` only at its validated boundary. There is one semantic `evaluationError` arm because every evaluator failure has the same consuming result: rollback to the original committed state. Its optional diagnostic code and message are operator data only and are excluded from the request digest, Lean/TypeScript semantic comparison, and command outcome. The code is the closed union shown above, and a non-null message is capped at 512 UTF-8 bytes; the implementation never classifies absent-root versus unsupported-property behavior by localized JUEL message text. The successful result is the ordered false prefix ending with the first true result, or the complete all-false candidate list. The request digest binds profile, definition, semantic Process instance, gateway operation and activation, candidates, exact expressions, default, and the complete tagged Process-scope context. Host IDs, Activity attempts, task queues, and Java class names do not enter the semantic request.
 
 ## Temporal hosting preflight
 
 The actual `cibseven-juel` implementation is Java and cannot execute inside the TypeScript Workflow sandbox. The selected hosting direction is a normal Java Temporal Activity Worker on a dedicated evaluator boundary. A TypeScript Local Activity or spawned JVM subprocess inside the Workflow Worker is not selected.
 
+Deployment-time syntax validation uses a short-lived TypeScript `validateJuelConditions` Workflow started by the deployment orchestrator after structural compilation and before any Process Workflow. It schedules one batched parse-only Activity on the same Java evaluator Worker and requires a content-bound success receipt before admission is finalized. This names the missing cross-language transport without adding a direct service endpoint or fourth runtime root. Validation syntax failure is definition rejection; Worker absence, timeout, malformed transport, or validation-Workflow failure is deployment infrastructure failure.
+
 The [capsule preflight](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md#temporal-hosting-and-refinement-preflight) selects:
 
 - one content-bound Activity request per gateway activation rather than one Activity per candidate condition;
 - XML Sequence Flow declaration-order evaluation and first-true short-circuit;
-- exact context serialization across the TypeScript and Java SDKs, including absence versus explicit null and the selected `string | null` values;
+- exact context serialization across the TypeScript and Java SDKs, including absence versus tagged explicit null and the selected String/Null values;
 - deterministic result delivery under Worker restart and replay;
 - start-to-close 2 seconds, schedule-to-close 10 seconds, two attempts, fixed 100-millisecond retry backoff, no heartbeat, read-only duplicate safety, and separate typed-evaluation versus infrastructure failures;
 - Event History growth per evaluation Activity and the resulting difference from pure internal semantic closure;
 - no evaluation result derived from Temporal task order, Activity attempt number, or another host identity;
 - no evaluator bypass that lets Workflow code or the TypeScript core fabricate condition truth.
 
-An Activity result is recorded in Event History and reused during replay. Replay therefore reproduces the selected route without running JUEL again for the recorded activation, while a new live activation evaluates against its new content-bound context.
+An Activity result is recorded in Event History and reused during replay. Replay therefore reproduces the selected route without running JUEL again for the recorded activation, while a new live activation evaluates against its new content-bound context. Runtime Activity attempt exhaustion fails the originating Update outside the semantic outcome algebra, discards the private continuation, preserves the original committed User Task wait, and resumes the single input queue; it cannot leave a permanently pending continuation.
 
 ## Evidence and independence
 
@@ -143,11 +145,11 @@ For the selected capsule, pristine CIB public behavior supplies enough evidence 
 
 ## Candidate dependency record
 
-The proposed Worker has runtime roots `org.cibseven.bpm.juel:cibseven-juel:2.0.0` and `io.temporal:temporal-sdk:1.35.0`, plus build-time import of `com.fasterxml.jackson:jackson-bom:2.21.5` to align Temporal's older Jackson transitive family to a currently advisory-clean patch. [SOURCES.md](SOURCES.md#candidate-java-juel-evaluator-worker) owns the resolved 38-artifact graph, URLs, source revisions, licenses, local-cache boundary, integrity, advisory scan, and removal cost.
+The approved Worker dependency set has runtime roots `org.cibseven.bpm.juel:cibseven-juel:2.0.0` and `io.temporal:temporal-sdk:1.35.0`, plus build-time import of `com.fasterxml.jackson:jackson-bom:2.21.5` to align Temporal's older Jackson transitive family to a currently advisory-clean patch. [SOURCES.md](SOURCES.md#candidate-java-juel-evaluator-worker) owns the resolved 38-artifact graph, URLs, source revisions, licenses, local-cache boundary, integrity, advisory scan, and removal cost.
 
 The JUEL artifact's role would be only parsing and evaluation in the isolated Java evaluator Worker. The Java Temporal SDK would host only the Activity Worker and cross-SDK payload boundary. Removing the module and task-queue registration removes the complete graph without changing the pure TypeScript semantic core. The Java module placement, payload converter, deployment unit, and container image remain implementation choices inside the capsule boundary.
 
-No dependency is adopted by this decision. Dependency approval requires the complete direct and transitive graph, exact versions and integrity, licenses, source provenance, runtime role, security review, and removal cost.
+No dependency is adopted by this decision. Independent review verified the complete direct and transitive graph, exact versions and integrity, licenses, source provenance, runtime role, security review, and removal cost, and the owner approved that exact set on 2026-07-30. A committed build change remains required before production use.
 
 ## Required before implementation
 
@@ -156,8 +158,9 @@ No dependency is adopted by this decision. Dependency approval requires the comp
 3. **Completed:** decide evaluator errors and command rollback against pinned CIB Seven.
 4. **Completed:** approve the [Exclusive Gateway source-order, default-flow, and evaluation-result capsule](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md).
 5. **Completed:** complete the capsule's Temporal hosting/refinement preflight.
-6. **Blocked on owner approval:** adopt the recorded Java Temporal, CIB JUEL, and Jackson alignment dependencies.
-7. **Pending after approval:** use red/green evidence before changing production Lean, TypeScript, Java, schemas, or retained evidence.
+6. **Completed:** approve the recorded Java Temporal, CIB JUEL, and Jackson alignment dependencies.
+7. **Completed:** name the short-lived validation Workflow, runtime Activity-exhaustion recovery, one semantic evaluation-error arm, tagged variable context, per-command closure budget, runtime-only inventory, and atomic versioning set.
+8. **Next:** commit the approved dependencies and use red/green evidence before changing production Lean, TypeScript, Java, schemas, or retained evidence.
 
 ## Exclusions
 

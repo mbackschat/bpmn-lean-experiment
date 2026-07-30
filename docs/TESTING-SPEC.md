@@ -85,6 +85,14 @@ The preflight must identify each semantic stimulus, wait, timer, subscription, e
 
 An admission, lowering, runtime-representation, or public-observation capsule must additionally state the exact source-to-result claim it can invalidate and retain the smallest theorem, typed check, or executable discriminator that detects the realistic wrong account. For every newly reachable structure, the capsule must executable-check its longest internal closure against the configured `semanticProcessClosureLimit`, including one over-limit negative witness, and must show that each newly reachable multiple-enabled state is an approved independent/order-invariant set, receives an explicit semantic choice, or is rejected consistently by Lean and TypeScript. A second capsule needing the same preservation proposition reopens the general theorem rather than duplicating an increasingly universal local proof.
 
+### CIB BPMN fixture construction
+
+Use the pinned CIB Seven BPMN Model API for ordinary project-authored CIB behavioral probes when its typed model can preserve every fact the witness needs. A capsule-specific helper should make the admitted source shape structurally unavoidable rather than expose an arbitrary XML builder; the Exclusive Gateway helper therefore requires exactly two conditional branches and one conditionless default. Direct project use of the model API is declared as a test dependency even when the engine already resolves it transitively.
+
+Keep literal BPMN XML when XML syntax, namespace spelling, declaration order, reference order, an omitted/defaulted attribute, parser rejection, or another lexical distinction is the discriminator. Do not route such a witness through a builder that may normalize, synthesize, validate, or reorder the deciding fact. A rare excluded model variant may use a private test helper over typed model and DOM APIs when the helper states the exact mutation and the generated XML shape is asserted.
+
+Do not modify the pinned CIB source or fork its DSL merely to simplify project fixtures. If a modified reference branch is necessary for tracing or a deterministic fault point, follow the [reference instrumentation policy](REFERENCE-INSTRUMENTATION-POLICY.md), shadow-compare it with the pristine lane, and keep it diagnostic rather than counting it as oracle evidence.
+
 ## Current contract and artifact gate
 
 ```sh

@@ -25,6 +25,7 @@ The script uses Homebrew Java 21 by default and the repository Maven wrapper.
 | Setting | Value |
 |---|---|
 | CIB Seven | `org.cibseven.bpm:cibseven-engine:2.2.0` |
+| BPMN Model API | Direct test-scope `org.cibseven.bpm.model:cibseven-bpmn-model` at the same release; already engine-transitive |
 | Database | H2 `2.3.232`, isolated in memory per runner |
 | Java | Release 21 |
 | Automatic job executor | Disabled |
@@ -63,7 +64,8 @@ The package script supplies the exact replacement opt-in. The command executes a
 | [CibSevenEffectProbe.java](src/main/java/org/bpmnlean/cibseven/CibSevenEffectProbe.java) | Test-local plain and fail-after-mutation Service Task delegate behavior |
 | [CibSevenServiceTaskScenarioRunnerTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskScenarioRunnerTest.java) | Ordinary plain-success and raw retry/re-execution scenario-runner evidence |
 | [CibSevenBoundaryErrorPhaseZeroProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java) | Packaged `2.0.0` boundary-error calibration, including the caught output-mapping and unmatched rollback counterexamples |
-| [CibSevenExclusiveGatewayJuelProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java) | Packaged `2.0.0` Exclusive Gateway calibration for JUEL delimiter/context behavior, Sequence Flow declaration order, first-true short-circuit, default selection, result typing, failure, and command rollback |
+| [CibSevenExclusiveGatewayModels.java](src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayModels.java) | Typed CIB Model API fixture restricted to the exact two-condition-plus-default profile shape |
+| [CibSevenExclusiveGatewayJuelProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java) | Fourteen packaged-`2.0.0` Exclusive Gateway probes covering declaration order, exact-profile first/second/default routing, short circuit, delimiters, tagged-domain source cases, result typing, deployment admission, language-as-script routing, failure, and command rollback |
 | [CibSevenIsolatedJuelRuntimeProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenIsolatedJuelRuntimeProbeTest.java) | Direct pinned-JUEL feasibility probe for immutable root/array/list/map data with no Process Engine, bean, function, method, or writable-property surface |
 | [CibSevenTestEngine.java](src/test/java/org/bpmnlean/cibseven/CibSevenTestEngine.java) | Shared isolated test-engine configuration for the bounded probes |
 | [PvmDefinitionProjector.java](src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) | Read-only diagnostic definition projection |
