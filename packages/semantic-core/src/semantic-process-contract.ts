@@ -55,76 +55,30 @@ export type CheckedBpmnErrorRoute = DeepReadonly<{
   outputFlowId: string;
 }>;
 
-type CheckedServiceTaskBase = DeepReadonly<{
+export const EffectProtocol = {
+  Activity: "urn:bpmn-lean:effect-protocol:activity-v1",
+} as const;
+
+export const EffectOperation = {
+  Probe: "urn:bpmn-lean:effect-operation:probe-v1",
+  MappedSuccess: "urn:bpmn-lean:effect-operation:mapped-success-v1",
+  MappedBoundaryError:
+    "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1",
+} as const;
+
+export type EffectDescriptor = DeepReadonly<{
+  protocol: string;
+  operation: string;
+}>;
+
+type CheckedServiceTask = DeepReadonly<{
   kind: CheckedNodeKind.ServiceTask;
   id: string;
+  descriptor: EffectDescriptor;
   inputMappings: VariableMapping[];
   outputMappings: VariableMapping[];
   bpmnErrorRoute: CheckedBpmnErrorRoute | null;
 }>;
-
-type ProbeServiceTask = CheckedServiceTaskBase &
-  DeepReadonly<{
-    implementation: "urn:bpmn-lean:effect:probe-v1";
-    sourceBinding: {
-      delegateExpressionAttribute: {
-        namespace: "http://camunda.org/schema/1.0/bpmn";
-        value: "${bpmnLeanEffectHandler}";
-      };
-      asyncBeforeAttribute: {
-        namespace: "http://camunda.org/schema/1.0/bpmn";
-        value: "true";
-      };
-    };
-  }>;
-
-type A12CreateDocumentServiceTask = CheckedServiceTaskBase &
-  DeepReadonly<{
-    implementation: "urn:bpmn-lean:a12-delegate:v1";
-    sourceBinding: {
-      delegateExpressionAttribute: {
-        namespace: "http://camunda.org/schema/1.0/bpmn";
-        value: "${createDocumentDelegate}";
-      };
-      protocolSource: "semanticProfile";
-      inputOutputElement: {
-        namespace: "http://camunda.org/schema/1.0/bpmn";
-        inputParameter: {
-          name: "documentModelName";
-          body: "MyDocumentModel";
-        };
-        outputParameter: {
-          name: "myDocumentReference";
-          body: "${newDocRef}";
-        };
-      };
-    };
-  }>;
-
-type A12BoundaryErrorServiceTask = CheckedServiceTaskBase &
-  DeepReadonly<{
-    implementation: "urn:bpmn-lean:a12-delegate:v1";
-    sourceBinding: {
-      delegateExpressionAttribute: {
-        namespace: "http://camunda.org/schema/1.0/bpmn";
-        value: "#{createRelationshipLinkDelegate}";
-      };
-      implementationAttribute: {
-        value: "urn:bpmn-lean:a12-delegate:v1";
-      };
-      inputOutputElement: {
-        namespace: "http://camunda.org/schema/1.0/bpmn";
-        inputParameter: {
-          name: "relationshipModel";
-          body: "RelationshipModel";
-        };
-        outputParameter: {
-          name: "relationshipLinkId";
-          body: "${newLinkId}";
-        };
-      };
-    };
-  }>;
 
 export type CheckedNode =
   | DeepReadonly<{
@@ -141,9 +95,7 @@ export type CheckedNode =
       id: string;
       durationLiteral: "PT1S";
     }>
-  | ProbeServiceTask
-  | A12CreateDocumentServiceTask
-  | A12BoundaryErrorServiceTask
+  | CheckedServiceTask
   | DeepReadonly<{
       kind: CheckedNodeKind.ParallelGateway;
       id: string;
@@ -211,16 +163,6 @@ export type BpmnSequenceFlowOrigin = DeepReadonly<{
 export type ControlPlace = DeepReadonly<{
   id: string;
   origin: BpmnSequenceFlowOrigin;
-}>;
-
-export type EffectDescriptor = DeepReadonly<{
-  protocol:
-    | "urn:bpmn-lean:effect:probe-v1"
-    | "urn:bpmn-lean:a12-delegate:v1";
-  handler:
-    | "bpmnLeanEffectHandler"
-    | "createDocumentDelegate"
-    | "createRelationshipLinkDelegate";
 }>;
 
 export type BpmnErrorRoute = DeepReadonly<{

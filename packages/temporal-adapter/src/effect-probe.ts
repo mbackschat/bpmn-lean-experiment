@@ -1,4 +1,6 @@
 import {
+  EffectOperation,
+  EffectProtocol,
   EffectExecutionResultKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
@@ -147,7 +149,7 @@ export class EffectProbeActivityRegistry {
       if (
         registration === undefined ||
         registration.request.protocol !== request.protocol ||
-        registration.request.handler !== request.handler
+        registration.request.operation !== request.operation
       ) {
         throw new Error(
           `No exact probe registration exists for ${request.idempotencyKey}`,
@@ -162,22 +164,22 @@ function requireEffectRequest(
   request: EffectRequest,
 ): void {
   if (
-    request.protocol !== "urn:bpmn-lean:effect:probe-v1" ||
-    request.handler !== "bpmnLeanEffectHandler" ||
+    request.protocol !== EffectProtocol.Activity ||
+    request.operation !== EffectOperation.Probe ||
     request.arguments.length !== 0
   ) {
     const isCreateDocument =
-      request.protocol === "urn:bpmn-lean:a12-delegate:v1" &&
-      request.handler === "createDocumentDelegate" &&
+      request.protocol === EffectProtocol.Activity &&
+      request.operation === EffectOperation.MappedSuccess &&
       hasCreateDocumentArguments(request.arguments);
     if (!isCreateDocument) {
       const isBoundaryError =
-        request.protocol === "urn:bpmn-lean:a12-delegate:v1" &&
-        request.handler === "createRelationshipLinkDelegate" &&
+        request.protocol === EffectProtocol.Activity &&
+        request.operation === EffectOperation.MappedBoundaryError &&
         hasBoundaryErrorArguments(request.arguments);
       if (!isBoundaryError) {
         throw new TypeError(
-          "Effect request must contain one admitted protocol, handler, and argument contract",
+          "Effect request must contain one admitted protocol, operation, and argument contract",
         );
       }
     }
@@ -196,7 +198,7 @@ function requireEffectRequest(
 function effectResultFor(
   request: EffectRequest,
 ): EffectExecutionResult {
-  if (request.handler === "createDocumentDelegate") {
+  if (request.operation === EffectOperation.MappedSuccess) {
     return {
       kind: EffectExecutionResultKind.Success,
       localPatch: [
@@ -210,7 +212,7 @@ function effectResultFor(
       ],
     };
   }
-  if (request.handler === "createRelationshipLinkDelegate") {
+  if (request.operation === EffectOperation.MappedBoundaryError) {
     return {
       kind: EffectExecutionResultKind.BpmnError,
       code: "LinkLimitReachedError",

@@ -11,8 +11,8 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
 def descriptor : EffectDescriptor :=
-  { protocol := "urn:bpmn-lean:effect:probe-v1"
-    handler := "bpmnLeanEffectHandler" }
+  { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+    operation := "urn:bpmn-lean:effect-operation:probe-v1" }
 
 def checkedProcess : CheckedProcess :=
   { identity :=
@@ -25,12 +25,7 @@ def checkedProcess : CheckedProcess :=
       [ .noneEndEvent ⟨"EndEvent_1"⟩
       , .serviceTask
           ⟨"ServiceTask_Record"⟩
-          "urn:bpmn-lean:effect:probe-v1"
-          (.probe
-            "http://camunda.org/schema/1.0/bpmn"
-            "${bpmnLeanEffectHandler}"
-            "http://camunda.org/schema/1.0/bpmn"
-            "true")
+          descriptor
           []
           []
           none

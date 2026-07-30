@@ -43,7 +43,10 @@ test("matches native SHA-256 for the proposed multi-block effect transport bytes
       "Process_ServiceTaskEffect",
     ],
     ["Instance_1", "ServiceTask_Record", 1],
-    ["urn:bpmn-lean:effect:probe-v1", "bpmnLeanEffectHandler"],
+    [
+      "urn:bpmn-lean:effect-protocol:activity-v1",
+      "urn:bpmn-lean:effect-operation:probe-v1",
+    ],
   ]);
   assert.ok(Buffer.byteLength(encoding, "utf8") > 64);
   assert.equal(

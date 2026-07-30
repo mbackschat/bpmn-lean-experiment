@@ -60,8 +60,8 @@ const material: EffectTransportMaterial = Object.freeze({
     activation: 1,
   },
   descriptor: {
-    protocol: "urn:bpmn-lean:effect:probe-v1",
-    handler: "bpmnLeanEffectHandler",
+    protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+    operation: "urn:bpmn-lean:effect-operation:probe-v1",
   },
   arguments: [],
 });
@@ -79,8 +79,8 @@ const createDocumentMaterial: EffectTransportMaterial = Object.freeze({
     activation: 1,
   },
   descriptor: {
-    protocol: "urn:bpmn-lean:a12-delegate:v1",
-    handler: "createDocumentDelegate",
+    protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+    operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
   },
   arguments: [
     {
@@ -115,11 +115,11 @@ test("encodes and digests the complete committed effect intent", () => {
   } as const satisfies EffectExecutionResult;
   assert.equal(
     canonicalEffectTransportEncoding(material),
-    '["effectTransport",["cibseven-2.2.0-service-task-effect-draft","service-task-effect-process","0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","Process_ServiceTaskEffect"],["Instance_1","ServiceTask_Record",1],["urn:bpmn-lean:effect:probe-v1","bpmnLeanEffectHandler"],[]]',
+    '["effectTransport",["cibseven-2.2.0-service-task-effect-draft","service-task-effect-process","0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","Process_ServiceTaskEffect"],["Instance_1","ServiceTask_Record",1],["urn:bpmn-lean:effect-protocol:activity-v1","urn:bpmn-lean:effect-operation:probe-v1"],[]]',
   );
   assert.equal(
     effectTransportKey(material),
-    "effect-transport-sha256:c26d9095cbca0dd542631ac07a4271cef739265d1357c1a6225c3c8b47d06713",
+    "effect-transport-sha256:ddf0be90e3c504ba65452cc6961647f9e6e041cbaac08a707b006e42bf9cacf7",
   );
   assert.equal(
     canonicalCompleteEffectEncoding(material.occurrence, result),
@@ -144,11 +144,11 @@ test("encodes and digests the complete committed effect intent", () => {
 test("content-binds CreateDocument arguments and typed result bytes", () => {
   assert.equal(
     canonicalEffectTransportEncoding(createDocumentMaterial),
-    '["effectTransport",["cibseven-2.0.0-a12-create-document-draft","a12-create-document-data","34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13","Process_A12CreateDocument"],["Instance_1","CreateDocument",1],["urn:bpmn-lean:a12-delegate:v1","createDocumentDelegate"],[["documentModelName",["string","MyDocumentModel"]]]]',
+    '["effectTransport",["cibseven-2.0.0-a12-create-document-draft","a12-create-document-data","34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13","Process_A12CreateDocument"],["Instance_1","CreateDocument",1],["urn:bpmn-lean:effect-protocol:activity-v1","urn:bpmn-lean:effect-operation:mapped-success-v1"],[["documentModelName",["string","MyDocumentModel"]]]]',
   );
   assert.equal(
     effectTransportKey(createDocumentMaterial),
-    "effect-transport-sha256:a0698192512794db66d09219648fca793f8354719af59eafb990262e107ba76e",
+    "effect-transport-sha256:0c53e91ee1ad870c4a37f45d216157ac47045080885cd444b7d1612b205ffbfd",
   );
   assert.equal(
     canonicalCompleteEffectEncoding(
@@ -334,18 +334,18 @@ const identityMutations: ReadonlyArray<IdentityMutation> = [
       ...base,
       descriptor: {
         ...base.descriptor,
-        protocol: "urn:bpmn-lean:a12-delegate:v1",
+        protocol: "urn:bpmn-lean:effect-protocol:other-v1",
       },
     }),
   },
   {
     group: "descriptor",
-    field: "handler",
+    field: "operation",
     mutate: (base) => ({
       ...base,
       descriptor: {
         ...base.descriptor,
-        handler: "createDocumentDelegate",
+        operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
       },
     }),
   },

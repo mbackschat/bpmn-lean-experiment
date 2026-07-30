@@ -52,7 +52,7 @@ The selected account is the exact-code, same-Process, Task-attached case. The ca
 - one project-authored MIT fixture shaped after the product mechanism without copying A12 source;
 - exact source handler token `#{createRelationshipLinkDelegate}`;
 - profile-specific recognition of that exact deferred-expression token, with the wrong `${...}` sigil rejected;
-- profile-supplied protocol `urn:bpmn-lean:a12-delegate:v1`;
+- profile-registered neutral Activity protocol and mapped-boundary-error operation;
 - one literal string input mapping and one simple local-reference output mapping;
 - one attached interrupting boundary Error Event;
 - one referenced root Error with exact code `LinkLimitReachedError`;
@@ -85,7 +85,7 @@ The project-authored fixture admits:
 
 - one private executable Process with the exact topology shown above;
 - one Service Task carrying exact delegate-expression token `#{createRelationshipLinkDelegate}`;
-- profile-supplied protocol `urn:bpmn-lean:a12-delegate:v1`;
+- registered neutral descriptor `urn:bpmn-lean:effect-protocol:activity-v1` plus `urn:bpmn-lean:effect-operation:mapped-boundary-error-v1`;
 - one input parameter `relationshipModel = "RelationshipModel"` normalized as a string literal;
 - one output parameter `relationshipLinkId = ${newLinkId}` normalized as a simple Activity-local reference;
 - one Boundary Event attached to that Service Task;
@@ -96,7 +96,7 @@ The project-authored fixture admits:
 - no error-code or error-message variable extension;
 - no other executable extension content.
 
-The lexical forms `${name}` and `#{name}` are not interchangeable source-profile tokens. CIB/JUEL classifies `${...}` as immediate syntax and `#{...}` as deferred syntax even though the delegate-expression host evaluates the selected expression when invoking the Service Task. This profile accepts only exact `#{createRelationshipLinkDelegate}` and rejects `${createRelationshipLinkDelegate}` as a hostile wrong-sigil control. After exact profile admission, the token normalizes to runtime handler identity `createRelationshipLinkDelegate`; the sigil does not enter `EffectDescriptor`. The CreateDocument profile independently retains exact `${createDocumentDelegate}`. These two explicit mappings are not a claim of general JUEL evaluation or lexical equivalence.
+The lexical forms `${name}` and `#{name}` are not interchangeable source-profile tokens. CIB/JUEL classifies `${...}` as immediate syntax and `#{...}` as deferred syntax even though the delegate-expression host evaluates the selected expression when invoking the Service Task. This profile accepts only exact `#{createRelationshipLinkDelegate}` and rejects `${createRelationshipLinkDelegate}` as a hostile wrong-sigil control. After exact profile admission, the registered neutral Activity/mapped-boundary-error descriptor enters the checked graph; the raw bean token and sigil do not enter `EffectDescriptor`. The CreateDocument profile independently retains exact `${createDocumentDelegate}` and maps it to its own neutral operation. These registrations are not a claim of general JUEL evaluation or lexical equivalence, and Lean does not independently derive them.
 
 The checked source retains the mapping bodies, Boundary Event ID and optional name, attachment, Error Event Definition ID and reference, root Error ID, optional name, exact code, boundary Sequence Flow, and exact BPMN element provenance. The target's `BoundaryEvent.name="Error Event"` and `Error.name="Link Limit Reached"` are source metadata, not matching keys. A name change changes exact source identity but not runtime matching. Admission rejects a missing or unresolved reference, a different code, `cancelActivity="false"`, a second handler, a catch-all definition, an unattached event, the wrong expression sigil, or foreign executable content.
 

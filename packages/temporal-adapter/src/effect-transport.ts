@@ -37,7 +37,7 @@ export function canonicalEffectTransportEncoding(
     ],
     [
       material.descriptor.protocol,
-      material.descriptor.handler,
+      material.descriptor.operation,
     ],
     material.arguments.map(variableBindingTuple),
   ]);

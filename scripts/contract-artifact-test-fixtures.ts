@@ -240,8 +240,8 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
       "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d",
   };
   const descriptor = {
-    protocol: "urn:bpmn-lean:effect:probe-v1",
-    handler: "bpmnLeanEffectHandler",
+    protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+    operation: "urn:bpmn-lean:effect-operation:probe-v1",
   };
   return {
     checkedProcess: {
@@ -253,20 +253,10 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
         {
           kind: "serviceTask",
           id: "ServiceTask_Record",
-          implementation: descriptor.protocol,
+          descriptor: { ...descriptor },
           inputMappings: [],
           outputMappings: [],
           bpmnErrorRoute: null,
-          sourceBinding: {
-            delegateExpressionAttribute: {
-              namespace: "http://camunda.org/schema/1.0/bpmn",
-              value: "${bpmnLeanEffectHandler}",
-            },
-            asyncBeforeAttribute: {
-              namespace: "http://camunda.org/schema/1.0/bpmn",
-              value: "true",
-            },
-          },
         },
         { kind: "noneStartEvent", id: "StartEvent_1" },
       ],

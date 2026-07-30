@@ -6,7 +6,7 @@ This specification owns the approved bounded source, data, mapping, effect-resul
 
 This capsule defines the smallest semantic and compatibility contract needed to admit the maintained A12 Workflows `CreateDocument.bpmn` source unchanged while preserving the project's single TypeScript semantic core, Temporal Activity boundary, and Lean assurance model.
 
-This is a deliberate vertical feasibility slice, not the architectural location of A12 behavior. Literal input mapping, scoped result validation, output mapping, and effect-result commitment are reusable BPMN/CIB mechanisms; the exact bean token, profile-supplied protocol, external source check, and migration measurement belong to the downstream A12 adoption boundary. Another A12 model that uses these same contracts should add adapter/profile configuration and regression evidence rather than another model-specific semantic path.
+This is a deliberate vertical feasibility slice, not the architectural location of A12 behavior. Literal input mapping, scoped result validation, output mapping, and effect-result commitment are reusable BPMN/CIB mechanisms; the exact bean token, its profile registration to a neutral operation, the external source check, and migration measurement belong outside the semantic core. Another A12 model that uses these same contracts should add adapter/profile configuration and regression evidence rather than another model-specific semantic path.
 
 The [CIB Seven 2.0 target assessment](../research/CIB-SEVEN-A12-BASELINE-RESEARCH.md) owns release comparison. The [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns the product denominator. Owner approval authorizes this bounded implementation; it does not authorize a JVM Worker, general variables, general JUEL, or a broader compatibility claim.
 
@@ -40,7 +40,7 @@ The exact maintained source has:
 - string values only;
 - one Process scope and one Activity-local scope;
 - one literal input mapping and one simple local-variable-reference output mapping;
-- profile-supplied effect protocol plus source-supplied bean handler;
+- profile-registered neutral Activity protocol and mapped-success operation;
 - committed effect arguments derived before Activity execution;
 - one successful Activity-local result patch;
 - deterministic output mapping and Process-variable projection;
@@ -70,16 +70,16 @@ Select a new CIB Seven `2.0.0` A12 target profile. Do not mutate, alias, or rela
 
 The target profile may reuse reviewed clauses and witness designs from the payload-free Service Task capsule where the underlying CIB source is byte-identical. It must generate its own engine-version-bound observations and content-bound evidence.
 
-The profile supplies protocol identity `urn:bpmn-lean:a12-delegate:v1` because the maintained source has no standard BPMN `implementation` attribute. The source's exact delegate-expression token supplies handler identity `createDocumentDelegate`.
+The profile retains the exact source delegate-expression token and registers it to the neutral Activity protocol and mapped-success operation. The absence of a standard BPMN `implementation` attribute is part of the source binding; it does not cause a vendor or bean identity to enter the neutral descriptor.
 
 ```ts
 type EffectDescriptor = Readonly<{
-  protocol: "urn:bpmn-lean:a12-delegate:v1";
-  handler: "createDocumentDelegate";
+  protocol: "urn:bpmn-lean:effect-protocol:activity-v1";
+  operation: "urn:bpmn-lean:effect-operation:mapped-success-v1";
 }>;
 ```
 
-The protocol is a versioned project compatibility contract, not a fact read from the BPMN attribute. The checked graph records that provenance. Admission rejects a different or compound bean expression; recognizing the exact `${createDocumentDelegate}` token remains structural binding, not general JUEL execution.
+The neutral descriptor is a versioned project contract, not a fact read from a BPMN attribute. Exact source/profile evidence records the raw binding and its profile registration; the checked graph carries only the neutral descriptor plus generic mappings. Admission rejects a different or compound bean expression, so recognizing the exact `${createDocumentDelegate}` token remains structural binding rather than general JUEL execution. Lean independently validates neutral graph-to-program lowering but does not independently derive the raw binding registration.
 
 ## Source admission
 
@@ -122,7 +122,7 @@ type MappingExpression =
   | Readonly<{ kind: "localVariable"; name: string }>;
 ```
 
-The input body `MyDocumentModel` normalizes to `stringLiteral`. The output body `${newDocRef}` normalizes to `localVariable`. The checked source retains the exact bodies so Lean independently validates normalization.
+The input body `MyDocumentModel` normalizes to `stringLiteral`. The output body `${newDocRef}` normalizes to `localVariable`. The checked graph retains the mapping names and normalized expression data so Lean independently validates neutral graph-to-program lowering. Exact lexical bodies remain source/profile evidence; Lean does not independently parse their Camunda syntax.
 
 This is not a JUEL subset claim. The syntax recognizer accepts only the complete `${identifier}` form for this output position, with no whitespace, nesting, property access, call, operator, coercion, fallback, or side effect. The handler token is separately recognized as a binding token and is not evaluated through `MappingExpression`.
 
@@ -280,7 +280,7 @@ The differential judgement is therefore not four independent semantic derivation
 | Rule | Profile clause | Lean | CIB Seven `2.0.0` | TypeScript core | Temporal refinement | Negative or mutation guard |
 |---|---|---|---|---|---|---|
 | `CDATA-INPUT-01` | Exact literal `documentModelName` input mapping | `literal_input_commits_exact_arguments` and exact waiting trace | Delegate observes the one engine-mapped literal argument | Start commits exactly one immutable effect argument | Activity request is derived from committed arguments | Argument variation/omission changes or collides with transport identity as expected |
-| `CDATA-INTENT-01` | Profile protocol plus exact source handler and mappings | Exact waiting trace and successful mapping trace | No semantic-intent claim; synchronous host execution only | Observation and transport material derive from admitted program plus committed state | Retry, replay, and Worker replacement preserve the same request | Host-derived identity and Activity-bypass mutations fail |
+| `CDATA-INTENT-01` | Exact raw source binding registered to the neutral Activity/mapped-success descriptor plus exact mappings | Exact neutral waiting trace and successful mapping trace; no raw source-translation claim | No semantic-intent claim; synchronous host execution only | Observation and transport material derive from admitted program plus committed state | Retry, replay, and Worker replacement preserve the same request | Raw-binding, neutral-operation, host-derived identity, and Activity-bypass mutations fail |
 | `CDATA-PATCH-01` | Exact successful local `newDocRef` patch | `successful_result_maps_only_process_target` | Probe records one local write | Exact success patch commits | Typed Activity result produces one content-bound completion | Patch-field/value identity locks |
 | `CDATA-PATCH-REFUSE-01` | Closed one-field result contract | Quantified `invalid_patch_is_rejected` with missing, extra, and duplicate examples | No result-ingress claim | Missing, extra, duplicate, wrong-name, and wrong-type patches preserve state | No independent mismatch input; adapter forwards the typed Worker result | Malformed-patch tests preserve the exact wait |
 | `CDATA-OUTPUT-01` | Exact `${newDocRef}` output mapping | Exact final trace, output theorem, and direct-patch-to-Process-scope non-law | Engine maps local output to the Process variable | Core alone evaluates the output mapping and rejects direct patch naming as final scope | Adapter supplies only the typed local patch | Direct-patch mapping witness and Activity-bypass history mutation |
@@ -324,7 +324,7 @@ For `CDATA-OUTPUT-01` and `CDATA-SCOPE-01`, `camunda:inputOutput` has no BPMN no
 The owner approved all eight selections:
 
 1. a distinct CIB Seven `2.0.0` A12 target profile for this capsule, without merging it with `2.2.0`;
-2. the exact unchanged `CreateDocument` source shape with profile-supplied protocol `urn:bpmn-lean:a12-delegate:v1` and source handler `createDocumentDelegate`;
+2. the exact unchanged `CreateDocument` source shape with its raw delegate-expression binding registered to neutral Activity/mapped-success identities;
 3. string-only typed values, one Process scope, one Activity-local scope, literal input mapping, and exact simple local-variable output reference;
 4. committed effect arguments, one validated Activity-local success patch, and core-owned output mapping to canonical Process variables;
 5. transport identity extended by committed arguments and completion-command identity extended by the typed patch;

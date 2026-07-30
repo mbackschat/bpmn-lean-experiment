@@ -1,6 +1,8 @@
 import {
   CheckedNodeKind,
   CheckedProcessKind,
+  EffectOperation,
+  EffectProtocol,
   MappingExpressionKind,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
@@ -190,19 +192,11 @@ function projectCreateDocument(
   return {
     kind: CheckedNodeKind.ServiceTask,
     id,
-    implementation: protocol,
-    bpmnErrorRoute: null,
-    sourceBinding: {
-      delegateExpressionAttribute: {
-        namespace: camundaNamespace,
-        value: handlerExpression,
-      },
-      protocolSource: "semanticProfile",
-      inputOutputElement: {
-        namespace: camundaNamespace,
-        ...inputOutput,
-      },
+    descriptor: {
+      protocol: EffectProtocol.Activity,
+      operation: EffectOperation.MappedSuccess,
     },
+    bpmnErrorRoute: null,
     inputMappings: [{
       target: inputOutput.inputParameter.name,
       expression: {

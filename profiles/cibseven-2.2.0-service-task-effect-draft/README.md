@@ -1,6 +1,6 @@
 # CIB Seven 2.2.0 Service Task effect profile
 
-The [immutable profile artifact](profile.json) selects one private executable `None Start Event → Service Task → None End Event` Process with the exact paired `implementation="urn:bpmn-lean:effect:probe-v1"`, `{http://camunda.org/schema/1.0/bpmn}delegateExpression="${bpmnLeanEffectHandler}"`, and `{http://camunda.org/schema/1.0/bpmn}asyncBefore="true"` binding.
+The [immutable profile artifact](profile.json) selects one private executable `None Start Event → Service Task → None End Event` Process with the exact paired `implementation="urn:bpmn-lean:effect:probe-v1"`, `{http://camunda.org/schema/1.0/bpmn}delegateExpression="${bpmnLeanEffectHandler}"`, and `{http://camunda.org/schema/1.0/bpmn}asyncBefore="true"` source binding. Its `effectBindings` registration maps that raw source pair to the neutral Activity/probe descriptor used by the checked graph, Lean, semantic core, and Temporal adapter.
 
 The profile claims only the selected extension `CIB-EXT-0001` under the explicit disabled-executor/manual-release configuration `CIB-CFG-0002`. CIB exposes a pre-activation continuation wait and atomic delegate invocation plus Service Task completion; mapping that wait to the project effect occurrence is adapter-decided rather than an independent CIB derivation.
 

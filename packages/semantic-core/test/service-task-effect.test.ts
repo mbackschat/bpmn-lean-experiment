@@ -36,8 +36,8 @@ import {
 } from "./semantic-program-parts.ts";
 
 const descriptor = Object.freeze({
-  protocol: "urn:bpmn-lean:effect:probe-v1",
-  handler: "bpmnLeanEffectHandler",
+  protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+  operation: "urn:bpmn-lean:effect-operation:probe-v1",
 });
 
 const effectProgram: SemanticProcessProgram = {

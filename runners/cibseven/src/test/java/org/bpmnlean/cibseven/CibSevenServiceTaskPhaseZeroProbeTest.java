@@ -32,9 +32,10 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
   private static final String SERVICE_TASK_ID = "ServiceTask_Record";
   private static final String BPMN_NAMESPACE = CibSevenEffectProjector.BPMN_NAMESPACE;
   private static final String CAMUNDA_NAMESPACE = CibSevenEffectProjector.CAMUNDA_NAMESPACE;
-  private static final String HANDLER_BEAN = CibSevenEffectProjector.HANDLER_BEAN;
+  private static final String HANDLER_BEAN =
+      CibSevenEffectProjector.SOURCE_HANDLER_BEAN;
   private static final String HANDLER_EXPRESSION = "${" + HANDLER_BEAN + "}";
-  private static final String EFFECT_PROTOCOL = CibSevenEffectProjector.EFFECT_PROTOCOL;
+  private static final String EFFECT_PROTOCOL = CibSevenEffectProjector.SOURCE_PROTOCOL;
 
   @Test
   public void decrementsRetriesAndReexecutesWithOneTestLocalMutation()

@@ -225,8 +225,8 @@ test("active wait projection orders by semantic kind before element ID", () => {
       {
         id: taskId("M_Effect"),
         descriptor: {
-          protocol: "urn:bpmn-lean:effect:probe-v1",
-          handler: "bpmnLeanEffectHandler",
+          protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+          operation: "urn:bpmn-lean:effect-operation:probe-v1",
         },
         arguments: [],
         outputMappings: [],

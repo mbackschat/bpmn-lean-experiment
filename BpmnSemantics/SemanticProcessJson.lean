@@ -265,6 +265,13 @@ private def decodeCheckedBpmnErrorRoute (json : Json) :
             code := ← stringField json "code"
             outputFlowId := ⟨← stringField json "outputFlowId"⟩ })
 
+private def decodeEffectDescriptor (json : Json) :
+    Except String EffectDescriptor := do
+  requireObjectShape json ["operation", "protocol"]
+  pure
+    { protocol := ← stringField json "protocol"
+      operation := ← stringField json "operation" }
+
 private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   let kind ← stringField json "kind"
   match kind with
@@ -285,73 +292,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← stringField json "durationLiteral"))
   | "serviceTask" =>
       requireObjectShape json
-        ["bpmnErrorRoute", "id", "implementation", "inputMappings", "kind",
-          "outputMappings", "sourceBinding"]
-      let implementation ← stringField json "implementation"
-      let binding ← field json "sourceBinding"
-      let delegateExpression ← field binding "delegateExpressionAttribute"
-      requireObjectShape delegateExpression ["namespace", "value"]
-      let sourceBinding ←
-        match implementation with
-        | "urn:bpmn-lean:effect:probe-v1" => do
-            requireObjectShape binding
-              ["asyncBeforeAttribute", "delegateExpressionAttribute"]
-            let asyncBefore ← field binding "asyncBeforeAttribute"
-            requireObjectShape asyncBefore ["namespace", "value"]
-            pure
-              (.probe
-                (← stringField delegateExpression "namespace")
-                (← stringField delegateExpression "value")
-                (← stringField asyncBefore "namespace")
-                (← stringField asyncBefore "value"))
-        | "urn:bpmn-lean:a12-delegate:v1" => do
-            let inputOutput ← field binding "inputOutputElement"
-            requireObjectShape inputOutput
-              ["inputParameter", "namespace", "outputParameter"]
-            let inputParameter ← field inputOutput "inputParameter"
-            let outputParameter ← field inputOutput "outputParameter"
-            requireObjectShape inputParameter ["body", "name"]
-            requireObjectShape outputParameter ["body", "name"]
-            match binding with
-            | .obj object =>
-                if (object.get? "implementationAttribute").isSome then
-                  requireObjectShape binding
-                    ["delegateExpressionAttribute", "implementationAttribute",
-                      "inputOutputElement"]
-                  let implementationAttribute ←
-                    field binding "implementationAttribute"
-                  requireObjectShape implementationAttribute ["value"]
-                  pure
-                    (.a12BoundaryError
-                      (← stringField delegateExpression "namespace")
-                      (← stringField delegateExpression "value")
-                      (← stringField implementationAttribute "value")
-                      (← stringField inputOutput "namespace")
-                      (← stringField inputParameter "name")
-                      (← stringField inputParameter "body")
-                      (← stringField outputParameter "name")
-                      (← stringField outputParameter "body"))
-                else
-                  requireObjectShape binding
-                    ["delegateExpressionAttribute", "inputOutputElement",
-                      "protocolSource"]
-                  expectStringField binding "protocolSource" "semanticProfile"
-                  pure
-                    (.a12CreateDocument
-                      (← stringField delegateExpression "namespace")
-                      (← stringField delegateExpression "value")
-                      (← stringField inputOutput "namespace")
-                      (← stringField inputParameter "name")
-                      (← stringField inputParameter "body")
-                      (← stringField outputParameter "name")
-                      (← stringField outputParameter "body"))
-            | _ => throw "Service Task source binding must be an object"
-        | _ => throw s!"unsupported Service Task implementation {implementation}"
+        ["bpmnErrorRoute", "descriptor", "id", "inputMappings", "kind",
+          "outputMappings"]
       pure
         (.serviceTask
           ⟨← stringField json "id"⟩
-          implementation
-          sourceBinding
+          (← decodeEffectDescriptor (← field json "descriptor"))
           (← decodeArray decodeVariableMapping (← field json "inputMappings"))
           (← decodeArray decodeVariableMapping (← field json "outputMappings"))
           (← decodeCheckedBpmnErrorRoute (← field json "bpmnErrorRoute")))
@@ -431,13 +377,6 @@ private def decodeTimerDefinition (json : Json) :
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       durationMs := ← decodeSafeNat (← field json "durationMs") }
-
-private def decodeEffectDescriptor (json : Json) :
-    Except String EffectDescriptor := do
-  requireObjectShape json ["handler", "protocol"]
-  pure
-    { protocol := ← stringField json "protocol"
-      handler := ← stringField json "handler" }
 
 private def decodeEffectDefinition (json : Json) :
     Except String EffectDefinition := do

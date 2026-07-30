@@ -56,7 +56,7 @@ public class CibSevenActiveWaitProjectorTest {
         new EffectOccurrenceId("Instance_1", elementId, 1),
         new EffectDescriptor(
             CibSevenEffectProjector.EFFECT_PROTOCOL,
-            CibSevenEffectProjector.HANDLER_BEAN),
+            CibSevenEffectProjector.EFFECT_OPERATION),
         List.of());
   }
 }

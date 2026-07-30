@@ -48,8 +48,8 @@ public final class CibSevenServiceTaskScenarioRunnerTest {
         CibSevenEffectProjector.EFFECT_PROTOCOL,
         waiting.openEffects().getFirst().descriptor().protocol());
     assertEquals(
-        CibSevenEffectProjector.HANDLER_BEAN,
-        waiting.openEffects().getFirst().descriptor().handler());
+        CibSevenEffectProjector.EFFECT_OPERATION,
+        waiting.openEffects().getFirst().descriptor().operation());
     assertEquals(
         CommandOutcome.COMMITTED,
         ((CommandObservation) result.trace().get(3)).outcome());

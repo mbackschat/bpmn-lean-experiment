@@ -322,26 +322,11 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
     {
       kind: CheckedNodeKind.ServiceTask,
       id: "CreateDocument",
-      implementation: "urn:bpmn-lean:a12-delegate:v1",
-      bpmnErrorRoute: null,
-      sourceBinding: {
-        delegateExpressionAttribute: {
-          namespace: "http://camunda.org/schema/1.0/bpmn",
-          value: "${createDocumentDelegate}",
-        },
-        protocolSource: "semanticProfile",
-        inputOutputElement: {
-          namespace: "http://camunda.org/schema/1.0/bpmn",
-          inputParameter: {
-            name: "documentModelName",
-            body: "MyDocumentModel",
-          },
-          outputParameter: {
-            name: "myDocumentReference",
-            body: "${newDocRef}",
-          },
-        },
+      descriptor: {
+        protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+        operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
       },
+      bpmnErrorRoute: null,
       inputMappings: [
         {
           target: "documentModelName",
@@ -378,8 +363,8 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
       effect: {
         elementId: "CreateDocument",
         descriptor: {
-          protocol: "urn:bpmn-lean:a12-delegate:v1",
-          handler: "createDocumentDelegate",
+          protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+          operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
         },
         inputMappings: [
           {

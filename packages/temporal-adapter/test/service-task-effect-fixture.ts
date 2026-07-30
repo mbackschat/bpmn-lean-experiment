@@ -37,8 +37,8 @@ export type ServiceTaskEffectRequest = EffectDescriptor &
   }>;
 
 const descriptor: EffectDescriptor = {
-  protocol: "urn:bpmn-lean:effect:probe-v1",
-  handler: "bpmnLeanEffectHandler",
+  protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+  operation: "urn:bpmn-lean:effect-operation:probe-v1",
 };
 
 export function serviceTaskEffectInput(

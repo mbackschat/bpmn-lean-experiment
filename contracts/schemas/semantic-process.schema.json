@@ -238,56 +238,20 @@
       }
     },
     "effectDescriptor": {
-      "oneOf": [
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "protocol",
-            "handler"
-          ],
-          "properties": {
-            "protocol": {
-              "const": "urn:bpmn-lean:effect:probe-v1"
-            },
-            "handler": {
-              "const": "bpmnLeanEffectHandler"
-            }
-          }
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "operation"
+      ],
+      "properties": {
+        "protocol": {
+          "$ref": "#/$defs/nonemptyString"
         },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "protocol",
-            "handler"
-          ],
-          "properties": {
-            "protocol": {
-              "const": "urn:bpmn-lean:a12-delegate:v1"
-            },
-            "handler": {
-              "const": "createDocumentDelegate"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "protocol",
-            "handler"
-          ],
-          "properties": {
-            "protocol": {
-              "const": "urn:bpmn-lean:a12-delegate:v1"
-            },
-            "handler": {
-              "const": "createRelationshipLinkDelegate"
-            }
-          }
+        "operation": {
+          "$ref": "#/$defs/nonemptyString"
         }
-      ]
+      }
     },
     "mappingExpression": {
       "oneOf": [

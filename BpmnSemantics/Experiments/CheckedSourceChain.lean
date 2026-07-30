@@ -163,7 +163,7 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | intermediateCatchTimerEvent id duration =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
-        | serviceTask id implementation binding inputs outputs route =>
+        | serviceTask id descriptor inputs outputs route =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | parallelGateway gatewayNode direction =>
             cases direction with

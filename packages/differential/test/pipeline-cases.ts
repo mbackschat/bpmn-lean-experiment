@@ -113,7 +113,7 @@ function mutateOpenTimerDeadline(result: MutableScenarioResult): void {
   };
 }
 
-function mutateOpenEffectHandler(result: MutableScenarioResult): void {
+function mutateOpenEffectOperation(result: MutableScenarioResult): void {
   const running = runningObservation(result);
   const openEffect = running.openEffects?.[0];
   if (openEffect === undefined) {
@@ -123,7 +123,7 @@ function mutateOpenEffectHandler(result: MutableScenarioResult): void {
     ...openEffect,
     descriptor: {
       ...openEffect.descriptor,
-      handler: `${openEffect.descriptor.handler}-mutated`,
+      operation: `${openEffect.descriptor.operation}-mutated`,
     },
   } as unknown as typeof openEffect;
 }
@@ -308,11 +308,11 @@ function effectCase(): PipelineCase {
     cibEffectExecutionSchedule:
       CibEffectExecutionSchedule.FailAfterMutationOnce,
     replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
-    injectMutation: mutateOpenEffectHandler,
+    injectMutation: mutateOpenEffectOperation,
     expectedInjectedDisagreement: observationValueDisagreement(
-      "trace[2].openEffects[0].descriptor.handler",
-      "bpmnLeanEffectHandler",
-      "bpmnLeanEffectHandler-mutated",
+      "trace[2].openEffects[0].descriptor.operation",
+      "urn:bpmn-lean:effect-operation:probe-v1",
+      "urn:bpmn-lean:effect-operation:probe-v1-mutated",
     ),
   });
 }

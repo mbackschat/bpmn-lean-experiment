@@ -145,7 +145,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var boundaryErrorProbe = new CibSevenBoundaryErrorProbe();
     engineConfiguration.setBeans(
         Map.of(
-            CibSevenEffectProjector.HANDLER_BEAN,
+            CibSevenEffectProjector.SOURCE_HANDLER_BEAN,
             effectProbe,
             CibSevenCreateDocumentProbe.HANDLER_BEAN,
             createDocumentProbe,

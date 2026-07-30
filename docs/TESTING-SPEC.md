@@ -99,7 +99,7 @@ The gate:
 - requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
 - checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, canonical unordered-array order, and raw CIB task-query, timer-job, effect-job, and effect-execution observations against their canonical projections;
 - pins every schema integer to the JavaScript-safe range, checks Unicode scalar-value ordering across BMP and supplementary-plane identifiers without normalization, and rejects duplicate decoded keys and unpaired surrogates from exact JSON bytes;
-- distinguishes unknown and missing fields, closed-enum violations, explicit `null` from absence, unsafe and non-integral numbers, answer smuggling, stale evidence, unknown relationships, invalid task, timer, or effect activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw producer observations, duplicate raw semantic task identities, timer-deadline projection drift, and Service Task handler drift.
+- distinguishes unknown and missing fields, closed-enum violations, explicit `null` from absence, unsafe and non-integral numbers, answer smuggling, stale evidence, unknown relationships, invalid task, timer, or effect activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw producer observations, duplicate raw semantic task identities, timer-deadline projection drift, raw Service Task binding drift, and neutral effect-operation drift.
 
 Retained CIB evidence is verifier-only. Target runners never receive it, and ordinary green runs never regenerate it.
 

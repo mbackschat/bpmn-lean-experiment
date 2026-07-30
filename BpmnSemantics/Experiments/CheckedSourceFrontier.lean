@@ -199,7 +199,7 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   cases candidate with
   | noneStartEvent id => simp [fireNode?, notPending]
   | intermediateCatchTimerEvent id duration => rfl
-  | serviceTask id implementation binding inputs outputs route => rfl
+  | serviceTask id descriptor inputs outputs route => rfl
   | userTask id name =>
       simp only [nodeArityValid, Bool.and_eq_true, decide_eq_true_eq] at candidateArity
       have disabled := firstIncomingDisabled source state id noToken candidateArity.1

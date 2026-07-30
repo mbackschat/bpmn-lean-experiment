@@ -61,6 +61,18 @@
     "trace": "synchronous-caught-error-host-relation",
     "semanticConcurrency": false
   },
+  "effectBindings": [
+    {
+      "source": {
+        "implementation": "urn:bpmn-lean:a12-delegate:v1",
+        "delegateExpression": "#{createRelationshipLinkDelegate}"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1"
+      }
+    }
+  ],
   "excluded": [
     "catch-all-error-boundaries",
     "multiple-error-handlers",

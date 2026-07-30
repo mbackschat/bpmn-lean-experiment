@@ -56,6 +56,18 @@
     "trace": "exact-after-canonical-projection",
     "semanticConcurrency": false
   },
+  "effectBindings": [
+    {
+      "source": {
+        "implementation": null,
+        "delegateExpression": "${createDocumentDelegate}"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:mapped-success-v1"
+      }
+    }
+  ],
   "excluded": [
     "non-string-values",
     "general-variables",

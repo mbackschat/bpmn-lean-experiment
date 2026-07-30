@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0-service-task-effect-draft",
-    "sha256": "8c82e2b29074eb6aed262c88a3ba0050f2710cc4b8dd9e7bad4c52617bf9eae7"
+    "sha256": "0d6e2bad3cd98e49bf8c283fdf8aceb38b8d3bf24c5f5f04a13d671c511fb698"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -107,8 +107,8 @@
               "activation": 1
             },
             "descriptor": {
-              "protocol": "urn:bpmn-lean:effect:probe-v1",
-              "handler": "bpmnLeanEffectHandler"
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1"
             },
             "arguments": []
           }

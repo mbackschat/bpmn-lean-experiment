@@ -2,7 +2,7 @@
 
 The [immutable profile artifact](profile.json) selects one project-authored private executable Process with an exact synchronous `#{createRelationshipLinkDelegate}` Service Task, literal input mapping, local-reference output mapping, matching interrupting Error Boundary Event, boundary User Task, and normal and boundary None End Events.
 
-The standard BPMN account owns exact-code matching, interruption, abandonment of the normal route, and boundary continuation. The CIB overlay owns the exact deferred delegate-expression binding and the profile-scoped caught-path output-mapping extension: the Worker-reported Activity-local null patch is validated, the committed output mapping creates a present null-valued Process variable, local state is removed, and the boundary route opens atomically.
+The standard BPMN account owns exact-code matching, interruption, abandonment of the normal route, and boundary continuation. The CIB overlay owns the exact deferred delegate-expression binding, its `effectBindings` registration to the neutral Activity/mapped-boundary-error descriptor, and the profile-scoped caught-path output-mapping extension: the Worker-reported Activity-local null patch is validated, the committed output mapping creates a present null-valued Process variable, local state is removed, and the boundary route opens atomically.
 
 CIB Seven executes the delegate, error catch, output mapping, and boundary routing synchronously in one engine command. The project effect intent, successful typed Activity result, command identity, and replay boundary are Temporal-hosted refinements rather than independent CIB states.
 

@@ -11,8 +11,8 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
 def descriptor : EffectDescriptor :=
-  { protocol := "urn:bpmn-lean:a12-delegate:v1"
-    handler := "createDocumentDelegate" }
+  { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+    operation := "urn:bpmn-lean:effect-operation:mapped-success-v1" }
 
 def inputMappings : List VariableMapping :=
   [{ target := "documentModelName"
@@ -36,15 +36,7 @@ def checkedProcess : CheckedProcess :=
     nodes :=
       [ .serviceTask
           ⟨"CreateDocument"⟩
-          descriptor.protocol
-          (.a12CreateDocument
-            "http://camunda.org/schema/1.0/bpmn"
-            "${createDocumentDelegate}"
-            "http://camunda.org/schema/1.0/bpmn"
-            "documentModelName"
-            "MyDocumentModel"
-            "myDocumentReference"
-            "${newDocRef}")
+          descriptor
           inputMappings
           outputMappings
           none

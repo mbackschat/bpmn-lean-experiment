@@ -1,4 +1,5 @@
 import {
+  EffectOperation,
   VariableValueKind,
   type SemanticProcessProgram,
   type StartProcessStimulus,
@@ -27,7 +28,7 @@ export function runBpmnProcessEffectBypassMutation(
       );
     },
     async (request) => ({
-      ...(request.handler === "createRelationshipLinkDelegate"
+      ...(request.operation === EffectOperation.MappedBoundaryError
         ? {
             kind: EffectExecutionResultKind.BpmnError,
             code: "LinkLimitReachedError",
@@ -42,7 +43,7 @@ export function runBpmnProcessEffectBypassMutation(
         : {
             kind: EffectExecutionResultKind.Success,
             localPatch:
-              request.handler === "createDocumentDelegate"
+              request.operation === EffectOperation.MappedSuccess
                 ? [
                     {
                       name: "newDocRef",

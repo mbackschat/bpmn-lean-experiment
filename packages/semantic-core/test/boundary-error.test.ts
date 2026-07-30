@@ -54,8 +54,9 @@ const program: SemanticProcessProgram = {
       effect: {
         elementId: "CreateRelationshipLinkTask",
         descriptor: {
-          protocol: "urn:bpmn-lean:a12-delegate:v1",
-          handler: "createRelationshipLinkDelegate",
+          protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+          operation:
+            "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1",
         },
         inputMappings: [
           {

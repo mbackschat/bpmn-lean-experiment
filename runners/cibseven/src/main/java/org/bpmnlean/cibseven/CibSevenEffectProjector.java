@@ -13,15 +13,18 @@ import org.w3c.dom.Element;
 /**
  * Projects the bounded async-before Service Task host wait from public deployment and job state.
  *
- * <p>Activity, protocol, handler, retry, and executability facts are host-derived. Mapping the sole
- * live job to semantic activation one is deliberately adapter-decided.
+ * <p>Activity, source protocol, handler, retry, and executability facts are host-derived. Mapping
+ * the admitted source binding to a neutral effect descriptor and the sole live job to semantic
+ * activation one are deliberately adapter-decided.
  */
 final class CibSevenEffectProjector {
 
   static final String BPMN_NAMESPACE = "http://www.omg.org/spec/BPMN/20100524/MODEL";
   static final String CAMUNDA_NAMESPACE = "http://camunda.org/schema/1.0/bpmn";
-  static final String EFFECT_PROTOCOL = "urn:bpmn-lean:effect:probe-v1";
-  static final String HANDLER_BEAN = "bpmnLeanEffectHandler";
+  static final String SOURCE_PROTOCOL = "urn:bpmn-lean:effect:probe-v1";
+  static final String SOURCE_HANDLER_BEAN = "bpmnLeanEffectHandler";
+  static final String EFFECT_PROTOCOL = "urn:bpmn-lean:effect-protocol:activity-v1";
+  static final String EFFECT_OPERATION = "urn:bpmn-lean:effect-operation:probe-v1";
 
   List<ProjectedEffectWait> project(
       ProcessEngine engine, String processInstanceId, String stableInstanceId) {
@@ -58,14 +61,14 @@ final class CibSevenEffectProjector {
       var handler =
           requireBeanToken(
               requireAttribute(serviceTask, CAMUNDA_NAMESPACE, "delegateExpression"));
-      if (!EFFECT_PROTOCOL.equals(protocol) || !HANDLER_BEAN.equals(handler)) {
+      if (!SOURCE_PROTOCOL.equals(protocol) || !SOURCE_HANDLER_BEAN.equals(handler)) {
         throw new IllegalStateException(
             "Deployed Service Task binding does not match the admitted profile");
       }
       var activation = Math.toIntExact(activationCount);
       var occurrence =
           new EffectOccurrenceId(stableInstanceId, definition.getActivityId(), activation);
-      var descriptor = new EffectDescriptor(protocol, handler);
+      var descriptor = new EffectDescriptor(EFFECT_PROTOCOL, EFFECT_OPERATION);
       projected.add(
           new ProjectedEffectWait(
               job.getId(),

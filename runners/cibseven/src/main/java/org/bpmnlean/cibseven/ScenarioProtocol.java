@@ -278,10 +278,10 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record EffectDescriptor(String protocol, String handler) {
+  public record EffectDescriptor(String protocol, String operation) {
     public EffectDescriptor {
       Objects.requireNonNull(protocol, "protocol");
-      Objects.requireNonNull(handler, "handler");
+      Objects.requireNonNull(operation, "operation");
     }
   }
 

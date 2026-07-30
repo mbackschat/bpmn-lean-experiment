@@ -8,6 +8,9 @@ import type {
   StartProcessStimulus,
 } from "./contract.js";
 import {
+  EffectOperation,
+  EffectProtocol,
+  MappingExpressionKind,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -403,61 +406,46 @@ function isSupportedEffectContract(
 ): boolean {
   if (
     !isRecord(effect.descriptor) ||
-    !hasOnlyKeys(effect.descriptor, ["protocol", "handler"]) ||
+    !hasOnlyKeys(effect.descriptor, ["protocol", "operation"]) ||
+    effect.descriptor.protocol !== EffectProtocol.Activity ||
+    !isNonEmptyString(effect.descriptor.operation) ||
     !Array.isArray(effect.inputMappings) ||
     !Array.isArray(effect.outputMappings)
   ) {
     return false;
   }
-  if (
-    effect.descriptor.protocol === "urn:bpmn-lean:effect:probe-v1" &&
-    effect.descriptor.handler === "bpmnLeanEffectHandler"
-  ) {
-    return effect.inputMappings.length === 0 &&
-      effect.outputMappings.length === 0 &&
-      bpmnErrorRoute === null;
+  switch (effect.descriptor.operation) {
+    case EffectOperation.Probe:
+      return effect.inputMappings.length === 0 &&
+        effect.outputMappings.length === 0 &&
+        bpmnErrorRoute === null;
+    case EffectOperation.MappedSuccess:
+      return isSingleMapping(
+          effect.inputMappings,
+          MappingExpressionKind.StringLiteral,
+          "value",
+        ) &&
+        isSingleMapping(
+          effect.outputMappings,
+          MappingExpressionKind.LocalVariable,
+          "name",
+        ) &&
+        bpmnErrorRoute === null;
+    case EffectOperation.MappedBoundaryError:
+      return isSingleMapping(
+          effect.inputMappings,
+          MappingExpressionKind.StringLiteral,
+          "value",
+        ) &&
+        isSingleMapping(
+          effect.outputMappings,
+          MappingExpressionKind.LocalVariable,
+          "name",
+        ) &&
+        isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds);
+    default:
+      return false;
   }
-  if (
-    effect.descriptor.protocol !==
-      "urn:bpmn-lean:a12-delegate:v1"
-  ) {
-    return false;
-  }
-  const createDocument =
-    effect.descriptor.handler === "createDocumentDelegate" &&
-      isExactMapping(
-      effect.inputMappings,
-      "documentModelName",
-      "stringLiteral",
-      "value",
-      "MyDocumentModel",
-    ) &&
-    isExactMapping(
-      effect.outputMappings,
-      "myDocumentReference",
-      "localVariable",
-      "name",
-      "newDocRef",
-    ) &&
-      bpmnErrorRoute === null;
-  const boundaryError =
-    effect.descriptor.handler === "createRelationshipLinkDelegate" &&
-      isExactMapping(
-        effect.inputMappings,
-        "relationshipModel",
-        "stringLiteral",
-        "value",
-        "RelationshipModel",
-      ) &&
-      isExactMapping(
-        effect.outputMappings,
-        "relationshipLinkId",
-        "localVariable",
-        "name",
-        "newLinkId",
-      ) &&
-      isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds);
-  return createDocument || boundaryError;
 }
 
 function isWellFormedBpmnErrorRoute(
@@ -467,7 +455,6 @@ function isWellFormedBpmnErrorRoute(
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, ["code", "output", "origin"]) ||
-    value.code !== "LinkLimitReachedError" ||
     !isPlaceReference(value.output, placeIds) ||
     !isRecord(value.origin) ||
     !hasOnlyKeys(value.origin, [
@@ -481,28 +468,27 @@ function isWellFormedBpmnErrorRoute(
     return false;
   }
   return value.origin.kind === SemanticOriginKind.BpmnElement &&
+    isNonEmptyString(value.code) &&
     isNonEmptyString(value.origin.boundaryEventId) &&
     isNonEmptyString(value.origin.errorDefinitionId) &&
     isNonEmptyString(value.origin.errorElementId) &&
     isNonEmptyString(value.origin.sequenceFlowId);
 }
 
-function isExactMapping(
+function isSingleMapping(
   mappings: ReadonlyArray<unknown>,
-  target: string,
-  kind: string,
+  kind: MappingExpressionKind,
   valueField: "name" | "value",
-  value: string,
 ): boolean {
   const mapping = mappings[0];
   return mappings.length === 1 &&
     isRecord(mapping) &&
     hasOnlyKeys(mapping, ["target", "expression"]) &&
-    mapping.target === target &&
+    isNonEmptyString(mapping.target) &&
     isRecord(mapping.expression) &&
     hasOnlyKeys(mapping.expression, ["kind", valueField]) &&
     mapping.expression.kind === kind &&
-    mapping.expression[valueField] === value;
+    isNonEmptyString(mapping.expression[valueField]);
 }
 
 function isSupportedScenario(value: unknown): value is Scenario {

@@ -202,7 +202,7 @@ test("retains PT1S in the checked graph and lowers one timer wait", async () => 
   );
 });
 
-test("retains the exact Service Task binding and lowers one effect wait", async () => {
+test("keeps the exact Service Task binding outside the neutral checked graph", async () => {
   const result = await compileFixture(
     "../../../scenarios/service-task-effect/process.bpmn",
     "service-task-effect-phase-zero-probe",
@@ -217,21 +217,18 @@ test("retains the exact Service Task binding and lowers one effect wait", async 
     {
       kind: CheckedNodeKind.ServiceTask,
       id: "ServiceTask_Record",
-      implementation: "urn:bpmn-lean:effect:probe-v1",
+      descriptor: {
+        protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+        operation: "urn:bpmn-lean:effect-operation:probe-v1",
+      },
       inputMappings: [],
       outputMappings: [],
       bpmnErrorRoute: null,
-      sourceBinding: {
-        delegateExpressionAttribute: {
-          namespace: "http://camunda.org/schema/1.0/bpmn",
-          value: "${bpmnLeanEffectHandler}",
-        },
-        asyncBeforeAttribute: {
-          namespace: "http://camunda.org/schema/1.0/bpmn",
-          value: "true",
-        },
-      },
     },
+  );
+  assert.doesNotMatch(
+    JSON.stringify(result.checkedProcess),
+    /camunda|bpmnLeanEffectHandler/,
   );
   assert.deepEqual(
     result.semanticProcess.operations.find(
@@ -249,14 +246,18 @@ test("retains the exact Service Task binding and lowers one effect wait", async 
       effect: {
         elementId: "ServiceTask_Record",
         descriptor: {
-          protocol: "urn:bpmn-lean:effect:probe-v1",
-          handler: "bpmnLeanEffectHandler",
+          protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+          operation: "urn:bpmn-lean:effect-operation:probe-v1",
         },
         inputMappings: [],
         outputMappings: [],
       },
       bpmnErrorRoute: null,
     },
+  );
+  assert.doesNotMatch(
+    JSON.stringify(result.semanticProcess),
+    /camunda|bpmnLeanEffectHandler/,
   );
 });
 
@@ -272,6 +273,10 @@ test("retains and lowers the exact A12 boundary-error route", async () => {
     result.checkedProcess.nodes,
     "CreateRelationshipLinkTask",
   );
+  assert.deepEqual(task.descriptor, {
+    protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+    operation: "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1",
+  });
   assert.deepEqual(task.bpmnErrorRoute, {
     boundaryEventId: "BoundaryEvent_LinkLimitReached",
     boundaryEventName: "Link Limit Reached Boundary",

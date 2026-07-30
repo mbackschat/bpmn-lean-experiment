@@ -52,8 +52,8 @@ const program: SemanticProcessProgram = {
       effect: {
         elementId: "CreateDocument",
         descriptor: {
-          protocol: "urn:bpmn-lean:a12-delegate:v1",
-          handler: "createDocumentDelegate",
+          protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+          operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
         },
         inputMappings: [
           {
@@ -123,8 +123,8 @@ test("commits the literal input as immutable effect arguments", () => {
     {
       id: effectId,
       descriptor: {
-        protocol: "urn:bpmn-lean:a12-delegate:v1",
-        handler: "createDocumentDelegate",
+        protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+        operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
       },
       arguments: [
         {

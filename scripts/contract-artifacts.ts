@@ -157,8 +157,8 @@ type TimerJobSnapshot = Readonly<{
 export type EffectJob = Readonly<{
   elementId: string;
   activation: number;
-  protocol: EffectDescriptor["protocol"];
-  handler: EffectDescriptor["handler"];
+  protocol: string;
+  handler: string;
   retries: number;
   executable: boolean;
   dueDatePresent: boolean;

@@ -26,7 +26,7 @@ There is one token, one Service Task activation, one effect protocol, one busine
 
 - exact private executable `None Start Event → Service Task → None End Event` topology;
 - exact paired Service Task binding: standard implementation URI `urn:bpmn-lean:effect:probe-v1` plus the Camunda-namespace bean token `${bpmnLeanEffectHandler}`, with `asyncBefore="true"`;
-- one project-owned `probe-v1` effect protocol, one `bpmnLeanEffectHandler` business handler, and one successful result with no payload;
+- one profile-registered neutral Activity/probe descriptor, one exact raw `bpmnLeanEffectHandler` CIB source binding, and one successful result with no payload;
 - one semantic effect occurrence and intent;
 - one adapter-derived SHA-256 transport key whose complete typed input is committed semantic intent state;
 - one `awaitEffect` Semantic Process IL mechanism;
@@ -93,11 +93,11 @@ Admission accepts only:
 - one extension QName `{http://camunda.org/schema/1.0/bpmn}asyncBefore` with lexical value `true`;
 - no extension elements, fields, listeners, method or property expressions, retry cycles, `asyncAfter`, topics, or other foreign attributes.
 
-The implementation URI and delegate-expression token are one profile-defined pair. Admission rejects either field alone, every alternative spelling or value, and any mismatched pair. The normalized contract assigns distinct authority: `protocol` is the effect execution protocol read from the standard `implementation` attribute, while `handler` is the business-effect identity and Worker dispatch authority read from the exact delegate-expression token. Both come from the admitted pair; a Worker or adapter cannot select or change either independently.
+The implementation URI and delegate-expression token are one profile-defined source pair. Admission rejects either field alone, every alternative spelling or value, and any mismatched pair. The profile registers that exact pair to the neutral descriptor `urn:bpmn-lean:effect-protocol:activity-v1` plus `urn:bpmn-lean:effect-operation:probe-v1`. A Worker or adapter cannot select or change either neutral identity independently of the committed intent.
 
-Requiring the project URN is a probe-fixture profile choice, not the future migration-admission rule for existing CIB documents. A future migration profile may infer or supply protocol identity for a real binding only through an explicit, versioned, separately evidenced mapping. A second business effect under this protocol receives a different handler; it does not invent a different protocol URI.
+Requiring the source implementation URN is a probe-fixture profile choice, not the future migration-admission rule for existing CIB documents. A future migration profile may map a real binding to a neutral operation only through an explicit, versioned, separately evidenced profile registration. A second business effect under the Activity protocol receives a different operation identity; it does not invent a different protocol URI.
 
-The checked Service Task retains a project-owned normalized source-binding record containing the standard implementation URI as `protocol`, handler identifier `bpmnLeanEffectHandler`, and the two extension QName/value pairs. Lean independently verifies that this exact record lowers to the project-owned effect descriptor. Recognizing this one complete lexical token is structural source admission, not JUEL evaluation. The Semantic Process IL and runtime contain no Camunda prefix, namespace, expression object, Java class, CIB job ID, retry count, or engine type.
+The source/profile boundary retains the exact implementation URI, handler token, and extension QName/value pairs as admission evidence, then emits only the registered neutral descriptor in the checked Service Task. Lean independently verifies neutral checked-graph-to-program lowering; it does not derive the raw Camunda-to-neutral registration. Recognizing this one complete lexical token is structural source admission, not JUEL evaluation. The checked graph, Semantic Process IL, Lean, and runtime contain no Camunda prefix, namespace, expression object, bean name, Java class, CIB job ID, retry count, or engine type.
 
 The CIB register classification is:
 
@@ -114,17 +114,10 @@ The checked graph adds one `serviceTask` node carrying:
 type CheckedServiceTask = Readonly<{
   kind: "serviceTask";
   id: string;
-  implementation: "urn:bpmn-lean:effect:probe-v1";
-  sourceBinding: Readonly<{
-    delegateExpressionAttribute: Readonly<{
-      namespace: "http://camunda.org/schema/1.0/bpmn";
-      value: "${bpmnLeanEffectHandler}";
-    }>;
-    asyncBeforeAttribute: Readonly<{
-      namespace: "http://camunda.org/schema/1.0/bpmn";
-      value: "true";
-    }>;
-  }>;
+  descriptor: EffectDescriptor;
+  inputMappings: readonly [];
+  outputMappings: readonly [];
+  bpmnErrorRoute: null;
 }>;
 ```
 
@@ -132,8 +125,8 @@ Lowering produces the reusable mechanism:
 
 ```ts
 type EffectDescriptor = Readonly<{
-  protocol: "urn:bpmn-lean:effect:probe-v1";
-  handler: "bpmnLeanEffectHandler";
+  protocol: "urn:bpmn-lean:effect-protocol:activity-v1";
+  operation: "urn:bpmn-lean:effect-operation:probe-v1";
 }>;
 
 type AwaitEffect = Readonly<{
@@ -202,7 +195,7 @@ The transport material uses the already-implemented Workflow-safe canonical type
   [protocol, handler]]
 ```
 
-The external key is `effect-transport-sha256:<sha256(utf8(canonicalEncoding))>`. Compiler identity is deliberately excluded: exact lowering equality already binds a compiler result to the admitted source, and a compiler-only bump must not reissue external idempotency identity for byte-identical source under the same profile. The key is stable across Activity attempts, replay, and Worker replacement, and deliberately changes when profile, source identity or bytes, Process definition, occurrence, protocol, or handler changes.
+The external key is `effect-transport-sha256:<sha256(utf8(canonicalEncoding))>`. Compiler identity is deliberately excluded: exact lowering equality already binds a compiler result to the admitted source, and a compiler-only bump must not reissue external idempotency identity for byte-identical source under the same profile. The key is stable across Activity attempts, replay, and Worker replacement, and deliberately changes when profile, source identity or bytes, Process definition, occurrence, protocol, or operation changes.
 
 The success stimulus is:
 
@@ -238,13 +231,13 @@ The language-neutral Activity request is derived from the committed intent:
 
 ```ts
 type EffectRequest = Readonly<{
-  protocol: "urn:bpmn-lean:effect:probe-v1";
-  handler: "bpmnLeanEffectHandler";
+  protocol: "urn:bpmn-lean:effect-protocol:activity-v1";
+  operation: "urn:bpmn-lean:effect-operation:probe-v1";
   idempotencyKey: string;
 }>;
 ```
 
-`EffectRequest` is exactly `EffectDescriptor` plus `idempotencyKey`. The Worker dispatches only by `handler`; it treats `protocol` as immutable protocol identity and returns only `EffectExecutionResult`. The adapter derives both fields and the key from the same committed intent, so no host identifier, Activity return value, or independent registry lookup can create a mismatched binding.
+`EffectRequest` is exactly `EffectDescriptor` plus `idempotencyKey`. The Worker dispatches only by `operation`; it treats `protocol` as immutable protocol identity and returns only `EffectExecutionResult`. Any downstream binding from the neutral operation to a bean or Worker implementation is outside the semantic core. The adapter derives both fields and the key from the same committed intent, so no host identifier, Activity return value, or independent registry lookup can create a mismatched semantic binding.
 
 ## Stable semantic rules
 
@@ -404,17 +397,17 @@ The same test deploys an equivalent source whose lexical prefix is `probe` and w
 
 No row presents the CIB job, activation ordinal, or retry count as an independent derivation of the semantic intent. For `EFFECT-WAIT-01`, `EFFECT-INTENT-01`, and `EFFECT-OBSERVE-01`, CIB supplies a host-realization compatibility check only.
 
-The activation comparator component cannot fail independently in this bounded probe: it is `Math.toIntExact(activationCount)` after the same count is required to equal one. The activity, protocol, and handler components are independently deployment-derived and can fail the profile comparator. This asymmetry is acceptable only under the explicit adapter-decided fidelity.
+The activation comparator component cannot fail independently in this bounded probe: it is `Math.toIntExact(activationCount)` after the same count is required to equal one. The raw activity, implementation URI, and handler-token components are deployment-derived and can fail the profile comparator. The neutral descriptor is then produced by the shared profile registration rather than independently observed from CIB. This asymmetry is acceptable only under the explicit adapter-decided fidelity.
 
 ## Rule-to-evidence matrix
 
 | Rule | Normative or profile clause | Lean | CIB Seven | TypeScript core | Temporal refinement | Negative or mutation guard |
 |---|---|---|---|---|---|---|
 | `EFFECT-WAIT-01` | BPMN 2.0.2 §13.3.3 under the success-only profile | Declarative `awaitEffect` relation, evaluator soundness, exact start prefix | Pre-activation continuation job plus adapter-decided singleton occurrence projection | Start closes at one effect wait with no output token | Committed wait state precedes Activity scheduling and is preserved across attempts | Synchronous/bypass accounts fail wait-state or Activity-history evidence |
-| `EFFECT-INTENT-01` | Profile-defined protocol/handler pair | Exact structured intent in the start prefix | Deployment-derived activity, protocol, and handler; activation remains adapter-decided | Intent and transport material project only from admitted program and committed state | Same request/key across replay, retry, and Worker replacement | Host-identity over-inclusion, field-omission collisions, and two-instance shared-store witness |
+| `EFFECT-INTENT-01` | Profile-registered raw binding to neutral protocol/operation pair | Exact neutral structured intent in the start prefix; no raw source-translation claim | Deployment-derived raw activity/binding mapped through the same registered profile rule; activation remains adapter-decided | Intent and transport material project only from admitted program and committed state | Same request/key across replay, retry, and Worker replacement | Raw-binding and neutral-operation mutations, host-identity over-inclusion, field-omission collisions, and two-instance shared-store witness |
 | `EFFECT-RESULT-01` | BPMN 2.0.2 §13.3.3 successful service completion | Exact success trace | Public job execution invokes the bean and completes the Process | Matching `completeEffect` consumes the wait and closes | Activity success derives one content-bound completion from committed intent | Activity-bypass mutation preserves pure output but lacks durable Activity evidence |
 | `EFFECT-REFUSE-01` | Project occurrence-identity admission rule | Quantified three-field mismatch theorem with exact state preservation and accept-any-result non-law | No claim: CIB has no semantic result-ingress identity | Every mismatch and stale/consumed result rejects with unchanged state | No claim: the adapter derives identity from committed intent | Never-activated and stale completion witnesses |
-| `EFFECT-OBSERVE-01` | Project canonical observation boundary | Exact waiting and completed projections | Raw job/deployed-model facts reconstruct `openEffects`; handler mutation fails | One effect wait and descriptor, no caller interaction | Query trace is reconciled with Activity history and completed receipt | Producer handler mutation and canonical Activity-bypass mutation |
+| `EFFECT-OBSERVE-01` | Project canonical observation boundary | Exact waiting and completed projections | Raw job/deployed-model facts reconstruct `openEffects`; raw binding mutation fails | One effect wait and neutral descriptor, no caller interaction | Query trace is reconciled with Activity history and completed receipt | Raw producer-binding mutation, canonical operation mutation, and canonical Activity-bypass mutation |
 
 Canonical equality does not erase these fidelity distinctions. In particular, CIB is a host-realization check rather than a semantic account for the invented effect-in-flight state, and Temporal is refinement evidence rather than a second choice of BPMN meaning.
 
@@ -499,7 +492,7 @@ The owner approved:
 1. the exact success-only semantic account and exclusions;
 2. the green phase-zero `asyncBefore` exact delegate-expression bean binding;
 3. namespace-aware admission of only the two exact Camunda extension attributes without general JUEL;
-4. `awaitEffect`, shared occurrence identity, structured committed intent, protocol/handler descriptor, separate `openEffects`, and adapter-rendered SHA-256 transport key;
+4. `awaitEffect`, shared occurrence identity, structured committed intent, neutral protocol/operation descriptor, separate `openEffects`, and adapter-rendered SHA-256 transport key;
 5. a two-attempt Activity policy with two-second start-to-close, ten-second schedule-to-close, 100-millisecond fixed retry interval, no heartbeat, no Workflow retry policy, and typed adapter failure on exhaustion;
 6. separate explicit host schedules, per-execution store isolation, the eight-scenario/sixteen-execution/nine-replay matrix, and adapter-local canonical-equivalence/key assertions;
 7. retry exhaustion as typed adapter failure, with CIB incidents, BPMN service faults, cancellation/termination recovery, and external-task protocol as named reopen conditions rather than semantic outcomes.

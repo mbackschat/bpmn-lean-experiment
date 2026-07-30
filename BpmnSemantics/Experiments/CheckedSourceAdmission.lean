@@ -113,10 +113,9 @@ theorem secondTimerIsRejected :
 
 private def exactProbeServiceNode (route : Option CheckedBpmnErrorRoute := none) :
     CheckedNode :=
-  .serviceTask ⟨"ServiceTask"⟩ "urn:bpmn-lean:effect:probe-v1"
-    (.probe "http://camunda.org/schema/1.0/bpmn"
-      "${bpmnLeanEffectHandler}"
-      "http://camunda.org/schema/1.0/bpmn" "true")
+  .serviceTask ⟨"ServiceTask"⟩
+    { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+      operation := "urn:bpmn-lean:effect-operation:probe-v1" }
     [] [] route
 
 private def excludedBoundaryRoute : CheckedBpmnErrorRoute :=
@@ -136,14 +135,16 @@ theorem composedWaitSurfaceIsExact :
         (.intermediateCatchTimerEvent ⟨"Timer"⟩ "PT5M") = false ∧
       composedNodeSurfaceValid exactProbeServiceNode = true ∧
       composedNodeSurfaceValid
-        (.serviceTask ⟨"ServiceTask"⟩ "urn:unreviewed"
-          (.probe "http://camunda.org/schema/1.0/bpmn"
-            "${bpmnLeanEffectHandler}"
-            "http://camunda.org/schema/1.0/bpmn" "true")
+        (.serviceTask ⟨"ServiceTask"⟩
+          { protocol := "urn:bpmn-lean:effect-protocol:unreviewed"
+            operation := "urn:bpmn-lean:effect-operation:probe-v1" }
           [] [] none) = false ∧
       composedNodeSurfaceValid
-        (.serviceTask ⟨"ServiceTask"⟩ "urn:bpmn-lean:a12-delegate:v1"
-          (.a12CreateDocument "" "" "" "" "" "" "") [] [] none) = false ∧
+        (.serviceTask ⟨"ServiceTask"⟩
+          { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+            operation :=
+              "urn:bpmn-lean:effect-operation:mapped-success-v1" }
+          [] [] none) = false ∧
       composedNodeSurfaceValid
         (exactProbeServiceNode (some excludedBoundaryRoute)) = false := by
   decide

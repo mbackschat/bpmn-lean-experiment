@@ -45,7 +45,7 @@ test("accepts the canonical checked-process and Semantic Process contract shapes
   }
 });
 
-test("rejects drift in either exact Service Task binding identity", async () => {
+test("rejects drift in the neutral Service Task effect identity", async () => {
   const mutations: ReadonlyArray<
     (artifacts: MutableDefinitionArtifacts) => void
   > = [
@@ -53,20 +53,15 @@ test("rejects drift in either exact Service Task binding identity", async () => 
       const serviceTask = requireServiceTask(
         artifacts.checkedProcess.nodes[1],
       );
-      (
-        serviceTask as unknown as { implementation: string }
-      ).implementation =
-        "urn:bpmn-lean:effect:other";
+      serviceTask.descriptor.protocol =
+        "urn:bpmn-lean:effect-protocol:other-v1";
     },
     (artifacts) => {
       const serviceTask = requireServiceTask(
         artifacts.checkedProcess.nodes[1],
       );
-      (
-        serviceTask.sourceBinding.delegateExpressionAttribute as unknown as {
-          value: string;
-        }
-      ).value = "${otherHandler}";
+      serviceTask.descriptor.operation =
+        "urn:bpmn-lean:effect-operation:other-v1";
     },
     (artifacts) => {
       const effectOperation = requireAwaitEffect(
@@ -81,7 +76,7 @@ test("rejects drift in either exact Service Task binding identity", async () => 
     mutate(artifacts);
     await assert.rejects(
       verifyDefinitionArtifacts(projectRoot, artifacts),
-      /schema validation failed|effect identity differs/,
+      /schema validation failed|effect identity differs|effect descriptor differs/,
     );
   }
 });

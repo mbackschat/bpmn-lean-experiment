@@ -4,7 +4,7 @@
 
 **Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, payload-free Service Task effect, CreateDocument data, and interrupting boundary-error capsules.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, three exact Service Task source bindings, one exact attached interrupting Error route, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, three profile-mapped Service Task source shapes, one exact attached interrupting Error route, diverging Parallel Gateway, converging Parallel Gateway, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -94,72 +94,19 @@ type CheckedBpmnErrorRoute = DeepReadonly<{
   outputFlowId: string;
 }>;
 
-type CheckedServiceTaskBase = DeepReadonly<{
+type EffectDescriptor = DeepReadonly<{
+  protocol: string;
+  operation: string;
+}>;
+
+type CheckedServiceTask = DeepReadonly<{
   kind: "serviceTask";
   id: string;
+  descriptor: EffectDescriptor;
   inputMappings: VariableMapping[];
   outputMappings: VariableMapping[];
   bpmnErrorRoute: CheckedBpmnErrorRoute | null;
 }>;
-
-type CheckedServiceTask =
-  | (CheckedServiceTaskBase & DeepReadonly<{
-      implementation: "urn:bpmn-lean:effect:probe-v1";
-      sourceBinding: {
-        delegateExpressionAttribute: {
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          value: "${bpmnLeanEffectHandler}";
-        };
-        asyncBeforeAttribute: {
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          value: "true";
-        };
-      };
-    }>)
-  | (CheckedServiceTaskBase & DeepReadonly<{
-      implementation: "urn:bpmn-lean:a12-delegate:v1";
-      sourceBinding: {
-        delegateExpressionAttribute: {
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          value: "${createDocumentDelegate}";
-        };
-        protocolSource: "semanticProfile";
-        inputOutputElement: {
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          inputParameter: {
-            name: "documentModelName";
-            body: "MyDocumentModel";
-          };
-          outputParameter: {
-            name: "myDocumentReference";
-            body: "${newDocRef}";
-          };
-        };
-      };
-    }>)
-  | (CheckedServiceTaskBase & DeepReadonly<{
-      implementation: "urn:bpmn-lean:a12-delegate:v1";
-      sourceBinding: {
-        delegateExpressionAttribute: {
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          value: "#{createRelationshipLinkDelegate}";
-        };
-        implementationAttribute: {
-          value: "urn:bpmn-lean:a12-delegate:v1";
-        };
-        inputOutputElement: {
-          namespace: "http://camunda.org/schema/1.0/bpmn";
-          inputParameter: {
-            name: "relationshipModel";
-            body: "RelationshipModel";
-          };
-          outputParameter: {
-            name: "relationshipLinkId";
-            body: "${newLinkId}";
-          };
-        };
-      };
-    }>);
 
 type CheckedNode = DeepReadonly<
   | {
@@ -197,6 +144,8 @@ type CheckedSequenceFlow = DeepReadonly<{
 
 `CheckedProcess` means that parsing, supported-element admission, reference resolution, gateway-direction classification, profile membership, and bounded structural checks have succeeded. A rejected document does not produce this artifact.
 
+The source/profile boundary validates each admitted Camunda binding and maps it to a registered neutral `protocol`/`operation` descriptor before producing the checked graph. Exact namespaces, lexical source tokens, and downstream A12 bean identities remain in source/profile evidence and do not enter the checked graph. Mapping names and literal bodies remain ordinary source-derived data because the checked graph and Lean lowering need them for the generic typed mapping mechanism; they are not lower-layer admission discriminators.
+
 ### Semantic Process program
 
 The Semantic Process program is an immutable, content-bound definition. It contains control places and operations but no mutable execution state.
@@ -229,16 +178,6 @@ type OperationBase = DeepReadonly<{
     kind: "bpmnElement";
     elementId: string;
   };
-}>;
-
-type EffectDescriptor = DeepReadonly<{
-  protocol:
-    | "urn:bpmn-lean:effect:probe-v1"
-    | "urn:bpmn-lean:a12-delegate:v1";
-  handler:
-    | "bpmnLeanEffectHandler"
-    | "createDocumentDelegate"
-    | "createRelationshipLinkDelegate";
 }>;
 
 type BpmnErrorRoute = DeepReadonly<{
@@ -329,9 +268,9 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | Sequence Flow | `ControlPlace` |
 | User Task | `awaitUserTask` |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
-| exact payload-free Service Task binding | `awaitEffect` with the probe protocol/handler descriptor and empty mappings |
-| exact A12-shaped CreateDocument binding and mappings | `awaitEffect` with the profile protocol, source handler, normalized literal input, and local-reference output mapping |
-| exact A12-shaped interrupting boundary Error binding | `awaitEffect` with the profile protocol, deferred source handler, normalized mapping pair, and one committed `bpmnErrorRoute` |
+| exact payload-free Service Task source shape | `awaitEffect` with the registered neutral Activity/probe descriptor and empty mappings |
+| exact A12-shaped CreateDocument source shape and mappings | `awaitEffect` with the registered neutral Activity/mapped-success descriptor, normalized literal input, and local-reference output mapping |
+| exact A12-shaped interrupting boundary Error source shape | `awaitEffect` with the registered neutral Activity/mapped-boundary-error descriptor, normalized mapping pair, and one committed `bpmnErrorRoute` |
 | diverging Parallel Gateway | `duplicate` |
 | converging Parallel Gateway | `synchronize` |
 | none End Event | `terminate` |

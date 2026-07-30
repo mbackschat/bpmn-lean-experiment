@@ -74,7 +74,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
       | .notStarted
       | .completed _ => none
   | .intermediateCatchTimerEvent _ _ => none
-  | .serviceTask _ _ _ _ _ _ => none
+  | .serviceTask _ _ _ _ _ => none
   | .parallelGateway id .diverging =>
       let input := firstFlowId (incomingFlowIds source id)
       if hasToken state input then
@@ -122,8 +122,7 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
           · simp [fireNode?, controlEq, enabled] at result
   | intermediateCatchTimerEvent id durationLiteral =>
       simp [fireNode?] at result
-  | serviceTask id implementation sourceBinding inputMappings outputMappings
-      bpmnErrorRoute =>
+  | serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
       simp [fireNode?] at result
   | parallelGateway id direction =>
       cases direction with

@@ -62,6 +62,120 @@
         }
       }
     },
+    "effectDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "operation"
+      ],
+      "properties": {
+        "protocol": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "operation": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "mappingExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "stringLiteral"
+            },
+            "value": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "const": "localVariable"
+            },
+            "name": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        }
+      ]
+    },
+    "variableMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "expression"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "expression": {
+          "$ref": "#/$defs/mappingExpression"
+        }
+      }
+    },
+    "checkedBpmnErrorRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boundaryEventId",
+        "boundaryEventName",
+        "attachedToRef",
+        "errorDefinitionId",
+        "errorElementId",
+        "errorName",
+        "code",
+        "outputFlowId"
+      ],
+      "properties": {
+        "boundaryEventId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "boundaryEventName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "attachedToRef": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "errorDefinitionId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "errorElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "errorName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "code": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "outputFlowId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "node": {
       "oneOf": [
         {
@@ -81,17 +195,27 @@
           }
         },
         {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/probeServiceTask"
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "const": "userTask"
             },
-            {
-              "$ref": "#/$defs/a12CreateDocumentServiceTask"
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
             },
-            {
-              "$ref": "#/$defs/a12BoundaryErrorServiceTask"
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
-          ]
+          }
         },
         {
           "type": "object",
@@ -119,19 +243,41 @@
           "required": [
             "kind",
             "id",
-            "name"
+            "descriptor",
+            "inputMappings",
+            "outputMappings",
+            "bpmnErrorRoute"
           ],
           "properties": {
             "kind": {
-              "const": "userTask"
+              "const": "serviceTask"
             },
             "id": {
               "$ref": "#/$defs/nonemptyString"
             },
-            "name": {
-              "type": [
-                "string",
-                "null"
+            "descriptor": {
+              "$ref": "#/$defs/effectDescriptor"
+            },
+            "inputMappings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variableMapping"
+              }
+            },
+            "outputMappings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variableMapping"
+              }
+            },
+            "bpmnErrorRoute": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/checkedBpmnErrorRoute"
+                }
               ]
             }
           }
@@ -176,395 +322,6 @@
           }
         }
       ]
-    },
-    "probeServiceTask": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "id",
-        "implementation",
-        "sourceBinding",
-        "inputMappings",
-        "outputMappings",
-        "bpmnErrorRoute"
-      ],
-      "properties": {
-        "kind": {
-          "const": "serviceTask"
-        },
-        "id": {
-          "$ref": "#/$defs/nonemptyString"
-        },
-        "implementation": {
-          "const": "urn:bpmn-lean:effect:probe-v1"
-        },
-        "sourceBinding": {
-          "$ref": "#/$defs/probeServiceTaskSourceBinding"
-        },
-        "inputMappings": {
-          "const": []
-        },
-        "outputMappings": {
-          "const": []
-        },
-        "bpmnErrorRoute": {
-          "type": "null"
-        }
-      }
-    },
-    "probeServiceTaskSourceBinding": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "delegateExpressionAttribute",
-        "asyncBeforeAttribute"
-      ],
-      "properties": {
-        "delegateExpressionAttribute": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "namespace",
-            "value"
-          ],
-          "properties": {
-            "namespace": {
-              "const": "http://camunda.org/schema/1.0/bpmn"
-            },
-            "value": {
-              "const": "${bpmnLeanEffectHandler}"
-            }
-          }
-        },
-        "asyncBeforeAttribute": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "namespace",
-            "value"
-          ],
-          "properties": {
-            "namespace": {
-              "const": "http://camunda.org/schema/1.0/bpmn"
-            },
-            "value": {
-              "const": "true"
-            }
-          }
-        }
-      }
-    },
-    "a12CreateDocumentServiceTask": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "id",
-        "implementation",
-        "sourceBinding",
-        "inputMappings",
-        "outputMappings",
-        "bpmnErrorRoute"
-      ],
-      "properties": {
-        "kind": {
-          "const": "serviceTask"
-        },
-        "id": {
-          "const": "CreateDocument"
-        },
-        "implementation": {
-          "const": "urn:bpmn-lean:a12-delegate:v1"
-        },
-        "sourceBinding": {
-          "$ref": "#/$defs/a12CreateDocumentSourceBinding"
-        },
-        "inputMappings": {
-          "const": [
-            {
-              "target": "documentModelName",
-              "expression": {
-                "kind": "stringLiteral",
-                "value": "MyDocumentModel"
-              }
-            }
-          ]
-        },
-        "outputMappings": {
-          "const": [
-            {
-              "target": "myDocumentReference",
-              "expression": {
-                "kind": "localVariable",
-                "name": "newDocRef"
-              }
-            }
-          ]
-        },
-        "bpmnErrorRoute": {
-          "type": "null"
-        }
-      }
-    },
-    "a12CreateDocumentSourceBinding": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "delegateExpressionAttribute",
-        "protocolSource",
-        "inputOutputElement"
-      ],
-      "properties": {
-        "delegateExpressionAttribute": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "namespace",
-            "value"
-          ],
-          "properties": {
-            "namespace": {
-              "const": "http://camunda.org/schema/1.0/bpmn"
-            },
-            "value": {
-              "const": "${createDocumentDelegate}"
-            }
-          }
-        },
-        "protocolSource": {
-          "const": "semanticProfile"
-        },
-        "inputOutputElement": {
-          "$ref": "#/$defs/a12InputOutputElement"
-        }
-      }
-    },
-    "a12InputOutputElement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "namespace",
-        "inputParameter",
-        "outputParameter"
-      ],
-      "properties": {
-        "namespace": {
-          "const": "http://camunda.org/schema/1.0/bpmn"
-        },
-        "inputParameter": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "name",
-            "body"
-          ],
-          "properties": {
-            "name": {
-              "const": "documentModelName"
-            },
-            "body": {
-              "const": "MyDocumentModel"
-            }
-          }
-        },
-        "outputParameter": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "name",
-            "body"
-          ],
-          "properties": {
-            "name": {
-              "const": "myDocumentReference"
-            },
-            "body": {
-              "const": "${newDocRef}"
-            }
-          }
-        }
-      }
-    },
-    "a12BoundaryErrorServiceTask": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "id",
-        "implementation",
-        "sourceBinding",
-        "inputMappings",
-        "outputMappings",
-        "bpmnErrorRoute"
-      ],
-      "properties": {
-        "kind": {
-          "const": "serviceTask"
-        },
-        "id": {
-          "const": "CreateRelationshipLinkTask"
-        },
-        "implementation": {
-          "const": "urn:bpmn-lean:a12-delegate:v1"
-        },
-        "sourceBinding": {
-          "$ref": "#/$defs/a12BoundaryErrorSourceBinding"
-        },
-        "inputMappings": {
-          "const": [
-            {
-              "target": "relationshipModel",
-              "expression": {
-                "kind": "stringLiteral",
-                "value": "RelationshipModel"
-              }
-            }
-          ]
-        },
-        "outputMappings": {
-          "const": [
-            {
-              "target": "relationshipLinkId",
-              "expression": {
-                "kind": "localVariable",
-                "name": "newLinkId"
-              }
-            }
-          ]
-        },
-        "bpmnErrorRoute": {
-          "$ref": "#/$defs/a12BoundaryErrorRoute"
-        }
-      }
-    },
-    "a12BoundaryErrorSourceBinding": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "delegateExpressionAttribute",
-        "implementationAttribute",
-        "inputOutputElement"
-      ],
-      "properties": {
-        "delegateExpressionAttribute": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "namespace",
-            "value"
-          ],
-          "properties": {
-            "namespace": {
-              "const": "http://camunda.org/schema/1.0/bpmn"
-            },
-            "value": {
-              "const": "#{createRelationshipLinkDelegate}"
-            }
-          }
-        },
-        "implementationAttribute": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "value"
-          ],
-          "properties": {
-            "value": {
-              "const": "urn:bpmn-lean:a12-delegate:v1"
-            }
-          }
-        },
-        "inputOutputElement": {
-          "$ref": "#/$defs/a12BoundaryErrorInputOutputElement"
-        }
-      }
-    },
-    "a12BoundaryErrorInputOutputElement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "namespace",
-        "inputParameter",
-        "outputParameter"
-      ],
-      "properties": {
-        "namespace": {
-          "const": "http://camunda.org/schema/1.0/bpmn"
-        },
-        "inputParameter": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "name",
-            "body"
-          ],
-          "properties": {
-            "name": {
-              "const": "relationshipModel"
-            },
-            "body": {
-              "const": "RelationshipModel"
-            }
-          }
-        },
-        "outputParameter": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "name",
-            "body"
-          ],
-          "properties": {
-            "name": {
-              "const": "relationshipLinkId"
-            },
-            "body": {
-              "const": "${newLinkId}"
-            }
-          }
-        }
-      }
-    },
-    "a12BoundaryErrorRoute": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "boundaryEventId",
-        "boundaryEventName",
-        "attachedToRef",
-        "errorDefinitionId",
-        "errorElementId",
-        "errorName",
-        "code",
-        "outputFlowId"
-      ],
-      "properties": {
-        "boundaryEventId": {
-          "const": "BoundaryEvent_LinkLimitReached"
-        },
-        "boundaryEventName": {
-          "const": "Link Limit Reached Boundary"
-        },
-        "attachedToRef": {
-          "const": "CreateRelationshipLinkTask"
-        },
-        "errorDefinitionId": {
-          "const": "ErrorEventDefinition_LinkLimitReached"
-        },
-        "errorElementId": {
-          "const": "Error_LinkLimitReached"
-        },
-        "errorName": {
-          "const": "Link Limit Reached"
-        },
-        "code": {
-          "const": "LinkLimitReachedError"
-        },
-        "outputFlowId": {
-          "const": "Flow_ErrorToUserTask"
-        }
-      }
     },
     "sequenceFlow": {
       "type": "object",

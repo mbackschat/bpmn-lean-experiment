@@ -41,7 +41,7 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
         | noneStartEvent _ => simp [parseFrom, nodeResult] at result
         | userTask _ _
         | intermediateCatchTimerEvent _ _
-        | serviceTask _ _ _ _ _ _ =>
+        | serviceTask _ _ _ _ _ =>
             simp only [parseFrom, nodeResult] at result
             split at result <;> try simp at result
             obtain ⟨remaining, parsed, rfl⟩ := result

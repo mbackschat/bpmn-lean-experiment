@@ -99,16 +99,7 @@ function lowerNode(
         output: requireOnly(outgoing, node.id, "outgoing"),
         effect: {
           elementId: node.id,
-          descriptor: {
-            protocol: node.implementation,
-            handler:
-              node.implementation === "urn:bpmn-lean:effect:probe-v1"
-                ? "bpmnLeanEffectHandler"
-                : node.sourceBinding.delegateExpressionAttribute.value ===
-                    "#{createRelationshipLinkDelegate}"
-                ? "createRelationshipLinkDelegate"
-                : "createDocumentDelegate",
-          },
+          descriptor: node.descriptor,
           inputMappings: node.inputMappings,
           outputMappings: node.outputMappings,
         },

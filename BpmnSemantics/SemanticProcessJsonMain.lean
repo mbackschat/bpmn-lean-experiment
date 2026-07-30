@@ -61,7 +61,7 @@ private def openTimerJson (timer : OpenTimer) : Json :=
 private def effectDescriptorJson (descriptor : EffectDescriptor) : Json :=
   Json.mkObj
     [ ("protocol", toJson descriptor.protocol)
-    , ("handler", toJson descriptor.handler) ]
+    , ("operation", toJson descriptor.operation) ]
 
 private def variableValueJson : VariableValue → Json
   | .string value =>

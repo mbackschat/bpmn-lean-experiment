@@ -120,18 +120,14 @@ def parseProcess? (source : CheckedProcess) :
 def composedNodeSurfaceValid : CheckedNode → Bool
   | .intermediateCatchTimerEvent _ durationLiteral =>
       durationLiteral = "PT1S"
-  | .serviceTask _ implementation
-      (.probe delegateNamespace delegateValue asyncNamespace asyncValue)
-      inputMappings outputMappings route =>
-      implementation = "urn:bpmn-lean:effect:probe-v1" &&
-        delegateNamespace = "http://camunda.org/schema/1.0/bpmn" &&
-        delegateValue = "${bpmnLeanEffectHandler}" &&
-        asyncNamespace = "http://camunda.org/schema/1.0/bpmn" &&
-        asyncValue = "true" &&
+  | .serviceTask _ descriptor inputMappings outputMappings route =>
+      descriptor.protocol =
+          "urn:bpmn-lean:effect-protocol:activity-v1" &&
+        descriptor.operation =
+          "urn:bpmn-lean:effect-operation:probe-v1" &&
         inputMappings.isEmpty &&
         outputMappings.isEmpty &&
         route.isNone
-  | .serviceTask .. => false
   | _ => true
 
 def profileChecks (source : CheckedProcess) : Bool :=

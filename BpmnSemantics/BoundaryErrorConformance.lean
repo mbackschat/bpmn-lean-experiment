@@ -11,8 +11,9 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
 def descriptor : EffectDescriptor :=
-  { protocol := "urn:bpmn-lean:a12-delegate:v1"
-    handler := "createRelationshipLinkDelegate" }
+  { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+    operation :=
+      "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1" }
 
 def inputMappings : List VariableMapping :=
   [{ target := "relationshipModel"
@@ -42,16 +43,7 @@ def checkedProcess : CheckedProcess :=
     nodes :=
       [ .serviceTask
           ⟨"CreateRelationshipLinkTask"⟩
-          descriptor.protocol
-          (.a12BoundaryError
-            "http://camunda.org/schema/1.0/bpmn"
-            "#{createRelationshipLinkDelegate}"
-            "urn:bpmn-lean:a12-delegate:v1"
-            "http://camunda.org/schema/1.0/bpmn"
-            "relationshipModel"
-            "RelationshipModel"
-            "relationshipLinkId"
-            "${newLinkId}")
+          descriptor
           inputMappings
           outputMappings
           (some checkedRoute)

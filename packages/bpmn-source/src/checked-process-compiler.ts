@@ -1,6 +1,8 @@
 import {
   CheckedNodeKind,
   CheckedProcessKind,
+  EffectOperation,
+  EffectProtocol,
   GatewayDirection,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
@@ -380,20 +382,13 @@ function projectServiceTask(
   return {
     kind: CheckedNodeKind.ServiceTask,
     id,
-    implementation: effectProtocol,
+    descriptor: {
+      protocol: EffectProtocol.Activity,
+      operation: EffectOperation.Probe,
+    },
     inputMappings: [],
     outputMappings: [],
     bpmnErrorRoute: null,
-    sourceBinding: {
-      delegateExpressionAttribute: {
-        namespace: camundaNamespace,
-        value: effectHandlerExpression,
-      },
-      asyncBeforeAttribute: {
-        namespace: camundaNamespace,
-        value: "true",
-      },
-    },
   };
 }
 

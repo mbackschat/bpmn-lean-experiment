@@ -176,8 +176,8 @@ test("reconstructs mixed waits in semantic kind-then-element order", async () =>
       activation: 1,
     },
     descriptor: {
-      protocol: "urn:bpmn-lean:effect:probe-v1",
-      handler: "bpmnLeanEffectHandler",
+      protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+      operation: "urn:bpmn-lean:effect-operation:probe-v1",
     },
     arguments: [],
   });
@@ -256,7 +256,7 @@ test("detects a Service Task effect-binding projection mutation", async () => {
 
   assert.throws(
     () => verifyArtifactSet(mutated),
-    /producer observation projection does not match canonical openEffects/,
+    /unsupported retained CIB effect binding|producer observation projection does not match canonical openEffects/,
   );
 });
 

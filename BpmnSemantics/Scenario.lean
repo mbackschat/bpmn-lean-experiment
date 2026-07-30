@@ -41,10 +41,10 @@ abbrev UserTaskInstanceId := OccurrenceId
 abbrev TimerOccurrenceId := OccurrenceId
 abbrev EffectOccurrenceId := OccurrenceId
 
-/-- Project-owned protocol and business-handler identity for an effect. -/
+/-- Host-neutral, profile-registered protocol and operation identity for an effect. -/
 structure EffectDescriptor where
   protocol : String
-  handler : String
+  operation : String
   deriving Repr, DecidableEq
 
 inductive VariableValue where

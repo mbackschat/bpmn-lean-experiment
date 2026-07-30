@@ -4,7 +4,6 @@
 import { isDeepStrictEqual } from "node:util";
 
 import type {
-  CanonicalObservation,
   CheckedProcess,
   OccurrenceId,
   SemanticOperation,
@@ -13,12 +12,14 @@ import type {
 } from "../packages/semantic-core/src/index.ts";
 import type {
   CibSevenEvidence,
-  EffectJob,
-  EffectJobSnapshot,
   MappingExecutionSnapshot,
   TaskQueryTask,
   TimerJob,
 } from "./contract-artifacts.ts";
+import {
+  projectEffectJobs,
+  statesWithEmptyEffectSnapshots,
+} from "./contract-effect-projection.ts";
 import {
   requireUnicodeScalarString,
 } from "./strict-json.ts";
@@ -204,6 +205,22 @@ export function verifyDefinitionReferences(
       throw new Error(
         `operation ${operation.id} effect identity differs from its BPMN origin`,
       );
+    }
+    if (operation.kind === "awaitEffect") {
+      const checkedNode = checkedProcess.nodes.find(
+        ({ id }) => id === operation.origin.elementId,
+      );
+      if (
+        checkedNode?.kind !== "serviceTask" ||
+        !isDeepStrictEqual(
+          checkedNode.descriptor,
+          operation.effect.descriptor,
+        )
+      ) {
+        throw new Error(
+          `operation ${operation.id} effect descriptor differs from its checked BPMN origin`,
+        );
+      }
     }
   }
 }
@@ -430,50 +447,6 @@ function verifyMappingExecution(
         `unsupported retained CIB mapping handler: ${execution.handler}`,
       );
   }
-}
-
-function statesWithEmptyEffectSnapshots(
-  trace: ReadonlyArray<CanonicalObservation>,
-): ReadonlyArray<EffectJobSnapshot> {
-  const snapshots: Array<EffectJobSnapshot> = [];
-  let afterCommandId: string | undefined;
-  for (const observation of trace) {
-    if (observation.kind === "command") {
-      afterCommandId = observation.commandId;
-    } else if (
-      observation.kind === "state" &&
-      afterCommandId !== undefined
-    ) {
-      snapshots.push({ afterCommandId, jobs: [] });
-      afterCommandId = undefined;
-    }
-  }
-  return snapshots;
-}
-
-function projectEffectJobs(
-  instanceId: string,
-  jobs: ReadonlyArray<EffectJob>,
-): Pick<StateObservation, "activeWaits" | "openEffects"> {
-  const activeWaits: Array<StateObservation["activeWaits"][number]> =
-    jobs.map((job) => ({
-    elementId: job.elementId,
-    kind: "effect" as StateObservation["activeWaits"][number]["kind"],
-    multiplicity: 1,
-  }));
-  const openEffects = jobs.map((job) => ({
-    id: {
-      processInstanceId: instanceId,
-      elementId: job.elementId,
-      activation: job.activation,
-    },
-    descriptor: {
-      protocol: job.protocol,
-      handler: job.handler,
-    },
-    arguments: [],
-  }));
-  return { activeWaits, openEffects };
 }
 
 function projectTimerJobs(

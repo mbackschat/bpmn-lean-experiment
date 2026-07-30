@@ -60,31 +60,6 @@ structure VariableMapping where
   expression : MappingExpression
   deriving Repr, DecidableEq
 
-inductive ServiceTaskSourceBinding where
-  | probe
-      (delegateExpressionNamespace : String)
-      (delegateExpressionValue : String)
-      (asyncBeforeNamespace : String)
-      (asyncBeforeValue : String)
-  | a12CreateDocument
-      (delegateExpressionNamespace : String)
-      (delegateExpressionValue : String)
-      (inputOutputNamespace : String)
-      (inputParameterName : String)
-      (inputParameterBody : String)
-      (outputParameterName : String)
-      (outputParameterBody : String)
-  | a12BoundaryError
-      (delegateExpressionNamespace : String)
-      (delegateExpressionValue : String)
-      (implementationValue : String)
-      (inputOutputNamespace : String)
-      (inputParameterName : String)
-      (inputParameterBody : String)
-      (outputParameterName : String)
-      (outputParameterBody : String)
-  deriving Repr, DecidableEq
-
 structure CheckedBpmnErrorRoute where
   boundaryEventId : NodeId
   boundaryEventName : Option String
@@ -102,8 +77,7 @@ inductive CheckedNode where
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | serviceTask
       (id : NodeId)
-      (implementation : String)
-      (sourceBinding : ServiceTaskSourceBinding)
+      (descriptor : EffectDescriptor)
       (inputMappings : List VariableMapping)
       (outputMappings : List VariableMapping)
       (bpmnErrorRoute : Option CheckedBpmnErrorRoute)
@@ -115,7 +89,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
   | .intermediateCatchTimerEvent id _
-  | .serviceTask id _ _ _ _ _
+  | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .noneEndEvent id => id
 
