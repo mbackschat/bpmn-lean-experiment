@@ -125,6 +125,11 @@ export type TemporalTimerBypassMutationExecution = DeepReadonly<{
 export type TemporalEffectBypassMutationExecution =
   TemporalTimerBypassMutationExecution;
 
+export type TemporalBranchBypassMutationExecution = DeepReadonly<{
+  waitTrace: CanonicalObservation[];
+  history: TemporalHistory;
+}>;
+
 export type TemporalEffectFailureExecution = DeepReadonly<{
   failureType: "BPMN_EFFECT_EXECUTION_EXHAUSTED";
   lastCommittedTrace: CanonicalObservation[];

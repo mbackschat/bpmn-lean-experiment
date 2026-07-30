@@ -425,13 +425,16 @@ export async function loadAndCompileCases(
         projectRoot,
         pipelineCase.scenarioRelativePath,
       );
-      const evidencePath = path.join(
-        projectRoot,
-        pipelineCase.evidenceRelativePath,
-      );
       const [scenario, retainedEvidence] = await Promise.all([
         readJson<Scenario>(scenarioPath),
-        readJson<RetainedEvidence>(evidencePath),
+        pipelineCase.cib === null
+          ? Promise.resolve(null)
+          : readJson<RetainedEvidence>(
+              path.join(
+                projectRoot,
+                pipelineCase.cib.evidenceRelativePath,
+              ),
+            ),
       ]);
       return {
         pipelineCase,

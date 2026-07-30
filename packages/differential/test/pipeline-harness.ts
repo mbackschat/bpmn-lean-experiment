@@ -123,7 +123,7 @@ export async function runPipelineCases(
     const core = runCoreTargets(contexts);
     const effectContexts = contexts.filter(
       ({ pipelineCase }) =>
-        pipelineCase.cibEffectExecutionSchedule ===
+        pipelineCase.cib?.effectExecutionSchedule ===
           CibEffectExecutionSchedule.FailAfterMutationOnce,
     );
     const [

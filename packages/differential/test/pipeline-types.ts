@@ -89,20 +89,24 @@ export type TemporalEffectSchedulePair = DeepReadonly<{
   isolation: EffectExecutionSchedule;
 }>;
 
+export type CibPipelineConfiguration = DeepReadonly<{
+  evidenceRelativePath: string;
+  version: "2.0.0" | "2.2.0";
+  relation: CibCaseRelation;
+  effectExecutionSchedule: CibEffectExecutionSchedule;
+}>;
+
 export type PipelineCase = DeepReadonly<{
   id: string;
   scenarioRelativePath: string;
-  evidenceRelativePath: string;
   bpmnRelativePath: string;
   workflowIdPrefix: string;
-  cibVersion: "2.0.0" | "2.2.0";
-  cibRelation: CibCaseRelation;
+  cib: CibPipelineConfiguration | null;
   expectedWaitTraceLength: number;
   completionDelivery: TemporalCompletionDelivery;
   temporalRelation: TemporalCaseRelation;
   executionSchedule: TemporalExecutionSchedule;
   effectSchedules: TemporalEffectSchedulePair | null;
-  cibEffectExecutionSchedule: CibEffectExecutionSchedule;
   replaySelection: PipelineReplaySelection;
   injectMutation: (result: MutableScenarioResult) => void;
   expectedInjectedDisagreement: ObservationValueDisagreement;
@@ -115,7 +119,7 @@ export type RetainedEvidence = Readonly<{
 export type PipelineContext = Readonly<{
   pipelineCase: PipelineCase;
   scenario: Scenario;
-  retainedEvidence: RetainedEvidence;
+  retainedEvidence: RetainedEvidence | null;
   checkedProcess: AcceptedBpmnCompilation["checkedProcess"];
   semanticProcess: SemanticProcessProgram;
 }>;
@@ -206,8 +210,8 @@ export type PipelineTargets = Readonly<{
 }>;
 
 export type ProjectedTargets = Readonly<{
-  cibResult: CibPipelineResult;
-  canonicalCib: ScenarioResult;
+  cibResult: CibPipelineResult | null;
+  canonicalCib: ScenarioResult | null;
   leanResult: ScenarioResult;
   semanticCoreResult: ScenarioResult;
   temporalResult: TemporalCaseExecution;

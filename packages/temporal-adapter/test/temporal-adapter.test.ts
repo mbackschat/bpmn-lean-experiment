@@ -73,6 +73,9 @@ import {
 import {
   registerBoundaryErrorTemporalTests,
 } from "./boundary-error-temporal-tests.ts";
+import {
+  registerExclusiveGatewayTemporalTests,
+} from "./exclusive-gateway-temporal-tests.ts";
 
 let runner: TemporalScenarioRunner | undefined;
 
@@ -320,3 +323,4 @@ registerParallelTemporalTests(activeRunner);
 registerServiceTaskEffectTemporalTests(activeRunner);
 registerCreateDocumentDataTemporalTests(activeRunner);
 registerBoundaryErrorTemporalTests(activeRunner);
+registerExclusiveGatewayTemporalTests(activeRunner);

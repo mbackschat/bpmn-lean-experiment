@@ -59,19 +59,33 @@ function requiredResult<Result>(
   return result;
 }
 
+function requiredCibResult<Result>(
+  result: Result | null,
+  scenarioId: string,
+): Result {
+  if (result === null) {
+    throw new Error(`CIB result omitted for ${scenarioId}`);
+  }
+  return result;
+}
+
 export function projectCaseTargets(
   context: PipelineContext,
   targets: PipelineTargets,
 ): ProjectedTargets {
   const scenarioId = context.scenario.id;
-  const cibResult = requiredResult(
-    targets.cib.results,
-    scenarioId,
-    "CIB Seven",
-  );
+  const cibResult =
+    context.pipelineCase.cib === null
+      ? null
+      : requiredResult(
+          targets.cib.results,
+          scenarioId,
+          "CIB Seven",
+        );
   return {
     cibResult,
-    canonicalCib: canonicalCibResult(cibResult),
+    canonicalCib:
+      cibResult === null ? null : canonicalCibResult(cibResult),
     leanResult: requiredResult(
       targets.lean.results,
       scenarioId,
@@ -113,6 +127,16 @@ export function compareCase(
     temporalResult,
     cibEffectRetryResult,
   } = projectedTargets;
+  const cibConfiguration = pipelineCase.cib;
+  if (
+    (cibConfiguration === null) !== (retainedEvidence === null) ||
+    (cibConfiguration === null) !== (cibResult === null) ||
+    (cibConfiguration === null) !== (canonicalCib === null)
+  ) {
+    throw new Error(
+      `CIB configuration and artifacts differ for ${scenario.id}`,
+    );
+  }
   const semanticCandidates: Array<TargetScenarioResult> = [
     {
       target: DifferentialTarget.Lean,
@@ -133,32 +157,36 @@ export function compareCase(
     });
   }
   // tag::four-target-comparison[]
-  const comparison =
-    pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
-      ? compareTargetResults(
-          {
-            target: DifferentialTarget.CibSeven,
-            result: canonicalCib,
-          },
-          semanticCandidates,
-        )
-      : compareTargetResults(
-          {
-            target: DifferentialTarget.Lean,
-            result: leanResult,
-          },
-          semanticCandidates.filter(
-            ({ target }) => target !== DifferentialTarget.Lean,
-          ),
-        );
+  const comparison = (() => {
+    if (
+      cibConfiguration?.relation === CibCaseRelation.ExactSemantic
+    ) {
+      return compareTargetResults(
+        {
+          target: DifferentialTarget.CibSeven,
+          result: requiredCibResult(canonicalCib, scenario.id),
+        },
+        semanticCandidates,
+      );
+    }
+    return compareTargetResults(
+      {
+        target: DifferentialTarget.Lean,
+        result: leanResult,
+      },
+      semanticCandidates.filter(
+        ({ target }) => target !== DifferentialTarget.Lean,
+      ),
+    );
+  })();
   // end::four-target-comparison[]
   const cibHostComparison =
-    pipelineCase.cibRelation ===
+    cibConfiguration?.relation ===
       CibCaseRelation.SynchronousFinalState
       ? compareTargetResults(
           {
             target: DifferentialTarget.CibSeven,
-            result: canonicalCib,
+            result: requiredCibResult(canonicalCib, scenario.id),
           },
           [
             {
@@ -167,12 +195,12 @@ export function compareCase(
             },
           ],
         )
-      : pipelineCase.cibRelation ===
+      : cibConfiguration?.relation ===
           CibCaseRelation.SynchronousBoundaryError
         ? compareTargetResults(
             {
               target: DifferentialTarget.CibSeven,
-              result: canonicalCib,
+              result: requiredCibResult(canonicalCib, scenario.id),
             },
             [
               {
@@ -232,23 +260,26 @@ export function compareCase(
       `Temporal returned an unexpected post-terminal result for ${scenario.id}`,
     );
   }
-  const evidenceComparison = compareTargetResults(
-    {
-      target: DifferentialTarget.RetainedCibEvidence,
-      result: retainedEvidence.result,
-    },
-    [
-      {
-        target: DifferentialTarget.CibSeven,
-        result: canonicalCib,
-      },
-    ],
-  );
+  const evidenceComparison =
+    retainedEvidence === null || canonicalCib === null
+      ? null
+      : compareTargetResults(
+          {
+            target: DifferentialTarget.RetainedCibEvidence,
+            result: retainedEvidence.result,
+          },
+          [
+            {
+              target: DifferentialTarget.CibSeven,
+              result: canonicalCib,
+            },
+          ],
+        );
   if (
-    pipelineCase.cibEffectExecutionSchedule ===
+    cibConfiguration?.effectExecutionSchedule ===
       CibEffectExecutionSchedule.FailAfterMutationOnce
   ) {
-    if (cibEffectRetryResult === null) {
+    if (cibEffectRetryResult === null || canonicalCib === null) {
       throw new Error("Service Task case omitted the CIB retry execution");
     }
     if (
@@ -283,15 +314,15 @@ export function compareCase(
   const injectedResult = mutableClone(semanticCoreResult);
   pipelineCase.injectMutation(injectedResult);
   const injectedReference =
-    pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
+    cibConfiguration?.relation === CibCaseRelation.ExactSemantic
       ? {
           target: DifferentialTarget.CibSeven,
-          result: canonicalCib,
-        }
+          result: requiredCibResult(canonicalCib, scenario.id),
+        } as const
       : {
           target: DifferentialTarget.Lean,
           result: leanResult,
-        };
+        } as const;
   const injectedDisagreement = compareTargetResults(
     injectedReference,
     [
@@ -398,7 +429,7 @@ export function compareCase(
       cibEffectRetryEvidence:
         cibEffectRetryResult?.diagnostics.effectExecutions?.[0] ??
         null,
-      cibCleanup: cibResult.diagnostics.cleanup,
+      cibCleanup: cibResult?.diagnostics.cleanup ?? null,
     },
   };
 }
@@ -530,7 +561,10 @@ export function cibTiming(
   cibTarget: TargetBatch<CibPipelineResult>,
   contexts: ReadonlyArray<PipelineContext>,
 ) {
-  const cases = contexts.map(({ scenario }) => {
+  const cibContexts = contexts.filter(
+    ({ pipelineCase }) => pipelineCase.cib !== null,
+  );
+  const cases = cibContexts.map(({ scenario }) => {
     const result = requiredResult(
       cibTarget.results,
       scenario.id,
@@ -546,9 +580,13 @@ export function cibTiming(
         1e6,
     };
   });
-  const firstContext = contexts[0];
+  const firstContext = cibContexts[0];
   if (firstContext === undefined) {
-    throw new TypeError("CIB timing requires one pipeline context");
+    return {
+      total: cibTarget.totalMs,
+      engineStartup: null,
+      cases,
+    };
   }
   const firstResult = requiredResult(
     cibTarget.results,

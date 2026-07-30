@@ -25,6 +25,7 @@ import type {
   BpmnProcessWorkflow,
   CompletedProcessReceipt,
   TemporalHistory,
+  TemporalBranchBypassMutationExecution,
   TemporalEffectBypassMutationExecution,
   TemporalEffectFailureExecution,
   TemporalReplayItem,
@@ -38,6 +39,7 @@ import type {
   TemporalTimeSkippingRunnerOptions,
 } from "./contracts.js";
 import {
+  runBranchBypassMutation,
   runEffectBypassMutation,
   runTimerBypassMutation,
 } from "./bypass-mutation.js";
@@ -418,6 +420,22 @@ export class TemporalScenarioRunner {
       workflowId,
       (handle, completion) =>
         this.waitForOpenUserTask(handle, completion),
+    );
+  }
+
+  async runBranchBypassMutation(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalBranchBypassMutationExecution> {
+    this.assertAvailable();
+    return runBranchBypassMutation(
+      this.environment,
+      scenario,
+      semanticProcess,
+      workflowId,
+      (handle, minimumLength) =>
+        this.waitForTrace(handle, minimumLength),
     );
   }
 

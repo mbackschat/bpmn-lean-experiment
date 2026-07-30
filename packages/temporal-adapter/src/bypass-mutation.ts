@@ -28,6 +28,7 @@ import {
 import type {
   BpmnProcessWorkflow,
   TemporalEffectBypassMutationExecution,
+  TemporalBranchBypassMutationExecution,
   TemporalHistory,
   TemporalTimerBypassMutationExecution,
 } from "./contracts.js";
@@ -67,6 +68,14 @@ const effectConfiguration = {
     new URL("./effect-bypass-mutation-workflows.js", import.meta.url),
   ),
   description: "effect-bypass mutation",
+} as const;
+const branchConfiguration = {
+  taskQueue: "bpmn-branch-bypass-mutation",
+  workflowType: "runBpmnProcessBranchBypassMutation",
+  workflowsPath: fileURLToPath(
+    new URL("./branch-bypass-mutation-workflows.js", import.meta.url),
+  ),
+  description: "branch-bypass mutation",
 } as const;
 const temporalTestIdentity = "bpmn-lean-test-runtime";
 const operationDeadlineMs = 5_000;
@@ -127,6 +136,87 @@ type WaitForUserTask = (
   handle: WorkflowHandle<BpmnProcessWorkflow>,
   completion: CompleteUserTaskInstanceStimulus,
 ) => Promise<void>;
+
+type WaitForTrace = (
+  handle: WorkflowHandle<BpmnProcessWorkflow>,
+  minimumLength: number,
+) => Promise<ReadonlyArray<CanonicalObservation>>;
+
+export async function runBranchBypassMutation(
+  environment: TestWorkflowEnvironment,
+  scenario: Scenario,
+  semanticProcess: SemanticProcessProgram,
+  workflowId: string,
+  waitForTrace: WaitForTrace,
+): Promise<TemporalBranchBypassMutationExecution> {
+  const start = requireStartStimulus(scenario);
+  const mutationWorker = await withDeadline(
+    Worker.create({
+      connection: environment.nativeConnection,
+      identity: temporalTestIdentity,
+      taskQueue: branchConfiguration.taskQueue,
+      workflowsPath: branchConfiguration.workflowsPath,
+    }),
+    workerStartupDeadlineMs,
+    `${branchConfiguration.description} Worker startup`,
+  );
+  let mutationWorkerError: unknown;
+  const mutationWorkerRun = mutationWorker.run().catch((error: unknown) => {
+    mutationWorkerError = error;
+  });
+  let handle: WorkflowHandle<BpmnProcessWorkflow> | undefined;
+
+  try {
+    handle = await withDeadline(
+      environment.client.workflow.start(
+        branchConfiguration.workflowType,
+        {
+          taskQueue: branchConfiguration.taskQueue,
+          workflowId,
+          workflowIdReusePolicy: "REJECT_DUPLICATE",
+          args: [start, semanticProcess],
+        },
+      ),
+      operationDeadlineMs,
+      `${branchConfiguration.description} Workflow start`,
+    );
+    const waitTrace = await waitForTrace(handle, 3);
+    const history = await withDeadline(
+      handle.fetchHistory(),
+      operationDeadlineMs,
+      `${branchConfiguration.description} history fetch`,
+    );
+    if (!Array.isArray(history.events)) {
+      throw new TypeError(
+        `${branchConfiguration.description} history did not contain an events array`,
+      );
+    }
+    return {
+      waitTrace: [...waitTrace],
+      history: history as TemporalHistory,
+    };
+  } finally {
+    if (handle !== undefined) {
+      await withDeadline(
+        handle.terminate("retained branch-bypass mutation"),
+        operationDeadlineMs,
+        `${branchConfiguration.description} Workflow cleanup`,
+      );
+    }
+    mutationWorker.shutdown();
+    await withDeadline(
+      mutationWorkerRun,
+      shutdownDeadlineMs,
+      `${branchConfiguration.description} Worker shutdown`,
+    );
+    if (mutationWorkerError !== undefined) {
+      throw normalizeError(
+        mutationWorkerError,
+        `${branchConfiguration.description} Worker failed`,
+      );
+    }
+  }
+}
 
 async function runBypassMutation(
   environment: TestWorkflowEnvironment,

@@ -17,7 +17,7 @@ import {
 } from "./pipeline-target-support.ts";
 import type {
   CibPipelineResult,
-  PipelineCase,
+  CibPipelineConfiguration,
   PipelineContext,
   TargetBatch,
 } from "./pipeline-types.ts";
@@ -26,7 +26,7 @@ export async function runCibTargets(
   scenarios: ReadonlyArray<Scenario>,
   inputPath: string,
   outputPath: string,
-  engineVersion: PipelineCase["cibVersion"],
+  engineVersion: CibPipelineConfiguration["version"],
   effectSchedule = EffectExecutionSchedule.PlainSuccess,
 ): Promise<TargetBatch<CibPipelineResult>> {
   const started = performance.now();
@@ -79,9 +79,18 @@ export async function runCibTargetGroups(
   effectSchedule = EffectExecutionSchedule.PlainSuccess,
 ): Promise<TargetBatch<CibPipelineResult>> {
   const started = performance.now();
+  const cibContexts = contexts.filter(
+    ({ pipelineCase }) => pipelineCase.cib !== null,
+  );
   const groups = Map.groupBy(
-    contexts,
-    ({ pipelineCase }) => pipelineCase.cibVersion,
+    cibContexts,
+    ({ pipelineCase }) => {
+      const configuration = pipelineCase.cib;
+      if (configuration === null) {
+        throw new Error("CIB target group received a standards-only case");
+      }
+      return configuration.version;
+    },
   );
   const batches = await Promise.all(
     [...groups.entries()].map(([engineVersion, versionContexts]) =>

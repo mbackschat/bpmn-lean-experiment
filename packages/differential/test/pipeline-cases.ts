@@ -22,6 +22,7 @@ import {
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import type {
+  CibPipelineConfiguration,
   DeepMutable,
   MutableScenarioResult,
   MutableStateObservation,
@@ -39,6 +40,22 @@ type ParallelCaseOptions = Readonly<{
   injectMutation?: PipelineCase["injectMutation"];
   expectedInjectedDisagreement?: ObservationValueDisagreement;
 }>;
+
+function cibConfiguration(
+  evidenceRelativePath: string,
+  version: CibPipelineConfiguration["version"],
+  relation: CibPipelineConfiguration["relation"],
+  effectExecutionSchedule:
+    CibPipelineConfiguration["effectExecutionSchedule"] =
+    CibEffectExecutionSchedule.None,
+): CibPipelineConfiguration {
+  return Object.freeze({
+    evidenceRelativePath,
+    version,
+    relation,
+    effectExecutionSchedule,
+  });
+}
 
 function mutableClone<T>(value: T): DeepMutable<T> {
   return structuredClone(value) as DeepMutable<T>;
@@ -68,6 +85,26 @@ function mutateOpenTaskActivation(result: MutableScenarioResult): void {
     id: {
       ...openTask.id,
       activation: 2,
+    },
+  };
+}
+
+function mutateSelectedBranchTask(result: MutableScenarioResult): void {
+  const running = runningObservation(result);
+  const openTask = running.openUserTasks?.[0];
+  if (
+    openTask === undefined ||
+    openTask.id.elementId !== "Task_First"
+  ) {
+    throw new Error(
+      "Simple Boolean calibration requires the first branch User Task",
+    );
+  }
+  running.openUserTasks[0] = {
+    ...openTask,
+    id: {
+      ...openTask.id,
+      elementId: "Task_Second",
     },
   };
 }
@@ -194,13 +231,14 @@ function interactionCase(
     id,
     scenarioRelativePath:
       `scenarios/user-task-discovery-completion/${scenarioFile}`,
-    evidenceRelativePath:
-      `scenarios/user-task-discovery-completion/${evidenceFile}`,
     bpmnRelativePath:
       "scenarios/user-task-discovery-completion/process.bpmn",
     workflowIdPrefix: id,
-    cibVersion: "2.2.0",
-    cibRelation: CibCaseRelation.ExactSemantic,
+    cib: cibConfiguration(
+        `scenarios/user-task-discovery-completion/${evidenceFile}`,
+      "2.2.0",
+      CibCaseRelation.ExactSemantic,
+    ),
     expectedWaitTraceLength: 3,
     completionDelivery:
       options.completionDelivery ??
@@ -212,7 +250,6 @@ function interactionCase(
       options.executionSchedule ??
       TemporalExecutionSchedule.Normal,
     effectSchedules: null,
-    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
     replaySelection: PipelineReplaySelection.Primary,
     injectMutation: mutateOpenTaskActivation,
     expectedInjectedDisagreement: observationValueDisagreement(
@@ -233,18 +270,18 @@ function parallelCase(
     id,
     scenarioRelativePath:
       `scenarios/parallel-fork-join/${scenarioFile}`,
-    evidenceRelativePath:
-      `scenarios/parallel-fork-join/${evidenceFile}`,
     bpmnRelativePath: "scenarios/parallel-fork-join/process.bpmn",
     workflowIdPrefix: id,
-    cibVersion: "2.2.0",
-    cibRelation: CibCaseRelation.ExactSemantic,
+    cib: cibConfiguration(
+        `scenarios/parallel-fork-join/${evidenceFile}`,
+      "2.2.0",
+      CibCaseRelation.ExactSemantic,
+    ),
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
     executionSchedule: TemporalExecutionSchedule.Normal,
     effectSchedules: null,
-    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
     replaySelection: PipelineReplaySelection.Primary,
     injectMutation:
       options.injectMutation ?? omitOneParallelOpenTask,
@@ -263,19 +300,19 @@ function timerCase(): PipelineCase {
     id: "intermediate-catch-timer-pt1s",
     scenarioRelativePath:
       "scenarios/intermediate-catch-timer/scenario.json",
-    evidenceRelativePath:
-      "scenarios/intermediate-catch-timer/cibseven-evidence.json",
     bpmnRelativePath:
       "scenarios/intermediate-catch-timer/process.bpmn",
     workflowIdPrefix: "intermediate-catch-timer-pt1s",
-    cibVersion: "2.2.0",
-    cibRelation: CibCaseRelation.ExactSemantic,
+    cib: cibConfiguration(
+        "scenarios/intermediate-catch-timer/cibseven-evidence.json",
+      "2.2.0",
+      CibCaseRelation.ExactSemantic,
+    ),
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
     executionSchedule: TemporalExecutionSchedule.Normal,
     effectSchedules: null,
-    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
     replaySelection: PipelineReplaySelection.Primary,
     injectMutation: mutateOpenTimerDeadline,
     expectedInjectedDisagreement: observationValueDisagreement(
@@ -286,17 +323,44 @@ function timerCase(): PipelineCase {
   });
 }
 
+function simpleBooleanGatewayCase(): PipelineCase {
+  return Object.freeze({
+    id: "exclusive-gateway-simple-boolean-first-true",
+    scenarioRelativePath:
+      "scenarios/exclusive-gateway-simple-boolean/scenario.json",
+    bpmnRelativePath:
+      "scenarios/exclusive-gateway-simple-boolean/process.bpmn",
+    workflowIdPrefix:
+      "exclusive-gateway-simple-boolean-first-true",
+    cib: null,
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    replaySelection: PipelineReplaySelection.Primary,
+    injectMutation: mutateSelectedBranchTask,
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[2].openUserTasks[0].id.elementId",
+      "Task_First",
+      "Task_Second",
+    ),
+  });
+}
+
 function effectCase(): PipelineCase {
   return Object.freeze({
     id: "service-task-effect-success",
     scenarioRelativePath:
       "scenarios/service-task-effect/scenario.json",
-    evidenceRelativePath:
-      "scenarios/service-task-effect/cibseven-evidence.json",
     bpmnRelativePath: "scenarios/service-task-effect/process.bpmn",
     workflowIdPrefix: "service-task-effect-success",
-    cibVersion: "2.2.0",
-    cibRelation: CibCaseRelation.ExactSemantic,
+    cib: cibConfiguration(
+        "scenarios/service-task-effect/cibseven-evidence.json",
+      "2.2.0",
+      CibCaseRelation.ExactSemantic,
+      CibEffectExecutionSchedule.FailAfterMutationOnce,
+    ),
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
@@ -305,8 +369,6 @@ function effectCase(): PipelineCase {
       primary: EffectExecutionSchedule.PlainSuccess,
       isolation: EffectExecutionSchedule.FailAfterMutationOnce,
     },
-    cibEffectExecutionSchedule:
-      CibEffectExecutionSchedule.FailAfterMutationOnce,
     replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
     injectMutation: mutateOpenEffectOperation,
     expectedInjectedDisagreement: observationValueDisagreement(
@@ -322,12 +384,13 @@ function createDocumentCase(): PipelineCase {
     id: "a12-create-document-data",
     scenarioRelativePath:
       "scenarios/create-document-data/scenario.json",
-    evidenceRelativePath:
-      "scenarios/create-document-data/cibseven-evidence.json",
     bpmnRelativePath: "scenarios/create-document-data/process.bpmn",
     workflowIdPrefix: "a12-create-document-data",
-    cibVersion: "2.0.0",
-    cibRelation: CibCaseRelation.SynchronousFinalState,
+    cib: cibConfiguration(
+        "scenarios/create-document-data/cibseven-evidence.json",
+      "2.0.0",
+      CibCaseRelation.SynchronousFinalState,
+    ),
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
@@ -336,7 +399,6 @@ function createDocumentCase(): PipelineCase {
       primary: EffectExecutionSchedule.PlainSuccess,
       isolation: EffectExecutionSchedule.FailAfterMutationOnce,
     },
-    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
     replaySelection: PipelineReplaySelection.PrimaryAndIsolation,
     injectMutation: mutateFinalProcessVariable,
     expectedInjectedDisagreement: observationValueDisagreement(
@@ -352,12 +414,13 @@ function boundaryErrorCase(): PipelineCase {
     id: "a12-boundary-error-caught",
     scenarioRelativePath:
       "scenarios/boundary-error/scenario.json",
-    evidenceRelativePath:
-      "scenarios/boundary-error/cibseven-evidence.json",
     bpmnRelativePath: "scenarios/boundary-error/process.bpmn",
     workflowIdPrefix: "a12-boundary-error-caught",
-    cibVersion: "2.0.0",
-    cibRelation: CibCaseRelation.SynchronousBoundaryError,
+    cib: cibConfiguration(
+        "scenarios/boundary-error/cibseven-evidence.json",
+      "2.0.0",
+      CibCaseRelation.SynchronousBoundaryError,
+    ),
     expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
@@ -366,7 +429,6 @@ function boundaryErrorCase(): PipelineCase {
       primary: EffectExecutionSchedule.PlainSuccess,
       isolation: EffectExecutionSchedule.PlainSuccess,
     },
-    cibEffectExecutionSchedule: CibEffectExecutionSchedule.None,
     replaySelection: PipelineReplaySelection.Primary,
     injectMutation: mutateBoundaryErrorProcessVariable,
     expectedInjectedDisagreement: observationValueDisagreement(
@@ -423,6 +485,7 @@ export const pipelineCases = Object.freeze([
     },
   ),
   timerCase(),
+  simpleBooleanGatewayCase(),
   effectCase(),
   createDocumentCase(),
   boundaryErrorCase(),

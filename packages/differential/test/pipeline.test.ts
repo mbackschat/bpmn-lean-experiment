@@ -20,6 +20,7 @@ import {
 } from "@bpmn-lean/differential";
 
 import {
+  CibCaseRelation,
   CibEffectExecutionSchedule,
 } from "./pipeline-types.ts";
 import {
@@ -72,6 +73,7 @@ test(
         "parallel-fork-join-b-then-a",
         "parallel-fork-join-stale-a-while-b-active",
         "intermediate-catch-timer-pt1s",
+        "exclusive-gateway-simple-boolean-first-true",
         "service-task-effect-success",
         "a12-create-document-data",
         "a12-boundary-error-caught",
@@ -118,6 +120,7 @@ test(
       const isSynchronousCibHost =
         isSynchronousCreateDocument ||
         isSynchronousBoundaryError;
+      const hasCib = pipelineCase.cib !== null;
       assert.equal(
         caseReport.comparison.targets.includes(
           DifferentialTarget.Temporal,
@@ -128,7 +131,7 @@ test(
         caseReport.comparison.targets.includes(
           DifferentialTarget.CibSeven,
         ),
-        !isSynchronousCibHost,
+        hasCib && !isSynchronousCibHost,
       );
       if (isSynchronousCibHost) {
         assert.deepEqual(caseReport.cibHostComparison, {
@@ -152,13 +155,18 @@ test(
       } else {
         assert.equal(caseReport.temporalPrefixComparison, null);
       }
-      assert.deepEqual(caseReport.evidenceComparison, {
-        kind: ComparisonKind.Agreement,
-        targets: [
-          DifferentialTarget.RetainedCibEvidence,
-          DifferentialTarget.CibSeven,
-        ],
-      });
+      assert.deepEqual(
+        caseReport.evidenceComparison,
+        hasCib
+          ? {
+              kind: ComparisonKind.Agreement,
+              targets: [
+                DifferentialTarget.RetainedCibEvidence,
+                DifferentialTarget.CibSeven,
+              ],
+            }
+          : null,
+      );
       assert.deepEqual(caseReport.scenario.semanticProcess, {
         kind: "semanticProcess",
         compiler: "bpmn-source-semantic-process",
@@ -174,13 +182,18 @@ test(
         caseEvidence.isolationTemporalResult,
         caseEvidence.primaryTemporalResult,
       );
-      assert.deepEqual(caseEvidence.cibCleanup, cleanCibProjection);
+      assert.deepEqual(
+        caseEvidence.cibCleanup,
+        hasCib ? cleanCibProjection : null,
+      );
 
       assert.deepEqual(caseReport.injectedDisagreement, {
         kind: ComparisonKind.Disagreement,
-        referenceTarget: isSynchronousCibHost
-          ? DifferentialTarget.Lean
-          : DifferentialTarget.CibSeven,
+        referenceTarget:
+          pipelineCase.cib?.relation ===
+              CibCaseRelation.ExactSemantic
+            ? DifferentialTarget.CibSeven
+            : DifferentialTarget.Lean,
         candidateTarget: DifferentialTarget.SemanticCore,
         disagreement: pipelineCase.expectedInjectedDisagreement,
       });
@@ -247,7 +260,7 @@ test(
           true,
         );
         if (
-          pipelineCase.cibEffectExecutionSchedule ===
+          pipelineCase.cib?.effectExecutionSchedule ===
             CibEffectExecutionSchedule.FailAfterMutationOnce
         ) {
           assert.deepEqual(caseEvidence.cibEffectRetryEvidence, {
@@ -297,7 +310,7 @@ test(
       }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 12,
+      liveHistories: 13,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
@@ -311,7 +324,7 @@ test(
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 20);
+    assert.equal(report.isolation.temporalWorkflowIds.length, 22);
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,
