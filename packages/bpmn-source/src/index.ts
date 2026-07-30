@@ -6,6 +6,8 @@ export {
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  SimpleBooleanExpressionKind,
+  SimpleBooleanExpressionLanguage,
 } from "@bpmn-lean/semantic-core";
 export type {
   CheckedProcess,
@@ -34,3 +36,6 @@ export {
 export {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
+export {
+  parseSimpleBooleanExpression,
+} from "./simple-boolean-expression.js";

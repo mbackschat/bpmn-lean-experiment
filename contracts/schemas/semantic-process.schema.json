@@ -489,6 +489,129 @@
         }
       }
     },
+    "simpleBooleanExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "literal"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "variable"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "isPresent",
+                "isNull"
+              ]
+            },
+            "variable": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.-]{0,63}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "variable",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "stringEquals"
+            },
+            "variable": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.-]{0,63}$"
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        }
+      ]
+    },
+    "conditionalCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "condition",
+        "output",
+        "origin"
+      ],
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/simpleBooleanExpression"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        }
+      }
+    },
+    "choose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "candidates",
+        "defaultOutput",
+        "defaultOrigin"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "choose"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/conditionalCandidate"
+          }
+        },
+        "defaultOutput": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "defaultOrigin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        }
+      }
+    },
     "terminate": {
       "type": "object",
       "additionalProperties": false,
@@ -532,6 +655,9 @@
         },
         {
           "$ref": "#/$defs/synchronize"
+        },
+        {
+          "$ref": "#/$defs/choose"
         },
         {
           "$ref": "#/$defs/terminate"

@@ -71,6 +71,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitTimer _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
+  | .choose _ _ input _ _ _
   | .terminate _ _ input => [input]
   | .synchronize _ _ inputs _ => inputs
 
@@ -82,6 +83,8 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitEffect _ _ _ output _ route =>
       output :: route.toList.map (·.output)
   | .duplicate _ _ _ outputs => outputs
+  | .choose _ _ _ candidates defaultOutput _ =>
+      candidates.map (·.output) ++ [defaultOutput]
   | .terminate .. => []
 
 private def producers (operations : List SemanticOperation)

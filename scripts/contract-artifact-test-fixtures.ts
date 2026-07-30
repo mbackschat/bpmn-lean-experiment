@@ -23,6 +23,8 @@ import type {
 export type DeepMutable<Value> =
   Value extends (...args: never[]) => unknown
     ? Value
+    : Value extends readonly [unknown, ...unknown[]]
+      ? { -readonly [Key in keyof Value]: DeepMutable<Value[Key]> }
     : Value extends ReadonlyArray<infer Item>
       ? Array<DeepMutable<Item>>
       : Value extends object
@@ -159,31 +161,37 @@ export function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
           id: "Flow_Fork_A",
           sourceId: "Gateway_Fork",
           targetId: "UserTask_A",
+          condition: null,
         },
         {
           id: "Flow_Fork_B",
           sourceId: "Gateway_Fork",
           targetId: "UserTask_B",
+          condition: null,
         },
         {
           id: "Flow_Join_End",
           sourceId: "Gateway_Join",
           targetId: "End_None",
+          condition: null,
         },
         {
           id: "Flow_Start_Fork",
           sourceId: "Start_None",
           targetId: "Gateway_Fork",
+          condition: null,
         },
         {
           id: "Flow_Task_A_Join",
           sourceId: "UserTask_A",
           targetId: "Gateway_Join",
+          condition: null,
         },
         {
           id: "Flow_Task_B_Join",
           sourceId: "UserTask_B",
           targetId: "Gateway_Join",
+          condition: null,
         },
       ],
     },
@@ -265,11 +273,13 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
           id: "Flow_ServiceToEnd",
           sourceId: "ServiceTask_Record",
           targetId: "EndEvent_1",
+          condition: null,
         },
         {
           id: "Flow_StartToService",
           sourceId: "StartEvent_1",
           targetId: "ServiceTask_Record",
+          condition: null,
         },
       ],
     },

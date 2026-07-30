@@ -20,6 +20,9 @@ import {
   evaluateInputMappings,
 } from "./semantic-process-data.js";
 import {
+  evaluateSimpleBooleanExpression,
+} from "./simple-boolean-expression.js";
+import {
   addToken,
   compareEffectWaits,
   compareTimerWaits,
@@ -267,6 +270,10 @@ export function applyInternalOperation(
       )
         ? synchronize(operation, state)
         : null;
+    case SemanticOperationKind.Choose:
+      return tokenMultiplicity(state.controlTokens, operation.input) > 0
+        ? choose(operation, state)
+        : null;
     case SemanticOperationKind.Terminate:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
         ? terminate(operation, state)
@@ -456,6 +463,28 @@ function synchronize(
   return {
     ...state,
     controlTokens: addToken(remaining, operation.output),
+  };
+}
+
+function choose(
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.Choose }
+  >,
+  state: RuntimeState,
+): RuntimeState {
+  const selected = operation.candidates.find(({ condition }) =>
+    evaluateSimpleBooleanExpression(
+      condition,
+      state.variables.process.bindings,
+    )
+  );
+  return {
+    ...state,
+    controlTokens: addToken(
+      removeToken(state.controlTokens, operation.input),
+      selected?.output ?? operation.defaultOutput,
+    ),
   };
 }
 

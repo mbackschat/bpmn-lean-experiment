@@ -10,6 +10,7 @@ export enum CheckedNodeKind {
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   ServiceTask = "serviceTask",
   ParallelGateway = "parallelGateway",
+  ExclusiveGateway = "exclusiveGateway",
   NoneEndEvent = "noneEndEvent",
 }
 
@@ -71,6 +72,40 @@ export type EffectDescriptor = DeepReadonly<{
   operation: string;
 }>;
 
+export const SimpleBooleanExpressionLanguage =
+  "urn:bpmn-lean:expression:simple-boolean:v1";
+
+export enum SimpleBooleanExpressionKind {
+  Literal = "literal",
+  IsPresent = "isPresent",
+  IsNull = "isNull",
+  StringEquals = "stringEquals",
+}
+
+export type SimpleBooleanExpression =
+  | DeepReadonly<{
+      kind: SimpleBooleanExpressionKind.Literal;
+      value: boolean;
+    }>
+  | DeepReadonly<{
+      kind: SimpleBooleanExpressionKind.IsPresent;
+      variable: string;
+    }>
+  | DeepReadonly<{
+      kind: SimpleBooleanExpressionKind.IsNull;
+      variable: string;
+    }>
+  | DeepReadonly<{
+      kind: SimpleBooleanExpressionKind.StringEquals;
+      variable: string;
+      value: string;
+    }>;
+
+export type CheckedCondition = DeepReadonly<{
+  language: string;
+  body: string;
+}>;
+
 type CheckedServiceTask = DeepReadonly<{
   kind: CheckedNodeKind.ServiceTask;
   id: string;
@@ -102,6 +137,13 @@ export type CheckedNode =
       direction: GatewayDirection;
     }>
   | DeepReadonly<{
+      kind: CheckedNodeKind.ExclusiveGateway;
+      id: string;
+      direction: GatewayDirection.Diverging;
+      candidateFlowIds: [string, string];
+      defaultFlowId: string;
+    }>
+  | DeepReadonly<{
       kind: CheckedNodeKind.NoneEndEvent;
       id: string;
     }>;
@@ -110,6 +152,7 @@ export type CheckedSequenceFlow = DeepReadonly<{
   id: string;
   sourceId: string;
   targetId: string;
+  condition: CheckedCondition | null;
 }>;
 
 export type CheckedProcess = DeepReadonly<{
@@ -135,6 +178,7 @@ export enum SemanticOperationKind {
   AwaitEffect = "awaitEffect",
   Duplicate = "duplicate",
   Synchronize = "synchronize",
+  Choose = "choose",
   Terminate = "terminate",
 }
 
@@ -175,6 +219,12 @@ export type BpmnErrorRoute = DeepReadonly<{
     errorElementId: string;
     sequenceFlowId: string;
   };
+}>;
+
+export type ConditionalCandidate = DeepReadonly<{
+  condition: SimpleBooleanExpression;
+  output: string;
+  origin: BpmnSequenceFlowOrigin;
 }>;
 
 type OperationBase = DeepReadonly<{
@@ -232,6 +282,14 @@ export type SemanticOperation =
         kind: SemanticOperationKind.Synchronize;
         inputs: string[];
         output: string;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.Choose;
+        input: string;
+        candidates: [ConditionalCandidate, ConditionalCandidate];
+        defaultOutput: string;
+        defaultOrigin: BpmnSequenceFlowOrigin;
       }>)
   | (OperationBase &
       DeepReadonly<{

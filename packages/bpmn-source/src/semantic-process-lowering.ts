@@ -7,6 +7,9 @@ import {
   SemanticProcessKind,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
+import {
+  parseSimpleBooleanExpression,
+} from "./simple-boolean-expression.js";
 import type {
   CheckedNode,
   CheckedProcess,
@@ -135,6 +138,23 @@ function lowerNode(
             output: requireOnly(outgoing, node.id, "outgoing"),
           };
       }
+    case CheckedNodeKind.ExclusiveGateway:
+      return {
+        ...base,
+        kind: SemanticOperationKind.Choose,
+        input: requireOnly(incoming, node.id, "incoming"),
+        candidates: node.candidateFlowIds.map((flowId) =>
+          lowerConditionalCandidate(flows, flowId)
+        ) as [
+          ReturnType<typeof lowerConditionalCandidate>,
+          ReturnType<typeof lowerConditionalCandidate>,
+        ],
+        defaultOutput: placeId(node.defaultFlowId),
+        defaultOrigin: {
+          kind: SemanticOriginKind.BpmnSequenceFlow,
+          elementId: node.defaultFlowId,
+        },
+      };
     case CheckedNodeKind.NoneEndEvent:
       return {
         ...base,
@@ -142,6 +162,32 @@ function lowerNode(
         input: requireOnly(incoming, node.id, "incoming"),
       };
   }
+}
+
+function lowerConditionalCandidate(
+  flows: ReadonlyArray<CheckedSequenceFlow>,
+  flowId: string,
+) {
+  const flow = flows.find(({ id }) => id === flowId);
+  if (flow === undefined || flow.condition === null) {
+    throw new TypeError(
+      `Checked conditional Sequence Flow ${flowId} is missing its condition`,
+    );
+  }
+  const condition = parseSimpleBooleanExpression(flow.condition.body);
+  if (condition === undefined) {
+    throw new TypeError(
+      `Checked conditional Sequence Flow ${flowId} has an invalid expression`,
+    );
+  }
+  return {
+    condition,
+    output: placeId(flow.id),
+    origin: {
+      kind: SemanticOriginKind.BpmnSequenceFlow,
+      elementId: flow.id,
+    },
+  } as const;
 }
 
 function normalizeTimerDuration(durationLiteral: "PT1S"): 1000 {

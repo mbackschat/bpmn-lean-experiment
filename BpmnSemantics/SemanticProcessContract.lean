@@ -60,6 +60,18 @@ structure VariableMapping where
   expression : MappingExpression
   deriving Repr, DecidableEq
 
+inductive SimpleBooleanExpression where
+  | literal (value : Bool)
+  | isPresent (name : String)
+  | isNull (name : String)
+  | stringEquals (name value : String)
+  deriving Repr, DecidableEq
+
+structure CheckedCondition where
+  language : String
+  body : String
+  deriving Repr, DecidableEq
+
 structure CheckedBpmnErrorRoute where
   boundaryEventId : NodeId
   boundaryEventName : Option String
@@ -82,6 +94,10 @@ inductive CheckedNode where
       (outputMappings : List VariableMapping)
       (bpmnErrorRoute : Option CheckedBpmnErrorRoute)
   | parallelGateway (id : NodeId) (direction : GatewayDirection)
+  | exclusiveGateway
+      (id : NodeId)
+      (candidateFlowIds : List SequenceFlowId)
+      (defaultFlowId : SequenceFlowId)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
 
@@ -91,12 +107,14 @@ def CheckedNode.id : CheckedNode → NodeId
   | .intermediateCatchTimerEvent id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
+  | .exclusiveGateway id _ _
   | .noneEndEvent id => id
 
 structure CheckedSequenceFlow where
   id : SequenceFlowId
   sourceId : NodeId
   targetId : NodeId
+  condition : Option CheckedCondition := none
   deriving Repr, DecidableEq
 
 structure CheckedProcess where
@@ -156,6 +174,12 @@ structure BpmnErrorRoute where
   origin : BpmnErrorRouteOrigin
   deriving Repr, DecidableEq
 
+structure ConditionalCandidate where
+  condition : SimpleBooleanExpression
+  output : ControlPlaceId
+  origin : BpmnSequenceFlowOrigin
+  deriving Repr, DecidableEq
+
 inductive SemanticOperation where
   | initiate
       (id : OperationId)
@@ -190,6 +214,13 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (inputs : List ControlPlaceId)
       (output : ControlPlaceId)
+  | choose
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (candidates : List ConditionalCandidate)
+      (defaultOutput : ControlPlaceId)
+      (defaultOrigin : BpmnSequenceFlowOrigin)
   | terminate
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -203,6 +234,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _
+  | .choose id _ _ _ _ _
   | .terminate id _ _ => id
 
 structure Program where

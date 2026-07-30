@@ -7,6 +7,7 @@ import BpmnSemantics.ServiceTaskEffectConformance
 import BpmnSemantics.CreateDocumentDataConformance
 import BpmnSemantics.BoundaryErrorConformance
 import BpmnSemantics.UserTaskInteractionConformance
+import BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance
 
 /-! Root of the BPMN semantic contract library.
 

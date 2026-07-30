@@ -46,6 +46,8 @@ export type CibCaseRelation =
 export type DeepMutable<T> =
   T extends (...args: never[]) => unknown
     ? T
+    : T extends readonly [unknown, ...unknown[]]
+      ? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
     : T extends ReadonlyArray<infer Item>
       ? Array<DeepMutable<Item>>
       : T extends object

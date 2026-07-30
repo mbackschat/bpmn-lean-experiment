@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # BpmnSemantics.SemanticProcess — bounded lowering and operational semantics
 
@@ -52,6 +53,20 @@ private def lowerBpmnErrorRoute
           errorElementId := route.errorElementId
           sequenceFlowId := route.outputFlowId } }
 
+private def lowerConditionalCandidate (source : CheckedProcess)
+    (flowId : SequenceFlowId) : ConditionalCandidate :=
+  match source.sequenceFlows.find? fun flow => decide (flow.id = flowId) with
+  | some flow =>
+      { condition :=
+          (flow.condition.bind fun condition =>
+            parseSimpleBooleanExpression condition.body).getD (.literal false)
+        output := flowControlPlaceId flow.id
+        origin := { elementId := flow.id } }
+  | none =>
+      { condition := .literal false
+        output := flowControlPlaceId flowId
+        origin := { elementId := flowId } }
+
 private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperation
   | .noneStartEvent id =>
       .initiate
@@ -96,6 +111,14 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
         { elementId := id }
         (incomingPlaces source id)
         (firstPlace (outgoingPlaces source id))
+  | .exclusiveGateway id candidateFlowIds defaultFlowId =>
+      .choose
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (candidateFlowIds.map (lowerConditionalCandidate source))
+        (flowControlPlaceId defaultFlowId)
+        { elementId := defaultFlowId }
   | .noneEndEvent id =>
       .terminate
         (nodeOperationId id)
@@ -179,6 +202,28 @@ private def wellFormedCheckedBpmnErrorRoute (serviceId : NodeId) :
         nonempty route.outputFlowId.value
   | none => false
 
+private def checkedConditionValid : Option CheckedCondition → Bool
+  | some condition =>
+      condition.language = simpleBooleanExpressionLanguage &&
+        (parseSimpleBooleanExpression condition.body).isSome
+  | none => false
+
+private def checkedExclusiveGatewayValid (flows : List CheckedSequenceFlow)
+    (id : NodeId) (candidateFlowIds : List SequenceFlowId)
+    (defaultFlowId : SequenceFlowId) : Bool :=
+  candidateFlowIds.length = 2 &&
+    (candidateFlowIds.eraseDups).length = 2 &&
+    !candidateFlowIds.contains defaultFlowId &&
+    candidateFlowIds.all fun candidateId =>
+      match flows.find? fun flow => decide (flow.id = candidateId) with
+      | some flow =>
+          flow.sourceId = id && checkedConditionValid flow.condition
+      | none => false
+    &&
+    match flows.find? fun flow => decide (flow.id = defaultFlowId) with
+    | some flow => flow.sourceId = id && flow.condition.isNone
+    | none => false
+
 private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -209,6 +254,10 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
   | .parallelGateway id .converging =>
       incomingCount flows id ≥ 2 && outgoingCount flows id = 1
+  | .exclusiveGateway id candidateFlowIds defaultFlowId =>
+      incomingCount flows id = 1 &&
+        outgoingCount flows id = 3 &&
+        checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 
@@ -242,6 +291,11 @@ private def convergingGatewayIds (nodes : List CheckedNode) : List NodeId :=
     | .parallelGateway id .converging => some id
     | _ => none
 
+private def exclusiveGatewayIds (nodes : List CheckedNode) : List NodeId :=
+  nodes.filterMap fun
+    | .exclusiveGateway id _ _ => some id
+    | _ => none
+
 private def endIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .noneEndEvent id => some id
@@ -255,23 +309,24 @@ private def boundedTopology (source : CheckedProcess) : Bool :=
       effectIds source.nodes,
       divergingGatewayIds source.nodes,
       convergingGatewayIds source.nodes,
+      exclusiveGatewayIds source.nodes,
       endIds source.nodes with
-  | [start], [task], [], [], [], [], [endNode] =>
+  | [start], [task], [], [], [], [], [], [endNode] =>
       source.nodes.length = 3 &&
         source.sequenceFlows.length = 2 &&
         hasFlow source.sequenceFlows start task &&
         hasFlow source.sequenceFlows task endNode
-  | [start], [], [timer], [], [], [], [endNode] =>
+  | [start], [], [timer], [], [], [], [], [endNode] =>
       source.nodes.length = 3 &&
         source.sequenceFlows.length = 2 &&
         hasFlow source.sequenceFlows start timer &&
         hasFlow source.sequenceFlows timer endNode
-  | [start], [], [], [effect], [], [], [endNode] =>
+  | [start], [], [], [effect], [], [], [], [endNode] =>
       source.nodes.length = 3 &&
         source.sequenceFlows.length = 2 &&
         hasFlow source.sequenceFlows start effect &&
         hasFlow source.sequenceFlows effect endNode
-  | [start], [task], [], [effect], [], [], [endA, endB] =>
+  | [start], [task], [], [effect], [], [], [], [endA, endB] =>
       let route := source.nodes.findSome? fun
         | .serviceTask id _ _ _ (some route) =>
             if id = effect then some route else none
@@ -287,7 +342,7 @@ private def boundedTopology (source : CheckedProcess) : Bool :=
                 (hasFlow source.sequenceFlows task endA ||
                   hasFlow source.sequenceFlows task endB)
           | none => false)
-  | [start], [taskA, taskB], [], [], [fork], [join], [endNode] =>
+  | [start], [taskA, taskB], [], [], [fork], [join], [], [endNode] =>
       source.nodes.length = 6 &&
         source.sequenceFlows.length = 6 &&
         hasFlow source.sequenceFlows start fork &&
@@ -296,9 +351,20 @@ private def boundedTopology (source : CheckedProcess) : Bool :=
         hasFlow source.sequenceFlows taskA join &&
         hasFlow source.sequenceFlows taskB join &&
         hasFlow source.sequenceFlows join endNode
-  | _, _, _, _, _, _, _ => false
+  | [start], [taskA, taskB, taskC], [], [], [], [], [gateway],
+      [endA, endB, endC] =>
+      source.identity.semanticProfile.value =
+          "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" &&
+        source.nodes.length = 8 &&
+        source.sequenceFlows.length = 7 &&
+        hasFlow source.sequenceFlows start gateway &&
+        [taskA, taskB, taskC].all fun task =>
+          hasFlow source.sequenceFlows gateway task &&
+            [endA, endB, endC].any fun endNode =>
+              hasFlow source.sequenceFlows task endNode
+  | _, _, _, _, _, _, _, _ => false
 
-/-- Independent static admission for the current sequential and balanced parallel checked graphs. -/
+/-- Independent static admission for the exact currently implemented checked-graph profiles. -/
 def checkedWellFormed (source : CheckedProcess) : Bool :=
   nonempty source.identity.semanticProfile.value &&
     nonempty source.identity.sourceId.value &&
@@ -315,12 +381,24 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                 decide (route.boundaryEventId = flow.sourceId)
             | _ => false) &&
         nodeExists source.nodes flow.targetId &&
-        decide (flow.sourceId ≠ flow.targetId)) &&
+        decide (flow.sourceId ≠ flow.targetId) &&
+        (match flow.condition with
+          | none => true
+          | some _ =>
+              source.nodes.any fun
+                | .exclusiveGateway _ candidateFlowIds _ =>
+                    candidateFlowIds.contains flow.id
+                | _ => false)) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
     boundedTopology source
 
 private def placeExists (places : List ControlPlace) (id : ControlPlaceId) : Bool :=
   places.any fun place => decide (place.id = id)
+
+private def placeHasOrigin (places : List ControlPlace)
+    (id : ControlPlaceId) (origin : BpmnSequenceFlowOrigin) : Bool :=
+  places.any fun place =>
+    decide (place.id = id && place.origin = origin)
 
 private def sortedDistinctPlaceIds (ids : List ControlPlaceId) : Bool :=
   strictlySortedStrings (ids.map fun id => id.value)
@@ -401,6 +479,17 @@ private def operationWellFormed (places : List ControlPlace) :
         sortedDistinctPlaceIds inputs &&
         inputs.all (placeExists places) &&
         placeExists places output
+  | .choose id origin input candidates defaultOutput defaultOrigin =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        placeExists places input &&
+        candidates.length = 2 &&
+        (candidates.map (·.output)).eraseDups.length = 2 &&
+        !((candidates.map (·.output)).contains defaultOutput) &&
+        candidates.all fun candidate =>
+          simpleBooleanExpressionValid candidate.condition &&
+            placeHasOrigin places candidate.output candidate.origin &&
+        placeHasOrigin places defaultOutput defaultOrigin
   | .terminate id origin input =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

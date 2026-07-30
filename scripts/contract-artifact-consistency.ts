@@ -67,6 +67,12 @@ function referencedControlPlaces(
       return [operation.input, ...operation.outputs];
     case "synchronize":
       return [...operation.inputs, operation.output];
+    case "choose":
+      return [
+        operation.input,
+        ...operation.candidates.map(({ output }) => output),
+        operation.defaultOutput,
+      ];
     case "terminate":
       return [operation.input];
     default:
@@ -105,6 +111,8 @@ export function verifyCanonicalDefinitionOrder(
           operation.inputs,
         );
         break;
+      case "choose":
+        break;
       case "initiate":
       case "awaitUserTask":
       case "awaitTimer":
@@ -139,6 +147,21 @@ export function verifyDefinitionReferences(
       throw new Error(
         `checked process flow ${flow.id} references unknown target node ${flow.targetId}`,
       );
+    }
+  }
+  for (const node of checkedProcess.nodes) {
+    if (node.kind !== "exclusiveGateway") {
+      continue;
+    }
+    for (const flowId of [
+      ...node.candidateFlowIds,
+      node.defaultFlowId,
+    ]) {
+      if (!flowIds.has(flowId)) {
+        throw new Error(
+          `checked Exclusive Gateway ${node.id} references unknown Sequence Flow ${flowId}`,
+        );
+      }
     }
   }
 
@@ -208,6 +231,28 @@ export function verifyDefinitionReferences(
         throw new Error(
           `operation ${operation.id} effect descriptor differs from its checked BPMN origin`,
         );
+      }
+    }
+    if (operation.kind === "choose") {
+      const origins = [
+        ...operation.candidates.map(({ output, origin }) => ({
+          output,
+          origin,
+        })),
+        {
+          output: operation.defaultOutput,
+          origin: operation.defaultOrigin,
+        },
+      ];
+      for (const { output, origin } of origins) {
+        const place = semanticProcess.controlPlaces.find(
+          ({ id }) => id === output,
+        );
+        if (place?.origin.elementId !== origin.elementId) {
+          throw new Error(
+            `operation ${operation.id} branch origin differs from its control place`,
+          );
+        }
       }
     }
   }

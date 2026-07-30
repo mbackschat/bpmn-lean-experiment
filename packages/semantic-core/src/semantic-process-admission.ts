@@ -21,6 +21,10 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
+  hasSimpleBooleanChoiceExecutionSurface,
+  isWellFormedChooseOperation,
+} from "./simple-boolean-choice-admission.js";
+import {
   isWellFormedStimulus,
 } from "./stimulus.js";
 import {
@@ -101,6 +105,7 @@ export function isWellFormedSemanticProcessProgram(
   }
 
   const placeIds = new Set<string>();
+  const placeOrigins = new Map<string, string>();
   for (const place of controlPlaces) {
     if (
       !isRecord(place) ||
@@ -114,11 +119,12 @@ export function isWellFormedSemanticProcessProgram(
       return false;
     }
     placeIds.add(place.id);
+    placeOrigins.set(place.id, place.origin.elementId);
   }
 
   let initiates = 0;
   for (const operation of operations) {
-    if (!isWellFormedOperation(operation, placeIds)) {
+    if (!isWellFormedOperation(operation, placeIds, placeOrigins)) {
       return false;
     }
     if (operation.kind === SemanticOperationKind.Initiate) {
@@ -136,7 +142,8 @@ function hasSupportedExecutionSurface(
     hasTimerExecutionSurface(program) ||
     hasEffectExecutionSurface(program) ||
     hasBoundaryErrorExecutionSurface(program) ||
-    hasBalancedParallelExecutionSurface(program)
+    hasBalancedParallelExecutionSurface(program) ||
+    hasSimpleBooleanChoiceExecutionSurface(program)
   );
 }
 
@@ -287,6 +294,7 @@ function sameStringSet(
 function isWellFormedOperation(
   value: unknown,
   placeIds: ReadonlySet<string>,
+  placeOrigins: ReadonlyMap<string, string>,
 ): value is SemanticOperation {
   if (
     !isRecord(value) ||
@@ -388,6 +396,12 @@ function isWellFormedOperation(
         ]) &&
         isManyPlaceReferences(value.inputs, placeIds) &&
         isPlaceReference(value.output, placeIds)
+      );
+    case SemanticOperationKind.Choose:
+      return isWellFormedChooseOperation(
+        value,
+        placeIds,
+        placeOrigins,
       );
     case SemanticOperationKind.Terminate:
       return (

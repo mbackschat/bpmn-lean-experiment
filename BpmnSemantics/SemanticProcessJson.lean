@@ -272,6 +272,16 @@ private def decodeEffectDescriptor (json : Json) :
     { protocol := ← stringField json "protocol"
       operation := ← stringField json "operation" }
 
+private def decodeCheckedCondition : Json →
+    Except String (Option CheckedCondition)
+  | .null => pure none
+  | json => do
+      requireObjectShape json ["body", "language"]
+      pure
+        (some
+          { language := ← stringField json "language"
+            body := ← stringField json "body" })
+
 private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   let kind ← stringField json "kind"
   match kind with
@@ -310,6 +320,16 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
       | "converging" =>
           pure (.parallelGateway ⟨← stringField json "id"⟩ .converging)
       | _ => throw s!"unsupported gateway direction {direction}"
+  | "exclusiveGateway" =>
+      requireObjectShape json
+        ["candidateFlowIds", "defaultFlowId", "direction", "id", "kind"]
+      expectStringField json "direction" "diverging"
+      pure
+        (.exclusiveGateway
+          ⟨← stringField json "id"⟩
+          ((← decodeStringArray (← field json "candidateFlowIds")).map
+            SequenceFlowId.mk)
+          ⟨← stringField json "defaultFlowId"⟩)
   | "noneEndEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneEndEvent ⟨← stringField json "id"⟩)
@@ -317,11 +337,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
 
 private def decodeCheckedSequenceFlow (json : Json) :
     Except String CheckedSequenceFlow := do
-  requireObjectShape json ["id", "sourceId", "targetId"]
+  requireObjectShape json ["condition", "id", "sourceId", "targetId"]
   pure
     { id := ⟨← stringField json "id"⟩
       sourceId := ⟨← stringField json "sourceId"⟩
-      targetId := ⟨← stringField json "targetId"⟩ }
+      targetId := ⟨← stringField json "targetId"⟩
+      condition := ← decodeCheckedCondition (← field json "condition") }
 
 def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
   requireObjectShape json
@@ -416,6 +437,35 @@ private def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
   decodeArray (fun value => ControlPlaceId.mk <$> value.getStr?) json
 
+private def decodeSimpleBooleanExpression (json : Json) :
+    Except String SimpleBooleanExpression := do
+  match ← stringField json "kind" with
+  | "literal" =>
+      requireObjectShape json ["kind", "value"]
+      pure (.literal (← (← field json "value").getBool?))
+  | "isPresent" =>
+      requireObjectShape json ["kind", "variable"]
+      pure (.isPresent (← stringField json "variable"))
+  | "isNull" =>
+      requireObjectShape json ["kind", "variable"]
+      pure (.isNull (← stringField json "variable"))
+  | "stringEquals" =>
+      requireObjectShape json ["kind", "value", "variable"]
+      pure
+        (.stringEquals
+          (← stringField json "variable")
+          (← stringField json "value"))
+  | kind => throw s!"unsupported Simple Boolean expression {kind}"
+
+private def decodeConditionalCandidate (json : Json) :
+    Except String ConditionalCandidate := do
+  requireObjectShape json ["condition", "origin", "output"]
+  pure
+    { condition :=
+        ← decodeSimpleBooleanExpression (← field json "condition")
+      output := ⟨← stringField json "output"⟩
+      origin := ← decodeSequenceFlowOrigin (← field json "origin") }
+
 private def decodeOperation (json : Json) :
     Except String SemanticOperation := do
   let kind ← stringField json "kind"
@@ -475,6 +525,19 @@ private def decodeOperation (json : Json) :
           origin
           (← decodePlaceIdArray (← field json "inputs"))
           ⟨← stringField json "output"⟩)
+  | "choose" =>
+      requireObjectShape json
+        ["candidates", "defaultOrigin", "defaultOutput", "id", "input",
+          "kind", "origin"]
+      pure
+        (.choose
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          (← decodeArray decodeConditionalCandidate
+            (← field json "candidates"))
+          ⟨← stringField json "defaultOutput"⟩
+          (← decodeSequenceFlowOrigin (← field json "defaultOrigin")))
   | "terminate" =>
       requireObjectShape json ["id", "input", "kind", "origin"]
       pure (.terminate id origin ⟨← stringField json "input"⟩)

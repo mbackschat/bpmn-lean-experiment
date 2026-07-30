@@ -105,11 +105,13 @@ test("retains exact source identity and compiles checked and semantic definition
         id: "Flow_StartToTask",
         sourceId: "StartEvent_1",
         targetId: "UserTask_Approve",
+        condition: null,
       },
       {
         id: "Flow_TaskToEnd",
         sourceId: "UserTask_Approve",
         targetId: "EndEvent_1",
+        condition: null,
       },
     ],
   });

@@ -284,7 +284,7 @@ function projectFlows(
         id !== undefined &&
         sourceId !== undefined &&
         targetId !== undefined
-      ? { id, sourceId, targetId }
+      ? { id, sourceId, targetId, condition: null }
       : undefined;
   });
   return flows.every((flow) => flow !== undefined)

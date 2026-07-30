@@ -101,6 +101,40 @@
           "additionalProperties": false,
           "required": [
             "kind",
+            "id",
+            "direction",
+            "candidateFlowIds",
+            "defaultFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "exclusiveGateway"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "direction": {
+              "const": "diverging"
+            },
+            "candidateFlowIds": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/nonemptyString"
+              }
+            },
+            "defaultFlowId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
             "name"
           ],
           "properties": {
@@ -329,7 +363,8 @@
       "required": [
         "id",
         "sourceId",
-        "targetId"
+        "targetId",
+        "condition"
       ],
       "properties": {
         "id": {
@@ -340,6 +375,34 @@
         },
         "targetId": {
           "$ref": "#/$defs/nonemptyString"
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/condition"
+            }
+          ]
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "body"
+      ],
+      "properties": {
+        "language": {
+          "const": "urn:bpmn-lean:expression:simple-boolean:v1"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
         }
       }
     }

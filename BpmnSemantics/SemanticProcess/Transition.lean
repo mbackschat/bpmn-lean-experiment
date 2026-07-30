@@ -203,6 +203,11 @@ private def synchronizeTokens (state : RuntimeState)
   { state with
     tokens := output :: removeTokens state.tokens inputs }
 
+private def chooseToken (state : RuntimeState) (input output : ControlPlaceId) :
+    RuntimeState :=
+  { state with
+    tokens := output :: removeToken state.tokens input }
+
 private def terminateToken (state : RuntimeState) (instanceId : SemanticId)
     (input : ControlPlaceId) : RuntimeState :=
   let tokens := removeToken state.tokens input
@@ -262,6 +267,17 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
         (.synchronize id origin inputs output)
         state
         (synchronizeTokens state inputs output)
+  | choose (id origin input candidates defaultOutput defaultOrigin)
+      (state : RuntimeState)
+      (output : ControlPlaceId)
+      (enabled : hasToken state input = true)
+      (selected :
+        selectConditionalOutput candidates defaultOutput
+          state.variables.process.bindings = some output) :
+      OperationStep
+        (.choose id origin input candidates defaultOutput defaultOrigin)
+        state
+        (chooseToken state input output)
   | terminate (id origin input) (state : RuntimeState)
       (instanceId : SemanticId)
       (running : state.control = .running instanceId)
@@ -320,6 +336,14 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
   | .synchronize _ _ inputs output =>
       if inputs.all (hasToken state) then
         some (synchronizeTokens state inputs output)
+      else
+        none
+  | .choose _ _ input candidates defaultOutput _ =>
+      if hasToken state input then
+        match selectConditionalOutput candidates defaultOutput
+            state.variables.process.bindings with
+        | some output => some (chooseToken state input output)
+        | none => none
       else
         none
   | .terminate _ _ input =>
@@ -387,6 +411,20 @@ theorem fire_sound (operation : SemanticOperation)
       · simp [fire?, enabled] at result
         subst after
         exact .synchronize id origin inputs output before enabled
+      · simp [fire?, enabled] at result
+  | choose id origin input candidates defaultOutput defaultOrigin =>
+      by_cases enabled : hasToken before input = true
+      · simp [fire?, enabled] at result
+        generalize selectedEq :
+            selectConditionalOutput candidates defaultOutput
+              before.variables.process.bindings = selected at result
+        cases selected with
+        | none => simp at result
+        | some output =>
+            simp at result
+            subst after
+            exact .choose id origin input candidates defaultOutput
+              defaultOrigin before output enabled selectedEq
       · simp [fire?, enabled] at result
   | terminate id origin input =>
       cases controlEq : before.control with

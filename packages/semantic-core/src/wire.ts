@@ -40,6 +40,23 @@ export function compareCanonicalStrings(left: string, right: string): number {
   return Math.sign(leftScalars.length - rightScalars.length);
 }
 
+/** Exact UTF-8 byte length for one already validated Unicode-scalar string. */
+export function utf8ByteLength(value: string): number {
+  if (!isWellFormedWireString(value)) {
+    throw new TypeError("UTF-8 sizing requires Unicode scalar values");
+  }
+  return [...value].reduce((total, scalar) => {
+    const codePoint = requireCodePoint(scalar);
+    if (codePoint <= 0x7f) {
+      return total + 1;
+    }
+    if (codePoint <= 0x7ff) {
+      return total + 2;
+    }
+    return total + (codePoint <= 0xffff ? 3 : 4);
+  }, 0);
+}
+
 function requireCodePoint(scalar: string | undefined): number {
   const codePoint = scalar?.codePointAt(0);
   if (codePoint === undefined) {

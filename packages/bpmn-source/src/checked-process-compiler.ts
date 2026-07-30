@@ -32,11 +32,17 @@ import {
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import {
+  hasSimpleBooleanChoiceTopology,
+  projectExclusiveGateway,
+  projectSimpleBooleanCondition,
+} from "./simple-boolean-exclusive-gateway-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
 const effectProtocol = "urn:bpmn-lean:effect:probe-v1";
 const effectHandlerExpression = "${bpmnLeanEffectHandler}";
+const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
 type CheckedCompilationProjection =
   | Readonly<{
@@ -61,6 +67,7 @@ export function compileCheckedProcess(
       "$type",
       "id",
       "targetNamespace",
+      "expressionLanguage",
       "rootElements",
     ])
   ) {
@@ -115,7 +122,10 @@ export function compileCheckedProcess(
     );
   }
 
-  const sequenceFlows = projectSequenceFlows(sourceFlows);
+  const sequenceFlows = projectSequenceFlows(
+    sourceFlows,
+    definitions.expressionLanguage,
+  );
   if (sequenceFlows === undefined) {
     return unsupported(
       "Every Sequence Flow requires a distinct ID and resolved source and target references.",
@@ -138,9 +148,17 @@ export function compileCheckedProcess(
       "The bounded compiler requires distinct Process, node, and Sequence Flow IDs.",
     );
   }
-  if (!hasSupportedTopology(nodes, sequenceFlows)) {
+  if (
+    !hasSupportedTopology(
+      nodes,
+      sequenceFlows,
+      definitions.expressionLanguage,
+      Object.hasOwn(definitions, "expressionLanguage"),
+      semanticProfile,
+    )
+  ) {
     return unsupported(
-      "The bounded compiler supports only one sequential wait or the balanced two-branch Parallel Gateway topology.",
+      "The bounded compiler supports only one sequential wait, the balanced two-branch Parallel Gateway topology, or the exact Simple Boolean divergent Exclusive Gateway topology.",
     );
   }
 
@@ -201,6 +219,8 @@ function projectNodes(
               direction,
             };
       }
+      case bpmnTypes.exclusiveGatewayType:
+        return projectExclusiveGateway(element, id, flows);
       case bpmnTypes.endEventType:
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneEndEvent, id }
@@ -255,6 +275,9 @@ function classifyGateway(
 function hasSupportedTopology(
   nodes: ReadonlyArray<CheckedNode>,
   flows: ReadonlyArray<CheckedSequenceFlow>,
+  expressionLanguage: unknown,
+  hasExplicitExpressionLanguage: boolean,
+  semanticProfile: string,
 ): boolean {
   const starts = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.NoneStartEvent,
@@ -271,11 +294,20 @@ function hasSupportedTopology(
   const gateways = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.ParallelGateway,
   );
+  const choices = nodes.filter(
+    ({ kind }) => kind === CheckedNodeKind.ExclusiveGateway,
+  );
   const ends = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.NoneEndEvent,
   );
   if (starts.length !== 1 || ends.length !== 1) {
-    return false;
+    return hasSimpleBooleanChoiceTopology(
+      nodes,
+      flows,
+      expressionLanguage,
+      hasExplicitExpressionLanguage,
+      semanticProfile,
+    );
   }
   const start = starts[0];
   const end = ends[0];
@@ -285,6 +317,9 @@ function hasSupportedTopology(
   if (
     tasks.length + timers.length + effects.length === 1 &&
     gateways.length === 0 &&
+    choices.length === 0 &&
+    expressionLanguage === bpmnDefaultExpressionLanguage &&
+    !hasExplicitExpressionLanguage &&
     flows.length === 2
   ) {
     const waitNode = tasks[0] ?? timers[0] ?? effects[0];
@@ -299,6 +334,9 @@ function hasSupportedTopology(
     effects.length !== 0 ||
     tasks.length !== 2 ||
     gateways.length !== 2 ||
+    choices.length !== 0 ||
+    expressionLanguage !== bpmnDefaultExpressionLanguage ||
+    hasExplicitExpressionLanguage ||
     flows.length !== 6
   ) {
     return false;
@@ -328,9 +366,17 @@ function hasSupportedTopology(
 
 function projectSequenceFlows(
   flows: ReadonlyArray<ElementRecord>,
+  expressionLanguage: unknown,
 ): ReadonlyArray<CheckedSequenceFlow> | undefined {
   const projected = flows.map((flow) => {
-    if (!hasOnlyOwnKeys(flow, ["$type", "id", "name"])) {
+    if (
+      !hasOnlyOwnKeys(flow, [
+        "$type",
+        "id",
+        "name",
+        "conditionExpression",
+      ])
+    ) {
       return undefined;
     }
     const id = readId(flow);
@@ -338,9 +384,18 @@ function projectSequenceFlows(
     const target = asElement(flow.targetRef);
     const sourceId = source === undefined ? undefined : readId(source);
     const targetId = target === undefined ? undefined : readId(target);
-    return id === undefined || sourceId === undefined || targetId === undefined
+    const condition = projectSimpleBooleanCondition(
+      flow.conditionExpression,
+      expressionLanguage,
+    );
+    return (
+      id === undefined ||
+      sourceId === undefined ||
+      targetId === undefined ||
+      condition === undefined
+    )
       ? undefined
-      : { id, sourceId, targetId };
+      : { id, sourceId, targetId, condition };
   });
   return projected.every((flow) => flow !== undefined)
     ? (projected as ReadonlyArray<CheckedSequenceFlow>)
@@ -354,6 +409,7 @@ function isSupportedNodeType(type: unknown): boolean {
     bpmnTypes.userTaskType,
     bpmnTypes.serviceTaskType,
     bpmnTypes.parallelGatewayType,
+    bpmnTypes.exclusiveGatewayType,
     bpmnTypes.endEventType,
   ].includes(String(type));
 }

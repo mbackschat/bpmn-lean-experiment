@@ -11,7 +11,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ServiceTask, ParallelGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ServiceTask, ParallelGateway, ExclusiveGateway, EndEvent, and SequenceFlow type identity",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
@@ -20,6 +20,7 @@
       "TimerEventDefinition timeDuration expression containment",
       "StartEvent.isInterrupting default",
       "Gateway.gatewayDirection type and default",
+      "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, and ExclusiveGateway.default",
       "BaseElement.id and Definitions.rootElements identity and containment",
       "BoundaryEvent attachment and interrupting default",
       "ErrorEventDefinition.errorRef and Error name/code identity"
@@ -44,6 +45,7 @@
     "userTaskType": "bpmn:UserTask",
     "serviceTaskType": "bpmn:ServiceTask",
     "parallelGatewayType": "bpmn:ParallelGateway",
+    "exclusiveGatewayType": "bpmn:ExclusiveGateway",
     "endEventType": "bpmn:EndEvent",
     "sequenceFlowType": "bpmn:SequenceFlow"
   },
@@ -152,6 +154,12 @@
       ]
     },
     {
+      "name": "ExclusiveGateway",
+      "directSuperClasses": [
+        "Gateway"
+      ]
+    },
+    {
       "name": "FlowNode",
       "directSuperClasses": [
         "FlowElement"
@@ -208,6 +216,15 @@
       "containment": true
     },
     {
+      "owner": "Definitions",
+      "name": "expressionLanguage",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": "http://www.w3.org/1999/XPath"
+    },
+    {
       "owner": "Process",
       "name": "isExecutable",
       "type": "Boolean",
@@ -243,6 +260,22 @@
       "owner": "SequenceFlow",
       "name": "targetRef",
       "type": "FlowNode",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "SequenceFlow",
+      "name": "conditionExpression",
+      "type": "Expression",
+      "lower": 0,
+      "upper": 1,
+      "containment": true
+    },
+    {
+      "owner": "FormalExpression",
+      "name": "language",
+      "type": "String",
       "lower": 1,
       "upper": 1,
       "containment": false
@@ -329,6 +362,14 @@
       "upper": 1,
       "containment": false,
       "default": "unspecified"
+    },
+    {
+      "owner": "ExclusiveGateway",
+      "name": "default",
+      "type": "SequenceFlow",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
     },
     {
       "owner": "ServiceTask",
