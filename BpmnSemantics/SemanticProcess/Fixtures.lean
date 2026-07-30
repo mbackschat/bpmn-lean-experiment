@@ -285,7 +285,8 @@ private def mixedWaitProjectionState : RuntimeState :=
           output := ⟨"place:effect-output"⟩
           bpmnErrorRoute := none } ] }
 
-theorem active_wait_projection_orders_by_kind_then_element_id :
+/-- With one wait per kind, this lock fixes only the cross-kind order (User Task before Timer before effect). Within a kind the projection follows program operation order; within-kind element-ID order is neither implemented as a sort nor exercised by this fixture. -/
+theorem active_wait_projection_orders_by_semantic_kind :
     (observeStableState mixedWaitProjectionProgram mixedWaitProjectionState).map
         (·.activeWaits) =
       some
