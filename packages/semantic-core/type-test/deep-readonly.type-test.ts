@@ -1,4 +1,5 @@
 import type { DeepReadonly } from "../src/deep-readonly.js";
+import type { RuntimeState } from "../src/semantic-process-state.js";
 
 type MutableContract = {
   status: "ready";
@@ -34,6 +35,18 @@ if (contract.choice.kind === "withPayload") {
 const callbackResult: number = contract.callback("value");
 const tuple: readonly [{ readonly enabled: boolean }, "tail"] =
   contract.nested.tuple;
+
+declare const runtime: RuntimeState;
+declare const activity:
+  RuntimeState["variables"]["activities"][number];
+// @ts-expect-error Process-scope bindings are immutable
+runtime.variables.process.bindings = [];
+// @ts-expect-error Activity-scope collections are immutable
+runtime.variables.activities.push(activity);
+// @ts-expect-error Complete occurrence owners are deeply immutable
+activity.owner.activation = 2;
+// @ts-expect-error Activity-local bindings are deeply immutable
+activity.bindings[0] = activity.bindings[0];
 
 void callbackResult;
 void tuple;

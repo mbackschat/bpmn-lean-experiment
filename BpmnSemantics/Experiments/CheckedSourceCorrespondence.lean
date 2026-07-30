@@ -56,7 +56,7 @@ private def lowerState
     waits := state.waits.map lowerWait
     timerWaits := []
     effectWaits := []
-    processVariables := []
+    variables := emptyScopedVariables
     activations := state.activations.map lowerActivation
     timerActivations := []
     effectActivations := []

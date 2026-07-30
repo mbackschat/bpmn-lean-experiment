@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  CanonicalObservationKind,
   CommandOutcome,
+  ControlStateKind,
   EffectExecutionResultKind,
   MappingExpressionKind,
   SemanticOperationKind,
@@ -10,12 +12,18 @@ import {
   SemanticProcessKind,
   StimulusKind,
   VariableValueKind,
+  addActivityVariableScope,
+  advanceScenario,
+  applyInternalOperation,
   applyStimulus,
+  completeActivityVariableScope,
   initialState,
   projectOpenEffects,
+  semanticProcessClosureLimit,
 } from "@bpmn-lean/semantic-core";
 import type {
   EffectExecutionResult,
+  RuntimeState,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
@@ -137,7 +145,19 @@ test("commits the literal input as immutable effect arguments", () => {
       ],
     },
   ]);
-  assert.deepEqual(waiting.state.processVariables, []);
+  assert.deepEqual(waiting.state.variables, {
+    process: { bindings: [] },
+    activities: [{
+      owner: effectId,
+      bindings: [{
+        name: "documentModelName",
+        value: {
+          kind: VariableValueKind.String,
+          value: "MyDocumentModel",
+        },
+      }],
+    }],
+  });
 });
 
 test("maps one successful local patch into Process scope and removes local state", () => {
@@ -151,22 +171,30 @@ test("maps one successful local patch into Process scope and removes local state
 
   assert.equal(completed.outcome, CommandOutcome.Committed);
   assert.deepEqual(completed.state.effectWaits, []);
-  assert.deepEqual(completed.state.processVariables, [
-    {
-      name: "myDocumentReference",
-      value: {
-        kind: "string",
-        value: "Document:42",
-      },
+  assert.deepEqual(completed.state.variables, {
+    process: {
+      bindings: [{
+        name: "myDocumentReference",
+        value: {
+          kind: "string",
+          value: "Document:42",
+        },
+      }],
     },
-  ]);
+    activities: [],
+  });
 
   const hostOwnedMappingMutation = {
     ...waiting,
+    variables: {
+      process: {
+        bindings: successResult.localPatch,
+      },
+      activities: [],
+    },
     effectWaits: [],
-    processVariables: successResult.localPatch,
   };
-  assert.deepEqual(hostOwnedMappingMutation.processVariables, [
+  assert.deepEqual(hostOwnedMappingMutation.variables.process.bindings, [
     {
       name: "newDocRef",
       value: {
@@ -176,8 +204,8 @@ test("maps one successful local patch into Process scope and removes local state
     },
   ]);
   assert.notDeepEqual(
-    hostOwnedMappingMutation.processVariables,
-    completed.state.processVariables,
+    hostOwnedMappingMutation.variables.process.bindings,
+    completed.state.variables.process.bindings,
   );
 });
 
@@ -232,4 +260,183 @@ test("rejects every malformed patch with exact state preservation", () => {
     assert.equal(rejected.outcome, CommandOutcome.Rejected);
     assert.deepEqual(rejected.state, waiting);
   }
+});
+
+test("keys local scopes by complete occurrence and removes only the matching owner", () => {
+  const secondOwner = {
+    ...effectId,
+    activation: 2,
+  };
+  const arguments_ = [{
+    name: "documentModelName",
+    value: {
+      kind: VariableValueKind.String,
+      value: "MyDocumentModel",
+    },
+  }] as const;
+  const withFirst = addActivityVariableScope(
+    initialState.variables,
+    effectId,
+    arguments_,
+  );
+  const withBoth = addActivityVariableScope(
+    withFirst,
+    secondOwner,
+    arguments_,
+  );
+  const effectOperation = program.operations.find(
+    (operation) => operation.kind === SemanticOperationKind.AwaitEffect,
+  );
+  assert.ok(
+    effectOperation?.kind === SemanticOperationKind.AwaitEffect,
+  );
+
+  const completed = completeActivityVariableScope(
+    withBoth,
+    effectId,
+    effectOperation.effect.outputMappings,
+    successResult.localPatch,
+    false,
+  );
+
+  assert.deepEqual(completed, {
+    process: {
+      bindings: [{
+        name: "myDocumentReference",
+        value: {
+          kind: VariableValueKind.String,
+          value: "Document:42",
+        },
+      }],
+    },
+    activities: [{
+      owner: secondOwner,
+      bindings: arguments_,
+    }],
+  });
+  assert.throws(
+    () => addActivityVariableScope(withBoth, effectId, arguments_),
+    /owner must be unique/,
+  );
+  assert.equal(
+    completeActivityVariableScope(
+      {
+        ...withFirst,
+        activities: [
+          ...withFirst.activities,
+          ...withFirst.activities,
+        ],
+      },
+      effectId,
+      effectOperation.effect.outputMappings,
+      successResult.localPatch,
+      false,
+    ),
+    null,
+  );
+});
+
+test("rejects completion when the complete occurrence has no owned local scope", () => {
+  const waiting = applyStimulus(program, initialState, start).state;
+  const missingOwner = {
+    ...waiting,
+    variables: {
+      ...waiting.variables,
+      activities: [],
+    },
+  };
+
+  const rejected = applyStimulus(program, missingOwner, {
+    kind: StimulusKind.CompleteEffect,
+    commandId: "missing-local-owner",
+    effectId,
+    result: successResult,
+  });
+
+  assert.equal(rejected.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(rejected.state, missingOwner);
+});
+
+test("keeps private local bindings outside canonical observations", () => {
+  const waiting = applyStimulus(program, initialState, start).state;
+  const activity = waiting.variables.activities[0];
+  assert.ok(activity !== undefined);
+  const withPrivateLocal = {
+    ...waiting,
+    variables: {
+      ...waiting.variables,
+      activities: [{
+        ...activity,
+        bindings: [
+          ...activity.bindings,
+          {
+            name: "privateOnly",
+            value: {
+              kind: VariableValueKind.String,
+              value: "secret",
+            },
+          },
+        ],
+      }],
+    },
+  };
+
+  assert.deepEqual(
+    projectOpenEffects(withPrivateLocal),
+    projectOpenEffects(waiting),
+  );
+  const rejected = advanceScenario(program, withPrivateLocal, {
+    kind: StimulusKind.CompleteEffect,
+    commandId: "wrong-private-observation",
+    effectId: { ...effectId, activation: 2 },
+    result: successResult,
+  });
+  const observation = rejected.observations.find(
+    (candidate) => candidate.kind === CanonicalObservationKind.State,
+  );
+  assert.ok(observation?.kind === CanonicalObservationKind.State);
+  assert.deepEqual(observation.variables, []);
+});
+
+test("does not add closure steps or make enabledness depend on scoped data", () => {
+  assert.equal(semanticProcessClosureLimit, 8);
+  assert.equal(
+    applyStimulus(program, initialState, start, 2)
+      .internalStepBoundExceeded,
+    false,
+  );
+  assert.equal(
+    applyStimulus(program, initialState, start, 1)
+      .internalStepBoundExceeded,
+    true,
+  );
+
+  const beforeClosure: RuntimeState = {
+    ...initialState,
+    control: {
+      kind: ControlStateKind.Running,
+      instanceId: effectId.processInstanceId,
+    },
+    controlTokens: [{
+      placeId: "place:Flow_StartToCreate",
+      multiplicity: 1,
+    }],
+  };
+  const withUnrelatedData = {
+    ...beforeClosure,
+    variables: addActivityVariableScope(
+      beforeClosure.variables,
+      { ...effectId, elementId: "OtherEffect" },
+      [],
+    ),
+  };
+  const enabledPattern = (state: RuntimeState) =>
+    program.operations.map(
+      (operation) => applyInternalOperation(operation, state) !== null,
+    );
+
+  assert.deepEqual(
+    enabledPattern(withUnrelatedData),
+    enabledPattern(beforeClosure),
+  );
 });

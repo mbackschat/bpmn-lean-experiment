@@ -63,7 +63,7 @@ structure RuntimeState where
   waits : List UserTaskWait
   timerWaits : List TimerWait
   effectWaits : List EffectWait
-  processVariables : List VariableBinding
+  variables : ScopedVariables
   activations : List TaskActivation
   timerActivations : List TimerActivation
   effectActivations : List EffectActivation
@@ -78,7 +78,7 @@ def initialState : RuntimeState :=
     waits := []
     timerWaits := []
     effectWaits := []
-    processVariables := []
+    variables := emptyScopedVariables
     activations := []
     timerActivations := []
     effectActivations := []
@@ -173,6 +173,10 @@ private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
     (bpmnErrorRoute : Option BpmnErrorRoute) : RuntimeState :=
   let activation := effectActivationCount state effect.elementId + 1
   let arguments := (evaluateInputMappings effect.inputMappings).getD []
+  let owner : EffectOccurrenceId :=
+    { processInstanceId := instanceId
+      elementId := ⟨effect.elementId.value⟩
+      activation }
   { state with
     tokens := removeToken state.tokens input
     effectWaits :=
@@ -184,6 +188,7 @@ private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
         outputMappings := effect.outputMappings
         output
         bpmnErrorRoute } :: state.effectWaits
+    variables := addActivityVariableScope state.variables owner arguments
     effectActivations :=
       setEffectActivationCount state.effectActivations
         effect.elementId activation }

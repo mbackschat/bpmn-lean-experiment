@@ -139,7 +139,21 @@ type VariableBinding = Readonly<{
 
 Canonical collections are sorted by exact scalar-value identifier order and reject duplicate names.
 
-The Process scope survives until Process completion and is canonically observable. The Activity-local scope exists only while the effect occurrence is active. It is core-owned runtime state and is not independently writable by a Worker.
+The implemented runtime uses the single replacement representation owned by the [scoped runtime data specification](SCOPED-DATA-SPEC.md):
+
+```ts
+type ScopedVariables = DeepReadonly<{
+  process: {
+    bindings: VariableBinding[];
+  };
+  activities: Array<{
+    owner: EffectOccurrenceId;
+    bindings: VariableBinding[];
+  }>;
+}>;
+```
+
+The Process scope survives until Process completion and is canonically observable. The Activity-local scope exists only while the complete effect occurrence is active, and its owner is the full `(processInstanceId, elementId, activation)` identity rather than a bare element or ordinal. It is core-owned runtime state and is not independently writable by a Worker.
 
 Input mapping evaluates before effect intent commitment:
 
@@ -183,7 +197,7 @@ activityLocal.newDocRef
   → process.myDocumentReference
 ```
 
-The local scope is then removed, the output token is produced, and supported closure reaches the End Event. `newDocRef` never appears in Process variables; `documentModelName` never leaks into Process variables; only `myDocumentReference` remains canonically observable after completion.
+Completion requires exactly one Activity-local scope owned by the submitted effect occurrence. The local scope is then removed, the output token is produced, and supported closure reaches the End Event. A missing or duplicate owner rejects with exact state preservation. `newDocRef` never appears in Process variables; `documentModelName` never leaks into Process variables; only `myDocumentReference` remains canonically observable after completion.
 
 ## Effect and command evolution
 

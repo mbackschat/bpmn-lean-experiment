@@ -120,7 +120,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openUserTasks := tasks
           openTimers := openTimers program state
           openEffects := openEffects program state
-          variables := state.processVariables
+          variables := state.variables.process.bindings
           enabledInteractions :=
             tasks.map fun task => .completeUserTaskInstance task.id
           logicalTimeMs := state.logicalTimeMs }
@@ -132,7 +132,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openUserTasks := []
           openTimers := []
           openEffects := []
-          variables := state.processVariables
+          variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
 

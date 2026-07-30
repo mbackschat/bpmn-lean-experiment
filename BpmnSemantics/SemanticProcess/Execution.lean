@@ -77,18 +77,18 @@ inductive EffectCompletionStep :
       (effectId : EffectOccurrenceId)
       (result : EffectExecutionResult)
       (wait : EffectWait)
-      (processVariables : List VariableBinding)
+      (variables : ScopedVariables)
       (output : ControlPlaceId)
       (occurrence :
         state.effectWaits.find? (effectOccurrenceMatches effectId) = some wait)
       (mapping :
-        applyEffectResult wait.arguments wait.outputMappings
-          state.processVariables result = some processVariables)
+        completeActivityVariableScope state.variables effectId
+          wait.outputMappings result = some variables)
       (route : effectResultOutput wait result = some output) :
       EffectCompletionStep state effectId result
         { state with
           effectWaits := state.effectWaits.erase wait
-          processVariables
+          variables
           tokens := output :: state.tokens }
 
 def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
@@ -96,17 +96,17 @@ def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
   match state.effectWaits.find? (effectOccurrenceMatches effectId) with
   | none => none
   | some wait =>
-      match applyEffectResult wait.arguments wait.outputMappings
-          state.processVariables result with
+      match completeActivityVariableScope state.variables effectId
+          wait.outputMappings result with
       | none => none
-      | some processVariables =>
+      | some variables =>
           match effectResultOutput wait result with
           | none => none
           | some output =>
               some
                 { state with
                   effectWaits := state.effectWaits.erase wait
-                  processVariables
+                  variables
                   tokens := output :: state.tokens }
 
 /-- Every successful executable effect completion is permitted by the separately stated effect-result relation. -/
@@ -122,12 +122,12 @@ theorem completeEffect_sound
   · rename_i wait occurrence
     split at success
     · contradiction
-    · rename_i processVariables mapping
+    · rename_i variables mapping
       split at success
       · contradiction
       · rename_i output route
         cases success
-        exact .commit state effectId result wait processVariables output
+        exact .commit state effectId result wait variables output
           occurrence mapping route
 
 def runChoices (program : Program) : RuntimeState → List OperationId →
@@ -300,9 +300,15 @@ def singletonTimerWaitingState (wait : TimerWait) (logicalTimeMs : Nat := 0) :
 /-- Isolated state used to state effect-result refusal over the complete public occurrence identity. -/
 def singletonEffectWaitingState (wait : EffectWait)
     (logicalTimeMs : Nat := 0) : RuntimeState :=
+  let owner : EffectOccurrenceId :=
+    { processInstanceId := wait.processInstanceId
+      elementId := ⟨wait.elementId.value⟩
+      activation := wait.activation }
   { initialState with
     control := .running wait.processInstanceId
     effectWaits := [wait]
+    variables :=
+      addActivityVariableScope initialState.variables owner wait.arguments
     effectActivations :=
       [{ elementId := wait.elementId, count := wait.activation }]
     logicalTimeMs }
@@ -313,8 +319,13 @@ theorem effect_result_mapping_failure_is_rejected
     (completionCommandId : SemanticId)
     (result : EffectExecutionResult) (logicalTimeMs : Nat)
     (invalid :
-      applyEffectResult wait.arguments wait.outputMappings
-        initialState.processVariables result = none) :
+      let owner : EffectOccurrenceId :=
+        { processInstanceId := wait.processInstanceId
+          elementId := ⟨wait.elementId.value⟩
+          activation := wait.activation }
+      completeActivityVariableScope
+          (addActivityVariableScope emptyScopedVariables owner wait.arguments)
+          owner wait.outputMappings result = none) :
     let effectId : EffectOccurrenceId :=
       { processInstanceId := wait.processInstanceId
         elementId := ⟨wait.elementId.value⟩
@@ -331,9 +342,20 @@ theorem effect_result_mapping_failure_is_rejected
     { processInstanceId := wait.processInstanceId
       elementId := ⟨wait.elementId.value⟩
       activation := wait.activation }
+  have scopedInvalid :
+      completeActivityVariableScope state.variables effectId
+          wait.outputMappings result = none := by
+    simpa [state, singletonEffectWaitingState, effectId, initialState]
+      using invalid
   have noCompletion : completeEffect state effectId result = none := by
-    simp [completeEffect, state, singletonEffectWaitingState,
-      effectId, effectOccurrenceMatches, invalid]
+    unfold completeEffect
+    have occurrence :
+        state.effectWaits.find? (effectOccurrenceMatches effectId) =
+          some wait := by
+      simp [state, singletonEffectWaitingState, effectId,
+        effectOccurrenceMatches]
+    simp only [occurrence]
+    rw [scopedInvalid]
   change applyStimulus scenarioClosureLimit program state
       (.completeEffect completionCommandId effectId result) =
     { outcome := .rejected

@@ -1,5 +1,6 @@
 import { VariableValueKind } from "./contract.js";
 import type {
+  EffectOccurrenceId,
   VariableBinding,
 } from "./contract.js";
 import {
@@ -11,6 +12,12 @@ import type {
 import {
   compareCanonicalStrings,
 } from "./wire.js";
+import {
+  sameOccurrence,
+} from "./semantic-process-state.js";
+import type {
+  ScopedVariables,
+} from "./semantic-process-state.js";
 
 export function evaluateInputMappings(
   mappings: ReadonlyArray<VariableMapping>,
@@ -35,10 +42,71 @@ export function evaluateInputMappings(
   }).sort(compareBindings);
 }
 
-export function applyEffectPatch(
+/**
+ * Adds the input-mapping scope for one newly activated effect occurrence.
+ *
+ * Duplicate complete owners indicate invalid internal state and throw before a transition is committed.
+ */
+export function addActivityVariableScope(
+  variables: ScopedVariables,
+  owner: EffectOccurrenceId,
+  bindings: ReadonlyArray<VariableBinding>,
+): ScopedVariables {
+  if (variables.activities.some((scope) => sameOccurrence(scope.owner, owner))) {
+    throw new TypeError("Activity-variable scope owner must be unique");
+  }
+  return {
+    ...variables,
+    activities: [
+      ...variables.activities,
+      { owner, bindings: [...bindings] },
+    ],
+  };
+}
+
+/**
+ * Validates one effect result against its unique occurrence-owned local scope, applies the
+ * committed output mapping to Process scope, and removes only that local scope atomically.
+ *
+ * Missing or duplicate owners and invalid patches return `null` without changing the input state.
+ */
+export function completeActivityVariableScope(
+  variables: ScopedVariables,
+  owner: EffectOccurrenceId,
+  outputMappings: ReadonlyArray<VariableMapping>,
+  localPatch: ReadonlyArray<VariableBinding>,
+  allowNull: boolean,
+): ScopedVariables | null {
+  const matching = variables.activities.filter((scope) =>
+    sameOccurrence(scope.owner, owner)
+  );
+  if (matching.length !== 1) {
+    return null;
+  }
+  const activity = matching[0];
+  if (activity === undefined) {
+    return null;
+  }
+  const processBindings = applyEffectPatch(
+    activity.bindings,
+    outputMappings,
+    variables.process.bindings,
+    localPatch,
+    allowNull,
+  );
+  if (processBindings === null) {
+    return null;
+  }
+  return {
+    process: { bindings: processBindings },
+    activities: variables.activities.filter((scope) => scope !== activity),
+  };
+}
+
+function applyEffectPatch(
   arguments_: ReadonlyArray<VariableBinding>,
   outputMappings: ReadonlyArray<VariableMapping>,
-  processVariables: ReadonlyArray<VariableBinding>,
+  processBindings: ReadonlyArray<VariableBinding>,
   localPatch: ReadonlyArray<VariableBinding>,
   allowNull: boolean,
 ): ReadonlyArray<VariableBinding> | null {
@@ -77,7 +145,7 @@ export function applyEffectPatch(
     }
     return { name: mapping.target, value };
   });
-  return mergeBindings(processVariables, projected);
+  return mergeBindings(processBindings, projected);
 }
 
 function validatePatch(

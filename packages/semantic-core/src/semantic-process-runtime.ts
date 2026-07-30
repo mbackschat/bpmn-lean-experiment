@@ -15,7 +15,8 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  applyEffectPatch,
+  addActivityVariableScope,
+  completeActivityVariableScope,
   evaluateInputMappings,
 } from "./semantic-process-data.js";
 import {
@@ -41,7 +42,10 @@ export {
 export type {
   ControlPlaceTokens,
   ControlState,
+  ActivityVariableScope,
+  ProcessVariableScope,
   RuntimeState,
+  ScopedVariables,
   SemanticEffectWait,
   SemanticTimerWait,
   SemanticUserTaskWait,
@@ -163,14 +167,14 @@ function admit(
       ) {
         return { outcome: CommandOutcome.Rejected, state };
       }
-      const processVariables = applyEffectPatch(
-        wait.arguments,
+      const variables = completeActivityVariableScope(
+        state.variables,
+        wait.id,
         wait.outputMappings,
-        state.processVariables,
         stimulus.result.localPatch,
         stimulus.result.kind === EffectExecutionResultKind.BpmnError,
       );
-      if (processVariables === null) {
+      if (variables === null) {
         return { outcome: CommandOutcome.Rejected, state };
       }
       return {
@@ -184,7 +188,7 @@ function admit(
           effectWaits: state.effectWaits.filter(
             (candidate) => candidate !== wait,
           ),
-          processVariables,
+          variables,
         },
       };
     }
@@ -364,24 +368,27 @@ function createEffectWait(
     (state.effectActivations.find(
       ({ elementId }) => elementId === operation.effect.elementId,
     )?.count ?? 0) + 1;
+  const id = {
+    processInstanceId: state.control.instanceId,
+    elementId: operation.effect.elementId,
+    activation,
+  };
+  const arguments_ = evaluateInputMappings(operation.effect.inputMappings);
   return {
     ...state,
     controlTokens: removeToken(state.controlTokens, operation.input),
     effectWaits: [
       ...state.effectWaits,
       {
-        id: {
-          processInstanceId: state.control.instanceId,
-          elementId: operation.effect.elementId,
-          activation,
-        },
+        id,
         descriptor: operation.effect.descriptor,
-        arguments: evaluateInputMappings(operation.effect.inputMappings),
+        arguments: arguments_,
         outputMappings: operation.effect.outputMappings,
         bpmnErrorRoute: operation.bpmnErrorRoute,
         output: operation.output,
       },
     ].sort(compareEffectWaits),
+    variables: addActivityVariableScope(state.variables, id, arguments_),
     effectActivations: setActivationCount(
       state.effectActivations,
       operation.effect.elementId,

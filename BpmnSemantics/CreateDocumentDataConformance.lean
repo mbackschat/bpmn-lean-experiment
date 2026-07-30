@@ -157,24 +157,118 @@ theorem literal_input_commits_exact_arguments :
     evaluateInputMappings inputMappings = some arguments := by
   decide
 
+def expectedWaitingVariables : ScopedVariables :=
+  { process := { bindings := [] }
+    activities := [{ owner := effectId, bindings := arguments }] }
+
+theorem activation_creates_complete_occurrence_owned_local_scope :
+    waitingState.variables = expectedWaitingVariables := by
+  decide
+
+def secondEffectId : EffectOccurrenceId :=
+  { effectId with activation := 2 }
+
+def twoOwnedScopes : ScopedVariables :=
+  addActivityVariableScope expectedWaitingVariables secondEffectId arguments
+
+theorem completion_removes_only_the_matching_owned_scope :
+    completeActivityVariableScope twoOwnedScopes effectId outputMappings
+        (successResult "Document:42") =
+      some
+        { process := { bindings := [expectedVariable "Document:42"] }
+          activities := [{ owner := secondEffectId, bindings := arguments }] } := by
+  decide
+
+example :
+    completeActivityVariableScope
+        { expectedWaitingVariables with
+          activities :=
+            expectedWaitingVariables.activities ++
+              expectedWaitingVariables.activities }
+        effectId outputMappings (successResult "Document:42") = none := by
+  decide
+
+def missingOwnedScopeState : RuntimeState :=
+  { waitingState with variables := emptyScopedVariables }
+
+theorem missing_owned_scope_rejects_with_exact_state_preservation :
+    applyStimulus scenarioClosureLimit program missingOwnedScopeState
+        (.completeEffect ⟨"missing-owned-scope"⟩ effectId
+          (successResult "Document:42")) =
+      { outcome := .rejected
+        state := missingOwnedScopeState
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  decide
+
+def privateLocalState : RuntimeState :=
+  { waitingState with
+    variables :=
+      { process := expectedWaitingVariables.process
+        activities :=
+          [{ owner := effectId
+             bindings :=
+               arguments ++
+                 [{ name := "privateOnly", value := .string "secret" }] }] } }
+
+theorem activity_local_bindings_remain_outside_public_observation :
+    (observeStableState program privateLocalState).map
+        (fun state => (state.variables, state.openEffects)) =
+      some ([], waitingObservation.openEffects) := by
+  decide
+
+theorem scoped_data_adds_no_closure_step :
+    scenarioClosureLimit = 8 ∧
+    (applyStimulus 2 program initialState
+        (.startProcess ⟨"start-create-document"⟩
+          ⟨"Process_A12CreateDocument"⟩ effectId.processInstanceId)
+      ).internalStepBoundExceeded = false ∧
+      (applyStimulus 1 program initialState
+        (.startProcess ⟨"start-create-document"⟩
+          ⟨"Process_A12CreateDocument"⟩ effectId.processInstanceId)
+      ).internalStepBoundExceeded = true := by
+  decide
+
+def beforeEffectActivationState : RuntimeState :=
+  { initialState with
+    control := .running effectId.processInstanceId
+    tokens := [⟨"place:Flow_StartToCreate"⟩] }
+
+def beforeEffectActivationWithUnrelatedData : RuntimeState :=
+  { beforeEffectActivationState with
+    variables :=
+      addActivityVariableScope beforeEffectActivationState.variables
+        { effectId with elementId := ⟨"OtherEffect"⟩ } [] }
+
+theorem scoped_data_does_not_change_internal_enabledness :
+    program.operations.map (fun operation =>
+        (fire? operation beforeEffectActivationState).isSome) =
+      program.operations.map (fun operation =>
+        (fire? operation beforeEffectActivationWithUnrelatedData).isSome) := by
+  decide
+
 theorem successful_mapping_trace_is_exact :
     runScenario program scenario =
       { outcome := .semantic .committed, trace := expectedTrace } := by
   decide
 
 theorem successful_result_maps_only_process_target (reference : String) :
-    applyEffectResult arguments outputMappings []
-        (successResult reference) =
-      some [expectedVariable reference] := by
-  simp [applyEffectResult, applyEffectPatch, outputMappings, successResult,
-    expectedVariable]
+    completeActivityVariableScope expectedWaitingVariables effectId
+        outputMappings (successResult reference) =
+      some
+        { process := { bindings := [expectedVariable reference] }
+          activities := [] } := by
+  simp [completeActivityVariableScope, expectedWaitingVariables,
+    activityScopeMatches, applyEffectResult, applyEffectPatch,
+    outputMappings, successResult, expectedVariable]
 
 /-- Any typed patch outside the exact one-local-string contract is refused with exact semantic-state preservation. -/
 theorem invalid_patch_is_rejected
     (commandId : SemanticId)
     (result : EffectExecutionResult)
     (invalid :
-      applyEffectResult arguments outputMappings [] result = none) :
+      completeActivityVariableScope expectedWaitingVariables effectId
+        outputMappings result = none) :
     applyStimulus scenarioClosureLimit program waitingState
         (.completeEffect commandId effectId result) =
       { outcome := .rejected
@@ -230,15 +324,18 @@ private def writeLocalPatchToProcessScope (state : RuntimeState) : RuntimeState 
   { state with
     effectWaits := []
     tokens := effectWait.output :: state.tokens
-    processVariables :=
-      [ { name := "newDocRef", value := .string "Document:42" } ] }
+    variables :=
+      { process :=
+          { bindings :=
+              [ { name := "newDocRef", value := .string "Document:42" } ] }
+        activities := [] } }
 
 theorem direct_patch_to_process_scope_is_a_non_law :
-    (writeLocalPatchToProcessScope waitingState).processVariables =
+    (writeLocalPatchToProcessScope waitingState).variables.process.bindings =
       [ { name := "newDocRef", value := .string "Document:42" } ] ∧
       (applyStimulus scenarioClosureLimit program waitingState
         (.completeEffect ⟨"mapped-patch"⟩ effectId
-          (successResult "Document:42"))).state.processVariables =
+          (successResult "Document:42"))).state.variables.process.bindings =
         [expectedVariable "Document:42"] := by
   decide
 

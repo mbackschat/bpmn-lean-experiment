@@ -9,6 +9,41 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- Process-owned bindings that form the public variable projection. -/
+structure ProcessVariableScope where
+  bindings : List VariableBinding
+  deriving Repr, DecidableEq
+
+/-- Private bindings owned by one complete semantic effect occurrence. -/
+structure ActivityVariableScope where
+  owner : EffectOccurrenceId
+  bindings : List VariableBinding
+  deriving Repr, DecidableEq
+
+/-- The single runtime representation for Process and Activity-local data. -/
+structure ScopedVariables where
+  process : ProcessVariableScope
+  activities : List ActivityVariableScope
+  deriving Repr, DecidableEq
+
+def emptyScopedVariables : ScopedVariables :=
+  { process := { bindings := [] }
+    activities := [] }
+
+def activityScopeMatches (owner : EffectOccurrenceId)
+    (scope : ActivityVariableScope) : Bool :=
+  decide (
+    scope.owner.processInstanceId = owner.processInstanceId &&
+      scope.owner.elementId.value = owner.elementId.value &&
+      scope.owner.activation = owner.activation)
+
+/-- Add the input-mapping scope for one newly activated effect occurrence. Reachable runtime states supply a fresh complete owner. -/
+def addActivityVariableScope (variables : ScopedVariables)
+    (owner : EffectOccurrenceId)
+    (bindings : List VariableBinding) : ScopedVariables :=
+  { variables with
+    activities := variables.activities ++ [{ owner, bindings }] }
+
 def evaluateInputMappings : List VariableMapping →
     Option (List VariableBinding)
   | [] => some []
@@ -19,11 +54,11 @@ def evaluateInputMappings : List VariableMapping →
 def applyEffectPatch
     (_arguments : List VariableBinding)
     (outputMappings : List VariableMapping)
-    (processVariables : List VariableBinding)
+    (processBindings : List VariableBinding)
     (localPatch : List VariableBinding)
     (allowNull : Bool) : Option (List VariableBinding) :=
   match outputMappings, localPatch with
-  | [], [] => some processVariables
+  | [], [] => some processBindings
   | [{ target, expression := .localVariable source }],
       [{ name, value }] =>
       if source = name &&
@@ -32,7 +67,7 @@ def applyEffectPatch
             | .null => allowNull) then
         some
           ({ name := target, value } ::
-            processVariables.filter fun binding =>
+            processBindings.filter fun binding =>
               decide (binding.name ≠ target))
       else
         none
@@ -41,14 +76,33 @@ def applyEffectPatch
 def applyEffectResult
     (arguments : List VariableBinding)
     (outputMappings : List VariableMapping)
-    (processVariables : List VariableBinding)
+    (processBindings : List VariableBinding)
     (result : EffectExecutionResult) : Option (List VariableBinding) :=
   match result with
   | .success localPatch =>
-      applyEffectPatch arguments outputMappings processVariables
+      applyEffectPatch arguments outputMappings processBindings
         localPatch false
   | .bpmnError _ _ localPatch =>
-      applyEffectPatch arguments outputMappings processVariables
+      applyEffectPatch arguments outputMappings processBindings
         localPatch true
+
+/-- Validate one effect result against its unique owned local scope, map into Process scope, and remove only that local scope. Missing or duplicate owners return `none`. -/
+def completeActivityVariableScope
+    (variables : ScopedVariables)
+    (owner : EffectOccurrenceId)
+    (outputMappings : List VariableMapping)
+    (result : EffectExecutionResult) : Option ScopedVariables :=
+  match variables.activities.filter (activityScopeMatches owner) with
+  | [activity] =>
+      match applyEffectResult activity.bindings outputMappings
+          variables.process.bindings result with
+      | none => none
+      | some processBindings =>
+          some
+            { process := { bindings := processBindings }
+              activities :=
+                variables.activities.filter fun scope =>
+                  !activityScopeMatches owner scope }
+  | _ => none
 
 end BpmnSemantics.SemanticProcess

@@ -252,7 +252,9 @@ Array order has no semantic meaning. Canonical serialization sorts definitions a
 
 ### Runtime state
 
-Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task, timer, and effect occurrences, committed immutable effect arguments, Process variables, Activity-local mapping state, the logical clock, committed command outcomes, and any explicit semantic choices.
+Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task, timer, and effect occurrences, committed immutable effect arguments, explicitly scoped variables, the logical clock, committed command outcomes, and any explicit semantic choices.
+
+The implemented runtime contains one `ScopedVariables` value. Its `process.bindings` survive Activity completion and alone project to canonical `variables`. Each entry in `activities` contains `owner` plus `bindings`, where `owner` is the complete semantic effect occurrence `(processInstanceId, elementId, activation)`. Effect activation creates exactly one owned local scope from evaluated inputs. Matching completion requires exactly one matching owner, evaluates the validated patch and output mappings against that scope, updates Process bindings, and removes only that scope atomically. Missing or duplicate owners reject completion with exact state preservation. The complete replacement contract and discriminators belong to the [scoped runtime data specification](capsules/SCOPED-DATA-SPEC.md).
 
 Lean and TypeScript may use different internal runtime representations. They must implement the same reviewed transition account and canonical observation contract; sharing an IL does not require sharing evaluator algorithms or runtime data structures.
 
@@ -316,7 +318,7 @@ The payload-free Service Task has empty mappings and accepts only the empty succ
 
 The boundary-error slice extends the same operation with one immutable exact-code Error route and extends variable values with a closed `string`/`null` union. A matching `bpmnError` result carries a validated Activity-local patch and optional non-empty message. Under the selected CIB-specific profile, the evaluator atomically installs the patch, applies the program-owned output mapping, removes the effect wait and Activity-local state, abandons the normal output, adds the boundary-route token, and resumes closure. An occurrence mismatch, non-matching Error code, or malformed patch rejects with exact state preservation. The Error route stays definition-only; code and message do not enter canonical state.
 
-The Worker never receives mutable Process state and never selects Process output names. Descriptor, arguments, result, output mapping, and Error route remain separate contracts. The exact bounded rules and host relations belong to the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md), [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md), and [boundary-error spec](capsules/BOUNDARY-ERROR-SPEC.md).
+The Worker never receives mutable Process state and never selects Process output names. Descriptor, arguments, result, output mapping, Error route, Process scope, and occurrence-owned Activity-local scope remain separate contracts. The exact bounded rules and host relations belong to the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md), [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md), [boundary-error spec](capsules/BOUNDARY-ERROR-SPEC.md), and [scoped runtime data spec](capsules/SCOPED-DATA-SPEC.md).
 
 ### Parallel duplication
 

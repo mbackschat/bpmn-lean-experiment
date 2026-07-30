@@ -217,12 +217,15 @@ test("applies the validated null patch and opens only the boundary route", () =>
       output: "place:Flow_UserTaskToEnd",
     },
   ]);
-  assert.deepEqual(caught.state.processVariables, [
+  assert.deepEqual(caught.state.variables, {
+    process: { bindings: [
     {
       name: "relationshipLinkId",
       value: { kind: "null" },
     },
-  ]);
+    ] },
+    activities: [],
+  });
   assert.equal(caught.state.endOccurrences, 0);
 });
 
@@ -284,8 +287,8 @@ test("keeps absence, null, and empty string semantically distinct", () => {
   assert.equal(empty.outcome, CommandOutcome.Committed);
   assert.equal(nullValue.outcome, CommandOutcome.Committed);
   assert.notDeepEqual(
-    empty.state.processVariables,
-    nullValue.state.processVariables,
+    empty.state.variables.process.bindings,
+    nullValue.state.variables.process.bindings,
   );
 });
 

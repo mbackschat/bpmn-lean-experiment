@@ -136,7 +136,7 @@ function observeStableState(state: RuntimeState): StateObservation | null {
         openUserTasks: projectOpenUserTasks(state),
         openTimers: projectOpenTimers(state),
         openEffects: projectOpenEffects(state),
-        variables: state.processVariables,
+        variables: state.variables.process.bindings,
         enabledInteractions: projectOpenUserTasks(state).map((task) => ({
           kind: StimulusKind.CompleteUserTaskInstance,
           taskId: task.id,

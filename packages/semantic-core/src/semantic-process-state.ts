@@ -56,6 +56,23 @@ export type SemanticEffectWait = DeepReadonly<{
   output: string;
 }>;
 
+/** Process-owned bindings that survive Activity-local cleanup and form the public variable projection. */
+export type ProcessVariableScope = DeepReadonly<{
+  bindings: VariableBinding[];
+}>;
+
+/** Private bindings owned by one complete semantic effect occurrence. */
+export type ActivityVariableScope = DeepReadonly<{
+  owner: EffectOccurrenceId;
+  bindings: VariableBinding[];
+}>;
+
+/** The single runtime representation for Process and Activity-local data. */
+export type ScopedVariables = DeepReadonly<{
+  process: ProcessVariableScope;
+  activities: ActivityVariableScope[];
+}>;
+
 type ActivationCounter = DeepReadonly<{
   elementId: string;
   count: number;
@@ -68,7 +85,7 @@ export type RuntimeState = DeepReadonly<{
   userTaskWaits: SemanticUserTaskWait[];
   timerWaits: SemanticTimerWait[];
   effectWaits: SemanticEffectWait[];
-  processVariables: VariableBinding[];
+  variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   timerActivations: ActivationCounter[];
   effectActivations: ActivationCounter[];
@@ -83,7 +100,10 @@ export const initialState: RuntimeState = {
   userTaskWaits: [],
   timerWaits: [],
   effectWaits: [],
-  processVariables: [],
+  variables: {
+    process: { bindings: [] },
+    activities: [],
+  },
   taskActivations: [],
   timerActivations: [],
   effectActivations: [],
@@ -176,7 +196,10 @@ function compareTokenPlaces(
   return compareCanonicalStrings(left.placeId, right.placeId);
 }
 
-function compareOccurrences(left: OccurrenceId, right: OccurrenceId): number {
+function compareOccurrences(
+  left: OccurrenceId,
+  right: OccurrenceId,
+): number {
   if (left.processInstanceId !== right.processInstanceId) {
     return compareCanonicalStrings(
       left.processInstanceId,
