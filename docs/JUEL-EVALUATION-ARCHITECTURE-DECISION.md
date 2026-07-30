@@ -2,13 +2,13 @@
 
 ## Status
 
-**Owner-selected architecture decision on 2026-07-30; the first Exclusive Gateway capsule and its reviewed dependency set are owner-approved, while the dependencies remain uncommitted and the Java Activity Worker, wire contracts, and production implementation remain absent.**
+**Owner-selected CIB compatibility architecture on 2026-07-30 and deferred later that day behind the standards-first [Simple Boolean expression decision](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md). The reviewed dependency set remains approved but unadopted; the Java Activity Worker, wire contracts, and production implementation remain absent.**
 
 ## Question
 
 How should a selected CIB Seven profile evaluate read-only JUEL expressions without creating a project-owned expression language, parser, abstract syntax tree, or evaluator?
 
-This decision answers the evaluator-ownership and hosting question. The [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) owns the first complete expression set, value domain, consuming semantics, and hosting preflight. The exact reviewed dependency set was separately approved after independent review; this decision does not itself adopt it or claim an implementation.
+This decision answers the evaluator-ownership and hosting question for the CIB JUEL compatibility overlay. The [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) now owns a standards-first project language and pure consuming semantics; when JUEL is reopened, it supplies another language result to that BPMN mechanism through a separately approved compatibility capsule. The exact reviewed dependency set was separately approved after independent review; this decision does not adopt it or claim an implementation.
 
 ## Layer and authority
 
@@ -53,9 +53,9 @@ The local-variable arm is nevertheless a project-owned shortcut for one JUEL-sha
 
 The first conditional-Sequence-Flow capsule does not remove this mapping representation because it has a different consumer and lifecycle. Removing it beforehand would break current checked programs and evidence without supplying a replacement.
 
-## First consumer boundary
+## Deferred first compatibility consumer boundary
 
-The first selected consumer is conditional Sequence Flow evaluation for an Exclusive Gateway. One evaluation request contains the gateway's ordered non-default candidate flows so one Java Activity invocation preserves the reviewed CIB ordering and short-circuit account without one Temporal Activity per condition. `CIB-INT-0001` fixes candidate order to XML `sequenceFlow` declaration order, and `CIB-AGR-0006` fixes first-true and all-false default behavior for the bounded profile.
+When this compatibility lane reopens, its first consumer is conditional Sequence Flow evaluation for an Exclusive Gateway. One evaluation request contains the gateway's ordered non-default candidate flows so one Java Activity invocation preserves the reviewed CIB ordering and short-circuit account without one Temporal Activity per condition. `CIB-INT-0001` fixes candidate order to XML `sequenceFlow` declaration order, and `CIB-AGR-0006` fixes first-true and all-false default behavior for the bounded profile.
 
 The evaluator returns condition results, not a selected Sequence Flow. Under the candidate first-true account, a successful result contains either:
 
@@ -64,7 +64,7 @@ The evaluator returns condition results, not a selected Sequence Flow. Under the
 
 The semantic core validates candidate identity and order and applies the separately approved gateway rule. If the pinned profile stops at the first true condition, evaluating later conditions is forbidden because a later expression may fail or invoke behavior that CIB would not reach.
 
-This decision alone authorizes no new Semantic Process IL operation. The owner-approved capsule proposes one generic `choose` operation, treats external evaluation as a private suspended command rather than a public wait, completes the Temporal preflight, and names the targeted closure-limit and multiple-enabledness obligations. Dependency adoption and red/green implementation remain pending.
+This decision alone authorizes no new Semantic Process IL operation. The active standards capsule implements the generic `choose` mechanism without suspension. A future JUEL capsule must add its private suspended-command and receipt boundary atomically rather than leaving a parallel path in the current contract. Dependency adoption and every Java/receipt implementation step are deferred.
 
 ## Selected private contract boundary
 
@@ -149,7 +149,7 @@ The approved Worker dependency set has runtime roots `org.cibseven.bpm.juel:cibs
 
 The JUEL artifact's role would be only parsing and evaluation in the isolated Java evaluator Worker. The Java Temporal SDK would host only the Activity Worker and cross-SDK payload boundary. Removing the module and task-queue registration removes the complete graph without changing the pure TypeScript semantic core. The Java module placement, payload converter, deployment unit, and container image remain implementation choices inside the capsule boundary.
 
-No dependency is adopted by this decision. Independent review verified the complete direct and transitive graph, exact versions and integrity, licenses, source provenance, runtime role, security review, and removal cost, and the owner approved that exact set on 2026-07-30. A committed build change remains required before production use.
+No dependency is adopted. Independent review verified the complete direct and transitive graph, exact versions and integrity, licenses, source provenance, runtime role, security review, and removal cost, and the owner approved that exact set on 2026-07-30. Adoption requires the CIB compatibility lane to be explicitly reopened; the earlier uncommitted empty Worker module was removed when the standards-first sequence was selected.
 
 ## Required before implementation
 
@@ -160,7 +160,8 @@ No dependency is adopted by this decision. Independent review verified the compl
 5. **Completed:** complete the capsule's Temporal hosting/refinement preflight.
 6. **Completed:** approve the recorded Java Temporal, CIB JUEL, and Jackson alignment dependencies.
 7. **Completed:** name the short-lived validation Workflow, runtime Activity-exhaustion recovery, one semantic evaluation-error arm, tagged variable context, per-command closure budget, runtime-only inventory, and atomic versioning set.
-8. **Next:** commit the approved dependencies and use red/green evidence before changing production Lean, TypeScript, Java, schemas, or retained evidence.
+8. **Deferred:** reopen the CIB JUEL compatibility lane before adopting the approved dependencies or adding a Java Worker.
+9. **Required after reopening:** define the shared request/result schema and prove the Java/TypeScript cross-SDK round trip before adding suspension, receipt, or Activity behavior to the current conditional-choice contract.
 
 ## Exclusions
 

@@ -271,13 +271,13 @@ The project instead commits an effect intent, runs a Temporal Activity, and rece
 
 ### CIB-OP-0004 — synchronous JUEL command rollback mapped to speculative semantic commitment
 
-**Status:** Selected operational mapping; production capsule unimplemented
+**Status:** Selected operational mapping for the deferred JUEL compatibility lane; production capsule unimplemented
 
 CIB Seven `2.0.0` evaluates a conditional Sequence Flow synchronously inside the command that completes the preceding User Task or starts the Process. When evaluation fails, the engine command rolls back: the preceding User Task remains available after failed completion, while a failure during Process start leaves no runtime or historic Process instance.
 
 The proposed project host does not treat JUEL as an application effect or expose speculative semantic state while an asynchronous evaluator Activity is pending. It persists a private suspended continuation rather than relying on an Update handler's call stack or mutating the committed core state; the single semantic loop invokes and awaits the Activity, the originating handler remains pending for its command result, and public Queries continue to expose the last committed semantic state. A valid evaluation receipt commits completion plus routing atomically; one semantic `evaluationError` discards the continuation and returns `rolledBack` with the exact pre-command state.
 
-**Evidence:** [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), [packaged-engine gateway rollback probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java), and the [Temporal hosting preflight](research/TEMPORAL-EXECUTION-RESEARCH.md#profile-selected-expression-evaluation-activities).
+**Evidence:** [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), [packaged-engine gateway rollback probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java), and the [Temporal hosting preflight](research/TEMPORAL-EXECUTION-RESEARCH.md#profile-selected-expression-evaluation-activities).
 
 **Boundary:** The private continuation is a project durability mechanism, not a CIB or BPMN public state. Syntax rejection remains an admission failure. Temporal Worker loss, timeout, malformed transport, cancellation, and exhausted retries remain infrastructure or adapter failures; terminal Activity failure discards the continuation, fails the originating Update outside the semantic result algebra, preserves the committed User Task wait, and resumes the queued input loop. This mapping does not authorize a general transaction emulator, arbitrary expression side effects, or rollback of external effects.
 
@@ -321,15 +321,15 @@ The mapping-free phase-zero control isolates that default: the Process has no re
 
 ### CIB-CFG-0005 — pinned read-only JUEL condition environment
 
-**Status:** Selected bounded configuration; production capsule unimplemented
+**Status:** Selected bounded configuration for the deferred JUEL compatibility lane; production capsule unimplemented
 
-The first conditional-routing profile uses `org.cibseven.bpm.juel:cibseven-juel:2.0.0`, matching pinned CIB Seven `2.0.0`, over a complete immutable Process-scope context whose values use the project's existing tagged `VariableValue.String | VariableValue.Null` contract. The Java evaluator converts those variants to `String | null` after validation. It exposes exact root-variable lookup and no bean, property-on-Java-object, method, function, class, `execution`, Process Engine service, Spring, file, network, or mutation capability.
+When reopened, the first JUEL compatibility profile uses `org.cibseven.bpm.juel:cibseven-juel:2.0.0`, matching pinned CIB Seven `2.0.0`, over a complete immutable Process-scope context whose values use the project's existing tagged `VariableValue.String | VariableValue.Null` contract. The Java evaluator converts those variants to `String | null` after validation. It exposes exact root-variable lookup and no bean, property-on-Java-object, method, function, class, `execution`, Process Engine service, Spring, file, network, or mutation capability.
 
 The admitted source has exactly two non-default conditions and one conditionless default, no condition `language`, `xsi:type` absent or resolving to BPMN `tFormalExpression`, and no Camunda `resource`. The condition result must be a non-null Java `Boolean`. Exact `${...}` and `#{...}` source is retained. A short-lived validation Workflow performs batched parse-only validation before any Process Workflow starts; runtime evaluator failures share one semantic `evaluationError` result, while diagnostic codes and messages do not affect semantic comparison.
 
-**Evidence:** [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), [isolated CIB JUEL runtime probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIsolatedJuelRuntimeProbeTest.java), and [packaged-engine gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java).
+**Evidence:** [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), [isolated CIB JUEL runtime probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIsolatedJuelRuntimeProbeTest.java), and [packaged-engine gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java).
 
-**Boundary:** This selection does not admit nested objects, collections, numbers, Boolean Process variables, Java objects, arbitrary JUEL, input/output mappings, forms, scripts, listeners, bean resolution, or general CIB expression compatibility. The reviewed dependencies are approved but remain uncommitted and absent from production code.
+**Boundary:** This selection does not admit nested objects, collections, numbers, Boolean Process variables, Java objects, arbitrary JUEL, input/output mappings, forms, scripts, listeners, bean resolution, or general CIB expression compatibility. The reviewed dependencies are approved but remain uncommitted and absent from production code. The active Simple Boolean standards profile is a different declared language and receives no CIB truth claim from this entry.
 
 ## Audit of previously visited findings
 

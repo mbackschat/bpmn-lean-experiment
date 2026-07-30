@@ -102,7 +102,7 @@ The condition strings have a maximum decoded UTF-8 length of 91 bytes. Their cap
 | Nested value inequality | 1 | Requires nested typed data and comparison, outside the first capsule |
 | Nested Boolean comparison | 1 | Requires nested Boolean data, outside the first capsule |
 
-The first [Exclusive Gateway conditional-routing proposal](../capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) therefore selects only complete Process-scope `string | null` context. That domain is sufficient for 9 of 16 condition occurrences, 5 of 11 exact strings, and 4 of 8 condition-bearing models without adding nested target data to the BPMN core. These are language/context coverage figures, not unchanged-model admission or execution figures.
+The active [Exclusive Gateway conditional-routing proposal](../capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) selects the project-owned Simple Boolean language. None of the 16 retained A12 JUEL condition occurrences uses that language URI, so this standards slice claims zero unchanged A12 expression or model adoption. The separately deferred [JUEL architecture](../JUEL-EVALUATION-ARCHITECTURE-DECISION.md) retains the earlier language/context finding—9 of 16 occurrences, 5 of 11 exact strings, and 4 of 8 condition-bearing models fit its read-only `string | null` context—but claims neither unchanged topology admission nor implementation. The project-wide unchanged-model execution count remains zero of 50.
 
 ## Delegate and effect surface
 
