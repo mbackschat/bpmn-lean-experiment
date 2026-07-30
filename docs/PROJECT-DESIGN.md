@@ -163,7 +163,7 @@ The existing exact `MappingExpression.localVariable` form remains a bounded dire
 
 Language families remain separately selected profiles. BPMN 2.0.2 declares XPath as its default expression language, while JUEL, DMN/FEEL, Groovy scripts, and FreeMarker templates have different value, capability, failure, and hosting contracts. Do not extract a universal multi-language framework until a second implemented consumer demonstrates an identical contract.
 
-The [Simple Boolean decision](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) owns the active language. The [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) owns its first consuming rules and Temporal preflight. The [JUEL decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns only the deferred CIB compatibility boundary.
+The [Simple Boolean decision](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) owns the active language. The [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) owns its first consuming rules and Temporal boundary. The [JUEL decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns only the deferred CIB compatibility boundary.
 
 ## CIB compatibility and polyglot effect execution
 

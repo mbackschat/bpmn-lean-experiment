@@ -102,7 +102,7 @@ The condition strings have a maximum decoded UTF-8 length of 91 bytes. Their cap
 | Nested value inequality | 1 | Requires nested typed data and comparison, outside the first capsule |
 | Nested Boolean comparison | 1 | Requires nested Boolean data, outside the first capsule |
 
-The active [Exclusive Gateway conditional-routing proposal](../capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) selects the project-owned Simple Boolean language. None of the 16 retained A12 JUEL condition occurrences uses that language URI, so this standards slice claims zero unchanged A12 expression or model adoption. The separately deferred [JUEL architecture](../JUEL-EVALUATION-ARCHITECTURE-DECISION.md) retains the earlier language/context finding—9 of 16 occurrences, 5 of 11 exact strings, and 4 of 8 condition-bearing models fit its read-only `string | null` context—but claims neither unchanged topology admission nor implementation. The project-wide unchanged-model execution count remains zero of 50.
+The implemented [Exclusive Gateway conditional-routing specification](../capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) selects the project-owned Simple Boolean language. None of the 16 retained A12 JUEL condition occurrences uses that language URI, so this standards slice claims zero unchanged A12 expression or model adoption. The separately deferred [JUEL architecture](../JUEL-EVALUATION-ARCHITECTURE-DECISION.md) retains the earlier language/context finding—9 of 16 occurrences, 5 of 11 exact strings, and 4 of 8 condition-bearing models fit its read-only `string | null` context—but claims neither unchanged topology admission nor implementation. The project-wide unchanged-model execution count remains zero of 50.
 
 ## Delegate and effect surface
 

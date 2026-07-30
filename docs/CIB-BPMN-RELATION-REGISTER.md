@@ -144,15 +144,15 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0006 — divergent Exclusive Gateway first-true and default routing
 
-**Status:** Reviewed bounded agreement; production capsule unimplemented
+**Status:** Reviewed bounded agreement; standards capsule implemented, CIB JUEL overlay deferred
 
 **BPMN basis:** BPMN 2.0.2 Clause 13.4.2 and Table 13.2 require a divergent Exclusive Gateway to evaluate outgoing conditional Sequence Flows in a defined order, select the first condition that evaluates true, and select the default Sequence Flow only when every condition is false.
 
 **Pinned CIB observation:** CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371` selects the first true non-default Sequence Flow, selects the second after the first false, does not evaluate a later failing condition after an earlier true result, and selects the declared default after both reviewed conditions evaluate false. The selected branch is visible through its distinct User Task. These controls now use the exact two-condition-plus-default and string/null source profile rather than broader Boolean or nested-map feasibility shapes.
 
-**Evidence:** [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md), [packaged-engine JUEL gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java), and [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md).
+**Evidence:** [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md), [packaged-engine JUEL gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java), and [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md).
 
-**Boundary:** Candidate order is the selected interpretation `CIB-INT-0001`; JUEL evaluation is configuration-specific under `CIB-CFG-0005`; synchronous command rollback is mapped by `CIB-OP-0004`. CIB accepts a language-qualified formal condition as a script source and may defer missing-script-engine failure until execution; the selected JUEL profile rejects that source before its parse-only JUEL validation. This agreement does not cover a missing default, converging or mixed gateways, more than two conditions, conditional flow from another Flow Node, arbitrary JUEL, nested data, scripts, or a production project implementation.
+**Boundary:** Candidate order is the selected interpretation `CIB-INT-0001`; JUEL evaluation is configuration-specific under `CIB-CFG-0005`; synchronous command rollback is mapped by `CIB-OP-0004`. CIB accepts a language-qualified formal condition as a script source and may defer missing-script-engine failure until execution; the deferred JUEL profile rejects that source before parse-only JUEL validation. The implemented project language is not executed by CIB and does not turn this calibration into Simple Boolean truth evidence. This agreement does not cover a missing default, converging or mixed gateways, more than two conditions, conditional flow from another Flow Node, arbitrary JUEL, nested data, or scripts.
 
 ## Interpretation register
 
@@ -162,13 +162,13 @@ The [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md#import-and-admission-po
 
 ### CIB-INT-0001 — Exclusive Gateway candidate order is XML Sequence Flow declaration order
 
-**Status:** Selected bounded interpretation; production capsule unimplemented
+**Status:** Selected bounded interpretation; standards capsule implemented
 
 BPMN requires a defined order for outgoing conditional Sequence Flows but the portable XML does not require a gateway's `<outgoing>` references to be ordered. CIB Seven `2.0.0` constructs transitions while parsing process-level `<sequenceFlow>` elements and its Exclusive Gateway behavior iterates those transitions in that declaration order.
 
 The selected profile therefore orders candidates by XML `sequenceFlow` declaration order, not by the order of gateway `<outgoing>` references, element ID, or project collection order. The checked BPMN graph retains both exact Sequence Flow identity and declaration position so Lean can independently check the lowering order.
 
-**Evidence:** The [packaged-engine JUEL gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java) deliberately reverses gateway `<outgoing>` references while keeping declaration order fixed and observes the declaration-first branch. The pinned source path and selected project rule are recorded in the [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md).
+**Evidence:** The [packaged-engine JUEL gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java) deliberately reverses gateway `<outgoing>` references while keeping declaration order fixed and observes the declaration-first branch. The standards scenario repeats that discriminator without using CIB as its expression oracle; the pinned source path and selected project rule are recorded in the [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md).
 
 **Boundary:** This interpretation is limited to the admitted divergent Exclusive Gateway slice. It is not a general order for other Flow Nodes, event races, parallel scheduling, or runtime occurrences.
 

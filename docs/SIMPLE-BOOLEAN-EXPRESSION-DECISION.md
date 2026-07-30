@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-selected on 2026-07-30 for the first standards-facing conditional-routing capsule; implementation is authorized but not yet complete. CIB JUEL remains a separately approved compatibility direction and is deferred from the active implementation path.**
+**Owner-selected on 2026-07-30 and implemented on 2026-07-31 for the first standards-facing conditional-routing capsule. CIB JUEL remains a separately approved compatibility direction and is deferred from the active implementation path.**
 
 ## Question
 

@@ -267,24 +267,28 @@ Each target returns the same language-neutral canonical result shape. The compar
 
 <!-- source-fragment: packages/differential/test/pipeline-comparison.ts#four-target-comparison -->
 ```js
-const comparison =
-  pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
-    ? compareTargetResults(
-        {
-          target: DifferentialTarget.CibSeven,
-          result: canonicalCib,
-        },
-        semanticCandidates,
-      )
-    : compareTargetResults(
-        {
-          target: DifferentialTarget.Lean,
-          result: leanResult,
-        },
-        semanticCandidates.filter(
-          ({ target }) => target !== DifferentialTarget.Lean,
-        ),
-      );
+const comparison = (() => {
+  if (
+    cibConfiguration?.relation === CibCaseRelation.ExactSemantic
+  ) {
+    return compareTargetResults(
+      {
+        target: DifferentialTarget.CibSeven,
+        result: requiredCibResult(canonicalCib, scenario.id),
+      },
+      semanticCandidates,
+    );
+  }
+  return compareTargetResults(
+    {
+      target: DifferentialTarget.Lean,
+      result: leanResult,
+    },
+    semanticCandidates.filter(
+      ({ target }) => target !== DifferentialTarget.Lean,
+    ),
+  );
+})();
 ```
 
 Agreement alone is weak if the projection or comparator cannot notice the semantic distinction being claimed. Every new evidence projection therefore needs a meaningful seeded mutation:
@@ -294,15 +298,15 @@ Agreement alone is weak if the projection or comparator cannot notice the semant
 const injectedResult = mutableClone(semanticCoreResult);
 pipelineCase.injectMutation(injectedResult);
 const injectedReference =
-  pipelineCase.cibRelation === CibCaseRelation.ExactSemantic
+  cibConfiguration?.relation === CibCaseRelation.ExactSemantic
     ? {
         target: DifferentialTarget.CibSeven,
-        result: canonicalCib,
-      }
+        result: requiredCibResult(canonicalCib, scenario.id),
+      } as const
     : {
         target: DifferentialTarget.Lean,
         result: leanResult,
-      };
+      } as const;
 const injectedDisagreement = compareTargetResults(
   injectedReference,
   [

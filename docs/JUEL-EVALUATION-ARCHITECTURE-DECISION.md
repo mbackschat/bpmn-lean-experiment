@@ -8,7 +8,7 @@
 
 How should a selected CIB Seven profile evaluate read-only JUEL expressions without creating a project-owned expression language, parser, abstract syntax tree, or evaluator?
 
-This decision answers the evaluator-ownership and hosting question for the CIB JUEL compatibility overlay. The [Exclusive Gateway condition proposal](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md) now owns a standards-first project language and pure consuming semantics; when JUEL is reopened, it supplies another language result to that BPMN mechanism through a separately approved compatibility capsule. The exact reviewed dependency set was separately approved after independent review; this decision does not adopt it or claim an implementation.
+This decision answers the evaluator-ownership and hosting question for the CIB JUEL compatibility overlay. The [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) owns the implemented standards-first project language and pure consuming semantics; when JUEL is reopened, it supplies another language result to that BPMN mechanism through a separately approved compatibility capsule. The exact reviewed dependency set was separately approved after independent review; this decision does not adopt it or claim an implementation.
 
 ## Layer and authority
 
@@ -113,7 +113,7 @@ The actual `cibseven-juel` implementation is Java and cannot execute inside the 
 
 Deployment-time syntax validation uses a short-lived TypeScript `validateJuelConditions` Workflow started by the deployment orchestrator after structural compilation and before any Process Workflow. It schedules one batched parse-only Activity on the same Java evaluator Worker and requires a content-bound success receipt before admission is finalized. This names the missing cross-language transport without adding a direct service endpoint or fourth runtime root. Validation syntax failure is definition rejection; Worker absence, timeout, malformed transport, or validation-Workflow failure is deployment infrastructure failure.
 
-The [capsule preflight](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md#temporal-hosting-and-refinement-preflight) selects:
+The [capsule preflight](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md#temporal-hosting-and-refinement-preflight) selects:
 
 - one content-bound Activity request per gateway activation rather than one Activity per candidate condition;
 - XML Sequence Flow declaration-order evaluation and first-true short-circuit;
@@ -156,7 +156,7 @@ No dependency is adopted. Independent review verified the complete direct and tr
 1. **Completed:** derive and record the exact first read-only condition-expression denominator and the smallest required typed context domain.
 2. **Completed:** classify the selected CIB behavior in the [CIB–BPMN relationship register](CIB-BPMN-RELATION-REGISTER.md).
 3. **Completed:** decide evaluator errors and command rollback against pinned CIB Seven.
-4. **Completed:** approve the [Exclusive Gateway source-order, default-flow, and evaluation-result capsule](capsules/EXCLUSIVE-GATEWAY-CONDITION-PROPOSAL.md).
+4. **Completed:** implement the [Exclusive Gateway source-order, default-flow, and evaluation-result capsule](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md).
 5. **Completed:** complete the capsule's Temporal hosting/refinement preflight.
 6. **Completed:** approve the recorded Java Temporal, CIB JUEL, and Jackson alignment dependencies.
 7. **Completed:** name the short-lived validation Workflow, runtime Activity-exhaustion recovery, one semantic evaluation-error arm, tagged variable context, per-command closure budget, runtime-only inventory, and atomic versioning set.

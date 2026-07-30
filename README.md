@@ -54,7 +54,7 @@ flowchart LR
   Temporal --> Replay[Refinement and live replay]
 ```
 
-CIB contributes twice: first as classified empirical input to the profile, then as the pinned behavioral oracle in differential tests. BPMN remains normative. CIB specificity and extensions are not mislabeled as deviations; every reviewed relationship is recorded in the prominent [CIB–BPMN register](docs/CIB-BPMN-RELATION-REGISTER.md).
+CIB contributes twice where a compatibility profile declares it: first as classified empirical input, then as the pinned behavioral oracle in differential tests. Standards-only profiles may omit CIB and use normative review plus Lean, TypeScript, and Temporal evidence without translating source into a CIB language. BPMN remains normative. CIB specificity and extensions are not mislabeled as deviations; every reviewed relationship is recorded in the prominent [CIB–BPMN register](docs/CIB-BPMN-RELATION-REGISTER.md).
 
 The strongest parts of the approach are:
 
@@ -139,7 +139,7 @@ scripts/             Maintained verification and infrastructure guards
 | Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Resume the next work | [PLAN.md](docs/PLAN.md) |
-| Review the active semantic meaning | [Parallel fork/join spec](docs/capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Semantic Process IL spec](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
+| Review the active semantic meaning | [Capsule registry](docs/capsules/README.md), [Exclusive Gateway condition spec](docs/capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md), and [Semantic Process IL spec](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
 | Understand CIB relative to BPMN | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Navigate all maintained documentation | [Documentation registry](docs/README.md) |
 

@@ -12,14 +12,14 @@ Command ingress returns a typed adapter union: accepted or recovered commands re
 
 ## Pre-release replay policy
 
-Tests start clean in-memory Temporal servers, execute the retained sequential, parallel, and Intermediate Catch Timer witnesses, fetch their live histories, replay those histories through the Workflow bundle, and shut the servers down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
+Tests start clean in-memory Temporal servers, execute the retained User Task, parallel, timer, effect, mapping, boundary-error, and Simple Boolean Exclusive Gateway witnesses, fetch their live histories, replay those histories through the Workflow bundle, and shut the servers down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
 
 This is deliberate, not an abandonment of replay compatibility. Before the first immutable deployment baseline, speculative history compatibility would preserve prototype accidents and multiply branches. Once a durable history baseline is explicitly approved, retained histories, Worker/version markers, compatibility code, and migration/deprecation rules become mandatory evidence.
 
 ## What the focused gate establishes
 
 - exact BPMN XML compiles before Workflow start;
-- one clean server and Worker execute exact, wrong-activation, sequential post-terminal stale, both parallel completion orders, live-sibling stale, and exact timer witnesses;
+- clean servers and Workers execute exact, wrong-activation, sequential post-terminal stale, both parallel completion orders, live-sibling stale, exact timer, effect, mapping, boundary-error, and Simple Boolean conditional-routing witnesses;
 - ordinary Query projections, Update outcomes, and final results equal the pure core;
 - duplicate logical delivery does not cause a second semantic transition;
 - each fetched live history contains the exact completion Update rather than Signal delivery;
@@ -33,13 +33,14 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - replacing a Worker at the semantic wait preserves start-before-completion ordering and the final result;
 - the durable timer is derived only from committed core state, survives Worker absence at its due time, completes after replacement, and replays with one exact timer-started/timer-fired pair;
 - a separately bundled timer-bypass mutation preserves the pure trace but fails the durable-history discriminator;
+- the Simple Boolean gateway exposes only the selected User Task, completes and replays without an evaluator Activity, and a separately bundled route-substitution mutation exposes the wrong branch;
 - one accepted Update result remains retrievable after Workflow closure, while a distinct late command returns `processClosed` and Workflow-ID reuse is refused;
 - an unknown address returns `processUnknown`;
 - same-Update-ID payload aliasing is visible, while a conflicting command ID under a distinct Update ID fails explicitly without wedging the Workflow;
 - semantic results do not contain the Temporal Workflow ID;
 - Query-derived command outcomes reconcile with durable Update results and terminal state reconciles with the completed receipt.
 
-The adapter does not implement retained results beyond Temporal retention, a production canonical-observation API, Activities, timer races or forms beyond the exact Intermediate Catch Timer capsule, Search Attributes, Continue-As-New, general Worker Versioning, general fault injection, a global task inbox, production authorization/forms, or BPMN beyond the admitted execution surfaces.
+The adapter does not implement retained results beyond Temporal retention, a production canonical-observation API, evaluator Activities for Simple Boolean expressions, timer races or forms beyond the exact Intermediate Catch Timer capsule, Activities beyond the admitted Service Task success/data/error slices, Search Attributes, Continue-As-New, general Worker Versioning, general fault injection, a global task inbox, production authorization/forms, or BPMN beyond the admitted execution surfaces.
 
 Run the focused gate:
 

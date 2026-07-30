@@ -1,8 +1,8 @@
-# Exclusive Gateway conditional routing proposal
+# Exclusive Gateway conditional routing specification
 
 ## Status
 
-**Owner-approved on 2026-07-30 and amended to the standards-first Simple Boolean expression profile; implementation is authorized but incomplete. The former JUEL-first Activity account is deferred to a separate CIB compatibility slice.**
+**Evidence-closed draft implemented on 2026-07-31 under the standards-first Simple Boolean expression profile. The former JUEL-first Activity account is deferred to a separate CIB compatibility slice.**
 
 ## Question
 
@@ -102,9 +102,9 @@ Lean decodes the checked exact bodies, independently parses them during canonica
 
 Simple Boolean evaluation is pure, total after admission, and synchronous inside internal closure. It adds no command, receipt, continuation, activation counter, public wait, rollback arm, or semantic error result.
 
-Starting the first topology requires exactly three internal transitions to reach the selected User Task: `initiate`, `choose`, then `awaitUserTask`. Completing that branch requires `terminate` after the accepted User Task completion. The profile guard proves every command path stays below `semanticProcessClosureLimit = 8`; an over-limit program mutation must fail admission or the harness guard.
+The exact profile guard admits eight operations and seven control places arranged as one initiation, one choice, three branch waits, and three terminations. Starting the Process takes exactly three internal transitions: `initiate`, `choose`, then `awaitUserTask`. Completing the accepted branch takes one `terminate` transition. The runtime-bound guard exposes exhaustion at two start steps; every admitted command path remains below `semanticProcessClosureLimit = 8`.
 
-The first topology permits no state in which `choose` and another independent internal operation are simultaneously enabled. Lean and TypeScript must reject the nearest mutated multiple-enabled program identically or prove the enabled set impossible from admitted source.
+The first topology permits no state in which `choose` and another independent internal operation are simultaneously enabled. Source admission fixes graph cardinality and branch ownership, the TypeScript execution-surface guard rejects an added or duplicated operation, and Lean rejects any received program unequal to canonical lowering before evaluation. This is a profile-specific reachability guard, not a general TypeScript ambiguity detector.
 
 ## Temporal hosting and refinement preflight
 
@@ -138,7 +138,7 @@ Implementation creates one draft standards profile identity `bpmn-2.0.2-simple-b
 
 The former proposed JUEL receipt, suspension, rollback, Java Worker, cross-SDK, and evaluator-Activity contract is not retained as a parallel current representation. It remains deferred design in the [JUEL architecture decision](../JUEL-EVALUATION-ARCHITECTURE-DECISION.md).
 
-## Separating witnesses
+## Maintained separating witnesses
 
 The minimum executable witnesses are:
 
@@ -153,18 +153,18 @@ The minimum executable witnesses are:
 9. exact checked-body-to-typed-AST lowering equality and a body/AST mutation;
 10. duplicate output, missing output, candidate reordering, and invalid default-reference program mutations;
 11. exact three-step start closure, an over-limit mutation, and a multiple-enabledness mutation; and
-12. Temporal selected-branch observation, completion, replay, Worker restart, and Workflow branch-bypass mutation.
+12. Temporal selected-branch observation, completion, replay, inherited User Task Worker-restart coverage, and a gateway-specific Workflow branch-bypass mutation.
 
 The current CIB JUEL probes remain calibration evidence for `CIB-AGR-0006` and `CIB-INT-0001`. They are not translated into Simple Boolean sources, retained as this profile's expected results, or counted as an independent language-truth lane.
 
-## Rule-to-evidence plan
+## Rule-to-evidence matrix
 
 | Rule | Layer | Normative/profile basis | Lean | CIB Seven | TypeScript | Temporal | Negative or mutation |
 |---|---|---|---|---|---|---|---|
-| `XGW-EVALUATE-01` | BPMN rule plus project order interpretation | Clause 13.4.2, Table 13.2, `CIB-INT-0001` as separate compatibility fact | Checked-order relation, parser/lowering equality | Declaration-order calibration only | Source admission, typed lowering, pure evaluation | Core-hosted closure | Reference-order and candidate-order mutations |
-| `XGW-SHORT-CIRCUIT-01` | BPMN-neutral | Clause 13.4.2 | Head-true tail-irrelevance law | JUEL calibration only | Tail mutation leaves route unchanged | Same selected wait on replay | Later-candidate mutation |
-| `XGW-DEFAULT-01` | BPMN-neutral | Clause 13.4.2, Table 13.2 | All-false default law | JUEL calibration only | Exact default selection | Default branch replay | Conditional/default-reference mutations |
-| `XGW-ROUTE-01` | BPMN-neutral | Token-routing rule | Evaluator soundness and exactly-one-output law | Selected-branch calibration only | Pure token transition | Query/Update result and replay | Duplicate/unselected output mutation |
+| `XGW-EVALUATE-01` | BPMN rule plus project order interpretation | Clause 13.4.2, Table 13.2, `CIB-INT-0001` as separate compatibility fact | Independent parser, exact canonical-lowering check, and checked-order transition | Declaration-order calibration only | Strict source admission, typed lowering, and pure evaluation | Core-hosted closure | Reversed gateway references, body/AST inequality, and wrong-route mutation |
+| `XGW-SHORT-CIRCUIT-01` | BPMN-neutral | Clause 13.4.2 | `first_true_ignores_tail` | JUEL calibration only | Tail mutation leaves the route unchanged | Selected wait is stable on replay | Later-candidate mutation |
+| `XGW-DEFAULT-01` | BPMN-neutral | Clause 13.4.2, Table 13.2 | Executable all-false default witness | JUEL calibration only | Exact default selection | Pure closure uses the same default route | Conditional-default and default-reference mutations |
+| `XGW-ROUTE-01` | BPMN-neutral | Token-routing rule | Evaluator soundness plus `selected_output_owned` | Selected-branch calibration only | Pure consume-one/produce-one transition | Query/Update result, replay, and route-bypass discrimination | Duplicate output, source-origin, and Workflow route-substitution mutations |
 
 ## Exclusions and nearest unsupported claim
 
@@ -172,16 +172,10 @@ This capsule excludes XPath, JUEL, FEEL, scripts, expression composition, coerci
 
 The closest unsupported claim is a divergent Exclusive Gateway under another expression language or source cardinality. General BPMN expression support, Common Executable XPath support, general Exclusive Gateway behavior, and BPMN Process Execution Conformance remain unsupported.
 
-## Graduation conditions
+## Assurance boundary
 
-Graduate this proposal only when:
+The checked BPMN graph and Semantic Process program have one TypeScript producer. Lean independently parses the retained expression bodies and checks graph-to-program lowering equality, but it does not independently parse BPMN XML; a shared XML-to-checked-graph defect could therefore reach Lean, the TypeScript core, and Temporal together. CIB's JUEL probes can separate declaration-order and first-true/default structure, but not truth in the project language.
 
-1. exact source admission and every excluded-source witness are red/green;
-2. current checked graph and Semantic Process schemas atomically include conditional/default structure and typed `choose`;
-3. Lean independently parses checked bodies, checks exact lowering equality, defines the declarative transition and executable evaluator, proves evaluator soundness, first-true tail irrelevance, all-false default, exactly-one-output, and the nearest non-laws;
-4. the independent TypeScript parser, lowerer, validator, and evaluator pass the same semantic classes without generated Lean code;
-5. the closure-limit and multiple-enabledness class guards pass;
-6. Temporal selected-branch, completion, Worker-restart, replay, and bypass evidence is green without a new Activity;
-7. scenarios remain answer-free and no CIB result is presented as Simple Boolean truth evidence;
-8. the requirement ledger, IL specification, expression decision, implementation map, testing guide, plan, profile, and registries state the exact implemented and absent claims; and
-9. epistemic-closure review names the custom-language limitation, the shared source/profile assumptions, and the nearest realistic counterexample.
+The nearest realistic counterexample is a source whose gateway references suggest one order while process-level Sequence Flow declarations establish another. The answer-free standards scenario contains that discriminator, and the compiler plus Lean lowering preserve declaration order. A schema-valid Workflow route substitution changes the observed User Task from `Task_First` to `Task_Second` and is detected at the differential boundary.
+
+This capsule changes no canonical observation field and retains no CIB expected result. Its standards-only differential case declares Lean as the reference result and compares the independently implemented TypeScript core and Temporal host. CIB remains a calibration lane for the separately named relationship records, never an expression-truth oracle for Simple Boolean v1.
