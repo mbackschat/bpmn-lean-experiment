@@ -1,12 +1,18 @@
 # Compositional BPMN admission and lowering proposal
 
-**Status:** Owner-approved on 2026-07-28; Stage 1 completed; Stage 2 stopped at its 500-line decomposition boundary after the graph-validation half closed; Stage 2b stopped inside its separate 250-line ceiling after closing declarative decomposition but not fuel-complete acyclicity; Stage 2c completed at 229 new nonblank Lean lines; Stage 2d independently accepted after required gate and saturation-cost amendments at 127 new or materially rewritten nonblank Lean lines; revised Stage 3a independently accepted and post-review cleanup closes at 276 new or materially rewritten nonblank Lean lines; Stage 3b is amended for independent acceptance at 298 new or materially rewritten nonblank Lean lines, excluding 11 relocated lines; every later Stage 3 sub-stage and production admission widening remain unapproved
+**Status:** Owner-approved on 2026-07-28, then superseded as a staged production-admission programme on 2026-07-30; completed Stages 1 through 3b remain frozen experimental results; no composed profile or widened production admission was adopted
 
-## Decision question
+## Current disposition
+
+The owner intentionally replaced this proposal's universal observational-preservation prerequisite with the [targeted preservation gate](PLAN.md#approved-decisions). This is a revision of the approved decision question, required-evidence item 7, and approved decision 6 below; the prerequisite was real and was not introduced only by the experiment record.
+
+The closure-limit and unsupported multiple-enabledness obligations formerly assigned to Stages 3c–3e remain mandatory. They transfer to every affected admission or representation capsule through the targeted gate. The programme's auditable Stages 2c through 3b total 930 new or materially rewritten nonblank Lean lines. Stage 1, Stage 2, and Stage 2b lack committed intermediate baselines, so aggregate consumption against the historical 1,800-line ceiling is not reproducible.
+
+## Historical decision question
 
 Should the project replace named whole-model topology checks with a profile-conditional structured-composition rule for already implemented BPMN mechanisms, while preserving exact lowering and closing observational checked-source preservation before widened admission ships?
 
-The recommendation is **yes, under the bounded structured-composition account below**. Arbitrary acyclic admission remains rejected. The first grammar admits repeated serial User Tasks and balanced two-User-Task regions, but globally permits at most one Intermediate Catch Timer and at most one Service Task effect.
+The historical recommendation was **yes, under the bounded structured-composition account below**. The 2026-07-30 disposition withdraws that staged production recommendation without approving arbitrary acyclic admission. The grammar and proof results below remain a bounded experiment record, not current production intent.
 
 ## Why this decision is forced now
 
@@ -16,7 +22,7 @@ Deleting those matchers without a replacement would be unsound. The strongest di
 
 Arbitrary acyclic admission would also assign unreviewed meaning to uncontrolled Activity fan-in. BPMN21-268 records that multiple uncontrolled incoming Sequence Flows may activate an Activity multiple times; this project has not selected or evidenced that account.
 
-The [frozen checked-source experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md#frozen-experiment-policy) has an explicit reopen trigger: observational lowering preservation must close before admission widens beyond fixture-pinned topologies. The owner approval reopened that bounded experiment through Stage 1 only; later stages retain their explicit checkpoints.
+The [frozen checked-source experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md#frozen-experiment-policy) originally required observational lowering preservation to close before admission widened beyond fixture-pinned topologies. This proposal approved that prerequisite independently in its decision question and required evidence. The 2026-07-30 owner decision supersedes it with targeted per-capsule preservation while retaining the closure-limit and multiple-enabledness safeguards.
 
 ## Required scope
 
@@ -149,20 +155,20 @@ Existing endpoint-indexed lowering is retained:
 
 Lowering selects inputs and outputs by checked source/target endpoints, never positional order. It does not perform reachability, choose runtime scheduling, execute closure, or reconstruct the decomposition.
 
-Before widened admission ships, Lean `programWellFormed`, TypeScript `isWellFormedSemanticProcessProgram`, and TypeScript `hasSupportedExecutionSurface` independently check the corresponding profile, reference, reachability, acyclicity, producer/consumer, arity, cardinality, and stable-closure obligations. Exact equality with checked-source lowering remains required, but is not their only source of structural facts.
+Under the historical programme, Lean `programWellFormed`, TypeScript `isWellFormedSemanticProcessProgram`, and TypeScript `hasSupportedExecutionSurface` would independently check the corresponding profile, reference, reachability, acyclicity, producer/consumer, arity, cardinality, and stable-closure obligations before widened admission shipped. The targeted gate retains these obligations for any capsule that makes the relevant structures reachable. Exact equality with checked-source lowering remains required, but is not their only source of structural facts.
 
 ## Execution and closure contract
 
 For the selected grammar, each internal-closure state has either no enabled transition, one enabled transition, or the reviewed disjoint pair of User Task activations.
 
-The required Lean lemma `structuredClosureStepsLeFour` proves that closure from any admitted stable boundary performs at most four internal steps:
+The historical programme named `structuredClosureStepsLeFour` as the required Lean lemma proving that closure from any admitted stable boundary performs at most four internal steps:
 
 - at Process start, the longest case is `initiate → duplicate → awaitUserTask → awaitUserTask`;
 - between segments, the longest case is `synchronize → duplicate → awaitUserTask → awaitUserTask`.
 
 The fixed production closure fuel of eight therefore remains unchanged. A long schema-valid cascade of automatic gateways is retained as an admission-negative witness: it exceeds the structural grammar and is rejected before evaluation rather than absorbed by more fuel.
 
-TypeScript must reject unsupported multiple-enabledness instead of selecting the lowest operation ID. Lean retains a declarative closure relation distinct from the executable selector and proves selector soundness over the admitted grammar.
+TypeScript must reject unsupported multiple-enabledness instead of selecting the lowest operation ID. Lean retains a declarative closure relation distinct from the executable selector. These requirements now belong to the targeted gate for each capsule that makes such a state reachable; they did not disappear when later proof stages were superseded.
 
 Under unique control-place producer/consumer facts, enabled disjoint internal operations are expected to commute at the canonical projection. Prove this as a positive law with exact hypotheses, or return with a real public non-commuting counterexample. Internal first-step order alone is not a separating observation and cannot justify admission policy.
 
@@ -180,7 +186,7 @@ Neither language copies the other’s internal representation. They agree throug
 
 ## Staged proof effort boundary
 
-Approximately 1,800 additional or materially rewritten nonblank Lean lines is a ceiling, not an estimate of guaranteed closure. The bottom-up range is wider because the repository has no external graph, reachability, finite-set, or permutation library.
+The historical approval set an aggregate ceiling of approximately 1,800 additional or materially rewritten nonblank Lean lines. That aggregate is not auditable: Stage 1, Stage 2, and Stage 2b have no committed intermediate baselines, while the auditable Stages 2c through 3b total 930 lines. The recorded stage ceilings also do not sum to the approved aggregate once Stage 4's 700 lines are included. The individual anchored stage figures remain valid; no exact aggregate-consumption claim is retained.
 
 Work stops at each stage if its named obligation does not close within its sub-budget:
 
@@ -281,7 +287,7 @@ An over-broad admission mutation retains a graph with unsupported simultaneous e
 
 Retain the renamed positional-record counter-model from the checked-source experiment. The widened preservation theorem quantifies over this structured grammar, endpoint lowering agrees with the direct source account, and fixture-coincidental positional pairing still diverges on the adversarial renamed graph.
 
-## Required evidence before adoption
+## Historical required evidence before adoption
 
 1. The BPMN ledger records the structured-chain, closure-bound, controlled fan-in, and profile-composition requirements and exact exclusions.
 2. Profile-conditional TypeScript and Lean source admission retains every existing profile boundary, accepts the mixed witness only under the composed profile, and rejects every hostile witness with a diagnostic.
@@ -289,8 +295,8 @@ Retain the renamed positional-record counter-model from the checked-source exper
 4. The mixed scenario has fresh content-bound CIB evidence and a meaningful Timer-wait projection mutation; existing evidence remains byte-identical.
 5. TypeScript and Lean standalone program validation owns the widened structural facts.
 6. Stage 1 closes before graph implementation proceeds, and every later proof stage closes within its budget.
-7. The final production preservation theorem proves observational lowering preservation over the selected structured-admission derivation.
-8. `structuredClosureStepsLeFour`, the disjoint-step commutation law, the long-gateway rejection, the uncontrolled-fan-in rejection, and the honest Lean/TypeScript ambiguity divergence are retained.
+7. **Superseded:** the final production preservation theorem would have proved observational lowering preservation over the selected structured-admission derivation. The current targeted gate instead requires the smallest source-to-result preservation result for each affected admission or representation capsule.
+8. **Transferred:** the closure-limit check, the disjoint-step commutation or explicit-choice account, the long-gateway rejection, the uncontrolled-fan-in rejection, and consistent Lean/TypeScript treatment of newly reachable multiple-enabledness belong to the targeted gate.
 9. Lean and TypeScript have exact mixed-scenario agreement, including kind-first canonical wait ordering; the nearest checked non-law remains explicit.
 10. Temporal runs and replays the mixed program through the existing semantic-lifetime Workflow with exact timer/effect mechanism evidence.
 11. The positional-lowering discriminator, source-hygiene limits, feedback budgets, and complete repository gate remain green without a new dependency or budget change.
@@ -308,12 +314,12 @@ Stop and return for owner direction if:
 - generic compilation needs A12 source, names, types, or runtime code;
 - a new CIB extension, relationship, dependency, feedback-budget change, or Temporal mechanism is required.
 
-## Approved decisions
+## Historical approved decisions
 
 1. Approve structured composition and reject arbitrary acyclic admission.
 2. Approve the revised grammar: `Segment+`, globally at most one Timer and one Service Task, explicit TypeScript arity checks, unique decomposition, closure bound four, and profile-conditional admission.
 3. Approve one explicitly composed `2.2.0` profile with selected—not unioned—features, exclusions, comparison mode, relationships, and one fresh retained CIB envelope.
 4. Approve reopening and first splitting the checked-source experiment, with graduation of any closed theorem out of `Experiments/`.
 5. Approve the revised witness set: mixed model, long-gateway closure rejection, BPMN21-268 uncontrolled fan-in rejection, honest Lean/TypeScript ambiguity divergence, positive disjoint-step commutation law, and retained positional-lowering discriminator.
-6. Approve the four-stage 1,800-line ceiling and stage-1 early kill gate.
+6. Approve the four-stage 1,800-line ceiling and stage-1 early kill gate. **Superseded on 2026-07-30:** completed anchored stages remain recorded, but no later stage or universal theorem is scheduled.
 7. Keep Exclusive Gateway and conditional Sequence Flow next after this admission work is adopted and reviewed; do not begin that capsule here.

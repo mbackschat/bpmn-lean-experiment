@@ -434,9 +434,9 @@ Lean is the formal semantic authority for the approved profile. The Lean lane mu
 5. a separately executable `step` evaluator;
 6. a soundness theorem showing that every evaluator-produced transition is permitted by `ProgramStep`;
 7. useful capsule laws and checked non-laws with exact hypotheses;
-8. a source-to-program preservation result whose statement begins at the checked BPMN graph and does not assume the program account it is intended to justify.
+8. a capsule-local source-to-program preservation result or executable discriminator for every material admission, lowering, runtime-representation, or public-observation change, whose statement begins before the changed boundary and does not assume the account it is intended to justify.
 
-The initial preservation obligation is observational:
+The strongest reusable preservation target remains observational:
 
 ```lean
 theorem lower_preserves_supported_run
@@ -449,11 +449,11 @@ theorem lower_preserves_supported_run
       projectSource source scenario = projectProgram programTrace
 ```
 
-The implemented statement may use a state relation rather than identical source and program state types, but it must begin at the checked BPMN graph and relate the same explicit scenario and public observation. A converse or exact equivalence claim requires a separate checked theorem; it must not be inferred from soundness.
+An implemented preservation statement may use a state relation rather than identical source and program state types, but it must begin at the earliest project-owned representation affected by the capsule and relate the same explicit scenario and public observation. A converse or exact equivalence claim requires a separate checked theorem; it must not be inferred from soundness. The universal `lower_preserves_supported_run` theorem is not a standing prerequisite for all admission. It becomes mandatory when a second capsule needs the same proposition or when the targeted proof cannot isolate the material risk without reconstructing the general bridge.
 
 For each retained program emitted by TypeScript, Lean must decode both the checked graph and emitted program, recompute `lower source`, reject inequality, and only then evaluate or prove program properties. A scenario identifier or fixture name is not a substitute for this content equality.
 
-Lean implements items 1 through 7 and the exact per-artifact requirement above. It proves structural definition-identity and Sequence-Flow-origin preservation, but it does not claim `lower_preserves_supported_run`. The [bounded checked-source relation experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) produced a provisional direct source token game and fixture-coincidental lowering discriminator. Stage 1 proves the operation-prefix ordering substrate and bounded two-segment selector correspondence. Stage 2 adds executable finite graph checks and the stronger standalone program graph validator. Stage 2b adds declarative tail decomposition, executable-tail-parser soundness, graph-derived uniqueness up to parallel-branch exchange, and positive executable-reachability soundness. Stage 2c adds graph-derived whole-process unique Start/End, a nonempty chain, complete distinct node coverage, complete Sequence Flow coverage, unique Flow-source ownership, and canonical-chain comparison without parser state in the exported proposition. Stage 2d adds saturation-certified path completeness, declarative return-path exclusion, and reachability antisymmetry. Optional vertex-count fuel adequacy would additionally establish no-false-rejection completeness. Direct Timer/effect source clauses, closure-selector soundness, the four-step closure theorem, generalized state/transition/observation correspondence, and run-level induction also remain unproved. The source account remains experimental and is not an independent BPMN authority.
+Lean implements items 1 through 7 and the exact per-artifact requirement above. It proves structural definition-identity and Sequence-Flow-origin preservation, but it does not claim `lower_preserves_supported_run`. The [bounded checked-source relation experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) produced a provisional direct source token game and fixture-coincidental lowering discriminator. Stage 1 proves the operation-prefix ordering substrate and bounded two-segment selector correspondence. Stage 2 adds executable finite graph checks and the stronger standalone program graph validator. Stage 2b adds declarative tail decomposition, executable-tail-parser soundness, graph-derived uniqueness up to parallel-branch exchange, and positive executable-reachability soundness. Stage 2c adds graph-derived whole-process unique Start/End, a nonempty chain, complete distinct node coverage, complete Sequence Flow coverage, unique Flow-source ownership, and canonical-chain comparison without parser state in the exported proposition. Stage 2d adds saturation-certified path completeness, declarative return-path exclusion, and reachability antisymmetry. Stages 3a and 3b add graph-derived single- and two-token frontier localization without selector or closure soundness. These results are frozen experiments rather than a production admission programme. Optional vertex-count fuel adequacy, direct Timer/effect source clauses, closure-selector soundness, the four-step closure theorem, generalized state/transition/observation correspondence, and run-level induction remain unproved. The source account remains experimental and is not an independent BPMN authority.
 
 These obligations establish bounded interpretation and execution claims. They do not prove the correctness of an arbitrary XML parser, arbitrary BPMN documents, CIB Seven, Temporal, or the independent TypeScript implementation. Those remain separate evidence lanes.
 
@@ -483,7 +483,7 @@ BPMN’s large event surface is not a reason to add one IL operation per BPMN el
 
 The IL may grow in bounded layers such as control, interaction, subscription, scope, propagation, and effects. A source element may lower to several typed operations when that is the smallest semantics-preserving account.
 
-The project must not create a universal `event` operation with a bag of flags, duplicate the BPMN metamodel as opcodes, or erase distinctions merely because two constructs look similar in one witness. A new operation or field requires an approved capsule, a named consumer or refinement risk, a separating witness, source-origin rules, well-formedness rules, observation consequences, and Lean preservation obligations.
+The project must not create a universal `event` operation with a bag of flags, duplicate the BPMN metamodel as opcodes, or erase distinctions merely because two constructs look similar in one witness. A new operation or field requires an approved capsule, a named consumer or refinement risk, a separating witness, source-origin rules, well-formedness rules, observation consequences, and targeted Lean preservation obligations. A capsule that changes admission or replaces lowering, runtime state, or observation must also executable-check that every newly reachable internal closure remains within the configured production closure limit. Every newly reachable multiple-enabled state must be an approved independent/order-invariant set, carry an explicit semantic choice, or be rejected consistently by Lean and TypeScript.
 
 ## Supported slice
 
@@ -529,7 +529,7 @@ This contract remains valid only while:
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
-- the reviewed preservation statement remains explicit and its achieved proof status is reported exactly;
+- the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
 - the independent TypeScript evaluator passes sequential, parallel, timer, payload-free effect, CreateDocument data/mapping, and boundary-error separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
@@ -545,7 +545,7 @@ Stop use or extension of this boundary and return to design if:
 - lowering performs runtime scheduling, activation, completion, propagation, or other semantic work that the IL claims to own;
 - the IL becomes a wrapper that selects an old topology evaluator;
 - a new opcode mirrors a BPMN surface class without a reusable semantic mechanism;
-- required source distinctions cannot be reconstructed from origins and the checked graph;
+- required neutral semantic distinctions cannot be reconstructed from origins and the checked graph, or source/profile normalization is reported as independently rechecked by Lean when Lean receives only its normalized result;
 - structural invalidity is represented as an ordinary semantic outcome;
 - the Lean account begins only after an unverified semantic translation;
 - the old and new executable representations would need to coexist in production;

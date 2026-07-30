@@ -87,6 +87,8 @@ The Worker receives the newly available history, advances the Workflow until it 
 
 If the Worker dies before the Service accepts the Workflow Task completion, the new Commands are not committed and the Workflow Task can be retried. This durable boundary does not make an Activity’s external side effect transactional with Event History.
 
+The interpreter may advance the pure semantic core through several internal transitions to quiescence inside one Workflow Task. Those internal transitions do not each create a Temporal Event; Event History growth follows Workflow Task lifecycle and durable operations such as accepted Updates, timers, Activities, and Workflow completion. CPU and replay work can still grow with internal closure even when Event count does not. Production closure is bounded by the semantic core's checked `semanticProcessClosureLimit`; exceeding it is a harness failure. This qualitative boundary supplies no numeric history-cost formula and does not authorize or require Continue-As-New.
+
 ### Command matching
 
 During replay, the SDK regenerates Commands from Workflow code and compares them with Commands implied by the recorded history. Command type, order, and relevant attributes must remain compatible.

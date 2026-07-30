@@ -83,6 +83,8 @@ A pile of feature/profile/format switches is evidence of an unsound boundary. Du
 
 The preflight must identify each semantic stimulus, wait, timer, subscription, effect, cancellation, and lifecycle boundary introduced by the mechanism; map it to a durable Temporal transport or host composition; state command ordering, handler-interleaving, duplicate-delivery, idempotency, retry, closure, projection, and replay risks; and name the smallest live-history witness plus the nearest adapter counterexample. The review passes only when every required public semantic outcome has a plausible host realization. It does not count as Temporal evidence until the focused live gate exercises the mapping and replays its history.
 
+An admission, lowering, runtime-representation, or public-observation capsule must additionally state the exact source-to-result claim it can invalidate and retain the smallest theorem, typed check, or executable discriminator that detects the realistic wrong account. For every newly reachable structure, the capsule must executable-check its longest internal closure against the configured `semanticProcessClosureLimit`, including one over-limit negative witness, and must show that each newly reachable multiple-enabled state is an approved independent/order-invariant set, receives an explicit semantic choice, or is rejected consistently by Lean and TypeScript. A second capsule needing the same preservation proposition reopens the general theorem rather than duplicating an increasingly universal local proof.
+
 ## Current contract and artifact gate
 
 ```sh
@@ -129,7 +131,7 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 - bounded parallel duplication creates exactly two task waits;
 - exact completion removes only the named occurrence and both completion orders reach the same final state;
 - synchronization requires every incoming flow, consumes one token from each, and retains excess multiplicity;
-- token projection is independent of storage order, a synthetic mixed-kind state holding one wait per kind fixes `activeWaits` order as User Task then Timer then effect — the cross-kind order only, because with a single wait per kind the fixture cannot exercise within-kind order, and Lean's within-kind order follows program operation order rather than an element-ID sort — and duplicate-left/no-right is a checked non-law;
+- token projection is independent of storage order, a synthetic mixed-kind state holding one wait per kind fixes `activeWaits` order as User Task then Timer then effect — the cross-kind order only, because with a single wait per kind the fixture cannot exercise within-kind order, and Lean's within-kind order follows program operation order rather than an element-ID sort — and duplicate-left/no-right is a checked non-law. This satisfies `PAR-PROJECT-01` only while admitted programs are ID-sorted and mixed or repeated same-kind waits are unreachable; a capsule that invalidates either premise must add an element-ID sort in Lean or a checked order-coincidence theorem;
 - exact Service Task lowering produces one structured effect intent, matching completion closes the Process, every full-identity mismatch preserves state, and the accept-arbitrary-result account is a checked non-law;
 - closure-bound exhaustion or ambiguous internal choice remains a harness failure and never exposes a committed semantic command.
 
@@ -264,6 +266,8 @@ This document owns the term. Related but different concepts keep their own names
 | Seeded mutation | Comparator-side mutations (applied to a clone of a target's canonical result) establish that the comparator detects one claimed field distinction; verifier-side mutations (applied to retained raw producer observations) establish that the raw-to-canonical evidence projection detects it | Projection completeness; a comparator-side mutation establishes nothing about the evidence projection |
 
 No agreement vote resolves a source disagreement. Classify mismatches against the standard, profile, CIB configuration, observation boundary, and evidence before changing semantics.
+
+The CIB evidence owner must classify every field of `scenario.schema.json#/$defs/stateObservation` and every nested occurrence, wait, timer, effect, and variable field as `engine-observed`, `adapter-derived`, `adapter-decided`, or not claimed. The classification follows the complete schema rather than a prose field count and explicitly includes activation, multiplicity, lifecycle state, and timer deadline. A raw observation may be added only when the pinned engine exposes the fact. A verifier that reuses producer projection rules remains a raw-to-canonical consistency check and does not become another independent evidence lane.
 
 ## Capsule closure review
 
