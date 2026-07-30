@@ -207,6 +207,52 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
   }
 
   @Test
+  public void rollsBackFailedUserTaskCompletionToTheSameCommittedWait() {
+    requireTargetRelease();
+    var source =
+        processAfterUserTask(
+            "Process_UserTaskRollback",
+            "Flow_Default",
+            List.of("Flow_Failure", "Flow_Default"),
+            List.of(
+                conditional("Flow_Failure", "Task_Selected", "${missing != null}"),
+                defaultFlow("Flow_Default", "Task_Default")));
+
+    try (var session = deploy("juel-user-task-rollback", source)) {
+      var instance =
+          session
+              .engine()
+              .getRuntimeService()
+              .startProcessInstanceByKey("Process_UserTaskRollback");
+      var task =
+          session
+              .engine()
+              .getTaskService()
+              .createTaskQuery()
+              .processInstanceId(instance.getId())
+              .singleResult();
+
+      var failure =
+          assertThrows(
+              ProcessEngineException.class,
+              () -> session.engine().getTaskService().complete(task.getId()));
+      assertTrue(failure.getMessage(), failure.getMessage().contains("Unknown property"));
+      assertEquals(
+          List.of("Task_Before"),
+          activeTaskKeys(session.engine(), instance.getId()));
+
+      session
+          .engine()
+          .getRuntimeService()
+          .setVariable(instance.getId(), "missing", "present");
+      session.engine().getTaskService().complete(task.getId());
+      assertEquals(
+          List.of("Task_Selected"),
+          activeTaskKeys(session.engine(), instance.getId()));
+    }
+  }
+
+  @Test
   public void stopsOnAnEarlierResolutionFailureWithoutTryingALaterTrueFlow() {
     requireTargetRelease();
     var source =
@@ -352,8 +398,55 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
       String defaultFlowId,
       List<String> outgoingReferences,
       List<Flow> declaredFlows) {
+    return process(
+        processId,
+        defaultFlowId,
+        outgoingReferences,
+        declaredFlows,
+        false);
+  }
+
+  private static String processAfterUserTask(
+      String processId,
+      String defaultFlowId,
+      List<String> outgoingReferences,
+      List<Flow> declaredFlows) {
+    return process(
+        processId,
+        defaultFlowId,
+        outgoingReferences,
+        declaredFlows,
+        true);
+  }
+
+  private static String process(
+      String processId,
+      String defaultFlowId,
+      List<String> outgoingReferences,
+      List<Flow> declaredFlows,
+      boolean includePrecedingUserTask) {
     var gatewayDefault =
         defaultFlowId == null ? "" : " default=\"" + defaultFlowId + "\"";
+    var gatewayIncoming =
+        includePrecedingUserTask ? "Flow_ToGateway" : "Flow_Start";
+    var precedingTask =
+        includePrecedingUserTask
+            ? """
+                <bpmn:userTask id="Task_Before">
+                  <bpmn:incoming>Flow_Start</bpmn:incoming>
+                  <bpmn:outgoing>Flow_ToGateway</bpmn:outgoing>
+                </bpmn:userTask>
+              """
+            : "";
+    var incomingFlows =
+        includePrecedingUserTask
+            ? """
+                <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Task_Before"/>
+                <bpmn:sequenceFlow id="Flow_ToGateway" sourceRef="Task_Before" targetRef="Gateway"/>
+              """
+            : """
+                <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Gateway"/>
+              """;
     var outgoing = new StringBuilder();
     for (var flowId : outgoingReferences) {
       outgoing
@@ -402,18 +495,22 @@ public final class CibSevenExclusiveGatewayJuelProbeTest {
             <bpmn:startEvent id="Start">
               <bpmn:outgoing>Flow_Start</bpmn:outgoing>
             </bpmn:startEvent>
+        %s
             <bpmn:exclusiveGateway id="Gateway"%s>
-              <bpmn:incoming>Flow_Start</bpmn:incoming>
+              <bpmn:incoming>%s</bpmn:incoming>
         %s    </bpmn:exclusiveGateway>
-        %s    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Gateway"/>
+        %s%s
         %s  </bpmn:process>
         </bpmn:definitions>
         """
         .formatted(
             processId,
+            precedingTask,
             gatewayDefault,
+            gatewayIncoming,
             outgoing,
             tasks,
+            incomingFlows,
             flows);
   }
 
