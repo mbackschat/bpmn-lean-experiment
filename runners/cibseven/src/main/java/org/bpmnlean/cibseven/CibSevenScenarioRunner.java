@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
@@ -197,6 +198,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var totalStartedAt = System.nanoTime();
     var timings = new MutableTimings();
     var trace = new ArrayList<CanonicalObservation>();
+    var stateQueries = new ArrayList<StateQuerySnapshot>();
     var taskQueries = new ArrayList<TaskQuerySnapshot>();
     var timerJobs = new ArrayList<TimerJobSnapshot>();
     var effectJobs = new ArrayList<EffectJobSnapshot>();
@@ -267,6 +269,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     stableInstanceId,
                     start.commandId());
             trace.add(observed.state());
+            stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
             timerJobs.add(observed.timerJobs());
             effectJobs.add(observed.effectJobs());
@@ -288,6 +291,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     stableInstanceId,
                     complete.commandId());
             trace.add(observed.state());
+            stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
             timerJobs.add(observed.timerJobs());
             effectJobs.add(observed.effectJobs());
@@ -313,6 +317,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     stableInstanceId,
                     fire.commandId());
             trace.add(observed.state());
+            stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
             timerJobs.add(observed.timerJobs());
             effectJobs.add(observed.effectJobs());
@@ -360,6 +365,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     stableInstanceId,
                     complete.commandId());
             trace.add(observed.state());
+            stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
             timerJobs.add(observed.timerJobs());
             effectJobs.add(observed.effectJobs());
@@ -399,6 +405,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             startupNanos,
             timings.freeze(),
             Objects.requireNonNull(pvmDefinition, "pvmDefinition"),
+            stateQueries,
             taskQueries,
             timerJobs,
             effectJobs,

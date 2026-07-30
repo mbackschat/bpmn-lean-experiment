@@ -33,6 +33,28 @@ import type {
 } from "./contract-artifact-test-fixtures.ts";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+type MutableRawStateSnapshot = {
+  afterCommandId: string;
+  processInstanceCount: number;
+  engineClockTimeMs: number;
+  variables: Array<{
+    name: string;
+    value: string | null;
+  }>;
+};
+
+function rawStateSnapshots(
+  artifactSet: ReturnType<typeof cloneArtifactSet>,
+): Array<MutableRawStateSnapshot> {
+  const observations = artifactSet.evidence.producerObservations as unknown as {
+    stateQueries?: Array<MutableRawStateSnapshot>;
+  };
+  return required(
+    observations.stateQueries,
+    "raw state-query snapshots",
+  );
+}
+
 test("rejects a meaningful invalid task-projection mutation", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
   const interaction = required(
@@ -53,6 +75,106 @@ test("rejects a meaningful invalid task-projection mutation", async () => {
   assert.throws(
     () => verifyArtifactSet(mutated),
     /evidence schema validation failed/,
+  );
+});
+
+test("binds status, logical time, and variables to raw state queries", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+
+  const running = cloneArtifactSet(
+    required(
+      artifactSets.find(
+        ({ scenario }) =>
+          scenario.id === "user-task-discovery-completion",
+      ),
+      "running User Task artifact set",
+    ),
+  );
+  requiredAt(
+    rawStateSnapshots(running),
+    0,
+    "raw state-query snapshots",
+  ).processInstanceCount = 0;
+  assert.throws(
+    () => verifyArtifactSet(running),
+    /producer observation projection does not match canonical status/,
+  );
+  requiredAt(
+    rawStateSnapshots(running),
+    0,
+    "raw state-query snapshots",
+  ).processInstanceCount = 2;
+  assert.throws(
+    () => verifyArtifactSet(running),
+    /must identify zero or one Process instance/,
+  );
+
+  const timer = cloneArtifactSet(
+    required(
+      artifactSets.find(
+        ({ scenario }) =>
+          scenario.id === "intermediate-catch-timer-pt1s",
+      ),
+      "timer artifact set",
+    ),
+  );
+  requiredAt(
+    rawStateSnapshots(timer),
+    1,
+    "raw state-query snapshots",
+  ).engineClockTimeMs = 999;
+  assert.throws(
+    () => verifyArtifactSet(timer),
+    /producer observation projection does not match canonical logicalTimeMs/,
+  );
+
+  const mapping = cloneArtifactSet(
+    required(
+      artifactSets.find(
+        ({ scenario }) => scenario.id === "a12-create-document-data",
+      ),
+      "CreateDocument artifact set",
+    ),
+  );
+  const rawVariable = requiredAt(
+    requiredAt(
+      rawStateSnapshots(mapping),
+      0,
+      "raw state-query snapshots",
+    ).variables,
+    0,
+    "raw Process variables",
+  );
+  rawVariable.value = "Document:wrong";
+  assert.throws(
+    () => verifyArtifactSet(mapping),
+    /producer observation projection does not match canonical variables/,
+  );
+});
+
+test("binds canonical semantic instance identity to the start stimulus", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const mutated = cloneArtifactSet(
+    required(
+      artifactSets.find(
+        ({ scenario }) =>
+          scenario.id === "user-task-discovery-completion",
+      ),
+      "User Task artifact set",
+    ),
+  );
+  const state = requireMutableState(mutated.evidence.result.trace[2]);
+  state.instanceId = "different-semantic-instance";
+  for (const task of state.openUserTasks) {
+    task.id.processInstanceId = state.instanceId;
+  }
+  for (const interaction of state.enabledInteractions) {
+    interaction.taskId.processInstanceId = state.instanceId;
+  }
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /producer observation projection does not match canonical instanceId/,
   );
 });
 

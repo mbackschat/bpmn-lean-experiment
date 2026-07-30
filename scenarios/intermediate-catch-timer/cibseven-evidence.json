@@ -17,6 +17,20 @@
     "database": "H2 2.3.232"
   },
   "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      }
+    ],
     "taskQueries": [
       {
         "afterCommandId": "start-process",

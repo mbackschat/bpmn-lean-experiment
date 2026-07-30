@@ -17,6 +17,30 @@
     "database": "H2 2.3.232"
   },
   "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-boundary-user-task",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": null
+          }
+        ]
+      }
+    ],
     "taskQueries": [
       {
         "afterCommandId": "start-boundary-error",

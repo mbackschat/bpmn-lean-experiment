@@ -151,9 +151,65 @@ The Java 21 runner deploys exact BPMN, starts a Process, queries active tasks an
 
 Compatible tests reuse one class-owned embedded engine instead of rebuilding the same H2/CIB configuration per test. The shared boundary-error phase-zero fixture still deploys one definition per test and requires zero deployments, runtime Processes, tasks, jobs, incidents, historic Processes, historic Activities, and historic variables before and after every session. Probes that require a distinct engine configuration remain isolated.
 
-PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw task-query and timer-job snapshots are retained as producer observations, while the evidence verifier reconstructs canonical task and timer projections from them — reusing the adapter's element-ID ordering and constant activation/state/argument rules rather than deriving them independently — and includes mutations that drop one initial parallel task, drop the live B sibling after stale A, or change the timer deadline. The CIB wait, scheduler eligibility, due transition, and completion are engine-observed; timer occurrence identity and logical deadline mapping are adapter-derived. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated deployment/runtime/history cleanup.
+PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw state-query, task-query, timer-job, and effect-job snapshots are retained as producer observations. The evidence verifier reconstructs status, waits, open interactions, Process variables, and logical time from them, while binding semantic instance identity to the answer-free start stimulus. Its reconstruction deliberately reuses the adapter's element-ID ordering, profile translation, and constant activation/state/argument rules rather than deriving them independently. Mutations cover Process status, logical time, Process variables, initial parallel tasks, live siblings after stale completion, and timer deadlines. The CIB wait, scheduler eligibility, due transition, and completion are engine-observed; timer occurrence identity and logical deadline mapping are adapter-derived. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated deployment/runtime/history cleanup.
 
 The owner-approved local feedback target for the complete two-release CIB gate is 10–15 seconds with compiled test classes. This is a diagnostic target, not a CI assertion: cold compilation and host contention remain visible rather than being hidden by a relaxed bound. Under competing background CPU work, record POSIX `time -p` `real`, `user`, and `sys`; `real` captures the experienced delay, while `user` and `sys` measure only the gate's process tree and therefore separate repository work from unrelated background CPU. Never compare a new run until an interrupted predecessor's process group is confirmed terminated.
+
+## Canonical CIB observation fidelity
+
+This table classifies the complete current field denominator of `scenario.schema.json#/$defs/stateObservation`: ten top-level fields plus every nested occurrence, wait, timer, effect, interaction, and variable field. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components.
+
+| Canonical field path | Fidelity | Exact basis |
+|---|---|---|
+| `kind` | `not-claimed` | Canonical wire discriminator |
+| `instanceId` | `not-claimed` | Scenario-supplied semantic identity, never a generated CIB Process-instance ID |
+| `status` | `adapter-derived` | `running` or `completed` from retained public Process-instance query count |
+| `activeWaits` | `adapter-derived` | Merge, semantic-kind rank, and Unicode element-ID sort over retained task/timer/effect facts |
+| `activeWaits[].elementId` | `engine-observed` | Task definition key or job-definition Activity ID |
+| `activeWaits[].kind` | `adapter-derived` | Classification by the engine collection and admitted host relation |
+| `activeWaits[].multiplicity` | `adapter-derived` | Count of retained live facts after unsupported repeated timer/effect identities are refused |
+| `openUserTasks` | `adapter-derived` | Canonical projection and sort over retained public task-query rows |
+| `openUserTasks[].id` | `adapter-derived` | Composite semantic occurrence identity |
+| `openUserTasks[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `openUserTasks[].id.elementId` | `engine-observed` | Public task definition key |
+| `openUserTasks[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
+| `openUserTasks[].name` | `engine-observed` | Public task name, including `null` |
+| `openUserTasks[].state` | `adapter-decided` | Canonical `active` stamp for rows returned by the live-task query |
+| `openTimers` | `adapter-derived` | Canonical projection and sort over retained timer-job rows |
+| `openTimers[].id` | `adapter-derived` | Composite semantic timer occurrence identity |
+| `openTimers[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `openTimers[].id.elementId` | `engine-observed` | Public job-definition Activity ID |
+| `openTimers[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
+| `openTimers[].deadlineMs` | `adapter-derived` | Retained job due date relative to the controlled engine epoch |
+| `openEffects` | `adapter-decided` | A CIB async-before job is only a host-realization fact, not an engine semantic effect intent |
+| `openEffects[].id` | `adapter-decided` | Profile-owned projection to a semantic effect occurrence |
+| `openEffects[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `openEffects[].id.elementId` | `engine-observed` | Public job-definition Activity ID |
+| `openEffects[].id.activation` | `adapter-decided` | Singleton host-job count projected as ordinal `1` |
+| `openEffects[].descriptor` | `adapter-decided` | Profile registration maps retained raw source binding to neutral identity |
+| `openEffects[].descriptor.protocol` | `adapter-decided` | Profile-registered opaque protocol identity |
+| `openEffects[].descriptor.operation` | `adapter-decided` | Profile-registered opaque operation identity |
+| `openEffects[].arguments` | `adapter-decided` | The only ordinary CIB effect profile stamps the approved payload-free list |
+| `openEffects[].arguments[].name` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
+| `openEffects[].arguments[].value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
+| `openEffects[].arguments[].value.kind` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
+| `openEffects[].arguments[].value.value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
+| `variables` | `adapter-derived` | Canonical type projection and Unicode name sort over retained bounded Process-variable history rows |
+| `variables[].name` | `engine-observed` | Historic Process-variable name |
+| `variables[].value` | `adapter-derived` | Raw nullable string projected into the canonical discriminated value |
+| `variables[].value.kind` | `adapter-derived` | `string` or `null` selected from the raw host value |
+| `variables[].value.value` | `engine-observed` | Exact host string when the value is non-null |
+| `enabledInteractions` | `adapter-derived` | One completion interaction per retained live User Task |
+| `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects `completeUserTaskInstance` |
+| `enabledInteractions[].taskId` | `adapter-derived` | Reuses the projected User Task occurrence |
+| `enabledInteractions[].taskId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `enabledInteractions[].taskId.elementId` | `engine-observed` | Public task definition key |
+| `enabledInteractions[].taskId.activation` | `adapter-decided` | Same unsupported singleton ordinal as the projected User Task |
+| `logicalTimeMs` | `adapter-derived` | Retained controlled engine-clock reading relative to the fixed logical epoch |
+
+Retained `stateQueries` now bind canonical status, logical time, and Process variables to raw public runtime/history queries and the controlled engine clock. Task, timer, and effect snapshots continue to bind the five wait/interaction collections. `kind` remains schema-guarded, while every semantic instance component is checked against the answer-free start stimulus rather than a generated host ID. The verifier deliberately shares the Java projector's projection rules, so it establishes raw-to-canonical consistency and is not a third independent semantic producer.
+
+The neutral layer repair did not increase source-binding independence. Lean independently recomputes and checks neutral checked-graph-to-program lowering. The raw Camunda binding to neutral protocol/operation translation is performed by the shared source/profile projection and rechecked by the CIB raw-binding mutation; Lean does not derive that translation from source bytes.
 
 ## Current Temporal gate
 

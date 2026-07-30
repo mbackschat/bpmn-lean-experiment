@@ -5,6 +5,8 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
 
 import java.util.Date;
 import java.util.List;
+import org.bpmnlean.cibseven.CibStateQueryEvidence.ProcessVariableSnapshot;
+import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
@@ -60,12 +62,16 @@ final class CibSevenScenarioStateProjector {
       throw new IllegalStateException(
           "Bounded CIB projection does not support child Process instances");
     }
-    var isRunning =
+    var processInstanceCount =
         runtime
-                .createProcessInstanceQuery()
-                .processInstanceId(engineInstanceId)
-                .count()
-            == 1;
+            .createProcessInstanceQuery()
+            .processInstanceId(engineInstanceId)
+            .count();
+    if (processInstanceCount > 1) {
+      throw new IllegalStateException(
+          "Engine Process-instance identity is not unique");
+    }
+    var isRunning = processInstanceCount == 1;
     var tasks =
         isRunning
             ? processEngine
@@ -115,8 +121,16 @@ final class CibSevenScenarioStateProjector {
             .toList();
     var allWaits =
         activeWaitProjector.project(activeWaits, openTimers, openEffects);
-    var logicalTimeMs = ClockUtil.getCurrentTime().getTime() - logicalEpoch.getTime();
-    var variables = observeProcessVariables(engineInstanceId);
+    var engineClockTimeMs = ClockUtil.getCurrentTime().getTime();
+    var logicalTimeMs = engineClockTimeMs - logicalEpoch.getTime();
+    var rawVariables = observeProcessVariables(engineInstanceId);
+    var variables =
+        rawVariables.stream()
+            .map(this::projectVariable)
+            .sorted(
+                (left, right) ->
+                    WireStrings.compare(left.name(), right.name()))
+            .toList();
     return new ObservedState(
         new StateObservation(
             stableInstanceId,
@@ -128,6 +142,11 @@ final class CibSevenScenarioStateProjector {
             variables,
             enabledInteractions,
             logicalTimeMs),
+        new StateQuerySnapshot(
+            afterCommandId,
+            processInstanceCount,
+            engineClockTimeMs,
+            rawVariables),
         taskQuery,
         timerJobSnapshot,
         new EffectJobSnapshot(
@@ -137,7 +156,8 @@ final class CibSevenScenarioStateProjector {
                 .toList()));
   }
 
-  private List<VariableBinding> observeProcessVariables(String engineInstanceId) {
+  private List<ProcessVariableSnapshot> observeProcessVariables(
+      String engineInstanceId) {
     return List.of("myDocumentReference", "relationshipLinkId").stream()
         .flatMap(
             name ->
@@ -148,22 +168,33 @@ final class CibSevenScenarioStateProjector {
                     .variableName(name)
                     .list()
                     .stream()
-                    .map(variable -> projectVariable(name, variable.getValue())))
-        .sorted(
-            (left, right) ->
-                WireStrings.compare(left.name(), right.name()))
+                    .map(
+                        variable ->
+                            observeProcessVariable(
+                                variable.getName(),
+                                variable.getValue())))
         .toList();
   }
 
-  private VariableBinding projectVariable(String name, Object value) {
+  private ProcessVariableSnapshot observeProcessVariable(
+      String name,
+      Object value) {
     if (value == null) {
-      return new VariableBinding(name, new NullValue());
+      return new ProcessVariableSnapshot(name, null);
     }
     if (value instanceof String stringValue) {
-      return new VariableBinding(name, new StringValue(stringValue));
+      return new ProcessVariableSnapshot(name, stringValue);
     }
     throw new IllegalStateException(
         "Canonical Process variable must be string or null: " + name);
+  }
+
+  private VariableBinding projectVariable(ProcessVariableSnapshot variable) {
+    return new VariableBinding(
+        variable.name(),
+        variable.value() == null
+            ? new NullValue()
+            : new StringValue(variable.value()));
   }
 
   CleanupProjection observeCleanup() {
@@ -224,6 +255,7 @@ final class CibSevenScenarioStateProjector {
 
   record ObservedState(
       StateObservation state,
+      StateQuerySnapshot stateQuery,
       TaskQuerySnapshot taskQuery,
       TimerJobSnapshot timerJobs,
       EffectJobSnapshot effectJobs) {}

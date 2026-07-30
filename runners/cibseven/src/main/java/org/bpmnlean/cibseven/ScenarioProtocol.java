@@ -496,6 +496,7 @@ public final class ScenarioProtocol {
       long startupNanos,
       PhaseTimings phases,
       PvmDefinitionProjection pvmDefinition,
+      List<CibStateQueryEvidence.StateQuerySnapshot> stateQueries,
       List<TaskQuerySnapshot> taskQueries,
       List<TimerJobSnapshot> timerJobs,
       List<EffectJobSnapshot> effectJobs,
@@ -510,6 +511,7 @@ public final class ScenarioProtocol {
       }
       Objects.requireNonNull(phases, "phases");
       Objects.requireNonNull(pvmDefinition, "pvmDefinition");
+      stateQueries = List.copyOf(stateQueries);
       taskQueries = List.copyOf(taskQueries);
       timerJobs = List.copyOf(timerJobs);
       effectJobs = List.copyOf(effectJobs);

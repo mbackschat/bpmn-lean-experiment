@@ -8,9 +8,11 @@ import {
   compareCanonicalStrings,
   verifyCanonicalDefinitionOrder,
   verifyDefinitionReferences,
-  verifyProducerProjection,
 } from "./contract-artifact-consistency.ts";
 export { compareCanonicalStrings } from "./contract-artifact-consistency.ts";
+import {
+  verifyProducerProjection,
+} from "./contract-cib-evidence-projection.ts";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type {
   AnySchema,
@@ -138,6 +140,18 @@ export type TaskQueryTask = Readonly<{
   name: string | null;
 }>;
 
+export type ProcessVariableSnapshot = Readonly<{
+  name: string;
+  value: string | null;
+}>;
+
+export type StateQuerySnapshot = Readonly<{
+  afterCommandId: string;
+  processInstanceCount: number;
+  engineClockTimeMs: number;
+  variables: ReadonlyArray<ProcessVariableSnapshot>;
+}>;
+
 type TaskQuerySnapshot = Readonly<{
   afterCommandId: string;
   tasks: ReadonlyArray<TaskQueryTask>;
@@ -195,6 +209,7 @@ export type CibSevenEvidence = Readonly<{
     engineRevision: string;
   }>;
   producerObservations: Readonly<{
+    stateQueries: ReadonlyArray<StateQuerySnapshot>;
     taskQueries: ReadonlyArray<TaskQuerySnapshot>;
     timerJobs: ReadonlyArray<TimerJobSnapshot>;
     effectJobs?: ReadonlyArray<EffectJobSnapshot>;
@@ -428,7 +443,16 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
   }
-  verifyProducerProjection(evidence);
+  const startStimuli = scenario.stimuli.filter(
+    (stimulus) => stimulus.kind === "startProcess",
+  );
+  const start = startStimuli[0];
+  if (startStimuli.length !== 1 || start === undefined) {
+    throw new Error(
+      "scenario must contain exactly one start Process stimulus",
+    );
+  }
+  verifyProducerProjection(evidence, start.instanceId);
   return artifactSet;
 }
 

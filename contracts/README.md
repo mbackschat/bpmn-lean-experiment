@@ -17,7 +17,7 @@ This separation avoids routing every consumer through document-version switches 
 | Semantic profile | Stable `kind`; versioned semantic `id`; pinned CIB release/configuration, selected feature surface, observation boundary, CIB–BPMN relationship references, and optional exact-source-binding-to-neutral-effect registrations |
 | Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, timer firing, and effect-result stimuli, requested observations, and provenance |
 | Canonical result | Outcome plus canonical observation trace including semantic task, timer, and effect occurrences and canonical Process variables; no target-specific host data |
-| CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; raw task/timer/effect/mapping observations plus canonical result |
+| CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; raw runtime/history state-query, task, timer, effect, and mapping observations plus canonical result |
 | Checked BPMN graph | Current `checkedProcess` contract; source-facing admitted graph with exact source/profile identity, profile-registered neutral effect descriptors, and no raw Camunda/A12 binding or runtime semantics |
 | Semantic Process program | Current `semanticProcess` contract; compiler/source/profile identity, typed control places and operations including neutral effect descriptors, and no mutable runtime state |
 | Pipeline report | Stable `kind`; ephemeral verification report, provenance, comparisons, replay count, isolation, and timings |

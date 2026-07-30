@@ -45,6 +45,7 @@ type CibRunnerResult = Readonly<{
     engineVersion: string;
     databaseVersion: string;
     cleanup: Readonly<Record<string, number>>;
+    stateQueries: ReadonlyArray<unknown>;
     taskQueries: ReadonlyArray<unknown>;
     timerJobs: ReadonlyArray<unknown>;
     effectJobs: ReadonlyArray<Readonly<{
@@ -98,6 +99,11 @@ function requireCleanDiagnostics(
   ) {
     throw new Error(
       `CIB scenario ${result.scenarioId} did not clean up`,
+    );
+  }
+  if (!Array.isArray(result.diagnostics.stateQueries)) {
+    throw new Error(
+      `CIB scenario ${result.scenarioId} omitted raw state-query observations`,
     );
   }
   if (!Array.isArray(result.diagnostics.taskQueries)) {
@@ -263,6 +269,7 @@ async function replaceEvidence() {
               database: profile.value.environment.database,
             },
             producerObservations: {
+              stateQueries: result.diagnostics.stateQueries,
               taskQueries: result.diagnostics.taskQueries,
               timerJobs: result.diagnostics.timerJobs,
               ...(result.diagnostics.effectJobs.some(
