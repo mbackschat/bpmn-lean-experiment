@@ -320,6 +320,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 #### Implemented
 
 - One semantic-lifetime Workflow receiving the start stimulus and admitted Semantic Process program
+- external `ExternalTemporalRuntime` Worker/client lifecycle over a caller-supplied address, Namespace, identity, and Task Queue, with no embedded-server or port-binding responsibility and a live sequential Process witness
+- explicit Process-start Task Queue shared with the selected Worker rather than a hidden production constant
 - typed `started | rejected` production start result after separate semantic and Temporal host-capability checks and before Workflow creation
 - conservative rejection of token-split graphs containing Timer or effect waits as `concurrentHostDrivenWaits`
 - passive admission of direct Message Signal ingress without treating subscriptions as host-driven waits
@@ -362,7 +364,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - JUEL evaluation Activity, Java evaluator Worker, evaluation request/result contract, or cross-SDK evaluator evidence
 - retained result beyond Temporal retention
 - production canonical-observation API
-- external-server Worker/CLI product entry point and documented runnable deployment path
+- command-line product entry point and documented fresh-checkout runnable deployment path
 - dummy User Task actor, realistic host delay around the durable Process wait, selected form-input projection, and completion-data patch
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow

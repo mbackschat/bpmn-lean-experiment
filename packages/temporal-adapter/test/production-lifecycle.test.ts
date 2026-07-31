@@ -97,6 +97,7 @@ test("closed Workflow retains accepted command result without accepting a new co
         environment.client.workflow,
         scenario.stimuli[0],
         compilation.semanticProcess,
+        { taskQueue: bpmnSemanticTaskQueue },
       ),
       operationDeadlineMs,
       "lifecycle Workflow start",

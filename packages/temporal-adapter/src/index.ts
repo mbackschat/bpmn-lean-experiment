@@ -5,6 +5,7 @@ export * from "./deterministic-sha256.js";
 export * from "./effect-probe.js";
 export * from "./ephemeral-server.js";
 export * from "./effect-transport.js";
+export * from "./external-temporal-runtime.js";
 export * from "./harness-evidence.js";
 export * from "./host-admission.js";
 export * from "./message-delivery-ledger.js";

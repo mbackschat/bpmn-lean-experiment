@@ -7,6 +7,7 @@
 import type {
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  DeepReadonly,
   DeliverMessageStimulus,
   SemanticProcessProgram,
   StartProcessStimulus,
@@ -32,7 +33,6 @@ import {
   bpmnMessageDeliveryResultQueryName,
   MessageDeliveryResolutionKind,
   bpmnProcessWorkflowType,
-  bpmnSemanticTaskQueue,
   ProcessCommandResultKind,
 } from "./contracts.js";
 import type {
@@ -109,6 +109,11 @@ export type BpmnProcessStartResult =
       failure: BpmnProcessAdmissionFailure;
     }>;
 
+export type BpmnProcessStartOptions = DeepReadonly<{
+  /** Task Queue polled by the Worker that hosts this Process. */
+  taskQueue: string;
+}>;
+
 export function assessBpmnProcessAdmission(
   start: StartProcessStimulus,
   semanticProcess: SemanticProcessProgram,
@@ -140,7 +145,11 @@ export async function startBpmnProcess(
   client: WorkflowClient,
   start: StartProcessStimulus,
   semanticProcess: SemanticProcessProgram,
+  options: BpmnProcessStartOptions,
 ): Promise<BpmnProcessStartResult> {
+  if (options.taskQueue.length === 0) {
+    throw new TypeError("Process Workflow Task Queue must be nonempty");
+  }
   const admission = assessBpmnProcessAdmission(start, semanticProcess);
   if (admission.kind === BpmnProcessAdmissionResultKind.Rejected) {
     return {
@@ -152,7 +161,7 @@ export async function startBpmnProcess(
     client.start<BpmnProcessWorkflow>(
       bpmnProcessWorkflowType,
       {
-        taskQueue: bpmnSemanticTaskQueue,
+        taskQueue: options.taskQueue,
         workflowId: processWorkflowId(start.instanceId),
         workflowIdReusePolicy: "REJECT_DUPLICATE",
         args: [start, semanticProcess],

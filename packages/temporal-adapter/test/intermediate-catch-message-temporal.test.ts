@@ -393,6 +393,7 @@ async function startWorkflow(
     environment.client.workflow,
     stimulus,
     program,
+    { taskQueue: bpmnSemanticTaskQueue },
   );
   switch (result.kind) {
     case BpmnProcessStartResultKind.Started:
