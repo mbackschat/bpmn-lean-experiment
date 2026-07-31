@@ -247,7 +247,7 @@ The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Intermed
 
 ## Ordered work
 
-1. **Owner checkpoint — embedded Sub-Process Error propagation:** review the [rebased proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) and approve or reject its direct-parent exact-code product boundary, structurally present but unreachable normal route, atomic throw/catch/cancel closure, unchanged runtime/public state shapes, and recommended optional CIB Seven `2.2.0` public-agreement lane. Do not begin semantic implementation before that decision.
+1. **Next — Error-propagation CIB phase zero:** execute the exact project-authored fixture against CIB Seven `2.2.0` in both sequential child-command orders using the unchanged public projection. Require only Recover while the Process remains running after Error and completion only after Recover. If the probe agrees, register the confirmed relationship before authoring profile/scenario artifacts; if it disagrees, stop for classification and owner direction before semantic implementation.
 
 Completed commit-bounded capsule measurements live in the [capsule cost ledger](CAPSULE-COST-LEDGER.md); implemented and absent claims live in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). Git and the owning specifications retain completed implementation history.
 
@@ -291,9 +291,9 @@ The ordinary embedded Sub-Process completion capsule is closed at a59f8a3 under 
 
 The reusable artifact roundtrip now discovers profiles, scenarios, and retained evidence; requires exact registry and pipeline coverage; checks CIB evidence routing and normative-only separation; and requires one seeded semantic mutation per pipeline case. Its owning rules are in [TESTING-SPEC.md](TESTING-SPEC.md).
 
-The [embedded Sub-Process Error-propagation proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) is rebased on the implemented definition-scope, runtime-occurrence, ownership, normal-completion, passive-hosting, and artifact-roundtrip foundations. It adds only checked Error/boundary definition facts, `throwError`, direct-parent handler resolution, and regional cancellation; the current runtime-state, public observation, stimulus, command-result, and outcome shapes remain unchanged.
+The [embedded Sub-Process Error-propagation proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) is owner-approved with implementation baseline `be7845d`. It reuses the implemented definition-scope, runtime-occurrence, ownership, normal-completion, passive-hosting, and artifact-roundtrip foundations; adds checked Error/boundary definition facts, node-kind-driven checked-graph progress, `throwError`, direct-parent handler validation, and regional cancellation; preserves monotonic activation/End counters; and leaves the public observation, stimulus, command-result, and outcome shapes unchanged.
 
-Resume at the single owner checkpoint above. The recommendation is to approve the exact vendor-neutral boundary and include its bounded CIB Seven `2.2.0` phase-zero/public-agreement lane; if the probe disagrees, implementation must stop for relationship classification rather than importing CIB behavior into BPMN meaning. Do not implement Error propagation before that approval.
+Resume at the phase-zero item above. The owner selected the CIB Seven `2.2.0` lane. Its unchanged public projection establishes recovery-route selection, not absence of an additional hidden normal-path microstep. The strongest Temporal witness must replace the Worker immediately after the committed throw/catch/cancel Update and recover both its accepted result and the post-cancellation wait set before further commands.
 
 The compositional-admission experiment remains accepted and frozen; do not begin another stage without a documented reopen trigger and owner approval. The runnable MVP remains implemented and owns no Temporal server or port lifecycle.
 

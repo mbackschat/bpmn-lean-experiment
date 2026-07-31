@@ -75,7 +75,7 @@ Implementing the error-only proposal first would install scope entry with delibe
 
 ## Ordered consequences
 
-The implemented [ordinary embedded Sub-Process specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) closed first. The [Error-propagation proposal](../capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) is now rebased on that definition/runtime scope foundation and awaits owner approval; it recommends a bounded CIB Seven `2.2.0` public-lifecycle probe/agreement lane without making CIB the source of BPMN meaning.
+The implemented [ordinary embedded Sub-Process specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) closed first. The [Error-propagation proposal](../capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) is now owner-approved on that definition/runtime scope foundation with a selected bounded CIB Seven `2.2.0` public-lifecycle phase-zero/agreement lane that cannot make CIB the source of BPMN meaning. Implementation has not started.
 
 The next breadth ranking after ordinary completion should be repeated against both the remaining construct inventory and the mechanisms actually established. Raw prevalence does not automatically make Boundary Events next: the chosen item must still be the smallest reusable proposition whose admission, semantics, host mapping, and evidence can close without importing adjacent families accidentally.
 
