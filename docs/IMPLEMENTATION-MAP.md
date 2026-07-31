@@ -289,6 +289,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - raw Process-instance count, engine-clock, Process-variable, timer-job due date/executability, effect-job binding/retry, effect-execution, and mapping-execution observations
 - engine-observed pre-due timer eligibility
 - bounded engine-level stale-task rejection probe
+- pinned `2.2.0` User Task completion-data phase-zero probe over public task/runtime/history services, covering Process-variable read, create/overwrite/preserve merge, present null, continuation/final visibility, no-data preservation, and unknown/stale no-write controls under selected `CIB-EXT-0005`
 - schema-valid duplicate-same-flow Parallel Gateway probe for candidate `CIB-DEV-0001`
 - warning-free exact Service Task bindings, prefix-independent expanded QNames, bean resolution, immediately executable async-before job with no due date, public job-definition/deployed-model projection, independent raw protocol/handler controls, profile-registered raw-binding-to-neutral-operation projection, public retry decrement `3 → 2`, two invocations/one test-local mutation, clean re-execution, and no administrative retry mutation
 - CreateDocument delegate input/local output plus final Process-variable history under packaged `2.0.0`

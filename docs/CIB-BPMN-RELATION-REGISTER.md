@@ -26,7 +26,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Permitted operational details | 4 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 4 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Selected CIB extensions | 5 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
 | Configuration-specific realizations | 5 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -224,6 +224,18 @@ CIB Seven `2.0.0` executes the attached Service Task's Camunda output parameters
 
 **Boundary:** Delegate-side Process-scope writes, arbitrary mappings, mapping expressions beyond the one simple local reference, other value kinds, listeners, nested scopes, general fault propagation, and a BPMN-conformant profile remain excluded. A BPMN-only profile may drop this extension without changing `BERROR-INTERRUPT-01`.
 
+### CIB-EXT-0005 — public User Task completion installs submitted Process variables
+
+**Status:** Selected bounded extension
+
+CIB Seven `2.2.0` exposes current Process variables through `TaskService.getVariables(taskId)` and accepts a variable map through `TaskService.complete(taskId, variables)`. In the project-owned two-User-Task probe, completion creates an absent string binding, overwrites an existing string binding, preserves an unrelated binding, and creates a present null-valued binding. The following User Task observes the complete merged Process map in the same public command outcome, and audit history retains the same map after final Process completion. The no-data completion overload preserves the existing Process variables.
+
+This is a CIB public-service extension over the BPMN User Task lifecycle, not general BPMN data-association or form meaning. The selected project profile maps one canonical string/null `submittedValues` patch to the same atomic merge-before-continuation behavior. Unknown and already completed generated task IDs throw `ProcessEngineException`; the probe observes the live Process variables and active task unchanged after each refusal. The project still maps its semantic occurrence identity separately under `CIB-OP-0001`.
+
+**Evidence:** The Java-21 [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskCompletionDataPhaseZeroProbeTest.java) uses the pinned CIB BPMN Model API to build the exact two-task control, records public task-service maps, runtime variables, final historic variables, active task keys, and Process liveness, and runs under `CIB-CFG-0001`. The [User Task completion-data proposal](capsules/USER-TASK-COMPLETION-DATA-PROPOSAL.md) owns the selected project rules and refinement boundary.
+
+**Boundary:** Only Process-scope string and explicit null values, one exact active task, create/overwrite/preserve merge, no-data preservation, continuation visibility, final-history visibility, and unknown/stale refusal are selected. Task-local and transient variables, deletion, nested or serialized values, BPMN input/output specifications and Data Associations, forms, field validation, variable authorization, people assignment, multiple active dummy tasks, and general Task Service compatibility remain excluded.
+
 ### Research queue
 
 | Hint | Status | Required investigation |
@@ -346,6 +358,7 @@ The admitted source has exactly two non-default conditions and one conditionless
 | Literal `PT1S` normal-flow Intermediate Catch Timer | `CIB-AGR-0004` under `CIB-CFG-0001` | Controlled-clock evidence observes wait creation, ineligibility before due time, eligibility at the due date, due transition, and completion; logical deadline projection remains adapter-derived |
 | Exact delegate-expression bean plus async-before Service Task execution | `CIB-EXT-0001` under `CIB-CFG-0002` | The exact expanded-QName pair, bean resolution, immediately executable continuation job, plain completion, packaged retry decrement, and test-local one-mutation re-execution are executable; the semantic effect-in-flight projection remains adapter-decided |
 | Divergent Exclusive Gateway condition order, first-true short circuit, default routing, and failed-command rollback | `CIB-AGR-0006`, `CIB-INT-0001`, `CIB-OP-0004`, and `CIB-CFG-0005` | Public CIB deployment, task, selected-branch, history, and rollback observations distinguish the selected bounded account; the shared JUEL implementation remains one correlated truth lane |
+| User Task completion with a public variable map | `CIB-EXT-0005` under `CIB-CFG-0001` | Task-service and history observations establish create/overwrite/preserve, present null, merge-before-continuation, no-data preservation, and no write on unknown or stale generated IDs; BPMN does not define this host completion API or universal form-to-Process-variable mapping |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
 | External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |
 

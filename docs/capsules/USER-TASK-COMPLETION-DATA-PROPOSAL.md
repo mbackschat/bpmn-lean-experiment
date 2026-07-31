@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-07-31; unimplemented; phase-zero CIB Seven `2.2.0` evidence is required before semantic implementation.**
+**Owner-approved on 2026-07-31; phase-zero CIB Seven `2.2.0` evidence and relationship classification complete; semantic implementation pending.**
 
 ## Question
 
@@ -12,7 +12,7 @@ For the existing exact User Task occurrence, how should an executable CIB Seven 
 
 The BPMN User Task lifecycle and exact occurrence admission remain owned by the [implemented User Task interaction specification](USER-TASK-INTERACTION-SPEC.md). BPMN 2.0.2 does not define `TaskService.complete(taskId, variables)` or a universal form-submission-to-Process-variable rule.
 
-This proposal therefore adds one selected CIB Seven `2.2.0` operational compatibility rule over the existing BPMN lifecycle. The [runnable MVP](../RUNNABLE-TEMPORAL-MVP-PROPOSAL.md) is its first concrete host consumer. The dummy actor, delay, CLI, and simulated response configuration are adapter/product facts and do not enter Lean or the semantic core.
+This proposal therefore adds the selected CIB Seven `2.2.0` public-service extension [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) over the existing BPMN lifecycle. The [runnable MVP](../RUNNABLE-TEMPORAL-MVP-PROPOSAL.md) is its first concrete host consumer. The dummy actor, delay, CLI, and simulated response configuration are adapter/product facts and do not enter Lean or the semantic core.
 
 ## Proposed data contract
 
@@ -53,17 +53,11 @@ The merge rule replaces an existing binding with the submitted value and creates
 
 ## Phase-zero CIB Seven evidence
 
-Before Lean, TypeScript, shared wire, or Temporal implementation, a pristine packaged CIB Seven `2.2.0` probe must answer these exact questions through public services:
+The Java-21 [packaged-engine probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskCompletionDataPhaseZeroProbeTest.java) completed under pinned CIB Seven `2.2.0` and `CIB-CFG-0001`. Its project-authored Model API fixture has two sequential User Tasks so the public continuation state remains observable before final completion.
 
-1. which Process variables are visible for one active User Task through the selected task-service read boundary;
-2. whether `TaskService.complete(taskId, variables)` creates an absent string binding, overwrites an existing string binding, and preserves unrelated bindings;
-3. whether an explicit null value is retained as a present null Process variable or treated as deletion/absence under the pinned serializer configuration;
-4. whether the submitted values are committed before outgoing Sequence Flow continuation and visible at Process completion;
-5. whether completion of an unknown or already completed host task applies no submitted values.
+The first task's `TaskService.getVariables(taskId)` returns the complete initial Process map. `TaskService.complete(taskId, variables)` creates an absent string binding, overwrites an existing string, preserves an unrelated binding, and retains an explicit null as a present Process variable. The following User Task observes the complete merged map immediately after the completion command, and the audit-history variable query retains the same map after final Process completion. A no-data completion control preserves the initial map. Unknown and already completed generated task IDs throw `ProcessEngineException`; public runtime-variable and active-task observations remain unchanged, so neither refused call applies its supplied values.
 
-The probe must retain raw task/variable observations and a no-data control. Its result receives a reviewed `CIB-OP`, `CIB-INT`, `CIB-EXT`, `CIB-CFG`, `CIB-LIM`, or `CIB-DEV` entry before profile meaning is fixed. This proposal does not reserve a register identifier or pre-classify an unobserved result.
-
-If null is not retained as present null, the owner must choose between narrowing the compatibility patch to strings, selecting a profile-specific null rule with an honest relation classification, or rejecting the capsule. Implementation must not silently substitute the existing Service Task null semantics.
+The relationship register classifies that public completion protocol as selected extension [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables), not BPMN data-association or form semantics. The observed present-null result selects the proposed closed string/null patch without reopening the value domain.
 
 ## Semantic Process and runtime consequence
 
