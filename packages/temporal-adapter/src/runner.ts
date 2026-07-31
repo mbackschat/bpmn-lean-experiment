@@ -15,6 +15,7 @@ import { TestWorkflowEnvironment } from "@temporalio/testing";
 import {
   createCachedLocalEnvironment,
   createCachedTimeSkippingEnvironment,
+  temporalCliVersion,
 } from "./ephemeral-server.js";
 import {
   bpmnOpenUserTasksQueryName,
@@ -114,7 +115,7 @@ export class TemporalScenarioRunner {
       createCachedLocalEnvironment({
         identity: temporalTestIdentity,
         downloadDirectory: options.downloadDirectory,
-        cliVersion: options.cliVersion,
+        cliVersion: options.cliVersion ?? temporalCliVersion,
       }),
       environmentStartupDeadlineMs,
       "Temporal environment startup",

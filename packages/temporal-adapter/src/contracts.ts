@@ -124,7 +124,8 @@ export type BpmnProcessWorkflow = (
 ) => Promise<CompletedProcessReceipt>;
 
 export type TemporalScenarioRunnerOptions = DeepReadonly<{
-  cliVersion: string;
+  /** Overrides the pinned `temporalCliVersion`. */
+  cliVersion?: string;
   downloadDirectory: string;
 }>;
 

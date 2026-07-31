@@ -90,7 +90,6 @@ function activeRunner(): TemporalScenarioRunner {
 before(async () => {
   runner = await withDeadline(
     TemporalScenarioRunner.create({
-      cliVersion: "v1.8.1",
       downloadDirectory: temporalCacheDirectory,
     }),
     45_000,

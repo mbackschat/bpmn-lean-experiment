@@ -114,7 +114,6 @@ export async function runPipelineCases(
   try {
     const startupStarted = performance.now();
     runner = await TemporalScenarioRunner.create({
-      cliVersion: "v1.8.1",
       downloadDirectory: temporalCacheDirectory,
     });
     startupMs = elapsedMs(startupStarted);

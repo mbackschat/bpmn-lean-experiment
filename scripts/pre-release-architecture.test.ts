@@ -72,7 +72,7 @@ test("keeps active code on one replace-in-place pre-release contract", async () 
 });
 
 test("starts every cached ephemeral server through the owner that creates its cache", async () => {
-  // A cached-download executable needs its download directory to exist first.
+  // A cached ephemeral executable needs its download directory to exist first.
   // The owner creates it, so a second configuration site would reintroduce a
   // gate that passes only where an earlier run left the cache behind.
   const executableMarker = ["cached", "-download"].join("");
@@ -80,12 +80,13 @@ test("starts every cached ephemeral server through the owner that creates its ca
     "packages/temporal-adapter/src",
     "ephemeral-server.ts",
   );
-  const adapterRoots = [
-    "packages/temporal-adapter/src",
-    "packages/temporal-adapter/test",
+  const scanRoots = [
+    ...activeSourceRoots,
+    "packages/bpmn-source/calibration",
     "packages/temporal-adapter/calibration",
+    "scripts",
   ];
-  const files = (await Promise.all(adapterRoots.map(sourceFiles))).flat();
+  const files = (await Promise.all(scanRoots.map(sourceFiles))).flat();
   const configurationSites: string[] = [];
 
   for (const relativePath of files) {
