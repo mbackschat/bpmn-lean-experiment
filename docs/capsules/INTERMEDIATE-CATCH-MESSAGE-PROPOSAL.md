@@ -2,7 +2,7 @@
 
 ## Status and owner decision
 
-**Revised draft proposal — owner approval required before implementation.** Independent review accepted the direct-addressed catch on its merits and required the boundary corrections now recorded below. This capsule selects one directly addressed, payload-free Intermediate Catch Message Event in normal flow. It does not select an Intermediate Throw Message Event, Collaboration, Message Flow, BPMN CorrelationKey, CIB message-name/business-key behavior, or A12 façade compatibility.
+**Owner-approved implementation proposal — approved on 2026-07-31, not yet implemented.** Independent review accepted the direct-addressed catch on its merits and required the boundary corrections now recorded below. The owner approved the direct payload-free subscription boundary, the decision-6 ordering reopen, and the R8 Signal-history amendment together. This capsule selects one directly addressed, payload-free Intermediate Catch Message Event in normal flow. It does not select an Intermediate Throw Message Event, Collaboration, Message Flow, BPMN CorrelationKey, CIB message-name/business-key behavior, or A12 façade compatibility.
 
 The proposed discriminator is:
 
@@ -15,7 +15,7 @@ None Start Event
 
 The trailing User Task is an already implemented mechanism. It keeps the semantic Process and Temporal Workflow live after the message is consumed so a second command with a fresh command ID can establish semantic stale refusal rather than only a post-closure transport result.
 
-Approval would establish the design boundary, authorize red/green implementation of this exact capsule, reopen canonical wait ordering under owner decision 6, and narrow R8's zero-Signal assertion to the existing non-Message paths while requiring exact Signal history for this Message path. It would not approve any excluded message behavior.
+Approval establishes the design boundary, authorizes red/green implementation of this exact capsule, reopens canonical wait ordering under owner decision 6, and narrows R8's zero-Signal assertion to the existing non-Message paths while requiring exact Signal history for this Message path. It does not approve any excluded message behavior.
 
 ## Exact question
 
@@ -305,7 +305,7 @@ For Message then User Task, the reachable wait sets are exactly one passive Mess
 
 ### R8 Signal-history amendment
 
-Owner approval explicitly narrows decision R8's zero-Signal assertion. `test:temporal` must continue to require zero Signal Events for every existing Update-, Timer-, and Activity-driven scenario. The Message history must instead contain exactly the submitted Message Signal Events with exact payload/content binding, including the Worker-down delivery, stale fresh-command delivery, exact duplicate, and identity-conflicting attempt; malformed client input produces none. Missing, extra, or payload-substituted Signal history must fail a seeded history mutation. This is an amendment to R8, not an inference from choosing Signal.
+The 2026-07-31 owner approval explicitly narrows decision R8's zero-Signal assertion. `test:temporal` must continue to require zero Signal Events for every existing Update-, Timer-, and Activity-driven scenario. The Message history must instead contain exactly the submitted Message Signal Events with exact payload/content binding, including the Worker-down delivery, stale fresh-command delivery, exact duplicate, and identity-conflicting attempt; malformed client input produces none. Missing, extra, or payload-substituted Signal history must fail a seeded history mutation. This is an amendment to R8, not an inference from choosing Signal.
 
 ### Smallest live-history witness
 
@@ -367,7 +367,7 @@ Adding required `openMessageSubscriptions` changes the canonical state denominat
 
 The existing `CommandOutcome` arms and `ProcessCommandResult` union remain unchanged, but the completed receipt does change by gaining the Message delivery ledger used for Signal-result recovery. Signal delivery adds no suspended semantic outcome and no core resume entry point: the Process is already represented as running with a public subscription, and the ordinary Workflow loop resumes when input arrives. `BpmnMessageIngressInvalid` and `BpmnCommandIdentityConflict` remain adapter request failures outside `CommandOutcome`.
 
-Owner approval must explicitly amend R8 from a universal zero-Signal assertion to zero Signal Events for every pre-existing path plus exact, mutation-sensitive Signal Events for the Message path. Without that owner decision, implementation remains blocked even if every other edit is accepted.
+The owner explicitly amended R8 from a universal zero-Signal assertion to zero Signal Events for every pre-existing path plus exact, mutation-sensitive Signal Events for the Message path.
 
 No legacy reader, optional compatibility field, format counter, Workflow patch branch, or retained history is permitted before an immutable baseline exists. No dependency addition, removal, upgrade, vendoring, or license-bound source is required.
 
@@ -402,8 +402,8 @@ Excluded:
 
 ## Approval test
 
-Owner approval should answer this product question: may the first receive-message capability require the caller to know the running Process instance and exact open subscription, accept no payload, resume that subscription once, and defer send-by-message-name/business-key, modeled throw, and A12 façade compatibility?
+The owner answered yes to this product question: may the first receive-message capability require the caller to know the running Process instance and exact open subscription, accept no payload, resume that subscription once, and defer send-by-message-name/business-key, modeled throw, and A12 façade compatibility?
 
-Approval must also say yes to two consequences: implement element-ID sorting in Lean and restate `PAR-PROJECT-01` evidence over four wait kinds under decision 6; and amend R8 so all existing paths retain zero-Signal evidence while this Message path requires exact Signal history.
+The owner also approved both consequences: implement element-ID sorting in Lean and restate `PAR-PROJECT-01` evidence over four wait kinds under decision 6; and amend R8 so all existing paths retain zero-Signal evidence while this Message path requires exact Signal history.
 
-If all three answers are yes, implementation begins from this proposal under red/green TDD and the complete atomic contract boundary above. If any answer is no, do not edit production semantics; replace the rejected correlation, ordering, or Temporal-history boundary first.
+Implementation now begins from this proposal under red/green TDD and the complete atomic contract boundary above.
