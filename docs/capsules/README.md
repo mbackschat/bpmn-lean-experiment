@@ -21,7 +21,8 @@ Every new capsule records:
 9. a rule-to-evidence matrix that keeps BPMN/profile, Lean, CIB, TypeScript, Temporal, negative-witness, and mutation claims separate;
 10. an inventory of runtime-only or synthetic constructs, including derivation, ownership, public projection, and lifecycle invariants;
 11. the layer ownership of every rule and whether any target-shaped fixture is a one-time vertical feasibility witness or a reusable semantic mechanism;
-12. exact unsupported claims, common-mode risks, and versioning consequences.
+12. exact unsupported claims, common-mode risks, and versioning consequences;
+13. for any admission widening, the newly reachable stable-state resumption account and the separate adapter host-capability obligation for every reachable wait-set shape.
 
 Completeness, determinism, liveness, fairness, compiler correspondence, TypeScript correspondence, and Temporal refinement are never implied by evaluator soundness. Record and check each only when its exact scope is meaningful.
 

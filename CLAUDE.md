@@ -187,7 +187,7 @@ After the technical gate is green but before marking a milestone or semantic cap
 7. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
 8. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
-10. ask whether this capsule cost materially less than the previous comparable capsule in code, documents, and wall time; if not, remove one identified process weight before starting the next capsule;
+10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in its completed [PLAN.md](docs/PLAN.md) item with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall;
 11. decide whether the result changes the next best step;
 12. request an independent review before crossing a strategically material semantic, proof, admission, compatibility, or architecture checkpoint when correlated assumptions or claim-strength errors could survive the executable gates. Routine implementation does not require this extra review.
 
