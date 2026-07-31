@@ -2,6 +2,8 @@
 
 This document owns source provenance and controlled reference navigation. Reference checkouts are not project dependencies. Recorded baseline revisions remain pristine evidence anchors; separately named local branches or worktrees may be instrumented under [REFERENCE-INSTRUMENTATION-POLICY.md](REFERENCE-INSTRUMENTATION-POLICY.md).
 
+Hosted verification also executes external GitHub Actions. Their exact revisions are recorded where they are used, as a commit pin plus a version comment on each `uses:` line in [.github/workflows/verify.yml](../.github/workflows/verify.yml); that file owns them, and this document deliberately keeps no second copy to drift from it.
+
 Local external reference trees are checked out under `~/Projects/oss`. Treat that location as a portable workspace convention rather than source identity: the repository and revision recorded for each source below remain authoritative, and the checkouts remain read-only research inputs unless an explicitly named experiment follows the instrumentation policy.
 
 ## Project-created local reference checkouts
