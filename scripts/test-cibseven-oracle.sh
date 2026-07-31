@@ -5,7 +5,6 @@ set -eu
 project_root=$(git rev-parse --show-toplevel)
 runner_dir="$project_root/runners/cibseven"
 maven_settings=${BPMN_MAVEN_SETTINGS:-"$runner_dir/maven-settings.xml"}
-xsd_path="$project_root/docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
 sequential_bpmn_path="$project_root/scenarios/user-task-discovery-completion/process.bpmn"
 parallel_bpmn_path="$project_root/scenarios/parallel-fork-join/process.bpmn"
 timer_bpmn_path="$project_root/scenarios/intermediate-catch-timer/process.bpmn"
@@ -16,12 +15,13 @@ juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibse
 
 test -f "$maven_settings"
 
-for bpmn_path in "$sequential_bpmn_path" "$parallel_bpmn_path" "$timer_bpmn_path" "$service_task_bpmn_path" "$boundary_error_bpmn_path" "$parallel_probe_path" "$juel_gateway_order_probe_path"; do
-  if test -f "$xsd_path"; then
-    xmllint --noout --schema "$xsd_path" "$bpmn_path"
-  else
-    xmllint --noout "$bpmn_path"
-  fi
-done
+"$project_root/scripts/validate-bpmn-xml.sh" \
+  "$sequential_bpmn_path" \
+  "$parallel_bpmn_path" \
+  "$timer_bpmn_path" \
+  "$service_task_bpmn_path" \
+  "$boundary_error_bpmn_path" \
+  "$parallel_probe_path" \
+  "$juel_gateway_order_probe_path"
 
 exec node "$project_root/scripts/run-cibseven-tests.ts"

@@ -23,6 +23,14 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v6
 
+      - name: Set up libxml2 tools
+        # Verification validates BPMN XML with xmllint. The macOS runner image
+        # already resolves one; the Ubuntu image has no libxml2-utils package.
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes libxml2-utils
+
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
         with:

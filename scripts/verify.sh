@@ -5,7 +5,6 @@ set -eu
 project_root=$(git rev-parse --show-toplevel)
 cd "$project_root"
 
-xsd_path="docs/reference/bpmn-2.0.2/machine-readable/BPMN20.xsd"
 bpmn_path="scenarios/user-task-discovery-completion/process.bpmn"
 
 ./scripts/pnpm.sh run test:contracts
@@ -13,11 +12,7 @@ bpmn_path="scenarios/user-task-discovery-completion/process.bpmn"
 ./scripts/pnpm.sh run check:source-hygiene
 ./scripts/pnpm.sh run check:doc-fragments
 
-if test -f "$xsd_path"; then
-  xmllint --noout --schema "$xsd_path" "$bpmn_path"
-else
-  xmllint --noout "$bpmn_path"
-fi
+./scripts/validate-bpmn-xml.sh "$bpmn_path"
 
 lake build
 lake test

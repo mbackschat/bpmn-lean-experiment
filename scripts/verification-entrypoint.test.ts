@@ -6,6 +6,9 @@ import { fileURLToPath } from "node:url";
 const verifyScriptPath = fileURLToPath(
   new URL("./verify.sh", import.meta.url),
 );
+const cibOracleScriptPath = fileURLToPath(
+  new URL("./test-cibseven-oracle.sh", import.meta.url),
+);
 const contributorGuidePath = fileURLToPath(
   new URL("../CLAUDE.md", import.meta.url),
 );
@@ -60,6 +63,18 @@ test("managed-sandbox guidance preauthorizes every Temporal server gate", async 
     assert.match(source, /`\.\/scripts\/verify\.sh`/);
     assert.match(source, /`\.\/scripts\/pnpm\.sh run test:temporal`/);
     assert.match(source, /`\.\/scripts\/pnpm\.sh run test:pipeline`/);
+  }
+});
+
+test("verification scripts validate BPMN XML through one preflighting owner", async () => {
+  for (const path of [verifyScriptPath, cibOracleScriptPath]) {
+    const source = await readFile(path, "utf8");
+    assert.equal(
+      source.includes("xmllint"),
+      false,
+      `${path} must not invoke xmllint directly: only the shared validator preflights that host tool and declares whether it established schema conformance`,
+    );
+    assert.match(source, /scripts\/validate-bpmn-xml\.sh/u);
   }
 });
 
