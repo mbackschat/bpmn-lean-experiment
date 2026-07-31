@@ -348,6 +348,7 @@ git diff --check
 - Use Conventional Commits: `type(scope): subject`, lowercase type, imperative subject, subject-only by default.
 - Do not push without an explicit current request.
 - Keep [AGENTS.md](AGENTS.md) as a symlink to `CLAUDE.md`; never maintain divergent copies.
+- The default branch requires the `verify-complete` hosted check, which passes only when every platform in the verification matrix succeeded. Repository administrators may bypass it, so a red merge takes a deliberate override rather than an accident; never override to land unverified work.
 
 Before handing off:
 
