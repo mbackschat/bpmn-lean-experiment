@@ -11,6 +11,8 @@ on:
   # cache-free Lean build keeps a from-scratch signal that cached runs hide.
   schedule:
     - cron: "17 4 * * 1"
+    # TEMPORARY probe: proves a real schedule event skips the Lean cache.
+    - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       skip_lean_cache:
