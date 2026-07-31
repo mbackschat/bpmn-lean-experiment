@@ -17,4 +17,5 @@ export * from "./scenario-admission.js";
 export * from "./scenario-stimulus-sequencing.js";
 export * from "./timer-command.js";
 export * from "./user-task-detail.js";
+export * from "./workflow-bundle.js";
 export { isCompletedProcessReceipt } from "./runner-support.js";

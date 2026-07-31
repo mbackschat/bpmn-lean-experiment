@@ -4,7 +4,6 @@
  * Scenario interpretation and command delivery remain outside this host boundary.
  */
 import { setTimeout as delay } from "node:timers/promises";
-import { fileURLToPath } from "node:url";
 
 import type {
   FireTimerStimulus,
@@ -37,8 +36,10 @@ import {
 import {
   isRecord,
 } from "./runner-support.js";
+import type {
+  BpmnWorkflowBundle,
+} from "./workflow-bundle.js";
 
-const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
 const temporalTestIdentity = "bpmn-lean-test-runtime";
 const operationDeadlineMs = 5_000;
 const workerStartupDeadlineMs = 20_000;
@@ -52,6 +53,7 @@ export class TemporalWorkerHost {
   private constructor(
     private readonly environment: TestWorkflowEnvironment,
     private readonly effectProbeRegistry: EffectProbeActivityRegistry,
+    private readonly workflowBundle: BpmnWorkflowBundle,
     private worker: Worker,
     private workerRun: Promise<void>,
   ) {}
@@ -59,8 +61,13 @@ export class TemporalWorkerHost {
   static async create(
     environment: TestWorkflowEnvironment,
     effectProbeRegistry: EffectProbeActivityRegistry,
+    workflowBundle: BpmnWorkflowBundle,
   ): Promise<TemporalWorkerHost> {
-    const worker = await createWorker(environment, effectProbeRegistry);
+    const worker = await createWorker(
+      environment,
+      effectProbeRegistry,
+      workflowBundle,
+    );
     let host: TemporalWorkerHost;
     const workerRun = worker.run().catch((error: unknown) => {
       host.workerError = error;
@@ -68,6 +75,7 @@ export class TemporalWorkerHost {
     host = new TemporalWorkerHost(
       environment,
       effectProbeRegistry,
+      workflowBundle,
       worker,
       workerRun,
     );
@@ -128,7 +136,7 @@ export class TemporalWorkerHost {
     items: ReadonlyArray<TemporalReplayItem>,
   ): Promise<void> {
     await withDeadline(
-      replayHistoryBatch(items),
+      replayHistoryBatch(this.workflowBundle, items),
       replayDeadlineMs,
       "Workflow history batch replay",
     );
@@ -148,6 +156,7 @@ export class TemporalWorkerHost {
     const replacement = await createWorker(
       this.environment,
       this.effectProbeRegistry,
+      this.workflowBundle,
       operation,
     );
     this.worker = replacement;
@@ -163,6 +172,7 @@ export class TemporalWorkerHost {
 async function createWorker(
   environment: TestWorkflowEnvironment,
   effectProbeRegistry: EffectProbeActivityRegistry,
+  workflowBundle: BpmnWorkflowBundle,
   operation = "Temporal Worker startup",
 ): Promise<Worker> {
   return withDeadline(
@@ -170,7 +180,7 @@ async function createWorker(
       connection: environment.nativeConnection,
       identity: temporalTestIdentity,
       taskQueue: bpmnSemanticTaskQueue,
-      workflowsPath,
+      workflowBundle,
       activities: effectProbeRegistry.activities,
     }),
     workerStartupDeadlineMs,
@@ -222,11 +232,12 @@ async function waitForTimerStarted(
 }
 
 async function replayHistoryBatch(
+  workflowBundle: BpmnWorkflowBundle,
   items: ReadonlyArray<TemporalReplayItem>,
 ): Promise<void> {
   let replayed = 0;
   for await (const result of Worker.runReplayHistories(
-    { workflowsPath },
+    { workflowBundle },
     items,
   )) {
     const expected = items[replayed];

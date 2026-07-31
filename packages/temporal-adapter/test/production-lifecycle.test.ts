@@ -24,6 +24,7 @@ import {
 import type { WorkflowHandle } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import { Worker } from "@temporalio/worker";
+import type { WorkflowBundleWithSourceMap } from "@temporalio/worker";
 
 import type { OpenUserTask } from "@bpmn-lean/semantic-core";
 
@@ -46,6 +47,7 @@ import {
   contentBoundUpdateId,
   createCachedLocalEnvironment,
   isCompletedProcessReceipt,
+  loadBpmnWorkflowBundle,
   processWorkflowId,
   startBpmnProcess,
   submitUserTaskCompletion,
@@ -57,9 +59,6 @@ const capsuleUrl = new URL(
 );
 const scenarioUrl = new URL("scenario.json", capsuleUrl);
 const bpmnUrl = new URL("process.bpmn", capsuleUrl);
-const workflowsPath = fileURLToPath(
-  new URL("../dist/workflows.js", import.meta.url),
-);
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -91,7 +90,8 @@ test("closed Workflow retains accepted command result without accepting a new co
   let workerLease;
 
   try {
-    workerLease = await startWorker(environment);
+    const workflowBundle = await loadBpmnWorkflowBundle();
+    workerLease = await startWorker(environment, workflowBundle);
     const startResult = await withDeadline(
       startBpmnProcess(
         environment.client.workflow,
@@ -141,7 +141,7 @@ test("closed Workflow retains accepted command result without accepting a new co
     assert.equal((await waitForOpenTasks(handle)).length, 1);
 
     await stopWorker(workerLease);
-    workerLease = await startWorker(environment);
+    workerLease = await startWorker(environment, workflowBundle);
 
     const completionResult = await withDeadline(
       submitUserTaskCompletion(
@@ -284,7 +284,7 @@ test("closed Workflow retains accepted command result without accepting a new co
     );
 
     await withDeadline(
-      replayHistory(history),
+      replayHistory(workflowBundle, history),
       operationDeadlineMs,
       "lifecycle history replay",
     );
@@ -302,13 +302,14 @@ test("closed Workflow retains accepted command result without accepting a new co
 
 async function startWorker(
   environment: TestWorkflowEnvironment,
+  workflowBundle: WorkflowBundleWithSourceMap,
 ): Promise<WorkerLease> {
   const worker = await withDeadline(
     Worker.create({
       connection: environment.nativeConnection,
       identity: "bpmn-lean-lifecycle-probe",
       taskQueue: bpmnSemanticTaskQueue,
-      workflowsPath,
+      workflowBundle,
     }),
     operationDeadlineMs,
     "Temporal lifecycle Worker startup",
@@ -366,11 +367,12 @@ async function waitForOpenTasks(
 }
 
 async function replayHistory(
+  workflowBundle: WorkflowBundleWithSourceMap,
   history: Awaited<ReturnType<WorkflowHandle["fetchHistory"]>>,
 ): Promise<void> {
   let replayed = 0;
   for await (const result of Worker.runReplayHistories(
-    { workflowsPath },
+    { workflowBundle },
     [{ history, workflowId }],
   )) {
     assert.equal(result.workflowId, workflowId);

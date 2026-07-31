@@ -94,6 +94,9 @@ import {
 import {
   requiresHostProgressBeforeCompletion,
 } from "./scenario-stimulus-sequencing.js";
+import {
+  loadBpmnWorkflowBundle,
+} from "./workflow-bundle.js";
 
 const temporalTestIdentity = "bpmn-lean-test-runtime";
 const operationDeadlineMs = 5_000;
@@ -145,9 +148,11 @@ export class TemporalScenarioRunner {
   ): Promise<TemporalScenarioRunner> {
     try {
       const effectProbeRegistry = new EffectProbeActivityRegistry();
+      const workflowBundle = await loadBpmnWorkflowBundle();
       const workerHost = await TemporalWorkerHost.create(
         environment,
         effectProbeRegistry,
+        workflowBundle,
       );
       return new TemporalScenarioRunner(
         environment,

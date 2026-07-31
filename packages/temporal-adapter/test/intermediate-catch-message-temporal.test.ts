@@ -6,7 +6,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import {
@@ -30,6 +29,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import { Worker } from "@temporalio/worker";
+import type { WorkflowBundleWithSourceMap } from "@temporalio/worker";
 import type {
   WorkflowHandle,
 } from "@temporalio/client";
@@ -44,6 +44,7 @@ import {
   bpmnTraceQueryName,
   createCachedLocalEnvironment,
   isCompletedProcessReceipt,
+  loadBpmnWorkflowBundle,
   startBpmnProcess,
   submitMessageDelivery,
   submitUserTaskCompletion,
@@ -82,9 +83,6 @@ const reverseBpmnUrl = new URL(
   "../../bpmn-source/test/fixtures/intermediate-catch-message-reverse.bpmn",
   import.meta.url,
 );
-const workflowsPath = fileURLToPath(
-  new URL("../dist/workflows.js", import.meta.url),
-);
 const operationDeadlineMs = 10_000;
 
 test("Signal delivery survives Worker absence and resolves live or from the completed receipt", async () => {
@@ -108,7 +106,8 @@ test("Signal delivery survives Worker absence and resolves live or from the comp
   let lease: WorkerLease | undefined;
 
   try {
-    lease = await startWorker(environment);
+    const workflowBundle = await loadBpmnWorkflowBundle();
+    lease = await startWorker(environment, workflowBundle);
     const startStimulus = requireStart(scenario);
     const delivery = requireDelivery(scenario);
     const taskCompletion = requireCompletion(scenario);
@@ -159,7 +158,7 @@ test("Signal delivery survives Worker absence and resolves live or from the comp
       delivery,
     );
     await waitForSignalCount(primaryHandle, 2);
-    lease = await startWorker(environment);
+    lease = await startWorker(environment, workflowBundle);
     assert.deepEqual(await workerDownDelivery, {
       kind: ProcessCommandResultKind.Semantic,
       commandId: delivery.commandId,
@@ -346,7 +345,7 @@ test("Signal delivery survives Worker absence and resolves live or from the comp
 
     await stopWorker(lease);
     lease = undefined;
-    await replayHistories([
+    await replayHistories(workflowBundle, [
       { history: primaryHistory, workflowId: primaryHandle.workflowId },
       { history: reverseHistory, workflowId: reverseHandle.workflowId },
     ]);
@@ -427,12 +426,13 @@ function requireCompletion(
 
 async function startWorker(
   environment: TestWorkflowEnvironment,
+  workflowBundle: WorkflowBundleWithSourceMap,
 ): Promise<WorkerLease> {
   const worker = await Worker.create({
     connection: environment.nativeConnection,
     identity: "bpmn-lean-message-probe",
     taskQueue: bpmnSemanticTaskQueue,
-    workflowsPath,
+    workflowBundle,
   });
   let failure: unknown;
   const completion = worker.run().catch((error: unknown) => {
@@ -563,6 +563,7 @@ function requireRecord(
 }
 
 async function replayHistories(
+  workflowBundle: WorkflowBundleWithSourceMap,
   items: ReadonlyArray<{
     history: TemporalHistory;
     workflowId: string;
@@ -571,7 +572,7 @@ async function replayHistories(
   let replayed = 0;
   for await (
     const result of Worker.runReplayHistories(
-      { workflowsPath },
+      { workflowBundle },
       items,
     )
   ) {
