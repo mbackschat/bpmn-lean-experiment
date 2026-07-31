@@ -27,6 +27,10 @@ structure ControlPlaceId where
   value : String
   deriving Repr, DecidableEq
 
+structure DefinitionScopeId where
+  value : String
+  deriving Repr, DecidableEq
+
 structure TaskDefinitionId where
   value : String
   deriving Repr, DecidableEq
@@ -85,6 +89,7 @@ structure CheckedBpmnErrorRoute where
 
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
+  | embeddedSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
   | userTask (id : NodeId) (name : Option String)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
@@ -104,6 +109,7 @@ inductive CheckedNode where
 
 def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
+  | .embeddedSubProcess id _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
@@ -119,9 +125,28 @@ structure CheckedSequenceFlow where
   condition : Option CheckedCondition := none
   deriving Repr, DecidableEq
 
+structure DefinitionScope where
+  id : DefinitionScopeId
+  parentScopeId : Option DefinitionScopeId
+  originElementId : NodeId
+  deriving Repr, DecidableEq
+
+structure NodeScopeOwnership where
+  nodeId : NodeId
+  scopeId : DefinitionScopeId
+  deriving Repr, DecidableEq
+
+structure SequenceFlowScopeOwnership where
+  sequenceFlowId : SequenceFlowId
+  scopeId : DefinitionScopeId
+  deriving Repr, DecidableEq
+
 structure CheckedProcess where
   identity : SourceIdentity
   processId : ProcessId
+  definitionScopes : List DefinitionScope
+  nodeScopes : List NodeScopeOwnership
+  sequenceFlowScopes : List SequenceFlowScopeOwnership
   nodes : List CheckedNode
   sequenceFlows : List CheckedSequenceFlow
   deriving Repr, DecidableEq
@@ -192,6 +217,11 @@ inductive SemanticOperation where
       (id : OperationId)
       (origin : BpmnElementOrigin)
       (output : ControlPlaceId)
+  | enterScope
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input childEntry : ControlPlaceId)
+      (childScopeId : DefinitionScopeId)
   | awaitUserTask
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -234,14 +264,20 @@ inductive SemanticOperation where
       (candidates : List ConditionalCandidate)
       (defaultOutput : ControlPlaceId)
       (defaultOrigin : BpmnSequenceFlowOrigin)
-  | terminate
+  | reachNoneEnd
       (id : OperationId)
       (origin : BpmnElementOrigin)
       (input : ControlPlaceId)
+  | completeScope
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (scopeId : DefinitionScopeId)
+      (parentOutput : Option ControlPlaceId)
   deriving Repr, DecidableEq
 
 def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
+  | .enterScope id _ _ _ _
   | .awaitUserTask id _ _ _ _
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _
@@ -249,11 +285,25 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .duplicate id _ _ _
   | .synchronize id _ _ _
   | .choose id _ _ _ _ _
-  | .terminate id _ _ => id
+  | .reachNoneEnd id _ _
+  | .completeScope id _ _ _ => id
+
+structure OperationScopeOwnership where
+  operationId : OperationId
+  scopeId : DefinitionScopeId
+  deriving Repr, DecidableEq
+
+structure ControlPlaceScopeOwnership where
+  controlPlaceId : ControlPlaceId
+  scopeId : DefinitionScopeId
+  deriving Repr, DecidableEq
 
 structure Program where
   identity : ProgramIdentity
   processId : ProcessId
+  definitionScopes : List DefinitionScope
+  operationScopes : List OperationScopeOwnership
+  controlPlaceScopes : List ControlPlaceScopeOwnership
   controlPlaces : List ControlPlace
   operations : List SemanticOperation
   deriving Repr, DecidableEq

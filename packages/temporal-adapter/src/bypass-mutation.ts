@@ -30,6 +30,7 @@ import type {
   TemporalEffectBypassMutationExecution,
   TemporalBranchBypassMutationExecution,
   TemporalHistory,
+  TemporalScopeBypassMutationExecution,
   TemporalTimerBypassMutationExecution,
 } from "./contracts.js";
 import {
@@ -78,6 +79,14 @@ const branchConfiguration = {
     new URL("./branch-bypass-mutation-workflows.js", import.meta.url),
   ),
   description: "branch-bypass mutation",
+} as const;
+const scopeConfiguration = {
+  taskQueue: "bpmn-scope-bypass-mutation",
+  workflowType: "runBpmnProcessScopeBypassMutation",
+  workflowsPath: fileURLToPath(
+    new URL("./scope-bypass-mutation-workflows.js", import.meta.url),
+  ),
+  description: "scope-bypass mutation",
 } as const;
 const completionDataConfiguration = {
   taskQueue: "bpmn-completion-data-bypass-mutation",
@@ -181,15 +190,105 @@ export async function runBranchBypassMutation(
   waitForTrace: WaitForTrace,
 ): Promise<TemporalBranchBypassMutationExecution> {
   const start = requireStartStimulus(scenario);
+  return runRetainedTraceMutation(
+    environment,
+    start,
+    semanticProcess,
+    workflowId,
+    branchConfiguration,
+    async (handle) => {
+      const waitTrace = await waitForTrace(handle, 3);
+      const history = await withDeadline(
+        handle.fetchHistory(),
+        operationDeadlineMs,
+        `${branchConfiguration.description} history fetch`,
+      );
+      if (!Array.isArray(history.events)) {
+        throw new TypeError(
+          `${branchConfiguration.description} history did not contain an events array`,
+        );
+      }
+      return {
+        waitTrace: [...waitTrace],
+        history: history as TemporalHistory,
+      };
+    },
+  );
+}
+
+export async function runScopeBypassMutation(
+  environment: TestWorkflowEnvironment,
+  scenario: Scenario,
+  semanticProcess: SemanticProcessProgram,
+  workflowId: string,
+  waitForTrace: WaitForTrace,
+): Promise<TemporalScopeBypassMutationExecution> {
+  const completion = requireCompletionStimuli(scenario)[0];
+  if (completion === undefined) {
+    throw new TypeError("Scope-bypass mutation requires one child completion");
+  }
+  const start = requireStartStimulus(scenario);
+  return runRetainedTraceMutation(
+    environment,
+    start,
+    semanticProcess,
+    workflowId,
+    scopeConfiguration,
+    async (handle) => {
+      await waitForTrace(handle, 3);
+      const completionResult = await submitUserTaskCompletionAtWorkflowId(
+        environment.client.workflow,
+        workflowId,
+        start.instanceId,
+        completion,
+      );
+      const completionOutcome = requireSemanticOutcome(completionResult);
+      const trace = await waitForTrace(handle, 5);
+      const history = await withDeadline(
+        handle.fetchHistory(),
+        operationDeadlineMs,
+        `${scopeConfiguration.description} history fetch`,
+      );
+      if (!Array.isArray(history.events)) {
+        throw new TypeError(
+          `${scopeConfiguration.description} history did not contain an events array`,
+        );
+      }
+      return {
+        trace: [...trace],
+        history: history as TemporalHistory,
+        completionOutcome,
+      };
+    },
+  );
+}
+
+type RetainedTraceMutationConfiguration = Readonly<{
+  taskQueue: string;
+  workflowType: string;
+  workflowsPath: string;
+  description: string;
+}>;
+
+async function runRetainedTraceMutation<Result>(
+  environment: TestWorkflowEnvironment,
+  start: ReturnType<typeof requireStartStimulus>,
+  semanticProcess: SemanticProcessProgram,
+  workflowId: string,
+  configuration: RetainedTraceMutationConfiguration,
+  drive: (
+    handle: WorkflowHandle<BpmnProcessWorkflow>,
+  ) => Promise<Result>,
+): Promise<Result> {
   const mutationWorker = await withDeadline(
     Worker.create({
       connection: environment.nativeConnection,
       identity: temporalTestIdentity,
-      taskQueue: branchConfiguration.taskQueue,
-      workflowsPath: branchConfiguration.workflowsPath,
+      taskQueue: configuration.taskQueue,
+      workflowsPath: configuration.workflowsPath,
     }),
     workerStartupDeadlineMs,
-    `${branchConfiguration.description} Worker startup`,
+    `${configuration.description} Worker startup`,
   );
   let mutationWorkerError: unknown;
   const mutationWorkerRun = mutationWorker.run().catch((error: unknown) => {
@@ -200,50 +299,36 @@ export async function runBranchBypassMutation(
   try {
     handle = await withDeadline(
       environment.client.workflow.start(
-        branchConfiguration.workflowType,
+        configuration.workflowType,
         {
-          taskQueue: branchConfiguration.taskQueue,
+          taskQueue: configuration.taskQueue,
           workflowId,
           workflowIdReusePolicy: "REJECT_DUPLICATE",
           args: [start, semanticProcess],
         },
       ),
       operationDeadlineMs,
-      `${branchConfiguration.description} Workflow start`,
+      `${configuration.description} Workflow start`,
     );
-    const waitTrace = await waitForTrace(handle, 3);
-    const history = await withDeadline(
-      handle.fetchHistory(),
-      operationDeadlineMs,
-      `${branchConfiguration.description} history fetch`,
-    );
-    if (!Array.isArray(history.events)) {
-      throw new TypeError(
-        `${branchConfiguration.description} history did not contain an events array`,
-      );
-    }
-    return {
-      waitTrace: [...waitTrace],
-      history: history as TemporalHistory,
-    };
+    return await drive(handle);
   } finally {
     if (handle !== undefined) {
       await withDeadline(
-        handle.terminate("retained branch-bypass mutation"),
+        handle.terminate(`retained ${configuration.description}`),
         operationDeadlineMs,
-        `${branchConfiguration.description} Workflow cleanup`,
+        `${configuration.description} Workflow cleanup`,
       );
     }
     mutationWorker.shutdown();
     await withDeadline(
       mutationWorkerRun,
       shutdownDeadlineMs,
-      `${branchConfiguration.description} Worker shutdown`,
+      `${configuration.description} Worker shutdown`,
     );
     if (mutationWorkerError !== undefined) {
       throw normalizeError(
         mutationWorkerError,
-        `${branchConfiguration.description} Worker failed`,
+        `${configuration.description} Worker failed`,
       );
     }
   }

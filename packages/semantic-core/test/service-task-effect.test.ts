@@ -34,13 +34,17 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import {
+  rootScopedProgram,
+  rootScopeOccurrence,
+} from "./root-scope-fixture.ts";
 
 const descriptor = Object.freeze({
   protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
   operation: "urn:bpmn-lean:effect-operation:probe-v1",
 });
 
-const effectProgram: SemanticProcessProgram = {
+const effectProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -57,7 +61,7 @@ const effectProgram: SemanticProcessProgram = {
   operations: [
     {
       ...operationBase("EndEvent_1"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_ServiceToEnd",
     },
     {
@@ -79,7 +83,7 @@ const effectProgram: SemanticProcessProgram = {
       output: "place:Flow_StartToService",
     },
   ],
-};
+});
 
 const effectId = Object.freeze({
   processInstanceId: "Instance_1",
@@ -145,6 +149,7 @@ test("start closes at one structured effect intent without producing output", ()
   assert.deepEqual(started.state.effectWaits, [
     {
       id: effectId,
+      owner: rootScopeOccurrence(effectProgram.processId, start.instanceId),
       descriptor,
       arguments: [],
       outputMappings: [],

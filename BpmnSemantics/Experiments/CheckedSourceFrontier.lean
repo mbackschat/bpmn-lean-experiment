@@ -198,6 +198,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
     fireNode? source candidate state = none := by
   cases candidate with
   | noneStartEvent id => simp [fireNode?, notPending]
+  | embeddedSubProcess id scopeId =>
+      simp [nodeArityValid] at candidateArity
   | intermediateCatchTimerEvent id duration => rfl
   | intermediateCatchMessageEvent id channel => rfl
   | serviceTask id descriptor inputs outputs route => rfl

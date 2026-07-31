@@ -22,6 +22,7 @@ import {
 import {
   CibCaseRelation,
   CibEffectExecutionSchedule,
+  PipelineReplaySelection,
 } from "./pipeline-types.ts";
 import {
   pipelineCases,
@@ -107,6 +108,10 @@ test(
         "parallel-fork-join-a-then-b",
         "parallel-fork-join-b-then-a",
         "parallel-fork-join-stale-a-while-b-active",
+        "embedded-subprocess-completion-a-then-b",
+        "embedded-subprocess-completion-b-then-a",
+        "embedded-subprocess-completion-stale-a-while-b-active",
+        "embedded-subprocess-completion-stale-a-after-scope",
         "intermediate-catch-timer-pt1s",
         "timer-user-task-composition",
         "intermediate-catch-message",
@@ -347,7 +352,15 @@ test(
       }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 15,
+      liveHistories: pipelineCases.reduce(
+        (count, pipelineCase) =>
+          count +
+          (pipelineCase.replaySelection ===
+              PipelineReplaySelection.PrimaryAndIsolation
+            ? 2
+            : 1),
+        0,
+      ),
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",

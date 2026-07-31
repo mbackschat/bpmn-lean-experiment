@@ -1,6 +1,5 @@
 import BpmnSemantics.SemanticProcess
-import BpmnSemantics.StrictJson
-import Lean.Data.Json
+import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # BpmnSemantics.SemanticProcessJson — strict current artifact decoders
 
@@ -18,152 +17,6 @@ structure DefinitionInput where
   checkedProcess : CheckedProcess
   semanticProcess : Program
   deriving Repr, DecidableEq
-
-def maxSafeWireNat : Nat := 9007199254740991
-
-def isSafeWireNat (value : Nat) : Bool :=
-  value ≤ maxSafeWireNat
-
-def parseWireJson (contents : String) : Except String Json :=
-  BpmnSemantics.StrictJson.parse contents
-
-private def decodeSafeNat (json : Json) : Except String Nat := do
-  let value ← json.getNat?
-  if isSafeWireNat value then
-    pure value
-  else
-    throw s!"wire integer exceeds {maxSafeWireNat}"
-
-private def requireObjectShape (json : Json) (keys : List String) :
-    Except String Unit :=
-  match json with
-  | .obj object =>
-      if object.size = keys.length &&
-          keys.all fun key => (object.get? key).isSome then
-        pure ()
-      else
-        throw s!"object fields do not match {keys}"
-  | _ => throw "object expected"
-
-private def field (json : Json) (key : String) : Except String Json :=
-  json.getObjVal? key
-
-private def stringField (json : Json) (key : String) : Except String String := do
-  (← field json key).getStr?
-
-private def expectString (json : Json) (expected : String) :
-    Except String Unit := do
-  let actual ← json.getStr?
-  if actual = expected then
-    pure ()
-  else
-    throw s!"expected {expected}, got {actual}"
-
-private def expectStringField (json : Json) (key expected : String) :
-    Except String Unit := do
-  expectString (← field json key) expected
-
-private def decodeArray (decode : Json → Except String α) (json : Json) :
-    Except String (List α) := do
-  let values ← json.getArr?
-  values.toList.mapM decode
-
-private def decodeOptionalString : Json → Except String (Option String)
-  | .null => pure none
-  | .str value => pure (some value)
-  | _ => throw "string or null expected"
-
-private def decodeStringArray (json : Json) :
-    Except String (List String) :=
-  decodeArray Json.getStr? json
-
-private def decodeResourceIdentity (json : Json) :
-    Except String ResourceIdentity := do
-  requireObjectShape json ["id", "relativePath", "sha256"]
-  pure
-    { id := ⟨← stringField json "id"⟩
-      relativePath := ← stringField json "relativePath"
-      sha256 := ← stringField json "sha256" }
-
-private def decodeOccurrenceId (json : Json) :
-    Except String OccurrenceId := do
-  requireObjectShape json
-    ["activation", "elementId", "processInstanceId"]
-  let activation ← decodeSafeNat (← field json "activation")
-  if activation = 0 then
-    throw "occurrence activation must be positive"
-  pure
-    { processInstanceId := ⟨← stringField json "processInstanceId"⟩
-      elementId := ⟨← stringField json "elementId"⟩
-      activation }
-
-private def decodeMessageChannel (json : Json) :
-    Except String MessageChannel := do
-  requireObjectShape json
-    ["interfaceId", "interfaceOperationId", "messageId"]
-  pure
-    { interfaceId := ⟨← stringField json "interfaceId"⟩
-      interfaceOperationId := ⟨← stringField json "interfaceOperationId"⟩
-      messageId := ⟨← stringField json "messageId"⟩ }
-
-private def decodeVariableValue (json : Json) :
-    Except String VariableValue := do
-  match ← stringField json "kind" with
-  | "string" =>
-      requireObjectShape json ["kind", "value"]
-      pure (.string (← stringField json "value"))
-  | "null" =>
-      requireObjectShape json ["kind"]
-      pure .null
-  | kind => throw s!"unsupported variable value {kind}"
-
-private def decodeVariableBinding (json : Json) :
-    Except String VariableBinding := do
-  requireObjectShape json ["name", "value"]
-  let name ← stringField json "name"
-  if name.isEmpty then
-    throw "variable binding name must be non-empty"
-  pure
-    { name
-      value := ← decodeVariableValue (← field json "value") }
-
-private def bindingNamesStrictlyIncrease : List VariableBinding → Bool
-  | []
-  | [_] => true
-  | left :: right :: remaining =>
-      decide (left.name < right.name) &&
-        bindingNamesStrictlyIncrease (right :: remaining)
-
-private def decodeCanonicalVariableBindings (json : Json) :
-    Except String (List VariableBinding) := do
-  let bindings ← decodeArray decodeVariableBinding json
-  if bindingNamesStrictlyIncrease bindings then
-    pure bindings
-  else
-    throw "variable bindings must have unique names in canonical order"
-
-private def decodeEffectExecutionResult (json : Json) :
-    Except String EffectExecutionResult := do
-  match ← stringField json "kind" with
-  | "success" =>
-      requireObjectShape json ["kind", "localPatch"]
-      pure
-        (.success
-          (← decodeArray decodeVariableBinding (← field json "localPatch")))
-  | "bpmnError" =>
-      requireObjectShape json ["code", "kind", "localPatch", "message"]
-      let code ← stringField json "code"
-      let message ← decodeOptionalString (← field json "message")
-      if code.isEmpty then
-        throw "BPMN Error code must be non-empty"
-      if message = some "" then
-        throw "BPMN Error message must be null or non-empty"
-      pure
-        (.bpmnError
-          code
-          message
-          (← decodeArray decodeVariableBinding (← field json "localPatch")))
-  | kind => throw s!"unsupported effect result {kind}"
 
 private def decodeStimulus (json : Json) : Except String Stimulus := do
   let kind ← stringField json "kind"
@@ -328,6 +181,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   | "noneStartEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneStartEvent ⟨← stringField json "id"⟩)
+  | "embeddedSubProcess" =>
+      requireObjectShape json ["childScopeId", "id", "kind"]
+      pure
+        (.embeddedSubProcess
+          ⟨← stringField json "id"⟩
+          ⟨← stringField json "childScopeId"⟩)
   | "userTask" =>
       requireObjectShape json ["id", "kind", "name"]
       pure
@@ -390,13 +249,44 @@ private def decodeCheckedSequenceFlow (json : Json) :
       targetId := ⟨← stringField json "targetId"⟩
       condition := ← decodeCheckedCondition (← field json "condition") }
 
+private def decodeDefinitionScope (json : Json) : Except String DefinitionScope := do
+  requireObjectShape json ["id", "originElementId", "parentScopeId"]
+  pure
+    { id := ⟨← stringField json "id"⟩
+      parentScopeId :=
+        (← decodeOptionalString (← field json "parentScopeId")).map
+          DefinitionScopeId.mk
+      originElementId := ⟨← stringField json "originElementId"⟩ }
+
+private def decodeNodeScopeOwnership (json : Json) :
+    Except String NodeScopeOwnership := do
+  requireObjectShape json ["nodeId", "scopeId"]
+  pure
+    { nodeId := ⟨← stringField json "nodeId"⟩
+      scopeId := ⟨← stringField json "scopeId"⟩ }
+
+private def decodeSequenceFlowScopeOwnership (json : Json) :
+    Except String SequenceFlowScopeOwnership := do
+  requireObjectShape json ["scopeId", "sequenceFlowId"]
+  pure
+    { sequenceFlowId := ⟨← stringField json "sequenceFlowId"⟩
+      scopeId := ⟨← stringField json "scopeId"⟩ }
+
 def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
   requireObjectShape json
-    ["identity", "kind", "nodes", "processId", "sequenceFlows"]
+    ["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
+      "processId", "sequenceFlowScopes", "sequenceFlows"]
   expectStringField json "kind" "checkedProcess"
   pure
     { identity := ← decodeSourceIdentity (← field json "identity")
       processId := ⟨← stringField json "processId"⟩
+      definitionScopes :=
+        ← decodeArray decodeDefinitionScope (← field json "definitionScopes")
+      nodeScopes :=
+        ← decodeArray decodeNodeScopeOwnership (← field json "nodeScopes")
+      sequenceFlowScopes :=
+        ← decodeArray decodeSequenceFlowScopeOwnership
+          (← field json "sequenceFlowScopes")
       nodes := ← decodeArray decodeCheckedNode (← field json "nodes")
       sequenceFlows :=
         ← decodeArray decodeCheckedSequenceFlow
@@ -528,6 +418,14 @@ private def decodeOperation (json : Json) :
   | "initiate" =>
       requireObjectShape json ["id", "kind", "origin", "output"]
       pure (.initiate id origin ⟨← stringField json "output"⟩)
+  | "enterScope" =>
+      requireObjectShape json
+        ["childEntry", "childScopeId", "id", "input", "kind", "origin"]
+      pure
+        (.enterScope id origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "childEntry"⟩
+          ⟨← stringField json "childScopeId"⟩)
   | "awaitUserTask" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "output", "task"]
@@ -601,18 +499,49 @@ private def decodeOperation (json : Json) :
             (← field json "candidates"))
           ⟨← stringField json "defaultOutput"⟩
           (← decodeSequenceFlowOrigin (← field json "defaultOrigin")))
-  | "terminate" =>
+  | "reachNoneEnd" =>
       requireObjectShape json ["id", "input", "kind", "origin"]
-      pure (.terminate id origin ⟨← stringField json "input"⟩)
+      pure (.reachNoneEnd id origin ⟨← stringField json "input"⟩)
+  | "completeScope" =>
+      requireObjectShape json
+        ["id", "kind", "origin", "parentOutput", "scopeId"]
+      pure
+        (.completeScope id origin
+          ⟨← stringField json "scopeId"⟩
+          ((← decodeOptionalString (← field json "parentOutput")).map
+            ControlPlaceId.mk))
   | _ => throw s!"unsupported Semantic Process operation {kind}"
+
+private def decodeOperationScopeOwnership (json : Json) :
+    Except String OperationScopeOwnership := do
+  requireObjectShape json ["operationId", "scopeId"]
+  pure
+    { operationId := ⟨← stringField json "operationId"⟩
+      scopeId := ⟨← stringField json "scopeId"⟩ }
+
+private def decodeControlPlaceScopeOwnership (json : Json) :
+    Except String ControlPlaceScopeOwnership := do
+  requireObjectShape json ["controlPlaceId", "scopeId"]
+  pure
+    { controlPlaceId := ⟨← stringField json "controlPlaceId"⟩
+      scopeId := ⟨← stringField json "scopeId"⟩ }
 
 def decodeProgram (json : Json) : Except String Program := do
   requireObjectShape json
-    ["controlPlaces", "identity", "kind", "operations", "processId"]
+    ["controlPlaceScopes", "controlPlaces", "definitionScopes", "identity",
+      "kind", "operationScopes", "operations", "processId"]
   expectStringField json "kind" "semanticProcess"
   pure
     { identity := ← decodeProgramIdentity (← field json "identity")
       processId := ⟨← stringField json "processId"⟩
+      definitionScopes :=
+        ← decodeArray decodeDefinitionScope (← field json "definitionScopes")
+      operationScopes :=
+        ← decodeArray decodeOperationScopeOwnership
+          (← field json "operationScopes")
+      controlPlaceScopes :=
+        ← decodeArray decodeControlPlaceScopeOwnership
+          (← field json "controlPlaceScopes")
       controlPlaces :=
         ← decodeArray decodeControlPlace (← field json "controlPlaces")
       operations := ← decodeArray decodeOperation (← field json "operations") }

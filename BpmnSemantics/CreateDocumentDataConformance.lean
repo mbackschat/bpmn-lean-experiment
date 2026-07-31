@@ -33,6 +33,13 @@ def checkedProcess : CheckedProcess :=
         sourceSha256 :=
           "34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13" }
     processId := ⟨"Process_A12CreateDocument"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_A12CreateDocument"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_A12CreateDocument"⟩
+      [ ⟨"CreateDocument"⟩, ⟨"EndEvent_CreateDocument"⟩
+      , ⟨"StartEvent_CreateDocument"⟩ ]
+    sequenceFlowScopes := rootSequenceFlowScopes
+      ⟨"Process_A12CreateDocument"⟩
+      [⟨"Flow_CreateToEnd"⟩, ⟨"Flow_StartToCreate"⟩]
     nodes :=
       [ .serviceTask
           ⟨"CreateDocument"⟩
@@ -69,6 +76,7 @@ def expectedVariable (reference : String) : VariableBinding :=
 
 def effectWait : EffectWait :=
   { processInstanceId := effectId.processInstanceId
+    owner := rootScopeOccurrenceId effectId.processInstanceId program.processId
     elementId := ⟨effectId.elementId.value⟩
     activation := effectId.activation
     descriptor
@@ -233,9 +241,11 @@ theorem scoped_data_adds_no_closure_step :
   decide
 
 def beforeEffectActivationState : RuntimeState :=
-  { initialState with
-    control := .running effectId.processInstanceId
-    tokens := [⟨"place:Flow_StartToCreate"⟩] }
+  { (runningProgramStartState? program effectId.processInstanceId []).getD
+      initialState with
+    initiationPending := false
+    tokens := [rootToken effectId.processInstanceId program.processId
+      ⟨"place:Flow_StartToCreate"⟩] }
 
 def beforeEffectActivationWithUnrelatedData : RuntimeState :=
   { beforeEffectActivationState with
@@ -326,7 +336,7 @@ example :
 private def writeLocalPatchToProcessScope (state : RuntimeState) : RuntimeState :=
   { state with
     effectWaits := []
-    tokens := effectWait.output :: state.tokens
+    tokens := addToken state.tokens effectWait.output effectWait.owner
     variables :=
       { process :=
           { bindings :=

@@ -83,6 +83,11 @@ test("projects only caller-selected committed Process variables", () => {
     userTaskWaits: [
       {
         id: task.id,
+        owner: {
+          processInstanceId: task.id.processInstanceId,
+          definitionScopeId: "scope:Process_DummyUserTask",
+          activation: 1,
+        },
         name: task.name,
         output: "place:Flow_TaskToEnd",
       },

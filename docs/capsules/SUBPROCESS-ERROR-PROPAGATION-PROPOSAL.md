@@ -4,7 +4,7 @@
 
 **Retained bounded follow-on proposal; implementation is not authorized and its representation must rebase after ordinary embedded Sub-Process completion closes.**
 
-This is the first exceptional-exit follow-on after the [ordinary embedded Sub-Process completion proposal](EMBEDDED-SUBPROCESS-COMPLETION-PROPOSAL.md). It selects one normal embedded Sub-Process whose only reachable terminal result is an exact-code Error End Event caught by one interrupting boundary Error Event attached to that Sub-Process. It establishes regional cancellation and direct-parent Error propagation over the future ordinary-scope foundation; it does not establish Event Sub-Process behavior.
+This is the first exceptional-exit follow-on after the [ordinary embedded Sub-Process completion specification](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md). It selects one normal embedded Sub-Process whose only reachable terminal result is an exact-code Error End Event caught by one interrupting boundary Error Event attached to that Sub-Process. It establishes regional cancellation and direct-parent Error propagation over the implemented ordinary-scope foundation; it does not establish Event Sub-Process behavior.
 
 The owner question and semantic discriminator remain useful, but the `ScopeDefinition`, `EnterScopeOperation`, runtime ownership, and atomic versioning sketches below predate the ordinary-completion selection. They are provisional until rebased on that capsule's implemented names and invariants. Do not implement this document as written.
 

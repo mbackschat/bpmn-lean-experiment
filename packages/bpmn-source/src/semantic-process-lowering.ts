@@ -7,24 +7,34 @@ import {
   SemanticProcessKind,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
-import {
-  parseSimpleBooleanExpression,
-} from "./simple-boolean-expression.js";
 import type {
   CheckedNode,
   CheckedProcess,
   CheckedSequenceFlow,
+  DefinitionScope,
   SemanticOperation,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
+import {
+  parseSimpleBooleanExpression,
+} from "./simple-boolean-expression.js";
+
+type ScopedOperation = Readonly<{
+  operation: SemanticOperation;
+  scopeId: string;
+}>;
 
 export function lowerCheckedProcess(
   source: CheckedProcess,
 ): SemanticProcessProgram {
   // tag::semantic-process-lowering[]
-  const operations = source.nodes.map((node) =>
-    lowerNode(node, source.sequenceFlows)
+  const nodeOperations = source.nodes.flatMap((node) =>
+    lowerNode(node, source)
   );
+  const completionOperations = source.definitionScopes.map((scope) =>
+    lowerScopeCompletion(scope, source)
+  );
+  const scopedOperations = [...nodeOperations, ...completionOperations];
   const program: SemanticProcessProgram = {
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
@@ -32,6 +42,20 @@ export function lowerCheckedProcess(
       ...source.identity,
     },
     processId: source.processId,
+    definitionScopes: source.definitionScopes,
+    operationScopes: scopedOperations
+      .map(({ operation, scopeId }) => ({ operationId: operation.id, scopeId }))
+      .sort((left, right) =>
+        compareCanonicalStrings(left.operationId, right.operationId)
+      ),
+    controlPlaceScopes: source.sequenceFlowScopes
+      .map(({ sequenceFlowId, scopeId }) => ({
+        controlPlaceId: placeId(sequenceFlowId),
+        scopeId,
+      }))
+      .sort((left, right) =>
+        compareCanonicalStrings(left.controlPlaceId, right.controlPlaceId)
+      ),
     controlPlaces: source.sequenceFlows.map((flow) => ({
       id: placeId(flow.id),
       origin: {
@@ -39,7 +63,9 @@ export function lowerCheckedProcess(
         elementId: flow.id,
       },
     })),
-    operations: operations.sort(compareIds),
+    operations: scopedOperations
+      .map(({ operation }) => operation)
+      .sort(compareIds),
   };
   // end::semantic-process-lowering[]
   return program;
@@ -47,16 +73,11 @@ export function lowerCheckedProcess(
 
 function lowerNode(
   node: CheckedNode,
-  flows: ReadonlyArray<CheckedSequenceFlow>,
-): SemanticOperation {
-  const incoming = flows
-    .filter(({ targetId }) => targetId === node.id)
-    .map(({ id }) => placeId(id))
-    .sort(compareCanonicalStrings);
-  const outgoing = flows
-    .filter(({ sourceId }) => sourceId === node.id)
-    .map(({ id }) => placeId(id))
-    .sort(compareCanonicalStrings);
+  source: CheckedProcess,
+): ReadonlyArray<ScopedOperation> {
+  const scopeId = requireNodeScope(source, node.id);
+  const incoming = flowPlaces(source.sequenceFlows, node.id, "incoming");
+  const outgoing = flowPlaces(source.sequenceFlows, node.id, "outgoing");
   const base = {
     id: operationId(node.id),
     origin: {
@@ -64,27 +85,36 @@ function lowerNode(
       elementId: node.id,
     },
   } as const;
+  const scoped = (operation: SemanticOperation): ReadonlyArray<ScopedOperation> =>
+    [{ operation, scopeId }];
 
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent:
-      return {
+      return isRootScope(source, scopeId)
+        ? scoped({
+            ...base,
+            kind: SemanticOperationKind.Initiate,
+            output: requireOnly(outgoing, node.id, "outgoing"),
+          })
+        : [];
+    case CheckedNodeKind.EmbeddedSubProcess:
+      return scoped({
         ...base,
-        kind: SemanticOperationKind.Initiate,
-        output: requireOnly(outgoing, node.id, "outgoing"),
-      };
+        kind: SemanticOperationKind.EnterScope,
+        input: requireOnly(incoming, node.id, "incoming"),
+        childEntry: childEntryPlace(source, node.childScopeId),
+        childScopeId: node.childScopeId,
+      });
     case CheckedNodeKind.UserTask:
-      return {
+      return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitUserTask,
         input: requireOnly(incoming, node.id, "incoming"),
         output: requireOnly(outgoing, node.id, "outgoing"),
-        task: {
-          elementId: node.id,
-          name: node.name,
-        },
-      };
+        task: { elementId: node.id, name: node.name },
+      });
     case CheckedNodeKind.IntermediateCatchTimerEvent:
-      return {
+      return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitTimer,
         input: requireOnly(incoming, node.id, "incoming"),
@@ -93,20 +123,17 @@ function lowerNode(
           elementId: node.id,
           durationMs: normalizeTimerDuration(node.durationLiteral),
         },
-      };
+      });
     case CheckedNodeKind.IntermediateCatchMessageEvent:
-      return {
+      return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitMessage,
         input: requireOnly(incoming, node.id, "incoming"),
         output: requireOnly(outgoing, node.id, "outgoing"),
-        message: {
-          elementId: node.id,
-          channel: node.channel,
-        },
-      };
+        message: { elementId: node.id, channel: node.channel },
+      });
     case CheckedNodeKind.ServiceTask:
-      return {
+      return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitEffect,
         input: requireOnly(incoming, node.id, "incoming"),
@@ -125,37 +152,36 @@ function lowerNode(
               origin: {
                 kind: SemanticOriginKind.BpmnElement,
                 boundaryEventId: node.bpmnErrorRoute.boundaryEventId,
-                errorDefinitionId:
-                  node.bpmnErrorRoute.errorDefinitionId,
+                errorDefinitionId: node.bpmnErrorRoute.errorDefinitionId,
                 errorElementId: node.bpmnErrorRoute.errorElementId,
                 sequenceFlowId: node.bpmnErrorRoute.outputFlowId,
               },
             },
-      };
+      });
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:
-          return {
+          return scoped({
             ...base,
             kind: SemanticOperationKind.Duplicate,
             input: requireOnly(incoming, node.id, "incoming"),
             outputs: requireMany(outgoing, node.id, "outgoing"),
-          };
+          });
         case GatewayDirection.Converging:
-          return {
+          return scoped({
             ...base,
             kind: SemanticOperationKind.Synchronize,
             inputs: requireMany(incoming, node.id, "incoming"),
             output: requireOnly(outgoing, node.id, "outgoing"),
-          };
+          });
       }
     case CheckedNodeKind.ExclusiveGateway:
-      return {
+      return scoped({
         ...base,
         kind: SemanticOperationKind.Choose,
         input: requireOnly(incoming, node.id, "incoming"),
         candidates: node.candidateFlowIds.map((flowId) =>
-          lowerConditionalCandidate(flows, flowId)
+          lowerConditionalCandidate(source.sequenceFlows, flowId)
         ) as [
           ReturnType<typeof lowerConditionalCandidate>,
           ReturnType<typeof lowerConditionalCandidate>,
@@ -165,14 +191,90 @@ function lowerNode(
           kind: SemanticOriginKind.BpmnSequenceFlow,
           elementId: node.defaultFlowId,
         },
-      };
+      });
     case CheckedNodeKind.NoneEndEvent:
-      return {
+      return scoped({
         ...base,
-        kind: SemanticOperationKind.Terminate,
+        kind: SemanticOperationKind.ReachNoneEnd,
         input: requireOnly(incoming, node.id, "incoming"),
-      };
+      });
   }
+}
+
+function lowerScopeCompletion(
+  scope: DefinitionScope,
+  source: CheckedProcess,
+): ScopedOperation {
+  return {
+    scopeId: scope.id,
+    operation: {
+      id: `operation:complete-scope:${scope.id}`,
+      kind: SemanticOperationKind.CompleteScope,
+      origin: {
+        kind: SemanticOriginKind.BpmnElement,
+        elementId: scope.originElementId,
+      },
+      scopeId: scope.id,
+      parentOutput: scope.parentScopeId === null
+        ? null
+        : requireOnly(
+            flowPlaces(
+              source.sequenceFlows,
+              scope.originElementId,
+              "outgoing",
+            ),
+            scope.originElementId,
+            "outgoing",
+          ),
+    },
+  };
+}
+
+function childEntryPlace(source: CheckedProcess, childScopeId: string): string {
+  const starts = source.nodes.filter(
+    (node) =>
+      node.kind === CheckedNodeKind.NoneStartEvent &&
+      requireNodeScope(source, node.id) === childScopeId,
+  );
+  const start = starts[0];
+  if (starts.length !== 1 || start === undefined) {
+    throw new TypeError(`Checked scope ${childScopeId} requires one None Start Event`);
+  }
+  return requireOnly(
+    flowPlaces(source.sequenceFlows, start.id, "outgoing"),
+    start.id,
+    "outgoing",
+  );
+}
+
+function requireNodeScope(source: CheckedProcess, nodeId: string): string {
+  const owners = source.nodeScopes.filter((entry) => entry.nodeId === nodeId);
+  const owner = owners[0];
+  if (owners.length !== 1 || owner === undefined) {
+    throw new TypeError(`Checked node ${nodeId} requires one definition scope`);
+  }
+  return owner.scopeId;
+}
+
+function isRootScope(source: CheckedProcess, scopeId: string): boolean {
+  return source.definitionScopes.some(
+    (scope) => scope.id === scopeId && scope.parentScopeId === null,
+  );
+}
+
+function flowPlaces(
+  flows: ReadonlyArray<CheckedSequenceFlow>,
+  nodeId: string,
+  direction: "incoming" | "outgoing",
+): ReadonlyArray<string> {
+  return flows
+    .filter((flow) =>
+      direction === "incoming"
+        ? flow.targetId === nodeId
+        : flow.sourceId === nodeId
+    )
+    .map(({ id }) => placeId(id))
+    .sort(compareCanonicalStrings);
 }
 
 function lowerConditionalCandidate(

@@ -34,29 +34,45 @@ export type ControlState = NotStartedControl | InstancedControl;
 
 export type ControlPlaceTokens = DeepReadonly<{
   placeId: string;
+  owner: ScopeOccurrenceId;
   multiplicity: number;
+}>;
+
+export type ScopeOccurrenceId = DeepReadonly<{
+  processInstanceId: string;
+  definitionScopeId: string;
+  activation: number;
+}>;
+
+export type RuntimeScopeOccurrence = DeepReadonly<{
+  id: ScopeOccurrenceId;
+  parent: ScopeOccurrenceId | null;
 }>;
 
 export type SemanticUserTaskWait = DeepReadonly<{
   id: UserTaskInstanceId;
+  owner: ScopeOccurrenceId;
   name: string | null;
   output: string;
 }>;
 
 export type SemanticTimerWait = DeepReadonly<{
   id: TimerOccurrenceId;
+  owner: ScopeOccurrenceId;
   deadlineMs: number;
   output: string;
 }>;
 
 export type SemanticMessageWait = DeepReadonly<{
   id: MessageSubscriptionId;
+  owner: ScopeOccurrenceId;
   channel: MessageChannel;
   output: string;
 }>;
 
 export type SemanticEffectWait = DeepReadonly<{
   id: EffectOccurrenceId;
+  owner: ScopeOccurrenceId;
   descriptor: EffectDescriptor;
   arguments: VariableBinding[];
   outputMappings: VariableMapping[];
@@ -89,6 +105,7 @@ type ActivationCounter = DeepReadonly<{
 export type RuntimeState = DeepReadonly<{
   control: ControlState;
   initiationPending: boolean;
+  scopeOccurrences: RuntimeScopeOccurrence[];
   controlTokens: ControlPlaceTokens[];
   userTaskWaits: SemanticUserTaskWait[];
   messageWaits: SemanticMessageWait[];
@@ -99,6 +116,7 @@ export type RuntimeState = DeepReadonly<{
   messageActivations: ActivationCounter[];
   timerActivations: ActivationCounter[];
   effectActivations: ActivationCounter[];
+  scopeActivations: ActivationCounter[];
   endOccurrences: number;
   logicalTimeMs: number;
 }>;
@@ -106,6 +124,7 @@ export type RuntimeState = DeepReadonly<{
 export const initialState: RuntimeState = {
   control: { kind: ControlStateKind.NotStarted },
   initiationPending: false,
+  scopeOccurrences: [],
   controlTokens: [],
   userTaskWaits: [],
   messageWaits: [],
@@ -119,6 +138,7 @@ export const initialState: RuntimeState = {
   messageActivations: [],
   timerActivations: [],
   effectActivations: [],
+  scopeActivations: [],
   endOccurrences: 0,
   logicalTimeMs: 0,
 };
@@ -126,24 +146,30 @@ export const initialState: RuntimeState = {
 export function addToken(
   tokens: ReadonlyArray<ControlPlaceTokens>,
   placeId: string,
+  owner: ScopeOccurrenceId,
 ): ReadonlyArray<ControlPlaceTokens> {
-  const current = tokenMultiplicity(tokens, placeId);
+  const current = ownedTokenMultiplicity(tokens, placeId, owner);
   return [
-    ...tokens.filter((token) => token.placeId !== placeId),
-    { placeId, multiplicity: current + 1 },
+    ...tokens.filter((token) =>
+      token.placeId !== placeId || !sameScopeOccurrence(token.owner, owner)
+    ),
+    { placeId, owner, multiplicity: current + 1 },
   ].sort(compareTokenPlaces);
 }
 
 export function removeToken(
   tokens: ReadonlyArray<ControlPlaceTokens>,
   placeId: string,
+  owner: ScopeOccurrenceId,
 ): ReadonlyArray<ControlPlaceTokens> {
-  const current = tokenMultiplicity(tokens, placeId);
+  const current = ownedTokenMultiplicity(tokens, placeId, owner);
   if (current <= 1) {
-    return tokens.filter((token) => token.placeId !== placeId);
+    return tokens.filter((token) =>
+      token.placeId !== placeId || !sameScopeOccurrence(token.owner, owner)
+    );
   }
   return tokens.map((token) =>
-    token.placeId === placeId
+    token.placeId === placeId && sameScopeOccurrence(token.owner, owner)
       ? { ...token, multiplicity: token.multiplicity - 1 }
       : token
   );
@@ -153,7 +179,28 @@ export function tokenMultiplicity(
   tokens: ReadonlyArray<ControlPlaceTokens>,
   placeId: string,
 ): number {
-  return tokens.find((token) => token.placeId === placeId)?.multiplicity ?? 0;
+  return tokens
+    .filter((token) => token.placeId === placeId)
+    .reduce((total, token) => total + token.multiplicity, 0);
+}
+
+export function ownedTokenMultiplicity(
+  tokens: ReadonlyArray<ControlPlaceTokens>,
+  placeId: string,
+  owner: ScopeOccurrenceId,
+): number {
+  return tokens.find((token) =>
+    token.placeId === placeId && sameScopeOccurrence(token.owner, owner)
+  )?.multiplicity ?? 0;
+}
+
+export function tokenOwners(
+  tokens: ReadonlyArray<ControlPlaceTokens>,
+  placeId: string,
+): ReadonlyArray<ScopeOccurrenceId> {
+  return tokens
+    .filter((token) => token.placeId === placeId && token.multiplicity > 0)
+    .map(({ owner }) => owner);
 }
 
 export function setActivationCount(
@@ -178,6 +225,15 @@ export function sameOccurrence(
     left.elementId === right.elementId &&
     left.activation === right.activation
   );
+}
+
+export function sameScopeOccurrence(
+  left: ScopeOccurrenceId,
+  right: ScopeOccurrenceId,
+): boolean {
+  return left.processInstanceId === right.processInstanceId &&
+    left.definitionScopeId === right.definitionScopeId &&
+    left.activation === right.activation;
 }
 
 export function compareUserTaskWaits(
@@ -212,7 +268,28 @@ function compareTokenPlaces(
   left: ControlPlaceTokens,
   right: ControlPlaceTokens,
 ): number {
-  return compareCanonicalStrings(left.placeId, right.placeId);
+  const placeOrder = compareCanonicalStrings(left.placeId, right.placeId);
+  return placeOrder !== 0
+    ? placeOrder
+    : compareScopeOccurrences(left.owner, right.owner);
+}
+
+function compareScopeOccurrences(
+  left: ScopeOccurrenceId,
+  right: ScopeOccurrenceId,
+): number {
+  const instanceOrder = compareCanonicalStrings(
+    left.processInstanceId,
+    right.processInstanceId,
+  );
+  if (instanceOrder !== 0) {
+    return instanceOrder;
+  }
+  const scopeOrder = compareCanonicalStrings(
+    left.definitionScopeId,
+    right.definitionScopeId,
+  );
+  return scopeOrder !== 0 ? scopeOrder : left.activation - right.activation;
 }
 
 function compareOccurrences(

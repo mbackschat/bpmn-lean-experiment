@@ -91,6 +91,35 @@ test("retains exact source identity and compiles checked and semantic definition
       sourceSha256: "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
     },
     processId: "Process_SequentialUserTask",
+    definitionScopes: [{
+      id: "scope:Process_SequentialUserTask",
+      parentScopeId: null,
+      originElementId: "Process_SequentialUserTask",
+    }],
+    nodeScopes: [
+      {
+        nodeId: "EndEvent_1",
+        scopeId: "scope:Process_SequentialUserTask",
+      },
+      {
+        nodeId: "StartEvent_1",
+        scopeId: "scope:Process_SequentialUserTask",
+      },
+      {
+        nodeId: "UserTask_Approve",
+        scopeId: "scope:Process_SequentialUserTask",
+      },
+    ],
+    sequenceFlowScopes: [
+      {
+        sequenceFlowId: "Flow_StartToTask",
+        scopeId: "scope:Process_SequentialUserTask",
+      },
+      {
+        sequenceFlowId: "Flow_TaskToEnd",
+        scopeId: "scope:Process_SequentialUserTask",
+      },
+    ],
     nodes: [
       { kind: CheckedNodeKind.NoneEndEvent, id: "EndEvent_1" },
       { kind: CheckedNodeKind.NoneStartEvent, id: "StartEvent_1" },
@@ -122,9 +151,10 @@ test("retains exact source identity and compiles checked and semantic definition
   assert.deepEqual(
     result.semanticProcess.operations.map(({ kind }) => kind),
     [
-      SemanticOperationKind.Terminate,
+      SemanticOperationKind.ReachNoneEnd,
       SemanticOperationKind.Initiate,
       SemanticOperationKind.AwaitUserTask,
+      SemanticOperationKind.CompleteScope,
     ],
   );
 });

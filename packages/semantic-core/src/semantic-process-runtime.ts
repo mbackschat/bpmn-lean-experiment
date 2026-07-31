@@ -15,9 +15,7 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  addActivityVariableScope,
   completeActivityVariableScope,
-  evaluateInputMappings,
   mergeProcessVariableBindings,
 } from "./semantic-process-data.js";
 import {
@@ -28,19 +26,27 @@ import {
   deliverMessage,
 } from "./semantic-process-message.js";
 import {
+  commonTokenOwner,
+  completeScope,
+  enterScope,
+  onlyTokenOwner,
+} from "./semantic-process-scope-runtime.js";
+import {
   addToken,
-  compareEffectWaits,
-  compareTimerWaits,
-  compareUserTaskWaits,
   ControlStateKind,
   removeToken,
   sameOccurrence,
   setActivationCount,
-  tokenMultiplicity,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
+  ScopeOccurrenceId,
 } from "./semantic-process-state.js";
+import {
+  createEffectWait,
+  createTimerWait,
+  createUserTaskWait,
+} from "./semantic-process-wait-runtime.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export {
@@ -53,6 +59,8 @@ export type {
   ActivityVariableScope,
   ProcessVariableScope,
   RuntimeState,
+  RuntimeScopeOccurrence,
+  ScopeOccurrenceId,
   ScopedVariables,
   SemanticEffectWait,
   SemanticMessageWait,
@@ -94,11 +102,22 @@ function admit(
   stimulus: Stimulus,
 ): CommandAdmission {
   switch (stimulus.kind) {
-    case StimulusKind.StartProcess:
+    case StimulusKind.StartProcess: {
+      const rootScopes = program.definitionScopes.filter(
+        ({ parentScopeId }) => parentScopeId === null,
+      );
+      const rootScope = rootScopes[0];
       if (
         state.control.kind === ControlStateKind.NotStarted &&
-        stimulus.processId === program.processId
+        stimulus.processId === program.processId &&
+        rootScopes.length === 1 &&
+        rootScope !== undefined
       ) {
+        const rootOccurrence = {
+          processInstanceId: stimulus.instanceId,
+          definitionScopeId: rootScope.id,
+          activation: 1,
+        };
         return {
           outcome: CommandOutcome.Committed,
           state: {
@@ -108,6 +127,12 @@ function admit(
               instanceId: stimulus.instanceId,
             },
             initiationPending: true,
+            scopeOccurrences: [{ id: rootOccurrence, parent: null }],
+            scopeActivations: setActivationCount(
+              state.scopeActivations,
+              rootScope.id,
+              1,
+            ),
             variables: {
               ...state.variables,
               process: { bindings: stimulus.initialVariables },
@@ -116,6 +141,7 @@ function admit(
         };
       }
       return { outcome: CommandOutcome.Rejected, state };
+    }
     case StimulusKind.CompleteUserTaskInstance: {
       const wait = state.userTaskWaits.find((candidate) =>
         sameOccurrence(candidate.id, stimulus.taskId)
@@ -130,7 +156,11 @@ function admit(
         outcome: CommandOutcome.Committed,
         state: {
           ...state,
-          controlTokens: addToken(state.controlTokens, wait.output),
+          controlTokens: addToken(
+            state.controlTokens,
+            wait.output,
+            wait.owner,
+          ),
           userTaskWaits: state.userTaskWaits.filter(
             (candidate) => candidate !== wait,
           ),
@@ -167,7 +197,11 @@ function admit(
         outcome: CommandOutcome.Committed,
         state: {
           ...state,
-          controlTokens: addToken(state.controlTokens, wait.output),
+          controlTokens: addToken(
+            state.controlTokens,
+            wait.output,
+            wait.owner,
+          ),
           timerWaits: state.timerWaits.filter(
             (candidate) => candidate !== wait,
           ),
@@ -212,6 +246,7 @@ function admit(
           controlTokens: addToken(
             state.controlTokens,
             route?.output ?? wait.output,
+            wait.owner,
           ),
           effectWaits: state.effectWaits.filter(
             (candidate) => candidate !== wait,
@@ -304,204 +339,95 @@ export function applyInternalOperation(
   state: RuntimeState,
 ): RuntimeState | null {
   switch (operation.kind) {
-    case SemanticOperationKind.Initiate:
-      return state.initiationPending
+    case SemanticOperationKind.Initiate: {
+      const rootOwner = state.scopeOccurrences.find(
+        ({ parent }) => parent === null,
+      )?.id;
+      return state.initiationPending && rootOwner !== undefined
         ? {
             ...state,
             initiationPending: false,
             controlTokens: addToken(
               state.controlTokens,
               operation.output,
+              rootOwner,
             ),
           }
         : null;
-    case SemanticOperationKind.AwaitUserTask:
-      return tokenMultiplicity(state.controlTokens, operation.input) > 0
-        ? createUserTaskWait(operation, state)
+    }
+    case SemanticOperationKind.EnterScope: {
+      const owner = onlyTokenOwner(state, operation.input);
+      return owner === undefined
+        ? null
+        : enterScope(operation, state, owner);
+    }
+    case SemanticOperationKind.AwaitUserTask: {
+      const taskOwner = onlyTokenOwner(state, operation.input);
+      return taskOwner !== undefined
+        ? createUserTaskWait(operation, state, taskOwner)
         : null;
-    case SemanticOperationKind.AwaitMessage:
-      return tokenMultiplicity(state.controlTokens, operation.input) > 0
-        ? createMessageWait(operation, state)
+    }
+    case SemanticOperationKind.AwaitMessage: {
+      const messageOwner = onlyTokenOwner(state, operation.input);
+      return messageOwner !== undefined
+        ? createMessageWait(operation, state, messageOwner)
         : null;
-    case SemanticOperationKind.AwaitTimer:
-      return tokenMultiplicity(state.controlTokens, operation.input) > 0
-        ? createTimerWait(operation, state)
+    }
+    case SemanticOperationKind.AwaitTimer: {
+      const timerOwner = onlyTokenOwner(state, operation.input);
+      return timerOwner !== undefined
+        ? createTimerWait(operation, state, timerOwner)
         : null;
-    case SemanticOperationKind.AwaitEffect:
-      return tokenMultiplicity(state.controlTokens, operation.input) > 0
-        ? createEffectWait(operation, state)
+    }
+    case SemanticOperationKind.AwaitEffect: {
+      const effectOwner = onlyTokenOwner(state, operation.input);
+      return effectOwner !== undefined
+        ? createEffectWait(operation, state, effectOwner)
         : null;
-    case SemanticOperationKind.Duplicate:
-      return tokenMultiplicity(state.controlTokens, operation.input) > 0
-        ? duplicate(operation, state)
+    }
+    case SemanticOperationKind.Duplicate: {
+      const duplicateOwner = onlyTokenOwner(state, operation.input);
+      return duplicateOwner !== undefined
+        ? duplicate(operation, state, duplicateOwner)
         : null;
-    case SemanticOperationKind.Synchronize:
-      return operation.inputs.every(
-        (input) => tokenMultiplicity(state.controlTokens, input) > 0,
-      )
-        ? synchronize(operation, state)
+    }
+    case SemanticOperationKind.Synchronize: {
+      const synchronizedOwner = commonTokenOwner(state, operation.inputs);
+      return synchronizedOwner !== undefined
+        ? synchronize(operation, state, synchronizedOwner)
         : null;
-    case SemanticOperationKind.Choose:
-      return tokenMultiplicity(state.controlTokens, operation.input) > 0
-        ? choose(operation, state)
+    }
+    case SemanticOperationKind.Choose: {
+      const choiceOwner = onlyTokenOwner(state, operation.input);
+      return choiceOwner !== undefined
+        ? choose(operation, state, choiceOwner)
         : null;
-    case SemanticOperationKind.Terminate:
-      return tokenMultiplicity(state.controlTokens, operation.input) > 0
-        ? terminate(operation, state)
+    }
+    case SemanticOperationKind.ReachNoneEnd: {
+      const endOwner = onlyTokenOwner(state, operation.input);
+      return endOwner !== undefined
+        ? reachNoneEnd(operation, state, endOwner)
         : null;
+    }
+    case SemanticOperationKind.CompleteScope:
+      return completeScope(operation, state);
     default:
       return assertNever(operation);
   }
 }
 
-function createUserTaskWait(
+function reachNoneEnd(
   operation: Extract<
     SemanticOperation,
-    { kind: SemanticOperationKind.AwaitUserTask }
+    { kind: SemanticOperationKind.ReachNoneEnd }
   >,
   state: RuntimeState,
+  owner: ScopeOccurrenceId,
 ): RuntimeState {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return state;
-  }
-  const activation =
-    (state.taskActivations.find(
-      ({ elementId }) => elementId === operation.task.elementId,
-    )?.count ?? 0) + 1;
   return {
     ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input),
-    userTaskWaits: [
-      ...state.userTaskWaits,
-      {
-        id: {
-          processInstanceId: state.control.instanceId,
-          elementId: operation.task.elementId,
-          activation,
-        },
-        name: operation.task.name,
-        output: operation.output,
-      },
-    ].sort(compareUserTaskWaits),
-    taskActivations: setActivationCount(
-      state.taskActivations,
-      operation.task.elementId,
-      activation,
-    ),
-  };
-}
-
-function createTimerWait(
-  operation: Extract<
-    SemanticOperation,
-    { kind: SemanticOperationKind.AwaitTimer }
-  >,
-  state: RuntimeState,
-): RuntimeState {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return state;
-  }
-  const activation =
-    (state.timerActivations.find(
-      ({ elementId }) => elementId === operation.timer.elementId,
-    )?.count ?? 0) + 1;
-  const deadlineMs = state.logicalTimeMs + operation.timer.durationMs;
-  if (!Number.isSafeInteger(deadlineMs)) {
-    throw new RangeError("Timer deadline exceeds the safe integer boundary");
-  }
-  return {
-    ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input),
-    timerWaits: [
-      ...state.timerWaits,
-      {
-        id: {
-          processInstanceId: state.control.instanceId,
-          elementId: operation.timer.elementId,
-          activation,
-        },
-        deadlineMs,
-        output: operation.output,
-      },
-    ].sort(compareTimerWaits),
-    timerActivations: setActivationCount(
-      state.timerActivations,
-      operation.timer.elementId,
-      activation,
-    ),
-  };
-}
-
-function createEffectWait(
-  operation: Extract<
-    SemanticOperation,
-    { kind: SemanticOperationKind.AwaitEffect }
-  >,
-  state: RuntimeState,
-): RuntimeState {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return state;
-  }
-  const activation =
-    (state.effectActivations.find(
-      ({ elementId }) => elementId === operation.effect.elementId,
-    )?.count ?? 0) + 1;
-  const id = {
-    processInstanceId: state.control.instanceId,
-    elementId: operation.effect.elementId,
-    activation,
-  };
-  const arguments_ = evaluateInputMappings(operation.effect.inputMappings);
-  return {
-    ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input),
-    effectWaits: [
-      ...state.effectWaits,
-      {
-        id,
-        descriptor: operation.effect.descriptor,
-        arguments: arguments_,
-        outputMappings: operation.effect.outputMappings,
-        bpmnErrorRoute: operation.bpmnErrorRoute,
-        output: operation.output,
-      },
-    ].sort(compareEffectWaits),
-    variables: addActivityVariableScope(state.variables, id, arguments_),
-    effectActivations: setActivationCount(
-      state.effectActivations,
-      operation.effect.elementId,
-      activation,
-    ),
-  };
-}
-
-function terminate(
-  operation: Extract<
-    SemanticOperation,
-    { kind: SemanticOperationKind.Terminate }
-  >,
-  state: RuntimeState,
-): RuntimeState {
-  const controlTokens = removeToken(state.controlTokens, operation.input);
-  const endOccurrences = state.endOccurrences + 1;
-  const completed =
-    controlTokens.length === 0 &&
-    state.userTaskWaits.length === 0 &&
-    state.messageWaits.length === 0 &&
-    state.timerWaits.length === 0 &&
-    state.effectWaits.length === 0 &&
-    !state.initiationPending;
-  return {
-    ...state,
-    control:
-      completed && state.control.kind === ControlStateKind.Running
-        ? {
-            kind: ControlStateKind.Completed,
-            instanceId: state.control.instanceId,
-          }
-        : state.control,
-    controlTokens,
-    endOccurrences,
+    controlTokens: removeToken(state.controlTokens, operation.input, owner),
+    endOccurrences: state.endOccurrences + 1,
   };
 }
 
@@ -511,12 +437,13 @@ function duplicate(
     { kind: SemanticOperationKind.Duplicate }
   >,
   state: RuntimeState,
+  owner: ScopeOccurrenceId,
 ): RuntimeState {
   return {
     ...state,
     controlTokens: operation.outputs.reduce(
-      addToken,
-      removeToken(state.controlTokens, operation.input),
+      (tokens, output) => addToken(tokens, output, owner),
+      removeToken(state.controlTokens, operation.input, owner),
     ),
   };
 }
@@ -527,14 +454,15 @@ function synchronize(
     { kind: SemanticOperationKind.Synchronize }
   >,
   state: RuntimeState,
+  owner: ScopeOccurrenceId,
 ): RuntimeState {
   const remaining = operation.inputs.reduce(
-    removeToken,
+    (tokens, input) => removeToken(tokens, input, owner),
     state.controlTokens,
   );
   return {
     ...state,
-    controlTokens: addToken(remaining, operation.output),
+    controlTokens: addToken(remaining, operation.output, owner),
   };
 }
 
@@ -544,6 +472,7 @@ function choose(
     { kind: SemanticOperationKind.Choose }
   >,
   state: RuntimeState,
+  owner: ScopeOccurrenceId,
 ): RuntimeState {
   const selected = operation.candidates.find(({ condition }) =>
     evaluateSimpleBooleanExpression(
@@ -554,8 +483,9 @@ function choose(
   return {
     ...state,
     controlTokens: addToken(
-      removeToken(state.controlTokens, operation.input),
+      removeToken(state.controlTokens, operation.input, owner),
       selected?.output ?? operation.defaultOutput,
+      owner,
     ),
   };
 }

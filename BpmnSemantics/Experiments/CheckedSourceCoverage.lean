@@ -39,6 +39,7 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
             cases result
             rfl
         | noneStartEvent _ => simp [parseFrom, nodeResult] at result
+        | embeddedSubProcess _ _ => simp [parseFrom, nodeResult] at result
         | userTask _ _
         | intermediateCatchTimerEvent _ _
         | serviceTask _ _ _ _ _ =>

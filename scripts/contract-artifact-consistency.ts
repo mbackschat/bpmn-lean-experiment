@@ -39,6 +39,19 @@ function requireSortedStrings(
   }
 }
 
+function requireSortedByField(
+  label: string,
+  values: ReadonlyArray<Readonly<Record<string, string>>>,
+  field: string,
+): void {
+  const sorted = [...values].sort((left, right) =>
+    compareCanonicalStrings(left[field] ?? "", right[field] ?? "")
+  );
+  if (!isDeepStrictEqual(values, sorted)) {
+    throw new Error(`${label} must be sorted by ${field}`);
+  }
+}
+
 function requireUniqueIds<Value extends Readonly<{ id: string }>>(
   label: string,
   values: ReadonlyArray<Value>,
@@ -59,6 +72,8 @@ function referencedControlPlaces(
   switch (operation.kind) {
     case "initiate":
       return [operation.output];
+    case "enterScope":
+      return [operation.input, operation.childEntry];
     case "awaitUserTask":
     case "awaitTimer":
     case "awaitMessage":
@@ -74,8 +89,10 @@ function referencedControlPlaces(
         ...operation.candidates.map(({ output }) => output),
         operation.defaultOutput,
       ];
-    case "terminate":
+    case "reachNoneEnd":
       return [operation.input];
+    case "completeScope":
+      return operation.parentOutput === null ? [] : [operation.parentOutput];
     default:
       throw new Error("unsupported semantic operation");
   }
@@ -87,6 +104,20 @@ export function verifyCanonicalDefinitionOrder(
 ): void {
   requireSortedById("checked process nodes", checkedProcess.nodes);
   requireSortedById(
+    "checked process definition scopes",
+    checkedProcess.definitionScopes,
+  );
+  requireSortedByField(
+    "checked process node scopes",
+    checkedProcess.nodeScopes,
+    "nodeId",
+  );
+  requireSortedByField(
+    "checked process Sequence Flow scopes",
+    checkedProcess.sequenceFlowScopes,
+    "sequenceFlowId",
+  );
+  requireSortedById(
     "checked process sequence flows",
     checkedProcess.sequenceFlows,
   );
@@ -97,6 +128,20 @@ export function verifyCanonicalDefinitionOrder(
   requireSortedById(
     "semantic process operations",
     semanticProcess.operations,
+  );
+  requireSortedById(
+    "semantic process definition scopes",
+    semanticProcess.definitionScopes,
+  );
+  requireSortedByField(
+    "semantic process operation scopes",
+    semanticProcess.operationScopes,
+    "operationId",
+  );
+  requireSortedByField(
+    "semantic process control-place scopes",
+    semanticProcess.controlPlaceScopes,
+    "controlPlaceId",
   );
   for (const operation of semanticProcess.operations) {
     switch (operation.kind) {
@@ -115,11 +160,13 @@ export function verifyCanonicalDefinitionOrder(
       case "choose":
         break;
       case "initiate":
+      case "enterScope":
       case "awaitUserTask":
       case "awaitTimer":
       case "awaitMessage":
       case "awaitEffect":
-      case "terminate":
+      case "reachNoneEnd":
+      case "completeScope":
         break;
       default:
         throw new Error("unsupported semantic operation");
@@ -138,6 +185,11 @@ export function verifyDefinitionReferences(
   const flowIds = requireUniqueIds(
     "checked process sequence flows",
     checkedProcess.sequenceFlows,
+  );
+  const definitionOriginIds = new Set(
+    checkedProcess.definitionScopes.map(({ originElementId }) =>
+      originElementId
+    ),
   );
   for (const flow of checkedProcess.sequenceFlows) {
     if (!nodeIds.has(flow.sourceId)) {
@@ -183,7 +235,10 @@ export function verifyDefinitionReferences(
     }
   }
   for (const operation of semanticProcess.operations) {
-    if (!nodeIds.has(operation.origin.elementId)) {
+    if (
+      !nodeIds.has(operation.origin.elementId) &&
+      !definitionOriginIds.has(operation.origin.elementId)
+    ) {
       throw new Error(
         `operation ${operation.id} references unknown BPMN element origin ${operation.origin.elementId}`,
       );

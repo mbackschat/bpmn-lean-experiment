@@ -1,5 +1,7 @@
 import BpmnSemantics.Experiments.CheckedSourceSemantics
 import BpmnSemantics.ParallelForkJoinConformance
+import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.UserTaskInteractionConformance
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelation — positional-lowering discriminator
@@ -89,6 +91,14 @@ def renamedCountermodel : CheckedProcess :=
         sourceSha256 :=
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
     processId := ⟨"Process_Renamed"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_Renamed"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_Renamed"⟩
+      [ ⟨"End"⟩, ⟨"Fork"⟩, ⟨"Join"⟩, ⟨"Start"⟩, ⟨"Task_A"⟩
+      , ⟨"Task_Z"⟩ ]
+    sequenceFlowScopes := rootSequenceFlowScopes ⟨"Process_Renamed"⟩
+      [ ⟨"Flow_1_ToZ"⟩, ⟨"Flow_2_ToA"⟩, ⟨"Flow_3_AJoin"⟩
+      , ⟨"Flow_4_ZJoin"⟩, ⟨"Flow_5_JoinEnd"⟩
+      , ⟨"Flow_6_StartFork"⟩ ]
     nodes :=
       [ .noneEndEvent ⟨"End"⟩
       , .parallelGateway ⟨"Fork"⟩ .diverging

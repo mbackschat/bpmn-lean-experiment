@@ -11,7 +11,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ServiceTask, ParallelGateway, ExclusiveGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, EndEvent, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, and Operation type identity plus messageRef, operationRef, inMessageRef, payload, implementation, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
@@ -24,6 +24,7 @@
       "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, and ExclusiveGateway.default",
       "BaseElement.id and Definitions.rootElements identity and containment",
       "BoundaryEvent attachment and interrupting default",
+      "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
       "ErrorEventDefinition.errorRef and Error name/code identity"
     ],
     "absent": [
@@ -49,6 +50,7 @@
     "formalExpressionType": "bpmn:FormalExpression",
     "userTaskType": "bpmn:UserTask",
     "serviceTaskType": "bpmn:ServiceTask",
+    "subProcessType": "bpmn:SubProcess",
     "parallelGatewayType": "bpmn:ParallelGateway",
     "exclusiveGatewayType": "bpmn:ExclusiveGateway",
     "endEventType": "bpmn:EndEvent",
@@ -162,6 +164,13 @@
       "name": "ServiceTask",
       "directSuperClasses": [
         "Task"
+      ]
+    },
+    {
+      "name": "SubProcess",
+      "directSuperClasses": [
+        "Activity",
+        "FlowElementsContainer"
       ]
     },
     {
@@ -503,6 +512,15 @@
       "lower": 1,
       "upper": 1,
       "containment": false
+    },
+    {
+      "owner": "SubProcess",
+      "name": "triggeredByEvent",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": false
     }
   ]
 }

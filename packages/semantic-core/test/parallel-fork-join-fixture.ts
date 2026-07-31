@@ -17,10 +17,11 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import { rootScopedProgram } from "./root-scope-fixture.ts";
 
 const sourceSha256 = "1".repeat(64);
 
-export const parallelProgram: SemanticProcessProgram = {
+export const parallelProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -40,7 +41,7 @@ export const parallelProgram: SemanticProcessProgram = {
   operations: [
     {
       ...operationBase("EndEvent_1"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_JoinToEnd",
     },
     {
@@ -75,7 +76,7 @@ export const parallelProgram: SemanticProcessProgram = {
       task: { elementId: "UserTask_B", name: "B" },
     },
   ],
-};
+});
 
 export const parallelScenario: Scenario = {
   kind: ScenarioDocumentKind.Scenario,

@@ -22,6 +22,7 @@ import {
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
+  ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 
 export function createMessageWait(
@@ -30,6 +31,7 @@ export function createMessageWait(
     { kind: SemanticOperationKind.AwaitMessage }
   >,
   state: RuntimeState,
+  owner: ScopeOccurrenceId,
 ): RuntimeState {
   if (state.control.kind !== ControlStateKind.Running) {
     return state;
@@ -40,7 +42,7 @@ export function createMessageWait(
     )?.count ?? 0) + 1;
   return {
     ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input),
+    controlTokens: removeToken(state.controlTokens, operation.input, owner),
     messageWaits: [
       ...state.messageWaits,
       {
@@ -49,6 +51,7 @@ export function createMessageWait(
           elementId: operation.message.elementId,
           activation,
         },
+        owner,
         channel: operation.message.channel,
         output: operation.output,
       },
@@ -96,7 +99,7 @@ export function deliverMessage(
   }
   return {
     ...state,
-    controlTokens: addToken(state.controlTokens, wait.output),
+    controlTokens: addToken(state.controlTokens, wait.output, wait.owner),
     messageWaits: state.messageWaits.filter(
       (candidate) => candidate !== wait,
     ),

@@ -34,6 +34,9 @@ import {
   startStimulus,
 } from "./parallel-fork-join-fixture.ts";
 import { stateObservationAt } from "./canonical-observations.ts";
+import { rootScopeOccurrence } from "./root-scope-fixture.ts";
+
+const owner = rootScopeOccurrence(parallelProgram.processId, "Instance_1");
 
 test("fork duplication closes at exactly two simultaneous task waits", () => {
   const started = applyStimulus(
@@ -75,7 +78,7 @@ test("both task completion orders reach the same final state", () => {
     [taskId("UserTask_B")],
   );
   assert.deepEqual(afterA.state.controlTokens, [
-    { placeId: "place:Flow_AToJoin", multiplicity: 1 },
+    { placeId: "place:Flow_AToJoin", owner, multiplicity: 1 },
   ]);
 
   const aThenB = applyStimulus(
@@ -185,7 +188,7 @@ test("both orders expose the approved stable public observations", () => {
 test("two left tokens cannot satisfy a join missing its right input", () => {
   const join = operation(SemanticOperationKind.Synchronize);
   const duplicateLeftNoRight = runningState([
-    { placeId: "place:Flow_AToJoin", multiplicity: 2 },
+    { placeId: "place:Flow_AToJoin", owner, multiplicity: 2 },
   ]);
 
   assert.equal(
@@ -197,16 +200,16 @@ test("two left tokens cannot satisfy a join missing its right input", () => {
 test("one join activation consumes per incoming flow and retains excess", () => {
   const join = operation(SemanticOperationKind.Synchronize);
   const excess = runningState([
-    { placeId: "place:Flow_BToJoin", multiplicity: 1 },
-    { placeId: "place:Flow_AToJoin", multiplicity: 2 },
+    { placeId: "place:Flow_BToJoin", owner, multiplicity: 1 },
+    { placeId: "place:Flow_AToJoin", owner, multiplicity: 2 },
   ]);
 
   const synchronized = applyInternalOperation(join, excess);
 
   assert.ok(synchronized !== null, "the join must be enabled");
   assert.deepEqual(synchronized.controlTokens, [
-    { placeId: "place:Flow_AToJoin", multiplicity: 1 },
-    { placeId: "place:Flow_JoinToEnd", multiplicity: 1 },
+    { placeId: "place:Flow_AToJoin", owner, multiplicity: 1 },
+    { placeId: "place:Flow_JoinToEnd", owner, multiplicity: 1 },
   ]);
 });
 
@@ -232,6 +235,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
     messageWaits: [
       {
         id: taskId("A_Message"),
+        owner,
         channel: {
           interfaceId: "Interface_Projection",
           interfaceOperationId: "Operation_Projection",
@@ -243,6 +247,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
     timerWaits: [
       {
         id: taskId("C_Timer"),
+        owner,
         deadlineMs: 1000,
         output: "place:Flow_TimerToEnd",
       },
@@ -250,6 +255,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
     effectWaits: [
       {
         id: taskId("D_Effect"),
+        owner,
         descriptor: {
           protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
           operation: "urn:bpmn-lean:effect-operation:probe-v1",
@@ -360,6 +366,7 @@ function taskId(elementId: string): UserTaskInstanceId {
 function wait(elementId: string, name: string): SemanticUserTaskWait {
   return {
     id: taskId(elementId),
+    owner,
     name,
     output: `place:Flow_${elementId === "UserTask_A" ? "A" : "B"}ToJoin`,
   };
@@ -375,6 +382,11 @@ function runningState(
       kind: ControlStateKind.Running,
       instanceId: "Instance_1",
     },
+    scopeOccurrences: [{ id: owner, parent: null }],
+    scopeActivations: [{
+      elementId: owner.definitionScopeId,
+      count: owner.activation,
+    }],
     controlTokens,
     userTaskWaits,
   };

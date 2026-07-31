@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_EmbeddedSubProcess" targetNamespace="https://bpmn-lean.local/scenarios/embedded-subprocess-completion">
+  <bpmn:process id="Process_EmbeddedSubProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Outer">
+      <bpmn:outgoing>Flow_OuterStartToScope</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Work">
+      <bpmn:incoming>Flow_OuterStartToScope</bpmn:incoming>
+      <bpmn:outgoing>Flow_ScopeToAfter</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Child">
+        <bpmn:outgoing>Flow_ChildStartToFork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="Gateway_ChildFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_ChildStartToFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_ChildForkToA</bpmn:outgoing>
+        <bpmn:outgoing>Flow_ChildForkToB</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_ChildA" name="Child A">
+        <bpmn:incoming>Flow_ChildForkToA</bpmn:incoming>
+        <bpmn:outgoing>Flow_ChildAToEnd</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="UserTask_ChildB" name="Child B">
+        <bpmn:incoming>Flow_ChildForkToB</bpmn:incoming>
+        <bpmn:outgoing>Flow_ChildBToEnd</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_ChildA">
+        <bpmn:incoming>Flow_ChildAToEnd</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_ChildB">
+        <bpmn:incoming>Flow_ChildBToEnd</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_ChildStartToFork" sourceRef="StartEvent_Child" targetRef="Gateway_ChildFork"/>
+      <bpmn:sequenceFlow id="Flow_ChildForkToA" sourceRef="Gateway_ChildFork" targetRef="UserTask_ChildA"/>
+      <bpmn:sequenceFlow id="Flow_ChildForkToB" sourceRef="Gateway_ChildFork" targetRef="UserTask_ChildB"/>
+      <bpmn:sequenceFlow id="Flow_ChildAToEnd" sourceRef="UserTask_ChildA" targetRef="EndEvent_ChildA"/>
+      <bpmn:sequenceFlow id="Flow_ChildBToEnd" sourceRef="UserTask_ChildB" targetRef="EndEvent_ChildB"/>
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_AfterScope" name="After Scope">
+      <bpmn:incoming>Flow_ScopeToAfter</bpmn:incoming>
+      <bpmn:outgoing>Flow_AfterToOuterEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Outer">
+      <bpmn:incoming>Flow_AfterToOuterEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_OuterStartToScope" sourceRef="StartEvent_Outer" targetRef="SubProcess_Work"/>
+    <bpmn:sequenceFlow id="Flow_ScopeToAfter" sourceRef="SubProcess_Work" targetRef="UserTask_AfterScope"/>
+    <bpmn:sequenceFlow id="Flow_AfterToOuterEnd" sourceRef="UserTask_AfterScope" targetRef="EndEvent_Outer"/>
+  </bpmn:process>
+</bpmn:definitions>

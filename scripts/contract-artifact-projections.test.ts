@@ -397,6 +397,36 @@ test("detects a missing live sibling after stale parallel completion", async () 
   );
 });
 
+test("detects premature embedded Sub-Process exit after one child End", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const embedded = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "embedded-subprocess-completion-a-then-b",
+    ),
+    "embedded Sub-Process artifact set",
+  );
+  const mutated = cloneArtifactSet(embedded);
+  const afterFirstChild = required(
+    mutated.evidence.producerObservations.taskQueries.find(
+      ({ afterCommandId }) => afterCommandId === "complete-child-a",
+    ),
+    "post-first-child task snapshot",
+  );
+  const remainingTask = requiredAt(
+    afterFirstChild.tasks,
+    0,
+    "remaining child task",
+  );
+  remainingTask.elementId = "UserTask_AfterScope";
+  remainingTask.name = "After Scope";
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /producer observation projection does not match canonical/,
+  );
+});
+
 test("detects a timer deadline projection mutation", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
   const timer = required(

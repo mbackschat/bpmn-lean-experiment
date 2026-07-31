@@ -23,11 +23,15 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import {
+  rootScopedProgram,
+  rootScopeOccurrence,
+} from "./root-scope-fixture.ts";
 
 const compositionProfile =
   "bpmn-2.0.2-timer-user-task-composition-draft";
 
-const program: SemanticProcessProgram = {
+const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -45,7 +49,7 @@ const program: SemanticProcessProgram = {
   operations: [
     {
       ...operationBase("EndEvent_1"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_TaskToEnd",
     },
     {
@@ -74,9 +78,9 @@ const program: SemanticProcessProgram = {
       },
     },
   ],
-};
+});
 
-const reverseProgram: SemanticProcessProgram = {
+const reverseProgram = rootScopedProgram({
   ...program,
   controlPlaces: [
     controlPlace("Flow_StartToTask"),
@@ -99,15 +103,17 @@ const reverseProgram: SemanticProcessProgram = {
           input: "place:Flow_TaskToTimer",
           output: "place:Flow_TimerToEnd",
         };
-      case SemanticOperationKind.Terminate:
+      case SemanticOperationKind.ReachNoneEnd:
         return { ...operation, input: "place:Flow_TimerToEnd" };
+      case SemanticOperationKind.CompleteScope:
+        return operation;
       default:
         throw new Error(
           `unexpected composition operation ${operation.kind}`,
         );
     }
   }),
-};
+});
 
 const start = {
   kind: StimulusKind.StartProcess,
@@ -225,7 +231,14 @@ test("keeps closure bounded, single-enabled, and resumable at every new stable s
   const strandedState = {
     ...taskWait.state,
     controlTokens: [
-      { placeId: "place:stranded", multiplicity: 1 },
+      {
+        placeId: "place:stranded",
+        owner: rootScopeOccurrence(
+          program.processId,
+          "CompositionInstance_1",
+        ),
+        multiplicity: 1,
+      },
     ],
     userTaskWaits: [],
   };

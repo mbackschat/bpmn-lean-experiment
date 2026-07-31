@@ -44,6 +44,47 @@ const descriptor: EffectDescriptor = {
 export function serviceTaskEffectInput(
   instanceId = "Instance_1",
 ): TemporalExecutionInput {
+  const processId = "Process_ServiceTaskEffect";
+  const scopeId = `scope:${processId}`;
+  const controlPlaces = [
+    serviceTaskControlPlace("Flow_ServiceToEnd"),
+    serviceTaskControlPlace("Flow_StartToService"),
+  ];
+  const operations = [
+    {
+      ...serviceTaskOperationBase("EndEvent_1"),
+      kind: SemanticOperationKind.ReachNoneEnd,
+      input: "place:Flow_ServiceToEnd",
+    },
+    {
+      ...serviceTaskOperationBase("ServiceTask_Record"),
+      kind: SemanticOperationKind.AwaitEffect,
+      input: "place:Flow_StartToService",
+      output: "place:Flow_ServiceToEnd",
+      effect: {
+        elementId: "ServiceTask_Record",
+        descriptor,
+        inputMappings: [],
+        outputMappings: [],
+      },
+      bpmnErrorRoute: null,
+    },
+    {
+      ...serviceTaskOperationBase("StartEvent_1"),
+      kind: SemanticOperationKind.Initiate,
+      output: "place:Flow_StartToService",
+    },
+    {
+      id: `operation:complete-scope:${scopeId}`,
+      kind: SemanticOperationKind.CompleteScope,
+      origin: {
+        kind: SemanticOriginKind.BpmnElement,
+        elementId: processId,
+      },
+      scopeId,
+      parentOutput: null,
+    },
+  ] as const;
   const semanticProcess: SemanticProcessProgram = {
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
@@ -53,36 +94,22 @@ export function serviceTaskEffectInput(
       sourceSha256:
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     },
-    processId: "Process_ServiceTaskEffect",
-    controlPlaces: [
-      serviceTaskControlPlace("Flow_ServiceToEnd"),
-      serviceTaskControlPlace("Flow_StartToService"),
-    ],
-    operations: [
-      {
-        ...serviceTaskOperationBase("EndEvent_1"),
-        kind: SemanticOperationKind.Terminate,
-        input: "place:Flow_ServiceToEnd",
-      },
-      {
-        ...serviceTaskOperationBase("ServiceTask_Record"),
-        kind: SemanticOperationKind.AwaitEffect,
-        input: "place:Flow_StartToService",
-        output: "place:Flow_ServiceToEnd",
-        effect: {
-          elementId: "ServiceTask_Record",
-          descriptor,
-          inputMappings: [],
-          outputMappings: [],
-        },
-        bpmnErrorRoute: null,
-      },
-      {
-        ...serviceTaskOperationBase("StartEvent_1"),
-        kind: SemanticOperationKind.Initiate,
-        output: "place:Flow_StartToService",
-      },
-    ],
+    processId,
+    definitionScopes: [{
+      id: scopeId,
+      parentScopeId: null,
+      originElementId: processId,
+    }],
+    operationScopes: operations.map(({ id: operationId }) => ({
+      operationId,
+      scopeId,
+    })),
+    controlPlaceScopes: controlPlaces.map(({ id: controlPlaceId }) => ({
+      controlPlaceId,
+      scopeId,
+    })),
+    controlPlaces,
+    operations,
   };
   const effectId: EffectOccurrenceId = {
     processInstanceId: instanceId,

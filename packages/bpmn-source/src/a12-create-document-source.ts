@@ -32,6 +32,7 @@ import {
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import { definitionScopeId } from "./scoped-flow-elements.js";
 
 export const a12CreateDocumentProfile =
   "cibseven-2.0.0-a12-create-document-draft";
@@ -136,6 +137,8 @@ export function compileA12CreateDocument(
   if (new Set(ids).size !== ids.length) {
     return unsupported("Process, node, and Sequence Flow IDs must be distinct.");
   }
+  const rootScopeId = definitionScopeId(processId);
+  const nodes = [start, task, end];
   return {
     checkedProcess: {
       kind: CheckedProcessKind.CheckedProcess,
@@ -145,7 +148,24 @@ export function compileA12CreateDocument(
         sourceSha256: source.sha256,
       },
       processId,
-      nodes: [start, task, end].sort(compareIds),
+      definitionScopes: [{
+        id: rootScopeId,
+        parentScopeId: null,
+        originElementId: processId,
+      }],
+      nodeScopes: nodes.map(({ id: nodeId }) => ({
+        nodeId,
+        scopeId: rootScopeId,
+      })).sort((left, right) =>
+        compareCanonicalStrings(left.nodeId, right.nodeId)
+      ),
+      sequenceFlowScopes: flows.map(({ id: sequenceFlowId }) => ({
+        sequenceFlowId,
+        scopeId: rootScopeId,
+      })).sort((left, right) =>
+        compareCanonicalStrings(left.sequenceFlowId, right.sequenceFlowId)
+      ),
+      nodes: nodes.sort(compareIds),
       sequenceFlows: [...flows].sort(compareIds),
     },
     diagnostic: undefined,

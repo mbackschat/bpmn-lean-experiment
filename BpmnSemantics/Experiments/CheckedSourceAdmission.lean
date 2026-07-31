@@ -11,22 +11,31 @@ namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 open BpmnSemantics.SemanticProcess
 
 private def disconnectedProgram : Program :=
-  { identity :=
-      { compiler := .bpmnSourceSemanticProcess
+  let scopeId := rootDefinitionScopeId sequentialProgram.processId
+  let input : ControlPlace :=
+    { id := ⟨"place:DisconnectedInput"⟩
+      origin := { elementId := ⟨"Flow_DisconnectedInput"⟩ } }
+  let output : ControlPlace :=
+    { id := ⟨"place:DisconnectedOutput"⟩
+      origin := { elementId := ⟨"Flow_DisconnectedOutput"⟩ } }
+  let operation : SemanticOperation :=
+    .awaitUserTask ⟨"operation:DisconnectedTask"⟩
+      { elementId := ⟨"DisconnectedTask"⟩ }
+      input.id output.id { id := ⟨"DisconnectedTask"⟩, name := none }
+  { sequentialProgram with
+    identity :=
+      { sequentialProgram.identity with
         semanticProfile := ⟨"checked-source-stage-2"⟩
         sourceId := ⟨"disconnected-program"⟩
         sourceSha256 :=
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
-    processId := ⟨"Process_Disconnected"⟩
-    controlPlaces :=
-      [ { id := ⟨"place:A"⟩, origin := { elementId := ⟨"Flow_A"⟩ } }
-      , { id := ⟨"place:B"⟩, origin := { elementId := ⟨"Flow_B"⟩ } }
-      , { id := ⟨"place:C"⟩, origin := { elementId := ⟨"Flow_C"⟩ } } ]
-    operations :=
-      [ .terminate ⟨"operation:End"⟩ { elementId := ⟨"End"⟩ } ⟨"place:A"⟩
-      , .initiate ⟨"operation:Start"⟩ { elementId := ⟨"Start"⟩ } ⟨"place:A"⟩
-      , .awaitUserTask ⟨"operation:Task"⟩ { elementId := ⟨"Task"⟩ }
-          ⟨"place:B"⟩ ⟨"place:C"⟩ { id := ⟨"Task"⟩, name := none } ] }
+    operationScopes :=
+      sequentialProgram.operationScopes ++ [{ operationId := operation.id, scopeId }]
+    controlPlaceScopes := sequentialProgram.controlPlaceScopes ++
+      [ { controlPlaceId := input.id, scopeId }
+      , { controlPlaceId := output.id, scopeId } ]
+    controlPlaces := sequentialProgram.controlPlaces ++ [input, output]
+    operations := sequentialProgram.operations ++ [operation] }
 
 /-- A structurally disconnected program must fail standalone validation. -/
 theorem disconnectedProgramIsRejected :
@@ -40,6 +49,11 @@ private def twoSegmentSource : CheckedProcess :=
         sourceSha256 :=
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
     processId := ⟨"Process_TwoSegment"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_TwoSegment"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_TwoSegment"⟩
+      [⟨"End"⟩, ⟨"Start"⟩, ⟨"Task_A"⟩, ⟨"Task_B"⟩]
+    sequenceFlowScopes := rootSequenceFlowScopes ⟨"Process_TwoSegment"⟩
+      [⟨"Flow_A_B"⟩, ⟨"Flow_B_End"⟩, ⟨"Flow_Start_A"⟩]
     nodes :=
       [ .noneEndEvent ⟨"End"⟩
       , .noneStartEvent ⟨"Start"⟩
@@ -56,6 +70,9 @@ private def twoSegmentSource : CheckedProcess :=
 private def zeroSegmentSource : CheckedProcess :=
   { twoSegmentSource with
     identity := { twoSegmentSource.identity with sourceId := ⟨"zero-segment"⟩ }
+    nodeScopes := rootNodeScopes twoSegmentSource.processId [⟨"End"⟩, ⟨"Start"⟩]
+    sequenceFlowScopes := rootSequenceFlowScopes twoSegmentSource.processId
+      [⟨"Flow_Start_End"⟩]
     nodes := [.noneEndEvent ⟨"End"⟩, .noneStartEvent ⟨"Start"⟩]
     sequenceFlows :=
       [ { id := ⟨"Flow_Start_End"⟩
@@ -66,6 +83,11 @@ private def disconnectedCycleSource : CheckedProcess :=
   { twoSegmentSource with
     identity :=
       { twoSegmentSource.identity with sourceId := ⟨"disconnected-cycle"⟩ }
+    nodeScopes := rootNodeScopes twoSegmentSource.processId
+      [⟨"End"⟩, ⟨"Start"⟩, ⟨"Task_A"⟩, ⟨"Task_B"⟩, ⟨"Task_C"⟩]
+    sequenceFlowScopes := rootSequenceFlowScopes twoSegmentSource.processId
+      [⟨"Flow_A_End"⟩, ⟨"Flow_B_C"⟩, ⟨"Flow_C_B"⟩,
+        ⟨"Flow_Start_A"⟩]
     nodes :=
       [ .noneEndEvent ⟨"End"⟩
       , .noneStartEvent ⟨"Start"⟩
@@ -129,6 +151,9 @@ private def excludedMessageCatch : CheckedNode :=
       messageId := ⟨"Message"⟩
     }
 
+private def excludedEmbeddedSubProcess : CheckedNode :=
+  .embeddedSubProcess ⟨"EmbeddedSubProcess"⟩ ⟨"scope:child"⟩
+
 private def excludedBoundaryRoute : CheckedBpmnErrorRoute :=
   { boundaryEventId := ⟨"BoundaryError"⟩
     boundaryEventName := none
@@ -169,6 +194,12 @@ theorem exclusiveGatewayRemainsOutsideFrozenExperiment :
 /-- Production Message support does not silently expand the frozen structured-admission experiment. -/
 theorem messageCatchRemainsOutsideFrozenExperiment :
     composedNodeSurfaceValid excludedMessageCatch = false := by
+  decide
+
+/-- Production embedded-scope support does not silently expand the frozen structured-admission experiment. -/
+theorem embeddedSubProcessRemainsOutsideFrozenExperiment :
+    nodeArityValid twoSegmentSource excludedEmbeddedSubProcess = false ∧
+      composedNodeSurfaceValid excludedEmbeddedSubProcess = false := by
   decide
 
 private def threeCycle : List (GraphEdge NodeId) :=

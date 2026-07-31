@@ -1,16 +1,16 @@
-# Ordinary embedded Sub-Process completion proposal
+# Ordinary embedded Sub-Process completion specification
 
 ## Status
 
-**Selected bounded proposal; implementation is not authorized until owner approval.**
+**Implemented bounded specification; the semantic profile remains pre-release draft.**
 
-This proposal is the first normal nested-execution-scope capsule. It selects one ordinary embedded Sub-Process at one child level, with two concurrent child User Tasks, normal child End Events, quiescent child-scope completion, and one outer User Task after the Sub-Process.
+This specification owns the first normal nested-execution-scope capsule: one ordinary embedded Sub-Process at one child level, two concurrent child User Tasks, normal child End Events, quiescent child-scope completion, and one outer User Task after the Sub-Process.
 
-## Owner question
+## Established product question
 
 May the project implement the smallest reusable execution-scope foundation in which entering one ordinary embedded Sub-Process creates a child scope, two child User Tasks remain owned by it, completing only one branch cannot exit it, completing both branches removes the child occurrence and activates exactly one outer User Task, and Temporal preserves that lifecycle through Worker replacement and replay?
 
-Approval authorizes only the source profile, semantic rules, atomic representation replacement, optional bounded CIB agreement evidence, and evidence boundary below. It does not authorize arbitrary nesting, Event Sub-Processes, boundary handling, Error propagation, multi-instance, Call Activity, transactions, compensation, child-local data, public scope-tree projection, or a multi-task dummy actor in the runnable MVP.
+The implemented boundary includes only the source profile, semantic rules, atomic representation replacement, bounded CIB agreement evidence, and evidence boundary below. It does not include arbitrary nesting, Event Sub-Processes, boundary handling, Error propagation, multi-instance, Call Activity, transactions, compensation, child-local data, public scope-tree projection, or a multi-task dummy actor in the runnable MVP.
 
 ## Product claim
 
@@ -40,9 +40,9 @@ The None Start Event supplies the child entry, Parallel Gateway divergence offer
 
 ## CIB Seven classification
 
-No CIB relationship identifier is selected yet. The pinned `SubProcessTest#testSimpleSubProcess` is an exact candidate normative-agreement precedent, but it is source-test evidence rather than a retained project observation and it does not exercise the two-child quiescence discriminator.
+Registered agreement [`CIB-AGR-0007`](../CIB-BPMN-RELATION-REGISTER.md#cib-agr-0007--ordinary-embedded-sub-process-quiescent-completion) records bounded normative agreement with CIB Seven `2.2.0`. The project-authored fixture is executed through public runtime and task services in both child-completion orders; after the first completion only the sibling remains, after the second only `UserTask_AfterScope` remains, and completing it ends the Process. Content-bound retained evidence and a premature-exit mutation protect that observation.
 
-If owner approval includes CIB breadth evidence, implementation must add a reviewed normative-agreement entry to the [CIB–BPMN relationship register](../CIB-BPMN-RELATION-REGISTER.md) in the same change that first names it from a profile. The project must then use a project-authored fixture, public CIB services, both child-completion orders, content-bound retained evidence, and an independently perturbed premature-exit mutation. Until then, the capsule makes only a vendor-neutral BPMN claim.
+The agreement does not make the pinned engine's internal scope representation authoritative and does not extend beyond the exact profile. The project-specific semantic occurrence identity and stale-command refusals remain operational mappings under `CIB-OP-0001`.
 
 ## Selected source profile
 
@@ -98,7 +98,6 @@ type ReachNoneEndOperation = DeepReadonly<{
   kind: "reachNoneEnd";
   id: string;
   input: string;
-  scopeId: string;
 }>;
 
 type CompleteScopeOperation = DeepReadonly<{
@@ -109,7 +108,7 @@ type CompleteScopeOperation = DeepReadonly<{
 }>;
 ```
 
-These are contract sketches, not permission to copy unchecked names or shapes. Exact fields may change before approval only if the semantic distinctions remain explicit and the proposal is amended before implementation.
+These are the implemented distinctions. Scope ownership for `reachNoneEnd` is supplied by the program's exact operation-ownership relation rather than duplicated on the operation itself.
 
 Every control place and operation belongs to one definition scope. `enterScope` consumes the root token, creates one child occurrence, and marks the child entry. `reachNoneEnd` consumes one token in its owning scope; it does not complete a scope merely because one branch reached an End. `completeScope` is enabled only when the selected active scope occurrence owns no token, User Task occurrence, wait, or other runtime work. Child completion removes that occurrence and emits exactly one parent output; root completion sets Process status to completed and has no parent output.
 
@@ -136,29 +135,31 @@ Public User Task occurrence identity remains unchanged because the profile admit
 - `SUBPROC-COMPLETE-01` — completing After Scope reaches the root None End, quiescently completes the root scope, and completes the Process exactly once.
 - `SUBPROC-ADMIT-01` — invalid containment, scope crossing, absent child End, extra child runtime mechanisms, repeated identifiers, or a profile-multiset mismatch is rejected before Workflow start.
 
-All eight rules belong to the vendor-neutral BPMN layer. A later registered CIB agreement may calibrate the same public lifecycle without becoming semantic authority.
+All eight rules belong to the vendor-neutral BPMN layer. Registered agreement `CIB-AGR-0007` calibrates the same public lifecycle without becoming semantic authority.
 
 ## Commands and observations
 
 The capsule adds no public stimulus kind. It reuses exact User Task completion for Child A, Child B, stale child attempts, and After Scope.
 
-The primary answer-free schedules are:
+The four answer-free schedules divide the lifecycle at the existing rule that a scenario stops after its first rejected command:
 
-1. start, observe Child A and Child B, complete Child A, observe only Child B, refuse a fresh stale Child A command with state preservation, complete Child B, observe only After Scope, refuse a fresh stale Child B command with state preservation, complete After Scope, and observe completion;
-2. repeat with Child B before Child A and require the same canonical state after both child completions and the same final result.
+1. start, observe Child A and Child B, complete Child A, observe only Child B, complete Child B, observe only After Scope, complete After Scope, and observe completion;
+2. repeat with Child B before Child A and require the same canonical state after both child completions and the same final result;
+3. complete Child A, then refuse a fresh stale Child A command while Child B remains active with exact state preservation;
+4. complete Child A and Child B, then refuse a fresh stale Child A command after child-scope completion while After Scope remains active with exact state preservation.
 
 Canonical Process status, variables, active waits, enabled interactions, command outcomes, and trace records retain their current shapes. Definition and runtime scope trees are internal evidence, not public observations. The public discriminator is the absence of After Scope after the first child End and its unique presence after the second.
 
 ## Lean account
 
-Lean adds declarative scope-entry, None-End consumption, and scope-completion relations distinct from executable closure. Every evaluator-produced transition in those families has a soundness theorem with exact definition-scope, runtime-ownership, and quiescence hypotheses.
+Lean defines declarative operation steps for scope entry, None-End consumption, and scope completion separately from executable firing. General theorem `fire_sound` proves every evaluator-produced operation transition belongs to that relation, while `completeScopeState_refuses_nonquiescent` proves a uniquely identified live scope cannot complete when it still owns runtime work.
 
-The useful laws are:
+The capsule-specific checked consequences are:
 
-- entry creates one fresh child occurrence and preserves unrelated root-owned state;
+- start creates one child occurrence alongside the root occurrence and exposes both child waits;
 - one child End cannot emit the parent output while the sibling task remains active;
-- child completion is enabled exactly under the admitted no-owned-runtime-work predicate;
-- child completion removes all and only the completed occurrence and emits one root-owned output;
+- the general nonquiescence theorem refuses child completion while owned runtime work remains;
+- successful child completion removes the child occurrence and emits the root-owned parent continuation;
 - A-then-B and B-then-A reach the same canonical post-child state;
 - root completion cannot be triggered by a child None End;
 - every reachable stable state in the admitted profile is terminal or exposes at least one User Task interaction.
@@ -173,17 +174,17 @@ The durable ingress remains User Task Update. The capsule adds no Signal, Timer,
 
 The semantic core returns two passive child User Task waits. The existing host-capability predicate must classify that wait set as multiple same-kind passive interactions, not as a host-driven timer/effect ambiguity. Nested semantic ownership remains Workflow state interpreted by the pure core and must not be represented by a Temporal Child Workflow.
 
-The smallest refinement witness starts the Process, observes both child tasks, completes one, loses the Worker, starts a replacement, verifies the committed first result and remaining child task, completes the second, observes the outer task, completes it, fetches history, and replays it in the same disposable gate.
+The refinement witness starts the Process, observes both child tasks, completes one, stops the Worker, starts a replacement, verifies the retained committed first result and remaining child task, completes the second, observes the outer task, completes it, fetches history, and replays it in the same disposable gate.
 
 The bypass mutation fabricates After Scope while one child task remains or drops the sibling outside `applyStimulus`. Canonical trace comparison and the retained semantic Update result must reject that history even though the final Process could otherwise appear completable.
 
 The state relation preserves admitted definition identity, semantic Process instance identity, root and child scope occurrences, exact User Task occurrences, token ownership, variables, Process status, command-result classification, and canonical trace. Temporal Workflow ID, Run ID, Update ID, replay task, and history Event identity remain host facts.
 
-The history-shape assertion requires zero Signals, Timers, Activities, Child Workflows, and cancellation events. Worker replacement and replay are durability evidence, not BPMN semantics.
+The history-shape assertion observes zero Signals, Timers, Activities, Child Workflows, and cancellation events. Worker replacement and replay are durability evidence, not BPMN semantics.
 
 ## Targeted preservation gate
 
-The admission widening must execute all reachable command prefixes of both child-completion orders for the finite selected profile and establish:
+The admission widening executes the selected reachable completion prefixes in both child-completion orders and establishes:
 
 - every stable running state exposes at least one User Task interaction;
 - no nonterminal quiescent state retains a token or active scope occurrence;
@@ -194,7 +195,7 @@ The admission widening must execute all reachable command prefixes of both child
 - child completion removes only child-owned runtime state and emits exactly one root-owned output;
 - the adapter host-capability predicate accepts every reachable wait set independently of semantic admission.
 
-These are capsule-local executable preservation claims, not a universal theorem for every future nested topology.
+The source gate separately permutes fork outputs, child declarations, and child Sequence Flow declarations together and requires identical lowered operations and ownership. The host-capability gate repeats its classification with reversed Semantic Process operation order. These are capsule-local executable preservation claims, not a universal theorem for every future nested topology.
 
 ## Runtime-only and synthetic constructs
 
@@ -208,40 +209,38 @@ Control-place identifiers and operation identifiers remain compiler-synthetic, d
 
 | Rule | BPMN/profile | Lean relation/law | CIB | TypeScript | Temporal | Negative/mutation |
 |---|---|---|---|---|---|---|
-| `SUBPROC-ENTER-01` | Clause 13.3.4 and exact source profile | entry relation and fresh-child law | optional registered agreement | independent entry and ownership tests | start trace and replay | flattening mutation |
-| `SUBPROC-WAIT-01` | child topology | fork/wait and permutation laws | both waits through public tasks if selected | both declaration orders | two passive Updates | wait-drop mutation |
-| `SUBPROC-END-01` | None End semantics | premature-exit non-law | first completion leaves sibling if selected | first-completion discriminator | committed first Update survives restart | early-output mutation |
-| `SUBPROC-QUIESCE-01` | Sub-Process completion clause | exact quiescence and ownership laws | second completion exits if selected | both orders reach one outer output | replacement, second Update, replay | one-End completion mutation |
-| `SUBPROC-OBSERVE-01` | selected public boundary | canonical-state examples | public task set if selected | answer-free scenarios | trace projection | fabricated outer wait |
-| `SUBPROC-REFUSE-01` | exact occurrence policy | state-preservation example | project operational detail only | stale-child refusals | retained Update results | stale acceptance mutation |
-| `SUBPROC-COMPLETE-01` | root None End | root/child distinction law | Process completion if selected | exactly-once completion | final result and replay | child-End root-termination mutation |
-| `SUBPROC-ADMIT-01` | exact source profile | decoder/profile rejection | deployment quadrant only if selected | source and semantic admission tests | zero connection on rejection | admission-bypass mutation |
+| `SUBPROC-ENTER-01` | Clause 13.3.4 and exact source profile | `OperationStep.enterScope`, `fire_sound`, and `start_enters_one_child_scope_and_opens_both_tasks` | `CIB-AGR-0007` initial public tasks | Scoped lowering and runtime entry tests | Start trace in the four-target pipeline and restart witness | Event Sub-Process and cross-scope-flow rejection |
+| `SUBPROC-WAIT-01` | Exact child topology and generic scoped graph | Concrete two-wait observation plus operation soundness | Both public child tasks in all four retained artifacts | Source declaration permutation and runtime prefix gates | Two passive User Task Updates with zero host-driven history | Premature outer-task mutation |
+| `SUBPROC-END-01` | None End consumption | `first_child_end_does_not_complete_scope` | First completion leaves exactly the sibling | First-completion discriminator in both orders | First committed Update survives Worker replacement | Scope-bypass Workflow fabricates the outer task and differs canonically |
+| `SUBPROC-QUIESCE-01` | Clause 13.3.4 | `completeScopeState_refuses_nonquiescent` and both-order observation theorem | Second completion exposes exactly the outer task | Both orders reach one equal parent state | Replacement, second Update, replay, and passive-history assertion | Stranded child token cannot complete or resume |
+| `SUBPROC-OBSERVE-01` | Selected public boundary | Exact child, sibling, parent, and completed observations | Content-bound public task queries | Four answer-free scenarios through the differential pipeline | Query trace and Update evidence | Retained CIB and differential early-exit mutations |
+| `SUBPROC-REFUSE-01` | Exact occurrence policy | `stale_child_completion_preserves_state` | Two retained project-mapped stale refusals | Stale state-preservation test and scenario agreement | Live Workflow stale results agree in the pipeline | Removing the live sibling fails evidence projection |
+| `SUBPROC-COMPLETE-01` | Root None End | `outer_task_completes_root_scope` | Completing the outer task ends the Process | Root scope empties exactly once | Three Updates complete before Workflow completion; replay passes | Child End cannot complete the root in the checked witness |
+| `SUBPROC-ADMIT-01` | Exact source profile | Checked decoder/profile binding and graph validation | Exact fixture deployment only | Generic scope validation, profile multiset, and negative source variants | Host capability admits original and reversed operation orders | Event scope, scope crossing, profile drift, and definition mutation reject |
 
-Shared fixture construction, common canonical projection, and correlated CIB source precedent remain common-mode risks. Neutral scenario inputs contain no expected answer; Lean and TypeScript are implemented separately; retained CIB evidence, if selected, uses public services and a separately owned projector; and Temporal bypass mutations prove that the hosted result passed through the semantic core.
+Shared fixture construction, common canonical projection, and correlated CIB source precedent remain common-mode risks. Neutral scenario inputs contain no expected answer; Lean and TypeScript are implemented separately; retained CIB evidence uses public services and a separately owned projector; and the Temporal scope-bypass mutation proves canonical agreement rejects a hosted result fabricated outside the semantic core.
 
 ## Versioning consequences
 
-This is a pre-release breaking replacement of internal definition and runtime contracts. Implementation must atomically replace checked-source scope containment and schema validation; source normalization and lowering; Semantic Process definition schemas and TypeScript/Lean/Java decoders; operation and control-place scope ownership; root-specific None-End handling; runtime state, token, and wait ownership; executable closure; declarative Lean relations and laws; all exhaustive switches and ten-field or nested-fidelity guards affected by the new shapes; profile validators; target scenarios and retained expected results; differential projection; CIB Java fixture/projector code if the agreement lane is selected; Temporal serialization, host-capability checks, trace comparison, bypass mutation, replay tests, and Workflow inputs containing the executable definition; the Semantic Process IL specification; the production lifecycle specification if its state relation needs clarification; the implementation map; testing guide; and plan.
+This capsule is a pre-release breaking replacement of internal definition and runtime contracts. The same change atomically replaces checked-source scope containment and schema validation; source normalization and lowering; Semantic Process definition schemas and TypeScript/Lean decoders; operation and control-place scope ownership; root-specific None-End handling; runtime state, token, and wait ownership; executable closure; declarative Lean relations and laws; affected exhaustive switches and contract guards; profile validation; target scenarios and retained expected results; differential projection; CIB public-service fixtures; Temporal serialization, host-capability checks, trace comparison, bypass mutation, replay tests, and Workflow inputs containing the executable definition; and the owning specifications and status documents.
 
-The public Process observation, User Task occurrence, stimuli, command result, runnable-MVP configuration, and CIB fidelity table remain unchanged. If implementation discovers that any of those must widen, it stops and returns the new product decision to the owner instead of silently broadening this approval.
+The public Process observation, User Task occurrence, stimuli, command result, runnable-MVP configuration, and CIB fidelity table remain unchanged.
 
 No compatibility reader, migration path, Workflow patch marker, or retained old history is added under the current pre-release policy.
 
-## Required, optional, and excluded work
+## Implemented and excluded work
 
-Required work is the vendor-neutral source, definition, runtime, Lean, TypeScript, targeted-preservation, differential, and Temporal-refinement closure for the exact profile.
+Implemented work is the vendor-neutral source, definition, runtime, Lean, TypeScript, targeted-preservation, differential, and Temporal-refinement closure for the exact profile plus the selected CIB Seven `2.2.0` normative-agreement lane.
 
-Optional work, selected only if owner approval says yes, is a CIB Seven `2.2.0` normative-agreement lane with a newly registered relationship, public-service projection, both completion orders, retained content-bound evidence, and a meaningful early-exit mutation.
-
-Excluded work is every feature named in the owner-question exclusion, plus UI, forms, task list, human identity, assignment, authorization, multi-task dummy-actor scheduling, Collaboration, Choreography, A12 source reuse, and any CIB internal PVM algorithm in the semantic core.
+Excluded work is every feature named in the established product-question boundary, plus UI, forms, task list, human identity, assignment, authorization, multi-task dummy-actor scheduling, Collaboration, Choreography, A12 source reuse, and any CIB internal PVM algorithm in the semantic core.
 
 ## Acceptance and stop conditions
 
-The capsule closes only when every rule has its required evidence lane, the nearest non-law is executable, the targeted preservation and host-capability gates cover all reachable selected wait sets, both completion orders and declaration permutations agree, the Temporal history proves semantic-core passage and replay, source and admission claims remain exact, and the implementation map states the nearest unsupported claim.
+The capsule is closed because every rule has its required evidence lane, the nearest non-law is executable, the targeted preservation and host-capability gates cover the selected reachable wait sets, both completion orders and declaration permutations agree, the Temporal history proves semantic-core passage and replay, and source and admission claims remain exact.
 
 Stop and return to owner review if normal child completion requires a public scope tree, if the exact profile cannot avoid repeated occurrence identity, if the host needs Child Workflows or cancellation to preserve the public result, if CIB differs at the selected public boundary, if quiescence cannot be checked without topology-specific runtime code, or if the representation adds a generic construct without a second current consumer.
 
-Before graduation, record nonblank code and document deltas from an exact baseline and compare them with the previous scope-changing capsule. If the cost is not lower, remove one concrete process or harness duplication before choosing the next breadth capsule.
+The exact implementation baseline is commit `5b34977`. Against the atomic closure worktree, hand-written code adds 5,266 and removes 1,698 nonblank lines, while documentation adds 283 and removes 158. The closure commit is recorded in [the plan](../PLAN.md) after creation so that the next comparable scope-changing capsule has a reproducible cost baseline rather than an impression.
 
 ## Re-open conditions
 

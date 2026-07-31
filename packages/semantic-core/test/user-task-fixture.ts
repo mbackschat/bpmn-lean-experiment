@@ -15,6 +15,7 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import { rootScopedProgram } from "./root-scope-fixture.ts";
 
 const capsuleUrl = new URL(
   "../../../scenarios/user-task-discovery-completion/",
@@ -49,7 +50,7 @@ export function semanticProcessFor(
   scenario: Scenario,
   name: string | null = "Approve",
 ): SemanticProcessProgram {
-  return {
+  return rootScopedProgram({
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -65,7 +66,7 @@ export function semanticProcessFor(
     operations: [
       {
         ...operationBase("EndEvent_1"),
-        kind: SemanticOperationKind.Terminate,
+        kind: SemanticOperationKind.ReachNoneEnd,
         input: "place:Flow_TaskToEnd",
       },
       {
@@ -84,5 +85,5 @@ export function semanticProcessFor(
         },
       },
     ],
-  };
+  });
 }

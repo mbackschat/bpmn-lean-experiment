@@ -46,6 +46,13 @@ import {
 import type {
   RootDefinitionSelection,
 } from "./intermediate-catch-message-source.js";
+import {
+  collectScopedFlowElements,
+  definitionScopeId,
+} from "./scoped-flow-elements.js";
+import type {
+  ScopedSourceElement,
+} from "./scoped-flow-elements.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
@@ -106,31 +113,39 @@ export function compileCheckedProcess(
     process.isExecutable !== true
   ) {
     return unsupported(
-      "The bounded compiler requires an explicitly executable Process without subprocesses, lanes, artifacts, extensions, or other Process properties.",
+      "The bounded compiler requires an explicitly executable Process without lanes, artifacts, extensions, or other Process properties.",
     );
   }
 
   const processId = readId(process);
-  const flowElements = asElementArray(process.flowElements);
-  if (processId === undefined || flowElements === undefined) {
+  if (processId === undefined) {
     return unsupported("The Process and every compiled element require an ID.");
   }
+  const scoped = collectScopedFlowElements(
+    process,
+    processId,
+    bpmnTypes.subProcessType,
+  );
+  if (scoped === undefined) {
+    return unsupported(
+      "Every embedded SubProcess must be ordinary, have an ID, and contain a FlowElements graph.",
+    );
+  }
 
-  const sourceNodes = flowElements.filter((element) =>
+  const sourceNodes = scoped.elements.filter(({ element }) =>
     isSupportedNodeType(element.$type)
   );
-  const sourceFlows = elementsOfType(
-    flowElements,
-    bpmnTypes.sequenceFlowType,
+  const sourceFlows = scoped.elements.filter(
+    ({ element }) => element.$type === bpmnTypes.sequenceFlowType,
   );
-  if (sourceNodes.length + sourceFlows.length !== flowElements.length) {
+  if (sourceNodes.length + sourceFlows.length !== scoped.elements.length) {
     return unsupported(
-      "The bounded compiler supports only None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, None End Events, and Sequence Flows.",
+      "The bounded compiler supports only ordinary embedded SubProcesses, None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, None End Events, and Sequence Flows.",
     );
   }
 
   const sequenceFlows = projectSequenceFlows(
-    sourceFlows,
+    sourceFlows.map(({ element }) => element),
     definitions.expressionLanguage,
   );
   if (sequenceFlows === undefined) {
@@ -139,12 +154,24 @@ export function compileCheckedProcess(
     );
   }
   const nodes = projectNodes(
-    sourceNodes,
+    sourceNodes.map(({ element }) => element),
     sequenceFlows,
     definitions,
     rootSelection,
   );
-  if (nodes === undefined) {
+  const nodeScopes = projectOwnership(
+    sourceNodes,
+    (nodeId, scopeId) => ({ nodeId, scopeId }),
+  );
+  const sequenceFlowScopes = projectOwnership(
+    sourceFlows,
+    (sequenceFlowId, scopeId) => ({ sequenceFlowId, scopeId }),
+  );
+  if (
+    nodes === undefined ||
+    nodeScopes === undefined ||
+    sequenceFlowScopes === undefined
+  ) {
     return unsupported(
       "Every admitted node requires a supported plain shape, distinct ID, and gateway direction consistent with its arity.",
     );
@@ -162,8 +189,13 @@ export function compileCheckedProcess(
   }
   if (
     !isAdmittedCheckedProcess(
-      nodes,
-      sequenceFlows,
+      {
+        definitionScopes: scoped.definitionScopes,
+        nodeScopes,
+        sequenceFlowScopes,
+        nodes,
+        flows: sequenceFlows,
+      },
       definitions.expressionLanguage,
       Object.hasOwn(definitions, "expressionLanguage"),
       semanticProfile,
@@ -183,6 +215,13 @@ export function compileCheckedProcess(
         sourceSha256: source.sha256,
       },
       processId,
+      definitionScopes: [...scoped.definitionScopes].sort(compareIds),
+      nodeScopes: [...nodeScopes].sort((left, right) =>
+        compareCanonicalStrings(left.nodeId, right.nodeId)
+      ),
+      sequenceFlowScopes: [...sequenceFlowScopes].sort((left, right) =>
+        compareCanonicalStrings(left.sequenceFlowId, right.sequenceFlowId)
+      ),
       nodes: [...nodes].sort(compareIds),
       sequenceFlows: [...sequenceFlows].sort(compareIds),
     },
@@ -206,6 +245,12 @@ function projectNodes(
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneStartEvent, id }
           : undefined;
+      case bpmnTypes.subProcessType:
+        return {
+          kind: CheckedNodeKind.EmbeddedSubProcess,
+          id,
+          childScopeId: definitionScopeId(id),
+        };
       case bpmnTypes.userTaskType: {
         const name = readOptionalName(element);
         return isPlainFlowNode(element) && name !== undefined
@@ -330,6 +375,7 @@ function projectSequenceFlows(
 function isSupportedNodeType(type: unknown): boolean {
   return [
     bpmnTypes.startEventType,
+    bpmnTypes.subProcessType,
     bpmnTypes.intermediateCatchEventType,
     bpmnTypes.userTaskType,
     bpmnTypes.serviceTaskType,
@@ -337,6 +383,19 @@ function isSupportedNodeType(type: unknown): boolean {
     bpmnTypes.exclusiveGatewayType,
     bpmnTypes.endEventType,
   ].includes(String(type));
+}
+
+function projectOwnership<T>(
+  elements: ReadonlyArray<ScopedSourceElement>,
+  project: (id: string, scopeId: string) => T,
+): ReadonlyArray<T> | undefined {
+  const projected = elements.map(({ element, scopeId }) => {
+    const id = readId(element);
+    return id === undefined ? undefined : project(id, scopeId);
+  });
+  return projected.every((entry) => entry !== undefined)
+    ? projected
+    : undefined;
 }
 
 function projectServiceTask(
@@ -406,13 +465,6 @@ function isExactPt1sTimerEvent(element: ElementRecord): boolean {
     hasOnlyOwnKeys(duration, ["$type", "body"]) &&
     duration.body === "PT1S"
   );
-}
-
-function elementsOfType(
-  elements: ReadonlyArray<ElementRecord>,
-  type: string,
-): ReadonlyArray<ElementRecord> {
-  return elements.filter((element) => element.$type === type);
 }
 
 function isPlainFlowNode(element: ElementRecord): boolean {

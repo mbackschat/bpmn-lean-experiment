@@ -29,6 +29,10 @@ import {
   semanticOperationKind,
   serviceTaskDefinitionArtifacts,
 } from "./contract-artifact-test-fixtures.ts";
+import {
+  artifactCases,
+  normativeArtifactCases,
+} from "./contract-artifact-cases.ts";
 import type {
   MutableDefinitionArtifacts,
 } from "./contract-artifact-test-fixtures.ts";
@@ -38,7 +42,7 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 test("separates normative profile authority from executable CIB oracle authority", async () => {
   const artifactSets =
     await readAndVerifyNormativeArtifactSets(projectRoot);
-  assert.equal(artifactSets.length, 3);
+  assert.equal(artifactSets.length, normativeArtifactCases.length);
   for (const artifactSet of artifactSets) {
     assert.equal(
       artifactSet.profile.normativeAuthority.name,
@@ -102,7 +106,7 @@ test("uses structural document kinds without embedded schema counters", async ()
 test("keeps every target scenario answer-free and binds retained CIB evidence by content", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 
-  assert.equal(artifactSets.length, 10);
+  assert.equal(artifactSets.length, artifactCases.length);
   for (const artifactSet of artifactSets) {
     assert.equal("calibration" in artifactSet.scenario, false);
     assert.equal(

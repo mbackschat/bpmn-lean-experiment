@@ -1,5 +1,6 @@
 import BpmnSemantics.Experiments.CheckedSourceTransition
 import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # Stage 1 checked-source correspondence
 
@@ -36,8 +37,10 @@ private def lowerControl :
   | .completed instanceId => .completed instanceId
 
 private def lowerWait
+    (source : CheckedProcess)
     (wait : CheckedSourceSemantics.SourceUserTaskWait) : UserTaskWait :=
   { processInstanceId := wait.processInstanceId
+    owner := rootScopeOccurrenceId wait.processInstanceId source.processId
     task := { id := ⟨wait.taskNodeId.value⟩, name := wait.name }
     activation := wait.activation
     output := flowControlPlaceId wait.output }
@@ -49,11 +52,24 @@ private def lowerActivation
     count := activation.count }
 
 private def lowerState
+    (source : CheckedProcess)
     (state : CheckedSourceSemantics.SourceRuntimeState) : RuntimeState :=
+  let instanceId? := match state.control with
+    | .notStarted => none
+    | .running instanceId
+    | .completed instanceId => some instanceId
+  let owner? := instanceId?.map fun instanceId =>
+    rootScopeOccurrenceId instanceId source.processId
   { control := lowerControl state.control
     initiationPending := state.initiationPending
-    tokens := state.tokens.map flowControlPlaceId
-    waits := state.waits.map lowerWait
+    scopeOccurrences := match state.control with
+      | .running instanceId =>
+          [{ id := rootScopeOccurrenceId instanceId source.processId, parent := none }]
+      | .notStarted
+      | .completed _ => []
+    tokens := state.tokens.filterMap fun token => owner?.map fun owner =>
+      { placeId := flowControlPlaceId token, owner }
+    waits := state.waits.map (lowerWait source)
     messageWaits := []
     timerWaits := []
     effectWaits := []
@@ -62,6 +78,8 @@ private def lowerState
     messageActivations := []
     timerActivations := []
     effectActivations := []
+    scopeActivations := instanceId?.map (fun _ =>
+      { scopeId := rootDefinitionScopeId source.processId, count := 1 }) |>.toList
     endOccurrences := state.endOccurrences
     logicalTimeMs := state.logicalTimeMs }
 
@@ -70,19 +88,28 @@ private def sourceEnabledTransitions (source : CheckedProcess)
     List (OperationId × RuntimeState) :=
   (CheckedSourceSemantics.enabledTransitions source state).map
     fun (node, successor) =>
-      (nodeOperationId node.id, lowerState successor)
+      (nodeOperationId node.id, lowerState source successor)
+
+private def closeRootIfEnabled (program : Program) (state : RuntimeState) :
+    RuntimeState :=
+  match program.operations.find? fun
+      | .completeScope _ _ _ none => true
+      | _ => false with
+  | none => state
+  | some completion => (fire? completion state).getD state
 
 private def programEnabledTransitions (program : Program)
     (state : RuntimeState) : List (OperationId × RuntimeState) :=
   program.operations.filterMap fun operation =>
-    (fire? operation state).map fun successor => (operation.id, successor)
+    (fire? operation state).map fun successor =>
+      (operation.id, closeRootIfEnabled program successor)
 
 private def enabledTransitionsCorrespondAt (source : CheckedProcess)
     (state : CheckedSourceSemantics.SourceRuntimeState) : Bool :=
   decide (
     sourceEnabledTransitions source state =
       programEnabledTransitions (lowerCheckedProcess source)
-        (lowerState state))
+        (lowerState source state))
 
 private def twoSegmentSource : CheckedProcess :=
   { identity :=
@@ -91,6 +118,11 @@ private def twoSegmentSource : CheckedProcess :=
         sourceSha256 :=
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
     processId := ⟨"Process_TwoSegment"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_TwoSegment"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_TwoSegment"⟩
+      [⟨"End"⟩, ⟨"Start"⟩, ⟨"Task_A"⟩, ⟨"Task_B"⟩]
+    sequenceFlowScopes := rootSequenceFlowScopes ⟨"Process_TwoSegment"⟩
+      [⟨"Flow_A_B"⟩, ⟨"Flow_B_End"⟩, ⟨"Flow_Start_A"⟩]
     nodes :=
       [ .noneEndEvent ⟨"End"⟩
       , .noneStartEvent ⟨"Start"⟩

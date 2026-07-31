@@ -1,518 +1,157 @@
-import BpmnSemantics.SemanticProcess.Data
+import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Semantic Process internal transitions
 
-This module owns committed runtime state, token operations, the declarative internal-operation relation, the executable internal evaluator, and its soundness bridge. External stimuli, closure, observations, and capsule fixtures remain separate.
+This module owns the declarative internal-operation relation, the executable evaluator, and their soundness bridge. Runtime representation and pure state transformations remain in `RuntimeState`.
 -/
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-inductive ProcessControl where
-  | notStarted
-  | running (instanceId : SemanticId)
-  | completed (instanceId : SemanticId)
-  deriving Repr, DecidableEq
+private def runningInstance? (state : RuntimeState) : Option SemanticId :=
+  match state.control with
+  | .running instanceId => some instanceId
+  | _ => none
 
-structure UserTaskWait where
-  processInstanceId : SemanticId
-  task : UserTaskDefinition
-  activation : Nat
-  output : ControlPlaceId
-  deriving Repr, DecidableEq
+def awaitUserTaskState? (state : RuntimeState) (input output : ControlPlaceId)
+    (task : UserTaskDefinition) : Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let instanceId ← runningInstance? state
+  pure (activateUserTask state instanceId owner input output task)
 
-structure TimerWait where
-  processInstanceId : SemanticId
-  elementId : NodeId
-  activation : Nat
-  deadlineMs : Nat
-  output : ControlPlaceId
-  deriving Repr, DecidableEq
+def awaitTimerState? (state : RuntimeState) (input output : ControlPlaceId)
+    (timer : TimerDefinition) : Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let instanceId ← runningInstance? state
+  pure (activateTimer state instanceId owner input output timer)
 
-structure MessageWait where
-  processInstanceId : SemanticId
-  elementId : NodeId
-  activation : Nat
-  channel : MessageChannel
-  output : ControlPlaceId
-  deriving Repr, DecidableEq
+def awaitMessageState? (state : RuntimeState) (input output : ControlPlaceId)
+    (message : MessageDefinition) : Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let instanceId ← runningInstance? state
+  pure (activateMessage state instanceId owner input output message)
 
-structure EffectWait where
-  processInstanceId : SemanticId
-  elementId : NodeId
-  activation : Nat
-  descriptor : EffectDescriptor
-  arguments : List VariableBinding
-  outputMappings : List VariableMapping
-  output : ControlPlaceId
-  bpmnErrorRoute : Option BpmnErrorRoute
-  deriving Repr, DecidableEq
+def awaitEffectState? (state : RuntimeState) (input output : ControlPlaceId)
+    (effect : EffectDefinition) (route : Option BpmnErrorRoute) :
+    Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let instanceId ← runningInstance? state
+  pure (activateEffect state instanceId owner input output effect route)
 
-structure TaskActivation where
-  taskId : TaskDefinitionId
-  count : Nat
-  deriving Repr, DecidableEq
+def duplicateState? (state : RuntimeState) (input : ControlPlaceId)
+    (outputs : List ControlPlaceId) : Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  pure (duplicateToken state owner input outputs)
 
-structure TimerActivation where
-  elementId : NodeId
-  count : Nat
-  deriving Repr, DecidableEq
+def synchronizeState? (state : RuntimeState) (inputs : List ControlPlaceId)
+    (output : ControlPlaceId) : Option RuntimeState := do
+  let owner ← commonTokenOwner? state inputs
+  pure (synchronizeTokens state owner inputs output)
 
-structure MessageActivation where
-  elementId : NodeId
-  count : Nat
-  deriving Repr, DecidableEq
+def chooseState? (state : RuntimeState) (input : ControlPlaceId)
+    (candidates : List ConditionalCandidate) (defaultOutput : ControlPlaceId) :
+    Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let output ← selectConditionalOutput candidates defaultOutput
+    state.variables.process.bindings
+  pure (chooseToken state owner input output)
 
-structure EffectActivation where
-  elementId : NodeId
-  count : Nat
-  deriving Repr, DecidableEq
-
-structure RuntimeState where
-  control : ProcessControl
-  initiationPending : Bool
-  tokens : List ControlPlaceId
-  waits : List UserTaskWait
-  messageWaits : List MessageWait
-  timerWaits : List TimerWait
-  effectWaits : List EffectWait
-  variables : ScopedVariables
-  activations : List TaskActivation
-  messageActivations : List MessageActivation
-  timerActivations : List TimerActivation
-  effectActivations : List EffectActivation
-  endOccurrences : Nat
-  logicalTimeMs : Nat
-  deriving Repr, DecidableEq
-
-def initialState : RuntimeState :=
-  { control := .notStarted
-    initiationPending := false
-    tokens := []
-    waits := []
-    messageWaits := []
-    timerWaits := []
-    effectWaits := []
-    variables := emptyScopedVariables
-    activations := []
-    messageActivations := []
-    timerActivations := []
-    effectActivations := []
-    endOccurrences := 0
-    logicalTimeMs := 0 }
-
-def runningStartState (instanceId : SemanticId)
-    (initialVariables : List VariableBinding) : RuntimeState :=
-  { initialState with
-    control := .running instanceId
-    initiationPending := true
-    variables :=
-      { emptyScopedVariables with
-        process := { bindings := initialVariables } } }
-
-def tokenMultiplicity (state : RuntimeState) (place : ControlPlaceId) : Nat :=
-  (state.tokens.filter fun token => decide (token = place)).length
-
-def hasToken (state : RuntimeState) (place : ControlPlaceId) : Bool :=
-  tokenMultiplicity state place > 0
-
-private def removeToken : List ControlPlaceId → ControlPlaceId →
-    List ControlPlaceId
-  | [], _ => []
-  | token :: rest, place =>
-      if token = place then rest else token :: removeToken rest place
-
-private def removeTokens (tokens : List ControlPlaceId)
-    (places : List ControlPlaceId) : List ControlPlaceId :=
-  places.foldl removeToken tokens
-
-private def addTokens (tokens : List ControlPlaceId)
-    (places : List ControlPlaceId) : List ControlPlaceId :=
-  places.foldr List.cons tokens
-
-private def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
-    Nat :=
-  (state.activations.find? fun activation =>
-    decide (activation.taskId = taskId)).map (·.count) |>.getD 0
-
-private def setActivationCount (activations : List TaskActivation)
-    (taskId : TaskDefinitionId) (count : Nat) : List TaskActivation :=
-  { taskId, count } ::
-    activations.filter fun activation => decide (activation.taskId ≠ taskId)
-
-private def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
-    Nat :=
-  (state.timerActivations.find? fun activation =>
-    decide (activation.elementId = elementId)).map (·.count) |>.getD 0
-
-private def setTimerActivationCount (activations : List TimerActivation)
-    (elementId : NodeId) (count : Nat) : List TimerActivation :=
-  { elementId, count } ::
-    activations.filter fun activation =>
-      decide (activation.elementId ≠ elementId)
-
-private def messageActivationCount (state : RuntimeState)
-    (elementId : NodeId) : Nat :=
-  (state.messageActivations.find? fun activation =>
-    decide (activation.elementId = elementId)).map (·.count) |>.getD 0
-
-private def setMessageActivationCount (activations : List MessageActivation)
-    (elementId : NodeId) (count : Nat) : List MessageActivation :=
-  { elementId, count } ::
-    activations.filter fun activation =>
-      decide (activation.elementId ≠ elementId)
-
-private def effectActivationCount (state : RuntimeState) (elementId : NodeId) :
-    Nat :=
-  (state.effectActivations.find? fun activation =>
-    decide (activation.elementId = elementId)).map (·.count) |>.getD 0
-
-private def setEffectActivationCount (activations : List EffectActivation)
-    (elementId : NodeId) (count : Nat) : List EffectActivation :=
-  { elementId, count } ::
-    activations.filter fun activation =>
-      decide (activation.elementId ≠ elementId)
-
-private def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
-    (input output : ControlPlaceId) (task : UserTaskDefinition) : RuntimeState :=
-  let activation := activationCount state task.id + 1
-  { state with
-    tokens := removeToken state.tokens input
-    waits :=
-      { processInstanceId := instanceId
-        task
-        activation
-        output } :: state.waits
-    activations := setActivationCount state.activations task.id activation }
-
-private def activateTimer (state : RuntimeState) (instanceId : SemanticId)
-    (input output : ControlPlaceId) (timer : TimerDefinition) : RuntimeState :=
-  let activation := timerActivationCount state timer.elementId + 1
-  { state with
-    tokens := removeToken state.tokens input
-    timerWaits :=
-      { processInstanceId := instanceId
-        elementId := timer.elementId
-        activation
-        deadlineMs := state.logicalTimeMs + timer.durationMs
-        output } :: state.timerWaits
-    timerActivations :=
-      setTimerActivationCount state.timerActivations timer.elementId activation }
-
-private def activateMessage (state : RuntimeState) (instanceId : SemanticId)
-    (input output : ControlPlaceId) (message : MessageDefinition) :
-    RuntimeState :=
-  let activation := messageActivationCount state message.elementId + 1
-  { state with
-    tokens := removeToken state.tokens input
-    messageWaits :=
-      { processInstanceId := instanceId
-        elementId := message.elementId
-        activation
-        channel := message.channel
-        output } :: state.messageWaits
-    messageActivations :=
-      setMessageActivationCount state.messageActivations
-        message.elementId activation }
-
-private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
-    (input output : ControlPlaceId) (effect : EffectDefinition)
-    (bpmnErrorRoute : Option BpmnErrorRoute) : RuntimeState :=
-  let activation := effectActivationCount state effect.elementId + 1
-  let arguments := (evaluateInputMappings effect.inputMappings).getD []
-  let owner : EffectOccurrenceId :=
-    { processInstanceId := instanceId
-      elementId := ⟨effect.elementId.value⟩
-      activation }
-  { state with
-    tokens := removeToken state.tokens input
-    effectWaits :=
-      { processInstanceId := instanceId
-        elementId := effect.elementId
-        activation
-        descriptor := effect.descriptor
-        arguments
-        outputMappings := effect.outputMappings
-        output
-        bpmnErrorRoute } :: state.effectWaits
-    variables := addActivityVariableScope state.variables owner arguments
-    effectActivations :=
-      setEffectActivationCount state.effectActivations
-        effect.elementId activation }
-
-private def duplicateToken (state : RuntimeState) (input : ControlPlaceId)
-    (outputs : List ControlPlaceId) : RuntimeState :=
-  { state with
-    tokens := addTokens (removeToken state.tokens input) outputs }
-
-private def synchronizeTokens (state : RuntimeState)
-    (inputs : List ControlPlaceId) (output : ControlPlaceId) : RuntimeState :=
-  { state with
-    tokens := output :: removeTokens state.tokens inputs }
-
-private def chooseToken (state : RuntimeState) (input output : ControlPlaceId) :
-    RuntimeState :=
-  { state with
-    tokens := output :: removeToken state.tokens input }
-
-private def terminateToken (state : RuntimeState) (instanceId : SemanticId)
-    (input : ControlPlaceId) : RuntimeState :=
-  let tokens := removeToken state.tokens input
-  let completed :=
-    tokens.isEmpty && state.waits.isEmpty && state.messageWaits.isEmpty &&
-      state.timerWaits.isEmpty &&
-      state.effectWaits.isEmpty &&
-      !state.initiationPending
-  { state with
-    control := if completed then .completed instanceId else state.control
-    tokens
-    endOccurrences := state.endOccurrences + 1 }
+def reachNoneEndState? (state : RuntimeState) (input : ControlPlaceId) :
+    Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let _ ← runningInstance? state
+  pure (reachNoneEndToken state owner input)
 
 /-- Declarative transition relation for one explicitly selected Semantic Process operation. -/
 inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState → Prop where
-  | initiate (id origin output) (state : RuntimeState)
-      (pending : state.initiationPending = true) :
+  | initiate (id origin output) (before after : RuntimeState)
+      (transition : initiateState? before output = some after) :
+      OperationStep (.initiate id origin output) before after
+  | enterScope (id origin input childEntry childScopeId)
+      (before after : RuntimeState)
+      (transition :
+        enterScopeState? before input childEntry childScopeId = some after) :
       OperationStep
-        (.initiate id origin output)
-        state
-        { state with
-          initiationPending := false
-          tokens := output :: state.tokens }
-  | awaitUserTask (id origin input output task) (state : RuntimeState)
-      (instanceId : SemanticId)
-      (running : state.control = .running instanceId)
-      (enabled : hasToken state input = true) :
+        (.enterScope id origin input childEntry childScopeId) before after
+  | awaitUserTask (id origin input output task) (before after : RuntimeState)
+      (transition : awaitUserTaskState? before input output task = some after) :
+      OperationStep (.awaitUserTask id origin input output task) before after
+  | awaitTimer (id origin input output timer) (before after : RuntimeState)
+      (transition : awaitTimerState? before input output timer = some after) :
+      OperationStep (.awaitTimer id origin input output timer) before after
+  | awaitMessage (id origin input output message) (before after : RuntimeState)
+      (transition : awaitMessageState? before input output message = some after) :
+      OperationStep (.awaitMessage id origin input output message) before after
+  | awaitEffect (id origin input output effect route)
+      (before after : RuntimeState)
+      (transition :
+        awaitEffectState? before input output effect route = some after) :
       OperationStep
-        (.awaitUserTask id origin input output task)
-        state
-        (activateUserTask state instanceId input output task)
-  | awaitTimer (id origin input output timer) (state : RuntimeState)
-      (instanceId : SemanticId)
-      (running : state.control = .running instanceId)
-      (enabled : hasToken state input = true) :
-      OperationStep
-        (.awaitTimer id origin input output timer)
-        state
-        (activateTimer state instanceId input output timer)
-  | awaitMessage (id origin input output message) (state : RuntimeState)
-      (instanceId : SemanticId)
-      (running : state.control = .running instanceId)
-      (enabled : hasToken state input = true) :
-      OperationStep
-        (.awaitMessage id origin input output message)
-        state
-        (activateMessage state instanceId input output message)
-  | awaitEffect (id origin input output effect bpmnErrorRoute)
-      (state : RuntimeState)
-      (instanceId : SemanticId)
-      (running : state.control = .running instanceId)
-      (enabled : hasToken state input = true) :
-      OperationStep
-        (.awaitEffect id origin input output effect bpmnErrorRoute)
-        state
-        (activateEffect state instanceId input output effect bpmnErrorRoute)
-  | duplicate (id origin input outputs) (state : RuntimeState)
-      (enabled : hasToken state input = true) :
-      OperationStep
-        (.duplicate id origin input outputs)
-        state
-        (duplicateToken state input outputs)
-  | synchronize (id origin inputs output) (state : RuntimeState)
-      (enabled : inputs.all (hasToken state) = true) :
-      OperationStep
-        (.synchronize id origin inputs output)
-        state
-        (synchronizeTokens state inputs output)
+        (.awaitEffect id origin input output effect route) before after
+  | duplicate (id origin input outputs) (before after : RuntimeState)
+      (transition : duplicateState? before input outputs = some after) :
+      OperationStep (.duplicate id origin input outputs) before after
+  | synchronize (id origin inputs output) (before after : RuntimeState)
+      (transition : synchronizeState? before inputs output = some after) :
+      OperationStep (.synchronize id origin inputs output) before after
   | choose (id origin input candidates defaultOutput defaultOrigin)
-      (state : RuntimeState)
-      (output : ControlPlaceId)
-      (enabled : hasToken state input = true)
-      (selected :
-        selectConditionalOutput candidates defaultOutput
-          state.variables.process.bindings = some output) :
+      (before after : RuntimeState)
+      (transition :
+        chooseState? before input candidates defaultOutput = some after) :
       OperationStep
         (.choose id origin input candidates defaultOutput defaultOrigin)
-        state
-        (chooseToken state input output)
-  | terminate (id origin input) (state : RuntimeState)
-      (instanceId : SemanticId)
-      (running : state.control = .running instanceId)
-      (enabled : hasToken state input = true) :
+        before after
+  | reachNoneEnd (id origin input) (before after : RuntimeState)
+      (transition : reachNoneEndState? before input = some after) :
+      OperationStep (.reachNoneEnd id origin input) before after
+  | completeScope (id origin scopeId parentOutput)
+      (before after : RuntimeState)
+      (transition :
+        completeScopeState? before scopeId parentOutput = some after) :
       OperationStep
-        (.terminate id origin input)
-        state
-        (terminateToken state instanceId input)
+        (.completeScope id origin scopeId parentOutput) before after
 
 /-- Executable transition for one operation. It performs no operation selection. -/
 def fire? (operation : SemanticOperation) (state : RuntimeState) :
     Option RuntimeState :=
   match operation with
-  | .initiate _ _ output =>
-      if state.initiationPending then
-        some
-          { state with
-            initiationPending := false
-            tokens := output :: state.tokens }
-      else
-        none
+  | .initiate _ _ output => initiateState? state output
+  | .enterScope _ _ input childEntry childScopeId =>
+      enterScopeState? state input childEntry childScopeId
   | .awaitUserTask _ _ input output task =>
-      match state.control with
-      | .running instanceId =>
-          if hasToken state input then
-            some (activateUserTask state instanceId input output task)
-          else
-            none
-      | .notStarted
-      | .completed _ => none
+      awaitUserTaskState? state input output task
   | .awaitTimer _ _ input output timer =>
-      match state.control with
-      | .running instanceId =>
-          if hasToken state input then
-            some (activateTimer state instanceId input output timer)
-          else
-            none
-      | .notStarted
-      | .completed _ => none
+      awaitTimerState? state input output timer
   | .awaitMessage _ _ input output message =>
-      match state.control with
-      | .running instanceId =>
-          if hasToken state input then
-            some (activateMessage state instanceId input output message)
-          else
-            none
-      | .notStarted
-      | .completed _ => none
-  | .awaitEffect _ _ input output effect bpmnErrorRoute =>
-      match state.control with
-      | .running instanceId =>
-          if hasToken state input then
-            some
-              (activateEffect state instanceId input output effect
-                bpmnErrorRoute)
-          else
-            none
-      | .notStarted
-      | .completed _ => none
-  | .duplicate _ _ input outputs =>
-      if hasToken state input then
-        some (duplicateToken state input outputs)
-      else
-        none
-  | .synchronize _ _ inputs output =>
-      if inputs.all (hasToken state) then
-        some (synchronizeTokens state inputs output)
-      else
-        none
+      awaitMessageState? state input output message
+  | .awaitEffect _ _ input output effect route =>
+      awaitEffectState? state input output effect route
+  | .duplicate _ _ input outputs => duplicateState? state input outputs
+  | .synchronize _ _ inputs output => synchronizeState? state inputs output
   | .choose _ _ input candidates defaultOutput _ =>
-      if hasToken state input then
-        match selectConditionalOutput candidates defaultOutput
-            state.variables.process.bindings with
-        | some output => some (chooseToken state input output)
-        | none => none
-      else
-        none
-  | .terminate _ _ input =>
-      match state.control with
-      | .running instanceId =>
-          if hasToken state input then
-            some (terminateToken state instanceId input)
-          else
-            none
-      | .notStarted
-      | .completed _ => none
+      chooseState? state input candidates defaultOutput
+  | .reachNoneEnd _ _ input => reachNoneEndState? state input
+  | .completeScope _ _ scopeId parentOutput =>
+      completeScopeState? state scopeId parentOutput
 
 theorem fire_sound (operation : SemanticOperation)
     (before after : RuntimeState)
     (result : fire? operation before = some after) :
     OperationStep operation before after := by
-  cases operation with
-  | initiate id origin output =>
-      by_cases pending : before.initiationPending = true
-      · simp [fire?, pending] at result
-        subst after
-        exact .initiate id origin output before pending
-      · simp [fire?, pending] at result
-  | awaitUserTask id origin input output task =>
-      cases controlEq : before.control with
-      | notStarted => simp [fire?, controlEq] at result
-      | completed instanceId => simp [fire?, controlEq] at result
-      | running instanceId =>
-          by_cases enabled : hasToken before input = true
-          · simp [fire?, controlEq, enabled] at result
-            subst after
-            exact .awaitUserTask id origin input output task before
-              instanceId controlEq enabled
-          · simp [fire?, controlEq, enabled] at result
-  | awaitTimer id origin input output timer =>
-      cases controlEq : before.control with
-      | notStarted => simp [fire?, controlEq] at result
-      | completed instanceId => simp [fire?, controlEq] at result
-      | running instanceId =>
-          by_cases enabled : hasToken before input = true
-          · simp [fire?, controlEq, enabled] at result
-            subst after
-            exact .awaitTimer id origin input output timer before
-              instanceId controlEq enabled
-          · simp [fire?, controlEq, enabled] at result
-  | awaitMessage id origin input output message =>
-      cases controlEq : before.control with
-      | notStarted => simp [fire?, controlEq] at result
-      | completed instanceId => simp [fire?, controlEq] at result
-      | running instanceId =>
-          by_cases enabled : hasToken before input = true
-          · simp [fire?, controlEq, enabled] at result
-            subst after
-            exact .awaitMessage id origin input output message before
-              instanceId controlEq enabled
-          · simp [fire?, controlEq, enabled] at result
-  | awaitEffect id origin input output effect bpmnErrorRoute =>
-      cases controlEq : before.control with
-      | notStarted => simp [fire?, controlEq] at result
-      | completed instanceId => simp [fire?, controlEq] at result
-      | running instanceId =>
-          by_cases enabled : hasToken before input = true
-          · simp [fire?, controlEq, enabled] at result
-            subst after
-            exact .awaitEffect id origin input output effect bpmnErrorRoute before
-              instanceId controlEq enabled
-          · simp [fire?, controlEq, enabled] at result
-  | duplicate id origin input outputs =>
-      by_cases enabled : hasToken before input = true
-      · simp [fire?, enabled] at result
-        subst after
-        exact .duplicate id origin input outputs before enabled
-      · simp [fire?, enabled] at result
-  | synchronize id origin inputs output =>
-      by_cases enabled : inputs.all (hasToken before) = true
-      · simp [fire?, enabled] at result
-        subst after
-        exact .synchronize id origin inputs output before enabled
-      · simp [fire?, enabled] at result
-  | choose id origin input candidates defaultOutput defaultOrigin =>
-      by_cases enabled : hasToken before input = true
-      · simp [fire?, enabled] at result
-        generalize selectedEq :
-            selectConditionalOutput candidates defaultOutput
-              before.variables.process.bindings = selected at result
-        cases selected with
-        | none => simp at result
-        | some output =>
-            simp at result
-            subst after
-            exact .choose id origin input candidates defaultOutput
-              defaultOrigin before output enabled selectedEq
-      · simp [fire?, enabled] at result
-  | terminate id origin input =>
-      cases controlEq : before.control with
-      | notStarted => simp [fire?, controlEq] at result
-      | completed instanceId => simp [fire?, controlEq] at result
-      | running instanceId =>
-          by_cases enabled : hasToken before input = true
-          · simp [fire?, controlEq, enabled] at result
-            subst after
-            exact .terminate id origin input before instanceId controlEq enabled
-          · simp [fire?, controlEq, enabled] at result
+  cases operation <;> first
+    | exact .initiate _ _ _ before after result
+    | exact .enterScope _ _ _ _ _ before after result
+    | exact .awaitUserTask _ _ _ _ _ before after result
+    | exact .awaitTimer _ _ _ _ _ before after result
+    | exact .awaitMessage _ _ _ _ _ before after result
+    | exact .awaitEffect _ _ _ _ _ _ before after result
+    | exact .duplicate _ _ _ _ before after result
+    | exact .synchronize _ _ _ _ before after result
+    | exact .choose _ _ _ _ _ _ before after result
+    | exact .reachNoneEnd _ _ _ before after result
+    | exact .completeScope _ _ _ _ before after result
 
 /-- Program relation keeps the explicit selected operation identity as semantic input. -/
 def ProgramStep (program : Program) (before : RuntimeState)
@@ -549,6 +188,5 @@ theorem step_sound :
             selectedEq
         exact of_decide_eq_true selectedMatches
       · exact fire_sound operation state successor result
-
 
 end BpmnSemantics.SemanticProcess

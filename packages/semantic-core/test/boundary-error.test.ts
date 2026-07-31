@@ -28,8 +28,12 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import {
+  rootScopedProgram,
+  rootScopeOccurrence,
+} from "./root-scope-fixture.ts";
 
-const program: SemanticProcessProgram = {
+const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -91,12 +95,12 @@ const program: SemanticProcessProgram = {
     },
     {
       ...operationBase("EndEvent_AfterError"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_UserTaskToEnd",
     },
     {
       ...operationBase("EndEvent_Normal"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_ServiceToEnd",
     },
     {
@@ -115,7 +119,7 @@ const program: SemanticProcessProgram = {
       output: "place:Flow_StartToService",
     },
   ],
-};
+});
 
 const effectId = Object.freeze({
   processInstanceId: "Instance_1",
@@ -215,6 +219,7 @@ test("applies the validated null patch and opens only the boundary route", () =>
         elementId: "ExpectedUserTaskAfterBPMNError",
         activation: 1,
       },
+      owner: rootScopeOccurrence(program.processId, "Instance_1"),
       name: "Expected User Task After BPMN Error",
       output: "place:Flow_UserTaskToEnd",
     },

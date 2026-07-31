@@ -63,6 +63,30 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/boundary-error/cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/embedded-subprocess-completion/a-then-b.scenario.json",
+    evidenceRelativePath:
+      "scenarios/embedded-subprocess-completion/a-then-b.cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/embedded-subprocess-completion/b-then-a.scenario.json",
+    evidenceRelativePath:
+      "scenarios/embedded-subprocess-completion/b-then-a.cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/embedded-subprocess-completion/stale-a-while-b-active.scenario.json",
+    evidenceRelativePath:
+      "scenarios/embedded-subprocess-completion/stale-a-while-b-active.cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/embedded-subprocess-completion/stale-a-after-scope.scenario.json",
+    evidenceRelativePath:
+      "scenarios/embedded-subprocess-completion/stale-a-after-scope.cibseven-evidence.json",
+  }),
 ]);
 
 export const normativeArtifactCases = Object.freeze([

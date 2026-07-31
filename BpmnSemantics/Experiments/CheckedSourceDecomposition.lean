@@ -90,6 +90,7 @@ def parseFrom (source : CheckedProcess) :
               | _, _ => none
           | _ => none
       | some (.noneStartEvent _)
+      | some (.embeddedSubProcess ..)
       | some (.intermediateCatchMessageEvent ..)
       | some (.parallelGateway _ .converging)
       | some (.exclusiveGateway ..)
@@ -120,6 +121,11 @@ def parseProcess? (source : CheckedProcess) :
   | _, _ => none
 
 def composedNodeSurfaceValid : CheckedNode → Bool
+  | .noneStartEvent _
+  | .noneEndEvent _
+  | .userTask ..
+  | .parallelGateway .. => true
+  | .embeddedSubProcess .. => false
   | .intermediateCatchTimerEvent _ durationLiteral =>
       durationLiteral = "PT1S"
   | .serviceTask _ descriptor inputMappings outputMappings route =>
@@ -132,7 +138,6 @@ def composedNodeSurfaceValid : CheckedNode → Bool
         route.isNone
   | .intermediateCatchMessageEvent .. => false
   | .exclusiveGateway .. => false
-  | _ => true
 
 def profileChecks (source : CheckedProcess) : Bool :=
   source.nodes.all composedNodeSurfaceValid &&

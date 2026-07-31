@@ -66,14 +66,16 @@ def acyclicClosed [DecidableEq α] (edges : List (GraphEdge α))
       !reachableWithin edges fuel edge.target edge.source
 
 private def operationInputs : SemanticOperation → List ControlPlaceId
-  | .initiate .. => []
+  | .initiate ..
+  | .completeScope .. => []
+  | .enterScope _ _ input _ _
   | .awaitUserTask _ _ input _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
   | .choose _ _ input _ _ _
-  | .terminate _ _ input => [input]
+  | .reachNoneEnd _ _ input => [input]
   | .synchronize _ _ inputs _ => inputs
 
 private def operationOutputs : SemanticOperation → List ControlPlaceId
@@ -82,12 +84,14 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output => [output]
+  | .enterScope _ _ _ childEntry _ => [childEntry]
   | .awaitEffect _ _ _ output _ route =>
       output :: route.toList.map (·.output)
   | .duplicate _ _ _ outputs => outputs
   | .choose _ _ _ candidates defaultOutput _ =>
       candidates.map (·.output) ++ [defaultOutput]
-  | .terminate .. => []
+  | .reachNoneEnd .. => []
+  | .completeScope _ _ _ parentOutput => parentOutput.toList
 
 private def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
@@ -105,11 +109,111 @@ private def consumers (operations : List SemanticOperation)
     else
       none
 
-private def programEdges (program : Program) : List (GraphEdge OperationId) :=
+private def placeEdges (program : Program) : List (GraphEdge OperationId) :=
   program.controlPlaces.flatMap fun place =>
     (producers program.operations place.id).flatMap fun producer =>
       (consumers program.operations place.id).map fun consumer =>
         { source := producer, target := consumer }
+
+private def operationScope? (program : Program) (operationId : OperationId) :
+    Option DefinitionScopeId :=
+  (program.operationScopes.find? fun ownership =>
+    decide (ownership.operationId = operationId)).map (·.scopeId)
+
+private def placeScope? (program : Program) (placeId : ControlPlaceId) :
+    Option DefinitionScopeId :=
+  (program.controlPlaceScopes.find? fun ownership =>
+    decide (ownership.controlPlaceId = placeId)).map (·.scopeId)
+
+private def definitionScope? (program : Program) (scopeId : DefinitionScopeId) :
+    Option DefinitionScope :=
+  program.definitionScopes.find? fun scope => decide (scope.id = scopeId)
+
+private def placesOwnedBy (program : Program) (places : List ControlPlaceId)
+    (scopeId : DefinitionScopeId) : Bool :=
+  places.all fun place => placeScope? program place == some scopeId
+
+private def operationRespectsScopes (program : Program)
+    (operation : SemanticOperation) : Bool :=
+  match operationScope? program operation.id with
+  | none => false
+  | some owner =>
+      match operation with
+      | .initiate _ _ output =>
+          (definitionScope? program owner).any (·.parentScopeId.isNone) &&
+            placesOwnedBy program [output] owner
+      | .enterScope _ _ input childEntry childScopeId =>
+          placesOwnedBy program [input] owner &&
+            placesOwnedBy program [childEntry] childScopeId &&
+            (definitionScope? program childScopeId).any fun scope =>
+              scope.parentScopeId == some owner
+      | .completeScope _ _ scopeId parentOutput =>
+          scopeId = owner &&
+            match definitionScope? program scopeId with
+            | none => false
+            | some scope =>
+                match scope.parentScopeId, parentOutput with
+                | none, none => true
+                | some parent, some output =>
+                    placesOwnedBy program [output] parent
+                | _, _ => false
+      | _ =>
+          placesOwnedBy program
+            (operationInputs operation ++ operationOutputs operation) owner
+
+private def scopeEdges (program : Program) :
+    List (GraphEdge DefinitionScopeId) :=
+  program.definitionScopes.filterMap fun scope =>
+    scope.parentScopeId.map fun parent =>
+      { source := parent, target := scope.id }
+
+private def scopeTreeWellFormed (program : Program) : Bool :=
+  let ids := program.definitionScopes.map (·.id)
+  match program.definitionScopes.filter (·.parentScopeId.isNone) with
+  | [root] =>
+      let edges := scopeEdges program
+      let fuel := ids.length
+      allReachableWithin ids edges fuel root.id && acyclicClosed edges fuel
+  | _ => false
+
+private def scopedOwnershipComplete (program : Program) : Bool :=
+  program.operationScopes.map (·.operationId) = program.operations.map (·.id) &&
+    program.controlPlaceScopes.map (·.controlPlaceId) =
+      program.controlPlaces.map (·.id) &&
+    program.operations.all (operationRespectsScopes program)
+
+private def oneCompletionAndEntryPerScope (program : Program) : Bool :=
+  program.definitionScopes.all fun scope =>
+    (program.operations.filter fun
+      | .completeScope _ _ scopeId _ => scopeId = scope.id
+      | _ => false).length = 1 &&
+    match scope.parentScopeId with
+    | none =>
+        program.operations.all fun
+          | .enterScope _ _ _ _ childScopeId => childScopeId ≠ scope.id
+          | _ => true
+    | some _ =>
+        (program.operations.filter fun
+          | .enterScope _ _ _ _ childScopeId => childScopeId = scope.id
+          | _ => false).length = 1
+
+private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
+    Option OperationId :=
+  program.operations.findSome? fun
+    | .completeScope id _ candidate _ =>
+        if candidate = scopeId then some id else none
+    | _ => none
+
+private def completionEdges (program : Program) : List (GraphEdge OperationId) :=
+  program.operations.filterMap fun
+    | .reachNoneEnd id _ _ => do
+        let scopeId ← operationScope? program id
+        let completionId ← completionId? program scopeId
+        pure { source := id, target := completionId }
+    | _ => none
+
+private def programEdges (program : Program) : List (GraphEdge OperationId) :=
+  placeEdges program ++ completionEdges program
 
 private def initiateIds (operations : List SemanticOperation) :
     List OperationId :=
@@ -117,22 +221,32 @@ private def initiateIds (operations : List SemanticOperation) :
     | .initiate id _ _ => some id
     | _ => none
 
-private def terminateIds (operations : List SemanticOperation) :
-    List OperationId :=
-  operations.filterMap fun
-    | .terminate id _ _ => some id
-    | _ => none
+private def rootScope? (program : Program) : Option DefinitionScopeId :=
+  match program.definitionScopes.filter (·.parentScopeId.isNone) with
+  | [scope] => some scope.id
+  | _ => none
+
+private def rootCompletionIds (program : Program) : List OperationId :=
+  match rootScope? program with
+  | none => []
+  | some root => program.operations.filterMap fun
+      | .completeScope id _ scopeId none =>
+          if scopeId = root then some id else none
+      | _ => none
 
 /-- Standalone graph backstop for decoded programs, independent of lowering equality. -/
 def programGraphWellFormed (program : Program) : Bool :=
   let operationIds := program.operations.map (·.id)
   let starts := initiateIds program.operations
-  let ends := terminateIds program.operations
+  let ends := rootCompletionIds program
   match starts with
   | [start] =>
       let edges := programEdges program
       let fuel := operationIds.length
-      program.controlPlaces.all (fun place =>
+      scopeTreeWellFormed program &&
+        scopedOwnershipComplete program &&
+        oneCompletionAndEntryPerScope program &&
+        program.controlPlaces.all (fun place =>
         (producers program.operations place.id).length = 1 &&
           (consumers program.operations place.id).length = 1) &&
         allReachableWithin operationIds edges fuel start &&

@@ -6,6 +6,7 @@ export enum CheckedProcessKind {
 
 export enum CheckedNodeKind {
   NoneStartEvent = "noneStartEvent",
+  EmbeddedSubProcess = "embeddedSubProcess",
   UserTask = "userTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
@@ -128,6 +129,11 @@ export type CheckedNode =
       id: string;
     }>
   | DeepReadonly<{
+      kind: CheckedNodeKind.EmbeddedSubProcess;
+      id: string;
+      childScopeId: string;
+    }>
+  | DeepReadonly<{
       kind: CheckedNodeKind.UserTask;
       id: string;
       name: string | null;
@@ -167,10 +173,29 @@ export type CheckedSequenceFlow = DeepReadonly<{
   condition: CheckedCondition | null;
 }>;
 
+export type DefinitionScope = DeepReadonly<{
+  id: string;
+  parentScopeId: string | null;
+  originElementId: string;
+}>;
+
+export type NodeScopeOwnership = DeepReadonly<{
+  nodeId: string;
+  scopeId: string;
+}>;
+
+export type SequenceFlowScopeOwnership = DeepReadonly<{
+  sequenceFlowId: string;
+  scopeId: string;
+}>;
+
 export type CheckedProcess = DeepReadonly<{
   kind: CheckedProcessKind.CheckedProcess;
   identity: CheckedProcessIdentity;
   processId: string;
+  definitionScopes: DefinitionScope[];
+  nodeScopes: NodeScopeOwnership[];
+  sequenceFlowScopes: SequenceFlowScopeOwnership[];
   nodes: CheckedNode[];
   sequenceFlows: CheckedSequenceFlow[];
 }>;
@@ -185,6 +210,7 @@ export enum SemanticProcessCompilerId {
 
 export enum SemanticOperationKind {
   Initiate = "initiate",
+  EnterScope = "enterScope",
   AwaitUserTask = "awaitUserTask",
   AwaitMessage = "awaitMessage",
   AwaitTimer = "awaitTimer",
@@ -192,7 +218,8 @@ export enum SemanticOperationKind {
   Duplicate = "duplicate",
   Synchronize = "synchronize",
   Choose = "choose",
-  Terminate = "terminate",
+  ReachNoneEnd = "reachNoneEnd",
+  CompleteScope = "completeScope",
 }
 
 export enum SemanticOriginKind {
@@ -220,6 +247,16 @@ export type BpmnSequenceFlowOrigin = DeepReadonly<{
 export type ControlPlace = DeepReadonly<{
   id: string;
   origin: BpmnSequenceFlowOrigin;
+}>;
+
+export type OperationScopeOwnership = DeepReadonly<{
+  operationId: string;
+  scopeId: string;
+}>;
+
+export type ControlPlaceScopeOwnership = DeepReadonly<{
+  controlPlaceId: string;
+  scopeId: string;
 }>;
 
 export type BpmnErrorRoute = DeepReadonly<{
@@ -250,6 +287,13 @@ export type SemanticOperation =
       DeepReadonly<{
         kind: SemanticOperationKind.Initiate;
         output: string;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.EnterScope;
+        input: string;
+        childEntry: string;
+        childScopeId: string;
       }>)
   | (OperationBase &
       DeepReadonly<{
@@ -316,14 +360,23 @@ export type SemanticOperation =
       }>)
   | (OperationBase &
       DeepReadonly<{
-        kind: SemanticOperationKind.Terminate;
+        kind: SemanticOperationKind.ReachNoneEnd;
         input: string;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.CompleteScope;
+        scopeId: string;
+        parentOutput: string | null;
       }>);
 
 export type SemanticProcessProgram = DeepReadonly<{
   kind: SemanticProcessKind.SemanticProcess;
   identity: SemanticProcessIdentity;
   processId: string;
+  definitionScopes: DefinitionScope[];
+  operationScopes: OperationScopeOwnership[];
+  controlPlaceScopes: ControlPlaceScopeOwnership[];
   controlPlaces: ControlPlace[];
   operations: SemanticOperation[];
 }>;

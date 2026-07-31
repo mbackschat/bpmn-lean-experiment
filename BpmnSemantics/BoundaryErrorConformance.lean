@@ -40,6 +40,14 @@ def checkedProcess : CheckedProcess :=
         sourceSha256 :=
           "68ad931204e62da12494766393b380026addb1e230d5a3a64205e655831f62b6" }
     processId := ⟨"Process_BoundaryError"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_BoundaryError"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_BoundaryError"⟩
+      [ ⟨"CreateRelationshipLinkTask"⟩, ⟨"EndEvent_AfterError"⟩
+      , ⟨"EndEvent_Normal"⟩, ⟨"ExpectedUserTaskAfterBPMNError"⟩
+      , ⟨"StartEvent_None"⟩ ]
+    sequenceFlowScopes := rootSequenceFlowScopes ⟨"Process_BoundaryError"⟩
+      [ ⟨"Flow_ErrorToUserTask"⟩, ⟨"Flow_ServiceToEnd"⟩
+      , ⟨"Flow_StartToService"⟩, ⟨"Flow_UserTaskToEnd"⟩ ]
     nodes :=
       [ .serviceTask
           ⟨"CreateRelationshipLinkTask"⟩
@@ -97,6 +105,7 @@ def route : BpmnErrorRoute :=
 
 def effectWait : EffectWait :=
   { processInstanceId := effectId.processInstanceId
+    owner := rootScopeOccurrenceId effectId.processInstanceId program.processId
     elementId := ⟨effectId.elementId.value⟩
     activation := effectId.activation
     descriptor

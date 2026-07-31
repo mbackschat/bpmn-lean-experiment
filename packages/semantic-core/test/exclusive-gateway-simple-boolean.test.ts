@@ -27,6 +27,10 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import {
+  rootScopedProgram,
+  rootScopeOccurrence,
+} from "./root-scope-fixture.ts";
 
 const literal = (value: boolean): SimpleBooleanExpression => ({
   kind: SimpleBooleanExpressionKind.Literal,
@@ -46,7 +50,7 @@ function choiceProgram(
     "Flow_Second_End",
     "Flow_Start",
   ];
-  return {
+  return rootScopedProgram({
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -88,17 +92,17 @@ function choiceProgram(
       },
       {
         ...operationBase("End_Default"),
-        kind: SemanticOperationKind.Terminate,
+        kind: SemanticOperationKind.ReachNoneEnd,
         input: "place:Flow_Default_End",
       },
       {
         ...operationBase("End_First"),
-        kind: SemanticOperationKind.Terminate,
+        kind: SemanticOperationKind.ReachNoneEnd,
         input: "place:Flow_First_End",
       },
       {
         ...operationBase("End_Second"),
-        kind: SemanticOperationKind.Terminate,
+        kind: SemanticOperationKind.ReachNoneEnd,
         input: "place:Flow_Second_End",
       },
       {
@@ -128,7 +132,7 @@ function choiceProgram(
         task: { elementId: "Task_Second", name: null },
       },
     ],
-  };
+  });
 }
 
 const start = {
@@ -239,7 +243,11 @@ test("requires three start-closure steps and reports a smaller bound", () => {
   assert.equal(short.internalStepBoundExceeded, true);
   assert.deepEqual(short.state.userTaskWaits, []);
   assert.deepEqual(short.state.controlTokens, [
-    { placeId: "place:Flow_First", multiplicity: 1 },
+    {
+      placeId: "place:Flow_First",
+      owner: rootScopeOccurrence(program.processId, start.instanceId),
+      multiplicity: 1,
+    },
   ]);
 });
 
@@ -247,7 +255,7 @@ test("rejects an extra initiation branch before it creates multiple-enabledness"
   const original = choiceProgram(literal(true), literal(false));
   const extraTerminate = {
     ...operationBase("End_Extra"),
-    kind: SemanticOperationKind.Terminate,
+    kind: SemanticOperationKind.ReachNoneEnd,
     input: "place:Flow_Extra",
   } as const satisfies SemanticOperation;
   const extraInitiate = {

@@ -160,6 +160,7 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             cases result
             exact .finish entry endNode nodeResult
         | noneStartEvent _ => simp [parseFrom, nodeResult] at result
+        | embeddedSubProcess _ _ => simp [parseFrom, nodeResult] at result
         | userTask id name =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | intermediateCatchTimerEvent id duration =>

@@ -8,6 +8,9 @@
     "kind",
     "identity",
     "processId",
+    "definitionScopes",
+    "nodeScopes",
+    "sequenceFlowScopes",
     "nodes",
     "sequenceFlows"
   ],
@@ -20,6 +23,27 @@
     },
     "processId": {
       "$ref": "#/$defs/nonemptyString"
+    },
+    "definitionScopes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/definitionScope"
+      }
+    },
+    "nodeScopes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/nodeScopeOwnership"
+      }
+    },
+    "sequenceFlowScopes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/sequenceFlowScopeOwnership"
+      }
     },
     "nodes": {
       "type": "array",
@@ -59,6 +83,62 @@
         "sourceSha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "definitionScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "parentScopeId",
+        "originElementId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "parentScopeId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "originElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "nodeScopeOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nodeId",
+        "scopeId"
+      ],
+      "properties": {
+        "nodeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "scopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "sequenceFlowScopeOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequenceFlowId",
+        "scopeId"
+      ],
+      "properties": {
+        "sequenceFlowId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "scopeId": {
+          "$ref": "#/$defs/nonemptyString"
         }
       }
     },
@@ -112,60 +192,6 @@
               "const": "stringLiteral"
             },
             "value": {
-              "$ref": "#/$defs/nonemptyString"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "id",
-            "channel"
-          ],
-          "properties": {
-            "kind": {
-              "const": "intermediateCatchMessageEvent"
-            },
-            "id": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "channel": {
-              "$ref": "#/$defs/messageChannel"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "id",
-            "direction",
-            "candidateFlowIds",
-            "defaultFlowId"
-          ],
-          "properties": {
-            "kind": {
-              "const": "exclusiveGateway"
-            },
-            "id": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "direction": {
-              "const": "diverging"
-            },
-            "candidateFlowIds": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "uniqueItems": true,
-              "items": {
-                "$ref": "#/$defs/nonemptyString"
-              }
-            },
-            "defaultFlowId": {
               "$ref": "#/$defs/nonemptyString"
             }
           }
@@ -274,6 +300,26 @@
           "required": [
             "kind",
             "id",
+            "childScopeId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "embeddedSubProcess"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "childScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "name"
           ],
           "properties": {
@@ -308,6 +354,26 @@
             },
             "durationLiteral": {
               "const": "PT1S"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "channel"
+          ],
+          "properties": {
+            "kind": {
+              "const": "intermediateCatchMessageEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "channel": {
+              "$ref": "#/$defs/messageChannel"
             }
           }
         },
@@ -376,6 +442,40 @@
                 "diverging",
                 "converging"
               ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "direction",
+            "candidateFlowIds",
+            "defaultFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "exclusiveGateway"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "direction": {
+              "const": "diverging"
+            },
+            "candidateFlowIds": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/nonemptyString"
+              }
+            },
+            "defaultFlowId": {
+              "$ref": "#/$defs/nonemptyString"
             }
           }
         },

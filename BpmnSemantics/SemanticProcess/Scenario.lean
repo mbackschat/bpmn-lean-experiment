@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.Lowering
 
 /-! # Semantic Process scenario projection
 

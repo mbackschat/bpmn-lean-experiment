@@ -38,6 +38,8 @@ public class CibSevenScenarioRunnerTest {
       PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion");
   private static final Path PARALLEL_ROOT =
       PROJECT_ROOT.resolve("scenarios/parallel-fork-join");
+  private static final Path EMBEDDED_SUBPROCESS_ROOT =
+      PROJECT_ROOT.resolve("scenarios/embedded-subprocess-completion");
   private static CibSevenScenarioRunner runner;
 
   @BeforeClass
@@ -146,6 +148,71 @@ public class CibSevenScenarioRunnerTest {
     assertEquals(
         ScenarioProtocol.CleanupProjection.clean(),
         bThenAResult.diagnostics().cleanup());
+  }
+
+  @Test
+  public void completesEmbeddedSubProcessOnlyAfterBothChildEnds()
+      throws Exception {
+    var aThenB =
+        ScenarioJson.read(EMBEDDED_SUBPROCESS_ROOT.resolve("a-then-b.scenario.json"));
+    var bThenA =
+        ScenarioJson.read(EMBEDDED_SUBPROCESS_ROOT.resolve("b-then-a.scenario.json"));
+    var staleWhileActive =
+        ScenarioJson.read(
+            EMBEDDED_SUBPROCESS_ROOT.resolve("stale-a-while-b-active.scenario.json"));
+    var staleAfterScope =
+        ScenarioJson.read(
+            EMBEDDED_SUBPROCESS_ROOT.resolve("stale-a-after-scope.scenario.json"));
+
+    var aThenBResult = runner.run(aThenB, PROJECT_ROOT);
+    var bThenAResult = runner.run(bThenA, PROJECT_ROOT);
+    var staleWhileActiveResult = runner.run(staleWhileActive, PROJECT_ROOT);
+    var staleAfterScopeResult = runner.run(staleAfterScope, PROJECT_ROOT);
+
+    assertEquals(
+        ScenarioJson.readEvidenceResult(
+            EMBEDDED_SUBPROCESS_ROOT.resolve("a-then-b.cibseven-evidence.json")),
+        new ScenarioProtocol.CanonicalResult(aThenBResult.outcome(), aThenBResult.trace()));
+    assertEquals(
+        ScenarioJson.readEvidenceResult(
+            EMBEDDED_SUBPROCESS_ROOT.resolve("b-then-a.cibseven-evidence.json")),
+        new ScenarioProtocol.CanonicalResult(bThenAResult.outcome(), bThenAResult.trace()));
+    assertEquals(
+        ScenarioJson.readEvidenceResult(
+            EMBEDDED_SUBPROCESS_ROOT.resolve(
+                "stale-a-while-b-active.cibseven-evidence.json")),
+        new ScenarioProtocol.CanonicalResult(
+            staleWhileActiveResult.outcome(), staleWhileActiveResult.trace()));
+    assertEquals(
+        ScenarioJson.readEvidenceResult(
+            EMBEDDED_SUBPROCESS_ROOT.resolve("stale-a-after-scope.cibseven-evidence.json")),
+        new ScenarioProtocol.CanonicalResult(
+            staleAfterScopeResult.outcome(), staleAfterScopeResult.trace()));
+
+    var afterFirstA = (StateObservation) aThenBResult.trace().get(4);
+    var afterFirstB = (StateObservation) bThenAResult.trace().get(4);
+    assertEquals(List.of("UserTask_ChildB"), taskElementIds(afterFirstA));
+    assertEquals(List.of("UserTask_ChildA"), taskElementIds(afterFirstB));
+    assertEquals(
+        (StateObservation) aThenBResult.trace().get(6),
+        (StateObservation) bThenAResult.trace().get(6));
+    assertEquals(
+        List.of("UserTask_AfterScope"),
+        taskElementIds((StateObservation) aThenBResult.trace().get(6)));
+    assertEquals(COMPLETED, ((StateObservation) aThenBResult.trace().get(8)).status());
+    assertEquals(
+        staleWhileActiveResult.trace().get(4), staleWhileActiveResult.trace().get(6));
+    assertEquals(staleAfterScopeResult.trace().get(6), staleAfterScopeResult.trace().get(8));
+    assertEquals(
+        ScenarioProtocol.CleanupProjection.clean(), aThenBResult.diagnostics().cleanup());
+    assertEquals(
+        ScenarioProtocol.CleanupProjection.clean(), bThenAResult.diagnostics().cleanup());
+    assertEquals(
+        ScenarioProtocol.CleanupProjection.clean(),
+        staleWhileActiveResult.diagnostics().cleanup());
+    assertEquals(
+        ScenarioProtocol.CleanupProjection.clean(),
+        staleAfterScopeResult.diagnostics().cleanup());
   }
 
   private static List<ScenarioProtocol.CanonicalObservation> expectedCommittedTrace() {
@@ -274,5 +341,9 @@ public class CibSevenScenarioRunnerTest {
         new UserTaskInstanceId(INSTANCE_ID, elementId, 1),
         name,
         ACTIVE);
+  }
+
+  private static List<String> taskElementIds(StateObservation state) {
+    return state.openUserTasks().stream().map(task -> task.id().elementId()).toList();
   }
 }

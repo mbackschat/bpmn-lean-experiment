@@ -29,6 +29,9 @@ import type {
   ObservationValueDisagreement,
   PipelineCase,
 } from "./pipeline-types.ts";
+import {
+  embeddedSubProcessPipelineCases,
+} from "./embedded-subprocess-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -547,6 +550,7 @@ export const pipelineCases = Object.freeze([
       ),
     },
   ),
+  ...embeddedSubProcessPipelineCases,
   timerCase(),
   timerUserTaskCompositionCase(),
   intermediateCatchMessageCase(),

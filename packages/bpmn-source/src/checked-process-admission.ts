@@ -1,69 +1,161 @@
 import {
   CheckedNodeKind,
   GatewayDirection,
-  SemanticOperationKind,
   SemanticProfileId,
   SimpleBooleanExpressionLanguage,
-  profileAllowsOperationKinds,
+  profileAllowsCheckedProcessShape,
 } from "@bpmn-lean/semantic-core";
 import type {
+  DefinitionScope,
+  NodeScopeOwnership,
   CheckedNode,
   CheckedSequenceFlow,
+  SequenceFlowScopeOwnership,
 } from "@bpmn-lean/semantic-core";
 
 const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
+export type CheckedProcessGraph = Readonly<{
+  definitionScopes: ReadonlyArray<DefinitionScope>;
+  nodeScopes: ReadonlyArray<NodeScopeOwnership>;
+  sequenceFlowScopes: ReadonlyArray<SequenceFlowScopeOwnership>;
+  nodes: ReadonlyArray<CheckedNode>;
+  flows: ReadonlyArray<CheckedSequenceFlow>;
+}>;
+
 /**
- * Applies profile capability to a graph admitted independently by structural
- * BPMN facts. No complete model topology is named here.
+ * Applies profile cardinalities to a graph admitted through generic scoped BPMN facts.
+ * No complete model topology is named here.
  */
 export function isAdmittedCheckedProcess(
-  nodes: ReadonlyArray<CheckedNode>,
-  flows: ReadonlyArray<CheckedSequenceFlow>,
+  graph: CheckedProcessGraph,
   expressionLanguage: unknown,
   hasExplicitExpressionLanguage: boolean,
   semanticProfile: string,
 ): boolean {
-  return (
-    profileAllowsOperationKinds(
+  const nodeScopes = ownershipMap(
+    graph.nodeScopes,
+    "nodeId",
+    graph.nodes.map(({ id }) => id),
+    graph.definitionScopes,
+  );
+  const flowScopes = ownershipMap(
+    graph.sequenceFlowScopes,
+    "sequenceFlowId",
+    graph.flows.map(({ id }) => id),
+    graph.definitionScopes,
+  );
+  return profileAllowsCheckedProcessShape(
       semanticProfile,
-      nodes.map(semanticOperationKind),
+      graph.nodes.map(({ kind }) => kind),
+      graph.definitionScopes.length,
     ) &&
+    nodeScopes !== undefined &&
+    flowScopes !== undefined &&
+    isDefinitionScopeTree(graph.definitionScopes) &&
+    embeddedNodesOwnChildScopes(graph, nodeScopes) &&
     hasSelectedExpressionLanguage(
       semanticProfile,
       expressionLanguage,
       hasExplicitExpressionLanguage,
     ) &&
-    nodes.every((node) => hasSelectedArity(node, flows)) &&
-    hasSelectedConditions(semanticProfile, flows) &&
-    isConnectedAcyclicGraph(nodes, flows)
-  );
+    hasSelectedConditions(semanticProfile, graph.flows) &&
+    graph.definitionScopes.every(({ id }) =>
+      isAdmittedDefinitionScope(graph, id, nodeScopes, flowScopes)
+    );
 }
 
-function semanticOperationKind(node: CheckedNode): SemanticOperationKind {
-  switch (node.kind) {
-    case CheckedNodeKind.NoneStartEvent:
-      return SemanticOperationKind.Initiate;
-    case CheckedNodeKind.UserTask:
-      return SemanticOperationKind.AwaitUserTask;
-    case CheckedNodeKind.IntermediateCatchTimerEvent:
-      return SemanticOperationKind.AwaitTimer;
-    case CheckedNodeKind.IntermediateCatchMessageEvent:
-      return SemanticOperationKind.AwaitMessage;
-    case CheckedNodeKind.ServiceTask:
-      return SemanticOperationKind.AwaitEffect;
-    case CheckedNodeKind.ParallelGateway:
-      switch (node.direction) {
-        case GatewayDirection.Diverging:
-          return SemanticOperationKind.Duplicate;
-        case GatewayDirection.Converging:
-          return SemanticOperationKind.Synchronize;
+function isAdmittedDefinitionScope(
+  graph: CheckedProcessGraph,
+  scopeId: string,
+  nodeScopes: ReadonlyMap<string, string>,
+  flowScopes: ReadonlyMap<string, string>,
+): boolean {
+  const nodes = graph.nodes.filter(({ id }) => nodeScopes.get(id) === scopeId);
+  const flows = graph.flows.filter(({ id }) => flowScopes.get(id) === scopeId);
+  const nodeIds = new Set(nodes.map(({ id }) => id));
+  return nodes.every((node) => hasSelectedArity(node, flows)) &&
+    flows.every(
+      ({ sourceId, targetId }) =>
+        nodeIds.has(sourceId) && nodeIds.has(targetId),
+    ) &&
+    isConnectedAcyclicGraph(nodes, flows);
+}
+
+function embeddedNodesOwnChildScopes(
+  graph: CheckedProcessGraph,
+  nodeScopes: ReadonlyMap<string, string>,
+): boolean {
+  const embedded = graph.nodes.filter(
+    (
+      node,
+    ): node is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.EmbeddedSubProcess }
+    > => node.kind === CheckedNodeKind.EmbeddedSubProcess,
+  );
+  const roots = graph.definitionScopes.filter(
+    ({ parentScopeId }) => parentScopeId === null,
+  );
+  return roots.length === 1 &&
+    embedded.every((node) =>
+      graph.definitionScopes.some(
+        ({ id, parentScopeId, originElementId }) =>
+          id === node.childScopeId &&
+          parentScopeId === nodeScopes.get(node.id) &&
+          originElementId === node.id,
+      )
+    ) &&
+    graph.definitionScopes.every(({ id, parentScopeId, originElementId }) =>
+      parentScopeId === null || embedded.some(
+        (node) => node.id === originElementId && node.childScopeId === id,
+      )
+    );
+}
+
+function isDefinitionScopeTree(
+  scopes: ReadonlyArray<DefinitionScope>,
+): boolean {
+  const byId = new Map(scopes.map((scope) => [scope.id, scope]));
+  return byId.size === scopes.length && scopes.every((scope) => {
+    if (scope.parentScopeId === null) {
+      return true;
+    }
+    const visited = new Set([scope.id]);
+    let parentId: string | null = scope.parentScopeId;
+    while (parentId !== null) {
+      if (visited.has(parentId)) {
+        return false;
       }
-    case CheckedNodeKind.ExclusiveGateway:
-      return SemanticOperationKind.Choose;
-    case CheckedNodeKind.NoneEndEvent:
-      return SemanticOperationKind.Terminate;
+      visited.add(parentId);
+      const parent: DefinitionScope | undefined = byId.get(parentId);
+      if (parent === undefined) {
+        return false;
+      }
+      parentId = parent.parentScopeId;
+    }
+    return true;
+  });
+}
+
+function ownershipMap<K extends "nodeId" | "sequenceFlowId">(
+  entries: ReadonlyArray<Readonly<Record<K, string> & { scopeId: string }>>,
+  idKey: K,
+  expectedIds: ReadonlyArray<string>,
+  scopes: ReadonlyArray<DefinitionScope>,
+): ReadonlyMap<string, string> | undefined {
+  const scopeIds = new Set(scopes.map(({ id }) => id));
+  const result = new Map<string, string>();
+  for (const entry of entries) {
+    if (result.has(entry[idKey]) || !scopeIds.has(entry.scopeId)) {
+      return undefined;
+    }
+    result.set(entry[idKey], entry.scopeId);
   }
+  return entries.length === expectedIds.length &&
+      expectedIds.every((id) => result.has(id))
+    ? result
+    : undefined;
 }
 
 function hasSelectedExpressionLanguage(
@@ -73,15 +165,11 @@ function hasSelectedExpressionLanguage(
 ): boolean {
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
-      return (
-        hasExplicitExpressionLanguage &&
-        expressionLanguage === SimpleBooleanExpressionLanguage
-      );
+      return hasExplicitExpressionLanguage &&
+        expressionLanguage === SimpleBooleanExpressionLanguage;
     default:
-      return (
-        !hasExplicitExpressionLanguage &&
-        expressionLanguage === bpmnDefaultExpressionLanguage
-      );
+      return !hasExplicitExpressionLanguage &&
+        expressionLanguage === bpmnDefaultExpressionLanguage;
   }
 }
 
@@ -106,6 +194,7 @@ function hasSelectedArity(
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent:
       return incoming === 0 && outgoing === 1;
+    case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.UserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:
     case CheckedNodeKind.IntermediateCatchMessageEvent:
@@ -129,15 +218,6 @@ function isConnectedAcyclicGraph(
   nodes: ReadonlyArray<CheckedNode>,
   flows: ReadonlyArray<CheckedSequenceFlow>,
 ): boolean {
-  const nodeIds = new Set(nodes.map(({ id }) => id));
-  if (
-    flows.some(
-      ({ sourceId, targetId }) =>
-        !nodeIds.has(sourceId) || !nodeIds.has(targetId),
-    )
-  ) {
-    return false;
-  }
   const starts = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.NoneStartEvent,
   );
@@ -155,21 +235,13 @@ function isConnectedAcyclicGraph(
   const reached = reachableFrom([start.id], edges);
   const canReachEnd = reachableFrom(
     ends.map(({ id }) => id),
-    edges.map(({ source, target }) => ({
-      source: target,
-      target: source,
-    })),
+    edges.map(({ source, target }) => ({ source: target, target: source })),
   );
-  return (
-    nodes.every(({ id }) => reached.has(id) && canReachEnd.has(id)) &&
-    isAcyclic([...nodeIds], edges)
-  );
+  return nodes.every(({ id }) => reached.has(id) && canReachEnd.has(id)) &&
+    isAcyclic(nodes.map(({ id }) => id), edges);
 }
 
-type NodeEdge = Readonly<{
-  source: string;
-  target: string;
-}>;
+type NodeEdge = Readonly<{ source: string; target: string }>;
 
 function reachableFrom(
   initial: ReadonlyArray<string>,

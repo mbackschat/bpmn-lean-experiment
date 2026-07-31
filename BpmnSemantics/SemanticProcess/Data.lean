@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcessContract
 
 /-! # Semantic Process bounded data mappings
 

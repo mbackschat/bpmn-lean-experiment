@@ -42,7 +42,7 @@ inductive MessageDeliveryStep :
       MessageDeliveryStep program state subscriptionId channel
         { state with
           messageWaits := state.messageWaits.erase wait
-          tokens := wait.output :: state.tokens }
+          tokens := addToken state.tokens wait.output wait.owner }
 
 def deliverMessage (program : Program) (state : RuntimeState)
     (subscriptionId : MessageSubscriptionId) (channel : MessageChannel) :
@@ -54,7 +54,7 @@ def deliverMessage (program : Program) (state : RuntimeState)
         some
           { state with
             messageWaits := state.messageWaits.erase wait
-            tokens := wait.output :: state.tokens }
+            tokens := addToken state.tokens wait.output wait.owner }
       else
         none
 
@@ -85,9 +85,12 @@ def singletonMessageWaitingState (wait : MessageWait)
     (logicalTimeMs : Nat := 0) : RuntimeState :=
   { initialState with
     control := .running wait.processInstanceId
+    scopeOccurrences := [{ id := wait.owner, parent := none }]
     messageWaits := [wait]
     messageActivations :=
       [{ elementId := wait.elementId, count := wait.activation }]
+    scopeActivations :=
+      [{ scopeId := wait.owner.definitionScopeId, count := wait.owner.activation }]
     logicalTimeMs }
 
 end BpmnSemantics.SemanticProcess

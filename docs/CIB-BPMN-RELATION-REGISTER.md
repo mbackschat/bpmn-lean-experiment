@@ -154,6 +154,18 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** Candidate order is the selected interpretation `CIB-INT-0001`; JUEL evaluation is configuration-specific under `CIB-CFG-0005`; synchronous command rollback is mapped by `CIB-OP-0004`. CIB accepts a language-qualified formal condition as a script source and may defer missing-script-engine failure until execution; the deferred JUEL profile rejects that source before parse-only JUEL validation. The implemented project language is not executed by CIB and does not turn this calibration into Simple Boolean truth evidence. This agreement does not cover a missing default, converging or mixed gateways, more than two conditions, conditional flow from another Flow Node, arbitrary JUEL, nested data, or scripts.
 
+### CIB-AGR-0007 — ordinary embedded Sub-Process quiescent completion
+
+**Status:** Reviewed bounded agreement
+
+**BPMN basis:** BPMN 2.0.2 Clauses 10.3.5 and 13.3.4 define an embedded Sub-Process as an Activity-owned execution scope that starts when reached and completes only after no contained token or active Activity remains, then continues through the Sub-Process's outgoing Sequence Flow.
+
+**Pinned CIB observation:** CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017` starts the exact project-authored one-level ordinary Sub-Process with simultaneous `UserTask_ChildA` and `UserTask_ChildB` waits. Completing either child first leaves only its sibling active and does not expose the enclosing `UserTask_AfterScope`; completing both children destroys the child work and exposes exactly the enclosing task. A-then-B and B-then-A reach the same public post-child state, and completing the enclosing task completes the Process.
+
+**Evidence:** [Ordinary embedded Sub-Process completion scenarios](../scenarios/embedded-subprocess-completion/README.md), content-bound evidence for [A then B](../scenarios/embedded-subprocess-completion/a-then-b.cibseven-evidence.json) and [B then A](../scenarios/embedded-subprocess-completion/b-then-a.cibseven-evidence.json), [public-service oracle test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java), and the [draft profile](../profiles/cibseven-2.2.0-embedded-subprocess-completion-draft/README.md).
+
+**Boundary:** This agreement is limited to one ordinary embedded Sub-Process, one child scope level, one diverging Parallel Gateway, two distinct child User Tasks, separate child None End Events, and one enclosing User Task. Project semantic occurrence identity and stale-command refusal remain operational mappings under `CIB-OP-0001`. Arbitrary nesting, repeated activation, Event Sub-Processes, implicit completion, boundary handling, Error propagation, Terminate End Events, child-local data, loops, multi-instance, Call Activities, transactions, compensation, and internal CIB scope representation remain outside this agreement.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.

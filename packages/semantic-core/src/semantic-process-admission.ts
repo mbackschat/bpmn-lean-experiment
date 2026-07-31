@@ -17,6 +17,9 @@ import {
   SemanticProcessKind,
 } from "./semantic-process-contract.js";
 import type {
+  ControlPlaceScopeOwnership,
+  DefinitionScope,
+  OperationScopeOwnership,
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
@@ -27,7 +30,7 @@ import {
   isWellFormedSemanticProcessGraph,
 } from "./semantic-process-graph-admission.js";
 import {
-  profileAllowsOperationKinds,
+  profileAllowsProgramShape,
 } from "./semantic-process-profile.js";
 import {
   isWellFormedStimulus,
@@ -57,9 +60,10 @@ export function supportsSemanticProcessScenario(
   return (
     isSupportedScenario(scenario) &&
     isWellFormedSemanticProcessProgram(program) &&
-    profileAllowsOperationKinds(
+    profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations.map(({ kind }) => kind),
+      program.definitionScopes.length,
     ) &&
     program.identity.semanticProfile === scenario.profile &&
     program.identity.sourceId === scenario.bpmn.id &&
@@ -75,9 +79,10 @@ export function supportsSemanticProcessExecution(
     isWellFormedStimulus(start) &&
     start.kind === StimulusKind.StartProcess &&
     isWellFormedSemanticProcessProgram(program) &&
-    profileAllowsOperationKinds(
+    profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations.map(({ kind }) => kind),
+      program.definitionScopes.length,
     ) &&
     start.processId === program.processId
   );
@@ -90,6 +95,15 @@ export function isWellFormedSemanticProcessProgram(
     return false;
   }
   const identity = isRecord(value.identity) ? value.identity : undefined;
+  const definitionScopes = Array.isArray(value.definitionScopes)
+    ? value.definitionScopes
+    : undefined;
+  const operationScopes = Array.isArray(value.operationScopes)
+    ? value.operationScopes
+    : undefined;
+  const controlPlaceScopes = Array.isArray(value.controlPlaceScopes)
+    ? value.controlPlaceScopes
+    : undefined;
   const controlPlaces = Array.isArray(value.controlPlaces)
     ? value.controlPlaces
     : undefined;
@@ -97,14 +111,43 @@ export function isWellFormedSemanticProcessProgram(
     ? value.operations
     : undefined;
   if (
+    !hasOnlyKeys(value, [
+      "kind",
+      "identity",
+      "processId",
+      "definitionScopes",
+      "operationScopes",
+      "controlPlaceScopes",
+      "controlPlaces",
+      "operations",
+    ]) ||
     value.kind !== SemanticProcessKind.SemanticProcess ||
     identity === undefined ||
+    !hasOnlyKeys(identity, [
+      "compiler",
+      "semanticProfile",
+      "sourceId",
+      "sourceSha256",
+    ]) ||
     identity.compiler !==
       SemanticProcessCompilerId.BpmnSourceSemanticProcess ||
     !isNonEmptyString(identity.semanticProfile) ||
     !isNonEmptyString(identity.sourceId) ||
     !isSha256(identity.sourceSha256) ||
     !isNonEmptyString(value.processId) ||
+    definitionScopes === undefined ||
+    definitionScopes.length === 0 ||
+    !definitionScopes.every(isWellFormedDefinitionScope) ||
+    !isSortedById(definitionScopes) ||
+    definitionScopes.filter(
+      ({ parentScopeId }) => parentScopeId === null,
+    )[0]?.originElementId !== value.processId ||
+    operationScopes === undefined ||
+    !operationScopes.every(isWellFormedOperationScopeOwnership) ||
+    !isSortedByField(operationScopes, "operationId") ||
+    controlPlaceScopes === undefined ||
+    !controlPlaceScopes.every(isWellFormedControlPlaceScopeOwnership) ||
+    !isSortedByField(controlPlaceScopes, "controlPlaceId") ||
     controlPlaces === undefined ||
     controlPlaces.length === 0 ||
     operations === undefined ||
@@ -116,6 +159,7 @@ export function isWellFormedSemanticProcessProgram(
   }
 
   const placeIds = new Set<string>();
+  const scopeIds = new Set(definitionScopes.map(({ id }) => id));
   const placeOrigins = new Map<string, string>();
   for (const place of controlPlaces) {
     if (
@@ -135,12 +179,15 @@ export function isWellFormedSemanticProcessProgram(
 
   const checkedOperations: SemanticOperation[] = [];
   for (const operation of operations) {
-    if (!isWellFormedOperation(operation, placeIds, placeOrigins)) {
+    if (!isWellFormedOperation(operation, placeIds, placeOrigins, scopeIds)) {
       return false;
     }
     checkedOperations.push(operation);
   }
   return isWellFormedSemanticProcessGraph({
+    definitionScopes,
+    operationScopes,
+    controlPlaceScopes,
     controlPlaceIds: [...placeIds],
     operations: checkedOperations,
   });
@@ -150,6 +197,7 @@ function isWellFormedOperation(
   value: unknown,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
+  scopeIds: ReadonlySet<string>,
 ): value is SemanticOperation {
   if (
     !isRecord(value) ||
@@ -166,6 +214,21 @@ function isWellFormedOperation(
       return (
         hasOnlyKeys(value, ["id", "kind", "origin", "output"]) &&
         isPlaceReference(value.output, placeIds)
+      );
+    case SemanticOperationKind.EnterScope:
+      return (
+        hasOnlyKeys(value, [
+          "id",
+          "kind",
+          "origin",
+          "input",
+          "childEntry",
+          "childScopeId",
+        ]) &&
+        isPlaceReference(value.input, placeIds) &&
+        isPlaceReference(value.childEntry, placeIds) &&
+        isNonEmptyString(value.childScopeId) &&
+        scopeIds.has(value.childScopeId)
       );
     case SemanticOperationKind.AwaitUserTask:
       return (
@@ -276,14 +339,56 @@ function isWellFormedOperation(
         placeIds,
         placeOrigins,
       );
-    case SemanticOperationKind.Terminate:
+    case SemanticOperationKind.ReachNoneEnd:
       return (
         hasOnlyKeys(value, ["id", "kind", "origin", "input"]) &&
         isPlaceReference(value.input, placeIds)
       );
+    case SemanticOperationKind.CompleteScope:
+      return (
+        hasOnlyKeys(value, [
+          "id",
+          "kind",
+          "origin",
+          "scopeId",
+          "parentOutput",
+        ]) &&
+        isNonEmptyString(value.scopeId) &&
+        scopeIds.has(value.scopeId) &&
+        (value.parentOutput === null ||
+          isPlaceReference(value.parentOutput, placeIds))
+      );
     default:
       return false;
   }
+}
+
+function isWellFormedDefinitionScope(
+  value: unknown,
+): value is DefinitionScope {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["id", "parentScopeId", "originElementId"]) &&
+    isNonEmptyString(value.id) &&
+    (value.parentScopeId === null || isNonEmptyString(value.parentScopeId)) &&
+    isNonEmptyString(value.originElementId);
+}
+
+function isWellFormedOperationScopeOwnership(
+  value: unknown,
+): value is OperationScopeOwnership {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["operationId", "scopeId"]) &&
+    isNonEmptyString(value.operationId) &&
+    isNonEmptyString(value.scopeId);
+}
+
+function isWellFormedControlPlaceScopeOwnership(
+  value: unknown,
+): value is ControlPlaceScopeOwnership {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["controlPlaceId", "scopeId"]) &&
+    isNonEmptyString(value.controlPlaceId) &&
+    isNonEmptyString(value.scopeId);
 }
 
 function isMessageChannel(value: unknown): boolean {
@@ -458,6 +563,21 @@ function isSortedById(values: ReadonlyArray<unknown>): boolean {
           isNonEmptyString(previous.id) &&
           compareCanonicalStrings(previous.id, value.id) < 0))
     );
+  });
+}
+
+function isSortedByField(
+  values: ReadonlyArray<unknown>,
+  field: string,
+): boolean {
+  return values.every((value, index) => {
+    const previous = values[index - 1];
+    return isRecord(value) &&
+      isNonEmptyString(value[field]) &&
+      (previous === undefined ||
+        (isRecord(previous) &&
+          isNonEmptyString(previous[field]) &&
+          compareCanonicalStrings(previous[field], value[field]) < 0));
   });
 }
 

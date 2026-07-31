@@ -18,6 +18,13 @@ def checkedProcess : CheckedProcess :=
         sourceSha256 :=
           "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5" }
     processId := ⟨"Process_IntermediateCatchTimer"⟩
+    definitionScopes :=
+      [rootDefinitionScope ⟨"Process_IntermediateCatchTimer"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_IntermediateCatchTimer"⟩
+      [⟨"EndEvent_1"⟩, ⟨"StartEvent_1"⟩, ⟨"TimerCatch_PT1S"⟩]
+    sequenceFlowScopes := rootSequenceFlowScopes
+      ⟨"Process_IntermediateCatchTimer"⟩
+      [⟨"Flow_StartToTimer"⟩, ⟨"Flow_TimerToEnd"⟩]
     nodes :=
       [ .noneEndEvent ⟨"EndEvent_1"⟩
       , .noneStartEvent ⟨"StartEvent_1"⟩
@@ -31,34 +38,7 @@ def checkedProcess : CheckedProcess :=
           targetId := ⟨"EndEvent_1"⟩ } ] }
 
 def program : Program :=
-  { identity :=
-      { compiler := .bpmnSourceSemanticProcess
-        semanticProfile :=
-          ⟨"cibseven-2.2.0-intermediate-catch-timer-draft"⟩
-        sourceId := ⟨"intermediate-catch-timer-pt1s-process"⟩
-        sourceSha256 :=
-          "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5" }
-    processId := ⟨"Process_IntermediateCatchTimer"⟩
-    controlPlaces :=
-      [ { id := ⟨"place:Flow_StartToTimer"⟩
-          origin := { elementId := ⟨"Flow_StartToTimer"⟩ } }
-      , { id := ⟨"place:Flow_TimerToEnd"⟩
-          origin := { elementId := ⟨"Flow_TimerToEnd"⟩ } } ]
-    operations :=
-      [ .terminate
-          ⟨"operation:EndEvent_1"⟩
-          { elementId := ⟨"EndEvent_1"⟩ }
-          ⟨"place:Flow_TimerToEnd"⟩
-      , .initiate
-          ⟨"operation:StartEvent_1"⟩
-          { elementId := ⟨"StartEvent_1"⟩ }
-          ⟨"place:Flow_StartToTimer"⟩
-      , .awaitTimer
-          ⟨"operation:TimerCatch_PT1S"⟩
-          { elementId := ⟨"TimerCatch_PT1S"⟩ }
-          ⟨"place:Flow_StartToTimer"⟩
-          ⟨"place:Flow_TimerToEnd"⟩
-          { elementId := ⟨"TimerCatch_PT1S"⟩, durationMs := 1000 } ] }
+  lowerCheckedProcess checkedProcess
 
 def timerId : TimerOccurrenceId :=
   { processInstanceId := ⟨"Instance_1"⟩
@@ -67,6 +47,7 @@ def timerId : TimerOccurrenceId :=
 
 def timerWait : TimerWait :=
   { processInstanceId := timerId.processInstanceId
+    owner := rootScopeOccurrenceId timerId.processInstanceId program.processId
     elementId := ⟨timerId.elementId.value⟩
     activation := timerId.activation
     deadlineMs := 1000

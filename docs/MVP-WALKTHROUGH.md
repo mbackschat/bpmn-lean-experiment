@@ -64,9 +64,13 @@ The actual compiler projection is kept synchronized from its tested source:
 
 <!-- source-fragment: packages/bpmn-source/src/semantic-process-lowering.ts#semantic-process-lowering -->
 ```ts
-const operations = source.nodes.map((node) =>
-  lowerNode(node, source.sequenceFlows)
+const nodeOperations = source.nodes.flatMap((node) =>
+  lowerNode(node, source)
 );
+const completionOperations = source.definitionScopes.map((scope) =>
+  lowerScopeCompletion(scope, source)
+);
+const scopedOperations = [...nodeOperations, ...completionOperations];
 const program: SemanticProcessProgram = {
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
@@ -74,6 +78,20 @@ const program: SemanticProcessProgram = {
     ...source.identity,
   },
   processId: source.processId,
+  definitionScopes: source.definitionScopes,
+  operationScopes: scopedOperations
+    .map(({ operation, scopeId }) => ({ operationId: operation.id, scopeId }))
+    .sort((left, right) =>
+      compareCanonicalStrings(left.operationId, right.operationId)
+    ),
+  controlPlaceScopes: source.sequenceFlowScopes
+    .map(({ sequenceFlowId, scopeId }) => ({
+      controlPlaceId: placeId(sequenceFlowId),
+      scopeId,
+    }))
+    .sort((left, right) =>
+      compareCanonicalStrings(left.controlPlaceId, right.controlPlaceId)
+    ),
   controlPlaces: source.sequenceFlows.map((flow) => ({
     id: placeId(flow.id),
     origin: {
@@ -81,7 +99,9 @@ const program: SemanticProcessProgram = {
       elementId: flow.id,
     },
   })),
-  operations: operations.sort(compareIds),
+  operations: scopedOperations
+    .map(({ operation }) => operation)
+    .sort(compareIds),
 };
 ```
 
@@ -410,4 +430,4 @@ These slices do not establish general BPMN parsing or execution, OMG conformance
 
 The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, stale rejection with a live sibling, and the duplicate-left/no-right non-law. Content-bound CIB evidence calibrates both balanced completion orders and the live-sibling stale witness.
 
-The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md) adds one string-only argument/result/output-mapping path with a separate synchronous CIB `2.0.0` final-state relation. The [User Task completion-data spec](capsules/USER-TASK-COMPLETION-DATA-SPEC.md) adds one canonical string/null submitted patch under selected CIB extension `CIB-EXT-0005`. The thirteen-case pipeline connects the maintained capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
+The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md) adds one string-only argument/result/output-mapping path with a separate synchronous CIB `2.0.0` final-state relation. The [User Task completion-data spec](capsules/USER-TASK-COMPLETION-DATA-SPEC.md) adds one canonical string/null submitted patch under selected CIB extension `CIB-EXT-0005`. The [ordinary embedded Sub-Process completion spec](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) adds one scope-owned two-child lifecycle with exact quiescent completion. The seventeen-case pipeline connects the maintained capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).

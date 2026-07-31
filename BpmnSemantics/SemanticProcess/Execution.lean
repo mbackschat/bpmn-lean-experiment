@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Message
+import BpmnSemantics.SemanticProcess.EffectCompletion
 
 /-! # Semantic Process external execution
 
@@ -30,7 +31,7 @@ def completeUserTask (state : RuntimeState) (processInstanceId : SemanticId)
       some
         { state with
           waits := state.waits.erase wait
-          tokens := wait.output :: state.tokens }
+          tokens := addToken state.tokens wait.output wait.owner }
 
 def fireTimer (state : RuntimeState) (timerId : TimerOccurrenceId)
     (logicalTimeMs : Nat) : Option RuntimeState :=
@@ -45,87 +46,10 @@ def fireTimer (state : RuntimeState) (timerId : TimerOccurrenceId)
         some
           { state with
             timerWaits := state.timerWaits.erase wait
-            tokens := wait.output :: state.tokens
+            tokens := addToken state.tokens wait.output wait.owner
             logicalTimeMs := wait.deadlineMs }
       else
         none
-
-def effectOccurrenceMatches (effectId : EffectOccurrenceId)
-    (wait : EffectWait) : Bool :=
-  decide (
-    wait.processInstanceId = effectId.processInstanceId &&
-      wait.elementId.value = effectId.elementId.value &&
-      wait.activation = effectId.activation)
-
-def effectResultOutput (wait : EffectWait) :
-    EffectExecutionResult → Option ControlPlaceId
-  | .success _ => some wait.output
-  | .bpmnError code _ _ =>
-      match wait.bpmnErrorRoute with
-      | some route => if route.code = code then some route.output else none
-      | none => none
-
-/-- Declarative account of one successful effect-result transition. It exposes occurrence matching and mapping validation as separate premises rather than defining validity through the executable transition. -/
-inductive EffectCompletionStep :
-    RuntimeState → EffectOccurrenceId → EffectExecutionResult →
-      RuntimeState → Prop where
-  | commit
-      (state : RuntimeState)
-      (effectId : EffectOccurrenceId)
-      (result : EffectExecutionResult)
-      (wait : EffectWait)
-      (variables : ScopedVariables)
-      (output : ControlPlaceId)
-      (occurrence :
-        state.effectWaits.find? (effectOccurrenceMatches effectId) = some wait)
-      (mapping :
-        completeActivityVariableScope state.variables effectId
-          wait.outputMappings result = some variables)
-      (route : effectResultOutput wait result = some output) :
-      EffectCompletionStep state effectId result
-        { state with
-          effectWaits := state.effectWaits.erase wait
-          variables
-          tokens := output :: state.tokens }
-
-def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
-    (result : EffectExecutionResult) : Option RuntimeState :=
-  match state.effectWaits.find? (effectOccurrenceMatches effectId) with
-  | none => none
-  | some wait =>
-      match completeActivityVariableScope state.variables effectId
-          wait.outputMappings result with
-      | none => none
-      | some variables =>
-          match effectResultOutput wait result with
-          | none => none
-          | some output =>
-              some
-                { state with
-                  effectWaits := state.effectWaits.erase wait
-                  variables
-                  tokens := output :: state.tokens }
-
-/-- Every successful executable effect completion is permitted by the separately stated effect-result relation. -/
-theorem completeEffect_sound
-    (state successor : RuntimeState)
-    (effectId : EffectOccurrenceId)
-    (result : EffectExecutionResult)
-    (success : completeEffect state effectId result = some successor) :
-    EffectCompletionStep state effectId result successor := by
-  unfold completeEffect at success
-  split at success
-  · contradiction
-  · rename_i wait occurrence
-    split at success
-    · contradiction
-    · rename_i variables mapping
-      split at success
-      · contradiction
-      · rename_i output route
-        cases success
-        exact .commit state effectId result wait variables output
-          occurrence mapping route
 
 def runChoices (program : Program) : RuntimeState → List OperationId →
     Option RuntimeState
@@ -145,8 +69,9 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
       match state.control with
       | .notStarted =>
           if program.processId.value = processId.value then
-            { outcome := .committed
-              state := runningStartState instanceId initialVariables }
+            match runningProgramStartState? program instanceId initialVariables with
+            | some started => { outcome := .committed, state := started }
+            | none => { outcome := .semanticFailure, state }
           else
             { outcome := .rejected, state }
       | .running _
@@ -312,8 +237,11 @@ def singletonWaitingState (wait : UserTaskWait) (logicalTimeMs : Nat := 0)
     RuntimeState :=
   { initialState with
     control := .running wait.processInstanceId
+    scopeOccurrences := [{ id := wait.owner, parent := none }]
     waits := [wait]
     activations := [{ taskId := wait.task.id, count := wait.activation }]
+    scopeActivations :=
+      [{ scopeId := wait.owner.definitionScopeId, count := wait.owner.activation }]
     variables
     logicalTimeMs }
 
@@ -322,9 +250,12 @@ def singletonTimerWaitingState (wait : TimerWait) (logicalTimeMs : Nat := 0) :
     RuntimeState :=
   { initialState with
     control := .running wait.processInstanceId
+    scopeOccurrences := [{ id := wait.owner, parent := none }]
     timerWaits := [wait]
     timerActivations :=
       [{ elementId := wait.elementId, count := wait.activation }]
+    scopeActivations :=
+      [{ scopeId := wait.owner.definitionScopeId, count := wait.owner.activation }]
     logicalTimeMs }
 
 /-- Isolated state used to state effect-result refusal over the complete public occurrence identity. -/
@@ -336,11 +267,14 @@ def singletonEffectWaitingState (wait : EffectWait)
       activation := wait.activation }
   { initialState with
     control := .running wait.processInstanceId
+    scopeOccurrences := [{ id := wait.owner, parent := none }]
     effectWaits := [wait]
     variables :=
       addActivityVariableScope initialState.variables owner wait.arguments
     effectActivations :=
       [{ elementId := wait.elementId, count := wait.activation }]
+    scopeActivations :=
+      [{ scopeId := wait.owner.definitionScopeId, count := wait.owner.activation }]
     logicalTimeMs }
 
 /-- A matching effect result whose patch cannot satisfy the committed mapping contract is rejected with exact state preservation. -/

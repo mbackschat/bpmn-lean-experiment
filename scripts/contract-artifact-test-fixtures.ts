@@ -140,6 +140,25 @@ export function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
       kind: "checkedProcess",
       identity,
       processId: "Process_ParallelUserTasks",
+      ...checkedRootScope(
+        "Process_ParallelUserTasks",
+        [
+          "End_None",
+          "Gateway_Fork",
+          "Gateway_Join",
+          "Start_None",
+          "UserTask_A",
+          "UserTask_B",
+        ],
+        [
+          "Flow_Fork_A",
+          "Flow_Fork_B",
+          "Flow_Join_End",
+          "Flow_Start_Fork",
+          "Flow_Task_A_Join",
+          "Flow_Task_B_Join",
+        ],
+      ),
       nodes: [
         { kind: "noneEndEvent", id: "End_None" },
         {
@@ -202,6 +221,26 @@ export function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
         ...identity,
       },
       processId: "Process_ParallelUserTasks",
+      ...semanticRootScope(
+        "Process_ParallelUserTasks",
+        [
+          "operation:End_None",
+          "operation:Gateway_Fork",
+          "operation:Gateway_Join",
+          "operation:Start_None",
+          "operation:UserTask_A",
+          "operation:UserTask_B",
+          "operation:complete-scope:scope:Process_ParallelUserTasks",
+        ],
+        [
+          "Flow_Fork_A",
+          "Flow_Fork_B",
+          "Flow_Join_End",
+          "Flow_Start_Fork",
+          "Flow_Task_A_Join",
+          "Flow_Task_B_Join",
+        ],
+      ),
       controlPlaces: [
         controlPlace("Flow_Fork_A"),
         controlPlace("Flow_Fork_B"),
@@ -211,7 +250,7 @@ export function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
         controlPlace("Flow_Task_B_Join"),
       ],
       operations: [
-        operation("End_None", "terminate", {
+        operation("End_None", "reachNoneEnd", {
           input: "place:Flow_Join_End",
         }),
         operation("Gateway_Fork", "duplicate", {
@@ -235,6 +274,7 @@ export function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
           output: "place:Flow_Task_B_Join",
           task: { elementId: "UserTask_B", name: "B" },
         }),
+        scopeCompletion("Process_ParallelUserTasks"),
       ],
     },
   } as unknown as MutableDefinitionArtifacts;
@@ -256,6 +296,11 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
       kind: "checkedProcess",
       identity,
       processId: "Process_ServiceTaskEffectProbe",
+      ...checkedRootScope(
+        "Process_ServiceTaskEffectProbe",
+        ["EndEvent_1", "ServiceTask_Record", "StartEvent_1"],
+        ["Flow_ServiceToEnd", "Flow_StartToService"],
+      ),
       nodes: [
         { kind: "noneEndEvent", id: "EndEvent_1" },
         {
@@ -290,12 +335,22 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
         ...identity,
       },
       processId: "Process_ServiceTaskEffectProbe",
+      ...semanticRootScope(
+        "Process_ServiceTaskEffectProbe",
+        [
+          "operation:EndEvent_1",
+          "operation:ServiceTask_Record",
+          "operation:StartEvent_1",
+          "operation:complete-scope:scope:Process_ServiceTaskEffectProbe",
+        ],
+        ["Flow_ServiceToEnd", "Flow_StartToService"],
+      ),
       controlPlaces: [
         controlPlace("Flow_ServiceToEnd"),
         controlPlace("Flow_StartToService"),
       ],
       operations: [
-        operation("EndEvent_1", "terminate", {
+        operation("EndEvent_1", "reachNoneEnd", {
           input: "place:Flow_ServiceToEnd",
         }),
         operation("ServiceTask_Record", "awaitEffect", {
@@ -312,6 +367,7 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
         operation("StartEvent_1", "initiate", {
           output: "place:Flow_StartToService",
         }),
+        scopeCompletion("Process_ServiceTaskEffectProbe"),
       ],
     },
   } as unknown as MutableDefinitionArtifacts;
@@ -322,6 +378,60 @@ function controlPlace(flowId: string): ControlPlace {
     id: `place:${flowId}`,
     origin: { kind: "bpmnSequenceFlow", elementId: flowId },
   } as unknown as ControlPlace;
+}
+
+function checkedRootScope(
+  processId: string,
+  nodeIds: ReadonlyArray<string>,
+  flowIds: ReadonlyArray<string>,
+) {
+  const scopeId = `scope:${processId}`;
+  return {
+    definitionScopes: [{
+      id: scopeId,
+      parentScopeId: null,
+      originElementId: processId,
+    }],
+    nodeScopes: nodeIds.map((nodeId) => ({ nodeId, scopeId })),
+    sequenceFlowScopes: flowIds.map((sequenceFlowId) => ({
+      sequenceFlowId,
+      scopeId,
+    })),
+  };
+}
+
+function semanticRootScope(
+  processId: string,
+  operationIds: ReadonlyArray<string>,
+  flowIds: ReadonlyArray<string>,
+) {
+  const scopeId = `scope:${processId}`;
+  return {
+    definitionScopes: [{
+      id: scopeId,
+      parentScopeId: null,
+      originElementId: processId,
+    }],
+    operationScopes: operationIds.map((operationId) => ({
+      operationId,
+      scopeId,
+    })),
+    controlPlaceScopes: flowIds.map((flowId) => ({
+      controlPlaceId: `place:${flowId}`,
+      scopeId,
+    })),
+  };
+}
+
+function scopeCompletion(processId: string): SemanticOperation {
+  const scopeId = `scope:${processId}`;
+  return {
+    id: `operation:complete-scope:${scopeId}`,
+    kind: "completeScope",
+    origin: { kind: "bpmnElement", elementId: processId },
+    scopeId,
+    parentOutput: null,
+  } as unknown as SemanticOperation;
 }
 
 function operation(

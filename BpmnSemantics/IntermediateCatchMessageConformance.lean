@@ -30,6 +30,13 @@ def processId : ProcessId :=
 def checkedProcess : CheckedProcess :=
   { identity := sourceIdentity
     processId
+    definitionScopes := [rootDefinitionScope processId]
+    nodeScopes := rootNodeScopes processId
+      [ ⟨"EndEvent_1"⟩, ⟨"MessageCatch_ApprovalRequest"⟩
+      , ⟨"StartEvent_1"⟩, ⟨"UserTask_Approve"⟩ ]
+    sequenceFlowScopes := rootSequenceFlowScopes processId
+      [ ⟨"Flow_MessageToTask"⟩, ⟨"Flow_StartToMessage"⟩
+      , ⟨"Flow_TaskToEnd"⟩ ]
     nodes :=
       [ .noneEndEvent ⟨"EndEvent_1"⟩
       , .intermediateCatchMessageEvent
@@ -196,6 +203,7 @@ theorem message_activation_preserves_complete_subscription :
     messageWaitingResult.outcome = .committed ∧
       messageWaitingResult.state.messageWaits =
         [{ processInstanceId := subscriptionId.processInstanceId
+           owner := rootScopeOccurrenceId subscriptionId.processInstanceId processId
            elementId := ⟨subscriptionId.elementId.value⟩
            activation := subscriptionId.activation
            channel
@@ -261,6 +269,9 @@ def reverseCheckedProcess : CheckedProcess :=
         sourceId := ⟨"reverse-intermediate-catch-message-process"⟩
         sourceSha256 :=
           "3333333333333333333333333333333333333333333333333333333333333333" }
+    sequenceFlowScopes := rootSequenceFlowScopes processId
+      [ ⟨"Flow_MessageToEnd"⟩, ⟨"Flow_StartToTask"⟩
+      , ⟨"Flow_TaskToMessage"⟩ ]
     sequenceFlows :=
       [ { id := ⟨"Flow_MessageToEnd"⟩
           sourceId := ⟨"MessageCatch_ApprovalRequest"⟩

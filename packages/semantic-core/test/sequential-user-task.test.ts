@@ -26,6 +26,7 @@ import {
 } from "./user-task-fixture.ts";
 import { requiredAt } from "./canonical-observations.ts";
 import { operationBase } from "./semantic-program-parts.ts";
+import { rootScopeOccurrence } from "./root-scope-fixture.ts";
 
 test("derives the independently calibrated CIB and Lean trace", async () => {
   const { scenario, expected } = await loadCase(
@@ -56,12 +57,17 @@ test("start closes at one stable User Task wait", async () => {
 
   assert.equal(result.outcome, CommandOutcome.Committed);
   assert.equal(result.internalStepBoundExceeded, false);
+  const owner = rootScopeOccurrence(
+    "Process_SequentialUserTask",
+    "Instance_1",
+  );
   assert.deepEqual(result.state, {
     control: {
       kind: ControlStateKind.Running,
       instanceId: "Instance_1",
     },
     initiationPending: false,
+    scopeOccurrences: [{ id: owner, parent: null }],
     controlTokens: [],
     userTaskWaits: [
       {
@@ -70,6 +76,7 @@ test("start closes at one stable User Task wait", async () => {
           elementId: "UserTask_Approve",
           activation: 1,
         },
+        owner,
         name: "Approve",
         output: "place:Flow_TaskToEnd",
       },
@@ -97,6 +104,10 @@ test("start closes at one stable User Task wait", async () => {
     messageActivations: [],
     timerActivations: [],
     effectActivations: [],
+    scopeActivations: [{
+      elementId: owner.definitionScopeId,
+      count: owner.activation,
+    }],
     endOccurrences: 0,
     logicalTimeMs: 0,
   });
@@ -144,12 +155,14 @@ test("matching occurrence completion closes the Process", async () => {
 
   assert.equal(completed.outcome, CommandOutcome.Committed);
   assert.equal(completed.internalStepBoundExceeded, false);
+  const owner = rootScopeOccurrence(model.processId, "Instance_1");
   assert.deepEqual(completed.state, {
     control: {
       kind: ControlStateKind.Completed,
       instanceId: "Instance_1",
     },
     initiationPending: false,
+    scopeOccurrences: [],
     controlTokens: [],
     userTaskWaits: [],
     messageWaits: [],
@@ -180,6 +193,10 @@ test("matching occurrence completion closes the Process", async () => {
     messageActivations: [],
     timerActivations: [],
     effectActivations: [],
+    scopeActivations: [{
+      elementId: owner.definitionScopeId,
+      count: owner.activation,
+    }],
     endOccurrences: 1,
     logicalTimeMs: 0,
   });
@@ -286,7 +303,7 @@ test("rejects a malformed current program without throwing", async () => {
     operations: [
       {
         ...operationBase("EndEvent_1"),
-        kind: SemanticOperationKind.Terminate,
+        kind: SemanticOperationKind.ReachNoneEnd,
         input: "place:Missing",
       },
       ...admitted.operations.slice(1),

@@ -32,12 +32,14 @@ export function assessTemporalHostCapability(
       case SemanticOperationKind.AwaitEffect:
         return true;
       case SemanticOperationKind.Initiate:
+      case SemanticOperationKind.EnterScope:
       case SemanticOperationKind.AwaitUserTask:
       case SemanticOperationKind.AwaitMessage:
       case SemanticOperationKind.Duplicate:
       case SemanticOperationKind.Synchronize:
       case SemanticOperationKind.Choose:
-      case SemanticOperationKind.Terminate:
+      case SemanticOperationKind.ReachNoneEnd:
+      case SemanticOperationKind.CompleteScope:
         return false;
       default:
         return assertNever(kind);

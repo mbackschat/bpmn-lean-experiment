@@ -6,7 +6,6 @@
 
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
@@ -21,27 +20,18 @@ import {
   ApplicationFailure,
   WorkflowExecutionAlreadyStartedError,
 } from "@temporalio/client";
-import type { WorkflowHandle } from "@temporalio/client";
-import type { TestWorkflowEnvironment } from "@temporalio/testing";
-import { Worker } from "@temporalio/worker";
-import type { WorkflowBundleWithSourceMap } from "@temporalio/worker";
-
-import type { OpenUserTask } from "@bpmn-lean/semantic-core";
-
-import { requiredAt } from "./temporal-test-support.ts";
-
-/** One running lifecycle Worker plus the failure its run loop observed. */
-type WorkerLease = Readonly<{
-  worker: Worker;
-  completion: Promise<void>;
-  failure: () => unknown;
-}>;
+import { requiredAt, withDeadline } from "./temporal-test-support.ts";
+import {
+  replayBpmnHistory,
+  startBpmnTestWorker,
+  stopBpmnTestWorker,
+  waitForOpenUserTaskIds,
+} from "./temporal-worker-test-support.ts";
 
 import {
   ProcessCommandResultKind,
   BpmnProcessStartResultKind,
   bpmnCompleteUserTaskUpdateName,
-  bpmnOpenUserTasksQueryName,
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
@@ -91,7 +81,11 @@ test("closed Workflow retains accepted command result without accepting a new co
 
   try {
     const workflowBundle = await loadBpmnWorkflowBundle();
-    workerLease = await startWorker(environment, workflowBundle);
+    workerLease = await startBpmnTestWorker(
+      environment,
+      workflowBundle,
+      "bpmn-lean-lifecycle-probe",
+    );
     const startResult = await withDeadline(
       startBpmnProcess(
         environment.client.workflow,
@@ -112,7 +106,10 @@ test("closed Workflow retains accepted command result without accepting a new co
     }
     const handle = startResult.handle;
     assert.equal(handle.workflowId, workflowId);
-    const openTasks = await waitForOpenTasks(handle);
+    const openTasks = await waitForOpenUserTaskIds(
+      handle,
+      ["UserTask_Approve"],
+    );
     assert.equal(openTasks.length, 1);
     assert.equal(
       requiredAt(openTasks, 0, "open User Tasks").id.processInstanceId,
@@ -138,10 +135,17 @@ test("closed Workflow retains accepted command result without accepting a new co
         error.cause instanceof ApplicationFailure &&
         error.cause.type === "BpmnCommandIdentityConflict",
     );
-    assert.equal((await waitForOpenTasks(handle)).length, 1);
+    assert.equal(
+      (await waitForOpenUserTaskIds(handle, ["UserTask_Approve"])).length,
+      1,
+    );
 
-    await stopWorker(workerLease);
-    workerLease = await startWorker(environment, workflowBundle);
+    await stopBpmnTestWorker(workerLease);
+    workerLease = await startBpmnTestWorker(
+      environment,
+      workflowBundle,
+      "bpmn-lean-lifecycle-probe",
+    );
 
     const completionResult = await withDeadline(
       submitUserTaskCompletion(
@@ -171,7 +175,7 @@ test("closed Workflow retains accepted command result without accepting a new co
     );
     assert.equal(JSON.stringify(result).includes(workflowId), false);
 
-    await stopWorker(workerLease);
+    await stopBpmnTestWorker(workerLease);
     workerLease = undefined;
 
     const retainedOutcome = await withDeadline(
@@ -284,13 +288,13 @@ test("closed Workflow retains accepted command result without accepting a new co
     );
 
     await withDeadline(
-      replayHistory(workflowBundle, history),
+      replayBpmnHistory(workflowBundle, history, workflowId),
       operationDeadlineMs,
       "lifecycle history replay",
     );
   } finally {
     if (workerLease !== undefined) {
-      await stopWorker(workerLease);
+      await stopBpmnTestWorker(workerLease);
     }
     await withDeadline(
       environment.teardown(),
@@ -299,100 +303,3 @@ test("closed Workflow retains accepted command result without accepting a new co
     );
   }
 });
-
-async function startWorker(
-  environment: TestWorkflowEnvironment,
-  workflowBundle: WorkflowBundleWithSourceMap,
-): Promise<WorkerLease> {
-  const worker = await withDeadline(
-    Worker.create({
-      connection: environment.nativeConnection,
-      identity: "bpmn-lean-lifecycle-probe",
-      taskQueue: bpmnSemanticTaskQueue,
-      workflowBundle,
-    }),
-    operationDeadlineMs,
-    "Temporal lifecycle Worker startup",
-  );
-  let failure: unknown;
-  const completion = worker.run().catch((error: unknown) => {
-    failure = error;
-  });
-  await delay(0);
-  if (failure !== undefined) {
-    throw failure;
-  }
-  return {
-    worker,
-    completion,
-    failure: () => failure,
-  };
-}
-
-async function stopWorker(lease: WorkerLease): Promise<void> {
-  lease.worker.shutdown();
-  await withDeadline(
-    lease.completion,
-    operationDeadlineMs,
-    "Temporal lifecycle Worker shutdown",
-  );
-  const failure = lease.failure();
-  if (failure !== undefined) {
-    throw failure;
-  }
-}
-
-async function waitForOpenTasks(
-  handle: WorkflowHandle,
-): Promise<ReadonlyArray<OpenUserTask>> {
-  let latestError: unknown;
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    try {
-      const tasks = await withDeadline(
-        handle.query<ReadonlyArray<OpenUserTask>>(bpmnOpenUserTasksQueryName),
-        1_000,
-        "open-task Query",
-      );
-      if (tasks.length > 0) {
-        return tasks;
-      }
-    } catch (error: unknown) {
-      latestError = error;
-    }
-    await delay(25);
-  }
-  throw latestError instanceof Error
-    ? latestError
-    : new Error("Workflow did not expose an open User Task");
-}
-
-async function replayHistory(
-  workflowBundle: WorkflowBundleWithSourceMap,
-  history: Awaited<ReturnType<WorkflowHandle["fetchHistory"]>>,
-): Promise<void> {
-  let replayed = 0;
-  for await (const result of Worker.runReplayHistories(
-    { workflowBundle },
-    [{ history, workflowId }],
-  )) {
-    assert.equal(result.workflowId, workflowId);
-    assert.equal(result.error, undefined);
-    replayed += 1;
-  }
-  assert.equal(replayed, 1);
-}
-
-function withDeadline<Value>(
-  promise: Promise<Value>,
-  timeoutMs: number,
-  operation: string,
-): Promise<Value> {
-  let timer: NodeJS.Timeout | undefined;
-  const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`${operation} exceeded ${timeoutMs}ms`)),
-      timeoutMs,
-    );
-  });
-  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
-}

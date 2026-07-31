@@ -9,6 +9,7 @@ namespace BpmnSemantics.SemanticProcess
 
 private def checkedNodeId : CheckedNode → NodeId
   | .noneStartEvent id
+  | .embeddedSubProcess id _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
@@ -27,8 +28,27 @@ private def normalizedFlowSource (nodes : List CheckedNode)
           if route.boundaryEventId = sourceId then some id else none
       | _ => none).getD sourceId
 
-private def checkedEdges (source : CheckedProcess) : List (GraphEdge NodeId) :=
-  source.sequenceFlows.map fun flow =>
+private def nodeScope? (source : CheckedProcess) (nodeId : NodeId) :
+    Option DefinitionScopeId :=
+  (source.nodeScopes.find? fun ownership =>
+    decide (ownership.nodeId = nodeId)).map (·.scopeId)
+
+private def flowScope? (source : CheckedProcess) (flowId : SequenceFlowId) :
+    Option DefinitionScopeId :=
+  (source.sequenceFlowScopes.find? fun ownership =>
+    decide (ownership.sequenceFlowId = flowId)).map (·.scopeId)
+
+private def scopedNodes (source : CheckedProcess) (scopeId : DefinitionScopeId) :
+    List CheckedNode :=
+  source.nodes.filter fun node => nodeScope? source (checkedNodeId node) == some scopeId
+
+private def scopedFlows (source : CheckedProcess) (scopeId : DefinitionScopeId) :
+    List CheckedSequenceFlow :=
+  source.sequenceFlows.filter fun flow => flowScope? source flow.id == some scopeId
+
+private def checkedEdges (source : CheckedProcess)
+    (flows : List CheckedSequenceFlow) : List (GraphEdge NodeId) :=
+  flows.map fun flow =>
     { source := normalizedFlowSource source.nodes flow.sourceId
       target := flow.targetId }
 
@@ -42,17 +62,25 @@ private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
     | .noneEndEvent id => some id
     | _ => none
 
-/-- Finite graph progress backstop independent of any complete model topology. -/
-def checkedProcessGraphWellFormed (source : CheckedProcess) : Bool :=
-  let nodeIds := source.nodes.map checkedNodeId
-  let ends := checkedEndIds source.nodes
-  match checkedStartIds source.nodes with
+/-- Finite per-scope graph progress backstop independent of any complete model topology. -/
+private def checkedScopeGraphWellFormed (source : CheckedProcess)
+    (scope : DefinitionScope) : Bool :=
+  let nodes := scopedNodes source scope.id
+  let nodeIds := nodes.map checkedNodeId
+  let ends := checkedEndIds nodes
+  match checkedStartIds nodes with
   | [start] =>
-      let edges := checkedEdges source
+      let edges := checkedEdges source (scopedFlows source scope.id)
       let fuel := nodeIds.length
+      !ends.isEmpty &&
       allReachableWithin nodeIds edges fuel start &&
         allCoreachableWithin nodeIds edges fuel ends &&
         acyclicClosed edges fuel
   | _ => false
+
+/-- Every declared definition scope is independently connected, co-reachable, and acyclic. -/
+def checkedProcessGraphWellFormed (source : CheckedProcess) : Bool :=
+  !source.definitionScopes.isEmpty &&
+    source.definitionScopes.all (checkedScopeGraphWellFormed source)
 
 end BpmnSemantics.SemanticProcess

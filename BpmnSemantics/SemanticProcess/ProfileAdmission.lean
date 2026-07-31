@@ -1,40 +1,35 @@
 import BpmnSemantics.SemanticProcessContract
 
-/-! # Semantic profile operation capabilities
+/-! # Semantic profile shape capabilities
 
-This module owns the exact operation cardinalities selected by each reviewed profile. Checked-source and Semantic Process graph validation remain profile-independent.
+This module owns exact checked-node and Semantic Process operation cardinalities. Generic scoped graph validation remains profile-independent.
 -/
 
 namespace BpmnSemantics.SemanticProcess
 
-private structure OperationCardinalities where
-  initiates : Nat
-  userTasks : Nat
-  messages : Nat
-  timers : Nat
-  effects : Nat
-  duplicates : Nat
-  synchronizes : Nat
-  choices : Nat
-  terminates : Nat
+private structure ShapeCardinalities where
+  starts : Nat := 0
+  initiates : Nat := 0
+  embeddedScopes : Nat := 0
+  scopeEntries : Nat := 0
+  userTasks : Nat := 0
+  messages : Nat := 0
+  timers : Nat := 0
+  effects : Nat := 0
+  duplicates : Nat := 0
+  synchronizes : Nat := 0
+  choices : Nat := 0
+  ends : Nat := 0
+  scopeCompletions : Nat := 0
   deriving DecidableEq
 
-private def emptyCardinalities : OperationCardinalities :=
-  { initiates := 0
-    userTasks := 0
-    messages := 0
-    timers := 0
-    effects := 0
-    duplicates := 0
-    synchronizes := 0
-    choices := 0
-    terminates := 0 }
-
 private def nodeCardinalities (nodes : List CheckedNode) :
-    OperationCardinalities :=
-  nodes.foldl (init := emptyCardinalities) fun counts node =>
+    ShapeCardinalities :=
+  nodes.foldl (init := {}) fun counts node =>
     match node with
-    | .noneStartEvent .. => { counts with initiates := counts.initiates + 1 }
+    | .noneStartEvent .. => { counts with starts := counts.starts + 1 }
+    | .embeddedSubProcess .. =>
+        { counts with embeddedScopes := counts.embeddedScopes + 1 }
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .intermediateCatchTimerEvent .. =>
         { counts with timers := counts.timers + 1 }
@@ -46,13 +41,14 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .parallelGateway _ .converging =>
         { counts with synchronizes := counts.synchronizes + 1 }
     | .exclusiveGateway .. => { counts with choices := counts.choices + 1 }
-    | .noneEndEvent .. => { counts with terminates := counts.terminates + 1 }
+    | .noneEndEvent .. => { counts with ends := counts.ends + 1 }
 
 private def operationCardinalities (operations : List SemanticOperation) :
-    OperationCardinalities :=
-  operations.foldl (init := emptyCardinalities) fun counts operation =>
+    ShapeCardinalities :=
+  operations.foldl (init := {}) fun counts operation =>
     match operation with
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
+    | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
     | .awaitUserTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .awaitTimer .. => { counts with timers := counts.timers + 1 }
     | .awaitMessage .. => { counts with messages := counts.messages + 1 }
@@ -61,61 +57,92 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .synchronize .. =>
         { counts with synchronizes := counts.synchronizes + 1 }
     | .choose .. => { counts with choices := counts.choices + 1 }
-    | .terminate .. => { counts with terminates := counts.terminates + 1 }
+    | .reachNoneEnd .. => { counts with ends := counts.ends + 1 }
+    | .completeScope .. =>
+        { counts with scopeCompletions := counts.scopeCompletions + 1 }
 
-private def profileAllowsCardinalities (profile : String)
-    (counts : OperationCardinalities) : Bool :=
+private def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) :
+    ShapeCardinalities :=
+  { shape with scopeCompletions := count }
+
+private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   if profile = "cibseven-2.2.0-user-task-process-data-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1, userTasks := 1, terminates := 1 }
+    some (1, { starts := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1, timers := 1, terminates := 1 }
+    some (1, { starts := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
       profile = "cibseven-2.0.0-a12-create-document-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1, effects := 1, terminates := 1 }
+    some (1, { starts := 1, effects := 1, ends := 1 })
   else if profile = "cibseven-2.0.0-a12-boundary-error-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1, userTasks := 1, effects := 1, terminates := 2 }
+    some (1,
+      { starts := 1, userTasks := 1, effects := 1, ends := 2 })
   else if profile = "parallel-fork-join-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1
-        userTasks := 2
-        duplicates := 1
-        synchronizes := 1
-        terminates := 1 }
+    some (1,
+      { starts := 1, userTasks := 2, duplicates := 1,
+        synchronizes := 1, ends := 1 })
+  else if profile = "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" then
+    some (1,
+      { starts := 1, userTasks := 3, choices := 1, ends := 3 })
+  else if profile = "bpmn-2.0.2-timer-user-task-composition-draft" then
+    some (1,
+      { starts := 1, userTasks := 1, timers := 1, ends := 1 })
+  else if profile = "bpmn-2.0.2-intermediate-catch-message-draft" then
+    some (1,
+      { starts := 1, userTasks := 1, messages := 1, ends := 1 })
   else if profile =
-      "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1, userTasks := 3, choices := 1, terminates := 3 }
-  else if profile =
-      "bpmn-2.0.2-timer-user-task-composition-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1, userTasks := 1, timers := 1, terminates := 1 }
-  else if profile =
-      "bpmn-2.0.2-intermediate-catch-message-draft" then
-    counts =
-      { emptyCardinalities with
-        initiates := 1, userTasks := 1, messages := 1, terminates := 1 }
-  else
-    false
+      "cibseven-2.2.0-embedded-subprocess-completion-draft" then
+    some (2,
+      { starts := 2, embeddedScopes := 1, userTasks := 3,
+        duplicates := 1, ends := 3 })
+  else none
 
-/-- Exact node cardinalities selected by the checked source's semantic profile. -/
+private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
+  if profile = "cibseven-2.2.0-user-task-process-data-draft" then
+    some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 1 })
+  else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
+    some (1, withScopeCompletions 1 { initiates := 1, timers := 1, ends := 1 })
+  else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
+      profile = "cibseven-2.0.0-a12-create-document-draft" then
+    some (1, withScopeCompletions 1 { initiates := 1, effects := 1, ends := 1 })
+  else if profile = "cibseven-2.0.0-a12-boundary-error-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, effects := 1, ends := 2 })
+  else if profile = "parallel-fork-join-draft" then
+    some (1,
+      withScopeCompletions 1
+        { initiates := 1, userTasks := 2, duplicates := 1,
+          synchronizes := 1, ends := 1 })
+  else if profile = "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 3, choices := 1, ends := 3 })
+  else if profile = "bpmn-2.0.2-timer-user-task-composition-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, timers := 1, ends := 1 })
+  else if profile = "bpmn-2.0.2-intermediate-catch-message-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, messages := 1, ends := 1 })
+  else if profile =
+      "cibseven-2.2.0-embedded-subprocess-completion-draft" then
+    some (2,
+      withScopeCompletions 2
+        { initiates := 1, scopeEntries := 1, userTasks := 3,
+          duplicates := 1, ends := 3 })
+  else none
+
+/-- Exact checked node and definition-scope cardinalities selected by the profile. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
-  profileAllowsCardinalities source.identity.semanticProfile.value
-    (nodeCardinalities source.nodes)
+  match checkedShape? source.identity.semanticProfile.value with
+  | some (scopeCount, shape) =>
+      source.definitionScopes.length = scopeCount &&
+        nodeCardinalities source.nodes = shape
+  | none => false
 
-/-- Exact operation cardinalities selected by the program's semantic profile. -/
+/-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
-  profileAllowsCardinalities program.identity.semanticProfile.value
-    (operationCardinalities program.operations)
+  match programShape? program.identity.semanticProfile.value with
+  | some (scopeCount, shape) =>
+      program.definitionScopes.length = scopeCount &&
+        operationCardinalities program.operations = shape
+  | none => false
 
 end BpmnSemantics.SemanticProcess

@@ -21,6 +21,12 @@ def checkedProcess : CheckedProcess :=
         sourceSha256 :=
           "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d" }
     processId := ⟨"Process_ServiceTaskEffectProbe"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_ServiceTaskEffectProbe"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_ServiceTaskEffectProbe"⟩
+      [⟨"EndEvent_1"⟩, ⟨"ServiceTask_Record"⟩, ⟨"StartEvent_1"⟩]
+    sequenceFlowScopes := rootSequenceFlowScopes
+      ⟨"Process_ServiceTaskEffectProbe"⟩
+      [⟨"Flow_ServiceToEnd"⟩, ⟨"Flow_StartToService"⟩]
     nodes :=
       [ .noneEndEvent ⟨"EndEvent_1"⟩
       , .serviceTask
@@ -39,37 +45,7 @@ def checkedProcess : CheckedProcess :=
           targetId := ⟨"ServiceTask_Record"⟩ } ] }
 
 def program : Program :=
-  { identity :=
-      { compiler := .bpmnSourceSemanticProcess
-        semanticProfile := ⟨"cibseven-2.2.0-service-task-effect-draft"⟩
-        sourceId := ⟨"service-task-effect-phase-zero-probe"⟩
-        sourceSha256 :=
-          "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d" }
-    processId := ⟨"Process_ServiceTaskEffectProbe"⟩
-    controlPlaces :=
-      [ { id := ⟨"place:Flow_ServiceToEnd"⟩
-          origin := { elementId := ⟨"Flow_ServiceToEnd"⟩ } }
-      , { id := ⟨"place:Flow_StartToService"⟩
-          origin := { elementId := ⟨"Flow_StartToService"⟩ } } ]
-    operations :=
-      [ .terminate
-          ⟨"operation:EndEvent_1"⟩
-          { elementId := ⟨"EndEvent_1"⟩ }
-          ⟨"place:Flow_ServiceToEnd"⟩
-      , .awaitEffect
-          ⟨"operation:ServiceTask_Record"⟩
-          { elementId := ⟨"ServiceTask_Record"⟩ }
-          ⟨"place:Flow_StartToService"⟩
-          ⟨"place:Flow_ServiceToEnd"⟩
-          { elementId := ⟨"ServiceTask_Record"⟩
-            descriptor
-            inputMappings := []
-            outputMappings := [] }
-          none
-      , .initiate
-          ⟨"operation:StartEvent_1"⟩
-          { elementId := ⟨"StartEvent_1"⟩ }
-          ⟨"place:Flow_StartToService"⟩ ] }
+  lowerCheckedProcess checkedProcess
 
 def effectId : EffectOccurrenceId :=
   { processInstanceId := ⟨"Instance_1"⟩
@@ -78,6 +54,7 @@ def effectId : EffectOccurrenceId :=
 
 def effectWait : EffectWait :=
   { processInstanceId := effectId.processInstanceId
+    owner := rootScopeOccurrenceId effectId.processInstanceId program.processId
     elementId := ⟨effectId.elementId.value⟩
     activation := effectId.activation
     descriptor
@@ -184,15 +161,18 @@ example :
 
 /-- Executable wrong account: accepting an arbitrary result would advance even when no effect occurrence was ever activated. -/
 private def acceptAnyEffectResult (state : RuntimeState)
-    (output : ControlPlaceId) : RuntimeState :=
-  { state with tokens := output :: state.tokens }
+    (owner : ScopeOccurrenceId) (output : ControlPlaceId) : RuntimeState :=
+  { state with tokens := addToken state.tokens output owner }
 
 theorem accept_any_effect_result_is_a_non_law :
-    let before := runningStartState ⟨"Instance_1"⟩ []
+    let before :=
+      (runningProgramStartState? program ⟨"Instance_1"⟩ []).getD initialState
     let submitted :=
       Stimulus.completeEffect ⟨"never-activated"⟩ effectId (.success [])
-    (acceptAnyEffectResult before ⟨"place:Flow_ServiceToEnd"⟩).tokens =
-        [⟨"place:Flow_ServiceToEnd"⟩] ∧
+    (acceptAnyEffectResult before effectWait.owner
+      ⟨"place:Flow_ServiceToEnd"⟩).tokens =
+        [rootToken ⟨"Instance_1"⟩ program.processId
+          ⟨"place:Flow_ServiceToEnd"⟩] ∧
       applyStimulus scenarioClosureLimit program before submitted =
         { outcome := .rejected
           state := before

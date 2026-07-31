@@ -43,6 +43,25 @@ private def outgoingPlaces (source : CheckedProcess) (nodeId : NodeId) :
 private def firstPlace (places : List ControlPlaceId) : ControlPlaceId :=
   places.head?.getD ⟨""⟩
 
+private def nodeScopeId? (source : CheckedProcess) (nodeId : NodeId) :
+    Option DefinitionScopeId :=
+  (source.nodeScopes.find? fun ownership =>
+    decide (ownership.nodeId = nodeId)).map (·.scopeId)
+
+private def isRootScope (source : CheckedProcess)
+    (scopeId : DefinitionScopeId) : Bool :=
+  source.definitionScopes.any fun scope =>
+    decide (scope.id = scopeId) && scope.parentScopeId.isNone
+
+private def childEntryPlace (source : CheckedProcess)
+    (childScopeId : DefinitionScopeId) : ControlPlaceId :=
+  let startId := (source.nodes.findSome? fun node =>
+    match node, nodeScopeId? source node.id with
+    | .noneStartEvent id, some scopeId =>
+        if scopeId = childScopeId then some id else none
+    | _, _ => none).getD ⟨""⟩
+  firstPlace (outgoingPlaces source startId)
+
 private def lowerBpmnErrorRoute
     (route : Option CheckedBpmnErrorRoute) : Option BpmnErrorRoute :=
   route.map fun route =>
@@ -68,36 +87,56 @@ private def lowerConditionalCandidate (source : CheckedProcess)
         output := flowControlPlaceId flowId
         origin := { elementId := flowId } }
 
-private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperation
+private def lowerNode (source : CheckedProcess) :
+    CheckedNode → Option (SemanticOperation × DefinitionScopeId)
   | .noneStartEvent id =>
-      .initiate
-        (nodeOperationId id)
-        { elementId := id }
-        (firstPlace (outgoingPlaces source id))
+      match nodeScopeId? source id with
+      | some scopeId =>
+          if isRootScope source scopeId then
+            some
+              (.initiate
+                (nodeOperationId id)
+                { elementId := id }
+                (firstPlace (outgoingPlaces source id)), scopeId)
+          else none
+      | none => none
+  | .embeddedSubProcess id childScopeId => do
+      let scopeId ← nodeScopeId? source id
+      pure
+        (.enterScope
+          (nodeOperationId id)
+          { elementId := id }
+          (firstPlace (incomingPlaces source id))
+          (childEntryPlace source childScopeId)
+          childScopeId, scopeId)
   | .userTask id name =>
-      .awaitUserTask
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.awaitUserTask
         (nodeOperationId id)
         { elementId := id }
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
-        { id := ⟨id.value⟩, name }
+        { id := ⟨id.value⟩, name }, scopeId)
   | .intermediateCatchTimerEvent id durationLiteral =>
-      .awaitTimer
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.awaitTimer
         (nodeOperationId id)
         { elementId := id }
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
         { elementId := id
-          durationMs := if durationLiteral = "PT1S" then 1000 else 0 }
+          durationMs := if durationLiteral = "PT1S" then 1000 else 0 }, scopeId)
   | .intermediateCatchMessageEvent id channel =>
-      .awaitMessage
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.awaitMessage
         (nodeOperationId id)
         { elementId := id }
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
-        { elementId := id, channel }
+        { elementId := id, channel }, scopeId)
   | .serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
-      .awaitEffect
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.awaitEffect
         (nodeOperationId id)
         { elementId := id }
         (firstPlace (incomingPlaces source id))
@@ -106,43 +145,83 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
           descriptor
           inputMappings
           outputMappings }
-        (lowerBpmnErrorRoute bpmnErrorRoute)
+        (lowerBpmnErrorRoute bpmnErrorRoute), scopeId)
   | .parallelGateway id .diverging =>
-      .duplicate
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.duplicate
         (nodeOperationId id)
         { elementId := id }
         (firstPlace (incomingPlaces source id))
-        (outgoingPlaces source id)
+        (outgoingPlaces source id), scopeId)
   | .parallelGateway id .converging =>
-      .synchronize
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.synchronize
         (nodeOperationId id)
         { elementId := id }
         (incomingPlaces source id)
-        (firstPlace (outgoingPlaces source id))
+        (firstPlace (outgoingPlaces source id)), scopeId)
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
-      .choose
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.choose
         (nodeOperationId id)
         { elementId := id }
         (firstPlace (incomingPlaces source id))
         (candidateFlowIds.map (lowerConditionalCandidate source))
         (flowControlPlaceId defaultFlowId)
-        { elementId := defaultFlowId }
+        { elementId := defaultFlowId }, scopeId)
   | .noneEndEvent id =>
-      .terminate
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.reachNoneEnd
         (nodeOperationId id)
         { elementId := id }
-        (firstPlace (incomingPlaces source id))
+        (firstPlace (incomingPlaces source id)), scopeId)
+
+private def lowerScopeCompletion (source : CheckedProcess)
+    (scope : DefinitionScope) : SemanticOperation × DefinitionScopeId :=
+  let parentOutput := scope.parentScopeId.map fun _ =>
+    firstPlace (outgoingPlaces source scope.originElementId)
+  (.completeScope
+    ⟨"operation:complete-scope:" ++ scope.id.value⟩
+    { elementId := scope.originElementId }
+    scope.id
+    parentOutput, scope.id)
+
+private def insertScopedOperation
+    (operation : SemanticOperation × DefinitionScopeId) :
+    List (SemanticOperation × DefinitionScopeId) →
+      List (SemanticOperation × DefinitionScopeId)
+  | [] => [operation]
+  | candidate :: rest =>
+      if operation.1.id.value < candidate.1.id.value then
+        operation :: candidate :: rest
+      else candidate :: insertScopedOperation operation rest
+
+private def sortScopedOperations :
+    List (SemanticOperation × DefinitionScopeId) →
+      List (SemanticOperation × DefinitionScopeId)
+  | [] => []
+  | operation :: rest =>
+      insertScopedOperation operation (sortScopedOperations rest)
 
 /-- Canonical lowering over the current checked graph. Meaning is claimed only under `checkedWellFormed`. -/
 def lowerCheckedProcess (source : CheckedProcess) : Program :=
+  let scopedOperations := sortScopedOperations
+    (source.nodes.filterMap (lowerNode source) ++
+      source.definitionScopes.map (lowerScopeCompletion source))
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := source.identity.semanticProfile
         sourceId := source.identity.sourceId
         sourceSha256 := source.identity.sourceSha256 }
     processId := source.processId
+    definitionScopes := source.definitionScopes
+    operationScopes := scopedOperations.map fun operation =>
+      { operationId := operation.1.id, scopeId := operation.2 }
+    controlPlaceScopes := source.sequenceFlowScopes.map fun ownership =>
+      { controlPlaceId := flowControlPlaceId ownership.sequenceFlowId
+        scopeId := ownership.scopeId }
     controlPlaces := source.sequenceFlows.map CheckedSequenceFlow.toControlPlace
-    operations := source.nodes.map (lowerNode source) }
+    operations := scopedOperations.map (·.1) }
 
 theorem lower_preserves_definition_identity (source : CheckedProcess) :
     (lowerCheckedProcess source).identity.semanticProfile =
@@ -181,6 +260,63 @@ private def outgoingCount (flows : List CheckedSequenceFlow) (id : NodeId) : Nat
 
 private def nodeExists (nodes : List CheckedNode) (id : NodeId) : Bool :=
   nodes.any fun node => decide (node.id = id)
+
+private def scopeExists (scopes : List DefinitionScope)
+    (scopeId : DefinitionScopeId) : Bool :=
+  scopes.any fun scope => decide (scope.id = scopeId)
+
+private def sequenceFlowScopeId? (source : CheckedProcess)
+    (flowId : SequenceFlowId) : Option DefinitionScopeId :=
+  (source.sequenceFlowScopes.find? fun ownership =>
+    decide (ownership.sequenceFlowId = flowId)).map (·.scopeId)
+
+private def flowSourceScopeId? (source : CheckedProcess) (flow : CheckedSequenceFlow) :
+    Option DefinitionScopeId :=
+  match nodeScopeId? source flow.sourceId with
+  | some scopeId => some scopeId
+  | none =>
+      source.nodes.findSome? fun
+        | .serviceTask id _ _ _ (some route) =>
+            if route.boundaryEventId = flow.sourceId then nodeScopeId? source id
+            else none
+        | _ => none
+
+private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
+  strictlySortedStrings (source.definitionScopes.map fun scope => scope.id.value) &&
+    match source.definitionScopes.filter (·.parentScopeId.isNone) with
+    | [root] =>
+        root.originElementId.value = source.processId.value &&
+          source.definitionScopes.all fun scope =>
+            match scope.parentScopeId with
+            | none => scope.id = root.id
+            | some parentScopeId =>
+                decide (scope.id ≠ parentScopeId) &&
+                  scopeExists source.definitionScopes parentScopeId &&
+                  source.nodes.any fun
+                    | .embeddedSubProcess id childScopeId =>
+                        decide (
+                          childScopeId = scope.id &&
+                          scope.originElementId = id &&
+                          nodeScopeId? source id = some parentScopeId)
+                    | _ => false
+    | _ => false
+
+private def checkedOwnershipValid (source : CheckedProcess) : Bool :=
+  strictlySortedStrings (source.nodeScopes.map fun ownership =>
+      ownership.nodeId.value) &&
+    strictlySortedStrings (source.sequenceFlowScopes.map fun ownership =>
+      ownership.sequenceFlowId.value) &&
+    source.nodeScopes.map (·.nodeId) = source.nodes.map (·.id) &&
+    source.sequenceFlowScopes.map (·.sequenceFlowId) =
+      source.sequenceFlows.map (·.id) &&
+    source.nodeScopes.all fun ownership =>
+      scopeExists source.definitionScopes ownership.scopeId &&
+    source.sequenceFlowScopes.all fun ownership =>
+      scopeExists source.definitionScopes ownership.scopeId &&
+    source.sequenceFlows.all fun flow =>
+      let scopeId := sequenceFlowScopeId? source flow.id
+      scopeId = flowSourceScopeId? source flow &&
+        scopeId = nodeScopeId? source flow.targetId
 
 private def singleStringLiteralMapping : List VariableMapping → Bool
   | [{ target
@@ -231,6 +367,8 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
       incomingCount flows id = 0 && outgoingCount flows id = 1
+  | .embeddedSubProcess id _ =>
+      incomingCount flows id = 1 && outgoingCount flows id = 1
   | .userTask id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .intermediateCatchTimerEvent id durationLiteral =>
@@ -275,6 +413,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
     nonempty source.identity.sourceId.value &&
     lowercaseHexSha256 source.identity.sourceSha256 &&
     nonempty source.processId.value &&
+    checkedDefinitionScopesValid source &&
+    checkedOwnershipValid source &&
     strictlySortedStrings (source.nodes.map fun node => node.id.value) &&
     strictlySortedStrings (source.sequenceFlows.map fun flow => flow.id.value) &&
     source.nodes.all (fun node => nonempty node.id.value) &&
@@ -327,6 +467,12 @@ private def operationWellFormed (places : List ControlPlace) :
       nonempty id.value &&
         nonempty origin.elementId.value &&
         placeExists places output
+  | .enterScope id origin input childEntry childScopeId =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty childScopeId.value &&
+        placeExists places input &&
+        placeExists places childEntry
   | .awaitUserTask id origin input output task =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -407,10 +553,15 @@ private def operationWellFormed (places : List ControlPlace) :
           simpleBooleanExpressionValid candidate.condition &&
             placeHasOrigin places candidate.output candidate.origin &&
         placeHasOrigin places defaultOutput defaultOrigin
-  | .terminate id origin input =>
+  | .reachNoneEnd id origin input =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
         placeExists places input
+  | .completeScope id origin scopeId parentOutput =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty scopeId.value &&
+        parentOutput.all (placeExists places)
 
 private def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
@@ -422,6 +573,10 @@ def programWellFormed (program : Program) : Bool :=
     nonempty program.identity.sourceId.value &&
     lowercaseHexSha256 program.identity.sourceSha256 &&
     nonempty program.processId.value &&
+    !program.definitionScopes.isEmpty &&
+    strictlySortedStrings (program.definitionScopes.map fun scope => scope.id.value) &&
+    program.definitionScopes.all (fun scope =>
+      nonempty scope.id.value && nonempty scope.originElementId.value) &&
     !program.controlPlaces.isEmpty &&
     !program.operations.isEmpty &&
     strictlySortedStrings (program.controlPlaces.map fun place => place.id.value) &&

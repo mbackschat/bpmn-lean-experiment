@@ -43,8 +43,12 @@ def completionStimulus : Stimulus :=
     exactTaskInstanceId
     submittedValues
 
+def rootOwner : ScopeOccurrenceId :=
+  rootScopeOccurrenceId ⟨"Instance_1"⟩ program.processId
+
 def exactWait : UserTaskWait :=
   { processInstanceId := ⟨"Instance_1"⟩
+    owner := rootOwner
     task :=
       { id := ⟨"UserTask_Approve"⟩
         name := some "Approve" }
@@ -52,17 +56,16 @@ def exactWait : UserTaskWait :=
     output := ⟨"place:Flow_TaskToEnd"⟩ }
 
 def afterStartState : RuntimeState :=
-  { initialState with
-    control := .running ⟨"Instance_1"⟩
+  { (runningProgramStartState? program ⟨"Instance_1"⟩ initialBindings).getD
+      initialState with
+    initiationPending := false
     waits := [exactWait]
-    variables :=
-      { initialState.variables with
-        process := { bindings := initialBindings } }
     activations := [{ taskId := exactWait.task.id, count := 1 }] }
 
 def completedState : RuntimeState :=
   { afterStartState with
     control := .completed ⟨"Instance_1"⟩
+    scopeOccurrences := []
     waits := []
     variables :=
       { afterStartState.variables with

@@ -24,6 +24,10 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import {
+  rootScopedProgram,
+  rootScopeOccurrence,
+} from "./root-scope-fixture.ts";
 
 const messageProfile =
   "bpmn-2.0.2-intermediate-catch-message-draft";
@@ -34,7 +38,7 @@ const channel = Object.freeze({
   messageId: "Message_ApprovalRequest",
 });
 
-const program = {
+const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -52,7 +56,7 @@ const program = {
   operations: [
     {
       ...operationBase("EndEvent_1"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_TaskToEnd",
     },
     {
@@ -81,9 +85,9 @@ const program = {
       },
     },
   ],
-} as const satisfies SemanticProcessProgram;
+});
 
-const reverseProgram = {
+const reverseProgram = rootScopedProgram({
   ...program,
   controlPlaces: [
     controlPlace("Flow_MessageToEnd"),
@@ -106,11 +110,13 @@ const reverseProgram = {
           input: "place:Flow_TaskToMessage",
           output: "place:Flow_MessageToEnd",
         };
-      case SemanticOperationKind.Terminate:
+      case SemanticOperationKind.ReachNoneEnd:
         return { ...operation, input: "place:Flow_MessageToEnd" };
+      default:
+        return operation;
     }
   }),
-} as const satisfies SemanticProcessProgram;
+});
 
 const start = Object.freeze({
   kind: StimulusKind.StartProcess,
@@ -153,6 +159,7 @@ test("activates one exact Message subscription and delivers it once", () => {
   assert.deepEqual(waiting.state.messageWaits, [
     {
       id: subscriptionId,
+      owner: rootScopeOccurrence(program.processId, start.instanceId),
       channel,
       output: "place:Flow_MessageToTask",
     },

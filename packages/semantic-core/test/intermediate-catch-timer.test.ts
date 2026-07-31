@@ -27,13 +27,17 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import {
+  rootScopedProgram,
+  rootScopeOccurrence,
+} from "./root-scope-fixture.ts";
 
 const sourceSha256 =
   "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5";
 const timerCommandId =
   "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b";
 
-const timerProgram: SemanticProcessProgram = {
+const timerProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -49,7 +53,7 @@ const timerProgram: SemanticProcessProgram = {
   operations: [
     {
       ...operationBase("EndEvent_1"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_TimerToEnd",
     },
     {
@@ -68,7 +72,7 @@ const timerProgram: SemanticProcessProgram = {
       },
     },
   ],
-};
+});
 
 const timerId = Object.freeze({
   processInstanceId: "Instance_1",
@@ -134,6 +138,7 @@ test("start closes at one PT1S timer occurrence without advancing time", () => {
   assert.deepEqual(started.state.timerWaits, [
     {
       id: timerId,
+      owner: rootScopeOccurrence(timerProgram.processId, start.instanceId),
       deadlineMs: 1000,
       output: "place:Flow_TimerToEnd",
     },

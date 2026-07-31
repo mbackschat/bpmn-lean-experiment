@@ -9,6 +9,33 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+def rootDefinitionScopeId (processId : ProcessId) : DefinitionScopeId :=
+  ⟨"scope:" ++ processId.value⟩
+
+def rootDefinitionScope (processId : ProcessId) : DefinitionScope :=
+  { id := rootDefinitionScopeId processId
+    parentScopeId := none
+    originElementId := ⟨processId.value⟩ }
+
+def rootNodeScopes (processId : ProcessId) (nodeIds : List NodeId) :
+    List NodeScopeOwnership :=
+  nodeIds.map fun nodeId => { nodeId, scopeId := rootDefinitionScopeId processId }
+
+def rootSequenceFlowScopes (processId : ProcessId)
+    (flowIds : List SequenceFlowId) : List SequenceFlowScopeOwnership :=
+  flowIds.map fun sequenceFlowId =>
+    { sequenceFlowId, scopeId := rootDefinitionScopeId processId }
+
+def rootScopeOccurrenceId (instanceId : SemanticId) (processId : ProcessId) :
+    ScopeOccurrenceId :=
+  { processInstanceId := instanceId
+    definitionScopeId := rootDefinitionScopeId processId
+    activation := 1 }
+
+def rootToken (instanceId : SemanticId) (processId : ProcessId)
+    (placeId : ControlPlaceId) : ControlToken :=
+  { placeId, owner := rootScopeOccurrenceId instanceId processId }
+
 def sequentialCheckedProcess : CheckedProcess :=
   { identity :=
       { semanticProfile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩
@@ -16,6 +43,11 @@ def sequentialCheckedProcess : CheckedProcess :=
         sourceSha256 :=
           "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
     processId := ⟨"Process_SequentialUserTask"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_SequentialUserTask"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_SequentialUserTask"⟩
+      [⟨"EndEvent_1"⟩, ⟨"StartEvent_1"⟩, ⟨"UserTask_Approve"⟩]
+    sequenceFlowScopes := rootSequenceFlowScopes ⟨"Process_SequentialUserTask"⟩
+      [⟨"Flow_StartToTask"⟩, ⟨"Flow_TaskToEnd"⟩]
     nodes :=
       [ .noneEndEvent ⟨"EndEvent_1"⟩
       , .noneStartEvent ⟨"StartEvent_1"⟩
@@ -29,33 +61,7 @@ def sequentialCheckedProcess : CheckedProcess :=
           targetId := ⟨"EndEvent_1"⟩ } ] }
 
 def sequentialProgram : Program :=
-  { identity :=
-      { compiler := .bpmnSourceSemanticProcess
-        semanticProfile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩
-        sourceId := ⟨"sequential-user-task-process"⟩
-        sourceSha256 :=
-          "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
-    processId := ⟨"Process_SequentialUserTask"⟩
-    controlPlaces :=
-      [ { id := ⟨"place:Flow_StartToTask"⟩
-          origin := { elementId := ⟨"Flow_StartToTask"⟩ } }
-      , { id := ⟨"place:Flow_TaskToEnd"⟩
-          origin := { elementId := ⟨"Flow_TaskToEnd"⟩ } } ]
-    operations :=
-      [ .terminate
-          ⟨"operation:EndEvent_1"⟩
-          { elementId := ⟨"EndEvent_1"⟩ }
-          ⟨"place:Flow_TaskToEnd"⟩
-      , .initiate
-          ⟨"operation:StartEvent_1"⟩
-          { elementId := ⟨"StartEvent_1"⟩ }
-          ⟨"place:Flow_StartToTask"⟩
-      , .awaitUserTask
-          ⟨"operation:UserTask_Approve"⟩
-          { elementId := ⟨"UserTask_Approve"⟩ }
-          ⟨"place:Flow_StartToTask"⟩
-          ⟨"place:Flow_TaskToEnd"⟩
-          { id := ⟨"UserTask_Approve"⟩, name := some "Approve" } ] }
+  lowerCheckedProcess sequentialCheckedProcess
 
 def parallelCheckedProcess : CheckedProcess :=
   { identity :=
@@ -64,6 +70,13 @@ def parallelCheckedProcess : CheckedProcess :=
         sourceSha256 :=
           "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6" }
     processId := ⟨"Process_ParallelForkJoin"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_ParallelForkJoin"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_ParallelForkJoin"⟩
+      [ ⟨"EndEvent_1"⟩, ⟨"Gateway_Fork"⟩, ⟨"Gateway_Join"⟩
+      , ⟨"StartEvent_1"⟩, ⟨"UserTask_A"⟩, ⟨"UserTask_B"⟩ ]
+    sequenceFlowScopes := rootSequenceFlowScopes ⟨"Process_ParallelForkJoin"⟩
+      [ ⟨"Flow_AToJoin"⟩, ⟨"Flow_BToJoin"⟩, ⟨"Flow_ForkToA"⟩
+      , ⟨"Flow_ForkToB"⟩, ⟨"Flow_JoinToEnd"⟩, ⟨"Flow_StartToFork"⟩ ]
     nodes :=
       [ .noneEndEvent ⟨"EndEvent_1"⟩
       , .parallelGateway ⟨"Gateway_Fork"⟩ .diverging
@@ -103,25 +116,33 @@ def parallelTaskBOperation : OperationId := ⟨"operation:UserTask_B"⟩
 def parallelEndOperation : OperationId := ⟨"operation:EndEvent_1"⟩
 
 def parallelStartState : RuntimeState :=
-  runningStartState parallelInstanceId []
+  (runningProgramStartState? parallelProgram parallelInstanceId []).getD initialState
 
 def parallelAfterStart : RuntimeState :=
   { parallelStartState with
     initiationPending := false
-    tokens := [⟨"place:Flow_StartToFork"⟩] }
+    tokens := [rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+      ⟨"place:Flow_StartToFork"⟩] }
 
 def parallelAfterFork : RuntimeState :=
   { parallelAfterStart with
     tokens :=
-      [ ⟨"place:Flow_ForkToA"⟩
-      , ⟨"place:Flow_ForkToB"⟩ ] }
+      [ rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_ForkToA"⟩
+      , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_ForkToB"⟩ ] }
 
-def parallelWaitingState : RuntimeState :=
-  (runChoices parallelProgram parallelStartState
+def parallelWaitingStateFor (instanceId : SemanticId) : RuntimeState :=
+  let start :=
+    (runningProgramStartState? parallelProgram instanceId []).getD initialState
+  (runChoices parallelProgram start
     [ parallelStartOperation
     , parallelForkOperation
     , parallelTaskAOperation
     , parallelTaskBOperation ]).getD initialState
+
+def parallelWaitingState : RuntimeState :=
+  parallelWaitingStateFor parallelInstanceId
 
 def parallelWaitingStateBThenA : RuntimeState :=
   (runChoices parallelProgram parallelStartState
@@ -135,7 +156,11 @@ def parallelJoinInputs : List ControlPlaceId :=
 
 def duplicateLeftNoRightState : RuntimeState :=
   { parallelAfterFork with
-    tokens := [⟨"place:Flow_AToJoin"⟩, ⟨"place:Flow_AToJoin"⟩] }
+    tokens :=
+      [ rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_AToJoin"⟩
+      , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_AToJoin"⟩ ] }
 
 def timerUserTaskCompositionCheckedProcess : CheckedProcess :=
   { identity :=
@@ -145,6 +170,14 @@ def timerUserTaskCompositionCheckedProcess : CheckedProcess :=
         sourceSha256 :=
           "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2" }
     processId := ⟨"Process_TimerUserTaskComposition"⟩
+    definitionScopes :=
+      [rootDefinitionScope ⟨"Process_TimerUserTaskComposition"⟩]
+    nodeScopes := rootNodeScopes ⟨"Process_TimerUserTaskComposition"⟩
+      [ ⟨"EndEvent_1"⟩, ⟨"StartEvent_1"⟩, ⟨"TimerCatch_PT1S"⟩
+      , ⟨"UserTask_Approve"⟩ ]
+    sequenceFlowScopes := rootSequenceFlowScopes
+      ⟨"Process_TimerUserTaskComposition"⟩
+      [⟨"Flow_StartToTimer"⟩, ⟨"Flow_TaskToEnd"⟩, ⟨"Flow_TimerToTask"⟩]
     nodes :=
       [ .noneEndEvent ⟨"EndEvent_1"⟩
       , .noneStartEvent ⟨"StartEvent_1"⟩
@@ -169,6 +202,9 @@ def reverseTimerUserTaskCompositionCheckedProcess : CheckedProcess :=
     identity :=
       { timerUserTaskCompositionCheckedProcess.identity with
         sourceId := ⟨"reverse-timer-user-task-composition"⟩ }
+    sequenceFlowScopes := rootSequenceFlowScopes
+      ⟨"Process_TimerUserTaskComposition"⟩
+      [⟨"Flow_StartToTask"⟩, ⟨"Flow_TaskToTimer"⟩, ⟨"Flow_TimerToEnd"⟩]
     sequenceFlows :=
       [ { id := ⟨"Flow_StartToTask"⟩
           sourceId := ⟨"StartEvent_1"⟩
@@ -235,15 +271,20 @@ def reverseTimerUserTaskCompositionCompleted : StimulusResult :=
 def excessJoinState : RuntimeState :=
   { parallelAfterFork with
     tokens :=
-      [ ⟨"place:Flow_AToJoin"⟩
-      , ⟨"place:Flow_AToJoin"⟩
-      , ⟨"place:Flow_BToJoin"⟩ ] }
+      [ rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_AToJoin"⟩
+      , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_AToJoin"⟩
+      , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_BToJoin"⟩ ] }
 
 def excessAfterJoin : RuntimeState :=
   { excessJoinState with
     tokens :=
-      [ ⟨"place:Flow_JoinToEnd"⟩
-      , ⟨"place:Flow_AToJoin"⟩ ] }
+      [ rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_JoinToEnd"⟩
+      , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+          ⟨"place:Flow_AToJoin"⟩ ] }
 
 def parallelAfterCompletingA : RuntimeState :=
   (completeUserTask parallelWaitingState parallelInstanceId
@@ -285,11 +326,7 @@ theorem parallel_supported_closure_reaches_exact_waiting_state :
       (.startProcess ⟨"start-process"⟩
         ⟨"Process_ParallelForkJoin"⟩ ⟨"Instance_1"⟩ [])) =
       { outcome := .committed
-        state :=
-          { parallelWaitingState with
-            control := .running ⟨"Instance_1"⟩
-            waits := parallelWaitingState.waits.map fun wait =>
-              { wait with processInstanceId := ⟨"Instance_1"⟩ } }
+        state := parallelWaitingStateFor ⟨"Instance_1"⟩
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   decide
@@ -313,9 +350,12 @@ theorem token_projection_ignores_storage_permutation :
     projectTokenMultiplicities parallelProgram
         { excessJoinState with
           tokens :=
-            [ ⟨"place:Flow_BToJoin"⟩
-            , ⟨"place:Flow_AToJoin"⟩
-            , ⟨"place:Flow_AToJoin"⟩ ] } =
+            [ rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+                ⟨"place:Flow_BToJoin"⟩
+            , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+                ⟨"place:Flow_AToJoin"⟩
+            , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
+                ⟨"place:Flow_AToJoin"⟩ ] } =
       projectTokenMultiplicities parallelProgram excessJoinState := by
   decide
 
@@ -327,6 +367,9 @@ private def mixedWaitProjectionProgram : Program :=
         sourceId := ⟨"projection-order-test"⟩
         sourceSha256 := "projection-order-test" }
     processId := ⟨"Process_ProjectionOrder"⟩
+    definitionScopes := []
+    operationScopes := []
+    controlPlaceScopes := []
     controlPlaces := []
     operations :=
       [ .awaitUserTask
@@ -371,19 +414,26 @@ private def mixedWaitProjectionProgram : Program :=
           none ] }
 
 private def mixedWaitProjectionState : RuntimeState :=
+  let owner : ScopeOccurrenceId :=
+    rootScopeOccurrenceId ⟨"Instance_ProjectionOrder"⟩
+      ⟨"Process_ProjectionOrder"⟩
   { initialState with
     control := .running ⟨"Instance_ProjectionOrder"⟩
+    scopeOccurrences := [{ id := owner, parent := none }]
     waits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          owner
           task := { id := ⟨"Z_UserTask"⟩, name := some "Z" }
           activation := 1
           output := ⟨"place:user-output"⟩ }
       , { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          owner
           task := { id := ⟨"B_UserTask"⟩, name := some "B" }
           activation := 1
           output := ⟨"place:user-b-output"⟩ } ]
     messageWaits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          owner
           elementId := ⟨"A_Message"⟩
           activation := 1
           channel :=
@@ -393,12 +443,14 @@ private def mixedWaitProjectionState : RuntimeState :=
           output := ⟨"place:message-output"⟩ } ]
     timerWaits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          owner
           elementId := ⟨"C_Timer"⟩
           activation := 1
           deadlineMs := 1000
           output := ⟨"place:timer-output"⟩ } ]
     effectWaits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          owner
           elementId := ⟨"D_Effect"⟩
           activation := 1
           descriptor :=

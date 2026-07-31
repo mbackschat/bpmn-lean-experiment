@@ -1,0 +1,91 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "status": "draft",
+  "claim": "ordinary-embedded-subprocess-quiescent-completion-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "ordinary-embedded-subprocess",
+      "one-child-definition-scope",
+      "parallel-gateway-fork",
+      "two-child-user-tasks",
+      "separate-child-none-end-events",
+      "quiescent-child-scope-completion",
+      "outer-user-task-after-scope",
+      "outer-none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0007",
+      "CIB-OP-0001",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "arbitrary-nesting",
+    "multiple-subprocess-occurrences",
+    "event-subprocesses",
+    "boundary-events",
+    "error-propagation",
+    "terminate-end-events",
+    "implicit-child-completion",
+    "child-local-data",
+    "input-output-mapping",
+    "loops",
+    "multi-instance",
+    "call-activities",
+    "transactions",
+    "compensation",
+    "public-scope-tree",
+    "claiming",
+    "assignment",
+    "authorization",
+    "forms",
+    "timers",
+    "messages",
+    "effects",
+    "expressions",
+    "listeners",
+    "history",
+    "search-attributes",
+    "global-task-inbox",
+    "external-services",
+    "vendor-extensions"
+  ]
+}

@@ -9,54 +9,11 @@ import {
 } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
-  SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
   isWellFormedWireString,
   utf8ByteLength,
 } from "./wire.js";
-
-const semanticProfile =
-  "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft";
-
-export function hasSimpleBooleanChoiceExecutionSurface(
-  program: SemanticProcessProgram,
-): boolean {
-  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
-  const choose = onlyOperation(program, SemanticOperationKind.Choose);
-  const tasks = operationsOfKind(
-    program,
-    SemanticOperationKind.AwaitUserTask,
-  );
-  const terminates = operationsOfKind(
-    program,
-    SemanticOperationKind.Terminate,
-  );
-  if (
-    program.identity.semanticProfile !== semanticProfile ||
-    program.controlPlaces.length !== 7 ||
-    program.operations.length !== 8 ||
-    initiate === undefined ||
-    choose === undefined ||
-    tasks.length !== 3 ||
-    terminates.length !== 3 ||
-    initiate.output !== choose.input
-  ) {
-    return false;
-  }
-  const branchOutputs = [
-    ...choose.candidates.map(({ output }) => output),
-    choose.defaultOutput,
-  ];
-  return (
-    new Set(branchOutputs).size === 3 &&
-    sameStringSet(branchOutputs, tasks.map(({ input }) => input)) &&
-    sameStringSet(
-      tasks.map(({ output }) => output),
-      terminates.map(({ input }) => input),
-    )
-  );
-}
 
 export function isWellFormedChooseOperation(
   value: Record<string, unknown>,
@@ -162,36 +119,6 @@ function isSequenceFlowOrigin(
     hasOnlyKeys(value, ["kind", "elementId"]) &&
     value.kind === SemanticOriginKind.BpmnSequenceFlow &&
     isNonEmptyString(value.elementId)
-  );
-}
-
-function onlyOperation<K extends SemanticOperationKind>(
-  program: SemanticProcessProgram,
-  kind: K,
-): Extract<SemanticOperation, { kind: K }> | undefined {
-  const operations = operationsOfKind(program, kind);
-  return operations.length === 1 ? operations[0] : undefined;
-}
-
-function operationsOfKind<K extends SemanticOperationKind>(
-  program: SemanticProcessProgram,
-  kind: K,
-): ReadonlyArray<Extract<SemanticOperation, { kind: K }>> {
-  return program.operations.filter(
-    (
-      operation,
-    ): operation is Extract<SemanticOperation, { kind: K }> =>
-      operation.kind === kind,
-  );
-}
-
-function sameStringSet(
-  left: ReadonlyArray<string>,
-  right: ReadonlyArray<string>,
-): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value) => right.includes(value))
   );
 }
 

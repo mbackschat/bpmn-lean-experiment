@@ -1,10 +1,13 @@
 import {
+  CheckedNodeKind,
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
 
 export const SemanticProfileId = Object.freeze({
   BoundaryError: "cibseven-2.0.0-a12-boundary-error-draft",
   CreateDocument: "cibseven-2.0.0-a12-create-document-draft",
+  EmbeddedSubProcessCompletion:
+    "cibseven-2.2.0-embedded-subprocess-completion-draft",
   ExclusiveGatewaySimpleBoolean:
     "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
   IntermediateCatchTimer:
@@ -24,93 +27,240 @@ export const SemanticProfileId = Object.freeze({
  * Graph structure remains the responsibility of the profile-independent
  * checked-source and Semantic Process graph validators.
  */
-export function profileAllowsOperationKinds(
+export function profileAllowsProgramShape(
   semanticProfile: string,
   actualKinds: ReadonlyArray<SemanticOperationKind>,
+  definitionScopeCount: number,
 ): boolean {
-  const requiredKinds = requiredOperationKinds(semanticProfile);
-  return requiredKinds !== undefined &&
-    sameOperationCardinalities(actualKinds, requiredKinds);
+  const required = requiredProgramShape(semanticProfile);
+  return required !== undefined &&
+    definitionScopeCount === required.definitionScopeCount &&
+    sameOperationCardinalities(actualKinds, required.operationKinds);
 }
 
-function requiredOperationKinds(
+export function profileAllowsCheckedProcessShape(
   semanticProfile: string,
-): ReadonlyArray<SemanticOperationKind> | undefined {
+  actualKinds: ReadonlyArray<CheckedNodeKind>,
+  definitionScopeCount: number,
+): boolean {
+  const required = requiredCheckedProcessShape(semanticProfile);
+  return required !== undefined &&
+    definitionScopeCount === required.definitionScopeCount &&
+    sameCardinalities(actualKinds, required.nodeKinds);
+}
+
+type RequiredCheckedProcessShape = Readonly<{
+  definitionScopeCount: number;
+  nodeKinds: ReadonlyArray<CheckedNodeKind>;
+}>;
+
+function requiredCheckedProcessShape(
+  semanticProfile: string,
+): RequiredCheckedProcessShape | undefined {
+  const start = CheckedNodeKind.NoneStartEvent;
+  const end = CheckedNodeKind.NoneEndEvent;
   switch (semanticProfile) {
     case SemanticProfileId.UserTask:
-      return [
+      return rootChecked([start, CheckedNodeKind.UserTask, end]);
+    case SemanticProfileId.IntermediateCatchTimer:
+      return rootChecked([
+        start,
+        CheckedNodeKind.IntermediateCatchTimerEvent,
+        end,
+      ]);
+    case SemanticProfileId.IntermediateCatchMessage:
+      return rootChecked([
+        start,
+        CheckedNodeKind.IntermediateCatchMessageEvent,
+        CheckedNodeKind.UserTask,
+        end,
+      ]);
+    case SemanticProfileId.ServiceTaskEffect:
+    case SemanticProfileId.CreateDocument:
+      return rootChecked([start, CheckedNodeKind.ServiceTask, end]);
+    case SemanticProfileId.BoundaryError:
+      return rootChecked([
+        start,
+        CheckedNodeKind.ServiceTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+      ]);
+    case SemanticProfileId.ParallelForkJoin:
+      return rootChecked([
+        start,
+        CheckedNodeKind.ParallelGateway,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.ParallelGateway,
+        end,
+      ]);
+    case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
+      return rootChecked([
+        start,
+        CheckedNodeKind.ExclusiveGateway,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+        end,
+      ]);
+    case SemanticProfileId.TimerUserTaskComposition:
+      return rootChecked([
+        start,
+        CheckedNodeKind.IntermediateCatchTimerEvent,
+        CheckedNodeKind.UserTask,
+        end,
+      ]);
+    case SemanticProfileId.EmbeddedSubProcessCompletion:
+      return {
+        definitionScopeCount: 2,
+        nodeKinds: [
+          start,
+          CheckedNodeKind.EmbeddedSubProcess,
+          CheckedNodeKind.UserTask,
+          end,
+          start,
+          CheckedNodeKind.ParallelGateway,
+          CheckedNodeKind.UserTask,
+          CheckedNodeKind.UserTask,
+          end,
+          end,
+        ],
+      };
+    default:
+      return undefined;
+  }
+}
+
+type RequiredProgramShape = Readonly<{
+  definitionScopeCount: number;
+  operationKinds: ReadonlyArray<SemanticOperationKind>;
+}>;
+
+function requiredProgramShape(
+  semanticProfile: string,
+): RequiredProgramShape | undefined {
+  switch (semanticProfile) {
+    case SemanticProfileId.UserTask:
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitUserTask,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.IntermediateCatchTimer:
-      return [
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitTimer,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.IntermediateCatchMessage:
-      return [
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitMessage,
         SemanticOperationKind.AwaitUserTask,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.ServiceTaskEffect:
     case SemanticProfileId.CreateDocument:
-      return [
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitEffect,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.BoundaryError:
-      return [
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitEffect,
         SemanticOperationKind.AwaitUserTask,
-        SemanticOperationKind.Terminate,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.ParallelForkJoin:
-      return [
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.Duplicate,
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.Synchronize,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
-      return [
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.Choose,
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.AwaitUserTask,
-        SemanticOperationKind.Terminate,
-        SemanticOperationKind.Terminate,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.TimerUserTaskComposition:
-      return [
+      return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitTimer,
         SemanticOperationKind.AwaitUserTask,
-        SemanticOperationKind.Terminate,
-      ];
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case SemanticProfileId.EmbeddedSubProcessCompletion:
+      return {
+        definitionScopeCount: 2,
+        operationKinds: [
+          SemanticOperationKind.Initiate,
+          SemanticOperationKind.EnterScope,
+          SemanticOperationKind.Duplicate,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.CompleteScope,
+          SemanticOperationKind.CompleteScope,
+        ],
+      };
     default:
       return undefined;
   }
+}
+
+function rootProgram(
+  operationKinds: ReadonlyArray<SemanticOperationKind>,
+): RequiredProgramShape {
+  return { definitionScopeCount: 1, operationKinds };
+}
+
+function rootChecked(
+  nodeKinds: ReadonlyArray<CheckedNodeKind>,
+): RequiredCheckedProcessShape {
+  return { definitionScopeCount: 1, nodeKinds };
 }
 
 function sameOperationCardinalities(
   actual: ReadonlyArray<SemanticOperationKind>,
   required: ReadonlyArray<SemanticOperationKind>,
 ): boolean {
+  return sameCardinalities(actual, required);
+}
+
+function sameCardinalities<T>(
+  actual: ReadonlyArray<T>,
+  required: ReadonlyArray<T>,
+): boolean {
   return actual.length === required.length &&
     required.every(
-      (kind) =>
-        actual.filter((candidate) => candidate === kind).length ===
-          required.filter((candidate) => candidate === kind).length,
+      (item) =>
+        actual.filter((candidate) => candidate === item).length ===
+          required.filter((candidate) => candidate === item).length,
     );
 }

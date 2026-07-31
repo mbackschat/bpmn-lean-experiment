@@ -31,13 +31,17 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
+import {
+  rootScopedProgram,
+  rootScopeOccurrence,
+} from "./root-scope-fixture.ts";
 
 type SuccessLocalPatch = Extract<
   EffectExecutionResult,
   { kind: EffectExecutionResultKind.Success }
 >["localPatch"];
 
-const program: SemanticProcessProgram = {
+const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
@@ -86,7 +90,7 @@ const program: SemanticProcessProgram = {
     },
     {
       ...operationBase("EndEvent_CreateDocument"),
-      kind: SemanticOperationKind.Terminate,
+      kind: SemanticOperationKind.ReachNoneEnd,
       input: "place:Flow_CreateToEnd",
     },
     {
@@ -95,7 +99,7 @@ const program: SemanticProcessProgram = {
       output: "place:Flow_StartToCreate",
     },
   ],
-};
+});
 
 const effectId = Object.freeze({
   processInstanceId: "Instance_1",
@@ -420,7 +424,12 @@ test("does not add closure steps or make enabledness depend on scoped data", () 
     },
     controlTokens: [{
       placeId: "place:Flow_StartToCreate",
+      owner: rootScopeOccurrence(program.processId, effectId.processInstanceId),
       multiplicity: 1,
+    }],
+    scopeOccurrences: [{
+      id: rootScopeOccurrence(program.processId, effectId.processInstanceId),
+      parent: null,
     }],
   };
   const withUnrelatedData = {

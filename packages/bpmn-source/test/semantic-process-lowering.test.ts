@@ -11,43 +11,24 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import type {
-  AcceptedBpmnCompilation,
-  BpmnSourceLimits,
-} from "@bpmn-lean/bpmn-source";
-import type {
   CheckedNode,
   SemanticOperation,
 } from "@bpmn-lean/semantic-core";
+import {
+  compileSemanticProcessFixture,
+  semanticProcessTestLimits as limits,
+} from "./semantic-process-compilation-test-support.ts";
 
-const limits: BpmnSourceLimits = Object.freeze({
-  maxBytes: 1024 * 1024,
-  parserDeadlineMs: 1_000,
-});
-
-/**
- * Compiles one tracked fixture that this suite expects to be admitted.
- *
- * Rejection is a harness failure here: the lowering cases below read the
- * checked graph and Semantic Process, which only an accepted compilation has.
- */
-async function compileFixture(
+function compileFixture(
   relativePath: string,
   sourceId: string,
   semanticProfile: string,
-): Promise<AcceptedBpmnCompilation> {
-  const result = await compileBpmnToSemanticProcess({
-    bytes: await readFile(new URL(relativePath, import.meta.url)),
+) {
+  return compileSemanticProcessFixture(
+    new URL(relativePath, import.meta.url),
     sourceId,
-    expectedSha256: undefined,
     semanticProfile,
-    limits,
-  });
-  if (result.status !== BpmnCompilationStatus.Accepted) {
-    throw new Error(
-      `${sourceId} was rejected: ${JSON.stringify(result.diagnostics)}`,
-    );
-  }
-  return result;
+  );
 }
 
 function operationOfKind<Kind extends SemanticOperationKind>(
@@ -91,7 +72,7 @@ test("emits the canonical checked graph and Semantic Process for the sequential 
     result.semanticProcess.operations.map(({ kind, id }) => ({ kind, id })),
     [
       {
-        kind: SemanticOperationKind.Terminate,
+        kind: SemanticOperationKind.ReachNoneEnd,
         id: "operation:EndEvent_1",
       },
       {
@@ -101,6 +82,10 @@ test("emits the canonical checked graph and Semantic Process for the sequential 
       {
         kind: SemanticOperationKind.AwaitUserTask,
         id: "operation:UserTask_Approve",
+      },
+      {
+        kind: SemanticOperationKind.CompleteScope,
+        id: "operation:complete-scope:scope:Process_SequentialUserTask",
       },
     ],
   );
@@ -212,10 +197,11 @@ test("admits timer and User Task composition only through its selected profile",
   assert.deepEqual(
     result.semanticProcess.operations.map(({ kind }) => kind),
     [
-      SemanticOperationKind.Terminate,
+      SemanticOperationKind.ReachNoneEnd,
       SemanticOperationKind.Initiate,
       SemanticOperationKind.AwaitTimer,
       SemanticOperationKind.AwaitUserTask,
+      SemanticOperationKind.CompleteScope,
     ],
   );
 

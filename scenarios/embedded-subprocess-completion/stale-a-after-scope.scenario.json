@@ -1,0 +1,72 @@
+{
+  "kind": "scenario",
+  "id": "embedded-subprocess-completion-stale-a-after-scope",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "embedded-subprocess-completion-process",
+    "relativePath": "scenarios/embedded-subprocess-completion/process.bpmn",
+    "sha256": "6ca0aa3bccb005de1ac4b6ef6283f2a29c4f4ef7c3e8aff6bf29d79247f09a36"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EmbeddedSubProcess",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-child-a",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ChildA",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-child-b",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ChildB",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-stale-child-a-after-scope",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ChildA",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/subprocess/SubProcessTest.java#testSimpleSubProcess",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId"
+    ]
+  }
+}

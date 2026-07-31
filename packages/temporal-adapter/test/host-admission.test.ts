@@ -173,3 +173,24 @@ test("keeps passive parallel User Tasks separate from host-driven waits", async 
     },
   });
 });
+
+test("admits embedded scope waits independently of semantic operation order", async () => {
+  const program = await compileFixture(
+    "../../../scenarios/embedded-subprocess-completion/process.bpmn",
+    "embedded-subprocess-completion-process",
+    "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  );
+
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [...program.operations].reverse(),
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Admitted,
+    },
+  );
+});

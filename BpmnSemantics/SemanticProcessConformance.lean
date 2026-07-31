@@ -98,7 +98,8 @@ example :
 
 private def timerUserTaskCompositionStrandedState : RuntimeState :=
   { timerUserTaskCompositionTaskWait.state with
-    tokens := [⟨"place:stranded"⟩]
+    tokens := [rootToken ⟨"CompositionInstance_1"⟩
+      timerUserTaskCompositionProgram.processId ⟨"place:stranded"⟩]
     waits := [] }
 
 example :
