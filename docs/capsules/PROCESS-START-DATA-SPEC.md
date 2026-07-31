@@ -80,6 +80,10 @@ This is a breaking pre-release start-command shape replacement. Every schema, de
 
 The known eventual consumer is the runnable external-Temporal MVP command and its dummy form actor. Approval of the first durable production baseline still requires explicit history evolution, migration, rollback, and support-window decisions.
 
+## Closure review
+
+The reproducible implementation boundary is `416df39..07e7f17`: hand-written Lean, TypeScript, Java, and JavaScript changed by `+289/-77` nonblank lines and documentation changed by `+104/-36`; elapsed time is unknown. The exact established claim is atomic installation and ordinary Process-scope observation of one canonical string/null binding map on an accepted fresh start under selected CIB extension `CIB-EXT-0006`. The closest unsupported claim is BPMN data modeling, task-local input mapping, form semantics, variable deletion, a wider value domain, or mutation of an existing instance. The principal correlation risk is the shared admitted scenario/profile account; the independent public-service CIB probe observes the first task before completion, while Lean and TypeScript separately establish the start transition downstream of the admitted graph. Wrong Process identity, malformed or noncanonical bindings, state outside `notStarted`, and outside-core installation are the nearest executable counterexamples. This capsule is materially smaller in code than the preceding completion-data capsule because it reuses the scoped-data representation, public observation, Temporal start argument, runner projection, and replay mechanisms.
+
 ## Reopen conditions
 
 Reopen before adding a value kind, deletion, local or transient scope, BPMN data construct, form metadata, variable-based discovery, start-on-message behavior, Process restart, multiple definitions in one command, or any host path that installs data outside the semantic start transition.
