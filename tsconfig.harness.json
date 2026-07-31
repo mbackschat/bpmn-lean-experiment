@@ -40,6 +40,7 @@
     "packages/differential/test/*.ts",
     "packages/semantic-core/test/*.ts",
     "packages/temporal-adapter/calibration/*.ts",
+    "packages/temporal-adapter/cli/*.ts",
     "packages/temporal-adapter/test/*.ts",
     "scripts/*.ts"
   ]

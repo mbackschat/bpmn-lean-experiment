@@ -97,7 +97,7 @@ export async function runDummyUserTaskActor(
   wait: (delayMs: number) => Promise<void> = waitForHostDelay,
   observe: (event: DummyUserTaskActorEvent) => void = () => undefined,
 ): Promise<DummyUserTaskActorResult> {
-  requireDummyUserTaskResponse(response);
+  validateDummyUserTaskResponse(response);
   const openTasks = await port.listOpenUserTasks();
   const selected = requireSingleConfiguredTask(response, openTasks);
   if ("kind" in selected) {
@@ -190,17 +190,37 @@ function requireSingleConfiguredTask(
   return task;
 }
 
-function requireDummyUserTaskResponse(
-  response: DummyUserTaskResponse,
-): void {
+/** Rejects malformed or widened foreground-actor configuration before any Workflow read. */
+export function validateDummyUserTaskResponse(
+  response: unknown,
+): asserts response is DummyUserTaskResponse {
+  if (
+    !isRecord(response) ||
+    !hasExactKeys(response, [
+      "elementId",
+      "delayMs",
+      "inputVariableNames",
+      "submittedValues",
+    ])
+  ) {
+    throw new TypeError(
+      "Dummy actor response must contain exactly elementId, delayMs, inputVariableNames, and submittedValues",
+    );
+  }
   if (!isNonEmptyWireString(response.elementId)) {
     throw new TypeError("Dummy actor elementId must be a nonempty wire string");
   }
-  if (!Number.isSafeInteger(response.delayMs) || response.delayMs <= 0) {
+  if (
+    !Number.isSafeInteger(response.delayMs) ||
+    Number(response.delayMs) <= 0
+  ) {
     throw new RangeError("Dummy actor delayMs must be a positive safe integer");
   }
+  if (!Array.isArray(response.inputVariableNames)) {
+    throw new TypeError("Dummy actor inputVariableNames must be an array");
+  }
   requireCanonicalNames(response.inputVariableNames);
-  const probe: CompleteUserTaskInstanceStimulus = {
+  const probe = {
     kind: StimulusKind.CompleteUserTaskInstance,
     commandId: "dummy-form-response-validation",
     taskId: {
@@ -217,7 +237,21 @@ function requireDummyUserTaskResponse(
   }
 }
 
-function requireCanonicalNames(names: ReadonlyArray<string>): void {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expected: ReadonlyArray<string>,
+): boolean {
+  const actual = Object.keys(value).sort();
+  const required = [...expected].sort();
+  return actual.length === required.length &&
+    actual.every((key, index) => key === required[index]);
+}
+
+function requireCanonicalNames(names: ReadonlyArray<unknown>): void {
   let previous: string | undefined;
   for (const name of names) {
     if (!isNonEmptyWireString(name)) {
@@ -237,8 +271,10 @@ function requireCanonicalNames(names: ReadonlyArray<string>): void {
   }
 }
 
-function isNonEmptyWireString(value: string): boolean {
-  return value.length > 0 && isWellFormedWireString(value);
+function isNonEmptyWireString(value: unknown): value is string {
+  return typeof value === "string" &&
+    value.length > 0 &&
+    isWellFormedWireString(value);
 }
 
 function sameTask(

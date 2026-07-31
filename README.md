@@ -6,7 +6,7 @@ This project builds a Temporal-hosted BPMN 2.0.2 execution engine whose behavior
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
 
-The next product increment is the owner-approved [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-PROPOSAL.md): an external-server Worker and CLI path with a dummy actor around the durable User Task wait, simulating form input without introducing a UI, task inbox, or identity system.
+The [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) is implemented: one command admits exact BPMN XML, connects its Worker to an existing Temporal service, shows the durable User Task and selected Process input, waits three seconds, submits simulated form values through the real Update, and reports the final Process state. It deliberately introduces no UI, task inbox, or identity system.
 
 Use [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for the live implemented/absent boundary and [PLAN.md](docs/PLAN.md) for the active checkpoint and work order.
 
@@ -121,6 +121,17 @@ Useful focused gates:
 ```
 
 The complete gate matrix and evidence boundaries are in [TESTING-SPEC.md](docs/TESTING-SPEC.md).
+
+## Run the Temporal MVP
+
+Start or select an existing Temporal service separately; the BPMN runtime never binds a server port. The maintained example expects `localhost:7233`, Namespace `default`, and a fresh semantic Process-instance ID:
+
+```sh
+temporal server start-dev --headless
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/accepted.json
+```
+
+Run those commands in separate terminals. Edit the explicit `temporal` fields or `process.instanceId` in a copied config when needed. The [MVP specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md#running-the-maintained-demonstration) documents the supported BPMN/data subset, event records, exit codes, and the unsupported-model demonstration.
 
 ## Repository guide
 

@@ -12,7 +12,7 @@ For the existing exact User Task occurrence, how should an executable CIB Seven 
 
 The BPMN User Task lifecycle and exact occurrence admission remain owned by the [implemented User Task interaction specification](USER-TASK-INTERACTION-SPEC.md). BPMN 2.0.2 does not define `TaskService.complete(taskId, variables)` or a universal form-submission-to-Process-variable rule.
 
-This specification adds the selected CIB Seven `2.2.0` public-service extension [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) over the existing BPMN lifecycle. The [runnable MVP](../RUNNABLE-TEMPORAL-MVP-PROPOSAL.md) is its first concrete host consumer. The dummy actor, delay, CLI, and simulated response configuration are adapter/product facts and do not enter Lean or the semantic core.
+This specification adds the selected CIB Seven `2.2.0` public-service extension [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) over the existing BPMN lifecycle. The [runnable MVP](../RUNNABLE-TEMPORAL-MVP-SPEC.md) is its first concrete host consumer. The dummy actor, delay, CLI, and simulated response configuration are adapter/product facts and do not enter Lean or the semantic core.
 
 ## Data contract
 

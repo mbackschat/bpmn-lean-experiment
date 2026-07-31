@@ -1,16 +1,16 @@
-# Runnable Temporal BPMN MVP proposal
+# Runnable Temporal BPMN MVP specification
 
 ## Status
 
-**Owner-approved on 2026-07-31; implementation in progress; not an immutable release or production-history baseline.**
+**Implemented current pre-release product contract on 2026-07-31; not an immutable release or production-history baseline.**
 
 ## Product question
 
 What is the smallest end-to-end product that lets a user run an admitted BPMN model durably on an ordinary Temporal server while honestly documenting its bounded feature set and avoiding a premature task UI, form renderer, identity system, or global task inbox?
 
-## Selected MVP
+## Implemented MVP
 
-Ship one command-line-driven runtime that connects to a caller-supplied Temporal address, starts a Worker for the generic BPMN Process Workflow, admits exact BPMN XML before Workflow creation, starts one semantic Process instance, exposes its current canonical state by known Process-instance identity, and waits until the Process completes or fails infrastructurally.
+The repository ships one command-line-driven runtime that connects to a caller-supplied Temporal address, starts a Worker for the generic BPMN Process Workflow, admits exact BPMN XML before Workflow creation, starts one semantic Process instance, exposes its current canonical state by known Process-instance identity, and waits until the Process completes or fails infrastructurally.
 
 The first product acceptance model is the existing private executable `None Start Event → User Task → None End Event` shape plus the implemented initial-data and completion-data extensions in the [Process-start data specification](capsules/PROCESS-START-DATA-SPEC.md) and [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md). The runtime must use the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update command boundary, and Temporal replay-safe code as the maintained evidence path. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
 
@@ -64,7 +64,7 @@ type DummyUserTaskResponse = Readonly<{
 
 `elementId` selects the admitted User Task definition. `delayMs` is a positive JavaScript-safe integer and represents simulated thinking time; the documented demo uses 3000 milliseconds. `inputVariableNames` selects Process variables returned to the simulated form. `submittedValues` is the simulated user input returned by form submission. Names are nonempty and unique, and arrays use the project’s canonical Unicode-scalar ordering.
 
-When the selected User Task becomes active, the MVP must:
+When the selected User Task becomes active, the MVP:
 
 1. expose the exact open-task occurrence and the selected committed Process-variable inputs;
 2. keep the User Task semantically active throughout the configured delay;
@@ -73,7 +73,7 @@ When the selected User Task becomes active, the MVP must:
 5. let the semantic core validate the exact task occurrence and atomically apply the approved completion-data patch before outgoing closure;
 6. report the Update’s typed semantic result and resulting canonical state.
 
-The dummy actor may drive only one active User Task at a time in the MVP. A second simultaneous task, an unconfigured task, a mismatched element, a malformed patch, or a task that is no longer active must not be guessed or auto-completed.
+The dummy actor drives only one active User Task at a time in the MVP. It refuses a second simultaneous task, an unconfigured or mismatched task, malformed configuration, and a task that changes during the delay rather than guessing or auto-completing.
 
 The response values are deterministic configuration. The MVP introduces no random person behavior, wall-clock-derived data, hidden default fields, or generated business values.
 
@@ -83,9 +83,35 @@ The dummy actor does not mutate semantic state directly. Initial form input and 
 
 The host delay is not a BPMN Timer Event, does not produce a Temporal timer in the Process Workflow, and is absent from canonical BPMN state. It is explicit foreground-actor behavior that produces one ordinary external completion command. If the actor process exits during the delay, the Process and User Task remain durably waiting on Temporal; restarting or replacing the actor may submit the same content-bound command safely.
 
-## Acceptance criteria
+## Running the maintained demonstration
 
-The MVP is usable when one fresh checkout can follow documented commands to:
+Install the repository dependencies, then make an ordinary Temporal service available. The BPMN command never starts a server or binds a server port. For a local demonstration, start Temporal separately in one terminal; the default accepted config addresses `localhost:7233`:
+
+```sh
+temporal server start-dev --headless
+```
+
+If the service uses another address, Namespace, or Task Queue, copy and edit the explicit `temporal` object in [`examples/temporal-mvp/accepted.json`](../examples/temporal-mvp/accepted.json). `process.instanceId` is semantic identity and must be new for each execution retained by that Temporal Namespace because Workflow ID reuse is deliberately rejected.
+
+Run the accepted model in another terminal:
+
+```sh
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/accepted.json
+```
+
+The command compiles the BPMN file before connecting, emits typed JSON records for source admission, Process identity, the stable task wait and Process variables, selected form input, the configured 3000-millisecond delay, the semantic completion result, and the completed receipt. Temporal SDK Worker logs may appear between these product records. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means actor or semantic completion refusal, and `64` means malformed command configuration.
+
+The unsupported example needs no Temporal service and proves pre-connect rejection:
+
+```sh
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/unsupported.json
+```
+
+It emits `sourceAdmissionRejected` with the source diagnostics and exits `2`; the command never opens a Temporal connection for that model.
+
+## Acceptance evidence
+
+The maintained command and gates establish that one fresh checkout can:
 
 1. start or connect to a local Temporal service without the BPMN runtime binding any server port;
 2. run the foreground BPMN Worker against that service;
@@ -110,8 +136,8 @@ The acceptance documentation must list the exact supported BPMN and variable sub
 
 ## Ordering consequence
 
-This runnable vertical product increment precedes the next semantic-breadth capsule. Once it is usable, uncovered BPMN mechanisms are scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). The selected embedded Sub-Process Error-propagation proposal remains bounded but deferred until that baseline-driven schedule selects it.
+This runnable vertical product increment is complete. Uncovered BPMN mechanisms are now scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). The selected embedded Sub-Process Error-propagation proposal remains bounded and is reconsidered against that baseline-driven schedule.
 
 ## Reopen conditions
 
-Reopen this proposal before adding a UI or inbox, identity or authorization, multiple simultaneous dummy tasks, another variable type, BPMN or CIB form metadata, task assignment extensions, an embedded Temporal server, production history compatibility, or any completion path that bypasses the semantic command boundary.
+Reopen this specification before adding a UI or inbox, identity or authorization, multiple simultaneous dummy tasks, another variable type, BPMN or CIB form metadata, task assignment extensions, an embedded Temporal server, production history compatibility, or any completion path that bypasses the semantic command boundary.

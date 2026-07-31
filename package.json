@@ -20,6 +20,7 @@
     "check:cmof-semantic-process": "node scripts/check-bpmn-semantic-process-metamodel.ts",
     "check:doc-fragments": "node scripts/markdown-code-fragments.ts",
     "check:source-hygiene": "node --test scripts/source-hygiene.test.ts",
+    "mvp:run": "pnpm build:bpmn-source && pnpm build:temporal-adapter && node packages/temporal-adapter/cli/run-mvp.ts",
     "sync:doc-fragments": "node scripts/markdown-code-fragments.ts --write",
     "replace:cib-evidence": "node scripts/replace-cibseven-evidence.ts --replace",
     "test:contracts": "node --test --test-concurrency=1 scripts/contract-artifacts.test.ts scripts/contract-artifact-projections.test.ts scripts/contract-definition-artifacts.test.ts scripts/cib-observation-fidelity.test.ts",

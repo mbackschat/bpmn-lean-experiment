@@ -5,6 +5,7 @@
  * completed receipt, then unknown Process.
  */
 import type {
+  CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
@@ -28,6 +29,7 @@ import type {
 
 import {
   TemporalHostCapabilityResultKind,
+  bpmnTraceQueryName,
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
   bpmnMessageDeliveryResultQueryName,
@@ -63,6 +65,20 @@ import { withDeadline } from "./async-boundary.js";
 
 const operationDeadlineMs = 5_000;
 const messageResolutionPollMs = 20;
+
+/** Reads the committed canonical trace of one known semantic Process instance. */
+export async function readBpmnProcessTrace(
+  client: WorkflowClient,
+  processInstanceId: string,
+): Promise<ReadonlyArray<CanonicalObservation>> {
+  return withDeadline(
+    client.getHandle<BpmnProcessWorkflow>(
+      processWorkflowId(processInstanceId),
+    ).query<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName),
+    operationDeadlineMs,
+    "BPMN Process trace Query",
+  );
+}
 
 export async function listOpenUserTasks(
   client: WorkflowClient,

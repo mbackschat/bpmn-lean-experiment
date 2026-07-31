@@ -23,6 +23,7 @@ import {
   ProcessCommandResultKind,
   projectUserTaskDetail,
   runDummyUserTaskActor,
+  validateDummyUserTaskResponse,
 } from "@bpmn-lean/temporal-adapter";
 import type {
   DummyUserTaskActorEvent,
@@ -251,4 +252,13 @@ test("rejects malformed response configuration before reading Workflow state", a
     /delayMs must be a positive safe integer/,
   );
   assert.equal(reads, 0);
+});
+
+test("rejects unknown dummy-form fields at the untrusted config boundary", () => {
+  const widened: unknown = { ...response, unexpected: true };
+
+  assert.throws(
+    () => validateDummyUserTaskResponse(widened),
+    /exactly elementId, delayMs, inputVariableNames, and submittedValues/,
+  );
 });

@@ -4,6 +4,24 @@
 
 `ExternalTemporalRuntime.connect` is the first product-facing Worker boundary. It connects one Worker and Workflow client to a caller-managed Temporal address, Namespace, and Task Queue; it never starts an embedded server or binds a server port. `startBpmnProcess` receives that same explicit Task Queue, so the client and Worker cannot drift through hidden defaults. The current external runtime registers no Activities and therefore advertises only admitted effect-free Process profiles until the runnable MVP supplies an explicit product effect registry.
 
+## Runnable MVP command
+
+The repository command builds the source/compiler and adapter packages, validates one exact JSON config, compiles the named BPMN file before any network connection, and then runs the production Worker/Query/Update path against an already running Temporal service:
+
+```sh
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/accepted.json
+```
+
+The accepted config exposes initial `requestTitle` data at the active `UserTask_Approve`, keeps that exact occurrence active across a 3000-millisecond foreground delay, submits deterministic `decision` and explicit-null `reviewNote` form values, and reports the completed receipt. Copy the config before changing its Temporal address or fresh semantic `process.instanceId`; paths inside it resolve relative to the config file.
+
+The rejection demonstration runs source admission but never connects to Temporal:
+
+```sh
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/unsupported.json
+```
+
+It exits `2` after emitting `sourceAdmissionRejected`. The complete operating contract, exit classifications, supported subset, and exclusions are in the [runnable MVP specification](../../docs/RUNNABLE-TEMPORAL-MVP-SPEC.md).
+
 Deployment-time code parses BPMN XML outside Workflow execution, checks semantic execution admission and the separate Temporal host-capability predicate, and passes an accepted Semantic Process program plus one explicit start stimulus with canonical string/null initial Process variables to one generic Workflow. Production start returns typed `started | rejected`; rejected input never calls Temporal. The Workflow lifetime derives from semantic terminal state and accepted-handler draining, never from future scenario stimuli. The `bpmn-open-user-tasks` Query invokes the core's current-state projection rather than scanning diagnostic trace history. The `bpmn-complete-user-task` Update delegates structural validation to the core, queues one completion, and returns the core-owned command outcome. Direct payload-free Message ingress uses the `bpmn-deliver-message` Signal plus a read-only result Query over a durable Workflow-local delivery ledger; malformed caller input and conflicting command identity remain adapter failures, while a wrong or stale well-formed delivery reaches the core and returns its semantic rejection. Handlers never advance semantic state directly; one Workflow loop alone calls the core.
 
 When committed core state exposes one admitted timer occurrence, the Workflow schedules `sleep(deadlineMs - logicalTimeMs)`, then derives the exact content-bound `fireTimer` stimulus from that committed occurrence and deadline. The runner never transports the scenario's timer stimulus to the Workflow. Timer sequence, physical lateness, and Event IDs remain adapter facts; the core alone owns occurrence identity, eligibility, logical-time advancement, and canonical observations. The exact contract is in the [Intermediate Catch Timer spec](../../docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md).

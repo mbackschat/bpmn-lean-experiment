@@ -1,0 +1,28 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/parallel-fork-join/process.bpmn",
+    "sourceId": "parallel-two-user-tasks-process",
+    "semanticProfile": "cibseven-2.2.0-user-task-process-data-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpUnsupported_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "dummyUserTask": {
+    "elementId": "UserTask_A",
+    "delayMs": 3000,
+    "inputVariableNames": [],
+    "submittedValues": []
+  }
+}
