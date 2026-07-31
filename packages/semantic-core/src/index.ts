@@ -4,6 +4,8 @@ export * from "./effect-transport-material.js";
 export * from "./semantic-process-admission.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
+export * from "./semantic-process-graph-admission.js";
+export * from "./semantic-process-profile.js";
 export * from "./semantic-process-runtime.js";
 export * from "./simple-boolean-expression.js";
 export * from "./scenario.js";

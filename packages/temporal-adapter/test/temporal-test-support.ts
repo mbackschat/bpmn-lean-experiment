@@ -61,6 +61,14 @@ export const timerBpmnUrl = new URL(
   "../../../scenarios/intermediate-catch-timer/process.bpmn",
   import.meta.url,
 );
+export const timerUserTaskCompositionScenarioUrl = new URL(
+  "../../../scenarios/timer-user-task-composition/scenario.json",
+  import.meta.url,
+);
+export const timerUserTaskCompositionBpmnUrl = new URL(
+  "../../../scenarios/timer-user-task-composition/process.bpmn",
+  import.meta.url,
+);
 export const parallelSourceSha256 =
   "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6";
 export const temporalCacheDirectory = fileURLToPath(

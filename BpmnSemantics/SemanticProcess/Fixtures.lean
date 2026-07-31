@@ -137,6 +137,99 @@ def duplicateLeftNoRightState : RuntimeState :=
   { parallelAfterFork with
     tokens := [⟨"place:Flow_AToJoin"⟩, ⟨"place:Flow_AToJoin"⟩] }
 
+def timerUserTaskCompositionCheckedProcess : CheckedProcess :=
+  { identity :=
+      { semanticProfile :=
+          ⟨"bpmn-2.0.2-timer-user-task-composition-draft"⟩
+        sourceId := ⟨"timer-user-task-composition-process"⟩
+        sourceSha256 :=
+          "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2" }
+    processId := ⟨"Process_TimerUserTaskComposition"⟩
+    nodes :=
+      [ .noneEndEvent ⟨"EndEvent_1"⟩
+      , .noneStartEvent ⟨"StartEvent_1"⟩
+      , .intermediateCatchTimerEvent ⟨"TimerCatch_PT1S"⟩ "PT1S"
+      , .userTask ⟨"UserTask_Approve"⟩ (some "Approve") ]
+    sequenceFlows :=
+      [ { id := ⟨"Flow_StartToTimer"⟩
+          sourceId := ⟨"StartEvent_1"⟩
+          targetId := ⟨"TimerCatch_PT1S"⟩ }
+      , { id := ⟨"Flow_TaskToEnd"⟩
+          sourceId := ⟨"UserTask_Approve"⟩
+          targetId := ⟨"EndEvent_1"⟩ }
+      , { id := ⟨"Flow_TimerToTask"⟩
+          sourceId := ⟨"TimerCatch_PT1S"⟩
+          targetId := ⟨"UserTask_Approve"⟩ } ] }
+
+def timerUserTaskCompositionProgram : Program :=
+  lowerCheckedProcess timerUserTaskCompositionCheckedProcess
+
+def reverseTimerUserTaskCompositionCheckedProcess : CheckedProcess :=
+  { timerUserTaskCompositionCheckedProcess with
+    identity :=
+      { timerUserTaskCompositionCheckedProcess.identity with
+        sourceId := ⟨"reverse-timer-user-task-composition"⟩ }
+    sequenceFlows :=
+      [ { id := ⟨"Flow_StartToTask"⟩
+          sourceId := ⟨"StartEvent_1"⟩
+          targetId := ⟨"UserTask_Approve"⟩ }
+      , { id := ⟨"Flow_TaskToTimer"⟩
+          sourceId := ⟨"UserTask_Approve"⟩
+          targetId := ⟨"TimerCatch_PT1S"⟩ }
+      , { id := ⟨"Flow_TimerToEnd"⟩
+          sourceId := ⟨"TimerCatch_PT1S"⟩
+          targetId := ⟨"EndEvent_1"⟩ } ] }
+
+def reverseTimerUserTaskCompositionProgram : Program :=
+  lowerCheckedProcess reverseTimerUserTaskCompositionCheckedProcess
+
+def timerUserTaskCompositionStart : Stimulus :=
+  .startProcess
+    ⟨"start-timer-user-task-composition"⟩
+    ⟨"Process_TimerUserTaskComposition"⟩
+    ⟨"CompositionInstance_1"⟩
+
+def timerUserTaskCompositionFire : Stimulus :=
+  .fireTimer
+    ⟨"fire-timer-sha256:c6c6b5904c8ae7a91ee52294ba85c07d8e76d31c531a67f9bf3b3172e34fb1cd"⟩
+    { processInstanceId := ⟨"CompositionInstance_1"⟩
+      elementId := ⟨"TimerCatch_PT1S"⟩
+      activation := 1 }
+    1000
+
+def timerUserTaskCompositionComplete : Stimulus :=
+  .completeUserTaskInstance
+    ⟨"complete-composed-user-task"⟩
+    { processInstanceId := ⟨"CompositionInstance_1"⟩
+      elementId := ⟨"UserTask_Approve"⟩
+      activation := 1 }
+
+def timerUserTaskCompositionTimerWait : StimulusResult :=
+  applyStimulus scenarioClosureLimit timerUserTaskCompositionProgram
+    initialState timerUserTaskCompositionStart
+
+def timerUserTaskCompositionTaskWait : StimulusResult :=
+  applyStimulus scenarioClosureLimit timerUserTaskCompositionProgram
+    timerUserTaskCompositionTimerWait.state timerUserTaskCompositionFire
+
+def timerUserTaskCompositionCompleted : StimulusResult :=
+  applyStimulus scenarioClosureLimit timerUserTaskCompositionProgram
+    timerUserTaskCompositionTaskWait.state timerUserTaskCompositionComplete
+
+def reverseTimerUserTaskCompositionTaskWait : StimulusResult :=
+  applyStimulus scenarioClosureLimit reverseTimerUserTaskCompositionProgram
+    initialState timerUserTaskCompositionStart
+
+def reverseTimerUserTaskCompositionTimerWait : StimulusResult :=
+  applyStimulus scenarioClosureLimit reverseTimerUserTaskCompositionProgram
+    reverseTimerUserTaskCompositionTaskWait.state
+    timerUserTaskCompositionComplete
+
+def reverseTimerUserTaskCompositionCompleted : StimulusResult :=
+  applyStimulus scenarioClosureLimit reverseTimerUserTaskCompositionProgram
+    reverseTimerUserTaskCompositionTimerWait.state
+    timerUserTaskCompositionFire
+
 def excessJoinState : RuntimeState :=
   { parallelAfterFork with
     tokens :=

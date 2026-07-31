@@ -407,10 +407,10 @@ The relation may permit more than one internal operation. Any semantically mater
 - each control place has only the producer and consumer shapes permitted by the current lowering;
 - every operation and control place is reachable from initiation and can reach termination under the structural graph;
 - the current bounded graph is acyclic;
-- every operation kind is permitted by the named semantic profile;
+- the exact multiset of operation kinds is permitted by the named semantic profile;
 - the Simple Boolean Exclusive Gateway profile has exactly one initiation, one choice, three User Task waits, three terminations, seven control places, and the exact producer/consumer chain that makes an independent simultaneous internal operation unreachable.
 
-Lean's standalone `programWellFormed` independently checks exact one-producer/one-consumer control-place shape, reachability of every operation from the single initiation operation, co-reachability of every operation to a termination operation, and absence of a cycle within the finite operation-vertex fuel. Exact lowering equality remains an additional artifact requirement. Profile-selected operation-kind, cardinality, and stable-closure validation remain part of the compositional-admission boundary and are not implied by these graph checks.
+Lean's standalone `programWellFormed` independently checks exact one-producer/one-consumer control-place shape, reachability of every operation from the single initiation operation, co-reachability of every operation to a termination operation, and absence of a cycle within the finite operation-vertex fuel. Exact lowering equality remains an additional artifact requirement. Production admission then applies the separate exact profile mechanism/cardinality capability. The checked-source validator performs the corresponding topology-independent reachability, co-reachability, and acyclicity checks before lowering. The implemented split and first composed profile are owned by the [profile-parameterized admission specification](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md).
 
 Malformed structure, unsupported source, lowering failure, invalid program, semantic rejection, semantic failure, and harness failure are distinct result classes. `UNKNOWN` or an equivalent semantic value must never stand in for invalid program structure.
 
@@ -474,7 +474,7 @@ BPMN’s large event surface is not a reason to add one IL operation per BPMN el
 
 The IL may grow in bounded layers such as control, interaction, subscription, scope, propagation, and effects. A source element may lower to several typed operations when that is the smallest semantics-preserving account.
 
-The project must not create a universal `event` operation with a bag of flags, duplicate the BPMN metamodel as opcodes, or erase distinctions merely because two constructs look similar in one witness. A new operation or field requires an approved capsule, a named consumer or refinement risk, a separating witness, source-origin rules, well-formedness rules, observation consequences, and targeted Lean preservation obligations. A capsule that changes admission or replaces lowering, runtime state, or observation must also executable-check that every newly reachable internal closure remains within the configured production closure limit. Every newly reachable multiple-enabled state must be an approved independent/order-invariant set, carry an explicit semantic choice, or be rejected consistently by Lean and TypeScript.
+The project must not create a universal `event` operation with a bag of flags, duplicate the BPMN metamodel as opcodes, or erase distinctions merely because two constructs look similar in one witness. A new operation or field requires an approved capsule, a named consumer or refinement risk, a separating witness, source-origin rules, well-formedness rules, observation consequences, and targeted Lean preservation obligations. A capsule that changes admission or replaces lowering, runtime state, or observation must also executable-check that every newly reachable internal closure remains within the configured production closure limit. Every newly reachable multiple-enabled state must be an approved independent/order-invariant set, carry an explicit semantic choice, or be rejected consistently by Lean and TypeScript. Every newly reachable stable running state must expose a Timer, task, effect, subscription, or other explicit semantic resumption surface; a stranded token state blocks admission rather than silently remaining `running`.
 
 ## Supported slice
 
@@ -483,6 +483,7 @@ The maintained implementation supports exactly:
 - one none Start Event;
 - one or more User Tasks permitted by the two approved capsules;
 - one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
+- one finite acyclic linear composition containing exactly one exact `PT1S` Intermediate Catch Timer Event and one User Task under the profile-parameterized admission specification;
 - one exact Service Task binding under its single-token success-only effect capsule;
 - one exact A12-shaped CreateDocument Service Task with one literal string input and one local-reference output mapping;
 - one exact A12-shaped Service Task with the same bounded mapping mechanism and one attached exact-code interrupting Error route;
@@ -494,7 +495,7 @@ The maintained implementation supports exactly:
 - semantic task, timer, and effect occurrence identity, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
 - the canonical observation boundary including `openTimers`, effect arguments in `openEffects`, and Process `variables`.
 
-The sequential User Task, balanced parallel, Intermediate Catch Timer, payload-free Service Task, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, payload-free Service Task, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
@@ -517,14 +518,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, timer, payload-free effect, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway exact-source fixtures lower deterministically;
+- sequential, parallel, timer, Timer/User Task composition, payload-free effect, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, timer, payload-free effect, CreateDocument data/mapping, boundary-error, and Simple Boolean conditional-choice separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, payload-free effect, CreateDocument data/mapping, boundary-error, and Simple Boolean conditional-choice separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

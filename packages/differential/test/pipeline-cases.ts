@@ -348,6 +348,30 @@ function simpleBooleanGatewayCase(): PipelineCase {
   });
 }
 
+function timerUserTaskCompositionCase(): PipelineCase {
+  return Object.freeze({
+    id: "timer-user-task-composition",
+    scenarioRelativePath:
+      "scenarios/timer-user-task-composition/scenario.json",
+    bpmnRelativePath:
+      "scenarios/timer-user-task-composition/process.bpmn",
+    workflowIdPrefix: "timer-user-task-composition",
+    cib: null,
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    replaySelection: PipelineReplaySelection.Primary,
+    injectMutation: mutateOpenTimerDeadline,
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[2].openTimers[0].deadlineMs",
+      1000,
+      1001,
+    ),
+  });
+}
+
 function effectCase(): PipelineCase {
   return Object.freeze({
     id: "service-task-effect-success",
@@ -485,6 +509,7 @@ export const pipelineCases = Object.freeze([
     },
   ),
   timerCase(),
+  timerUserTaskCompositionCase(),
   simpleBooleanGatewayCase(),
   effectCase(),
   createDocumentCase(),

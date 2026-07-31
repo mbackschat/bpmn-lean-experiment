@@ -2,7 +2,7 @@
 
 `@bpmn-lean/semantic-core` is the production-oriented, dependency-free TypeScript implementation of the approved semantic capsule. It owns BPMN-visible command/state transitions and canonical observations, but no file I/O, XML parser, CIB Seven code, Temporal SDK code, or external effects.
 
-The execution surface supports the content-addressed `None Start Event → User Task → None End Event` model, the exact balanced two-branch parallel fork/join model, and the exact `None Start Event → PT1S Intermediate Catch Timer Event → None End Event` model. Semantic Process programs come from the separate [source-ingestion package](../bpmn-source/README.md), and results are checked independently against retained CIB evidence and the generic [Lean Semantic Process interpreter](../../BpmnSemantics/SemanticProcess.lean). The parallel evaluator executes `duplicate` and per-incoming-flow `synchronize`, while the timer evaluator executes `awaitTimer`, owns occurrence identity and logical deadlines, admits only exact-deadline firing, and projects `openTimers`. Canonical CIB and focused Temporal evidence are checked outside this package.
+The execution boundary validates Semantic Process graph structure independently from exact profile-selected operation cardinality. It supports the reviewed sequential User Task, balanced two-branch parallel fork/join, exact `PT1S` Timer, finite acyclic Timer/User Task composition, payload-free effect, data/error, and Simple Boolean conditional-choice surfaces without selecting among complete topology predicates. Semantic Process programs come from the separate [source-ingestion package](../bpmn-source/README.md), and results are checked independently against retained CIB evidence where declared and the generic [Lean Semantic Process interpreter](../../BpmnSemantics/SemanticProcess.lean). The parallel evaluator executes `duplicate` and per-incoming-flow `synchronize`, while the timer evaluator executes `awaitTimer`, owns occurrence identity and logical deadlines, admits only exact-deadline firing, and projects `openTimers`. Canonical CIB and focused Temporal evidence are checked outside this package.
 
 ## Public boundary
 
@@ -34,7 +34,9 @@ The code is split by responsibility:
 | File | Responsibility |
 |---|---|
 | [semantic-process-contract.ts](src/semantic-process-contract.ts) | Checked BPMN graph and Semantic Process definition data |
-| [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario/program validation, identity admission, and current execution-surface gate |
+| [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario/program validation and identity admission |
+| [semantic-process-graph-admission.ts](src/semantic-process-graph-admission.ts) | Topology-independent producer/consumer, reachability, co-reachability, and acyclicity validation |
+| [semantic-process-profile.ts](src/semantic-process-profile.ts) | Exact profile operation-kind cardinality capabilities |
 | [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, external command admission, enum-based operation dispatch for all current operations, operation-ID-stable internal closure, and `applyStimulus` |
 | [scenario.ts](src/scenario.ts) | Stable observation projection and incremental/full scenario evaluation |
 | [stimulus.ts](src/stimulus.ts) | Structural stimulus validation, command identity, and exact same-stimulus comparison |

@@ -70,6 +70,10 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/exclusive-gateway-simple-boolean/scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/timer-user-task-composition/scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

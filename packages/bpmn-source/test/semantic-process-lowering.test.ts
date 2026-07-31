@@ -202,6 +202,116 @@ test("retains PT1S in the checked graph and lowers one timer wait", async () => 
   );
 });
 
+test("admits timer and User Task composition only through its selected profile", async () => {
+  const result = await compileFixture(
+    "../../../scenarios/timer-user-task-composition/process.bpmn",
+    "timer-user-task-composition-process",
+    "bpmn-2.0.2-timer-user-task-composition-draft",
+  );
+
+  assert.deepEqual(
+    result.semanticProcess.operations.map(({ kind }) => kind),
+    [
+      SemanticOperationKind.Terminate,
+      SemanticOperationKind.Initiate,
+      SemanticOperationKind.AwaitTimer,
+      SemanticOperationKind.AwaitUserTask,
+    ],
+  );
+
+  for (const semanticProfile of [
+    "cibseven-2.2.0-intermediate-catch-timer-draft",
+    "cibseven-2.2.0-user-task-draft",
+    "unknown-profile",
+  ]) {
+    const rejected = await compileBpmnToSemanticProcess({
+      bytes: await readFile(
+        new URL(
+          "../../../scenarios/timer-user-task-composition/process.bpmn",
+          import.meta.url,
+        ),
+      ),
+      sourceId: "timer-user-task-composition-process",
+      expectedSha256: undefined,
+      semanticProfile,
+      limits,
+    });
+    assert.equal(rejected.status, BpmnCompilationStatus.Rejected);
+  }
+});
+
+test("derives the reverse linear order from graph facts instead of a named model", async () => {
+  const reverseSource = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_ReverseComposition" targetNamespace="https://bpmn-lean.local/test">
+  <bpmn:process id="Process_TimerUserTaskComposition" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_Approve" name="Approve">
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToTimer</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="TimerCatch_PT1S">
+      <bpmn:incoming>Flow_TaskToTimer</bpmn:incoming>
+      <bpmn:outgoing>Flow_TimerToEnd</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_TimerToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="StartEvent_1" targetRef="UserTask_Approve"/>
+    <bpmn:sequenceFlow id="Flow_TaskToTimer" sourceRef="UserTask_Approve" targetRef="TimerCatch_PT1S"/>
+    <bpmn:sequenceFlow id="Flow_TimerToEnd" sourceRef="TimerCatch_PT1S" targetRef="EndEvent_1"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+  const result = await compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(reverseSource),
+    sourceId: "reverse-timer-user-task-composition",
+    expectedSha256: undefined,
+    semanticProfile: "bpmn-2.0.2-timer-user-task-composition-draft",
+    limits,
+  });
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  if (result.status !== BpmnCompilationStatus.Accepted) {
+    throw new Error("reverse composition was not admitted");
+  }
+  const start = operationOfKind(
+    result.semanticProcess.operations,
+    SemanticOperationKind.Initiate,
+  );
+  const task = operationOfKind(
+    result.semanticProcess.operations,
+    SemanticOperationKind.AwaitUserTask,
+  );
+  const timer = operationOfKind(
+    result.semanticProcess.operations,
+    SemanticOperationKind.AwaitTimer,
+  );
+  assert.equal(start.output, task.input);
+  assert.equal(task.output, timer.input);
+});
+
+test("rejects an existing exact source under a capability-incompatible profile", async () => {
+  const result = await compileBpmnToSemanticProcess({
+    bytes: await readFile(
+      new URL(
+        "../../../scenarios/parallel-fork-join/process.bpmn",
+        import.meta.url,
+      ),
+    ),
+    sourceId: "parallel-two-user-tasks-process",
+    expectedSha256: undefined,
+    semanticProfile:
+      "cibseven-2.2.0-intermediate-catch-timer-draft",
+    limits,
+  });
+
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+});
+
 test("keeps the exact Service Task binding outside the neutral checked graph", async () => {
   const result = await compileFixture(
     "../../../scenarios/service-task-effect/process.bpmn",

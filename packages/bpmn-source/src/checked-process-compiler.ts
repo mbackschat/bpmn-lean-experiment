@@ -33,16 +33,17 @@ import type {
   ElementRecord,
 } from "./moddle-graph.js";
 import {
-  hasSimpleBooleanChoiceTopology,
   projectExclusiveGateway,
   projectSimpleBooleanCondition,
 } from "./simple-boolean-exclusive-gateway-source.js";
+import {
+  isAdmittedCheckedProcess,
+} from "./checked-process-admission.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
 const effectProtocol = "urn:bpmn-lean:effect:probe-v1";
 const effectHandlerExpression = "${bpmnLeanEffectHandler}";
-const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
 type CheckedCompilationProjection =
   | Readonly<{
@@ -118,7 +119,7 @@ export function compileCheckedProcess(
   );
   if (sourceNodes.length + sourceFlows.length !== flowElements.length) {
     return unsupported(
-      "The bounded compiler supports only None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, Parallel Gateways, None End Events, and Sequence Flows.",
+      "The bounded compiler supports only None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, None End Events, and Sequence Flows.",
     );
   }
 
@@ -149,7 +150,7 @@ export function compileCheckedProcess(
     );
   }
   if (
-    !hasSupportedTopology(
+    !isAdmittedCheckedProcess(
       nodes,
       sequenceFlows,
       definitions.expressionLanguage,
@@ -158,7 +159,7 @@ export function compileCheckedProcess(
     )
   ) {
     return unsupported(
-      "The bounded compiler supports only one sequential wait, the balanced two-branch Parallel Gateway topology, or the exact Simple Boolean divergent Exclusive Gateway topology.",
+      "The checked graph is outside the selected profile's mechanism, cardinality, graph, or expression capabilities.",
     );
   }
 
@@ -270,98 +271,6 @@ function classifyGateway(
     return direction;
   }
   return undefined;
-}
-
-function hasSupportedTopology(
-  nodes: ReadonlyArray<CheckedNode>,
-  flows: ReadonlyArray<CheckedSequenceFlow>,
-  expressionLanguage: unknown,
-  hasExplicitExpressionLanguage: boolean,
-  semanticProfile: string,
-): boolean {
-  const starts = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.NoneStartEvent,
-  );
-  const tasks = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.UserTask,
-  );
-  const timers = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.IntermediateCatchTimerEvent,
-  );
-  const effects = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.ServiceTask,
-  );
-  const gateways = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.ParallelGateway,
-  );
-  const choices = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.ExclusiveGateway,
-  );
-  const ends = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.NoneEndEvent,
-  );
-  if (starts.length !== 1 || ends.length !== 1) {
-    return hasSimpleBooleanChoiceTopology(
-      nodes,
-      flows,
-      expressionLanguage,
-      hasExplicitExpressionLanguage,
-      semanticProfile,
-    );
-  }
-  const start = starts[0];
-  const end = ends[0];
-  if (start === undefined || end === undefined) {
-    return false;
-  }
-  if (
-    tasks.length + timers.length + effects.length === 1 &&
-    gateways.length === 0 &&
-    choices.length === 0 &&
-    expressionLanguage === bpmnDefaultExpressionLanguage &&
-    !hasExplicitExpressionLanguage &&
-    flows.length === 2
-  ) {
-    const waitNode = tasks[0] ?? timers[0] ?? effects[0];
-    return (
-      waitNode !== undefined &&
-      hasFlow(flows, start.id, waitNode.id) &&
-      hasFlow(flows, waitNode.id, end.id)
-    );
-  }
-  if (
-    timers.length !== 0 ||
-    effects.length !== 0 ||
-    tasks.length !== 2 ||
-    gateways.length !== 2 ||
-    choices.length !== 0 ||
-    expressionLanguage !== bpmnDefaultExpressionLanguage ||
-    hasExplicitExpressionLanguage ||
-    flows.length !== 6
-  ) {
-    return false;
-  }
-  const fork = gateways.find(
-    (gateway) =>
-      gateway.kind === CheckedNodeKind.ParallelGateway &&
-      gateway.direction === GatewayDirection.Diverging,
-  );
-  const join = gateways.find(
-    (gateway) =>
-      gateway.kind === CheckedNodeKind.ParallelGateway &&
-      gateway.direction === GatewayDirection.Converging,
-  );
-  return (
-    fork !== undefined &&
-    join !== undefined &&
-    hasFlow(flows, start.id, fork.id) &&
-    tasks.every(
-      (task) =>
-        hasFlow(flows, fork.id, task.id) &&
-        hasFlow(flows, task.id, join.id),
-    ) &&
-    hasFlow(flows, join.id, end.id)
-  );
 }
 
 function projectSequenceFlows(
@@ -501,16 +410,6 @@ function readOptionalName(
     return null;
   }
   return typeof element.name === "string" ? element.name : undefined;
-}
-
-function hasFlow(
-  flows: ReadonlyArray<CheckedSequenceFlow>,
-  sourceId: string,
-  targetId: string,
-): boolean {
-  return flows.some(
-    (flow) => flow.sourceId === sourceId && flow.targetId === targetId,
-  );
 }
 
 function compareIds(

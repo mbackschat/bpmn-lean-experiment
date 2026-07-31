@@ -1,4 +1,5 @@
-import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # BpmnSemantics.SemanticProcess — bounded lowering and operational semantics
@@ -171,11 +172,6 @@ private def incomingCount (flows : List CheckedSequenceFlow) (id : NodeId) : Nat
 private def outgoingCount (flows : List CheckedSequenceFlow) (id : NodeId) : Nat :=
   (flows.filter fun flow => decide (flow.sourceId = id)).length
 
-private def hasFlow (flows : List CheckedSequenceFlow) (source target : NodeId) :
-    Bool :=
-  flows.any fun flow =>
-    decide (flow.sourceId = source && flow.targetId = target)
-
 private def nodeExists (nodes : List CheckedNode) (id : NodeId) : Bool :=
   nodes.any fun node => decide (node.id = id)
 
@@ -261,109 +257,6 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 
-private def startIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .noneStartEvent id => some id
-    | _ => none
-
-private def taskIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .userTask id _ => some id
-    | _ => none
-
-private def timerIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .intermediateCatchTimerEvent id _ => some id
-    | _ => none
-
-private def effectIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .serviceTask id _ _ _ _ => some id
-    | _ => none
-
-private def divergingGatewayIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .parallelGateway id .diverging => some id
-    | _ => none
-
-private def convergingGatewayIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .parallelGateway id .converging => some id
-    | _ => none
-
-private def exclusiveGatewayIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .exclusiveGateway id _ _ => some id
-    | _ => none
-
-private def endIds (nodes : List CheckedNode) : List NodeId :=
-  nodes.filterMap fun
-    | .noneEndEvent id => some id
-    | _ => none
-
-private def boundedTopology (source : CheckedProcess) : Bool :=
-  match
-      startIds source.nodes,
-      taskIds source.nodes,
-      timerIds source.nodes,
-      effectIds source.nodes,
-      divergingGatewayIds source.nodes,
-      convergingGatewayIds source.nodes,
-      exclusiveGatewayIds source.nodes,
-      endIds source.nodes with
-  | [start], [task], [], [], [], [], [], [endNode] =>
-      source.nodes.length = 3 &&
-        source.sequenceFlows.length = 2 &&
-        hasFlow source.sequenceFlows start task &&
-        hasFlow source.sequenceFlows task endNode
-  | [start], [], [timer], [], [], [], [], [endNode] =>
-      source.nodes.length = 3 &&
-        source.sequenceFlows.length = 2 &&
-        hasFlow source.sequenceFlows start timer &&
-        hasFlow source.sequenceFlows timer endNode
-  | [start], [], [], [effect], [], [], [], [endNode] =>
-      source.nodes.length = 3 &&
-        source.sequenceFlows.length = 2 &&
-        hasFlow source.sequenceFlows start effect &&
-        hasFlow source.sequenceFlows effect endNode
-  | [start], [task], [], [effect], [], [], [], [endA, endB] =>
-      let route := source.nodes.findSome? fun
-        | .serviceTask id _ _ _ (some route) =>
-            if id = effect then some route else none
-        | _ => none
-      source.nodes.length = 5 &&
-        source.sequenceFlows.length = 4 &&
-        hasFlow source.sequenceFlows start effect &&
-        (hasFlow source.sequenceFlows effect endA ||
-          hasFlow source.sequenceFlows effect endB) &&
-        (match route with
-          | some route =>
-              hasFlow source.sequenceFlows route.boundaryEventId task &&
-                (hasFlow source.sequenceFlows task endA ||
-                  hasFlow source.sequenceFlows task endB)
-          | none => false)
-  | [start], [taskA, taskB], [], [], [fork], [join], [], [endNode] =>
-      source.nodes.length = 6 &&
-        source.sequenceFlows.length = 6 &&
-        hasFlow source.sequenceFlows start fork &&
-        hasFlow source.sequenceFlows fork taskA &&
-        hasFlow source.sequenceFlows fork taskB &&
-        hasFlow source.sequenceFlows taskA join &&
-        hasFlow source.sequenceFlows taskB join &&
-        hasFlow source.sequenceFlows join endNode
-  | [start], [taskA, taskB, taskC], [], [], [], [], [gateway],
-      [endA, endB, endC] =>
-      source.identity.semanticProfile.value =
-          "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" &&
-        source.nodes.length = 8 &&
-        source.sequenceFlows.length = 7 &&
-        hasFlow source.sequenceFlows start gateway &&
-        [taskA, taskB, taskC].all fun task =>
-          hasFlow source.sequenceFlows gateway task &&
-            [endA, endB, endC].any fun endNode =>
-              hasFlow source.sequenceFlows task endNode
-  | _, _, _, _, _, _, _, _ => false
-
 /-- Independent static admission for the exact currently implemented checked-graph profiles. -/
 def checkedWellFormed (source : CheckedProcess) : Bool :=
   nonempty source.identity.semanticProfile.value &&
@@ -390,7 +283,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
-    boundedTopology source
+    checkedProfileCapabilitiesValid source &&
+    checkedProcessGraphWellFormed source
 
 private def placeExists (places : List ControlPlace) (id : ControlPlaceId) : Bool :=
   places.any fun place => decide (place.id = id)
@@ -519,6 +413,7 @@ def programWellFormed (program : Program) : Bool :=
 def definitionBindingValid (source : CheckedProcess) (program : Program) : Bool :=
   checkedWellFormed source &&
     programWellFormed program &&
+    programProfileCapabilitiesValid program &&
     decide (lowerCheckedProcess source = program)
 
 

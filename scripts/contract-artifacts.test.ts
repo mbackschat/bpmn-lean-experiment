@@ -38,26 +38,28 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 test("separates normative profile authority from executable CIB oracle authority", async () => {
   const artifactSets =
     await readAndVerifyNormativeArtifactSets(projectRoot);
-  assert.equal(artifactSets.length, 1);
+  assert.equal(artifactSets.length, 2);
+  for (const artifactSet of artifactSets) {
+    assert.equal(
+      artifactSet.profile.normativeAuthority.name,
+      "OMG Business Process Model and Notation",
+    );
+    assert.equal(
+      "oracle" in artifactSet.profile,
+      false,
+    );
+    assert.equal(
+      "environment" in artifactSet.profile,
+      false,
+    );
+    assert.equal("calibration" in artifactSet.scenario, false);
+  }
+
   const artifactSet = requiredAt(
     artifactSets,
     0,
     "normative artifact sets",
   );
-  assert.equal(
-    artifactSet.profile.normativeAuthority.name,
-    "OMG Business Process Model and Notation",
-  );
-  assert.equal(
-    "oracle" in artifactSet.profile,
-    false,
-  );
-  assert.equal(
-    "environment" in artifactSet.profile,
-    false,
-  );
-  assert.equal("calibration" in artifactSet.scenario, false);
-
   const mixedAuthority = {
     ...artifactSet,
     profile: {

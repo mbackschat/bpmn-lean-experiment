@@ -12,7 +12,7 @@ Run the pure comparator gate:
 ./scripts/pnpm.sh run test:differential
 ```
 
-The complete pipeline batches eleven semantic cases through one Lean result emitter, the semantic core, and two isolated Temporal executions per case. Ten declared CIB cases additionally run through release-grouped CIB Seven engines and compare content-bound retained evidence; the Simple Boolean standards case explicitly omits CIB. The pipeline compares each declared target relation, checks Query/Update and committed-state-derived timer results, requires seeded task, parallel, provenance, timer-deadline, conditional-route, effect, mapping, and boundary-error mutations to be classified, replays thirteen live histories through one Worker, records provenance and phase timings, proves cleanup, and enforces feedback budgets.
+The complete pipeline batches twelve semantic cases through one Lean result emitter, the semantic core, and two isolated Temporal executions per case. Ten declared CIB cases additionally run through release-grouped CIB Seven engines and compare content-bound retained evidence; the Simple Boolean and Timer/User Task standards cases explicitly omit CIB. The pipeline compares each declared target relation, checks Query/Update and committed-state-derived timer results, requires seeded task, parallel, provenance, timer-deadline, conditional-route, effect, mapping, and boundary-error mutations to be classified, replays fourteen live histories through one Worker, records provenance and phase timings, proves cleanup, and enforces feedback budgets.
 
 ```sh
 ./scripts/pnpm.sh run test:pipeline

@@ -1,6 +1,6 @@
 /**
- * Source projection and exact topology admission for the first Simple Boolean
- * divergent Exclusive Gateway profile.
+ * Source projection for the first Simple Boolean divergent Exclusive Gateway
+ * profile. Structural graph admission is owned separately.
  */
 import {
   CheckedNodeKind,
@@ -28,8 +28,6 @@ import {
 } from "./simple-boolean-expression.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
-const semanticProfile =
-  "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft";
 
 export function projectExclusiveGateway(
   element: ElementRecord,
@@ -112,89 +110,4 @@ export function projectSimpleBooleanCondition(
     language: SimpleBooleanExpressionLanguage,
     body: expression.body,
   };
-}
-
-export function hasSimpleBooleanChoiceTopology(
-  nodes: ReadonlyArray<CheckedNode>,
-  flows: ReadonlyArray<CheckedSequenceFlow>,
-  expressionLanguage: unknown,
-  hasExplicitExpressionLanguage: boolean,
-  selectedProfile: string,
-): boolean {
-  if (
-    expressionLanguage !== SimpleBooleanExpressionLanguage ||
-    !hasExplicitExpressionLanguage ||
-    selectedProfile !== semanticProfile ||
-    nodes.length !== 8 ||
-    flows.length !== 7
-  ) {
-    return false;
-  }
-  const start = onlyNode(nodes, CheckedNodeKind.NoneStartEvent);
-  const choice = onlyNode(nodes, CheckedNodeKind.ExclusiveGateway);
-  const tasks = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.UserTask,
-  );
-  const ends = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.NoneEndEvent,
-  );
-  if (
-    start === undefined ||
-    choice === undefined ||
-    tasks.length !== 3 ||
-    ends.length !== 3 ||
-    !hasFlow(flows, start.id, choice.id)
-  ) {
-    return false;
-  }
-  const branchFlows = [
-    ...choice.candidateFlowIds,
-    choice.defaultFlowId,
-  ].map((flowId) => flows.find(({ id }) => id === flowId));
-  if (
-    branchFlows.some(
-      (flow) =>
-        flow === undefined ||
-        flow.sourceId !== choice.id ||
-        !tasks.some(({ id }) => id === flow.targetId),
-    ) ||
-    new Set(branchFlows.map((flow) => flow?.targetId)).size !== 3
-  ) {
-    return false;
-  }
-  const taskToEnd = tasks.map((task) =>
-    flows.find(({ sourceId }) => sourceId === task.id)
-  );
-  return (
-    taskToEnd.every(
-      (flow) =>
-        flow !== undefined &&
-        flow.condition === null &&
-        ends.some(({ id }) => id === flow.targetId),
-    ) &&
-    new Set(taskToEnd.map((flow) => flow?.targetId)).size === 3
-  );
-}
-
-function onlyNode<K extends CheckedNodeKind>(
-  nodes: ReadonlyArray<CheckedNode>,
-  kind: K,
-): Extract<CheckedNode, { kind: K }> | undefined {
-  const matches = nodes.filter(
-    (node): node is Extract<CheckedNode, { kind: K }> =>
-      node.kind === kind,
-  );
-  return matches.length === 1 ? matches[0] : undefined;
-}
-
-function hasFlow(
-  flows: ReadonlyArray<CheckedSequenceFlow>,
-  sourceId: string,
-  targetId: string,
-): boolean {
-  return flows.some(
-    (flow) =>
-      flow.sourceId === sourceId &&
-      flow.targetId === targetId,
-  );
 }

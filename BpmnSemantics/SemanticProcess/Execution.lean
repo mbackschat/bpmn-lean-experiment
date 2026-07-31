@@ -204,6 +204,21 @@ private def enabledTransitions (program : Program) (state : RuntimeState) :
     | none => none
     | some successor => some (operation, successor)
 
+/-- Number of enabled internal operations, exposed for targeted admission-preservation checks. -/
+def enabledInternalOperationCount (program : Program)
+    (state : RuntimeState) : Nat :=
+  (enabledTransitions program state).length
+
+/-- A state already known to be internally stable is resumable exactly when it is complete or exposes a semantic wait. -/
+def stableStateResumable (state : RuntimeState) : Bool :=
+  match state.control with
+  | .notStarted => false
+  | .running _ =>
+      !state.waits.isEmpty ||
+        !state.timerWaits.isEmpty ||
+        !state.effectWaits.isEmpty
+  | .completed _ => true
+
 private def independentParallelTaskChoices :
     List (SemanticOperation × RuntimeState) → Bool
   | [ (.awaitUserTask _ _ inputA outputA taskA, _)

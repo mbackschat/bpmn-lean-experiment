@@ -139,7 +139,7 @@ scripts/             Maintained verification and infrastructure guards
 | Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Resume the next work | [PLAN.md](docs/PLAN.md) |
-| Review the active semantic meaning | [Capsule registry](docs/capsules/README.md), [Exclusive Gateway condition spec](docs/capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md), and [Semantic Process IL spec](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
+| Review the active semantic meaning and admission | [Capsule registry](docs/capsules/README.md), [Profile-parameterized admission spec](docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [Exclusive Gateway condition spec](docs/capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md), and [Semantic Process IL spec](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
 | Understand CIB relative to BPMN | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Navigate all maintained documentation | [Documentation registry](docs/README.md) |
 

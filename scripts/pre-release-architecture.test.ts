@@ -28,6 +28,12 @@ const prohibitedSourceFragments = [
   ["SequentialUserTask", "ExecutableIr"].join(""),
   ["BpmnExecutable", "IrKind"].join(""),
   ["bpmn-source", "-sequential-user-task"].join(""),
+  ["hasSupported", "ExecutionSurface"].join(""),
+  ["hasSequential", "ExecutionSurface"].join(""),
+  ["hasTimer", "ExecutionSurface"].join(""),
+  ["hasEffect", "ExecutionSurface"].join(""),
+  ["hasBoundaryError", "ExecutionSurface"].join(""),
+  ["hasBalancedParallel", "ExecutionSurface"].join(""),
 ];
 
 async function sourceFiles(

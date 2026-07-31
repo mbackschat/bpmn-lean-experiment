@@ -25,6 +25,29 @@ export const bpmnOpenUserTasksQueryName = "bpmn-open-user-tasks";
 export const bpmnCompleteUserTaskUpdateName = "bpmn-complete-user-task";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
+export enum TemporalHostCapabilityResultKind {
+  Admitted = "admitted",
+  Rejected = "rejected",
+}
+
+export enum TemporalHostAdmissionFailureCode {
+  ConcurrentHostDrivenWaits = "concurrentHostDrivenWaits",
+}
+
+export type TemporalHostAdmissionFailure = DeepReadonly<{
+  code: TemporalHostAdmissionFailureCode;
+  evidence: string;
+}>;
+
+export type TemporalHostCapabilityResult =
+  | DeepReadonly<{
+      kind: TemporalHostCapabilityResultKind.Admitted;
+    }>
+  | DeepReadonly<{
+      kind: TemporalHostCapabilityResultKind.Rejected;
+      failure: TemporalHostAdmissionFailure;
+    }>;
+
 export type CompletedProcessReceipt = DeepReadonly<{
   definition: SemanticProcessIdentity;
   processId: string;

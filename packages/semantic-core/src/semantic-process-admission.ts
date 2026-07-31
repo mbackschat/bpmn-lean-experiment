@@ -21,9 +21,14 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  hasSimpleBooleanChoiceExecutionSurface,
   isWellFormedChooseOperation,
 } from "./simple-boolean-choice-admission.js";
+import {
+  isWellFormedSemanticProcessGraph,
+} from "./semantic-process-graph-admission.js";
+import {
+  profileAllowsOperationKinds,
+} from "./semantic-process-profile.js";
 import {
   isWellFormedStimulus,
 } from "./stimulus.js";
@@ -52,7 +57,10 @@ export function supportsSemanticProcessScenario(
   return (
     isSupportedScenario(scenario) &&
     isWellFormedSemanticProcessProgram(program) &&
-    hasSupportedExecutionSurface(program) &&
+    profileAllowsOperationKinds(
+      program.identity.semanticProfile,
+      program.operations.map(({ kind }) => kind),
+    ) &&
     program.identity.semanticProfile === scenario.profile &&
     program.identity.sourceId === scenario.bpmn.id &&
     program.identity.sourceSha256 === scenario.bpmn.sha256
@@ -67,7 +75,10 @@ export function supportsSemanticProcessExecution(
     isWellFormedStimulus(start) &&
     start.kind === StimulusKind.StartProcess &&
     isWellFormedSemanticProcessProgram(program) &&
-    hasSupportedExecutionSurface(program) &&
+    profileAllowsOperationKinds(
+      program.identity.semanticProfile,
+      program.operations.map(({ kind }) => kind),
+    ) &&
     start.processId === program.processId
   );
 }
@@ -122,173 +133,17 @@ export function isWellFormedSemanticProcessProgram(
     placeOrigins.set(place.id, place.origin.elementId);
   }
 
-  let initiates = 0;
+  const checkedOperations: SemanticOperation[] = [];
   for (const operation of operations) {
     if (!isWellFormedOperation(operation, placeIds, placeOrigins)) {
       return false;
     }
-    if (operation.kind === SemanticOperationKind.Initiate) {
-      initiates += 1;
-    }
+    checkedOperations.push(operation);
   }
-  return initiates === 1;
-}
-
-function hasSupportedExecutionSurface(
-  program: SemanticProcessProgram,
-): boolean {
-  return (
-    hasSequentialExecutionSurface(program) ||
-    hasTimerExecutionSurface(program) ||
-    hasEffectExecutionSurface(program) ||
-    hasBoundaryErrorExecutionSurface(program) ||
-    hasBalancedParallelExecutionSurface(program) ||
-    hasSimpleBooleanChoiceExecutionSurface(program)
-  );
-}
-
-function hasBoundaryErrorExecutionSurface(
-  program: SemanticProcessProgram,
-): boolean {
-  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
-  const effect = onlyOperation(program, SemanticOperationKind.AwaitEffect);
-  const task = onlyOperation(program, SemanticOperationKind.AwaitUserTask);
-  const terminates = operationsOfKind(
-    program,
-    SemanticOperationKind.Terminate,
-  );
-  return (
-    program.controlPlaces.length === 4 &&
-    program.operations.length === 5 &&
-    initiate !== undefined &&
-    effect !== undefined &&
-    effect.bpmnErrorRoute !== null &&
-    task !== undefined &&
-    terminates.length === 2 &&
-    initiate.output === effect.input &&
-    effect.bpmnErrorRoute.output === task.input &&
-    sameStringSet(
-      [effect.output, task.output],
-      terminates.map(({ input }) => input),
-    )
-  );
-}
-
-function hasEffectExecutionSurface(
-  program: SemanticProcessProgram,
-): boolean {
-  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
-  const effect = onlyOperation(program, SemanticOperationKind.AwaitEffect);
-  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
-  return (
-    program.controlPlaces.length === 2 &&
-    program.operations.length === 3 &&
-    initiate !== undefined &&
-    effect !== undefined &&
-    terminate !== undefined &&
-    initiate.output === effect.input &&
-    effect.output === terminate.input
-  );
-}
-
-function hasTimerExecutionSurface(
-  program: SemanticProcessProgram,
-): boolean {
-  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
-  const timer = onlyOperation(program, SemanticOperationKind.AwaitTimer);
-  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
-  return (
-    program.controlPlaces.length === 2 &&
-    program.operations.length === 3 &&
-    initiate !== undefined &&
-    timer !== undefined &&
-    terminate !== undefined &&
-    initiate.output === timer.input &&
-    timer.output === terminate.input
-  );
-}
-
-function hasSequentialExecutionSurface(
-  program: SemanticProcessProgram,
-): boolean {
-  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
-  const task = onlyOperation(program, SemanticOperationKind.AwaitUserTask);
-  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
-  return (
-    program.controlPlaces.length === 2 &&
-    program.operations.length === 3 &&
-    initiate !== undefined &&
-    task !== undefined &&
-    terminate !== undefined &&
-    initiate.output === task.input &&
-    task.output === terminate.input
-  );
-}
-
-function hasBalancedParallelExecutionSurface(
-  program: SemanticProcessProgram,
-): boolean {
-  const initiate = onlyOperation(program, SemanticOperationKind.Initiate);
-  const duplicate = onlyOperation(program, SemanticOperationKind.Duplicate);
-  const synchronize = onlyOperation(
-    program,
-    SemanticOperationKind.Synchronize,
-  );
-  const terminate = onlyOperation(program, SemanticOperationKind.Terminate);
-  const tasks = operationsOfKind(
-    program,
-    SemanticOperationKind.AwaitUserTask,
-  );
-  return (
-    program.controlPlaces.length === 6 &&
-    program.operations.length === 6 &&
-    initiate !== undefined &&
-    duplicate !== undefined &&
-    synchronize !== undefined &&
-    terminate !== undefined &&
-    tasks.length === 2 &&
-    new Set(tasks.map(({ task }) => task.elementId)).size === 2 &&
-    initiate.output === duplicate.input &&
-    sameStringSet(
-      duplicate.outputs,
-      tasks.map(({ input }) => input),
-    ) &&
-    sameStringSet(
-      tasks.map(({ output }) => output),
-      synchronize.inputs,
-    ) &&
-    synchronize.output === terminate.input
-  );
-}
-
-function onlyOperation<K extends SemanticOperationKind>(
-  program: SemanticProcessProgram,
-  kind: K,
-): Extract<SemanticOperation, { kind: K }> | undefined {
-  const operations = operationsOfKind(program, kind);
-  return operations.length === 1 ? operations[0] : undefined;
-}
-
-function operationsOfKind<K extends SemanticOperationKind>(
-  program: SemanticProcessProgram,
-  kind: K,
-): ReadonlyArray<Extract<SemanticOperation, { kind: K }>> {
-  return program.operations.filter(
-    (
-      operation,
-    ): operation is Extract<SemanticOperation, { kind: K }> =>
-      operation.kind === kind,
-  );
-}
-
-function sameStringSet(
-  left: ReadonlyArray<string>,
-  right: ReadonlyArray<string>,
-): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value) => right.includes(value))
-  );
+  return isWellFormedSemanticProcessGraph({
+    controlPlaceIds: [...placeIds],
+    operations: checkedOperations,
+  });
 }
 
 function isWellFormedOperation(

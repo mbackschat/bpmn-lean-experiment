@@ -53,6 +53,8 @@ import {
   temporalCacheDirectory,
   timerBpmnUrl,
   timerScenarioUrl,
+  timerUserTaskCompositionBpmnUrl,
+  timerUserTaskCompositionScenarioUrl,
   withDeadline,
 } from "./temporal-test-support.ts";
 import {
@@ -275,6 +277,48 @@ test("durable timer survives Worker absence at due time and replays exactly", as
     ),
     10_000,
     "Intermediate Catch Timer history replay",
+  );
+});
+
+test("durably composes a timer wait with later User Task ingress", async () => {
+  const scenario = await loadJson<Scenario>(
+    timerUserTaskCompositionScenarioUrl,
+  );
+  const input = await compileExecutionInput(
+    scenario,
+    timerUserTaskCompositionBpmnUrl,
+  );
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    activeRunner().runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "timer-user-task-composition",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.Normal,
+      effectExecutionSchedule: null,
+    }),
+    15_000,
+    "timer and User Task composition execution",
+  );
+
+  assert.deepEqual(execution.result, expected);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+  assert.deepEqual(
+    execution.interactionEvidence.openTimersAtWait,
+    stateObservationAt(expected.trace, 2).openTimers,
+  );
+  assert.deepEqual(
+    execution.interactionEvidence.openUserTasksAtWait,
+    stateObservationAt(expected.trace, 4).openUserTasks,
+  );
+  requireDurableTimerHistory(execution.history, 1_000);
+
+  await withDeadline(
+    activeRunner().replayHistory(
+      execution.history,
+      "timer-user-task-composition-replay",
+    ),
+    10_000,
+    "timer and User Task composition history replay",
   );
 });
 

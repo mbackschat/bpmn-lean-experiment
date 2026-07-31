@@ -80,12 +80,12 @@ import {
 import {
   TemporalWorkerHost,
 } from "./temporal-worker-host.js";
-
-export { isCompletedProcessReceipt } from "./runner-support.js";
-export {
-  startBpmnProcess,
-  submitUserTaskCompletion,
-} from "./process-client.js";
+import {
+  requireScenarioAdmission,
+} from "./scenario-admission.js";
+import {
+  requiresHostProgressBeforeCompletion,
+} from "./scenario-stimulus-sequencing.js";
 
 const temporalTestIdentity = "bpmn-lean-test-runtime";
 const operationDeadlineMs = 5_000;
@@ -223,6 +223,7 @@ export class TemporalScenarioRunner {
     this.assertAvailable();
     validateExecutionOptions(scenario, options);
     const start = requireStartStimulus(scenario);
+    requireScenarioAdmission(start, semanticProcess);
     const handle = await withDeadline(
       this.environment.client.workflow.start<BpmnProcessWorkflow>(
         bpmnProcessWorkflowType,
@@ -246,8 +247,8 @@ export class TemporalScenarioRunner {
     const completions = requireCompletionStimuli(scenario);
     const firstCompletion = completions[0];
     if (
-      options.effectExecutionSchedule !== null &&
-      firstCompletion !== undefined
+      firstCompletion !== undefined &&
+      requiresHostProgressBeforeCompletion(scenario, firstCompletion)
     ) {
       await this.waitForOpenUserTask(handle, firstCompletion);
     }

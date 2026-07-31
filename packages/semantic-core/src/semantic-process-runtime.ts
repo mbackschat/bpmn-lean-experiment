@@ -209,11 +209,14 @@ function admit(
 // selector also has no ambiguity signal: Lean rejects every other
 // multiple-enabled state as an unresolved semantic choice, which admission
 // currently keeps unreachable here.
-function internalStep(
+function enabledInternalOperations(
   program: SemanticProcessProgram,
   state: RuntimeState,
-): RuntimeState | null {
-  const enabled = program.operations
+): ReadonlyArray<Readonly<{
+  operation: SemanticOperation;
+  successor: RuntimeState;
+}>> {
+  return program.operations
     .map((operation) => ({
       operation,
       successor: applyInternalOperation(operation, state),
@@ -229,6 +232,41 @@ function internalStep(
     .sort(({ operation: left }, { operation: right }) =>
       compareCanonicalStrings(left.id, right.id)
     );
+}
+
+export function enabledInternalOperationCount(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): number {
+  return enabledInternalOperations(program, state).length;
+}
+
+/**
+ * Classifies a state already known to be internally stable.
+ *
+ * A running state is resumable only when one semantic wait exposes a possible
+ * future ingress. Hidden tokens alone are not evidence of progress.
+ */
+export function isStableStateResumable(state: RuntimeState): boolean {
+  switch (state.control.kind) {
+    case ControlStateKind.NotStarted:
+      return false;
+    case ControlStateKind.Running:
+      return state.userTaskWaits.length > 0 ||
+        state.timerWaits.length > 0 ||
+        state.effectWaits.length > 0;
+    case ControlStateKind.Completed:
+      return true;
+    default:
+      return assertNever(state.control);
+  }
+}
+
+function internalStep(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): RuntimeState | null {
+  const enabled = enabledInternalOperations(program, state);
   return enabled[0]?.successor ?? null;
 }
 

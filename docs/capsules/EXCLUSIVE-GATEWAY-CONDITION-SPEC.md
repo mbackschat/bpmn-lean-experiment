@@ -104,7 +104,7 @@ Simple Boolean evaluation is pure, total after admission, and synchronous inside
 
 The exact profile guard admits eight operations and seven control places arranged as one initiation, one choice, three branch waits, and three terminations. Starting the Process takes exactly three internal transitions: `initiate`, `choose`, then `awaitUserTask`. Completing the accepted branch takes one `terminate` transition. The runtime-bound guard exposes exhaustion at two start steps; every admitted command path remains below `semanticProcessClosureLimit = 8`.
 
-The first topology permits no state in which `choose` and another independent internal operation are simultaneously enabled. Source admission fixes graph cardinality and branch ownership, the TypeScript execution-surface guard rejects an added or duplicated operation, and Lean rejects any received program unequal to canonical lowering before evaluation. This is a profile-specific reachability guard, not a general TypeScript ambiguity detector.
+The first topology permits no state in which `choose` and another independent internal operation are simultaneously enabled. Source admission fixes graph cardinality and branch ownership, the profile capability rejects an added or duplicated operation independently of the reusable graph validator, and Lean rejects any received program unequal to canonical lowering before evaluation. This is a profile-specific reachability guard, not a general TypeScript ambiguity detector.
 
 ## Temporal hosting and refinement preflight
 

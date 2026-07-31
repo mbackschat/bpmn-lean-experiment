@@ -1,0 +1,78 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-timer-user-task-composition-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-linear-timer-user-task-composition",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.5.4",
+      "Clause 10.5.5",
+      "Clause 10.7.3",
+      "Clause 13.3.2",
+      "Clause 13.3.3",
+      "Table 10.89",
+      "Table 10.101",
+      "Table 10.122"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "intermediate-catch-timer-event",
+      "literal-time-duration-pt1s",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0004",
+      "CIB-OP-0001",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-composition-compatibility-claim",
+    "duration-literals-other-than-PT1S",
+    "time-date",
+    "time-cycle",
+    "multiple-timers",
+    "repeated-user-tasks",
+    "parallel-interaction",
+    "gateways",
+    "service-tasks",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "loops",
+    "variables",
+    "expressions",
+    "vendor-extensions",
+    "a12-adoption-coverage"
+  ]
+}

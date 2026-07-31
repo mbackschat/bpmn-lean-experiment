@@ -139,8 +139,8 @@ export async function runBpmnProcessWithHostEffects(
       const effects = projectOpenEffects(state);
       if (timers.length > 0 && effects.length > 0) {
         throw ApplicationFailure.nonRetryable(
-          "The admitted Temporal capsules do not compose timer and effect waits",
-          "BpmnHostWaitAmbiguity",
+          "Pre-start host admission failed to exclude concurrent timer and effect waits",
+          "BpmnHostCapabilityInvariantViolation",
         );
       }
       if (timers.length === 0 && effects.length === 0) {
@@ -152,8 +152,8 @@ export async function runBpmnProcessWithHostEffects(
       } else if (timers.length > 0) {
         if (timers.length !== 1) {
           throw ApplicationFailure.nonRetryable(
-            "The admitted Temporal timer capsule requires exactly one committed timer wait",
-            "BpmnTimerCardinalityFailure",
+            "Pre-start host admission failed to exclude multiple committed timer waits",
+            "BpmnHostCapabilityInvariantViolation",
           );
         }
         const timer = timers[0];
@@ -181,8 +181,8 @@ export async function runBpmnProcessWithHostEffects(
       } else {
         if (effects.length !== 1) {
           throw ApplicationFailure.nonRetryable(
-            "The admitted Temporal effect capsule requires exactly one committed effect intent",
-            "BpmnEffectCardinalityFailure",
+            "Pre-start host admission failed to exclude multiple committed effect intents",
+            "BpmnHostCapabilityInvariantViolation",
           );
         }
         const effect = effects[0];

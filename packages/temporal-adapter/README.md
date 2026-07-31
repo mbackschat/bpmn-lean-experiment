@@ -2,7 +2,7 @@
 
 `@bpmn-lean/temporal-adapter` durably hosts the pure [TypeScript semantic core](../semantic-core/README.md). Temporal records message delivery and Workflow decisions; the core remains the owner of BPMN-visible state transitions and canonical observations.
 
-Deployment-time code parses BPMN XML outside Workflow execution and passes the admitted Semantic Process program plus one explicit start stimulus to one generic Workflow. The Workflow lifetime derives from semantic terminal state and accepted-handler draining, never from future scenario stimuli. The `bpmn-open-user-tasks` Query invokes the core's current-state projection rather than scanning diagnostic trace history. The `bpmn-complete-user-task` Update delegates structural validation to the core, queues one completion, and returns the core-owned command outcome. Handlers never advance semantic state directly; one Workflow loop alone calls the core.
+Deployment-time code parses BPMN XML outside Workflow execution, checks semantic execution admission and the separate Temporal host-capability predicate, and passes an accepted Semantic Process program plus one explicit start stimulus to one generic Workflow. Production start returns typed `started | rejected`; rejected input never calls Temporal. The Workflow lifetime derives from semantic terminal state and accepted-handler draining, never from future scenario stimuli. The `bpmn-open-user-tasks` Query invokes the core's current-state projection rather than scanning diagnostic trace history. The `bpmn-complete-user-task` Update delegates structural validation to the core, queues one completion, and returns the core-owned command outcome. Handlers never advance semantic state directly; one Workflow loop alone calls the core.
 
 When committed core state exposes one admitted timer occurrence, the Workflow schedules `sleep(deadlineMs - logicalTimeMs)`, then derives the exact content-bound `fireTimer` stimulus from that committed occurrence and deadline. The runner never transports the scenario's timer stimulus to the Workflow. Timer sequence, physical lateness, and Event IDs remain adapter facts; the core alone owns occurrence identity, eligibility, logical-time advancement, and canonical observations. The exact contract is in the [Intermediate Catch Timer spec](../../docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md).
 
@@ -12,13 +12,14 @@ Command ingress returns a typed adapter union: accepted or recovered commands re
 
 ## Pre-release replay policy
 
-Tests start clean in-memory Temporal servers, execute the retained User Task, parallel, timer, effect, mapping, boundary-error, and Simple Boolean Exclusive Gateway witnesses, fetch their live histories, replay those histories through the Workflow bundle, and shut the servers down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
+Tests start clean in-memory Temporal servers, execute the retained User Task, parallel, timer, Timer/User Task composition, effect, mapping, boundary-error, and Simple Boolean Exclusive Gateway witnesses, fetch their live histories, replay those histories through the Workflow bundle, and shut the servers down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
 
 This is deliberate, not an abandonment of replay compatibility. Before the first immutable deployment baseline, speculative history compatibility would preserve prototype accidents and multiply branches. Once a durable history baseline is explicitly approved, retained histories, Worker/version markers, compatibility code, and migration/deprecation rules become mandatory evidence.
 
 ## What the focused gate establishes
 
 - exact BPMN XML compiles before Workflow start;
+- unsupported semantic input and a token split combined with a Timer/effect return typed pre-start admission rejection;
 - clean servers and Workers execute exact, wrong-activation, sequential post-terminal stale, both parallel completion orders, live-sibling stale, exact timer, effect, mapping, boundary-error, and Simple Boolean conditional-routing witnesses;
 - ordinary Query projections, Update outcomes, and final results equal the pure core;
 - duplicate logical delivery does not cause a second semantic transition;
@@ -32,6 +33,7 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - duplicate Workflow identities are rejected before start;
 - replacing a Worker at the semantic wait preserves start-before-completion ordering and the final result;
 - the durable timer is derived only from committed core state, survives Worker absence at its due time, completes after replacement, and replays with one exact timer-started/timer-fired pair;
+- the linear Timer/User Task composition passes host capability, durably fires its Timer, exposes the later User Task, completes through Update ingress, and replays;
 - a separately bundled timer-bypass mutation preserves the pure trace but fails the durable-history discriminator;
 - the Simple Boolean gateway exposes only the selected User Task, completes and replays without an evaluator Activity, and a separately bundled route-substitution mutation exposes the wrong branch;
 - one accepted Update result remains retrievable after Workflow closure, while a distinct late command returns `processClosed` and Workflow-ID reuse is refused;

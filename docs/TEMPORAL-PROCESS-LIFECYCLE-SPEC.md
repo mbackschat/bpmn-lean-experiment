@@ -6,7 +6,7 @@
 
 ## Scope
 
-This specification defines the production lifecycle shared by the admitted semantic capsules. It answers when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
+This specification defines the production lifecycle shared by the admitted semantic capsules. It answers how semantic and host-capability admission is reported before Workflow creation, when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
 It does not itself add BPMN semantics, a task inbox, Activities, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The separately approved [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority.
 
@@ -15,6 +15,7 @@ It does not itself add BPMN semantics, a task inbox, Activities, cancellation, C
 Adopt a **semantic-lifetime Workflow with a retention-bounded closed-result boundary**:
 
 - one Temporal Workflow Execution hosts one semantic Process instance while that instance is semantically active;
+- semantic program admission and the separate Temporal host-capability predicate both pass before Workflow creation, otherwise start returns a typed `rejected` result;
 - the Workflow completes after the semantic core reaches terminal completed state and every already accepted handler has completed;
 - a retry of an already accepted exact command recovers the original Update result;
 - a distinct command first addressed after Workflow closure returns a typed adapter `processClosed` result, not semantic `rejected`;
@@ -36,6 +37,16 @@ The executable comparison and pinned platform facts are recorded in the [Tempora
 ## Public result contract
 
 ```ts
+type BpmnProcessStartResult =
+  | Readonly<{
+      kind: "started";
+      handle: WorkflowHandle<BpmnProcessWorkflow>;
+    }>
+  | Readonly<{
+      kind: "rejected";
+      failure: BpmnProcessAdmissionFailure;
+    }>;
+
 enum ProcessCommandResultKind {
   Semantic = "semantic",
   ProcessClosed = "processClosed",
@@ -69,6 +80,8 @@ type ProcessCommandResult =
     }>;
 ```
 
+`started` means semantic execution admission and the separate Temporal host-capability predicate both passed and Temporal created the Workflow. `rejected` means either the Semantic Process/start pair is unsupported or the host cannot schedule its potential wait-set shape. The adapter returns this result before `client.start`; Workflow execution does not classify admission.
+
 `semantic` means the command was accepted by the Workflow or its previously completed exact Update was recovered. Live execution and retry recovery return the same public shape.
 
 `processClosed` means the non-reusable Process address is retained, its Workflow has a valid completed semantic receipt, and no accepted Update exists for this exact command. It is an adapter lifecycle result. It must not be converted to `CommandOutcome.Rejected`, appended to the canonical BPMN trace, or presented as a Lean/CIB/TypeScript semantic transition.
@@ -97,7 +110,9 @@ The adapter defines one canonical typed stimulus encoding and a SHA-256 digest. 
 
 ## Workflow lifetime contract
 
-The production Workflow receives an admitted Semantic Process program and one explicit start stimulus. It does not receive a future scenario command list.
+The production start boundary first checks the explicit start stimulus and Semantic Process program through semantic execution admission, then checks the program through the separate Temporal host-capability predicate. Only an `admitted` result calls `client.start`. The current conservative host predicate accepts passive parallel User Task ingress and linear Timer/User Task composition, but rejects a token split combined with a Timer or effect wait as `concurrentHostDrivenWaits`.
+
+The production Workflow receives that admitted Semantic Process program and one explicit start stimulus. It does not receive a future scenario command list.
 
 The start stimulus enters the single semantic input queue before any external handler becomes addressable. Only the main Workflow loop calls the semantic core and mutates semantic state.
 
@@ -140,6 +155,9 @@ The sequential stale-completion case has a deliberately split relation. CIB Seve
 The focused Temporal gate must demonstrate:
 
 - Workflow lifetime depends on terminal semantic state and contains no scenario-stimulus count;
+- unsupported semantic input or host wait-set capability returns a typed pre-start rejection and creates no Workflow;
+- linear Timer/User Task composition passes host capability, executes one durable Timer before later User Task ingress, and replays;
+- a token split combined with a Timer or effect fails the conservative host-capability predicate;
 - start precedes every external completion under immediate delivery and Worker restart;
 - a normal exact completion closes the Workflow with a validated completed receipt;
 - every accepted racing Update completes before Workflow completion;

@@ -203,6 +203,7 @@ private def requiredObservations : List ObservationKind :=
 
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
+    programProfileCapabilitiesValid program &&
     decide (
       scenario.kind = .scenario &&
         scenario.profile = program.identity.semanticProfile &&

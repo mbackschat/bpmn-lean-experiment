@@ -194,8 +194,8 @@ test("rejects a malformed User Task name at deployment", async () => {
   );
 });
 
-test("admits a structurally compatible profile without profile-specific routing", async () => {
-  const { scenario, expected } = await loadCase(
+test("rejects a structurally compatible program under an unknown profile", async () => {
+  const { scenario } = await loadCase(
     "scenario.json",
     "cibseven-evidence.json",
   );
@@ -204,11 +204,11 @@ test("admits a structurally compatible profile without profile-specific routing"
     profile: "compatible-profile-under-calibration",
   };
 
-  assert.deepEqual(
-    runScenario(
+  assert.equal(
+    deployScenario(
       compatibleScenario,
       semanticProcessFor(compatibleScenario),
-    ),
-    expected,
+    ).outcome,
+    CommandOutcome.Unsupported,
   );
 });

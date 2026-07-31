@@ -8,7 +8,7 @@ The repository has an evidence-closed **draft** semantic capsule for one private
 
 Every multi-target agreement claim in this document carries one shared-origin qualifier: the TypeScript compiler in `@bpmn-lean/bpmn-source` is the sole producer of the checked BPMN graph and Semantic Process program that Lean, the TypeScript core, and the Temporal adapter all consume. Lean independently recomputes graph-to-program lowering and rejects inequality before evaluation; it has no BPMN XML parser, so a defect in XML-to-checked-graph translation propagates identically into those three targets. Pinned CIB Seven can separate that defect only for a declared CIB profile whose exact source it executes; the standards-only Simple Boolean profile has no such source-level oracle and states that limitation explicitly. The [parallel capsule's common-mode risks](capsules/PARALLEL-FORK-JOIN-SPEC.md#assurance-boundary), the [Exclusive Gateway assurance boundary](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md#assurance-boundary), and [TESTING-SPEC's evidence lanes](TESTING-SPEC.md#evidence-lanes) own the correlation rule.
 
-The parallel fork/join contract is evidence-closed as a draft under normative per-incoming-Sequence-Flow behavior. The bounded [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md), asymmetric runtime representations, and decision not to claim broad CIB parallel compatibility own the maintained definition boundary. Current schemas freeze the checked graph and Semantic Process wire shapes, and adversarial contract tests cover reference, arity, identity, canonical-order, candidate-order, and raw-to-canonical projection failures. The bounded source path produces canonical checked graphs and Semantic Process programs for the sequential model, exact two-branch parallel structure, exact `PT1S` Intermediate Catch Timer structure, exact payload-free Service Task binding, exact A12-shaped CreateDocument mapping contract, exact A12-shaped interrupting boundary-error contract, and exact two-condition-plus-default Simple Boolean Exclusive Gateway. Lean strictly decodes both artifacts, validates the checked graph and a structural subset of the program contract, recomputes canonical lowering, rejects inequality before evaluation, executes the received program through a generic relation/evaluator, proves evaluator soundness and structural lowering properties, and checks the bounded parallel, timer, effect, data-mapping, boundary-error, and conditional-choice laws and non-laws. Standalone Lean `programWellFormed` independently checks exact one-producer/one-consumer control-place shape, operation reachability and co-reachability, and acyclicity; profile-specific operation/cardinality/closure checks remain local execution-surface guards rather than a general validator. Lean's scenario evaluator closes the admitted independent two-task activation pair only under the checked disjointness condition and rejects every other multiple-enabled state as an unresolved semantic choice. The independent TypeScript semantic core executes the same observable contracts through its own explicit runtime representation. The topology-specific representation and evaluator path are absent. Temporal delegates current projection, stimulus well-formedness, command identity, and same-stimulus comparison to semantic-core operations. The [production lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) hosts the program under ordered, duplicate, concurrent, post-terminal, Worker-restart, retained-result, durable-timer, effect-Activity, typed-data, typed-business-error, pure conditional-routing, replay, and cleanup evidence. The CIB adapter projects multiple active tasks, realizes the timer through controlled-clock job execution, realizes the selected payload-free Service Task through an explicitly released async-before continuation job, and runs the CreateDocument and boundary-error host relations synchronously against distinct `2.0.0` profiles. The eleven-case prepared pipeline establishes case-specific declared target sets, intermediate Query projections, live replay, projection sensitivity, timer and Activity mechanism discrimination, conditional-route discrimination, data-mapping ownership, boundary-route preservation, and rejection of erased parallel Sequence-Flow provenance. The schema-valid negative probe separately establishes candidate deviation `CIB-DEV-0001`.
+The parallel fork/join contract is evidence-closed as a draft under normative per-incoming-Sequence-Flow behavior. The bounded [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md), asymmetric runtime representations, and decision not to claim broad CIB parallel compatibility own the maintained definition boundary. Current schemas freeze the checked graph and Semantic Process wire shapes, and adversarial contract tests cover reference, arity, identity, canonical-order, candidate-order, and raw-to-canonical projection failures. The bounded source path produces canonical checked graphs and Semantic Process programs for the sequential model, exact two-branch parallel structure, exact `PT1S` Intermediate Catch Timer structure, a finite acyclic `PT1S` Timer/User Task composition, exact payload-free Service Task binding, exact A12-shaped CreateDocument mapping contract, exact A12-shaped interrupting boundary-error contract, and exact two-condition-plus-default Simple Boolean Exclusive Gateway. The [profile-parameterized admission specification](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) replaces exact whole-topology execution-surface predicates with reusable checked-source and program graph validation plus exact profile mechanism/cardinality capability. Lean strictly decodes both artifacts, validates their graph and profile capabilities independently, recomputes canonical lowering, rejects inequality before evaluation, executes the received program through a generic relation/evaluator, proves evaluator soundness and structural lowering properties, and checks the bounded parallel, timer, Timer/User Task composition, effect, data-mapping, boundary-error, and conditional-choice laws and non-laws. Standalone Lean `programWellFormed` independently checks exact one-producer/one-consumer control-place shape, operation reachability and co-reachability, and acyclicity; scenario/execution admission separately checks the profile capability. Lean's scenario evaluator closes the admitted independent two-task activation pair only under the checked disjointness condition and rejects every other multiple-enabled state as an unresolved semantic choice. The independent TypeScript semantic core executes the same observable contracts through its own explicit runtime representation. The topology-specific representation and evaluator path are absent. Temporal delegates current projection, stimulus well-formedness, command identity, and same-stimulus comparison to semantic-core operations, and returns a typed semantic-or-host admission result before Workflow start. The [production lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) hosts the program under ordered, duplicate, concurrent, post-terminal, Worker-restart, retained-result, durable-timer, Timer-to-User-Task composition, effect-Activity, typed-data, typed-business-error, pure conditional-routing, replay, and cleanup evidence. The CIB adapter projects multiple active tasks, realizes the timer through controlled-clock job execution, realizes the selected payload-free Service Task through an explicitly released async-before continuation job, and runs the CreateDocument and boundary-error host relations synchronously against distinct `2.0.0` profiles. The twelve-case prepared pipeline establishes case-specific declared target sets, intermediate Query projections, live replay, projection sensitivity, timer and Activity mechanism discrimination, conditional-route discrimination, data-mapping ownership, boundary-route preservation, and rejection of erased parallel Sequence-Flow provenance. The schema-valid negative probe separately establishes candidate deviation `CIB-DEV-0001`.
 
 The [Intermediate Catch Timer contract](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) is evidence-closed as a draft. The exact literal remains in the checked graph and independently lowers to `awaitTimer` duration 1000; Lean and TypeScript own full timer occurrence identity, exact-deadline eligibility, logical-time advancement, refusal, and `openTimers` observation. The scenario's answer-free `fireTimer` is applied directly by Lean and the core, realized by controlled-clock CIB scheduling, and never delivered to Temporal; the Workflow derives the identical content-bound stimulus exclusively from committed core state after one durable timer. Full-server evidence covers Worker absence at due time, exact history, receipt reconciliation, replay, and a separately bundled sleep-bypass mutation. Time skipping is a separately named optional calibration lane.
 
@@ -24,7 +24,7 @@ The independently reviewed [compositional BPMN admission proposal](COMPOSITIONAL
 
 The production semantic realization remains one pure TypeScript core hosted by the TypeScript Temporal Workflow. The [dual semantic-core account](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected; there is no Java semantic core, Java Workflow, or Java-core experiment. JVM integration is an approved architecture boundary for future Activity Workers and client façades, not an implemented surface.
 
-The dependency-free [Simple Boolean expression language](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) and [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) implement the standards-first conditional-routing slice. The explicit URI selects five total Boolean forms over complete Process-scope string/null bindings; omitted language remains BPMN's XPath default and is rejected. The checked graph retains exact bodies and declaration-ordered conditional/default Flow identities; Lean and TypeScript parse and evaluate independently; the generic `choose` transition consumes one token and produces exactly one selected route inside pure bounded closure. Temporal hosts, completes, and replays the selected User Task without an evaluator Activity, while a separately bundled route-substitution mutation exposes the wrong branch. The standards profile declares normative authority and no CIB result; the eleven-case pipeline compares Lean, the core, and Temporal for this case. The [JUEL architecture](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), exact CIB probes, and audited 38-artifact dependency graph remain a deferred CIB compatibility candidate; no JUEL dependency or Java evaluator module is adopted. The existing `MappingExpression.localVariable` arm remains only as a direct lookup for two exact admitted mapping tokens and must not grow into either expression language.
+The dependency-free [Simple Boolean expression language](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) and [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) implement the standards-first conditional-routing slice. The explicit URI selects five total Boolean forms over complete Process-scope string/null bindings; omitted language remains BPMN's XPath default and is rejected. The checked graph retains exact bodies and declaration-ordered conditional/default Flow identities; Lean and TypeScript parse and evaluate independently; the generic `choose` transition consumes one token and produces exactly one selected route inside pure bounded closure. Temporal hosts, completes, and replays the selected User Task without an evaluator Activity, while a separately bundled route-substitution mutation exposes the wrong branch. The standards profile declares normative authority and no CIB result; the twelve-case pipeline compares Lean, the core, and Temporal for this case. The [JUEL architecture](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), exact CIB probes, and audited 38-artifact dependency graph remain a deferred CIB compatibility candidate; no JUEL dependency or Java evaluator module is adopted. The existing `MappingExpression.localVariable` arm remains only as a direct lookup for two exact admitted mapping tokens and must not grow into either expression language.
 
 This is not a general BPMN engine, an OMG conformance result, or an immutable production CIB deployment/history compatibility baseline. Individual evidence-bound calibration profile artifacts may already be immutable under the narrower [profile-registry definition](../profiles/README.md).
 
@@ -99,7 +99,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - stable document kinds
 - semantic profile/source/compiler identity
 - exact scenario/profile content binding
-- eleven answer-free target scenarios with CIB evidence required only by declared CIB target sets
+- twelve answer-free target scenarios with CIB evidence required only by declared CIB target sets
 - produced checked-process and Semantic Process artifacts
 - nullable checked conditions, one typed Simple Boolean expression union, and declaration-ordered `choose` candidates
 - one shared occurrence-ID shape reused by User Tasks, timers, and effects
@@ -129,7 +129,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 #### Implemented
 
 - Draft CIB-backed artifacts `cibseven-2.2.0-user-task-draft`, `parallel-fork-join-draft`, `cibseven-2.2.0-intermediate-catch-timer-draft`, `cibseven-2.2.0-service-task-effect-draft`, `cibseven-2.0.0-a12-create-document-draft`, and `cibseven-2.0.0-a12-boundary-error-draft` pin their oracle revision, environment, selected features, observation boundary, exclusions, and reviewed CIB–BPMN relationship IDs
-- the draft standards profile `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft` instead declares BPMN 2.0.2 normative authority and explicitly has no CIB oracle
+- the draft standards profiles `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft` and `bpmn-2.0.2-timer-user-task-composition-draft` instead declare BPMN 2.0.2 normative authority and explicitly have no CIB oracle
+- exact profile operation-kind cardinalities are checked separately from topology-independent graph validation
 - immutable CIB artifact status freezes evidence calibration and does not imply a production deployment/history baseline
 - the boundary profile selects exact-code agreement `CIB-AGR-0005`, deferred-expression/error extension `CIB-EXT-0003`, caught-path mapping extension `CIB-EXT-0004`, synchronous-to-durable operational mapping `CIB-OP-0003`, and pinned unmatched behavior `CIB-CFG-0004`
 - fresh content-bound packaged-engine evidence is release-bound to each CIB profile
@@ -170,7 +171,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - `choose` carries exactly two declaration-ordered typed Simple Boolean candidates and one distinct default
 - `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across empty, CreateDocument, and boundary-error contracts
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted condition, mapping, route, and exact source data
-- independent sequential, bounded-parallel, exact-timer, payload-free effect, CreateDocument data, boundary-error, and Simple Boolean conditional evaluation
+- independent sequential, bounded-parallel, exact-timer, Timer/User Task composition, payload-free effect, CreateDocument data, boundary-error, and Simple Boolean conditional evaluation
 - generic Lean relation/evaluator including choice and effect-completion soundness, laws, and non-laws
 - separately gated frozen checked-source experiment
 
@@ -187,7 +188,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - UTF-8/security preflight
 - private `bpmn-moddle@10.0.0` import
 - warning/reference-loss rejection
-- bounded compilers for the sequential User Task, balanced parallel, exact `PT1S` timer, payload-free Service Task, exact A12 CreateDocument shape, exact A12-shaped boundary Error, and exact two-condition-plus-default Simple Boolean Exclusive Gateway
+- bounded compilers for the sequential User Task, balanced parallel, exact `PT1S` timer, profile-parameterized finite acyclic Timer/User Task composition, payload-free Service Task, exact A12 CreateDocument shape, exact A12-shaped boundary Error, and exact two-condition-plus-default Simple Boolean Exclusive Gateway
+- reusable checked-source reference, arity, reachability, co-reachability, and acyclicity validation separated from profile mechanism/cardinality capability
 - explicit expression-language admission, strict five-form parsing, exact checked-body retention, and process-level Sequence Flow declaration order independent of gateway reference order
 - exact source/profile admission preserves raw CIB bindings as evidence and maps them to registered neutral effect identities while checked graphs retain generic conditions, mappings, route/reference metadata, and names
 - BPMNDI/modeler metadata remains outside semantics
@@ -224,14 +226,14 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - exact CreateDocument literal arguments, successful mapping trace, output-only Process target theorem, quantified invalid-patch refusal, missing/extra/duplicate examples, and direct-local-patch-to-Process-scope non-law
 - boundary-error exact lowering/trace, declarative business-error soundness, exact null mapping, message noninterference, quantified identity/code/patch refusal, and normal-success non-law
 - independent Simple Boolean parser/evaluator, checked-body-to-typed-expression lowering, declaration-ordered `choose` relation/evaluator soundness, second-true and all-false/default witnesses, `first_true_ignores_tail`, and `selected_output_owned`
-- generic eleven-scenario result emitter that consumes and echoes the same admitted scenario documents
+- generic twelve-scenario result emitter that consumes and echoes the same admitted scenario documents
 - saturation-certified executable path completeness and declarative acyclicity
 - experiment-only split direct checked-node account, general operation-prefix order theorem, two-segment enabled-transition correspondence checkpoint, executable structured parser, declarative graph-derived tail and whole-process decomposition, tail-parser soundness, unique Start/End, complete node/Flow coverage, decomposition uniqueness up to branch exchange, positive reachability soundness, graph-derived single-token exact and two-token permutation enabled-list localization, and renamed public divergence
 
 #### Explicitly absent
 
 - Optional vertex-count fuel adequacy and no-false-rejection theorem
-- generalized profile-selected standalone program-kind/cardinality/closure checks
+- generalized arbitrary-cardinality or arbitrary-graph progress theorem beyond the implemented profile capability and targeted checks
 - adopted checked-source semantics and run-level observational lowering-preservation proof
 - either-target-fires and exactly-two enabledness at a two-token frontier
 - generalized enabled-transition, supported-closure, admission, observation, and stimulus-list correspondence remain unresolved
@@ -248,7 +250,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - Dependency-free Semantic Process contracts
 - shared safe-string admission and Unicode scalar-value comparator
 - profile-registered opaque effect protocol/operation identities with no Camunda namespace, A12 bean, or target-model discriminator
-- strict structural program admission for exactly the sequential, balanced two-branch, exact timer, payload-free effect, CreateDocument, boundary-error, and Simple Boolean conditional-choice operation graphs
+- topology-independent structural program validation plus exact profile operation-kind cardinality for the sequential, balanced two-branch, exact timer, Timer/User Task composition, payload-free effect, CreateDocument, boundary-error, and Simple Boolean conditional-choice surfaces
 - pure enum-based execution of `initiate`, `awaitUserTask`, `awaitTimer`, `awaitEffect`, `duplicate`, per-incoming-flow `synchronize`, declaration-ordered `choose`, and `terminate`
 - operation-ID-stable internal closure independent of program collection order
 - explicit flow-identified token multiplicity and sorted semantic task/timer/effect occurrences
@@ -262,6 +264,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - pure effect-transport material projection from admitted definition fields plus one committed `openEffects` entry without hashing or host identity
 - adapter-facing current task/timer projection, exact structural stimulus validation including safe integers and scalar strings, command identity, and same-stimulus comparison
 - incremental deploy/advance and full scenario evaluation
+- executable internal-enabled-count and stable-state-resumability checks, including a stranded-token negative witness
 - malformed topology rejection
 
 #### Explicitly absent
@@ -310,6 +313,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 #### Implemented
 
 - One semantic-lifetime Workflow receiving the start stimulus and admitted Semantic Process program
+- typed `started | rejected` production start result after separate semantic and Temporal host-capability checks and before Workflow creation
+- conservative rejection of token-split graphs containing Timer or effect waits as `concurrentHostDrivenWaits`
 - collision-resistant SHA-256 Workflow ID derived from semantic Process address in production
 - one shared Workflow-safe canonical typed-tuple encoder over exact scalar strings and non-negative safe integers for Process addresses, stimuli, timer firings, effect transport, and effect completion
 - dependency-free deterministic SHA-256 with padding-boundary, supplementary-plane, multi-block, and native-crypto equality locks
@@ -336,6 +341,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - explicit ordered, post-terminal, accepted-batch, concurrent, Worker-down-at-timer-due, and Worker-down-at-effect-pending harness schedules
 - unordered one-commit/one-rejection race witness
 - committed-state-derived exact timer duration and firing with no runner delivery
+- durable Timer-to-User-Task composition with ordered host progress, exact core agreement, and live replay
 - harness-only Query reconciliation with durable Update, timer, Activity, and receipt facts
 - replay and cleanup
 - command-ID-only, timer-bypass, Activity-bypass, and conditional-route-bypass mutation guards
@@ -367,20 +373,21 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 
 #### Implemented
 
-- Eleven answer-free cases with explicit target sets
-- ten release-grouped ordinary CIB cases plus one standards-only Simple Boolean case and one raw-only `2.2.0` Service Task fail-once execution
+- Twelve answer-free cases with explicit target sets
+- ten release-grouped ordinary CIB cases plus two standards-only cases and one raw-only `2.2.0` Service Task fail-once execution
 - one generic Lean result emitter
 - one core batch
-- twenty-two isolated Temporal executions
-- exact case-specific relations including parallel live-sibling stale rejection, exact timer firing, Simple Boolean first-true routing, payload-free Service Task success, CreateDocument typed-data success, and typed boundary-error routing
+- twenty-four isolated Temporal executions
+- exact case-specific relations including parallel live-sibling stale rejection, exact timer firing, Timer/User Task composition, Simple Boolean first-true routing, payload-free Service Task success, CreateDocument typed-data success, and typed boundary-error routing
 - sequential stale three-way semantic agreement plus exact Temporal completion prefix and separate `processClosed`
 - Simple Boolean exact Lean/core/Temporal agreement with CIB absent
+- Timer/User Task exact Lean/core/Temporal agreement with CIB absent
 - CreateDocument and boundary-error exact Lean/core/Temporal semantic agreement plus separate CIB synchronous-final host relations
 - retained-CIB comparison only for declared CIB cases
 - Query/Update/durable-timer/Activity evidence
 - definition binding
 - activation, initial-task, live-sibling, timer-deadline, conditional-route, raw effect-binding, neutral effect-operation, final-variable, boundary-null, and provenance mutations
-- thirteen-history replay
+- fourteen-history replay
 - isolation, cleanup, timings, and budgets
 
 #### Explicitly absent
@@ -400,7 +407,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 
 #### Explicitly absent
 
-- Line-by-line exhaustive Process Execution denominator, implemented compositional graph admission, broad Activity/Event/Gateway/scope/data coverage, percentage-complete claim, or conformance claim
+- Line-by-line exhaustive Process Execution denominator, arbitrary compositional graph admission, broad Activity/Event/Gateway/scope/data coverage, percentage-complete claim, or conformance claim
 
 ## Current evidence
 
@@ -413,6 +420,7 @@ The complete prepared pipeline requires:
 - exact agreement for `parallel-fork-join-a-then-b` and `parallel-fork-join-b-then-a`, including the symmetric one-task intermediate projections;
 - exact four-target rejection for `parallel-fork-join-stale-a-while-b-active` with B unchanged;
 - exact four-target agreement for `intermediate-catch-timer-pt1s`, including one wait at deadline 1000, identical content-bound firing command observation, completed logical time 1000, and no caller-enabled interaction; in the CIB lane the deadline and completed logical time are `adapter-derived` per [the Timer capsule's fidelity rows](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#cib-fidelity-by-rule): the runner writes the scenario's firing time into the controlled engine clock and the projector reads that clock back, while the engine-observed facts are the raw job due-date delta and the pre-due/due eligibility transition;
+- exact Lean/core/Temporal agreement for `timer-user-task-composition`, including the Timer wait at deadline 1000, committed-state-derived durable firing, the later User Task wait and completion, live replay, typed pre-start host admission, and detection of a one-millisecond deadline mutation; CIB is explicitly absent because it does not establish the composition or structural-admission rule;
 - exact Lean/core/Temporal agreement for `exclusive-gateway-simple-boolean-first-true`, including declaration-ordered first-true routing to `Task_First`, tail irrelevance, completion, replay, and detection of a `Task_Second` route substitution; CIB is explicitly absent because it does not execute the project language;
 - exact canonical agreement for `service-task-effect-success`, including one structured effect intent, the content-bound success command, completed state, and no caller-enabled interaction; CIB contributes an explicitly adapter-decided host-realization check rather than an independent semantic effect-in-flight state;
 - exact Lean/core/Temporal semantic agreement for `a12-create-document-data`, including immutable arguments, one typed local patch, mapped Process variables, retry-equivalent isolation, and durable Activity evidence; CIB contributes a separate synchronous final-state relation with raw delegate input/local output and engine-observed final Process variable under `2.0.0`;
@@ -429,14 +437,14 @@ The complete prepared pipeline requires:
 - a rejected Lean scenario document with an injected extra answer field, plus exact equality between the admitted scenario and Lean's decoded echo;
 - exact Lean definition identity and lowering equality, plus rejection of a schema-valid operation-origin mutation;
 - rejection of erased parallel control-place Sequence-Flow provenance; detection of raw Process-status, logical-time, and Process-variable drift; binding of semantic instance identity to the start stimulus; detection of an omitted parallel open task, a dropped live sibling after stale A, a one-millisecond timer-deadline mutation, a substituted Simple Boolean route, a mutated Service Task operation, a mutated CreateDocument final variable, and null-to-string boundary mapping drift;
-- thirteen fetched live histories replayed before server shutdown;
+- fourteen fetched live histories replayed before server shutdown;
 - clean CIB and Temporal teardown.
 
 The complete pipeline remains subject to the 15-second warm and 45-second cold budgets. Exact latest measurements and commands belong in [PLAN.md](PLAN.md), not in this inventory.
 
 ## Nearest unsupported claim
 
-The nearest engine claim is Message Event subscription/correlation under a separately approved capsule, followed by broader Sub-Process and event propagation rather than another exact A12 model. The source compiler still admits named bounded topologies and generic admission does not yet make shape a function of semantic profile; the first-pass family map is not a line-by-line exhaustive Process Execution denominator; and the runtime has no message correlation, nested execution scope, inclusive/event-based gateway, loop, multi-instance, compensation, or general Event account. Conditional routing is implemented only for the exact two-condition-plus-default Simple Boolean profile; other expression languages, candidate cardinalities, missing defaults, and converging or mixed Exclusive Gateways remain unsupported. The superseded [compositional-admission proposal](COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md) retains useful frozen proof results but authorizes no composed profile or production admission. JUEL remains demand-driven, deferred, and separately classified.
+The nearest engine claim is Message Event subscription/correlation under a separately approved capsule, followed by broader Sub-Process and event propagation rather than another exact A12 model. The generic source path now makes admitted mechanism cardinality a function of semantic profile and validates graph structure without recognizing the complete Timer/User Task model, but arbitrary serial composition and arbitrary graph progress remain unsupported. The first-pass family map is not a line-by-line exhaustive Process Execution denominator, and the runtime has no message correlation, nested execution scope, inclusive/event-based gateway, loop, multi-instance, compensation, or general Event account. Conditional routing is implemented only for the exact two-condition-plus-default Simple Boolean profile; other expression languages, candidate cardinalities, missing defaults, and converging or mixed Exclusive Gateways remain unsupported. The superseded [compositional-admission proposal](COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md) retains useful frozen proof results but is not the production admission authority. JUEL remains demand-driven, deferred, and separately classified.
 
 The downstream adoption inventory remains in the [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md). The exact `2.0.0` target-profile projector admits one of 50 distinct exact-byte A12 Workflows models unchanged at the static source/lowering boundary, but the closed exact-model product count remains zero because the external EUPL-1.2 model and A12 Java delegate have not executed through a separately bounded adoption adapter. This is an A12 adoption gap, not the primary BPMN coverage measure. The active Simple Boolean language matches none of the retained A12 JUEL sources and claims zero adoption coverage. Read-only JUEL evaluation, capability-bearing JUEL, scripts, listeners, forms/assignment, message correlation, A12 façade adaptation, and engine-plugin behavior remain unimplemented with target-backed priority only where they force lower-layer work.
 

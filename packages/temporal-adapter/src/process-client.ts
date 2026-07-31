@@ -24,6 +24,7 @@ import type {
 } from "@temporalio/client";
 
 import {
+  TemporalHostCapabilityResultKind,
   bpmnCompleteUserTaskUpdateName,
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
@@ -32,10 +33,14 @@ import {
 import type {
   BpmnProcessWorkflow,
   ProcessCommandResult,
+  TemporalHostAdmissionFailure,
 } from "./contracts.js";
 import {
   contentBoundUpdateId,
 } from "./command-identity.js";
+import {
+  assessTemporalHostCapability,
+} from "./host-admission.js";
 import {
   processWorkflowId,
 } from "./process-address.js";
@@ -47,17 +52,87 @@ import {
 
 const operationDeadlineMs = 5_000;
 
+export enum BpmnProcessAdmissionResultKind {
+  Admitted = "admitted",
+  Rejected = "rejected",
+}
+
+export enum BpmnProcessAdmissionFailureCode {
+  SemanticProcessUnsupported = "semanticProcessUnsupported",
+}
+
+export type BpmnProcessAdmissionFailure =
+  | Readonly<{
+      code:
+        BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported;
+      evidence: string;
+    }>
+  | TemporalHostAdmissionFailure;
+
+export type BpmnProcessAdmissionResult =
+  | Readonly<{
+      kind: BpmnProcessAdmissionResultKind.Admitted;
+    }>
+  | Readonly<{
+      kind: BpmnProcessAdmissionResultKind.Rejected;
+      failure: BpmnProcessAdmissionFailure;
+    }>;
+
+export enum BpmnProcessStartResultKind {
+  Started = "started",
+  Rejected = "rejected",
+}
+
+export type BpmnProcessStartResult =
+  | Readonly<{
+      kind: BpmnProcessStartResultKind.Started;
+      handle: WorkflowHandle<BpmnProcessWorkflow>;
+    }>
+  | Readonly<{
+      kind: BpmnProcessStartResultKind.Rejected;
+      failure: BpmnProcessAdmissionFailure;
+    }>;
+
+export function assessBpmnProcessAdmission(
+  start: StartProcessStimulus,
+  semanticProcess: SemanticProcessProgram,
+): BpmnProcessAdmissionResult {
+  if (!supportsSemanticProcessExecution(start, semanticProcess)) {
+    return {
+      kind: BpmnProcessAdmissionResultKind.Rejected,
+      failure: {
+        code:
+          BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported,
+        evidence:
+          "Workflow start requires one admitted Semantic Process execution.",
+      },
+    };
+  }
+  const hostCapability = assessTemporalHostCapability(semanticProcess);
+  switch (hostCapability.kind) {
+    case TemporalHostCapabilityResultKind.Admitted:
+      return { kind: BpmnProcessAdmissionResultKind.Admitted };
+    case TemporalHostCapabilityResultKind.Rejected:
+      return {
+        kind: BpmnProcessAdmissionResultKind.Rejected,
+        failure: hostCapability.failure,
+      };
+  }
+}
+
 export async function startBpmnProcess(
   client: WorkflowClient,
   start: StartProcessStimulus,
   semanticProcess: SemanticProcessProgram,
-): Promise<WorkflowHandle<BpmnProcessWorkflow>> {
-  if (!supportsSemanticProcessExecution(start, semanticProcess)) {
-    throw new TypeError(
-      "Workflow start requires one admitted Semantic Process execution",
-    );
+): Promise<BpmnProcessStartResult> {
+  const admission = assessBpmnProcessAdmission(start, semanticProcess);
+  if (admission.kind === BpmnProcessAdmissionResultKind.Rejected) {
+    return {
+      kind: BpmnProcessStartResultKind.Rejected,
+      failure: admission.failure,
+    };
   }
-  return withDeadline(
+  const handle = await withDeadline(
     client.start<BpmnProcessWorkflow>(
       bpmnProcessWorkflowType,
       {
@@ -70,6 +145,10 @@ export async function startBpmnProcess(
     operationDeadlineMs,
     "Process Workflow start",
   );
+  return {
+    kind: BpmnProcessStartResultKind.Started,
+    handle,
+  };
 }
 
 export async function submitUserTaskCompletion(

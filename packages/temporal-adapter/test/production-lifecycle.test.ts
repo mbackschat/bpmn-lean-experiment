@@ -38,6 +38,7 @@ type WorkerLease = Readonly<{
 
 import {
   ProcessCommandResultKind,
+  BpmnProcessStartResultKind,
   bpmnCompleteUserTaskUpdateName,
   bpmnOpenUserTasksQueryName,
   bpmnProcessWorkflowType,
@@ -98,7 +99,7 @@ test("closed Workflow retains accepted command result without accepting a new co
 
   try {
     workerLease = await startWorker(environment);
-    const handle = await withDeadline(
+    const startResult = await withDeadline(
       startBpmnProcess(
         environment.client.workflow,
         scenario.stimuli[0],
@@ -107,6 +108,15 @@ test("closed Workflow retains accepted command result without accepting a new co
       operationDeadlineMs,
       "lifecycle Workflow start",
     );
+    switch (startResult.kind) {
+      case BpmnProcessStartResultKind.Started:
+        break;
+      case BpmnProcessStartResultKind.Rejected:
+        throw new Error(
+          `lifecycle Workflow was rejected: ${startResult.failure.code}`,
+        );
+    }
+    const handle = startResult.handle;
     assert.equal(handle.workflowId, workflowId);
     const openTasks = await waitForOpenTasks(handle);
     assert.equal(openTasks.length, 1);
