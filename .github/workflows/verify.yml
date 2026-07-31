@@ -12,6 +12,11 @@ on:
   schedule:
     - cron: "17 4 * * 1"
   workflow_dispatch:
+    inputs:
+      skip_lean_cache:
+        description: Verify without the Lean build cache
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -27,6 +32,11 @@ jobs:
     name: verify (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    env:
+      # One decision for the Lean build cache, announced by the first step so
+      # every run records which mode produced its result. The weekly schedule
+      # and an explicit dispatch both verify from scratch.
+      LEAN_CACHE: ${{ github.event_name != 'schedule' && github.event.inputs.skip_lean_cache != 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -35,6 +45,11 @@ jobs:
           - macos-latest
 
     steps:
+      - name: Report Lean cache mode
+        run: |
+          echo "event=${{ github.event_name }} LEAN_CACHE=$LEAN_CACHE"
+          test "$LEAN_CACHE" = "true" || echo "verifying from scratch: no Lean build cache"
+
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
@@ -80,7 +95,7 @@ jobs:
         # Lean source state, so an unchanged tree hits and a changed tree falls
         # back to the newest prefix match for an incremental rebuild. The
         # scheduled run skips the cache to keep one from-scratch build a week.
-        if: github.event_name != 'schedule'
+        if: env.LEAN_CACHE == 'true'
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .lake
