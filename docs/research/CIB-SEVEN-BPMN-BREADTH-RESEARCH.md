@@ -2,7 +2,7 @@
 
 ## Status and question
 
-This research inventories the pinned CIB Seven core BPMN test-resource corpus to answer one scheduling question: which uncovered reusable BPMN Process Execution mechanism should follow the runnable Temporal MVP?
+This research inventories the pinned CIB Seven core BPMN test-resource corpus to answer one scheduling question: which uncovered reusable BPMN Process Execution mechanism should follow the runnable Temporal MVP and the implemented scope-completion/Error-propagation pair?
 
 The inventory is a roadmap input, not a BPMN conformance measure, a CIB compatibility percentage, or evidence that every matching fixture executes the tagged construct. BPMN meaning remains owned by the standard and approved capsules; exact implementation and evidence status remain in the [implementation map](../IMPLEMENTATION-MAP.md).
 
@@ -14,45 +14,45 @@ The denominator is the 1,144 `*.bpmn` and `*.bpmn20.xml` files below `engine/src
 
 ## Inventory method and reproducibility boundary
 
-The broad inventory enumerates the resource files once and searches namespace-tolerant opening tags for each BPMN element or EventDefinition. Sub-Process classification uses XML parsing rather than a plain tag count: a `subProcess` with `triggeredByEvent="true"` is an Event Sub-Process; an absent or non-true value is ordinary. File counts and occurrence counts are recorded separately.
+Run `pnpm research:cib-breadth [resource-root]` to reproduce the inventory. The dependency-free classifier walks a namespace-insensitive XML element tree, excludes comments, CDATA, and processing instructions, records file counts and occurrence counts separately, and classifies the candidate attributes and direct child EventDefinitions used below. Its fixture test locks prefix independence, nested Sub-Process classification, Message-addressed Receive Tasks, sequential/parallel Multi-Instance classification, Event Sub-Process interruption, and Intermediate Throw Event triggers.
 
-The exact revision, denominator, paths, matching rules, and results are retained here, but the one-off inventory command is not yet a project harness. Exact regeneration is therefore reviewable but not an executable repository gate. If the inventory is refreshed or becomes a recurring roadmap input, first promote the enumeration into a checked dependency-free script with a fixture-based classification test.
+The scanner deliberately retains lexical construct signal from malformed negative-deployment fixtures and labels those files rather than treating them as executable examples. At the pinned revision it labels exactly one of 1,144 files structurally malformed under this limited tag-balance check. This is not general BPMN XML validation; source admission remains the parser-backed checked-graph boundary.
 
 Lexical counts are scheduling signals only. They can miss a construct created by a Java model builder, count an invalid or negative deployment fixture, and say nothing about behavioral depth. A candidate therefore still needs an exact standard proposition, an executable CIB probe when a CIB relationship is selected, and a bounded capsule before implementation.
 
 ## Broad fixture signals
 
-| Construct | Files containing it |
-|---|---:|
-| User Task | 737 |
-| any Sub-Process | 334 |
-| Boundary Event | 298 |
-| Service Task | 232 |
-| Multi-Instance Loop Characteristics | 160 |
-| Call Activity | 145 |
-| Parallel Gateway | 144 |
-| Timer Event Definition | 138 |
-| Receive Task | 121 |
-| Intermediate Throw Event | 116 |
-| Error Event Definition | 111 |
-| Message Event Definition | 109 |
-| Escalation Event Definition | 80 |
-| Compensation Event Definition | 78 |
-| Signal Event Definition | 69 |
-| Exclusive Gateway | 68 |
-| Intermediate Catch Event | 67 |
-| Conditional Event Definition | 44 |
-| Script Task | 37 |
-| Inclusive Gateway | 29 |
-| Terminate Event Definition | 22 |
-| Transaction | 21 |
-| Manual Task | 19 |
-| Event-Based Gateway | 16 |
-| Cancel Event Definition | 14 |
-| Send Task | 9 |
-| Link Event Definition | 4 |
-| Business Rule Task | 2 |
-| Complex Gateway | 0 |
+| Construct | Files | Occurrences |
+|---|---:|---:|
+| User Task | 737 | 1,341 |
+| any Sub-Process | 334 | 520 |
+| Boundary Event | 298 | 394 |
+| Service Task | 232 | 362 |
+| Multi-Instance Loop Characteristics | 160 | 180 |
+| Call Activity | 145 | 152 |
+| Parallel Gateway | 144 | 248 |
+| Timer Event Definition | 138 | 163 |
+| Receive Task | 121 | 141 |
+| Intermediate Throw Event | 116 | 126 |
+| Error Event Definition | 111 | 177 |
+| Message Event Definition | 109 | 136 |
+| Escalation Event Definition | 80 | 135 |
+| Compensation Event Definition | 78 | 192 |
+| Signal Event Definition | 69 | 80 |
+| Exclusive Gateway | 68 | 75 |
+| Intermediate Catch Event | 67 | 89 |
+| Conditional Event Definition | 44 | 54 |
+| Script Task | 37 | 46 |
+| Inclusive Gateway | 29 | 48 |
+| Terminate Event Definition | 22 | 24 |
+| Transaction | 21 | 23 |
+| Manual Task | 19 | 36 |
+| Event-Based Gateway | 16 | 16 |
+| Cancel Event Definition | 14 | 30 |
+| Send Task | 9 | 9 |
+| Link Event Definition | 4 | 11 |
+| Business Rule Task | 2 | 2 |
+| Complex Gateway | 0 | 0 |
 
 The 334 Sub-Process files split into 265 files with at least one ordinary embedded Sub-Process, 157 with at least one Event Sub-Process, and 88 containing both. The corpus contains 340 ordinary Sub-Process occurrences and 180 Event Sub-Process occurrences.
 
@@ -62,7 +62,39 @@ The pinned source test `org.cibseven.bpm.engine.test.bpmn.subprocess.SubProcessT
 
 That source test is a strong probe seed, not retained project evidence. It neither supplies a project-owned answer-free scenario nor establishes the richer two-child completion-order discriminator selected below.
 
-## Priority decision
+## Post-scope candidate split
+
+The executable refresh separates the largest remaining families into materially different propositions:
+
+| Candidate slice | Files | Occurrences | Deciding scope fact |
+|---|---:|---:|---|
+| Event Sub-Process | 157 | 180 | 95 files contain interrupting starts and 62 contain non-interrupting starts; Message, Escalation, Timer, Error, Compensation, Conditional, and Signal triggers are separate propositions |
+| Call Activity with `calledElement` | 117 | 123 | Requires called-definition resolution, a separately owned Process instance, and cross-definition lifecycle |
+| Receive Task with `messageRef` | 17 | 18 | Can reuse the implemented passive Message subscription, delivery, refusal, observation, Signal, and replay mechanisms after a bounded address-contract decision |
+| Receive Task without `messageRef` | 104 | 123 | CIB exposes a legacy execution-signal wait rather than a definition-addressed BPMN Message; this is not selected by the standard capsule |
+| Multi-Instance parallel | 85 | 86 | Requires activity-instance collection and completion accounting |
+| Multi-Instance sequential | 76 | 94 | Requires repeated activation and loop state; 10 occurrences also have a completion condition |
+| Intermediate Throw Compensation | 49 | 54 | Depends on compensation registration and invocation |
+| Intermediate Throw Escalation | 35 | 36 | Requires a new propagation family and catch loci |
+| Intermediate Throw Signal | 17 | 17 | Requires broadcast/routing semantics not established by direct subscription addressing |
+| Intermediate Throw Message | 9 | 10 | Requires modeled outbound delivery rather than the existing inbound catch mechanism |
+| Intermediate Throw None | 4 | 4 | Small but adds little CIB breadth or mechanism leverage |
+
+No inspected Receive Task carries `operationRef` or `instantiate="true"`. This matters because the already implemented Intermediate Catch Message profile deliberately requires a complete Interface → Operation → input Message chain, whereas the CIB Receive Task corpus supplies only a direct `messageRef` when it supplies an address at all.
+
+The exact compact CIB precedent is `ReceiveTaskTest.singleReceiveTask.bpmn20.xml`: None Start → Receive Task with `messageRef="newInvoice"` → None End, plus one root Message. `ReceiveTaskTest` observes one public Message subscription, consumes it with `messageEventReceived(subscription.name, executionId)`, removes the subscription, and completes the Process. The same Java test also exercises the addressless legacy `signal(executionId)` path; that path is deliberately not evidence for the selected BPMN Message account.
+
+## Priority decision after Error propagation
+
+A bounded Message-addressed Receive Task is selected next. It is not selected because 121 files contain the tag; it is selected because the 17-file/18-occurrence addressed subset has a compact public-service CIB precedent and can reuse the existing Message runtime and Temporal host seam while adding only the distinct BPMN Activity/source proposition.
+
+The capsule must decide the smallest closed Message-address representation before implementation. The current `MessageChannel` requires Interface, Interface Operation, and Message identities, and therefore cannot honestly represent the direct Message reference used by Receive Task. A proposal may replace that shape atomically with a closed discriminated address that preserves the existing operation-addressed case and adds the direct-message case; it must not make Interface fields optional, invent an Operation absent from source, or retain compatibility readers under the pre-release policy.
+
+The first profile is exactly one root Message and one Message-addressed Receive Task in a linear root Process. It excludes the 104 addressless CIB fixtures, `operationRef`, instantiate behavior, correlation keys, payload/data mapping, Message Flow, Collaboration, business-key or global correlation, repeated activation, Multi-Instance, boundary Events, Sub-Process combinations, and modeled Message throw. The optional CIB lane may establish agreement only for the exact Message subscription and public Process lifecycle observed by the compact precedent.
+
+Event Sub-Process is deferred despite its larger count because its interrupting/non-interrupting split and seven populated trigger families would either produce an artificially weak one-off slice or reopen scope creation, event routing, regional cancellation, repetition, and concurrency together. Multi-Instance and Call Activity remain high-leverage successors, but both require new lifecycle state rather than source-level reuse of an existing wait mechanism.
+
+## Earlier priority decision
 
 Ordinary embedded Sub-Process entry and normal completion was selected before Error propagation for four reasons:
 
@@ -75,12 +107,12 @@ Implementing the error-only proposal first would install scope entry with delibe
 
 ## Ordered consequences
 
-The implemented [ordinary embedded Sub-Process specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) closed first, followed by the [Error-propagation specification](../capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) on the same definition/runtime scope foundation. Its bounded CIB Seven `2.2.0` public-lifecycle evidence agrees in both child-command orders under `CIB-AGR-0008` without making CIB the source of BPMN meaning. The next breadth ranking must now be repeated against the remaining construct inventory and the mechanisms these two capsules established.
+The implemented [ordinary embedded Sub-Process specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) closed first, followed by the [Error-propagation specification](../capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) on the same definition/runtime scope foundation. Its bounded CIB Seven `2.2.0` public-lifecycle evidence agrees in both child-command orders under `CIB-AGR-0008` without making CIB the source of BPMN meaning. The executable refresh above re-ranks the remaining constructs against the mechanisms these two capsules established.
 
-The next breadth ranking after ordinary completion should be repeated against both the remaining construct inventory and the mechanisms actually established. Raw prevalence does not automatically make Boundary Events next: the chosen item must still be the smallest reusable proposition whose admission, semantics, host mapping, and evidence can close without importing adjacent families accidentally.
+The refresh above completes that re-ranking. Raw prevalence did not select Event Sub-Process or another Boundary Event merely because they occur more often; the chosen Receive Task slice is the smallest remaining standard proposition that reuses a proven subscription and host seam while adding a real CIB breadth construct.
 
 ## Limits and re-open conditions
 
 This inventory does not count BPMN requirements, behavioral variants, combinations, or negative cases. It does not measure Collaboration, choreography, human-resource products, forms, task lists, identity, deployment, or A12 adoption. Those surfaces retain their separate denominators and scope decisions.
 
-Re-run the inventory when the pinned CIB breadth baseline changes, when the resource denominator changes materially, or after a mechanism closes and its reusable consequences change the cheapest next capsule. Do not re-run it after every implementation-only commit.
+Re-run the inventory when the pinned CIB breadth baseline changes, when the resource denominator changes materially, or after a mechanism closes and its reusable consequences change the cheapest next capsule. The command is a reproducible research instrument and its classifier test belongs to the infrastructure gate; its changing corpus output is not a committed golden file and is not an ordinary per-commit gate because the external checkout is optional. Do not re-run it after every implementation-only commit.
