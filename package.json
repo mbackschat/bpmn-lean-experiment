@@ -23,7 +23,7 @@
     "mvp:run": "pnpm build:bpmn-source && pnpm build:temporal-adapter && node packages/temporal-adapter/cli/run-mvp.ts",
     "sync:doc-fragments": "node scripts/markdown-code-fragments.ts --write",
     "replace:cib-evidence": "node scripts/replace-cibseven-evidence.ts --replace",
-    "test:contracts": "node --test --test-concurrency=1 scripts/contract-artifacts.test.ts scripts/contract-artifact-projections.test.ts scripts/contract-definition-artifacts.test.ts scripts/cib-observation-fidelity.test.ts",
+    "test:contracts": "node --test --test-concurrency=1 scripts/capsule-roundtrip.test.ts scripts/contract-artifacts.test.ts scripts/contract-artifact-projections.test.ts scripts/contract-definition-artifacts.test.ts scripts/cib-observation-fidelity.test.ts",
     "test:differential": "tsc -p packages/differential/tsconfig.json && node --test --test-concurrency=1 packages/differential/test/comparator.test.ts packages/differential/test/scenario-binding.test.ts",
     "test:infrastructure": "node --test --test-concurrency=1 scripts/*.test.ts",
     "test:miwg": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && node packages/bpmn-source/calibration/miwg-observation.ts",

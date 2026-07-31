@@ -28,6 +28,13 @@ import {
   pipelineCases,
   runPipelineCases,
 } from "./pipeline-harness.ts";
+import {
+  artifactCases,
+  normativeArtifactCases,
+} from "../../../scripts/contract-artifact-cases.ts";
+import {
+  verifyPipelineRegistration,
+} from "../../../scripts/capsule-roundtrip.ts";
 
 /**
  * Warm-pipeline feedback budget in milliseconds.
@@ -61,6 +68,49 @@ test("rejects a warm-pipeline budget with trailing units", () => {
         BPMN_PIPELINE_WARM_BUDGET_MS: "40000ms",
       }),
     TypeError,
+  );
+});
+
+test("covers the complete artifact registry with exact evidence routes and seeded mutations", () => {
+  assert.doesNotThrow(() =>
+    verifyPipelineRegistration(
+      artifactCases,
+      normativeArtifactCases,
+      pipelineCases,
+    ),
+  );
+});
+
+test("rejects incomplete or unprotected pipeline registration", () => {
+  const scenarioRelativePath = "scenarios/example/scenario.json";
+  const evidenceRelativePath =
+    "scenarios/example/cibseven-evidence.json";
+  const artifact = { scenarioRelativePath, evidenceRelativePath };
+
+  assert.throws(
+    () => verifyPipelineRegistration([artifact], [], []),
+    /registered scenario missing from pipeline.*example\/scenario\.json/u,
+  );
+  assert.throws(
+    () =>
+      verifyPipelineRegistration([], [{ scenarioRelativePath }], [
+        { scenarioRelativePath, cib: null },
+      ]),
+    /pipeline case has no seeded mutation.*example\/scenario\.json/u,
+  );
+  assert.throws(
+    () =>
+      verifyPipelineRegistration([artifact], [], [
+        {
+          scenarioRelativePath,
+          cib: {
+            evidenceRelativePath:
+              "scenarios/example/different.cibseven-evidence.json",
+          },
+          injectMutation: () => undefined,
+        },
+      ]),
+    /pipeline CIB evidence route differs from registry/u,
   );
 });
 

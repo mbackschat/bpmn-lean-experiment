@@ -166,6 +166,8 @@ For each new runtime-transition family, keep a declarative Lean relation distinc
 
 Each capsule must inventory runtime-only and synthetic constructs, their source or derivation, why they are necessary, which public projections may expose them, and their creation, ownership, and removal invariants. Keep neutral target scenarios answer-free; expected outcomes and portable assertions remain verifier-only artifacts bound to exact scenario and profile identity.
 
+Adding a profile, scenario, or retained-evidence artifact requires the complete artifact registry and differential-catalog roundtrip in the same change. No profile may remain unreferenced, no scenario or evidence file may remain unregistered, every registered scenario must have exactly one pipeline case, CIB evidence routing must agree, and every pipeline case must retain a meaningful seeded semantic mutation. Derive aggregate counts from these catalogs instead of maintaining a second manual list.
+
 Name a concrete adapter consumer or refinement risk before generalizing a representation or semantic mechanism. Preserve content-bound CIB observations as immutable evidence and require a meaningful seeded mutation for every new evidence projection. During pre-release, capture and replay Temporal histories within one disposable gate; retain histories only after an explicit durable baseline is approved. Investigate a mismatch at the semantic or projection boundary; never refresh expected evidence merely to make a gate green.
 
 ### Pre-release evolution
@@ -189,7 +191,7 @@ After the technical gate is green but before marking a milestone or semantic cap
 7. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
 8. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
-10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in its completed [PLAN.md](docs/PLAN.md) item with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall;
+10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall;
 11. decide whether the result changes the next best step;
 12. request an independent review before crossing a strategically material semantic, proof, admission, compatibility, or architecture checkpoint when correlated assumptions or claim-strength errors could survive the executable gates. Routine implementation does not require this extra review.
 
@@ -228,6 +230,7 @@ Use one owner for each fact and link to it elsewhere:
 | Downstream A12 model, delegate, façade, blueprint, and migration-adoption denominator | [A12-WORKFLOWS-COMPATIBILITY-LEDGER.md](docs/research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) |
 | Exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
+| Commit-bounded completed capsule and enabling-increment cost | [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) |
 | CIB behavior relative to BPMN: agreements, operational details, interpretations, extensions, configuration, limitations, and deviations | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Bounded project-owned semantic meaning, laws, witnesses, and exclusions | [docs/capsules](docs/capsules/README.md) |
 | External-system and semantic-background findings | [docs/research](docs/research/README.md) |

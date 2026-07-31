@@ -23,6 +23,10 @@ Every new capsule records:
 11. the layer ownership of every rule and whether any target-shaped fixture is a one-time vertical feasibility witness or a reusable semantic mechanism;
 12. exact unsupported claims, common-mode risks, and versioning consequences;
 13. for any admission widening, the newly reachable stable-state resumption account and the separate adapter host-capability obligation for every reachable wait-set shape.
+14. a Temporal hosting/refinement preflight before a new transition family is implemented, including durable ingress, waits, effects, cancellation, ordering, deduplication, replay, and the smallest executable refinement witness;
+15. atomic versioning consequences across every producer and consumer, plus an explicit statement of the applicable pre-release or durable-history policy;
+16. an epistemic closure review naming the exact established and nearest unsupported claims, common-mode risks, the nearest realistic counterexample, meaningful mutations, and the next-step consequence;
+17. a commit-bounded closure measurement in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the nearest increment that changed the same layers.
 
 Completeness, determinism, liveness, fairness, compiler correspondence, TypeScript correspondence, and Temporal refinement are never implied by evaluator soundness. Record and check each only when its exact scope is meaningful.
 

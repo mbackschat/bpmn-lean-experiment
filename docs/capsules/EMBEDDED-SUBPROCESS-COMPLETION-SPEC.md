@@ -240,7 +240,7 @@ The capsule is closed because every rule has its required evidence lane, the nea
 
 Stop and return to owner review if normal child completion requires a public scope tree, if the exact profile cannot avoid repeated occurrence identity, if the host needs Child Workflows or cancellation to preserve the public result, if CIB differs at the selected public boundary, if quiescence cannot be checked without topology-specific runtime code, or if the representation adds a generic construct without a second current consumer.
 
-The exact implementation baseline is commit `5b34977`. Against the atomic closure worktree, hand-written code adds 5,266 and removes 1,698 nonblank lines, while documentation adds 283 and removes 158. The closure commit is recorded in [the plan](../PLAN.md) after creation so that the next comparable scope-changing capsule has a reproducible cost baseline rather than an impression.
+The exact implementation boundary is `5b34977..a59f8a3`. Hand-written code adds 5,266 and removes 1,698 nonblank lines, while documentation adds 283 and removes 158. The maintained comparison belongs in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md).
 
 ## Re-open conditions
 

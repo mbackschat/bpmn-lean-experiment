@@ -54,6 +54,7 @@ The following names identify repository-wide owners and do not require another s
 - `README.md` — navigation and project front door;
 - `PROJECT-DESIGN.md` — the durable architectural argument and decision model;
 - `PLAN.md` — current ordered work, blockers, and exact resume point;
+- `CAPSULE-COST-LEDGER.md` — retained commit-bounded capsule and enabling-increment measurements;
 - `SOURCES.md` — source provenance and controlled reference navigation;
 - `IMPLEMENTATION-MAP.md` — exact live implementation, proof, evidence, and absence boundary;
 - `DOC-DISCIPLINE.md` — this documentation workflow;
@@ -111,6 +112,7 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 | Mandatory research-lane procedure | `*-POLICY.md` |
 | Exact implementation and assurance status | `IMPLEMENTATION-MAP.md` |
 | Immediate work order | `PLAN.md` |
+| Reproducible completed capsule cost and comparison | `CAPSULE-COST-LEDGER.md` |
 | Test method and gates | `TESTING-SPEC.md` |
 | External revisions and licenses | `SOURCES.md` |
 
