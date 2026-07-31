@@ -2,9 +2,11 @@
 
 ## Status
 
-**Selected bounded proposal; implementation is not authorized until owner approval.**
+**Retained bounded follow-on proposal; implementation is not authorized and its representation must rebase after ordinary embedded Sub-Process completion closes.**
 
-This is the first broader Sub-Process and event-propagation capsule. It selects one normal embedded Sub-Process whose only reachable terminal result is an exact-code Error End Event caught by one interrupting boundary Error Event attached to that Sub-Process. It establishes one nested cancellation region and direct-parent Error propagation; it does not establish ordinary Sub-Process completion or Event Sub-Process behavior.
+This is the first exceptional-exit follow-on after the [ordinary embedded Sub-Process completion proposal](EMBEDDED-SUBPROCESS-COMPLETION-PROPOSAL.md). It selects one normal embedded Sub-Process whose only reachable terminal result is an exact-code Error End Event caught by one interrupting boundary Error Event attached to that Sub-Process. It establishes regional cancellation and direct-parent Error propagation over the future ordinary-scope foundation; it does not establish Event Sub-Process behavior.
+
+The owner question and semantic discriminator remain useful, but the `ScopeDefinition`, `EnterScopeOperation`, runtime ownership, and atomic versioning sketches below predate the ordinary-completion selection. They are provisional until rebased on that capsule's implemented names and invariants. Do not implement this document as written.
 
 ## Owner question
 
@@ -22,9 +24,9 @@ The closest unsupported claim is ordinary completion of an embedded Sub-Process 
 
 The known eventual consumers are the Process Execution Conformance roadmap and the later A12 adoption lane. The A12 corpus contains Error End Events, but no unchanged A12 model is claimed by this source profile and the corpus has not established a Sub-Process denominator.
 
-## Why this is first
+## Why this is the first exceptional follow-on
 
-The existing boundary-error capsule proves a matching Error result attached directly to a Task in one flat Process. It explicitly excludes Error End Events, nested propagation, and general cancellation. The selected discriminator adds exactly those missing semantic distinctions that must agree: one child scope occurrence, one modeled Error throw, direct-parent catcher selection, and cancellation by runtime ownership.
+The existing boundary-error capsule proves a matching Error result attached directly to a Task in one flat Process. It explicitly excludes Error End Events, nested propagation, and general cancellation. After ordinary child entry, ownership, and quiescent completion are established, this discriminator adds exactly the missing exceptional distinctions: one modeled Error throw, direct-parent catcher selection, and cancellation by runtime ownership.
 
 A single sequential child would not separate scope interruption from ordinary token replacement. The second live child User Task is required because its disappearance at the public observation boundary proves regional cancellation. An outer recovery User Task is required because it keeps the Process live long enough for a fresh stale-child command to establish state-preserving refusal.
 
@@ -147,11 +149,11 @@ type InterruptingErrorHandler = DeepReadonly<{
 
 These are minimal contract sketches, not permission to copy them without the compile-time and JSON-boundary audit. Exact names may change during implementation only if the semantic distinctions remain explicit and the proposal is updated before approval or the approved contract is amended atomically.
 
-`enterScope` is justified by the first consumer that requires a runtime-owned cancellation region distinct from the root Process. `throwError` is justified by the first modeled Error result whose meaning is propagation rather than completion of an external effect. Neither operation is a selector for the fixture topology, and neither is a dormant generic Event union.
+`enterScope` and ordinary child ownership will be inherited from the approved normal-completion foundation rather than introduced here. `throwError` is justified by the first modeled Error result whose meaning is propagation rather than completion of an external effect. Neither operation may become a selector for the fixture topology or a dormant generic Event union.
 
 The immutable program associates every control place and operation with one definition scope. The direct handler table associates the child definition scope with one Error boundary route in its parent. Program validation requires every referenced scope, place, origin, handler, Error identity, and code to agree and rejects a handler cycle or an attachment outside the direct parent.
 
-No general scope-completion operation is selected. The admitted `enterScope` has no normal output and the source profile proves that the child cannot normally quiesce: Trigger Error remains active until it reaches `throwError`. A later normal Sub-Process capsule must add its own output, completion rule, witness, and versioning decision rather than interpreting an unused field here.
+The admitted exceptional fixture still has no reachable normal child completion because Trigger Error remains active until it reaches `throwError`. The implementation must nevertheless reuse the ordinary capsule's general scope-completion representation and prove that the exceptional route cancels the active occurrence before normal completion can emit its parent output. It must not retain this proposal's earlier error-only no-output representation as a parallel scope account.
 
 ## Runtime and identity
 
@@ -266,6 +268,8 @@ No synthetic Temporal cancellation or CIB execution-tree identity enters the sem
 The shared XML-to-checked-source producer remains the principal correlation risk. Lean begins from the checked graph and independently checks lowering; it does not provide a second XML parser. Source-containment, attachment, and Error-reference mutations are therefore consistency guards, not a falsely independent source lane.
 
 ## Versioning consequences
+
+This section is provisional until the ordinary embedded Sub-Process capsule closes. Rebase it on the then-current checked-source, Semantic Process definition, runtime ownership, schema, host-capability, and evidence contracts; remove every replacement already completed by that foundation and keep only the additive Error propagation, handler, cancellation, and observation consequences.
 
 This is a breaking pre-release representation change and must replace every current producer and consumer atomically if approved.
 
