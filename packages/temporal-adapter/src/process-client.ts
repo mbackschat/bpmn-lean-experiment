@@ -54,8 +54,8 @@ import {
 import {
   requireCompletedProcessReceipt,
   semanticCommandResult,
-  withDeadline,
 } from "./runner-support.js";
+import { withDeadline } from "./async-boundary.js";
 
 const operationDeadlineMs = 5_000;
 const messageResolutionPollMs = 20;

@@ -39,7 +39,6 @@ import {
   reconcileHarnessTraceEvidence,
 } from "./harness-evidence.js";
 import {
-  normalizeError,
   requireCompletedProcessReceipt,
   requireCompletionStimuli,
   requireOptionalEffectExecution,
@@ -47,8 +46,11 @@ import {
   requireSemanticOutcome,
   requireStartStimulus,
   scenarioResultFromTrace,
-  withDeadline,
 } from "./runner-support.js";
+import {
+  normalizeError,
+  withDeadline,
+} from "./async-boundary.js";
 import {
   submitUserTaskCompletionAtWorkflowId,
 } from "./process-client.js";

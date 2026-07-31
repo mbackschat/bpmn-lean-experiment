@@ -67,7 +67,6 @@ import {
 import {
   completedState,
   isCompletedProcessReceipt,
-  normalizeError,
   openEffectsInTrace,
   openTimersInTrace,
   requireCompletedProcessReceipt,
@@ -77,8 +76,11 @@ import {
   requireStartStimulus,
   scenarioResultFromTrace,
   validateExecutionOptions,
-  withDeadline,
 } from "./runner-support.js";
+import {
+  normalizeError,
+  withDeadline,
+} from "./async-boundary.js";
 import {
   TemporalWorkerHost,
 } from "./temporal-worker-host.js";

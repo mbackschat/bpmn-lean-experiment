@@ -40,8 +40,8 @@ import {
 import {
   requireOptionalEffectExecution,
   requireStartStimulus,
-  withDeadline,
 } from "./runner-support.js";
+import { withDeadline } from "./async-boundary.js";
 
 const operationDeadlineMs = 5_000;
 const workflowResultDeadlineMs = 10_000;

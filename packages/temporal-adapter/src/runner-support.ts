@@ -531,29 +531,3 @@ function isNonEmptyString(value: unknown): value is string {
 export function assertNever(value: never): never {
   throw new TypeError(`Unsupported Temporal runner variant: ${String(value)}`);
 }
-
-export function withDeadline<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  operation: string,
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`${operation} exceeded ${timeoutMs}ms`)),
-      timeoutMs,
-    );
-  });
-  return Promise.race([promise, deadline]).finally(() => {
-    if (timer !== undefined) {
-      clearTimeout(timer);
-    }
-  });
-}
-
-export function normalizeError(
-  error: unknown,
-  fallbackMessage: string,
-): Error {
-  return error instanceof Error ? error : new Error(fallbackMessage);
-}

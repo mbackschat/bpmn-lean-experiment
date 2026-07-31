@@ -31,9 +31,11 @@ import type {
   EffectProbeStore,
 } from "./effect-probe.js";
 import {
-  isRecord,
   normalizeError,
   withDeadline,
+} from "./async-boundary.js";
+import {
+  isRecord,
 } from "./runner-support.js";
 
 const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));

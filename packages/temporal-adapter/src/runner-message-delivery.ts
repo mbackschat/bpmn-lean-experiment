@@ -15,8 +15,8 @@ import {
 } from "./process-client.js";
 import {
   requireMessageDeliveryStimuli,
-  withDeadline,
 } from "./runner-support.js";
+import { withDeadline } from "./async-boundary.js";
 
 export async function deliverScenarioMessages(
   client: WorkflowClient,

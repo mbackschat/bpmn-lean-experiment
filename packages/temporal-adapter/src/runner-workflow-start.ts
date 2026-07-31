@@ -16,9 +16,7 @@ import {
 import type {
   BpmnProcessWorkflow,
 } from "./contracts.js";
-import {
-  withDeadline,
-} from "./runner-support.js";
+import { withDeadline } from "./async-boundary.js";
 import {
   requireScenarioAdmission,
 } from "./scenario-admission.js";
