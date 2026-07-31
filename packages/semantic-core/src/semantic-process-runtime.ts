@@ -200,15 +200,9 @@ function admit(
   }
 }
 
-// Lean's closure advances the head of the program-ordered enabled list, while
-// this selector advances the lowest canonical operation ID. In the one admitted
-// multiple-enabled state (the disjoint two-User-Task pair) the two choices
-// coincide only because `isWellFormedSemanticProcessProgram` requires
-// `isSortedById(operations)` under this same `compareCanonicalStrings` order,
-// making the sorted head and the program-order head the same operation. This
-// selector also has no ambiguity signal: Lean rejects every other
-// multiple-enabled state as an unresolved semantic choice, which admission
-// currently keeps unreachable here.
+// Every internal operation the program permits in this state. Membership and
+// count are order-independent; the canonical-ID sort exists only for the
+// selector below.
 function enabledInternalOperations(
   program: SemanticProcessProgram,
   state: RuntimeState,
@@ -262,6 +256,15 @@ export function isStableStateResumable(state: RuntimeState): boolean {
   }
 }
 
+// Semantic policy, not semantic truth. This selector advances the lowest
+// canonical operation ID, while Lean's `closeSupported` advances the head of the
+// program-ordered enabled list. In the one admitted multiple-enabled state (the
+// disjoint two-User-Task pair) the two choices coincide only because
+// `isWellFormedSemanticProcessProgram` requires `isSortedById(operations)` under
+// this same `compareCanonicalStrings` order, making the sorted head and the
+// program-order head the same operation. This selector also has no ambiguity
+// signal, while Lean rejects every other multiple-enabled state as an unresolved
+// semantic choice; admission currently keeps those states unreachable here.
 function internalStep(
   program: SemanticProcessProgram,
   state: RuntimeState,

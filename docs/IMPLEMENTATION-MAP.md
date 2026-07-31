@@ -269,6 +269,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 
 #### Explicitly absent
 
+- an ambiguity refusal matching Lean's `ambiguousInternalChoice`: the closure selector advances the lowest canonical operation ID without signalling an unresolved semantic choice, so agreement with Lean at the one admitted multiple-enabled state rests on the `isSortedById(operations)` admission requirement and on per-profile unreachability of every other such state
 - I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, value kinds beyond string/null, general mapping expressions/scopes, general faults/Error propagation, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
 
 ### CIB oracle
