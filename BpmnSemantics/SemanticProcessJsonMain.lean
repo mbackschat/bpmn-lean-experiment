@@ -167,12 +167,14 @@ private def scenarioKindJson : ScenarioKind → Json
   | .scenario => toJson "scenario"
 
 private def stimulusJson : Stimulus → Json
-  | .startProcess commandId processId instanceId =>
+  | .startProcess commandId processId instanceId initialVariables =>
       Json.mkObj
         [ ("kind", toJson "startProcess")
         , ("commandId", toJson commandId.value)
         , ("processId", toJson processId.value)
-        , ("instanceId", toJson instanceId.value) ]
+        , ("instanceId", toJson instanceId.value)
+        , ("initialVariables",
+            jsonArray (initialVariables.map variableBindingJson)) ]
   | .completeUserTaskInstance commandId taskId submittedValues =>
       Json.mkObj
         [ ("kind", toJson "completeUserTaskInstance")
@@ -287,7 +289,7 @@ private def definitionForScenario (inputs : List DefinitionInput)
       input.checkedProcess.identity.sourceSha256 ≠ scenario.bpmn.sha256 ||
       input.checkedProcess.processId ≠
         match scenario.stimuli.head? with
-        | some (.startProcess _ processId _) => ⟨processId.value⟩
+        | some (.startProcess _ processId _ _) => ⟨processId.value⟩
         | _ => ⟨""⟩ then
     throw (IO.userError
       s!"definition identity does not match scenario {scenario.id.value}")

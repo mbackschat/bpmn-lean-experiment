@@ -12,7 +12,8 @@
       "kind": "startProcess",
       "commandId": "start-timer-user-task-composition",
       "processId": "Process_TimerUserTaskComposition",
-      "instanceId": "CompositionInstance_1"
+      "instanceId": "CompositionInstance_1",
+      "initialVariables": []
     },
     {
       "kind": "fireTimer",

@@ -92,6 +92,7 @@ const start = Object.freeze({
   commandId: "start-process",
   processId: effectProgram.processId,
   instanceId: effectId.processInstanceId,
+  initialVariables: [],
 } as const) satisfies StartProcessStimulus;
 
 const complete = Object.freeze({

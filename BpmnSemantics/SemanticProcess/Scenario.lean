@@ -18,7 +18,7 @@ def projectTokenMultiplicities (program : Program) (state : RuntimeState) :
     (place.id, tokenMultiplicity state place.id)
 
 private def commandId : Stimulus → SemanticId
-  | .startProcess id _ _
+  | .startProcess id _ _ _
   | .completeUserTaskInstance id _ _
   | .deliverMessage id _ _
   | .fireTimer id _ _

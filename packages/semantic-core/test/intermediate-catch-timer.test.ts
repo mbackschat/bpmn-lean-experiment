@@ -81,6 +81,7 @@ const start = Object.freeze({
   commandId: "start-process",
   processId: timerProgram.processId,
   instanceId: "Instance_1",
+  initialVariables: [],
 });
 
 const exactFire = Object.freeze({

@@ -102,10 +102,14 @@ def initialState : RuntimeState :=
     endOccurrences := 0
     logicalTimeMs := 0 }
 
-def runningStartState (instanceId : SemanticId) : RuntimeState :=
+def runningStartState (instanceId : SemanticId)
+    (initialVariables : List VariableBinding) : RuntimeState :=
   { initialState with
     control := .running instanceId
-    initiationPending := true }
+    initiationPending := true
+    variables :=
+      { emptyScopedVariables with
+        process := { bindings := initialVariables } } }
 
 def tokenMultiplicity (state : RuntimeState) (place : ControlPlaceId) : Nat :=
   (state.tokens.filter fun token => decide (token = place)).length

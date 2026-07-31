@@ -78,7 +78,17 @@ test("start closes at one stable User Task wait", async () => {
     timerWaits: [],
     effectWaits: [],
     variables: {
-      process: { bindings: [] },
+      process: {
+        bindings: [
+          {
+            name: "requestTitle",
+            value: {
+              kind: VariableValueKind.String,
+              value: "Review invoice 42",
+            },
+          },
+        ],
+      },
       activities: [],
     },
     taskActivations: [
@@ -152,6 +162,13 @@ test("matching occurrence completion closes the Process", async () => {
             name: "decision",
             value: { kind: VariableValueKind.String, value: "approved" },
           },
+          {
+            name: "requestTitle",
+            value: {
+              kind: VariableValueKind.String,
+              value: "Review invoice 42",
+            },
+          },
           { name: "reviewNote", value: { kind: VariableValueKind.Null } },
         ],
       },
@@ -166,6 +183,27 @@ test("matching occurrence completion closes the Process", async () => {
     endOccurrences: 1,
     logicalTimeMs: 0,
   });
+});
+
+test("rejects a wrong Process start without installing initial variables", async () => {
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
+  const start = requiredAt(scenario.stimuli, 0, "scenario stimuli");
+  assert.equal(start.kind, StimulusKind.StartProcess);
+  if (start.kind !== StimulusKind.StartProcess) {
+    throw new TypeError("Expected the Process start stimulus");
+  }
+
+  const rejected = applyStimulus(
+    semanticProcessFor(scenario),
+    initialState,
+    { ...start, processId: "Other_Process" },
+  );
+
+  assert.equal(rejected.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(rejected.state, initialState);
 });
 
 test("non-matching occurrence completion is rejected without state change", async () => {

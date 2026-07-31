@@ -108,6 +108,10 @@ function admit(
               instanceId: stimulus.instanceId,
             },
             initiationPending: true,
+            variables: {
+              ...state.variables,
+              process: { bindings: stimulus.initialVariables },
+            },
           },
         };
       }

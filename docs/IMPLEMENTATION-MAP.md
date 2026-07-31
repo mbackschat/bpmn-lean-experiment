@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 ## Current claim
 
-The repository has an evidence-closed **draft** semantic capsule for one private executable `None Start Event → User Task → None End Event` Process. Exact completion atomically installs a canonical string/null Process-variable patch under selected CIB extension `CIB-EXT-0005`, and exact completion plus wrong activation agree across pinned CIB Seven, the Lean reference interpreter, the independent TypeScript semantic core, and the Temporal adapter. For sequential stale completion, CIB Seven, Lean, and the core agree on semantic rejection and preservation of the first committed patch; Temporal agrees exactly through completion and separately returns adapter-owned `processClosed` under the explicit post-terminal schedule.
+The repository has an evidence-closed **draft** semantic capsule for one private executable `None Start Event → User Task → None End Event` Process. Exact start installs canonical string/null Process variables before the first wait under selected CIB extension `CIB-EXT-0006`; exact completion atomically merges a second canonical patch under `CIB-EXT-0005`. Start visibility, exact completion, and wrong activation agree across pinned CIB Seven, the Lean reference interpreter, the independent TypeScript semantic core, and the Temporal adapter. For sequential stale completion, CIB Seven, Lean, and the core agree on semantic rejection and preservation of the committed start/completion data; Temporal agrees exactly through completion and separately returns adapter-owned `processClosed` under the explicit post-terminal schedule.
 
 Every multi-target agreement claim in this document carries one shared-origin qualifier: the TypeScript compiler in `@bpmn-lean/bpmn-source` is the sole producer of the checked BPMN graph and Semantic Process program that Lean, the TypeScript core, and the Temporal adapter all consume. Lean independently recomputes graph-to-program lowering and rejects inequality before evaluation; it has no BPMN XML parser, so a defect in XML-to-checked-graph translation propagates identically into those three targets. Pinned CIB Seven can separate that defect only for a declared CIB profile whose exact source it executes; the standards-only Simple Boolean profile has no such source-level oracle and states that limitation explicitly. The [parallel capsule's common-mode risks](capsules/PARALLEL-FORK-JOIN-SPEC.md#assurance-boundary), the [Exclusive Gateway assurance boundary](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md#assurance-boundary), and [TESTING-SPEC's evidence lanes](TESTING-SPEC.md#evidence-lanes) own the correlation rule.
 
@@ -131,7 +131,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 
 #### Implemented
 
-- Draft CIB-backed artifacts `cibseven-2.2.0-user-task-data-draft`, `parallel-fork-join-draft`, `cibseven-2.2.0-intermediate-catch-timer-draft`, `cibseven-2.2.0-service-task-effect-draft`, `cibseven-2.0.0-a12-create-document-draft`, and `cibseven-2.0.0-a12-boundary-error-draft` pin their oracle revision, environment, selected features, observation boundary, exclusions, and reviewed CIB–BPMN relationship IDs
+- Draft CIB-backed artifacts `cibseven-2.2.0-user-task-process-data-draft`, `parallel-fork-join-draft`, `cibseven-2.2.0-intermediate-catch-timer-draft`, `cibseven-2.2.0-service-task-effect-draft`, `cibseven-2.0.0-a12-create-document-draft`, and `cibseven-2.0.0-a12-boundary-error-draft` pin their oracle revision, environment, selected features, observation boundary, exclusions, and reviewed CIB–BPMN relationship IDs
 - the draft standards profiles `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft`, `bpmn-2.0.2-timer-user-task-composition-draft`, and `bpmn-2.0.2-intermediate-catch-message-draft` instead declare BPMN 2.0.2 normative authority and explicitly have no CIB oracle
 - exact profile operation-kind cardinalities are checked separately from topology-independent graph validation
 - immutable CIB artifact status freezes evidence calibration and does not imply a production deployment/history baseline
@@ -270,6 +270,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - pure effect-transport material projection from admitted definition fields plus one committed `openEffects` entry without hashing or host identity
 - adapter-facing current task/Message/timer projection, exact structural stimulus validation including safe integers and scalar strings, command identity, and same-stimulus comparison
 - atomic exact-task Process-variable merge before outgoing closure, including create, replacement, unrelated-binding preservation, explicit null, and state-preserving refusal
+- exact Process-start variable installation before internal closure, with canonical string/null bindings, fresh Process scope, no Activity-local scope, and state-preserving refusal
 - incremental deploy/advance and full scenario evaluation
 - executable internal-enabled-count and stable-state-resumability checks, including a stranded-token negative witness
 - malformed topology rejection
@@ -292,8 +293,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - raw Process-instance count, engine-clock, Process-variable, timer-job due date/executability, effect-job binding/retry, effect-execution, and mapping-execution observations
 - engine-observed pre-due timer eligibility
 - bounded engine-level stale-task rejection probe
-- pinned `2.2.0` User Task completion-data phase-zero probe over public task/runtime/history services, covering Process-variable read, create/overwrite/preserve merge, present null, continuation/final visibility, no-data preservation, and unknown/stale no-write controls under selected `CIB-EXT-0005`
-- retained exact-completion evidence projects only names introduced by already committed completion commands through history-backed Process-variable queries; future or rejected submitted names cannot influence an earlier/current projection
+- pinned `2.2.0` Process-start/User Task completion-data phase-zero probe over public runtime/task/history services, covering initial-variable visibility at the first task under `CIB-EXT-0006` plus create/overwrite/preserve merge, present null, continuation/final visibility, no-data preservation, and unknown/stale no-write controls under `CIB-EXT-0005`
+- retained exact-completion evidence projects only names introduced by already committed start or completion commands through history-backed Process-variable queries; future or rejected submitted names cannot influence an earlier/current projection
 - schema-valid duplicate-same-flow Parallel Gateway probe for candidate `CIB-DEV-0001`
 - warning-free exact Service Task bindings, prefix-independent expanded QNames, bean resolution, immediately executable async-before job with no due date, public job-definition/deployed-model projection, independent raw protocol/handler controls, profile-registered raw-binding-to-neutral-operation projection, public retry decrement `3 → 2`, two invocations/one test-local mutation, clean re-execution, and no administrative retry mutation
 - CreateDocument delegate input/local output plus final Process-variable history under packaged `2.0.0`
@@ -326,6 +327,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 #### Implemented
 
 - One semantic-lifetime Workflow receiving the start stimulus and admitted Semantic Process program
+- exact canonical string/null initial Process bindings carried in the explicit start stimulus, installed by the core before the first stable wait, retained in Workflow history, Query state, and the completed receipt, and covered by replay
 - external `ExternalTemporalRuntime` Worker/client lifecycle over a caller-supplied address, Namespace, identity, and Task Queue, with no embedded-server or port-binding responsibility and a live sequential Process witness
 - explicit Process-start Task Queue shared with the selected Worker rather than a hidden production constant
 - typed `started | rejected` production start result after separate semantic and Temporal host-capability checks and before Workflow creation
@@ -376,7 +378,6 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - retained result beyond Temporal retention
 - production canonical-observation API
 - command-line product entry point and documented fresh-checkout runnable deployment path
-- initial Process-variable ingress for the runnable product command
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow
 - Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing

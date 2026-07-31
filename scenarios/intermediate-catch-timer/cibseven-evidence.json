@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "intermediate-catch-timer-pt1s",
-    "sha256": "7f9e28c05be3f50a1662c9c8b759315ea0f5aee5c17a4661aea5e565377a8623"
+    "sha256": "5e7e4812b1a0b2319f91f18bbc52932f77a52b9299e14125ba4c9d6c114689d2"
   },
   "profile": {
     "id": "cibseven-2.2.0-intermediate-catch-timer-draft",

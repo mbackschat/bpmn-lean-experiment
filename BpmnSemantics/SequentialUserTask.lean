@@ -18,6 +18,7 @@ def startStimulus : Stimulus :=
     ⟨"start-process"⟩
     ⟨program.processId.value⟩
     ⟨"Instance_1"⟩
+    [ { name := "requestTitle", value := .string "Review invoice 42" } ]
 
 def exactTaskInstanceId : UserTaskInstanceId :=
   { processInstanceId := ⟨"Instance_1"⟩
@@ -26,6 +27,14 @@ def exactTaskInstanceId : UserTaskInstanceId :=
 
 def submittedValues : List VariableBinding :=
   [ { name := "decision", value := .string "approved" }
+  , { name := "reviewNote", value := .null } ]
+
+def initialBindings : List VariableBinding :=
+  [ { name := "requestTitle", value := .string "Review invoice 42" } ]
+
+def completedBindings : List VariableBinding :=
+  [ { name := "decision", value := .string "approved" }
+  , { name := "requestTitle", value := .string "Review invoice 42" }
   , { name := "reviewNote", value := .null } ]
 
 def completionStimulus : Stimulus :=
@@ -46,6 +55,9 @@ def afterStartState : RuntimeState :=
   { initialState with
     control := .running ⟨"Instance_1"⟩
     waits := [exactWait]
+    variables :=
+      { initialState.variables with
+        process := { bindings := initialBindings } }
     activations := [{ taskId := exactWait.task.id, count := 1 }] }
 
 def completedState : RuntimeState :=
@@ -54,7 +66,7 @@ def completedState : RuntimeState :=
     waits := []
     variables :=
       { afterStartState.variables with
-        process := { bindings := submittedValues } }
+        process := { bindings := completedBindings } }
     endOccurrences := 1 }
 
 def runWithClosureLimit (closureLimit : Nat) : ScenarioRunner :=

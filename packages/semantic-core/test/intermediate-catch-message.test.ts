@@ -117,6 +117,7 @@ const start = Object.freeze({
   commandId: "start-message-process",
   processId: program.processId,
   instanceId: "MessageInstance_1",
+  initialVariables: [],
 });
 
 const subscriptionId = Object.freeze({
@@ -248,7 +249,7 @@ test("admits the reverse mechanism order and refuses pre-activation delivery", (
 
 test("rejects Message capability drift without a topology predicate", () => {
   for (const semanticProfile of [
-    "cibseven-2.2.0-user-task-data-draft",
+    "cibseven-2.2.0-user-task-process-data-draft",
     "bpmn-2.0.2-timer-user-task-composition-draft",
     "unknown-profile",
   ]) {

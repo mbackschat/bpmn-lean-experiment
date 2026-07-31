@@ -15,6 +15,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
+  StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   semanticProcessFor,
@@ -69,6 +70,12 @@ test("owns exact structural well-formedness for every current stimulus", () => {
     commandId: "start",
     processId: "Process",
     instanceId: "Instance",
+    initialVariables: [
+      {
+        name: "requestTitle",
+        value: { kind: VariableValueKind.String, value: "Review request" },
+      },
+    ],
   };
   const completion = {
     kind: StimulusKind.CompleteUserTaskInstance,
@@ -92,6 +99,14 @@ test("owns exact structural well-formedness for every current stimulus", () => {
   for (const malformed of [
     { ...start, commandId: "" },
     { ...start, unexpected: true },
+    { ...start, initialVariables: undefined },
+    {
+      ...start,
+      initialVariables: [
+        start.initialVariables[0],
+        start.initialVariables[0],
+      ],
+    },
     { ...completion, kind: "unknown" },
     {
       ...completion,
@@ -137,6 +152,18 @@ test("owns exact structural well-formedness for every current stimulus", () => {
 });
 
 test("compares complete semantic stimulus identity independently of transport IDs", () => {
+  const start = {
+    kind: StimulusKind.StartProcess,
+    commandId: "start",
+    processId: "Process",
+    instanceId: "Instance",
+    initialVariables: [
+      {
+        name: "requestTitle",
+        value: { kind: VariableValueKind.String, value: "First" },
+      },
+    ],
+  } as const satisfies StartProcessStimulus;
   const completion = {
     kind: StimulusKind.CompleteUserTaskInstance,
     commandId: "complete",
@@ -152,6 +179,20 @@ test("compares complete semantic stimulus identity independently of transport ID
       },
     ],
   } as const satisfies CompleteUserTaskInstanceStimulus;
+
+  assert.equal(sameStimulus(start, structuredClone(start)), true);
+  assert.equal(
+    sameStimulus(start, {
+      ...start,
+      initialVariables: [
+        {
+          name: "requestTitle",
+          value: { kind: VariableValueKind.String, value: "Second" },
+        },
+      ],
+    }),
+    false,
+  );
 
   assert.equal(sameStimulus(completion, structuredClone(completion)), true);
   assert.equal(
@@ -179,6 +220,7 @@ test("compares complete semantic stimulus identity independently of transport ID
       commandId: "complete",
       processId: "Process",
       instanceId: "Instance",
+      initialVariables: [],
     }),
     false,
   );

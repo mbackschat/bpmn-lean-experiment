@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-discovery-completion",
-    "sha256": "b41cb0a62100156f9191a6a84e01136b803237097926264b74a100ffddb9a787"
+    "sha256": "72ba4bb29a6bec8742ac2929eb52256ed12e2f1d76d1365e97592b0d2c9cbcae"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-data-draft",
-    "sha256": "8d21a69914dedbbb5ccf6dac458b2c4727fa538a56ae909fa633189e7fa747b2"
+    "id": "cibseven-2.2.0-user-task-process-data-draft",
+    "sha256": "08d6e70e497d0eb2ca24b4bb52e7c03f464dc4703061512ba557c5e724b6a38f"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -22,13 +22,22 @@
         "afterCommandId": "start-process",
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
-        "variables": []
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
+          }
+        ]
       },
       {
         "afterCommandId": "complete-user-task-instance",
         "processInstanceCount": 0,
         "engineClockTimeMs": 0,
         "variables": [
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
+          },
           {
             "name": "decision",
             "value": "approved"
@@ -109,7 +118,15 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
-        "variables": [],
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review invoice 42"
+            }
+          }
+        ],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -142,6 +159,13 @@
             "value": {
               "kind": "string",
               "value": "approved"
+            }
+          },
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review invoice 42"
             }
           },
           {

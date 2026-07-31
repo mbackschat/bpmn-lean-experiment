@@ -126,7 +126,7 @@ def renamedCountermodelScenario : Scenario :=
         sha256 := renamedCountermodel.identity.sourceSha256 }
     stimuli :=
       [ .startProcess ⟨"start-renamed"⟩
-          ⟨renamedCountermodel.processId.value⟩ ⟨"Instance_Renamed"⟩ ]
+          ⟨renamedCountermodel.processId.value⟩ ⟨"Instance_Renamed"⟩ [] ]
     observations := CheckedSourceSemantics.requiredObservations
     provenance :=
       { normativeRefs := []

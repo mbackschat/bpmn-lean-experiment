@@ -125,9 +125,9 @@ The adapter defines one canonical typed stimulus encoding and a SHA-256 digest. 
 
 The production start boundary first checks the explicit start stimulus and Semantic Process program through semantic execution admission, then checks the program through the separate Temporal host-capability predicate. Only an `admitted` result calls `client.start`. The current conservative host predicate accepts passive User Task Update and Message Signal ingress plus linear Timer/User Task composition, but rejects a token split combined with a Timer or effect wait as `concurrentHostDrivenWaits`.
 
-The production Workflow receives that admitted Semantic Process program and one explicit start stimulus. It does not receive a future scenario command list.
+The production Workflow receives that admitted Semantic Process program and one explicit start stimulus, including its required canonical string/null initial Process-variable list. It does not receive a future scenario command list.
 
-The start stimulus enters the single semantic input queue before any external handler becomes addressable. Only the main Workflow loop calls the semantic core and mutates semantic state.
+The start stimulus enters the single semantic input queue before any external handler becomes addressable. Only the main Workflow loop calls the semantic core, installs its initial Process variables, and mutates semantic state.
 
 While semantic state is nonterminal, the loop waits for queued accepted inputs. When the semantic core reaches completed state, the loop:
 
@@ -182,6 +182,7 @@ The focused Temporal gate must demonstrate:
 - linear Timer/User Task composition passes host capability, executes one durable Timer before later User Task ingress, and replays;
 - a token split combined with a Timer or effect fails the conservative host-capability predicate;
 - start precedes every external completion under immediate delivery and Worker restart;
+- initial Process variables are visible at the first stable wait, retained through completion, and reconstructed identically by replay;
 - a normal exact completion closes the Workflow with a validated completed receipt;
 - every accepted racing Update completes before Workflow completion;
 - an exact retry after closure returns the original semantic result;

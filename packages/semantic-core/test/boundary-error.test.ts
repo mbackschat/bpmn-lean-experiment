@@ -128,6 +128,7 @@ const start: StartProcessStimulus = Object.freeze({
   commandId: "start-boundary-error",
   processId: program.processId,
   instanceId: effectId.processInstanceId,
+  initialVariables: [],
 });
 
 const result = Object.freeze({

@@ -136,6 +136,7 @@ const start = {
   commandId: "start-choice",
   processId: "Process_Choice",
   instanceId: "choice-instance",
+  initialVariables: [],
 } as const;
 
 test("evaluates presence, explicit null, and string equality without coercion", () => {

@@ -1,8 +1,8 @@
 {
   "kind": "semanticProfile",
-  "id": "cibseven-2.2.0-user-task-data-draft",
+  "id": "cibseven-2.2.0-user-task-process-data-draft",
   "status": "draft",
-  "claim": "user-task-interaction-and-completion-data-calibration-only",
+  "claim": "user-task-interaction-and-process-data-calibration-only",
   "oracle": {
     "name": "CIB Seven",
     "version": "2.2.0",
@@ -24,18 +24,21 @@
       "user-task",
       "user-task-discovery",
       "user-task-instance-completion",
+      "process-start-string-null-data",
       "user-task-string-null-completion-data",
       "none-end-event",
       "sequence-flow",
       "process-completion"
     ],
     "extensions": [
+      "runtime-service-process-start-variable-map",
       "task-service-process-variable-completion-patch"
     ],
     "relationships": [
       "CIB-AGR-0001",
       "CIB-AGR-0002",
       "CIB-EXT-0005",
+      "CIB-EXT-0006",
       "CIB-OP-0001",
       "CIB-CFG-0001"
     ]

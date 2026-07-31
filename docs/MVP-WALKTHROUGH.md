@@ -54,7 +54,7 @@ The exact task occurrence used for completion is:
 
 That third identity component matters. A second activation of the same BPMN element is not the same task occurrence, even though both share `UserTask_Approve`.
 
-The [draft profile](../profiles/cibseven-2.2.0-user-task-data-draft/profile.json) pins the CIB version, execution environment, feature surface, and public observation boundary. Expected CIB results live in separate immutable evidence artifacts so target inputs cannot smuggle in their oracle answer.
+The [draft profile](../profiles/cibseven-2.2.0-user-task-process-data-draft/profile.json) pins the CIB version, execution environment, feature surface, and public observation boundary. Expected CIB results live in separate immutable evidence artifacts so target inputs cannot smuggle in their oracle answer.
 
 ## 2. Admit BPMN and compile data, not source code
 

@@ -12,7 +12,8 @@
       "kind": "startProcess",
       "commandId": "start-message-process",
       "processId": "Process_IntermediateCatchMessage",
-      "instanceId": "MessageInstance_1"
+      "instanceId": "MessageInstance_1",
+      "initialVariables": []
     },
     {
       "kind": "deliverMessage",

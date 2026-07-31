@@ -99,7 +99,11 @@ inductive EnabledInteraction where
 
 /-- External inputs currently admitted by the User Task scenario boundary. -/
 inductive Stimulus where
-  | startProcess (commandId : SemanticId) (processId : SemanticId) (instanceId : SemanticId)
+  | startProcess
+      (commandId : SemanticId)
+      (processId : SemanticId)
+      (instanceId : SemanticId)
+      (initialVariables : List VariableBinding)
   | completeUserTaskInstance
       (commandId : SemanticId)
       (taskId : UserTaskInstanceId)

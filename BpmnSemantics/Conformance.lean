@@ -28,13 +28,14 @@ example : ScenarioOutcome.infrastructureFailure ≠ .harnessFailure := by
 def contractScenario : Scenario :=
   { kind := .scenario
     id := ⟨"user-task-discovery-completion"⟩
-    profile := ⟨"cibseven-2.2.0-user-task-data-draft"⟩
+    profile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩
     bpmn :=
       { id := ⟨"sequential-user-task-process"⟩
         relativePath := "scenarios/user-task-discovery-completion/process.bpmn"
         sha256 := "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
     stimuli :=
       [ .startProcess ⟨"start-process"⟩ ⟨"Process_SequentialUserTask"⟩ ⟨"Instance_1"⟩
+          [ { name := "requestTitle", value := .string "Review invoice 42" } ]
       , .completeUserTaskInstance ⟨"complete-user-task-instance"⟩
           { processInstanceId := ⟨"Instance_1"⟩
             elementId := ⟨"UserTask_Approve"⟩

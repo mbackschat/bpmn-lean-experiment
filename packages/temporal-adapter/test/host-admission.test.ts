@@ -64,6 +64,7 @@ test("admits each reachable wait set of the new linear composition", async () =>
     commandId: "start-timer-user-task-composition",
     processId: program.processId,
     instanceId: "CompositionInstance_1",
+    initialVariables: [],
   };
   assert.deepEqual(assessBpmnProcessAdmission(start, program), {
     kind: BpmnProcessAdmissionResultKind.Admitted,

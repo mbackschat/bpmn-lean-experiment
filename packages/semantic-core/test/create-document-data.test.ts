@@ -108,6 +108,7 @@ const start = Object.freeze({
   commandId: "start-create-document",
   processId: program.processId,
   instanceId: effectId.processInstanceId,
+  initialVariables: [],
 });
 
 const successResult = Object.freeze({

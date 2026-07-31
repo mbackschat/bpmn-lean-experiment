@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "user-task-stale-completion",
-  "profile": "cibseven-2.2.0-user-task-data-draft",
+  "profile": "cibseven-2.2.0-user-task-process-data-draft",
   "bpmn": {
     "id": "sequential-user-task-process",
     "relativePath": "scenarios/user-task-discovery-completion/process.bpmn",
@@ -12,7 +12,16 @@
       "kind": "startProcess",
       "commandId": "start-process",
       "processId": "Process_SequentialUserTask",
-      "instanceId": "Instance_1"
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        {
+          "name": "requestTitle",
+          "value": {
+            "kind": "string",
+            "value": "Review invoice 42"
+          }
+        }
+      ]
     },
     {
       "kind": "completeUserTaskInstance",

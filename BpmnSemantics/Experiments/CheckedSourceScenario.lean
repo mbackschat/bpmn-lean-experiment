@@ -68,7 +68,7 @@ def observeStableState (source : CheckedProcess)
           logicalTimeMs := state.logicalTimeMs }
 
 def commandId : Stimulus → SemanticId
-  | .startProcess id _ _
+  | .startProcess id _ _ _
   | .completeUserTaskInstance id _ _
   | .fireTimer id _ _
   | .deliverMessage id _ _

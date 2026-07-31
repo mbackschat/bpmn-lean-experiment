@@ -39,7 +39,7 @@ private def interactionObservations : List ObservationKind :=
 private def interactionScenario (id : String) (stimuli : List Stimulus) : Scenario :=
   { kind := .scenario
     id := ⟨id⟩
-    profile := ⟨"cibseven-2.2.0-user-task-data-draft"⟩
+    profile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩
     bpmn := contractScenario.bpmn
     stimuli
     observations := interactionObservations
@@ -78,7 +78,7 @@ def waitingObservation : StateObservation :=
     openMessageSubscriptions := []
     openTimers := []
     openEffects := []
-    variables := []
+    variables := initialBindings
     enabledInteractions := [exactCompletionInteraction]
     logicalTimeMs := 0 }
 
@@ -90,7 +90,7 @@ def completedObservation : StateObservation :=
     openMessageSubscriptions := []
     openTimers := []
     openEffects := []
-    variables := submittedValues
+    variables := completedBindings
     enabledInteractions := []
     logicalTimeMs := 0 }
 

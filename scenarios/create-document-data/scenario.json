@@ -12,7 +12,8 @@
       "kind": "startProcess",
       "commandId": "start-create-document",
       "processId": "Process_A12CreateDocument",
-      "instanceId": "Instance_1"
+      "instanceId": "Instance_1",
+      "initialVariables": []
     },
     {
       "kind": "completeEffect",

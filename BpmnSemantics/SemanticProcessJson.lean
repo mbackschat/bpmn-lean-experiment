@@ -170,12 +170,14 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
   match kind with
   | "startProcess" =>
       requireObjectShape json
-        ["commandId", "instanceId", "kind", "processId"]
+        ["commandId", "initialVariables", "instanceId", "kind", "processId"]
       pure
         (.startProcess
           ⟨← stringField json "commandId"⟩
           ⟨← stringField json "processId"⟩
-          ⟨← stringField json "instanceId"⟩)
+          ⟨← stringField json "instanceId"⟩
+          (← decodeCanonicalVariableBindings
+            (← field json "initialVariables")))
   | "completeUserTaskInstance" =>
       requireObjectShape json
         ["commandId", "kind", "submittedValues", "taskId"]

@@ -36,7 +36,7 @@ Wire readers reject duplicate object keys after escape decoding and reject unpai
 
 ## Portable semantic assertions
 
-A target scenario contains only admitted model/profile identity and explicit semantic inputs. `fireTimer.logicalTimeMs` is one such answer-free semantic input. Lean and the semantic core apply it directly, CIB realizes it through controlled-clock advancement plus eligibility-gated job execution, and Temporal derives the identical typed stimulus exclusively from committed `openTimers` state without runner delivery. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.
+A target scenario contains only admitted model/profile identity and explicit semantic inputs. `startProcess.initialVariables` is the canonical ordered Process-scope binding map installed atomically by an accepted start, and `fireTimer.logicalTimeMs` is an answer-free semantic time input. Lean and the semantic core apply these inputs directly, CIB realizes them through its public start API and controlled-clock advancement plus eligibility-gated job execution, and Temporal derives timer stimuli exclusively from committed `openTimers` state without runner delivery. Target runners produce canonical results without receiving expected outcomes, rule verdicts, oracle traces, or comparison tolerances.
 
 Portable assertions are verifier-side claims over canonical results or relations between results. A future assertion artifact must bind the exact scenario content digest, semantic profile, applicable canonical observation contract, and stable rule identifiers. A general assertion language remains deferred until repeated semantic capsules demonstrate the smallest useful contract.
 

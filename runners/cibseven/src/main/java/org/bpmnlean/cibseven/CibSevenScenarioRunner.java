@@ -206,7 +206,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var effectJobs = new ArrayList<EffectJobSnapshot>();
     var effectExecutions = new ArrayList<EffectExecutionSnapshot>();
     var mappingExecutions = new ArrayList<MappingExecutionSnapshot>();
-    var committedCompletionVariableNames = new LinkedHashSet<String>();
+    var committedProcessVariableNames = new LinkedHashSet<String>();
     String deploymentId = null;
     String engineInstanceId = null;
     String stableInstanceId = null;
@@ -254,10 +254,17 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
           case StartProcessStimulus start -> {
             var startedAt = System.nanoTime();
             var processInstance =
-                processEngine.getRuntimeService().startProcessInstanceByKey(start.processId());
+                processEngine
+                    .getRuntimeService()
+                    .startProcessInstanceByKey(
+                        start.processId(),
+                        ScenarioVariableBindings.toEngineMap(start.initialVariables()));
             timings.startNanos = positiveElapsedSince(startedAt);
             engineInstanceId = processInstance.getId();
             stableInstanceId = start.instanceId();
+            start.initialVariables().stream()
+                .map(VariableBinding::name)
+                .forEach(committedProcessVariableNames::add);
             trace.add(new CommandObservation(start.commandId(), COMMITTED));
             if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
               mappingExecutions.add(createDocumentProbe.snapshot(start.commandId()));
@@ -271,7 +278,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     start.commandId(),
-                    committedCompletionVariableNames);
+                    committedProcessVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -290,7 +297,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             if (outcome == COMMITTED) {
               complete.submittedValues().stream()
                   .map(VariableBinding::name)
-                  .forEach(committedCompletionVariableNames::add);
+                  .forEach(committedProcessVariableNames::add);
             }
 
             var projectionStartedAt = System.nanoTime();
@@ -299,7 +306,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     complete.commandId(),
-                    committedCompletionVariableNames);
+                    committedProcessVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -326,7 +333,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     fire.commandId(),
-                    committedCompletionVariableNames);
+                    committedProcessVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -375,7 +382,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId,
                     stableInstanceId,
                     complete.commandId(),
-                    committedCompletionVariableNames);
+                    committedProcessVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());

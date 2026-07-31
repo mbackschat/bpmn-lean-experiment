@@ -65,6 +65,7 @@ def startStimulus : Stimulus :=
     ⟨"start-message-process"⟩
     ⟨processId.value⟩
     subscriptionId.processInstanceId
+    []
 
 def exactDelivery : Stimulus :=
   .deliverMessage ⟨"deliver-message"⟩ subscriptionId channel

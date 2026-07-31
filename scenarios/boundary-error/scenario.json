@@ -12,7 +12,8 @@
       "kind": "startProcess",
       "commandId": "start-boundary-error",
       "processId": "Process_BoundaryError",
-      "instanceId": "Instance_1"
+      "instanceId": "Instance_1",
+      "initialVariables": []
     },
     {
       "kind": "completeEffect",

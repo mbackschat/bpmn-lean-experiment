@@ -15,7 +15,7 @@ export const SemanticProfileId = Object.freeze({
   ServiceTaskEffect: "cibseven-2.2.0-service-task-effect-draft",
   TimerUserTaskComposition:
     "bpmn-2.0.2-timer-user-task-composition-draft",
-  UserTask: "cibseven-2.2.0-user-task-data-draft",
+  UserTask: "cibseven-2.2.0-user-task-process-data-draft",
 } as const);
 
 /**

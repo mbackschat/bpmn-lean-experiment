@@ -62,7 +62,7 @@ None recorded.
 
 **Classification rationale:** This is more than a representation difference because it changes the publicly observable point at which downstream BPMN work becomes active. The normative account now has answer-free content-bound balanced evidence, a mutation-sensitive raw-to-canonical projection, and complete balanced Lean, CIB, TypeScript, and Temporal impact evidence. The entry remains a candidate rather than a confirmed deviation because the separating duplicate-left/no-right CIB probe itself is not yet an immutable answer-free evidence artifact with a retained negative-result projection.
 
-**Profile decision:** The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) follows normative per-incoming-Sequence-Flow behavior. The current `cibseven-2.2.0-user-task-data-draft` profile is not expanded to claim parallel compatibility. Pinned CIB count-based behavior may be retained later only in an explicitly separate compatibility profile; one behavior cannot be claimed as both exact CIB compatibility and BPMN conformance.
+**Profile decision:** The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) follows normative per-incoming-Sequence-Flow behavior. The current `cibseven-2.2.0-user-task-process-data-draft` profile is not expanded to claim parallel compatibility. Pinned CIB count-based behavior may be retained later only in an explicitly separate compatibility profile; one behavior cannot be claimed as both exact CIB compatibility and BPMN conformance.
 
 **Capsule and semantic rule IDs:** The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) owns `PAR-JOIN-READY-01` and `PAR-JOIN-CONSUME-01`. Its balanced evidence lanes are closed as a draft; immutable negative-probe evidence remains pending.
 
@@ -86,7 +86,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** CIB Seven `2.2.0` deploys and starts the exact plain BPMN fixture, exposes exactly one active `UserTask_Approve`, completes it through the public task service, and reports the Process complete at unchanged controlled logical time.
 
-**Evidence:** [BPMN fixture and scenarios](../scenarios/user-task-discovery-completion/README.md), [exact-completion CIB evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [oracle runner test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-data-draft/README.md).
+**Evidence:** [BPMN fixture and scenarios](../scenarios/user-task-discovery-completion/README.md), [exact-completion CIB evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [oracle runner test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-process-data-draft/README.md).
 
 **Boundary:** This establishes agreement only for one private executable `None Start Event → User Task → None End Event` Process and its declared observation surface. It says nothing yet about assignment, variables, repeated activation, concurrency, errors, or general Process Execution Conformance.
 
@@ -98,7 +98,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** The public CIB task query exposes the active task and its BPMN definition key and name; completing the corresponding live host task removes the wait and completes the admitted Process.
 
-**Evidence:** [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [exact-completion evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [interaction scenarios](../scenarios/user-task-discovery-completion/README.md), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-data-draft/README.md).
+**Evidence:** [User Task interaction capsule](capsules/USER-TASK-INTERACTION-SPEC.md), [exact-completion evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [interaction scenarios](../scenarios/user-task-discovery-completion/README.md), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-process-data-draft/README.md).
 
 **Boundary:** People assignment, ownership, authorization, forms, input/output data, and general User Task lifecycle are excluded. The project’s structured activation ordinal and refusal of a mismatched semantic occurrence are an operational mapping under `CIB-OP-0001`, not a claim that BPMN prescribes that identity representation.
 
@@ -236,6 +236,18 @@ This is a CIB public-service extension over the BPMN User Task lifecycle, not ge
 
 **Boundary:** Only Process-scope string and explicit null values, one exact active task, create/overwrite/preserve merge, no-data preservation, continuation visibility, final-history visibility, and unknown/stale refusal are selected. Task-local and transient variables, deletion, nested or serialized values, BPMN input/output specifications and Data Associations, forms, field validation, variable authorization, people assignment, multiple active dummy tasks, and general Task Service compatibility remain excluded.
 
+### CIB-EXT-0006 — public Process start installs initial Process variables
+
+**Status:** Selected bounded extension
+
+CIB Seven `2.2.0` accepts a variable map through `RuntimeService.startProcessInstanceByKey(processDefinitionKey, variables)`. In the project-owned two-User-Task probe, the first active User Task reads the exact initial string map before any task-completion call. The no-data and completion controls retain those bindings until explicitly overwritten, and final history preserves the resulting Process map.
+
+This is a CIB public-service extension over Process instantiation, not general BPMN data initialization, Data Association, or form meaning. The selected project profile maps one canonical string/null `initialVariables` list to fresh Process scope before internal start closure. A rejected semantic start installs no supplied value and creates no Temporal Workflow.
+
+**Evidence:** The Java-21 [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskCompletionDataPhaseZeroProbeTest.java) supplies the initial map through the public Runtime Service and reads it through the first task before completion under `CIB-CFG-0001`. The ordinary retained sequential scenarios now carry content-bound initial data through the Java runner. The [Process-start data specification](capsules/PROCESS-START-DATA-SPEC.md) owns the selected project rules and refinement boundary.
+
+**Boundary:** Only a fresh private executable Process, canonical Process-scope string and explicit null values, visibility at the first stable wait, empty-list preservation, and exact semantic-start refusal are selected. Business keys, case instances, tenant IDs, named start events, start messages, transient or local variables, nested or serialized values, BPMN Properties and Data Associations, forms, variable authorization, and general Runtime Service compatibility remain excluded.
+
 ### Research queue
 
 | Hint | Status | Required investigation |
@@ -301,7 +313,7 @@ The proposed project host does not treat JUEL as an application effect or expose
 
 The current draft profile pins CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017`, Java 21, H2 `2.3.232`, disabled automatic job execution, an explicit logical clock, audit history, and default history TTL `P180D`. CIB deployment required the TTL in this environment; audit history remains outside the canonical observation boundary, while controlled time and scheduling prevent accidental host nondeterminism from entering the current capsule.
 
-This is a profile constraint, not evidence that CIB differs from BPMN. It does not claim that another database, history level, scheduler setting, plugin set, or engine configuration produces the same observations. The machine-readable declarations are in the [current profile](../profiles/cibseven-2.2.0-user-task-data-draft/profile.json).
+This is a profile constraint, not evidence that CIB differs from BPMN. It does not claim that another database, history level, scheduler setting, plugin set, or engine configuration produces the same observations. The machine-readable declarations are in the [current profile](../profiles/cibseven-2.2.0-user-task-process-data-draft/profile.json).
 
 ### CIB-CFG-0002 — explicit release of the Service Task continuation job
 
@@ -359,6 +371,7 @@ The admitted source has exactly two non-default conditions and one conditionless
 | Exact delegate-expression bean plus async-before Service Task execution | `CIB-EXT-0001` under `CIB-CFG-0002` | The exact expanded-QName pair, bean resolution, immediately executable continuation job, plain completion, packaged retry decrement, and test-local one-mutation re-execution are executable; the semantic effect-in-flight projection remains adapter-decided |
 | Divergent Exclusive Gateway condition order, first-true short circuit, default routing, and failed-command rollback | `CIB-AGR-0006`, `CIB-INT-0001`, `CIB-OP-0004`, and `CIB-CFG-0005` | Public CIB deployment, task, selected-branch, history, and rollback observations distinguish the selected bounded account; the shared JUEL implementation remains one correlated truth lane |
 | User Task completion with a public variable map | `CIB-EXT-0005` under `CIB-CFG-0001` | Task-service and history observations establish create/overwrite/preserve, present null, merge-before-continuation, no-data preservation, and no write on unknown or stale generated IDs; BPMN does not define this host completion API or universal form-to-Process-variable mapping |
+| Process start with a public variable map | `CIB-EXT-0006` under `CIB-CFG-0001` | Runtime-service and first-task observations establish initial Process-variable visibility before completion; BPMN does not define this host start API or universal start-map semantics |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
 | External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |
 

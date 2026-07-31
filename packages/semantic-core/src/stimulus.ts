@@ -31,7 +31,8 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         right.kind === StimulusKind.StartProcess &&
         left.commandId === right.commandId &&
         left.processId === right.processId &&
-        left.instanceId === right.instanceId
+        left.instanceId === right.instanceId &&
+        samePatch(left.initialVariables, right.initialVariables)
       );
     case StimulusKind.CompleteUserTaskInstance:
       return (
@@ -85,10 +86,14 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
           "commandId",
           "processId",
           "instanceId",
+          "initialVariables",
         ]) &&
         isNonEmptyString(value.commandId) &&
         isNonEmptyString(value.processId) &&
-        isNonEmptyString(value.instanceId)
+        isNonEmptyString(value.instanceId) &&
+        Array.isArray(value.initialVariables) &&
+        value.initialVariables.every(isVariableBinding) &&
+        isCanonicallyOrderedPatch(value.initialVariables)
       );
     case StimulusKind.CompleteUserTaskInstance:
       return (

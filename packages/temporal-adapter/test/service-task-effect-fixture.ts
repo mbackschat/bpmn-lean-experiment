@@ -110,6 +110,7 @@ export function serviceTaskEffectInput(
           commandId: "start-process",
           processId: semanticProcess.processId,
           instanceId,
+          initialVariables: [],
         },
         {
           kind: StimulusKind.CompleteEffect,

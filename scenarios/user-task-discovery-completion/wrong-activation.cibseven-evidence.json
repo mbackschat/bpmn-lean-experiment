@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-wrong-activation",
-    "sha256": "5661ca5bc051c8caadf565af57b8c18af2e8015729f4ead4f3969fbbc66c9100"
+    "sha256": "e251f32f0e52deb41f911e1b490105828972d8bcc314c52accfe03f3946cb903"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-data-draft",
-    "sha256": "8d21a69914dedbbb5ccf6dac458b2c4727fa538a56ae909fa633189e7fa747b2"
+    "id": "cibseven-2.2.0-user-task-process-data-draft",
+    "sha256": "08d6e70e497d0eb2ca24b4bb52e7c03f464dc4703061512ba557c5e724b6a38f"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -22,13 +22,23 @@
         "afterCommandId": "start-process",
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
-        "variables": []
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
+          }
+        ]
       },
       {
         "afterCommandId": "wrong-activation",
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
-        "variables": []
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -105,7 +115,15 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
-        "variables": [],
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review invoice 42"
+            }
+          }
+        ],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",
@@ -148,7 +166,15 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
-        "variables": [],
+        "variables": [
+          {
+            "name": "requestTitle",
+            "value": {
+              "kind": "string",
+              "value": "Review invoice 42"
+            }
+          }
+        ],
         "enabledInteractions": [
           {
             "kind": "completeUserTaskInstance",

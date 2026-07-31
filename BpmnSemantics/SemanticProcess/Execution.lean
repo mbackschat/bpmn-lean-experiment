@@ -141,12 +141,12 @@ private structure ExternalAdmission where
 
 private def admitStimulus (program : Program) (state : RuntimeState) :
     Stimulus → ExternalAdmission
-  | .startProcess _ processId instanceId =>
+  | .startProcess _ processId instanceId initialVariables =>
       match state.control with
       | .notStarted =>
           if program.processId.value = processId.value then
             { outcome := .committed
-              state := runningStartState instanceId }
+              state := runningStartState instanceId initialVariables }
           else
             { outcome := .rejected, state }
       | .running _

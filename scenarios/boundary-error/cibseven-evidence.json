@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "a12-boundary-error-caught",
-    "sha256": "9d993088355f0b6c0229461e7a4e8b3ff8edd771ceaa34bb7d75d075fdc35ff4"
+    "sha256": "03855ad6010da6240ace175738a65bb3b2596795815a89be03ea70108934af3e"
   },
   "profile": {
     "id": "cibseven-2.0.0-a12-boundary-error-draft",

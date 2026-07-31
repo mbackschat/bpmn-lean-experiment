@@ -101,6 +101,7 @@ def scenario : Scenario :=
           ⟨"start-process"⟩
           ⟨"Process_IntermediateCatchTimer"⟩
           ⟨"Instance_1"⟩
+          []
       , .fireTimer fireCommandId timerId 1000 ]
     observations
     provenance :=

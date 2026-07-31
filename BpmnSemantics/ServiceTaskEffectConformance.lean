@@ -100,6 +100,7 @@ def scenario : Scenario :=
           ⟨"start-process"⟩
           ⟨"Process_ServiceTaskEffectProbe"⟩
           ⟨"Instance_1"⟩
+          []
       , .completeEffect ⟨"complete-effect"⟩ effectId (.success []) ]
     observations :=
       [ .deployment
@@ -187,7 +188,7 @@ private def acceptAnyEffectResult (state : RuntimeState)
   { state with tokens := output :: state.tokens }
 
 theorem accept_any_effect_result_is_a_non_law :
-    let before := runningStartState ⟨"Instance_1"⟩
+    let before := runningStartState ⟨"Instance_1"⟩ []
     let submitted :=
       Stimulus.completeEffect ⟨"never-activated"⟩ effectId (.success [])
     (acceptAnyEffectResult before ⟨"place:Flow_ServiceToEnd"⟩).tokens =

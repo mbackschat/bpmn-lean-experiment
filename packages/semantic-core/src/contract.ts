@@ -43,6 +43,7 @@ export type StartProcessStimulus = DeepReadonly<{
   commandId: string;
   processId: string;
   instanceId: string;
+  initialVariables: VariableBinding[];
 }>;
 
 export type OccurrenceId = DeepReadonly<{

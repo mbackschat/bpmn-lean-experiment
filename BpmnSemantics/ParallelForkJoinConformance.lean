@@ -58,6 +58,7 @@ private def startStimulus : Stimulus :=
     ⟨"start-process"⟩
     ⟨"Process_ParallelForkJoin"⟩
     ⟨"Instance_1"⟩
+    []
 
 private def completionStimulus (commandId elementId : String) : Stimulus :=
   .completeUserTaskInstance ⟨commandId⟩ (parallelTaskId elementId) []

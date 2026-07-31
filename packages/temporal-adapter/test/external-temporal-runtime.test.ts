@@ -120,7 +120,7 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
       {
         elementId: completion.taskId.elementId,
         delayMs: 25,
-        inputVariableNames: [],
+        inputVariableNames: ["requestTitle"],
         submittedValues: completion.submittedValues,
       },
       {
@@ -153,6 +153,7 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
       commandId: "dummy-form-submit:UserTask_Approve:1",
       outcome: CommandOutcome.Committed,
     });
+    assert.deepEqual(actorResult.detail.inputVariables, start.initialVariables);
     assert.deepEqual(actorEvents, [
       DummyUserTaskActorEventKind.TaskReady,
       DummyUserTaskActorEventKind.DelayStarted,
@@ -165,6 +166,11 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
       "MVP Process completion",
     );
     assert.equal(receipt.processInstanceId, start.instanceId);
+    assert.deepEqual(receipt.finalState.variables, [
+      completion.submittedValues[0],
+      start.initialVariables[0],
+      completion.submittedValues[1],
+    ]);
   } finally {
     if (runtime !== undefined) {
       await withDeadline(

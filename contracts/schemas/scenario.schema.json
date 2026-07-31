@@ -190,7 +190,8 @@
         "kind",
         "commandId",
         "processId",
-        "instanceId"
+        "instanceId",
+        "initialVariables"
       ],
       "properties": {
         "kind": {
@@ -204,6 +205,12 @@
         },
         "instanceId": {
           "$ref": "#/$defs/nonEmptyString"
+        },
+        "initialVariables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableBinding"
+          }
         }
       }
     },

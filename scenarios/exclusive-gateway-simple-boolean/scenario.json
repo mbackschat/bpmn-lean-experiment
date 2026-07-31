@@ -12,7 +12,8 @@
       "kind": "startProcess",
       "commandId": "start-simple-boolean-choice",
       "processId": "Process_SimpleBooleanChoice",
-      "instanceId": "SimpleBooleanInstance_1"
+      "instanceId": "SimpleBooleanInstance_1",
+      "initialVariables": []
     },
     {
       "kind": "completeUserTaskInstance",

@@ -105,6 +105,7 @@ def scenario : Scenario :=
           ⟨"start-create-document"⟩
           ⟨"Process_A12CreateDocument"⟩
           effectId.processInstanceId
+          []
       , .completeEffect
           ⟨"complete-effect-sha256:f596120e7c23b39e80a25da929e64ee8c5a311a0f8281a132833d6afd33f4c88"⟩
           effectId
@@ -223,11 +224,11 @@ theorem scoped_data_adds_no_closure_step :
     scenarioClosureLimit = 8 ∧
     (applyStimulus 2 program initialState
         (.startProcess ⟨"start-create-document"⟩
-          ⟨"Process_A12CreateDocument"⟩ effectId.processInstanceId)
+          ⟨"Process_A12CreateDocument"⟩ effectId.processInstanceId [])
       ).internalStepBoundExceeded = false ∧
       (applyStimulus 1 program initialState
         (.startProcess ⟨"start-create-document"⟩
-          ⟨"Process_A12CreateDocument"⟩ effectId.processInstanceId)
+          ⟨"Process_A12CreateDocument"⟩ effectId.processInstanceId [])
       ).internalStepBoundExceeded = true := by
   decide
 

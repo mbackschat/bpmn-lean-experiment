@@ -119,6 +119,7 @@ export function startStimulus(): StartProcessStimulus {
     commandId: "start-process",
     processId: parallelProgram.processId,
     instanceId: "Instance_1",
+    initialVariables: [],
   };
 }
 

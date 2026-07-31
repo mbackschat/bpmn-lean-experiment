@@ -68,7 +68,7 @@ The relationship register classifies that public completion protocol as selected
 
 ## Semantic Process and runtime consequence
 
-No checked BPMN node, Semantic Process operation, or source admission shape changes. `awaitUserTask` already identifies the exact task occurrence and continuation, and Process string/null bindings already exist. This capsule widens only the completion stimulus and its state transition under the selected `cibseven-2.2.0-user-task-data-draft` profile capability.
+No checked BPMN node, Semantic Process operation, or source admission shape changes. `awaitUserTask` already identifies the exact task occurrence and continuation, and Process string/null bindings already exist. This capsule widens only the completion stimulus and its state transition under the current `cibseven-2.2.0-user-task-process-data-draft` profile capability.
 
 That absence of a new operation does not waive the targeted preservation gate. Lean and TypeScript check that submitted data cannot change which operation is enabled before completion commits, the quantified Lean mismatch law preserves arbitrary complete scoped variables, and exact completion closes below the current internal-step limit without ambiguity.
 
@@ -111,7 +111,7 @@ The reproducible implementation boundary is `8a5f3ac..5255888`: hand-written Lea
 
 ## Versioning consequences
 
-This was a breaking pre-release command-shape replacement even though `submittedValues: []` preserves existing meaning. Every producer and consumer changed atomically under the current pre-release policy. The selected semantic profile received the new identity `cibseven-2.2.0-user-task-data-draft` because completion meaning and the accepted stimulus surface widened.
+This was a breaking pre-release command-shape replacement even though `submittedValues: []` preserves existing meaning. Every producer and consumer changed atomically under the current pre-release policy. Completion first received identity `cibseven-2.2.0-user-task-data-draft`; the later [Process-start data specification](PROCESS-START-DATA-SPEC.md) atomically replaced that pre-release identity with current `cibseven-2.2.0-user-task-process-data-draft` when the accepted start surface widened.
 
 No retained production history existed at replacement. Approval of the first durable baseline still requires explicit migration, patch, replay, and rollback decisions based on actual retained histories.
 

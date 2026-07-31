@@ -180,7 +180,7 @@ structure ExternalAdmission where
 
 def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
     Stimulus → ExternalAdmission
-  | .startProcess _ processId instanceId =>
+  | .startProcess _ processId instanceId _ =>
       match state.control with
       | .notStarted =>
           if source.processId.value = processId.value then

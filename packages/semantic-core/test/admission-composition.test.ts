@@ -114,6 +114,7 @@ const start = {
   commandId: "start-timer-user-task-composition",
   processId: program.processId,
   instanceId: "CompositionInstance_1",
+  initialVariables: [],
 } as const;
 
 const fireTimer = {

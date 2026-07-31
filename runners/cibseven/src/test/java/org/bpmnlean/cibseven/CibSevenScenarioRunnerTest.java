@@ -163,7 +163,9 @@ public class CibSevenScenarioRunnerTest {
             List.of(),
             List.of(),
             List.of(),
-            List.of(),
+            List.of(
+                new VariableBinding(
+                    "requestTitle", new StringValue("Review invoice 42"))),
             List.of(completionInteraction),
             0),
         new CommandObservation("complete-user-task-instance", COMMITTED),
@@ -177,6 +179,8 @@ public class CibSevenScenarioRunnerTest {
             List.of(),
             List.of(
                 new VariableBinding("decision", new StringValue("approved")),
+                new VariableBinding(
+                    "requestTitle", new StringValue("Review invoice 42")),
                 new VariableBinding("reviewNote", new NullValue())),
             List.of(),
             0));

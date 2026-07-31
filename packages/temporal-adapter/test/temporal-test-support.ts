@@ -172,6 +172,7 @@ export function parallelScenario(
         commandId: "start-process",
         processId: "Process_ParallelForkJoin",
         instanceId: "Instance_1",
+        initialVariables: [],
       },
       completionStimulus(firstElementId),
       completionStimulus(secondElementId),

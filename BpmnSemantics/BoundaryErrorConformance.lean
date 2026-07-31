@@ -115,6 +115,7 @@ def startStimulus : Stimulus :=
     ⟨"start-boundary-error"⟩
     ⟨"Process_BoundaryError"⟩
     effectId.processInstanceId
+    []
 
 def scenario : Scenario :=
   { kind := .scenario

@@ -11,7 +11,7 @@ open BpmnSemantics
 
 def sequentialCheckedProcess : CheckedProcess :=
   { identity :=
-      { semanticProfile := ⟨"cibseven-2.2.0-user-task-data-draft"⟩
+      { semanticProfile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩
         sourceId := ⟨"sequential-user-task-process"⟩
         sourceSha256 :=
           "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
@@ -31,7 +31,7 @@ def sequentialCheckedProcess : CheckedProcess :=
 def sequentialProgram : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
-        semanticProfile := ⟨"cibseven-2.2.0-user-task-data-draft"⟩
+        semanticProfile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩
         sourceId := ⟨"sequential-user-task-process"⟩
         sourceSha256 :=
           "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
@@ -103,7 +103,7 @@ def parallelTaskBOperation : OperationId := ⟨"operation:UserTask_B"⟩
 def parallelEndOperation : OperationId := ⟨"operation:EndEvent_1"⟩
 
 def parallelStartState : RuntimeState :=
-  runningStartState parallelInstanceId
+  runningStartState parallelInstanceId []
 
 def parallelAfterStart : RuntimeState :=
   { parallelStartState with
@@ -188,6 +188,7 @@ def timerUserTaskCompositionStart : Stimulus :=
     ⟨"start-timer-user-task-composition"⟩
     ⟨"Process_TimerUserTaskComposition"⟩
     ⟨"CompositionInstance_1"⟩
+    []
 
 def timerUserTaskCompositionFire : Stimulus :=
   .fireTimer
@@ -282,7 +283,7 @@ theorem parallel_task_activation_order_has_same_observation :
 theorem parallel_supported_closure_reaches_exact_waiting_state :
     (applyStimulus scenarioClosureLimit parallelProgram initialState
       (.startProcess ⟨"start-process"⟩
-        ⟨"Process_ParallelForkJoin"⟩ ⟨"Instance_1"⟩)) =
+        ⟨"Process_ParallelForkJoin"⟩ ⟨"Instance_1"⟩ [])) =
       { outcome := .committed
         state :=
           { parallelWaitingState with

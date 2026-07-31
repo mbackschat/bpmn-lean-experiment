@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "a12-create-document-data",
-    "sha256": "02772c3623e5a3cec34f5a93f8243a12419517a95b3ac1ebc3aea0e4cfd55b95"
+    "sha256": "7ce3b1b63db53d1804931b1070fde18be45fac5d8f7125c972584ad46b933990"
   },
   "profile": {
     "id": "cibseven-2.0.0-a12-create-document-draft",

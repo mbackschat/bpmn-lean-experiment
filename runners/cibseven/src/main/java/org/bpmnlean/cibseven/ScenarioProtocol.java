@@ -198,11 +198,16 @@ public final class ScenarioProtocol {
   }
 
   public record StartProcessStimulus(
-      String commandId, String processId, String instanceId) implements Stimulus {
+      String commandId,
+      String processId,
+      String instanceId,
+      List<VariableBinding> initialVariables) implements Stimulus {
     public StartProcessStimulus {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(processId, "processId");
       Objects.requireNonNull(instanceId, "instanceId");
+      initialVariables =
+          ScenarioVariableBindings.requireCanonical(initialVariables, "initialVariables");
     }
   }
 
@@ -224,16 +229,8 @@ public final class ScenarioProtocol {
     public CompleteUserTaskInstanceStimulus {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(taskId, "taskId");
-      submittedValues = List.copyOf(submittedValues);
-      for (var index = 1; index < submittedValues.size(); index++) {
-        if (WireStrings.compare(
-                submittedValues.get(index - 1).name(),
-                submittedValues.get(index).name())
-            >= 0) {
-          throw new IllegalArgumentException(
-              "submittedValues names must be unique and canonically ordered");
-        }
-      }
+      submittedValues =
+          ScenarioVariableBindings.requireCanonical(submittedValues, "submittedValues");
     }
   }
 

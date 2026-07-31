@@ -12,7 +12,8 @@
       "kind": "startProcess",
       "commandId": "start-process",
       "processId": "Process_IntermediateCatchTimer",
-      "instanceId": "Instance_1"
+      "instanceId": "Instance_1",
+      "initialVariables": []
     },
     {
       "kind": "fireTimer",

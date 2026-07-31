@@ -4,7 +4,7 @@ This Java 21 module embeds pinned CIB Seven `2.2.0` as the behavioral oracle for
 
 It is calibration infrastructure, not a reusable BPMN semantic kernel. A read-only PVM definition projection explains compilation choices but is never a compatibility key or an input to Lean or the TypeScript semantic core.
 
-Three test-only probes sit beside the retained sequential and balanced-parallel oracle cases. The generated-ID consistency probe checks the host-identity premise of `CIB-OP-0001`. The User Task completion-data phase-zero probe records public task, runtime, and history variable maps for the selected [`CIB-EXT-0005`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) boundary, including present null, no-data, unknown-ID, and stale-ID controls. The schema-valid parallel-gateway probe sends two arrivals through one incoming flow while the other branch remains open and records the resulting downstream activation as candidate deviation [`CIB-DEV-0001`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001--parallel-join-activates-from-duplicate-arrivals-through-one-incoming-flow). The balanced parallel cases calibrate only the normative fork/join slice; they do not turn that negative probe into a CIB parallel-compatibility claim.
+Three test-only probes sit beside the retained sequential and balanced-parallel oracle cases. The generated-ID consistency probe checks the host-identity premise of `CIB-OP-0001`. The Process-start/User Task completion-data phase-zero probe records first-task visibility of public start variables for selected [`CIB-EXT-0006`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0006--public-process-start-installs-initial-process-variables) plus task, runtime, and history variable maps for selected [`CIB-EXT-0005`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables), including present null, no-data, unknown-ID, and stale-ID controls. The schema-valid parallel-gateway probe sends two arrivals through one incoming flow while the other branch remains open and records the resulting downstream activation as candidate deviation [`CIB-DEV-0001`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001--parallel-join-activates-from-duplicate-arrivals-through-one-incoming-flow). The balanced parallel cases calibrate only the normative fork/join slice; they do not turn that negative probe into a CIB parallel-compatibility claim.
 
 ## Run
 
@@ -30,7 +30,7 @@ The script uses Homebrew Java 21 by default and the repository Maven wrapper.
 | Java | Release 21 |
 | Automatic job executor | Disabled |
 | Logical clock | Frozen at Unix epoch per scenario and restored in `finally` |
-| History | Audit with `P180D` default TTL; supplies bounded final Process-variable evidence only for names introduced by committed completion commands |
+| History | Audit with `P180D` default TTL; supplies bounded Process-variable evidence only for names introduced by committed start or completion commands |
 
 ## Semantic boundary
 
@@ -38,7 +38,7 @@ Canonical traces include only stable deployment, command, Process state, wait, o
 
 A wrong semantic occurrence is rejected by the oracle adapter before CIB host-task completion and leaves the task active. A stale completion is rejected after no matching live task remains. These mappings are classified in the [CIB–BPMN relationship register](../../docs/CIB-BPMN-RELATION-REGISTER.md), not mislabeled as raw CIB or BPMN identity semantics.
 
-Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query, timer-job, effect-job, effect-execution, and state-query snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open timers, open effects, enabled interactions, and the bounded Process-variable projection and therefore detects omitted tasks, timer-deadline drift, effect-handler drift, and final-variable drift while treating raw query order as non-semantic. Variable names enter that projection only after the corresponding semantic completion command has committed, so a future, rejected, wrong-activation, or stale submitted patch cannot influence the current observation. The persistent JSON-lines boundary preserves request identity and cleanup across all eight CIB Seven `2.2.0` scenarios.
+Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query, timer-job, effect-job, effect-execution, and state-query snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open timers, open effects, enabled interactions, and the bounded Process-variable projection and therefore detects omitted tasks, timer-deadline drift, effect-handler drift, and final-variable drift while treating raw query order as non-semantic. Variable names enter that projection only after the corresponding semantic start or completion command has committed, so a future, rejected, wrong-activation, or stale submitted patch cannot influence the current observation. The persistent JSON-lines boundary preserves request identity and cleanup across all eight CIB Seven `2.2.0` scenarios.
 
 Ordinary verification never rewrites retained evidence. The explicit replacement operation is:
 
@@ -54,6 +54,7 @@ The package script supplies the exact replacement opt-in. The command executes a
 |---|---|
 | [ScenarioProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | Current typed scenario, trace, outcome, diagnostics, and PVM vocabulary |
 | [ScenarioJson.java](src/main/java/org/bpmnlean/cibseven/ScenarioJson.java) | Strict Jackson codec |
+| [ScenarioVariableBindings.java](src/main/java/org/bpmnlean/cibseven/ScenarioVariableBindings.java) | Canonical string/null binding-list validation and CIB engine-map projection shared by start and completion |
 | [CibSevenScenarioRunner.java](src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | Deploy/start/query/complete runner, clock control, projection, timing, and cleanup |
 | [CibSevenUserTaskProjector.java](src/main/java/org/bpmnlean/cibseven/CibSevenUserTaskProjector.java) | Engine-task-to-semantic-occurrence projection, deterministic sorting, and per-element wait multiplicity |
 | [CibSevenPipelineExportBridge.java](src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | Explicit test-scope bridge used by the Node pipeline |

@@ -45,8 +45,14 @@ test("canonically encodes every typed stimulus field", () => {
       commandId: "start-process",
       processId: "Process_1",
       instanceId: "Instance_1",
+      initialVariables: [
+        {
+          name: "requestTitle",
+          value: { kind: VariableValueKind.String, value: "Review request" },
+        },
+      ],
     }),
-    '["startProcess","start-process","Process_1","Instance_1"]',
+    '["startProcess","start-process","Process_1","Instance_1",[["requestTitle",["string","Review request"]]]]',
   );
   assert.equal(
     canonicalStimulusEncoding(completion),
@@ -86,8 +92,9 @@ test("derives fixed SHA-256 Update IDs from exact canonical content", () => {
       commandId: "start-process",
       processId: "Process_1",
       instanceId: "Instance_1",
+      initialVariables: [],
     }),
-    "bpmn-command-sha256:4e983b4226cdde1bd1e933ed9dffa08479839d0ef6c259b73252198f8ebbe0fd",
+    "bpmn-command-sha256:8f332418caaff55e732bc2b79fdf6bae90be78d83a004b299ce22156e62b87e6",
   );
 });
 
