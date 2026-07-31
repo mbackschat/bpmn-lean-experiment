@@ -7,6 +7,10 @@ on:
   push:
     branches:
       - main
+  # A weekly run catches a default branch that went red without a push, and its
+  # cache-free Lean build keeps a from-scratch signal that cached runs hide.
+  schedule:
+    - cron: "17 4 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -74,7 +78,9 @@ jobs:
         # verify.sh owns the build. Without this, every run rebuilds Lean from
         # scratch, which measured 79s of a 213s Ubuntu run. The key is the exact
         # Lean source state, so an unchanged tree hits and a changed tree falls
-        # back to the newest prefix match for an incremental rebuild.
+        # back to the newest prefix match for an incremental rebuild. The
+        # scheduled run skips the cache to keep one from-scratch build a week.
+        if: github.event_name != 'schedule'
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .lake
