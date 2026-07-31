@@ -138,6 +138,14 @@ The acceptance documentation must list the exact supported BPMN and variable sub
 
 This runnable vertical product increment is complete. Uncovered BPMN mechanisms are now scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). The selected embedded Sub-Process Error-propagation proposal remains bounded and is reconsidered against that baseline-driven schedule.
 
+## Closure review
+
+The reproducible command-and-product boundary is `9b58437..32df044`: hand-written TypeScript changed by `+950/-132` nonblank lines and documentation changed by `+58/-22`; elapsed time is unknown. The exact established claim is that the maintained one-User-Task config runs the admitted source through the production compiler, semantic core, generic Workflow, external Worker connection, exact detail Query, real completion Update, and completed receipt while the repository process owns no Temporal server port. The closest unsupported claim is production deployment, a second simultaneous task, any other BPMN profile, general form or human-resource support, retained-history compatibility, or unattended recovery of the foreground actor.
+
+The product path intentionally shares the already evidenced compiler, program, semantic core, Workflow, and Process-variable account; it is composition evidence rather than another independent semantic lane. Product records depend only on exact source/config input, admitted definition and runtime state, explicit actor configuration, and separated Temporal host identity. The maintained parallel source, widened or malformed config, multiple/changing task, and noncommitted completion paths are the nearest public counterexamples. This increment adds no Lean proposition because it introduces no semantic transition; the Process-start and completion-data capsules own the reused Lean laws and CIB relationships. The pre-release gate retains no production history, and the existing outside-core completion mutation remains the material refinement discriminator.
+
+This product increment is not materially smaller in code than the preceding completion-data capsule because it adds the first strict operating config, product event/result union, command/exit boundary, and external orchestration owner. Before returning to semantic breadth, the live acceptance test was made to load the real accepted config and call the command orchestration, replacing its duplicate manual compile/start/actor path rather than preserving a second product account.
+
 ## Reopen conditions
 
 Reopen this specification before adding a UI or inbox, identity or authorization, multiple simultaneous dummy tasks, another variable type, BPMN or CIB form metadata, task assignment extensions, an embedded Temporal server, production history compatibility, or any completion path that bypasses the semantic command boundary.
