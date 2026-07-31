@@ -22,7 +22,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 6 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Reviewed normative agreements | 8 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 4 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -165,6 +165,20 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Evidence:** [Ordinary embedded Sub-Process completion scenarios](../scenarios/embedded-subprocess-completion/README.md), content-bound evidence for [A then B](../scenarios/embedded-subprocess-completion/a-then-b.cibseven-evidence.json) and [B then A](../scenarios/embedded-subprocess-completion/b-then-a.cibseven-evidence.json), [public-service oracle test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScenarioRunnerTest.java), and the [draft profile](../profiles/cibseven-2.2.0-embedded-subprocess-completion-draft/README.md).
 
 **Boundary:** This agreement is limited to one ordinary embedded Sub-Process, one child scope level, one diverging Parallel Gateway, two distinct child User Tasks, separate child None End Events, and one enclosing User Task. Project semantic occurrence identity and stale-command refusal remain operational mappings under `CIB-OP-0001`. Arbitrary nesting, repeated activation, Event Sub-Processes, implicit completion, boundary handling, Error propagation, Terminate End Events, child-local data, loops, multi-instance, Call Activities, transactions, compensation, and internal CIB scope representation remain outside this agreement.
+
+### CIB-AGR-0008 — exact-code Error propagation from an embedded Sub-Process
+
+**Status:** Reviewed bounded agreement; project semantic implementation pending
+
+**BPMN basis:** BPMN 2.0.2 Clauses 10.3.5, 10.5.1, 13.3.4, and 13.5.3 require an Error End Event to propagate its Error to a matching interrupting boundary Error Event on the enclosing Sub-Process, cancel that Sub-Process instance, and continue through the boundary Event's outgoing Sequence Flow.
+
+**Pinned CIB observation:** CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017` starts the exact project-authored one-level Sub-Process with simultaneous `UserTask_TriggerError` and `UserTask_SiblingWork` tasks. Completing Trigger Error first removes Sibling Work and exposes only outer `UserTask_Recover` while the Process remains live. Completing Sibling Work first leaves Trigger Error active; completing Trigger Error then exposes only Recover while the Process remains live. In both orders the Process completes only after Recover completes.
+
+**Evidence:** [Project-authored phase-zero fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSubProcessErrorPropagationPhaseZeroProbeTest.bpmn), [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSubProcessErrorPropagationPhaseZeroProbeTest.java), and the [approved Error-propagation proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md).
+
+**Fidelity boundary:** Live Process existence and exact active task-definition keys are engine-observed through public runtime and task services. They establish selection of the recovery route and disappearance of the live sibling at that boundary. They do not expose the CIB execution tree, prove how regional cancellation is represented internally, or prove that no additional hidden normal-path microstep occurred.
+
+**Boundary:** This agreement is limited to one private executable Process, one ordinary embedded Sub-Process, one child Parallel Gateway, two distinct child User Tasks, one exact-code Error End Event, one matching interrupting boundary Error Event attached directly to that Sub-Process, and one outer recovery User Task. Catch-all or unmatched Errors, multiple handlers, ancestor search, arbitrary nesting, Event Sub-Processes, payload or data mapping, concurrent task commands, project semantic occurrence identity, stale-command refusal, and general Error compatibility remain outside this agreement.
 
 ## Interpretation register
 

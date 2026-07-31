@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved bounded proposal with required review edits applied; implementation has not started.**
+**Owner-approved bounded proposal with required review edits applied; the selected CIB Seven phase-zero lane is green and semantic implementation has not started.**
 
 This is the first exceptional-exit follow-on after the implemented [ordinary embedded Sub-Process completion specification](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md). It selects one normal embedded Sub-Process whose only reachable child result is an exact-code Error End Event caught by one interrupting boundary Error Event attached to that Sub-Process. It establishes regional cancellation and direct-parent Error propagation by reusing the current definition-scope, runtime-occurrence, ownership, normal-completion, and passive Temporal foundations; it does not establish Event Sub-Process behavior.
 
@@ -14,7 +14,7 @@ May the project implement the smallest standards-only nested-scope discriminator
 
 Approval authorizes only the source profile, semantic rules, additive Error definition boundary, atomic pre-release replacement, and evidence boundary in this proposal. It does not widen the implemented ordinary-completion profile and does not authorize A12 unchanged-model adoption, arbitrary nesting, or Event Sub-Processes.
 
-On 2026-07-31 the owner approved the vendor-neutral boundary and selected the CIB Seven `2.2.0` public-lifecycle agreement lane because that release is the current BPMN breadth baseline. Implementation must begin with the bounded phase-zero probe and may add relationship registration and retained evidence only if it agrees at the selected public boundary. CIB disagreement stops implementation for classification and cannot change vendor-neutral meaning.
+On 2026-07-31 the owner approved the vendor-neutral boundary and selected the CIB Seven `2.2.0` public-lifecycle agreement lane because that release is the current BPMN breadth baseline. The bounded phase-zero probe now agrees in both selected command orders and is classified as `CIB-AGR-0008`; retained evidence may join the capsule only at the unchanged public boundary. CIB cannot change vendor-neutral meaning.
 
 ## Product claim
 
@@ -230,7 +230,7 @@ The five on-demand questions have this disposition:
 4. public deployment, runtime, and task services can observe the selected task set and Process completion without contributing a host-specific fact to canonical semantics;
 5. A12 Error End occurrences remain prioritization anchors, not an unchanged-model claim.
 
-Implementation begins with a phase-zero probe of the exact project-authored source. It must cover Trigger-first and Sibling-first schedules, require only Recover to be active while the Process remains running after the Error, and require Process completion only after Recover. This establishes selection of the recovery route at the unchanged public boundary; it does not establish that no additional hidden normal-path microstep occurred. If CIB agrees, the same implementation change adds a confirmed relation entry, a profile reference to that registered identifier, answer-free target scenarios, content-bound retained evidence, an existing-projector fidelity audit, an evidence-replacement route, and a sibling-retention or wrong-route mutation. No profile artifact may use an unregistered placeholder identifier.
+The completed phase-zero probe uses the exact project-authored source and covers Trigger-first and Sibling-first schedules. In both orders CIB Seven `2.2.0` exposes only Recover while the Process remains running after the Error and reports Process completion only after Recover. This establishes selection of the recovery route at the unchanged public boundary under registered agreement `CIB-AGR-0008`; it does not establish that no additional hidden normal-path microstep occurred. The semantic implementation change must add a profile reference to that registered identifier, answer-free target scenarios, content-bound retained evidence, an existing-projector fidelity audit, an evidence-replacement route, and a sibling-retention or wrong-route mutation. No profile artifact may use an unregistered placeholder identifier.
 
 If CIB rejects the source, exposes a materially different public result, or requires an extension/configuration choice, semantic implementation stops before CIB enters the target set and the finding is classified in the relation register. The owner then decides whether to proceed standards-only or amend the compatibility boundary. The existing flat Task-attached `CIB-AGR-0005`, its caught-path mapping extension, and ordinary-scope `CIB-AGR-0007` do not authorize a nested propagation claim.
 

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_SubProcessErrorPropagationProbe"
+  targetNamespace="https://bpmn-lean.local/probes/subprocess-error-propagation">
+  <bpmn:error id="Error_ScopedFailure" name="Scoped failure" errorCode="ScopedFailure" />
+  <bpmn:process id="Process_SubProcessErrorPropagationProbe" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Outer">
+      <bpmn:outgoing>Flow_OuterStartToScope</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Work">
+      <bpmn:incoming>Flow_OuterStartToScope</bpmn:incoming>
+      <bpmn:outgoing>Flow_ScopeToNormalEnd</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Child">
+        <bpmn:outgoing>Flow_ChildStartToFork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="Gateway_ChildFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_ChildStartToFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_ForkToTriggerError</bpmn:outgoing>
+        <bpmn:outgoing>Flow_ForkToSiblingWork</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_TriggerError" name="Trigger Error">
+        <bpmn:incoming>Flow_ForkToTriggerError</bpmn:incoming>
+        <bpmn:outgoing>Flow_TriggerErrorToErrorEnd</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="UserTask_SiblingWork" name="Sibling Work">
+        <bpmn:incoming>Flow_ForkToSiblingWork</bpmn:incoming>
+        <bpmn:outgoing>Flow_SiblingWorkToNoneEnd</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_ScopedFailure">
+        <bpmn:incoming>Flow_TriggerErrorToErrorEnd</bpmn:incoming>
+        <bpmn:errorEventDefinition
+          id="ErrorEventDefinition_ThrownScopedFailure"
+          errorRef="Error_ScopedFailure" />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_SiblingWork">
+        <bpmn:incoming>Flow_SiblingWorkToNoneEnd</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_ChildStartToFork" sourceRef="StartEvent_Child" targetRef="Gateway_ChildFork" />
+      <bpmn:sequenceFlow id="Flow_ForkToTriggerError" sourceRef="Gateway_ChildFork" targetRef="UserTask_TriggerError" />
+      <bpmn:sequenceFlow id="Flow_ForkToSiblingWork" sourceRef="Gateway_ChildFork" targetRef="UserTask_SiblingWork" />
+      <bpmn:sequenceFlow id="Flow_TriggerErrorToErrorEnd" sourceRef="UserTask_TriggerError" targetRef="EndEvent_ScopedFailure" />
+      <bpmn:sequenceFlow id="Flow_SiblingWorkToNoneEnd" sourceRef="UserTask_SiblingWork" targetRef="EndEvent_SiblingWork" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent
+      id="BoundaryEvent_ScopedFailure"
+      name="Scoped failure boundary"
+      attachedToRef="SubProcess_Work"
+      cancelActivity="true">
+      <bpmn:outgoing>Flow_BoundaryToRecover</bpmn:outgoing>
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_CaughtScopedFailure"
+        errorRef="Error_ScopedFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_Recover" name="Recover">
+      <bpmn:incoming>Flow_BoundaryToRecover</bpmn:incoming>
+      <bpmn:outgoing>Flow_RecoverToRecoveredEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Normal">
+      <bpmn:incoming>Flow_ScopeToNormalEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Recovered">
+      <bpmn:incoming>Flow_RecoverToRecoveredEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_OuterStartToScope" sourceRef="StartEvent_Outer" targetRef="SubProcess_Work" />
+    <bpmn:sequenceFlow id="Flow_ScopeToNormalEnd" sourceRef="SubProcess_Work" targetRef="EndEvent_Normal" />
+    <bpmn:sequenceFlow id="Flow_BoundaryToRecover" sourceRef="BoundaryEvent_ScopedFailure" targetRef="UserTask_Recover" />
+    <bpmn:sequenceFlow id="Flow_RecoverToRecoveredEnd" sourceRef="UserTask_Recover" targetRef="EndEvent_Recovered" />
+  </bpmn:process>
+</bpmn:definitions>
