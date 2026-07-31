@@ -44,6 +44,8 @@ The initial command may run one Worker and one Process instance in one foregroun
 
 The dummy actor is an explicit MVP host profile, not BPMN User Task meaning and not CIB human-resource compatibility. It simulates a person entering values into a form and submitting that form through the real User Task completion command.
 
+The actor and its exact known-Process detail Query are implemented. The Query accepts the complete active task occurrence and canonical caller-selected Process-variable names; the actor checks the same sole occurrence again after the host delay before it submits.
+
 ```ts
 type DummyVariableValue =
   | Readonly<{ kind: "string"; value: string }>

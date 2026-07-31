@@ -8,7 +8,7 @@
 
 This specification defines the production lifecycle shared by the admitted semantic capsules. It answers how semantic and host-capability admission is reported before Workflow creation, when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
-It does not itself add BPMN semantics, a task inbox, Activities, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, and the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) composes one passive subscription with durable Signal ingress and result recovery.
+It does not itself add BPMN semantics, a task inbox, Activities, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, and the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) composes one passive subscription with durable Signal ingress and result recovery. The runnable MVP adds one exact known-Process User Task detail Query whose caller-selected Process-variable projection remains read-only and non-durable.
 
 ## Selected lifecycle
 

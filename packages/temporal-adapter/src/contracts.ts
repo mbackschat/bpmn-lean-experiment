@@ -14,6 +14,8 @@ import type {
   SemanticProcessProgram,
   StartProcessStimulus,
   StateObservation,
+  UserTaskInstanceId,
+  VariableBinding,
 } from "@bpmn-lean/semantic-core";
 import type {
   EffectExecutionSchedule,
@@ -23,6 +25,7 @@ import type {
 export const bpmnProcessWorkflowType = "runBpmnProcess";
 export const bpmnTraceQueryName = "bpmn-trace";
 export const bpmnOpenUserTasksQueryName = "bpmn-open-user-tasks";
+export const bpmnUserTaskDetailQueryName = "bpmn-user-task-detail";
 export const bpmnCompleteUserTaskUpdateName = "bpmn-complete-user-task";
 export const bpmnDeliverMessageSignalName = "bpmn-deliver-message";
 export const bpmnMessageDeliveryResultQueryName =
@@ -60,6 +63,17 @@ export type CompletedProcessReceipt = DeepReadonly<{
     status: ProcessStatus.Completed;
   };
   messageDeliveryRecords: MessageDeliveryRecord[];
+}>;
+
+/** Caller-selected detail for one exact currently open semantic User Task. */
+export type UserTaskDetailRequest = DeepReadonly<{
+  taskId: UserTaskInstanceId;
+  inputVariableNames: string[];
+}>;
+
+export type UserTaskDetail = DeepReadonly<{
+  task: OpenUserTask;
+  inputVariables: VariableBinding[];
 }>;
 
 export const MessageDeliveryResolutionKind = {
@@ -224,6 +238,10 @@ export type TemporalInteractionEvidence = DeepReadonly<{
 
 export type BpmnCompleteUserTaskUpdateArguments = [
   stimulus: CompleteUserTaskInstanceStimulus,
+];
+
+export type BpmnUserTaskDetailQueryArguments = [
+  request: UserTaskDetailRequest,
 ];
 
 export type BpmnDeliverMessageSignalArguments = [

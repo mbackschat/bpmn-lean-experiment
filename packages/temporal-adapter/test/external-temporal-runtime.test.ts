@@ -16,13 +16,16 @@ import {
   CommandOutcome,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
-import type { OpenUserTask } from "@bpmn-lean/semantic-core";
 import {
   BpmnProcessStartResultKind,
+  DummyUserTaskActorEventKind,
+  DummyUserTaskActorResultKind,
   ExternalTemporalRuntime,
   ProcessCommandResultKind,
-  bpmnOpenUserTasksQueryName,
   createCachedLocalEnvironment,
+  listOpenUserTasks,
+  readUserTaskDetail,
+  runDummyUserTaskActor,
   startBpmnProcess,
   submitUserTaskCompletion,
 } from "@bpmn-lean/temporal-adapter";
@@ -99,8 +102,9 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
       20_000,
       "external BPMN runtime connection",
     );
+    const connectedRuntime = runtime;
     const started = await startBpmnProcess(
-      runtime.workflowClient,
+      connectedRuntime.workflowClient,
       start,
       compilation.semanticProcess,
       { taskQueue },
@@ -111,25 +115,50 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
       case BpmnProcessStartResultKind.Rejected:
         throw new Error(`MVP Process was rejected: ${started.failure.code}`);
     }
-    const openTasks = await withDeadline(
-      started.handle.query<ReadonlyArray<OpenUserTask>>(
-        bpmnOpenUserTasksQueryName,
-      ),
-      5_000,
-      "MVP open-task Query",
+    const actorEvents: string[] = [];
+    const actorResult = await runDummyUserTaskActor(
+      {
+        elementId: completion.taskId.elementId,
+        delayMs: 25,
+        inputVariableNames: [],
+        submittedValues: completion.submittedValues,
+      },
+      {
+        listOpenUserTasks: () => listOpenUserTasks(
+          connectedRuntime.workflowClient,
+          start.instanceId,
+        ),
+        readUserTaskDetail: (request) => readUserTaskDetail(
+          connectedRuntime.workflowClient,
+          start.instanceId,
+          request,
+        ),
+        submitCompletion: (stimulus) => submitUserTaskCompletion(
+          connectedRuntime.workflowClient,
+          start.instanceId,
+          stimulus,
+        ),
+      },
+      undefined,
+      ({ kind }) => actorEvents.push(kind),
     );
-    assert.equal(openTasks.length, 1);
-
-    const completionResult = await submitUserTaskCompletion(
-      runtime.workflowClient,
-      start.instanceId,
-      completion,
-    );
-    assert.deepEqual(completionResult, {
+    switch (actorResult.kind) {
+      case DummyUserTaskActorResultKind.Submitted:
+        break;
+      case DummyUserTaskActorResultKind.Refused:
+        throw new Error(`MVP dummy actor refused: ${actorResult.code}`);
+    }
+    assert.deepEqual(actorResult.completion, {
       kind: ProcessCommandResultKind.Semantic,
-      commandId: completion.commandId,
+      commandId: "dummy-form-submit:UserTask_Approve:1",
       outcome: CommandOutcome.Committed,
     });
+    assert.deepEqual(actorEvents, [
+      DummyUserTaskActorEventKind.TaskReady,
+      DummyUserTaskActorEventKind.DelayStarted,
+      DummyUserTaskActorEventKind.DelayFinished,
+      DummyUserTaskActorEventKind.CompletionResolved,
+    ]);
     const receipt = await withDeadline(
       started.handle.result(),
       5_000,

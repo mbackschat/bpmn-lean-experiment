@@ -238,6 +238,10 @@ setHandler(
   () => projectOpenUserTasks(state),
 );
 setHandler(
+  bpmnUserTaskDetailQuery,
+  (request) => projectUserTaskDetail(state, request),
+);
+setHandler(
   bpmnMessageDeliveryResultQuery,
   (stimulus) =>
     findMessageDeliveryResolution(

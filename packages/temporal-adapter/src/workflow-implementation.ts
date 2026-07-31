@@ -47,14 +47,17 @@ import {
   bpmnDeliverMessageSignalName,
   bpmnMessageDeliveryResultQueryName,
   bpmnOpenUserTasksQueryName,
+  bpmnUserTaskDetailQueryName,
   bpmnTraceQueryName,
 } from "./contracts.js";
 import type {
   BpmnCompleteUserTaskUpdateArguments,
   BpmnDeliverMessageSignalArguments,
   BpmnMessageDeliveryResultQueryArguments,
+  BpmnUserTaskDetailQueryArguments,
   CompletedProcessReceipt,
   MessageDeliveryResolution,
+  UserTaskDetail,
 } from "./contracts.js";
 import type {
   EffectExecutionResult,
@@ -73,11 +76,18 @@ import {
 import {
   timerFiringStimulus,
 } from "./timer-command.js";
+import {
+  projectUserTaskDetail,
+} from "./user-task-detail.js";
 
 export const bpmnTraceQuery =
   defineQuery<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName);
 export const bpmnOpenUserTasksQuery =
   defineQuery<ReadonlyArray<OpenUserTask>>(bpmnOpenUserTasksQueryName);
+export const bpmnUserTaskDetailQuery = defineQuery<
+  UserTaskDetail | null,
+  BpmnUserTaskDetailQueryArguments
+>(bpmnUserTaskDetailQueryName);
 export const bpmnCompleteUserTaskUpdate = defineUpdate<
   CommandOutcome,
   BpmnCompleteUserTaskUpdateArguments
@@ -126,6 +136,10 @@ export async function runBpmnProcessWithHostEffects(
   setHandler(
     bpmnOpenUserTasksQuery,
     () => projectOpenUserTasks(state),
+  );
+  setHandler(
+    bpmnUserTaskDetailQuery,
+    (request) => projectUserTaskDetail(state, request),
   );
   setHandler(
     bpmnMessageDeliveryResultQuery,

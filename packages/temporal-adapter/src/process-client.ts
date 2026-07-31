@@ -31,6 +31,8 @@ import {
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
   bpmnMessageDeliveryResultQueryName,
+  bpmnOpenUserTasksQueryName,
+  bpmnUserTaskDetailQueryName,
   MessageDeliveryResolutionKind,
   bpmnProcessWorkflowType,
   ProcessCommandResultKind,
@@ -41,6 +43,8 @@ import type {
   MessageDeliveryResolution,
   ProcessCommandResult,
   TemporalHostAdmissionFailure,
+  UserTaskDetail,
+  UserTaskDetailRequest,
 } from "./contracts.js";
 import {
   contentBoundUpdateId,
@@ -59,6 +63,36 @@ import { withDeadline } from "./async-boundary.js";
 
 const operationDeadlineMs = 5_000;
 const messageResolutionPollMs = 20;
+
+export async function listOpenUserTasks(
+  client: WorkflowClient,
+  processInstanceId: string,
+): Promise<ReadonlyArray<import("@bpmn-lean/semantic-core").OpenUserTask>> {
+  return withDeadline(
+    client.getHandle<BpmnProcessWorkflow>(
+      processWorkflowId(processInstanceId),
+    ).query(bpmnOpenUserTasksQueryName),
+    operationDeadlineMs,
+    "open User Tasks Query",
+  );
+}
+
+export async function readUserTaskDetail(
+  client: WorkflowClient,
+  processInstanceId: string,
+  request: UserTaskDetailRequest,
+): Promise<UserTaskDetail | null> {
+  return withDeadline(
+    client.getHandle<BpmnProcessWorkflow>(
+      processWorkflowId(processInstanceId),
+    ).query<UserTaskDetail | null, [UserTaskDetailRequest]>(
+      bpmnUserTaskDetailQueryName,
+      request,
+    ),
+    operationDeadlineMs,
+    "User Task detail Query",
+  );
+}
 
 export class BpmnMessageIngressInvalid extends TypeError {
   override readonly name = "BpmnMessageIngressInvalid";

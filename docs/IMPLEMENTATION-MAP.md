@@ -352,6 +352,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - a typed `semantic`/`processClosed`/`processUnknown` ingress result kept outside semantic outcomes
 - retained-Update-first closure recovery
 - exact completion commits submitted Process variables through the core before Update acknowledgement; final Query state and completed receipt retain the same canonical bindings through replay
+- exact known-Process User Task detail Query over the complete active occurrence and caller-selected committed Process-variable names; absent and unselected names remain absent and Activity-local scope is never exposed
+- one-task dummy form actor that refuses zero, multiple, unexpected, unavailable, or changed tasks, observes the same exact task before and after a configurable nonblocking host delay, and submits configured canonical string/null values only through the production completion Update
 - separately bundled completion-data bypass writes variables outside the core while omitting the core command result and is rejected by durable Query/Update reconciliation
 - validated address-bound completed receipt including variables
 - `REJECT_DUPLICATE`
@@ -374,7 +376,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - retained result beyond Temporal retention
 - production canonical-observation API
 - command-line product entry point and documented fresh-checkout runnable deployment path
-- dummy User Task actor, realistic host delay around the durable Process wait, selected form-input projection, and completion-data patch
+- initial Process-variable ingress for the runnable product command
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow
 - Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
