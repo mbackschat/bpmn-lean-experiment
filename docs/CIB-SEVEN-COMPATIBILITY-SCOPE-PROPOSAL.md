@@ -1,6 +1,6 @@
 # CIB Seven compatibility scope proposal
 
-**Status:** Owner-approved on 2026-07-26 and amended on 2026-07-30 with the profile-selected JUEL delegation direction and exact dependency set; JUEL is deferred behind the standards-first Simple Boolean expression profile, its dependency graph is unadopted, and the Java evaluator remains absent
+**Status:** Owner-approved on 2026-07-26, amended on 2026-07-30 with the profile-selected JUEL delegation direction and exact dependency set, and amended on 2026-07-31 to make CIB Seven `2.2.0` the near-term BPMN breadth-ordering baseline; JUEL is deferred behind the standards-first Simple Boolean expression profile, its dependency graph is unadopted, and the Java evaluator remains absent
 
 ## Question
 
@@ -11,6 +11,8 @@ The pinned-source findings and family inventory are in [CIB Seven BPMN extension
 ## Layer role
 
 CIB Seven compatibility is an overlay on the vendor-neutral BPMN execution core, not the first or highest layer of the product. Standard BPMN propositions remain usable without a CIB profile. This document selects only the CIB syntax, interpretations, extensions, configurations, and host relations that a named compatibility profile adds.
+
+CIB Seven `2.2.0` nevertheless has a distinct planning role: its executable BPMN Process breadth is the primary baseline for ordering which standards mechanisms the project closes next after the runnable MVP. That priority does not make CIB normative, promote all CIB extensions into scope, require a CIB target for every standards capsule, or combine BPMN and CIB coverage measures. The durable rule is owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering).
 
 A12 Workflows sits above this layer as a downstream adoption target. Its corpus may justify prioritizing one CIB surface, but A12 handler names, Java APIs, integration façades, and model-specific shapes belong to an A12 adoption adapter or exact compatibility fixture. They do not become generic CIB semantics.
 
@@ -54,6 +56,7 @@ Compatibility claims remain level-specific:
 | Existing CIB Seven `JavaDelegate` binaries | **Deferred compatibility lane** | Requires an isolated Java executor and an exact `DelegateExecution` API disposition; assess after typed variables and a Java-worker deployment need exist |
 | Existing original Camunda 7 delegate binaries | **Deferred separately** | `org.camunda` and `org.cibseven` package identities differ; support would require a distinct bridge or dual API surface |
 | Full `DelegateExecution`, `ActivityBehavior`, Process Engine services, REST and plugin compatibility | **Non-goal for the current product architecture** | This would reproduce engine internals and host identities that the semantic-core boundary deliberately excludes; reconsider only through a separately funded compatibility program |
+| Exact User Task completion with canonical string/null Process-variable patch | **Owner-approved proposal; phase-zero evidence required** | First concrete consumer is the dummy actor in the runnable MVP; classify the pinned `TaskService.complete(taskId, variables)` result before semantic implementation under the [completion-data proposal](capsules/USER-TASK-COMPLETION-DATA-PROPOSAL.md) |
 | Read-only JUEL/Unified EL over typed Process data | **Architecture and dependencies approved; implementation deferred and dependencies unadopted** | When reopened, supply exact source and the complete approved Process context as canonical tagged String/Null bindings to the pinned CIB JUEL runtime behind a Java Activity; Lean and TypeScript consume a bound result and do not implement JUEL |
 | General JUEL methods, beans, `execution`, mutation, or engine-service access | **Deferred separate capability lanes** | Data evaluation, typed variable patches, bean/application capabilities, and Process Engine services have different authority, security, rollback, and effect boundaries |
 | FEEL | **Not selected as the project-native replacement for JUEL** | The target BPMN expressions use JUEL and the pinned CIB FEEL integrations belong to DMN; reopen only for a concrete DMN or explicitly selected FEEL-language profile |
@@ -65,7 +68,7 @@ Compatibility claims remain level-specific:
 | Exact literal and one local-reference input/output mappings | **Implemented bounded slices** | The current direct mapping representation is not general JUEL and must not grow into one; a future JUEL mapping capsule replaces it or proves an exact-token equivalence |
 | Field injection and general input/output mappings | **Deferred** | Require handler object lifecycle, profile-selected expression evaluation, typed values, scopes, result propagation, and a transaction/failure decision |
 | Execution/task listeners | **Deferred** | New lifecycle hook ordering and mutable callback contexts require separate semantics and evidence |
-| Forms, assignees, candidates, dates and identity extensions | **Deferred to User Task profiles** | Not part of effect execution; reopen with identity/form consumers |
+| Form metadata/rendering, assignees, candidates, dates and identity extensions | **Deferred to later User Task profiles** | The MVP simulates values without rendering a form or selecting human-resource extensions; reopen only with those exact consumers |
 | Call Activity, decision and case bindings | **Deferred** | Require deployment/version/tenant identity and DMN/CMMN decisions |
 | Multi-instance extensions | **Deferred** | Require collections, variable scopes, occurrence aggregation and concurrency semantics |
 | Connectors and built-in mail/shell task types | **Deferred** | Plugin/configuration-specific protocols with no current consumer |
@@ -239,7 +242,7 @@ Apart from the completed bounded Service Task work and its phase-zero probe, thi
 
 ## Approved owner decisions
 
-The owner approved these seven decisions:
+The owner approved these eight decisions:
 
 1. target selected source and behavioral compatibility, not general CIB engine API replacement;
 2. use project-owned handler identities and effect contracts as the primary replacement API;
@@ -248,6 +251,7 @@ The owner approved these seven decisions:
 5. keep Java delegate binaries, capability-bearing JUEL/beans, scripts, FEEL, and external tasks as separately reopened compatibility lanes under the dispositions above;
 6. treat full Process Engine Java/REST/plugin compatibility as a non-goal unless a separately funded compatibility program is approved.
 7. for the first read-only CIB expression capsule, provide complete approved context to the actual pinned JUEL runtime behind a Java Activity, build no project AST/evaluator, keep mutation and engine-service calls separate, and adopt only the explicitly approved dependency set recorded by that capsule.
+8. use CIB Seven `2.2.0` executable BPMN breadth as the primary ordering baseline for the near-term standards schedule while keeping BPMN authority, CIB relationship classification, A12 `2.0.0` profiles, and all three coverage denominators separate.
 
 ## Reopen conditions
 

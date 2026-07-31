@@ -2,9 +2,11 @@
 
 Making BPMN execution durable, explainable, and continuously checkable.
 
-This project builds a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. Its primary implementation roadmap is OMG BPMN Process Execution coverage. Selected CIB Seven behavior is layered on as versioned compatibility profiles, and evidence-backed A12 Workflows replacement is a downstream adoption goal implemented through bounded adapters rather than product semantics in the core. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture) owns the exact boundaries and separate coverage measures.
+This project builds a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. Its primary implementation roadmap is OMG BPMN Process Execution coverage, with CIB Seven `2.2.0` executable breadth ordering the near-term standards schedule. Selected CIB Seven behavior is layered on as versioned compatibility profiles, and evidence-backed A12 Workflows replacement is a downstream adoption goal implemented through bounded adapters rather than product semantics in the core. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture) owns the exact boundaries and separate coverage measures.
 
 Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
+
+The next product increment is the owner-approved [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-PROPOSAL.md): an external-server Worker and CLI path with a dummy actor around the durable User Task wait, simulating form input without introducing a UI, task inbox, or identity system.
 
 Use [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for the live implemented/absent boundary and [PLAN.md](docs/PLAN.md) for the active checkpoint and work order.
 

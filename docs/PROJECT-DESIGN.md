@@ -2,7 +2,7 @@
 
 ## Mission
 
-Build a Temporal-hosted BPMN 2.0.2 execution engine that imports Process diagrams and ultimately satisfies OMG Process Execution Conformance. Standards coverage is the primary engine roadmap: the reusable semantic model, Lean account, TypeScript core, and Temporal refinement must be meaningful without CIB Seven or A12.
+Build a Temporal-hosted BPMN 2.0.2 execution engine that imports Process diagrams and ultimately satisfies OMG Process Execution Conformance. Standards coverage is the primary engine roadmap: the reusable semantic model, Lean account, TypeScript core, and Temporal refinement must be meaningful without CIB Seven or A12. Within that roadmap, the executable BPMN breadth of CIB Seven `2.2.0` orders the near-term standards schedule so that the engine reaches a mature practical subset quickly.
 
 CIB Seven compatibility is a versioned overlay on that BPMN engine. It selects and classifies CIB interpretations, extensions, configuration-specific realizations, limitations, and evidenced deviations without allowing CIB host mechanisms to define the vendor-neutral BPMN core.
 
@@ -50,6 +50,24 @@ Coverage is accounted separately:
 3. A12 adoption counts unchanged models, handler/delegate compatibility, façade operations, and classified migration steps.
 
 No aggregate percentage may combine these denominators. A12 adoption is the ultimate product test, while BPMN coverage remains the primary implementation roadmap and CIB work is added when a standards ambiguity, selected compatibility claim, or downstream need forces it.
+
+## CIB Seven 2.2.0 breadth ordering
+
+CIB Seven `2.2.0` is the primary breadth baseline for ordering the near-term BPMN 2.0.2 Process Execution schedule. After the runnable MVP, choose the next uncovered reusable BPMN mechanism primarily from the executable Process surface evidenced by that release, subject to semantic dependencies, capsule size, and Temporal feasibility.
+
+This is a scheduling rule, not an authority reversal and not a combined coverage denominator. BPMN 2.0.2 remains normative; every mechanism receives a standards-owned account; CIB-specific interpretations and extensions remain separately classified; and a standards capsule may still omit CIB from its target relation when CIB supplies no independent evidence for that exact proposition.
+
+The breadth baseline counts executable Process behavior rather than every CIB product feature or public API. Administration, persistence, authorization, Tasklist, Cockpit, forms UI, identity management, Collaboration features not exercised by the selected engine baseline, and product-specific human-resource policy do not enter the semantic schedule merely because a CIB distribution contains adjacent facilities.
+
+A12 Workflows remains pinned separately to CIB Seven `2.0.0` for its downstream adoption profiles. Evidence from `2.2.0` must not be used as proof of `2.0.0` compatibility without a bounded equivalence result.
+
+The [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns standards dispositions. The [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) owns relation classifications. [PLAN.md](PLAN.md) owns the concrete ordered queue.
+
+## Runnable MVP delivery boundary
+
+Before the next breadth capsule, deliver the [owner-approved runnable Temporal MVP](RUNNABLE-TEMPORAL-MVP-PROPOSAL.md): an ordinary external-Temporal Worker and command path for a documented admitted subset, plus a dummy actor that leaves the User Task durably waiting on Temporal during a realistic host delay and then simulates form input through the real semantic completion boundary.
+
+The dummy actor is host policy. It does not define BPMN User Task meaning, add a human-resource model, or justify UI, forms, identity, authorization, Search Attributes, or a task inbox. Completion data is a separately reviewed CIB-profile semantic extension under the [User Task completion-data proposal](capsules/USER-TASK-COMPLETION-DATA-PROPOSAL.md).
 
 ## Authority model
 

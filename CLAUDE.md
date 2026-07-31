@@ -4,7 +4,7 @@ Shared guidance for Claude Code, OpenAI Codex, and human contributors working in
 
 ## Mission
 
-Build a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance. Treat standards coverage as the primary engine roadmap, selected CIB Seven behavior as a classified compatibility overlay, and A12 Workflows replacement as a downstream adoption layer. The durable layer boundaries and coverage measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture).
+Build a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance. Treat standards coverage as the primary engine roadmap, use the executable BPMN breadth of CIB Seven `2.2.0` to order the near-term standards schedule, keep selected CIB behavior as a classified compatibility overlay, and keep A12 Workflows replacement as a downstream adoption layer. The durable layer boundaries, ordering rule, and coverage measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture).
 
 Establish the semantic and hosting result through four components:
 
@@ -14,6 +14,8 @@ Establish the semantic and hosting result through four components:
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
 Use the maintained A12 Workflows product surface and its downstream full-stack blueprint to prioritize reusable BPMN mechanisms and necessary CIB overlays. A12 is the ultimate adoption target, but it does not define BPMN meaning and must not turn the engine into a collection of product-specific model paths.
+
+Deliver the owner-approved [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-PROPOSAL.md) before the next semantic-breadth capsule. Its dummy User Task actor is an explicit host simulation, not a UI, task inbox, form engine, identity layer, or human-resource semantic claim.
 
 The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and active sequencing and decisions belong in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 

@@ -362,6 +362,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - JUEL evaluation Activity, Java evaluator Worker, evaluation request/result contract, or cross-SDK evaluator evidence
 - retained result beyond Temporal retention
 - production canonical-observation API
+- external-server Worker/CLI product entry point and documented runnable deployment path
+- dummy User Task actor, realistic host delay around the durable Process wait, selected form-input projection, and completion-data patch
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow
 - Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
