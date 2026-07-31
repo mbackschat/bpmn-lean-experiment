@@ -52,6 +52,10 @@ const capsuleUrl = new URL(
   import.meta.url,
 );
 const scenarioUrl = new URL("trigger-first.scenario.json", capsuleUrl);
+const staleScenarioUrl = new URL(
+  "stale-sibling-after-error.scenario.json",
+  capsuleUrl,
+);
 const bpmnUrl = new URL("process.bpmn", capsuleUrl);
 const operationDeadlineMs = 10_000;
 const identity = "bpmn-lean-subprocess-error-replacement";
@@ -204,8 +208,8 @@ test("committed Error cancellation survives an immediate Worker replacement", as
   }
 });
 
-test("Error-bypass Workflow fabricates recovery without the semantic core", async () => {
-  const scenario = await readScenario();
+test("Error-bypass Workflow matches recovery then diverges on stale sibling", async () => {
+  const scenario = await readScenario(staleScenarioUrl);
   const input = await compileExecutionInput(scenario, bpmnUrl);
   const expected = runScenario(scenario, input.semanticProcess);
   const runner = await TemporalScenarioRunner.create({
@@ -222,13 +226,35 @@ test("Error-bypass Workflow fabricates recovery without the semantic core", asyn
       "Sub-Process Error bypass mutation",
     );
     assert.equal(execution.completionOutcome, CommandOutcome.Committed);
-    assert.deepEqual(execution.trace, expected.trace.slice(0, 5));
+    assert.deepEqual(execution.trace.slice(0, 5), expected.trace.slice(0, 5));
+    assert.equal(
+      execution.discriminatorOutcome,
+      CommandOutcome.Committed,
+    );
+    assert.deepEqual(expected.trace[5], {
+      kind: "command",
+      commandId: "refuse-stale-sibling-after-error",
+      outcome: CommandOutcome.Rejected,
+    });
+    assert.deepEqual(execution.trace[5], {
+      kind: "command",
+      commandId: "refuse-stale-sibling-after-error",
+      outcome: CommandOutcome.Committed,
+    });
+    assert.notDeepEqual(execution.trace, expected.trace);
     assert.equal(
       historyEvents(
         execution.history,
         "workflowExecutionUpdateAcceptedEventAttributes",
       ).length,
-      1,
+      2,
+    );
+    assert.equal(
+      historyEvents(
+        execution.history,
+        "workflowExecutionUpdateCompletedEventAttributes",
+      ).length,
+      2,
     );
     assertPassiveErrorHistory(execution.history);
   } finally {
@@ -236,8 +262,8 @@ test("Error-bypass Workflow fabricates recovery without the semantic core", asyn
   }
 });
 
-async function readScenario(): Promise<Scenario> {
-  return JSON.parse(await readFile(scenarioUrl, "utf8")) as Scenario;
+async function readScenario(url: URL = scenarioUrl): Promise<Scenario> {
+  return JSON.parse(await readFile(url, "utf8")) as Scenario;
 }
 
 function completionAt(

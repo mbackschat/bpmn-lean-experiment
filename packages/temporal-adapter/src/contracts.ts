@@ -212,6 +212,13 @@ export type TemporalScopeBypassMutationExecution = DeepReadonly<{
   completionOutcome: CommandOutcome;
 }>;
 
+export type TemporalErrorPropagationBypassMutationExecution = DeepReadonly<{
+  trace: CanonicalObservation[];
+  history: TemporalHistory;
+  completionOutcome: CommandOutcome;
+  discriminatorOutcome: CommandOutcome;
+}>;
+
 export type TemporalEffectFailureExecution = DeepReadonly<{
   failureType: "BPMN_EFFECT_EXECUTION_EXHAUSTED";
   lastCommittedTrace: CanonicalObservation[];

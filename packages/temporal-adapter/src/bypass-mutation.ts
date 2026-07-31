@@ -28,6 +28,7 @@ import {
 import type {
   BpmnProcessWorkflow,
   TemporalEffectBypassMutationExecution,
+  TemporalErrorPropagationBypassMutationExecution,
   TemporalBranchBypassMutationExecution,
   TemporalHistory,
   TemporalScopeBypassMutationExecution,
@@ -280,11 +281,21 @@ export async function runErrorPropagationBypassMutation(
   semanticProcess: SemanticProcessProgram,
   workflowId: string,
   waitForTrace: WaitForTrace,
-): Promise<TemporalScopeBypassMutationExecution> {
-  const completion = requireCompletionStimuli(scenario)[0];
+): Promise<TemporalErrorPropagationBypassMutationExecution> {
+  const completions = requireCompletionStimuli(scenario);
+  const completion = completions[0];
+  const discriminator = completions[1];
   if (completion?.taskId.elementId !== "UserTask_TriggerError") {
     throw new TypeError(
       "Error propagation bypass requires Trigger Error first",
+    );
+  }
+  if (
+    completions.length !== 2 ||
+    discriminator?.taskId.elementId !== "UserTask_SiblingWork"
+  ) {
+    throw new TypeError(
+      "Error propagation bypass requires one stale Sibling Work discriminator",
     );
   }
   const start = requireStartStimulus(scenario);
@@ -303,7 +314,17 @@ export async function runErrorPropagationBypassMutation(
         completion,
       );
       const completionOutcome = requireSemanticOutcome(completionResult);
-      const trace = await waitForTrace(handle, 5);
+      await waitForTrace(handle, 5);
+      const discriminatorResult = await submitUserTaskCompletionAtWorkflowId(
+        environment.client.workflow,
+        workflowId,
+        start.instanceId,
+        discriminator,
+      );
+      const discriminatorOutcome = requireSemanticOutcome(
+        discriminatorResult,
+      );
+      const trace = await waitForTrace(handle, 7);
       const history = await withDeadline(
         handle.fetchHistory(),
         operationDeadlineMs,
@@ -318,6 +339,7 @@ export async function runErrorPropagationBypassMutation(
         trace: [...trace],
         history: history as TemporalHistory,
         completionOutcome,
+        discriminatorOutcome,
       };
     },
   );

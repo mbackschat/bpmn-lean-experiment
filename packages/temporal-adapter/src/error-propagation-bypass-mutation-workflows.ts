@@ -27,7 +27,7 @@ import {
   bpmnTraceQuery,
 } from "./workflow-implementation.js";
 
-/** Retained defect: a Workflow fabricates the recovery result without invoking the semantic core for the Error-triggering completion. */
+/** Retained defect: a Workflow fabricates recovery without advancing the semantic state, which the next stale command exposes. */
 export async function runBpmnProcessErrorPropagationBypassMutation(
   start: StartProcessStimulus,
   semanticProcess: SemanticProcessProgram,
@@ -45,27 +45,44 @@ export async function runBpmnProcessErrorPropagationBypassMutation(
     deployment.observation,
     ...started.observations,
   ];
+  let state = started.state;
   let projectedTasks = projectOpenUserTasks(started.state);
+  let recoveryFabricated = false;
 
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(bpmnOpenUserTasksQuery, () => [...projectedTasks]);
   setHandler(
     bpmnCompleteUserTaskUpdate,
     (stimulus) => {
-      requireTriggerCompletion(stimulus);
-      const fabricated = fabricateRecoveryState(trace);
-      projectedTasks = fabricated.openUserTasks;
-      trace.push(
-        {
-          kind: CanonicalObservationKind.Command,
-          commandId: stimulus.commandId,
-          outcome: CommandOutcome.Committed,
-        },
-        fabricated,
-      );
+      requireCompletion(stimulus);
+      if (!recoveryFabricated) {
+        requireTriggerCompletion(stimulus);
+        const fabricated = fabricateRecoveryState(trace);
+        projectedTasks = fabricated.openUserTasks;
+        trace.push(
+          {
+            kind: CanonicalObservationKind.Command,
+            commandId: stimulus.commandId,
+            outcome: CommandOutcome.Committed,
+          },
+          fabricated,
+        );
+        recoveryFabricated = true;
+        return CommandOutcome.Committed;
+      }
+
+      const coreStep = advanceScenario(semanticProcess, state, stimulus);
+      if (coreStep.kind !== ScenarioStepKind.Committed) {
+        throw new TypeError(
+          "Error bypass discriminator requires the retained child state to commit",
+        );
+      }
+      state = coreStep.state;
+      projectedTasks = projectOpenUserTasks(state);
+      trace.push(...coreStep.observations);
       return CommandOutcome.Committed;
     },
-    { validator: requireTriggerCompletion },
+    { validator: requireCompletion },
   );
 
   await condition(() => false);
@@ -75,15 +92,22 @@ export async function runBpmnProcessErrorPropagationBypassMutation(
 function requireTriggerCompletion(
   stimulus: CompleteUserTaskInstanceStimulus,
 ): void {
-  const value = stimulus as unknown;
-  if (
-    !isWellFormedStimulus(value) ||
-    value.kind !== StimulusKind.CompleteUserTaskInstance ||
-    value.taskId.elementId !== "UserTask_TriggerError"
-  ) {
+  if (stimulus.taskId.elementId !== "UserTask_TriggerError") {
     throw new TypeError(
       "Error bypass requires the exact Trigger Error completion",
     );
+  }
+}
+
+function requireCompletion(
+  stimulus: CompleteUserTaskInstanceStimulus,
+): void {
+  const value = stimulus as unknown;
+  if (
+    !isWellFormedStimulus(value) ||
+    value.kind !== StimulusKind.CompleteUserTaskInstance
+  ) {
+    throw new TypeError("Error bypass requires a well-formed completion");
   }
 }
 

@@ -88,7 +88,7 @@ test("preserves exact Error identity and lowers one direct interrupting handler"
   );
 });
 
-test("Error lowering is independent of every selected declaration order", async () => {
+test("Error lowering survives one combined representative declaration reordering", async () => {
   const original = await compileSemanticProcessFixture(
     fixtureUrl,
     "subprocess-error-propagation-process",

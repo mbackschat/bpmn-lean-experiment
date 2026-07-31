@@ -27,6 +27,7 @@ import type {
   TemporalHistory,
   TemporalBranchBypassMutationExecution,
   TemporalEffectBypassMutationExecution,
+  TemporalErrorPropagationBypassMutationExecution,
   TemporalEffectFailureExecution,
   TemporalReplayItem,
   TemporalScenarioBatchItem,
@@ -453,7 +454,7 @@ export class TemporalScenarioRunner {
     scenario: Scenario,
     semanticProcess: SemanticProcessProgram,
     workflowId: string,
-  ): Promise<TemporalScopeBypassMutationExecution> {
+  ): Promise<TemporalErrorPropagationBypassMutationExecution> {
     this.assertAvailable();
     return runErrorPropagationBypassMutation(
       this.environment,

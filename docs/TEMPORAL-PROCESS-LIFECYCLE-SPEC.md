@@ -188,7 +188,7 @@ The focused Temporal gate must demonstrate:
 - the ordinary embedded Sub-Process history contains zero Signals, Timers, Activities, Child Workflows, and cancellation events;
 - an admitted Error-propagation Process commits Trigger Error through User Task Update ingress, performs `throwError` as internal closure, and exposes only Recover without a Signal, Timer, Activity, Child Workflow, or cancellation event;
 - replacing the Worker immediately after the committed throw/catch/cancel Update recovers that accepted result and the Recover-only wait set before a fresh stale Sibling Work Update is rejected with state preservation;
-- the Error-propagation Process completes after Recover, replays, and rejects a separately bundled Workflow that fabricates the post-cancellation state without invoking the semantic core;
+- the Error-propagation Process completes after Recover and replays; a separately bundled Workflow fabricates the identical post-cancellation prefix without invoking the semantic core, retains pre-throw state, and is rejected when the next stale sibling command produces the wrong durable outcome and canonical suffix;
 - start precedes every external completion under immediate delivery and Worker restart;
 - initial Process variables are visible at the first stable wait, retained through completion, and reconstructed identically by replay;
 - a normal exact completion closes the Workflow with a validated completed receipt;
