@@ -64,7 +64,7 @@ That source test is a strong probe seed, not retained project evidence. It neith
 
 ## Priority decision
 
-Ordinary embedded Sub-Process entry and normal completion is the next breadth capsule. It precedes the existing Error-propagation proposal for four reasons:
+Ordinary embedded Sub-Process entry and normal completion was selected before Error propagation for four reasons:
 
 1. It is the largest uncovered structural foundation in this bounded corpus inventory: 265 fixture files contain an ordinary embedded Sub-Process.
 2. It creates explicit definition scope, runtime scope occurrence, ownership, and normal quiescent completion once; Event Sub-Processes, boundary propagation, multi-instance bodies, transactions, and nested scopes can then add their distinct propositions without inventing a second scope model.
@@ -75,7 +75,7 @@ Implementing the error-only proposal first would install scope entry with delibe
 
 ## Ordered consequences
 
-The implemented [ordinary embedded Sub-Process specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) closed first. The [Error-propagation proposal](../capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) is owner-approved on that definition/runtime scope foundation. Its bounded CIB Seven `2.2.0` public-lifecycle phase-zero probe agrees in both child-command orders under `CIB-AGR-0008` without making CIB the source of BPMN meaning; semantic implementation has not started.
+The implemented [ordinary embedded Sub-Process specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) closed first, followed by the [Error-propagation specification](../capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) on the same definition/runtime scope foundation. Its bounded CIB Seven `2.2.0` public-lifecycle evidence agrees in both child-command orders under `CIB-AGR-0008` without making CIB the source of BPMN meaning. The next breadth ranking must now be repeated against the remaining construct inventory and the mechanisms these two capsules established.
 
 The next breadth ranking after ordinary completion should be repeated against both the remaining construct inventory and the mechanisms actually established. Raw prevalence does not automatically make Boundary Events next: the chosen item must still be the smallest reusable proposition whose admission, semantics, host mapping, and evidence can close without importing adjacent families accidentally.
 

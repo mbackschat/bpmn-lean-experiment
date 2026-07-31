@@ -64,6 +64,24 @@ def reachNoneEndState? (state : RuntimeState) (input : ControlPlaceId) :
   let _ ← runningInstance? state
   pure (reachNoneEndToken state owner input)
 
+def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
+    (error : ErrorReference) (handler : InterruptingErrorHandler) :
+    Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let _ ← runningInstance? state
+  if owner.definitionScopeId ≠ handler.attachedScopeId ||
+      error.code ≠ handler.code ||
+      error.errorElementId ≠ handler.origin.errorElementId then none
+  else
+    let occurrence ← match state.scopeOccurrences.filter fun candidate =>
+        decide (candidate.id = owner) with
+      | [candidate] => some candidate
+      | _ => none
+    let parent ← occurrence.parent
+    if state.scopeOccurrences.any fun candidate => candidate.id == parent then
+      some (interruptScope state owner parent handler.output)
+    else none
+
 /-- Declarative transition relation for one explicitly selected Semantic Process operation. -/
 inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState → Prop where
   | initiate (id origin output) (before after : RuntimeState)
@@ -103,6 +121,10 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
       OperationStep
         (.choose id origin input candidates defaultOutput defaultOrigin)
         before after
+  | throwError (id origin input error handler) (before after : RuntimeState)
+      (transition :
+        throwErrorState? before input error handler = some after) :
+      OperationStep (.throwError id origin input error handler) before after
   | reachNoneEnd (id origin input) (before after : RuntimeState)
       (transition : reachNoneEndState? before input = some after) :
       OperationStep (.reachNoneEnd id origin input) before after
@@ -132,6 +154,8 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
   | .synchronize _ _ inputs output => synchronizeState? state inputs output
   | .choose _ _ input candidates defaultOutput _ =>
       chooseState? state input candidates defaultOutput
+  | .throwError _ _ input error handler =>
+      throwErrorState? state input error handler
   | .reachNoneEnd _ _ input => reachNoneEndState? state input
   | .completeScope _ _ scopeId parentOutput =>
       completeScopeState? state scopeId parentOutput
@@ -150,6 +174,7 @@ theorem fire_sound (operation : SemanticOperation)
     | exact .duplicate _ _ _ _ before after result
     | exact .synchronize _ _ _ _ before after result
     | exact .choose _ _ _ _ _ _ before after result
+    | exact .throwError _ _ _ _ _ before after result
     | exact .reachNoneEnd _ _ _ before after result
     | exact .completeScope _ _ _ _ before after result
 

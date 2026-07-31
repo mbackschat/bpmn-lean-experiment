@@ -43,6 +43,7 @@ import {
   runBranchBypassMutation,
   runCompletionDataBypassMutation,
   runEffectBypassMutation,
+  runErrorPropagationBypassMutation,
   runScopeBypassMutation,
   runTimerBypassMutation,
 } from "./bypass-mutation.js";
@@ -439,6 +440,22 @@ export class TemporalScenarioRunner {
   ): Promise<TemporalScopeBypassMutationExecution> {
     this.assertAvailable();
     return runScopeBypassMutation(
+      this.environment,
+      scenario,
+      semanticProcess,
+      workflowId,
+      (handle, minimumLength) =>
+        this.waitForTrace(handle, minimumLength),
+    );
+  }
+
+  async runErrorPropagationBypassMutation(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalScopeBypassMutationExecution> {
+    this.assertAvailable();
+    return runErrorPropagationBypassMutation(
       this.environment,
       scenario,
       semanticProcess,

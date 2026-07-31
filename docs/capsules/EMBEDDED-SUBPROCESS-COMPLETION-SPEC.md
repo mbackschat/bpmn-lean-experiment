@@ -18,7 +18,7 @@ In product terms, the capsule establishes:
 
 > Can the engine enter a modeled embedded work region, keep all unfinished work inside that region, leave it only after every child path has ended, and then continue the enclosing Process exactly once?
 
-The closest unsupported claim is exceptional exit from that region through a modeled boundary handler. The retained [Error-propagation proposal](SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) owns that later extension.
+The closest implemented exceptional follow-on is direct-parent exact-code exit through a modeled boundary handler. The [Error-propagation specification](SUBPROCESS-ERROR-PROPAGATION-SPEC.md) owns that separate extension; broader handler search remains unsupported.
 
 The known eventual consumers are the BPMN Process Execution Conformance roadmap, CIB Seven breadth compatibility, Event Sub-Process and multi-instance foundations, and later A12 adoption. No unchanged A12 model is claimed here.
 

@@ -32,7 +32,7 @@ Command ingress returns a typed adapter union: accepted or recovered commands re
 
 ## Pre-release replay policy
 
-Tests start clean in-memory Temporal servers, execute the retained User Task, parallel, timer, Timer/User Task composition, Intermediate Catch Message, effect, mapping, boundary-error, and Simple Boolean Exclusive Gateway witnesses, fetch their live histories, replay those histories through the Workflow bundle, and shut the servers down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
+Tests start clean in-memory Temporal servers, execute the retained User Task, parallel, timer, Timer/User Task composition, Intermediate Catch Message, effect, mapping, boundary-error, Simple Boolean Exclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation witnesses, fetch their live histories, replay those histories through the Workflow bundle, and shut the servers down. No Event History fixture, legacy IR reader, patch branch, or migration path is committed while contracts are still changing freely.
 
 This is deliberate, not an abandonment of replay compatibility. Before the first immutable deployment baseline, speculative history compatibility would preserve prototype accidents and multiply branches. Once a durable history baseline is explicitly approved, retained histories, Worker/version markers, compatibility code, and migration/deprecation rules become mandatory evidence.
 
@@ -56,6 +56,7 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - the durable timer is derived only from committed core state, survives Worker absence at its due time, completes after replacement, and replays with one exact timer-started/timer-fired pair;
 - the linear Timer/User Task composition passes host capability, durably fires its Timer, exposes the later User Task, completes through Update ingress, and replays;
 - the direct Message subscription is passive host ingress, survives Worker absence, returns committed and refused semantic results through the result Query, preserves exact duplicate delivery, classifies malformed/conflicting requests outside semantic outcomes, records receipt recovery, and replays both Message/User Task orders;
+- the direct-parent Error-propagation Process uses only passive User Task Updates and core-owned internal closure, survives Worker replacement after committed throw/catch/cancel, recovers the Recover-only state, refuses the stale child, completes and replays with zero host cancellation events, and rejects a semantic-core bypass;
 - a separately bundled timer-bypass mutation preserves the pure trace but fails the durable-history discriminator;
 - the Simple Boolean gateway exposes only the selected User Task, completes and replays without an evaluator Activity, and a separately bundled route-substitution mutation exposes the wrong branch;
 - one accepted Update result remains retrievable after Workflow closure, while a distinct late command returns `processClosed` and Workflow-ID reuse is refused;
@@ -64,7 +65,7 @@ This is deliberate, not an abandonment of replay compatibility. Before the first
 - semantic results do not contain the Temporal Workflow ID;
 - Query-derived command outcomes reconcile with durable Update results and terminal state reconciles with the completed receipt.
 
-The adapter does not implement retained results beyond Temporal retention, a production canonical-observation API, evaluator Activities for Simple Boolean expressions, timer races or forms beyond the exact Intermediate Catch Timer capsule, Message payloads or key-based/global routing, modeled Message throw, Activities beyond the admitted Service Task success/data/error slices, Search Attributes, Continue-As-New, general Worker Versioning, general fault injection, a global task inbox, production authorization/forms, or BPMN beyond the admitted execution surfaces.
+The adapter does not implement retained results beyond Temporal retention, a production canonical-observation API, evaluator Activities for Simple Boolean expressions, timer races or forms beyond the exact Intermediate Catch Timer capsule, Message payloads or key-based/global routing, modeled Message throw, Activities beyond the admitted Service Task success/data/error slices, Error propagation beyond one direct parent, Search Attributes, Continue-As-New, general Worker Versioning, general fault injection, a global task inbox, production authorization/forms, or BPMN beyond the admitted execution surfaces.
 
 Run the focused gate:
 

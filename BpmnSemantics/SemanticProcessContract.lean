@@ -87,9 +87,17 @@ structure CheckedBpmnErrorRoute where
   outputFlowId : SequenceFlowId
   deriving Repr, DecidableEq
 
+structure ErrorReference where
+  errorDefinitionId : NodeId
+  errorElementId : NodeId
+  code : String
+  deriving Repr, DecidableEq
+
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | embeddedSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
+  | boundaryErrorEvent (id attachedToRef : NodeId)
+      (error : ErrorReference) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
@@ -104,18 +112,21 @@ inductive CheckedNode where
       (id : NodeId)
       (candidateFlowIds : List SequenceFlowId)
       (defaultFlowId : SequenceFlowId)
+  | errorEndEvent (id : NodeId) (error : ErrorReference)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
 
 def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .embeddedSubProcess id _
+  | .boundaryErrorEvent id _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveGateway id _ _
+  | .errorEndEvent id _
   | .noneEndEvent id => id
 
 structure CheckedSequenceFlow where
@@ -206,6 +217,20 @@ structure BpmnErrorRoute where
   origin : BpmnErrorRouteOrigin
   deriving Repr, DecidableEq
 
+structure InterruptingErrorHandlerOrigin where
+  boundaryEventId : NodeId
+  errorDefinitionId : NodeId
+  errorElementId : NodeId
+  sequenceFlowId : SequenceFlowId
+  deriving Repr, DecidableEq
+
+structure InterruptingErrorHandler where
+  attachedScopeId : DefinitionScopeId
+  code : String
+  output : ControlPlaceId
+  origin : InterruptingErrorHandlerOrigin
+  deriving Repr, DecidableEq
+
 structure ConditionalCandidate where
   condition : SimpleBooleanExpression
   output : ControlPlaceId
@@ -264,6 +289,12 @@ inductive SemanticOperation where
       (candidates : List ConditionalCandidate)
       (defaultOutput : ControlPlaceId)
       (defaultOrigin : BpmnSequenceFlowOrigin)
+  | throwError
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (error : ErrorReference)
+      (handler : InterruptingErrorHandler)
   | reachNoneEnd
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -285,6 +316,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .duplicate id _ _ _
   | .synchronize id _ _ _
   | .choose id _ _ _ _ _
+  | .throwError id _ _ _ _
   | .reachNoneEnd id _ _
   | .completeScope id _ _ _ => id
 

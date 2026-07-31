@@ -54,6 +54,7 @@ export function isAdmittedCheckedProcess(
     flowScopes !== undefined &&
     isDefinitionScopeTree(graph.definitionScopes) &&
     embeddedNodesOwnChildScopes(graph, nodeScopes) &&
+    errorNodesHaveDirectHandlers(graph, nodeScopes) &&
     hasSelectedExpressionLanguage(
       semanticProfile,
       expressionLanguage,
@@ -74,12 +75,70 @@ function isAdmittedDefinitionScope(
   const nodes = graph.nodes.filter(({ id }) => nodeScopes.get(id) === scopeId);
   const flows = graph.flows.filter(({ id }) => flowScopes.get(id) === scopeId);
   const nodeIds = new Set(nodes.map(({ id }) => id));
+  const exceptionalEdges = exceptionalEdgesWithinScope(
+    nodes,
+    nodeScopes,
+    scopeId,
+  );
   return nodes.every((node) => hasSelectedArity(node, flows)) &&
     flows.every(
       ({ sourceId, targetId }) =>
         nodeIds.has(sourceId) && nodeIds.has(targetId),
     ) &&
-    isConnectedAcyclicGraph(nodes, flows);
+    isConnectedAcyclicGraph(nodes, flows, exceptionalEdges);
+}
+
+function errorNodesHaveDirectHandlers(
+  graph: CheckedProcessGraph,
+  nodeScopes: ReadonlyMap<string, string>,
+): boolean {
+  const thrown = graph.nodes.filter(
+    (
+      node,
+    ): node is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.ErrorEndEvent }
+    > => node.kind === CheckedNodeKind.ErrorEndEvent,
+  );
+  const handlers = graph.nodes.filter(
+    (
+      node,
+    ): node is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.BoundaryErrorEvent }
+    > => node.kind === CheckedNodeKind.BoundaryErrorEvent,
+  );
+  const matchingHandlers = (
+    errorEnd: Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.ErrorEndEvent }
+    >,
+  ) => handlers.filter((handler) => {
+    const attached = graph.nodes.find(
+      (node): node is Extract<
+        CheckedNode,
+        { kind: CheckedNodeKind.EmbeddedSubProcess }
+      > =>
+        node.id === handler.attachedToRef &&
+        node.kind === CheckedNodeKind.EmbeddedSubProcess,
+    );
+    return attached !== undefined &&
+      attached.childScopeId === nodeScopes.get(errorEnd.id) &&
+      nodeScopes.get(handler.id) === nodeScopes.get(attached.id) &&
+      handler.error.errorElementId === errorEnd.error.errorElementId &&
+      handler.error.code === errorEnd.error.code &&
+      graph.flows.some(
+        ({ id, sourceId }) =>
+          id === handler.outputFlowId && sourceId === handler.id,
+      );
+  });
+  return thrown.every((errorEnd) => matchingHandlers(errorEnd).length === 1) &&
+    handlers.every(
+      (handler) =>
+        thrown.filter((errorEnd) =>
+          matchingHandlers(errorEnd).includes(handler)
+        ).length === 1,
+    );
 }
 
 function embeddedNodesOwnChildScopes(
@@ -200,6 +259,8 @@ function hasSelectedArity(
     case CheckedNodeKind.IntermediateCatchMessageEvent:
     case CheckedNodeKind.ServiceTask:
       return incoming === 1 && outgoing === 1;
+    case CheckedNodeKind.BoundaryErrorEvent:
+      return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:
@@ -209,6 +270,7 @@ function hasSelectedArity(
       }
     case CheckedNodeKind.ExclusiveGateway:
       return incoming === 1 && outgoing === 3;
+    case CheckedNodeKind.ErrorEndEvent:
     case CheckedNodeKind.NoneEndEvent:
       return incoming === 1 && outgoing === 0;
   }
@@ -217,21 +279,27 @@ function hasSelectedArity(
 function isConnectedAcyclicGraph(
   nodes: ReadonlyArray<CheckedNode>,
   flows: ReadonlyArray<CheckedSequenceFlow>,
+  exceptionalEdges: ReadonlyArray<NodeEdge>,
 ): boolean {
   const starts = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.NoneStartEvent,
   );
   const ends = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.NoneEndEvent,
+    ({ kind }) =>
+      kind === CheckedNodeKind.NoneEndEvent ||
+      kind === CheckedNodeKind.ErrorEndEvent,
   );
   const start = starts[0];
   if (starts.length !== 1 || start === undefined || ends.length === 0) {
     return false;
   }
-  const edges = flows.map(({ sourceId: source, targetId: target }) => ({
-    source,
-    target,
-  }));
+  const edges = [
+    ...flows.map(({ sourceId: source, targetId: target }) => ({
+      source,
+      target,
+    })),
+    ...exceptionalEdges,
+  ];
   const reached = reachableFrom([start.id], edges);
   const canReachEnd = reachableFrom(
     ends.map(({ id }) => id),
@@ -242,6 +310,19 @@ function isConnectedAcyclicGraph(
 }
 
 type NodeEdge = Readonly<{ source: string; target: string }>;
+
+function exceptionalEdgesWithinScope(
+  nodes: ReadonlyArray<CheckedNode>,
+  nodeScopes: ReadonlyMap<string, string>,
+  scopeId: string,
+): ReadonlyArray<NodeEdge> {
+  return nodes.flatMap((node) =>
+    node.kind === CheckedNodeKind.BoundaryErrorEvent &&
+      nodeScopes.get(node.attachedToRef) === scopeId
+      ? [{ source: node.attachedToRef, target: node.id }]
+      : []
+  );
+}
 
 function reachableFrom(
   initial: ReadonlyArray<string>,

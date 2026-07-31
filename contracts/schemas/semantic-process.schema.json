@@ -603,6 +603,75 @@
         }
       }
     },
+    "errorReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "errorDefinitionId",
+        "errorElementId",
+        "code"
+      ],
+      "properties": {
+        "errorDefinitionId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "errorElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "code": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "interruptingErrorHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attachedScopeId",
+        "code",
+        "output",
+        "origin"
+      ],
+      "properties": {
+        "attachedScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "code": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "boundaryEventId",
+            "errorDefinitionId",
+            "errorElementId",
+            "sequenceFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bpmnElement"
+            },
+            "boundaryEventId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "errorDefinitionId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "errorElementId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "sequenceFlowId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        }
+      }
+    },
     "duplicate": {
       "type": "object",
       "additionalProperties": false,
@@ -792,6 +861,38 @@
         }
       }
     },
+    "throwError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "error",
+        "handler"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "throwError"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "error": {
+          "$ref": "#/$defs/errorReference"
+        },
+        "handler": {
+          "$ref": "#/$defs/interruptingErrorHandler"
+        }
+      }
+    },
     "reachNoneEnd": {
       "type": "object",
       "additionalProperties": false,
@@ -876,6 +977,9 @@
         },
         {
           "$ref": "#/$defs/choose"
+        },
+        {
+          "$ref": "#/$defs/throwError"
         },
         {
           "$ref": "#/$defs/reachNoneEnd"

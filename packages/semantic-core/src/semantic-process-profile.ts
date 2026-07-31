@@ -8,6 +8,8 @@ export const SemanticProfileId = Object.freeze({
   CreateDocument: "cibseven-2.0.0-a12-create-document-draft",
   EmbeddedSubProcessCompletion:
     "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  SubProcessErrorPropagation:
+    "cibseven-2.2.0-subprocess-error-propagation-draft",
   ExclusiveGatewaySimpleBoolean:
     "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
   IntermediateCatchTimer:
@@ -129,6 +131,24 @@ function requiredCheckedProcessShape(
           end,
         ],
       };
+    case SemanticProfileId.SubProcessErrorPropagation:
+      return {
+        definitionScopeCount: 2,
+        nodeKinds: [
+          start,
+          CheckedNodeKind.EmbeddedSubProcess,
+          CheckedNodeKind.BoundaryErrorEvent,
+          CheckedNodeKind.UserTask,
+          end,
+          end,
+          start,
+          CheckedNodeKind.ParallelGateway,
+          CheckedNodeKind.UserTask,
+          CheckedNodeKind.UserTask,
+          CheckedNodeKind.ErrorEndEvent,
+          end,
+        ],
+      };
     default:
       return undefined;
   }
@@ -222,6 +242,24 @@ function requiredProgramShape(
           SemanticOperationKind.AwaitUserTask,
           SemanticOperationKind.AwaitUserTask,
           SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.CompleteScope,
+          SemanticOperationKind.CompleteScope,
+        ],
+      };
+    case SemanticProfileId.SubProcessErrorPropagation:
+      return {
+        definitionScopeCount: 2,
+        operationKinds: [
+          SemanticOperationKind.Initiate,
+          SemanticOperationKind.EnterScope,
+          SemanticOperationKind.Duplicate,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.ThrowError,
           SemanticOperationKind.ReachNoneEnd,
           SemanticOperationKind.ReachNoneEnd,
           SemanticOperationKind.ReachNoneEnd,

@@ -8,10 +8,6 @@ import type {
   StartProcessStimulus,
 } from "./contract.js";
 import {
-  EffectOperation,
-  EffectProtocol,
-  MappingExpressionKind,
-  SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
@@ -24,11 +20,11 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  isWellFormedChooseOperation,
-} from "./simple-boolean-choice-admission.js";
-import {
   isWellFormedSemanticProcessGraph,
 } from "./semantic-process-graph-admission.js";
+import {
+  isWellFormedSemanticOperation,
+} from "./semantic-process-operation-admission.js";
 import {
   profileAllowsProgramShape,
 } from "./semantic-process-profile.js";
@@ -179,7 +175,12 @@ export function isWellFormedSemanticProcessProgram(
 
   const checkedOperations: SemanticOperation[] = [];
   for (const operation of operations) {
-    if (!isWellFormedOperation(operation, placeIds, placeOrigins, scopeIds)) {
+    if (!isWellFormedSemanticOperation(
+      operation,
+      placeIds,
+      placeOrigins,
+      scopeIds,
+    )) {
       return false;
     }
     checkedOperations.push(operation);
@@ -191,176 +192,6 @@ export function isWellFormedSemanticProcessProgram(
     controlPlaceIds: [...placeIds],
     operations: checkedOperations,
   });
-}
-
-function isWellFormedOperation(
-  value: unknown,
-  placeIds: ReadonlySet<string>,
-  placeOrigins: ReadonlyMap<string, string>,
-  scopeIds: ReadonlySet<string>,
-): value is SemanticOperation {
-  if (
-    !isRecord(value) ||
-    !isNonEmptyString(value.id) ||
-    !isRecord(value.origin) ||
-    !hasOnlyKeys(value.origin, ["kind", "elementId"]) ||
-    value.origin.kind !== SemanticOriginKind.BpmnElement ||
-    !isNonEmptyString(value.origin.elementId)
-  ) {
-    return false;
-  }
-  switch (value.kind) {
-    case SemanticOperationKind.Initiate:
-      return (
-        hasOnlyKeys(value, ["id", "kind", "origin", "output"]) &&
-        isPlaceReference(value.output, placeIds)
-      );
-    case SemanticOperationKind.EnterScope:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "input",
-          "childEntry",
-          "childScopeId",
-        ]) &&
-        isPlaceReference(value.input, placeIds) &&
-        isPlaceReference(value.childEntry, placeIds) &&
-        isNonEmptyString(value.childScopeId) &&
-        scopeIds.has(value.childScopeId)
-      );
-    case SemanticOperationKind.AwaitUserTask:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "input",
-          "output",
-          "task",
-        ]) &&
-        isPlaceReference(value.input, placeIds) &&
-        isPlaceReference(value.output, placeIds) &&
-        isRecord(value.task) &&
-        hasOnlyKeys(value.task, ["elementId", "name"]) &&
-        value.task.elementId === value.origin.elementId &&
-        (value.task.name === null || typeof value.task.name === "string")
-      );
-    case SemanticOperationKind.AwaitTimer:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "input",
-          "output",
-          "timer",
-        ]) &&
-        isPlaceReference(value.input, placeIds) &&
-        isPlaceReference(value.output, placeIds) &&
-        isRecord(value.timer) &&
-        hasOnlyKeys(value.timer, ["elementId", "durationMs"]) &&
-        value.timer.elementId === value.origin.elementId &&
-        value.timer.durationMs === 1000
-      );
-    case SemanticOperationKind.AwaitMessage:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "input",
-          "output",
-          "message",
-        ]) &&
-        isPlaceReference(value.input, placeIds) &&
-        isPlaceReference(value.output, placeIds) &&
-        value.input !== value.output &&
-        isRecord(value.message) &&
-        hasOnlyKeys(value.message, ["elementId", "channel"]) &&
-        value.message.elementId === value.origin.elementId &&
-        isMessageChannel(value.message.channel)
-      );
-    case SemanticOperationKind.AwaitEffect:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "input",
-          "output",
-          "effect",
-          "bpmnErrorRoute",
-        ]) &&
-        isPlaceReference(value.input, placeIds) &&
-        isPlaceReference(value.output, placeIds) &&
-        isRecord(value.effect) &&
-        hasOnlyKeys(value.effect, [
-          "elementId",
-          "descriptor",
-          "inputMappings",
-          "outputMappings",
-        ]) &&
-        value.effect.elementId === value.origin.elementId &&
-        isSupportedEffectContract(
-          value.effect,
-          value.bpmnErrorRoute,
-          placeIds,
-        )
-      );
-    case SemanticOperationKind.Duplicate:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "input",
-          "outputs",
-        ]) &&
-        isPlaceReference(value.input, placeIds) &&
-        isManyPlaceReferences(value.outputs, placeIds)
-      );
-    case SemanticOperationKind.Synchronize:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "inputs",
-          "output",
-        ]) &&
-        isManyPlaceReferences(value.inputs, placeIds) &&
-        isPlaceReference(value.output, placeIds)
-      );
-    case SemanticOperationKind.Choose:
-      return isWellFormedChooseOperation(
-        value,
-        placeIds,
-        placeOrigins,
-      );
-    case SemanticOperationKind.ReachNoneEnd:
-      return (
-        hasOnlyKeys(value, ["id", "kind", "origin", "input"]) &&
-        isPlaceReference(value.input, placeIds)
-      );
-    case SemanticOperationKind.CompleteScope:
-      return (
-        hasOnlyKeys(value, [
-          "id",
-          "kind",
-          "origin",
-          "scopeId",
-          "parentOutput",
-        ]) &&
-        isNonEmptyString(value.scopeId) &&
-        scopeIds.has(value.scopeId) &&
-        (value.parentOutput === null ||
-          isPlaceReference(value.parentOutput, placeIds))
-      );
-    default:
-      return false;
-  }
 }
 
 function isWellFormedDefinitionScope(
@@ -389,110 +220,6 @@ function isWellFormedControlPlaceScopeOwnership(
     hasOnlyKeys(value, ["controlPlaceId", "scopeId"]) &&
     isNonEmptyString(value.controlPlaceId) &&
     isNonEmptyString(value.scopeId);
-}
-
-function isMessageChannel(value: unknown): boolean {
-  return isRecord(value) &&
-    hasOnlyKeys(value, [
-      "interfaceId",
-      "interfaceOperationId",
-      "messageId",
-    ]) &&
-    isNonEmptyString(value.interfaceId) &&
-    isNonEmptyString(value.interfaceOperationId) &&
-    isNonEmptyString(value.messageId);
-}
-
-function isSupportedEffectContract(
-  effect: Record<string, unknown>,
-  bpmnErrorRoute: unknown,
-  placeIds: ReadonlySet<string>,
-): boolean {
-  if (
-    !isRecord(effect.descriptor) ||
-    !hasOnlyKeys(effect.descriptor, ["protocol", "operation"]) ||
-    effect.descriptor.protocol !== EffectProtocol.Activity ||
-    !isNonEmptyString(effect.descriptor.operation) ||
-    !Array.isArray(effect.inputMappings) ||
-    !Array.isArray(effect.outputMappings)
-  ) {
-    return false;
-  }
-  switch (effect.descriptor.operation) {
-    case EffectOperation.Probe:
-      return effect.inputMappings.length === 0 &&
-        effect.outputMappings.length === 0 &&
-        bpmnErrorRoute === null;
-    case EffectOperation.MappedSuccess:
-      return isSingleMapping(
-          effect.inputMappings,
-          MappingExpressionKind.StringLiteral,
-          "value",
-        ) &&
-        isSingleMapping(
-          effect.outputMappings,
-          MappingExpressionKind.LocalVariable,
-          "name",
-        ) &&
-        bpmnErrorRoute === null;
-    case EffectOperation.MappedBoundaryError:
-      return isSingleMapping(
-          effect.inputMappings,
-          MappingExpressionKind.StringLiteral,
-          "value",
-        ) &&
-        isSingleMapping(
-          effect.outputMappings,
-          MappingExpressionKind.LocalVariable,
-          "name",
-        ) &&
-        isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds);
-    default:
-      return false;
-  }
-}
-
-function isWellFormedBpmnErrorRoute(
-  value: unknown,
-  placeIds: ReadonlySet<string>,
-): boolean {
-  if (
-    !isRecord(value) ||
-    !hasOnlyKeys(value, ["code", "output", "origin"]) ||
-    !isPlaceReference(value.output, placeIds) ||
-    !isRecord(value.origin) ||
-    !hasOnlyKeys(value.origin, [
-      "kind",
-      "boundaryEventId",
-      "errorDefinitionId",
-      "errorElementId",
-      "sequenceFlowId",
-    ])
-  ) {
-    return false;
-  }
-  return value.origin.kind === SemanticOriginKind.BpmnElement &&
-    isNonEmptyString(value.code) &&
-    isNonEmptyString(value.origin.boundaryEventId) &&
-    isNonEmptyString(value.origin.errorDefinitionId) &&
-    isNonEmptyString(value.origin.errorElementId) &&
-    isNonEmptyString(value.origin.sequenceFlowId);
-}
-
-function isSingleMapping(
-  mappings: ReadonlyArray<unknown>,
-  kind: MappingExpressionKind,
-  valueField: "name" | "value",
-): boolean {
-  const mapping = mappings[0];
-  return mappings.length === 1 &&
-    isRecord(mapping) &&
-    hasOnlyKeys(mapping, ["target", "expression"]) &&
-    isNonEmptyString(mapping.target) &&
-    isRecord(mapping.expression) &&
-    hasOnlyKeys(mapping.expression, ["kind", valueField]) &&
-    mapping.expression.kind === kind &&
-    isNonEmptyString(mapping.expression[valueField]);
 }
 
 function isSupportedScenario(value: unknown): value is Scenario {
@@ -532,26 +259,6 @@ function isSupportedScenario(value: unknown): value is Scenario {
   );
 }
 
-function isManyPlaceReferences(
-  value: unknown,
-  placeIds: ReadonlySet<string>,
-): boolean {
-  return (
-    Array.isArray(value) &&
-    value.length >= 2 &&
-    new Set(value).size === value.length &&
-    isSortedStrings(value) &&
-    value.every((item) => isPlaceReference(item, placeIds))
-  );
-}
-
-function isPlaceReference(
-  value: unknown,
-  placeIds: ReadonlySet<string>,
-): value is string {
-  return isNonEmptyString(value) && placeIds.has(value);
-}
-
 function isSortedById(values: ReadonlyArray<unknown>): boolean {
   return values.every((value, index) => {
     const previous = values[index - 1];
@@ -579,15 +286,6 @@ function isSortedByField(
           isNonEmptyString(previous[field]) &&
           compareCanonicalStrings(previous[field], value[field]) < 0));
   });
-}
-
-function isSortedStrings(values: ReadonlyArray<unknown>): boolean {
-  return values.every(
-    (value, index) =>
-      typeof value === "string" &&
-      (index === 0 ||
-        compareCanonicalStrings(String(values[index - 1]), value) < 0),
-  );
 }
 
 function hasOnlyKeys(

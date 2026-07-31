@@ -4,10 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.task.Task;
 import org.junit.AfterClass;
@@ -20,8 +20,10 @@ import org.junit.Test;
  */
 public final class CibSevenSubProcessErrorPropagationPhaseZeroProbeTest {
 
-  private static final String RESOURCE =
-      "/org/bpmnlean/cibseven/CibSevenSubProcessErrorPropagationPhaseZeroProbeTest.bpmn";
+  private static final Path PROJECT_ROOT =
+      Path.of("../..").toAbsolutePath().normalize();
+  private static final Path RESOURCE =
+      PROJECT_ROOT.resolve("scenarios/subprocess-error-propagation/process.bpmn");
   private static final String PROCESS_ID = "Process_SubProcessErrorPropagationProbe";
   private static final String TRIGGER_ERROR = "UserTask_TriggerError";
   private static final String SIBLING_WORK = "UserTask_SiblingWork";
@@ -125,13 +127,7 @@ public final class CibSevenSubProcessErrorPropagationPhaseZeroProbeTest {
   }
 
   private static String readResource() throws IOException {
-    try (var stream =
-        Objects.requireNonNull(
-            CibSevenSubProcessErrorPropagationPhaseZeroProbeTest.class
-                .getResourceAsStream(RESOURCE),
-            "Missing Sub-Process Error propagation phase-zero fixture")) {
-      return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-    }
+    return Files.readString(RESOURCE);
   }
 
   private record ProbeDeployment(ProcessEngine owner, String deploymentId)

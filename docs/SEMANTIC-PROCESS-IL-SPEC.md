@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free Service Task effect, CreateDocument data, interrupting boundary-error, Simple Boolean Exclusive Gateway, and ordinary embedded Sub-Process completion capsules.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free Service Task effect, CreateDocument data, interrupting boundary-error, Simple Boolean Exclusive Gateway, ordinary embedded Sub-Process completion, and direct-parent Sub-Process Error-propagation capsules.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, three profile-mapped Service Task source shapes, one exact attached interrupting Error route, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one level of ordinary embedded Sub-Process scope, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one level of embedded Sub-Process scope, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -103,6 +103,12 @@ type CheckedBpmnErrorRoute = DeepReadonly<{
   outputFlowId: string;
 }>;
 
+type ErrorReference = DeepReadonly<{
+  errorDefinitionId: string;
+  errorElementId: string;
+  code: string;
+}>;
+
 type EffectDescriptor = DeepReadonly<{
   protocol: string;
   operation: string;
@@ -139,6 +145,13 @@ type CheckedNode = DeepReadonly<
       childScopeId: string;
     }
   | {
+      kind: "boundaryErrorEvent";
+      id: string;
+      attachedToRef: string;
+      error: ErrorReference;
+      outputFlowId: string;
+    }
+  | {
       kind: "userTask";
       id: string;
       name: string | null;
@@ -165,6 +178,11 @@ type CheckedNode = DeepReadonly<
       direction: "diverging";
       candidateFlowIds: [string, string];
       defaultFlowId: string;
+    }
+  | {
+      kind: "errorEndEvent";
+      id: string;
+      error: ErrorReference;
     }
   | {
       kind: "noneEndEvent";
@@ -271,6 +289,19 @@ type BpmnErrorRoute = DeepReadonly<{
   };
 }>;
 
+type InterruptingErrorHandler = DeepReadonly<{
+  attachedScopeId: string;
+  code: string;
+  output: string;
+  origin: {
+    kind: "bpmnElement";
+    boundaryEventId: string;
+    errorDefinitionId: string;
+    errorElementId: string;
+    sequenceFlowId: string;
+  };
+}>;
+
 type SemanticOperation = DeepReadonly<
   | (OperationBase & {
       kind: "initiate";
@@ -342,6 +373,12 @@ type SemanticOperation = DeepReadonly<
       };
     })
   | (OperationBase & {
+      kind: "throwError";
+      input: string;
+      error: ErrorReference;
+      handler: InterruptingErrorHandler;
+    })
+  | (OperationBase & {
       kind: "reachNoneEnd";
       input: string;
     })
@@ -388,6 +425,8 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | exact payload-free Service Task source shape | `awaitEffect` with the registered neutral Activity/probe descriptor and empty mappings |
 | exact A12-shaped CreateDocument source shape and mappings | `awaitEffect` with the registered neutral Activity/mapped-success descriptor, normalized literal input, and local-reference output mapping |
 | exact A12-shaped interrupting boundary Error source shape | `awaitEffect` with the registered neutral Activity/mapped-boundary-error descriptor, normalized mapping pair, and one committed `bpmnErrorRoute` |
+| exact-code Error End Event with one direct enclosing Sub-Process boundary Error | `throwError` with the throwing Error identity and the checked, resolved interrupting handler |
+| explicit Sub-Process boundary Error Event | no independent operation; its checked attachment, matching Error, and outgoing parent flow are retained in the resolved `throwError.handler` |
 | diverging Parallel Gateway | `duplicate` |
 | converging Parallel Gateway | `synchronize` |
 | exact divergent Exclusive Gateway under Simple Boolean v1 | `choose` with two declaration-ordered candidates and one default |
@@ -469,6 +508,12 @@ Simple Boolean v1 is total after admission. The operation therefore has no seman
 
 The process instance is complete only through root-scope completion. Reaching one none End Event does not by itself discard unrelated work in the same scope, and completing one child branch does not complete its containing scope while a sibling wait remains live.
 
+### Error throw and direct-parent interruption
+
+`throwError` is enabled by one token on the Error End Event input in the operation's child scope occurrence. Firing consumes that token, selects the already checked exact-code handler attached to the directly enclosing embedded Sub-Process, removes every token, task, Message subscription, Timer, effect wait, Activity-local scope, and descendant occurrence owned by that interrupted child occurrence, removes the child occurrence itself, and emits exactly one parent-owned token on the boundary route.
+
+Task, Message, Timer, effect, scope, and End activation counters are monotonic historical state and survive regional interruption. Root-owned runtime work survives. The transition is one internal closure step: no pending Error or half-canceled scope is stable or public, and the structurally retained normal Sub-Process output cannot be emitted after the occurrence is removed.
+
 ### Internal scheduling
 
 The relation may permit more than one internal operation. Any semantically material choice must be explicit input or proven observationally irrelevant under exact hypotheses. The executable evaluator must not turn collection order into an undeclared scheduling rule.
@@ -490,6 +535,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every admitted `awaitEffect` has a profile-permitted descriptor and the exact mapping pair for that descriptor;
 - mapping targets are nonempty and unique, literal inputs remain exact strings, and local-variable outputs refer only to the admitted result-local name;
 - every non-null `bpmnErrorRoute` has a nonempty exact code, a distinct existing boundary output, complete source provenance, and the exact profile-permitted handler/mapping combination;
+- every `throwError` has a valid Error reference, an input owned by its throwing child scope, exactly one direct-parent handler with the same Error element and code but a distinct catching ErrorEventDefinition, and a handler output owned by that parent and originating from the recorded boundary Sequence Flow;
 - the current profile has exactly one root-owned `initiate`, exactly one `completeScope` per definition scope, and no `enterScope` targeting the root;
 - each control place has only the producer and consumer shapes permitted by the current lowering;
 - every operation and control place is reachable from initiation and can reach the root completion under the structural graph, including explicit end-to-scope-completion edges;
@@ -578,13 +624,14 @@ The maintained implementation supports exactly:
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;
 - one divergent Exclusive Gateway with exactly two Simple Boolean v1 conditions and one conditionless default under process-level Sequence Flow declaration order;
 - one ordinary one-level embedded Sub-Process with two independent child User Tasks and two child None End Events, followed by one outer User Task and root None End Event;
+- one one-level embedded Sub-Process with two independent child User Tasks, one child Error End Event, one child None End Event, one exact matching interrupting boundary Error in the parent, one outer recovery User Task, and a structurally present but unreachable normal continuation;
 - none End Events permitted by the capsules;
-- `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, `reachNoneEnd`, and `completeScope`;
+- `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, `throwError`, `reachNoneEnd`, and `completeScope`;
 - definition-scope ownership and occurrence identity plus token multiplicity per Sequence Flow and scope occurrence;
 - semantic task, Message-subscription, timer, and effect occurrence identity, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
 - the canonical observation boundary including `openMessageSubscriptions`, `openTimers`, effect arguments in `openEffects`, and Process `variables`.
 
-The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, and ordinary embedded Sub-Process fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
@@ -592,8 +639,8 @@ The following remain unsupported:
 
 - general BPMN 2.0.2 import or conformance;
 - event subtypes beyond the admitted none Start, exact normal-flow `PT1S` Intermediate Catch Timer, exact normal-flow payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
-- other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, other boundary Events, catch-all or propagated Errors, Error throws, Error End Events, signals as BPMN semantics, escalation, cancellation, compensation, and terminate semantics;
-- arbitrary Sub-Process nesting, call activities, transactions, event Sub-Processes, exceptional scope cancellation, and event propagation;
+- other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, boundary Events beyond the exact Task-attached and Sub-Process-attached Error slices, catch-all or unmatched Errors, handler search beyond one direct parent, Error payloads, Intermediate Throw Errors, signals as BPMN semantics, escalation, cancellation Events, compensation, and terminate semantics;
+- arbitrary Sub-Process nesting, call activities, transactions, event Sub-Processes, and exceptional scope cancellation or event propagation beyond the exact direct-parent Error slice;
 - converging or mixed Exclusive Gateways, missing-default or non-binary conditional routing, inclusive, complex, and event-based gateways;
 - loops, multi-instance activities, condition consumers beyond the admitted Exclusive Gateway, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond the two exact pairs;
 - XPath, JUEL, FEEL, script parsing or evaluation, conditional-evaluation receipts, and every expression runtime beyond Simple Boolean v1;
@@ -607,14 +654,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, and ordinary embedded Sub-Process exact-source fixtures lower deterministically;
+- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, CreateDocument data/mapping, boundary-error, Simple Boolean conditional-choice, and ordinary child-scope quiescence/completion separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, CreateDocument data/mapping, boundary-error, Simple Boolean conditional-choice, ordinary child-scope quiescence/completion, and direct-parent Error interruption separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

@@ -38,6 +38,7 @@ export function assessTemporalHostCapability(
       case SemanticOperationKind.Duplicate:
       case SemanticOperationKind.Synchronize:
       case SemanticOperationKind.Choose:
+      case SemanticOperationKind.ThrowError:
       case SemanticOperationKind.ReachNoneEnd:
       case SemanticOperationKind.CompleteScope:
         return false;

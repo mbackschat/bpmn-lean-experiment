@@ -1,0 +1,254 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "subprocess-error-propagation-stale-sibling-after-error",
+    "sha256": "a9239af196f6dac233785fb85b9ceabed7a403a839415289fb8ba1d81e2c02f8"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-subprocess-error-propagation-draft",
+    "sha256": "0e2656dcdc0f7f7b5b74991a23aa3dcd407ca05c0e33b1295fc7e5a1db31e28c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-trigger-error",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "refuse-stale-sibling-after-error",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_TriggerError",
+            "name": "Trigger Error"
+          },
+          {
+            "elementId": "UserTask_SiblingWork",
+            "name": "Sibling Work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-trigger-error",
+        "tasks": [
+          {
+            "elementId": "UserTask_Recover",
+            "name": "Recover"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-stale-sibling-after-error",
+        "tasks": [
+          {
+            "elementId": "UserTask_Recover",
+            "name": "Recover"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-trigger-error",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "refuse-stale-sibling-after-error",
+        "jobs": []
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_SiblingWork",
+            "kind": "userTask",
+            "multiplicity": 1
+          },
+          {
+            "elementId": "UserTask_TriggerError",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_SiblingWork",
+              "activation": 1
+            },
+            "name": "Sibling Work",
+            "state": "active"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_TriggerError",
+              "activation": 1
+            },
+            "name": "Trigger Error",
+            "state": "active"
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_SiblingWork",
+              "activation": 1
+            }
+          },
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_TriggerError",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-trigger-error",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Recover",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Recover",
+              "activation": 1
+            },
+            "name": "Recover",
+            "state": "active"
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Recover",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "refuse-stale-sibling-after-error",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "UserTask_Recover",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Recover",
+              "activation": 1
+            },
+            "name": "Recover",
+            "state": "active"
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Recover",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

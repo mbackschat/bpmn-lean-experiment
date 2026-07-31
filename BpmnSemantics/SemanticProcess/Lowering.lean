@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
@@ -109,6 +110,7 @@ private def lowerNode (source : CheckedProcess) :
           (firstPlace (incomingPlaces source id))
           (childEntryPlace source childScopeId)
           childScopeId, scopeId)
+  | .boundaryErrorEvent .. => none
   | .userTask id name =>
       nodeScopeId? source id |>.map fun scopeId =>
       (.awaitUserTask
@@ -169,6 +171,14 @@ private def lowerNode (source : CheckedProcess) :
         (candidateFlowIds.map (lowerConditionalCandidate source))
         (flowControlPlaceId defaultFlowId)
         { elementId := defaultFlowId }, scopeId)
+  | .errorEndEvent id error =>
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.throwError
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        error
+        (lowerInterruptingErrorHandler source scopeId error), scopeId)
   | .noneEndEvent id =>
       nodeScopeId? source id |>.map fun scopeId =>
       (.reachNoneEnd
@@ -369,6 +379,10 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       incomingCount flows id = 0 && outgoingCount flows id = 1
   | .embeddedSubProcess id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .boundaryErrorEvent id _ error outputFlowId =>
+      errorReferenceValid error &&
+        incomingCount flows id = 0 && outgoingCount flows id = 1 &&
+        flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
   | .userTask id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .intermediateCatchTimerEvent id durationLiteral =>
@@ -404,6 +418,9 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       incomingCount flows id = 1 &&
         outgoingCount flows id = 3 &&
         checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId
+  | .errorEndEvent id error =>
+      errorReferenceValid error &&
+        incomingCount flows id = 1 && outgoingCount flows id = 0
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 
@@ -435,6 +452,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
+    checkedErrorHandlersValid source &&
     checkedProfileCapabilitiesValid source &&
     checkedProcessGraphWellFormed source
 
@@ -553,6 +571,22 @@ private def operationWellFormed (places : List ControlPlace) :
           simpleBooleanExpressionValid candidate.condition &&
             placeHasOrigin places candidate.output candidate.origin &&
         placeHasOrigin places defaultOutput defaultOrigin
+  | .throwError id origin input error handler =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        errorReferenceValid error &&
+        nonempty handler.attachedScopeId.value &&
+        nonempty handler.code &&
+        nonempty handler.origin.boundaryEventId.value &&
+        nonempty handler.origin.errorDefinitionId.value &&
+        nonempty handler.origin.errorElementId.value &&
+        nonempty handler.origin.sequenceFlowId.value &&
+        handler.code = error.code &&
+        handler.origin.errorElementId = error.errorElementId &&
+        decide (handler.origin.errorDefinitionId ≠ error.errorDefinitionId) &&
+        placeExists places input &&
+        placeHasOrigin places handler.output
+          { elementId := handler.origin.sequenceFlowId }
   | .reachNoneEnd id origin input =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

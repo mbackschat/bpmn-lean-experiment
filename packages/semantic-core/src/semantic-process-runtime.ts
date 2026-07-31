@@ -22,6 +22,9 @@ import {
   evaluateSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
 import {
+  throwError,
+} from "./semantic-process-error-runtime.js";
+import {
   createMessageWait,
   deliverMessage,
 } from "./semantic-process-message.js";
@@ -401,6 +404,12 @@ export function applyInternalOperation(
       const choiceOwner = onlyTokenOwner(state, operation.input);
       return choiceOwner !== undefined
         ? choose(operation, state, choiceOwner)
+        : null;
+    }
+    case SemanticOperationKind.ThrowError: {
+      const throwingOwner = onlyTokenOwner(state, operation.input);
+      return throwingOwner !== undefined
+        ? throwError(operation, state, throwingOwner)
         : null;
     }
     case SemanticOperationKind.ReachNoneEnd: {

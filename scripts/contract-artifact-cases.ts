@@ -87,6 +87,24 @@ export const artifactCases = Object.freeze([
     evidenceRelativePath:
       "scenarios/embedded-subprocess-completion/stale-a-after-scope.cibseven-evidence.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/subprocess-error-propagation/trigger-first.scenario.json",
+    evidenceRelativePath:
+      "scenarios/subprocess-error-propagation/trigger-first.cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/subprocess-error-propagation/sibling-first.scenario.json",
+    evidenceRelativePath:
+      "scenarios/subprocess-error-propagation/sibling-first.cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/subprocess-error-propagation/stale-sibling-after-error.scenario.json",
+    evidenceRelativePath:
+      "scenarios/subprocess-error-propagation/stale-sibling-after-error.cibseven-evidence.json",
+  }),
 ]);
 
 export const normativeArtifactCases = Object.freeze([

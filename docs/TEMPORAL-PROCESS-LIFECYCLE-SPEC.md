@@ -8,7 +8,7 @@
 
 This specification defines the production lifecycle shared by the admitted semantic capsules. It answers how semantic and host-capability admission is reported before Workflow creation, when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
-It does not itself add BPMN semantics, a task inbox, Activities, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) composes one passive subscription with durable Signal ingress and result recovery, and the [ordinary embedded Sub-Process completion specification](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) keeps the child definition-scope lifecycle inside the same semantic state machine without a Temporal Child Workflow. The runnable MVP adds one exact known-Process User Task detail Query whose caller-selected Process-variable projection remains read-only and non-durable.
+It does not itself add BPMN semantics, a task inbox, Activities, host cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) composes one passive subscription with durable Signal ingress and result recovery, the [ordinary embedded Sub-Process completion specification](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) keeps the child definition-scope lifecycle inside the same semantic state machine without a Temporal Child Workflow, and the [Sub-Process Error-propagation specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) performs regional semantic cancellation without a Temporal cancellation command. The runnable MVP adds one exact known-Process User Task detail Query whose caller-selected Process-variable projection remains read-only and non-durable.
 
 ## Selected lifecycle
 
@@ -123,11 +123,11 @@ The adapter defines one canonical typed stimulus encoding and a SHA-256 digest. 
 
 ## Workflow lifetime contract
 
-The production start boundary first checks the explicit start stimulus and Semantic Process program through semantic execution admission, then checks the program through the separate Temporal host-capability predicate. Only an `admitted` result calls `client.start`. The current conservative host predicate accepts passive User Task Update and Message Signal ingress, scope-owned passive User Task sets, and linear Timer/User Task composition, but rejects a token split combined with a Timer or effect wait as `concurrentHostDrivenWaits`.
+The production start boundary first checks the explicit start stimulus and Semantic Process program through semantic execution admission, then checks the program through the separate Temporal host-capability predicate. Only an `admitted` result calls `client.start`. The current conservative host predicate accepts passive User Task Update and Message Signal ingress, scope-owned passive User Task sets, internal `throwError` closure, and linear Timer/User Task composition, but rejects a token split combined with a Timer or effect wait as `concurrentHostDrivenWaits`.
 
 The production Workflow receives that admitted Semantic Process program and one explicit start stimulus, including its required canonical string/null initial Process-variable list. It does not receive a future scenario command list.
 
-The Workflow persists the semantic core's complete replacement runtime state, including definition-scope occurrences and the scope owner on every token and wait. Temporal does not project a child scope into a Child Workflow, Activity, Timer, Signal, cancellation command, or separate host lifecycle. Entry, child End consumption, quiescence, child completion, and the outer continuation remain internal core transitions within the one Process Workflow.
+The Workflow persists the semantic core's complete replacement runtime state, including definition-scope occurrences and the scope owner on every token and wait. Temporal does not project a child scope into a Child Workflow, Activity, Timer, Signal, cancellation command, or separate host lifecycle. Entry, child End consumption, quiescence, normal child completion, Error throw/catch, regional child cancellation, and the selected outer continuation remain internal core transitions within the one Process Workflow.
 
 The start stimulus enters the single semantic input queue before any external handler becomes addressable. Only the main Workflow loop calls the semantic core, installs its initial Process variables, and mutates semantic state.
 
@@ -186,6 +186,9 @@ The focused Temporal gate must demonstrate:
 - an admitted ordinary embedded Sub-Process exposes both scope-owned child User Tasks through the existing passive Update path, retains the sibling and withholds the outer continuation after the first child completion, then exposes the outer User Task only after exact child quiescence;
 - replacing the Worker between child completions preserves the first completed Update result, child scope state, sibling task, later outer continuation, terminal receipt, and replay result;
 - the ordinary embedded Sub-Process history contains zero Signals, Timers, Activities, Child Workflows, and cancellation events;
+- an admitted Error-propagation Process commits Trigger Error through User Task Update ingress, performs `throwError` as internal closure, and exposes only Recover without a Signal, Timer, Activity, Child Workflow, or cancellation event;
+- replacing the Worker immediately after the committed throw/catch/cancel Update recovers that accepted result and the Recover-only wait set before a fresh stale Sibling Work Update is rejected with state preservation;
+- the Error-propagation Process completes after Recover, replays, and rejects a separately bundled Workflow that fabricates the post-cancellation state without invoking the semantic core;
 - start precedes every external completion under immediate delivery and Worker restart;
 - initial Process variables are visible at the first stable wait, retained through completion, and reconstructed identically by replay;
 - a normal exact completion closes the Workflow with a validated completed receipt;
@@ -223,7 +226,7 @@ Excluded from this specification:
 - starting or reopening a Process through command ingress;
 - Workflow-ID reuse, Update-With-Start, and host-derived semantic identity;
 - Continue-As-New and cross-Run command-result lookup;
-- cancellation, termination, timeout, reset, pause, failure, and operator-repair semantics, including exceptional child-scope interruption or propagation;
+- host cancellation, termination, timeout, reset, pause, failure, and operator-repair semantics; semantic interruption remains limited to the direct-parent Error-propagation capsule and never uses those host mechanisms;
 - Activities and effects beyond their separate capsules, Message payloads, key-based/global Message routing, modeled Message throw, Search Attributes, forms, variables beyond the current observation, task discovery, and timer forms or races beyond the separately specified exact Intermediate Catch Timer capsule.
 
 ## Re-open conditions

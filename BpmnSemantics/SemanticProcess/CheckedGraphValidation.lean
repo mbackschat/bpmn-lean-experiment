@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.GraphValidation
 
 /-! # Checked BPMN graph validation
 
-This module owns topology-independent reachability, co-reachability, and cycle rejection for the production checked graph. A boundary-event route is normalized to the owning Service Task operation because the boundary event is source metadata rather than a checked runtime node.
+This module owns topology-independent reachability, co-reachability, and cycle rejection for the production checked graph. `normalizedFlowSource` remains scoped to the inline Service Task boundary route, where the boundary event is source metadata rather than a checked runtime node. Explicit boundary Error nodes contribute a separate parent-local exceptional edge from their attached Sub-Process.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -10,12 +10,14 @@ namespace BpmnSemantics.SemanticProcess
 private def checkedNodeId : CheckedNode → NodeId
   | .noneStartEvent id
   | .embeddedSubProcess id _
+  | .boundaryErrorEvent id _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveGateway id _ _
+  | .errorEndEvent id _
   | .noneEndEvent id => id
 
 private def normalizedFlowSource (nodes : List CheckedNode)
@@ -52,6 +54,12 @@ private def checkedEdges (source : CheckedProcess)
     { source := normalizedFlowSource source.nodes flow.sourceId
       target := flow.targetId }
 
+private def exceptionalEdges (nodes : List CheckedNode) : List (GraphEdge NodeId) :=
+  nodes.filterMap fun
+    | .boundaryErrorEvent id attachedToRef _ _ =>
+        some { source := attachedToRef, target := id }
+    | _ => none
+
 private def checkedStartIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .noneStartEvent id => some id
@@ -59,6 +67,7 @@ private def checkedStartIds (nodes : List CheckedNode) : List NodeId :=
 
 private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
+    | .errorEndEvent id _ => some id
     | .noneEndEvent id => some id
     | _ => none
 
@@ -70,7 +79,8 @@ private def checkedScopeGraphWellFormed (source : CheckedProcess)
   let ends := checkedEndIds nodes
   match checkedStartIds nodes with
   | [start] =>
-      let edges := checkedEdges source (scopedFlows source scope.id)
+      let edges := checkedEdges source (scopedFlows source scope.id) ++
+        exceptionalEdges nodes
       let fuel := nodeIds.length
       !ends.isEmpty &&
       allReachableWithin nodeIds edges fuel start &&

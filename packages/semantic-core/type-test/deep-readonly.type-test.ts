@@ -1,5 +1,11 @@
 import type { DeepReadonly } from "../src/deep-readonly.js";
 import type { RuntimeState } from "../src/semantic-process-state.js";
+import type {
+  SemanticOperation,
+} from "../src/semantic-process-contract.js";
+import {
+  SemanticOperationKind,
+} from "../src/semantic-process-contract.js";
 
 type MutableContract = {
   status: "ready";
@@ -47,6 +53,15 @@ runtime.variables.activities.push(activity);
 activity.owner.activation = 2;
 // @ts-expect-error Activity-local bindings are deeply immutable
 activity.bindings[0] = activity.bindings[0];
+
+declare const errorOperation: Extract<
+  SemanticOperation,
+  { kind: SemanticOperationKind.ThrowError }
+>;
+// @ts-expect-error nested resolved Error handlers are deeply immutable
+errorOperation.handler.attachedScopeId = "scope:changed";
+// @ts-expect-error nested Error origin fields are deeply immutable
+errorOperation.handler.origin.sequenceFlowId = "Flow_Changed";
 
 void callbackResult;
 void tuple;

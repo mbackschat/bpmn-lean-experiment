@@ -105,6 +105,8 @@ function lowerNode(
         childEntry: childEntryPlace(source, node.childScopeId),
         childScopeId: node.childScopeId,
       });
+    case CheckedNodeKind.BoundaryErrorEvent:
+      return [];
     case CheckedNodeKind.UserTask:
       return scoped({
         ...base,
@@ -192,6 +194,27 @@ function lowerNode(
           elementId: node.defaultFlowId,
         },
       });
+    case CheckedNodeKind.ErrorEndEvent: {
+      const handler = requireDirectErrorHandler(source, node);
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.ThrowError,
+        input: requireOnly(incoming, node.id, "incoming"),
+        error: node.error,
+        handler: {
+          attachedScopeId: handler.attachedScopeId,
+          code: handler.boundary.error.code,
+          output: placeId(handler.boundary.outputFlowId),
+          origin: {
+            kind: SemanticOriginKind.BpmnElement,
+            boundaryEventId: handler.boundary.id,
+            errorDefinitionId: handler.boundary.error.errorDefinitionId,
+            errorElementId: handler.boundary.error.errorElementId,
+            sequenceFlowId: handler.boundary.outputFlowId,
+          },
+        },
+      });
+    }
     case CheckedNodeKind.NoneEndEvent:
       return scoped({
         ...base,
@@ -199,6 +222,48 @@ function lowerNode(
         input: requireOnly(incoming, node.id, "incoming"),
       });
   }
+}
+
+function requireDirectErrorHandler(
+  source: CheckedProcess,
+  errorEnd: Extract<
+    CheckedNode,
+    { kind: CheckedNodeKind.ErrorEndEvent }
+  >,
+): Readonly<{
+  boundary: Extract<
+    CheckedNode,
+    { kind: CheckedNodeKind.BoundaryErrorEvent }
+  >;
+  attachedScopeId: string;
+}> {
+  const errorScopeId = requireNodeScope(source, errorEnd.id);
+  const handlers = source.nodes.flatMap((node) => {
+    if (node.kind !== CheckedNodeKind.BoundaryErrorEvent) {
+      return [];
+    }
+    const attached = source.nodes.find(
+      (candidate): candidate is Extract<
+        CheckedNode,
+        { kind: CheckedNodeKind.EmbeddedSubProcess }
+      > =>
+        candidate.id === node.attachedToRef &&
+        candidate.kind === CheckedNodeKind.EmbeddedSubProcess,
+    );
+    return attached !== undefined &&
+        attached.childScopeId === errorScopeId &&
+        node.error.errorElementId === errorEnd.error.errorElementId &&
+        node.error.code === errorEnd.error.code
+      ? [{ boundary: node, attachedScopeId: attached.childScopeId }]
+      : [];
+  });
+  const handler = handlers[0];
+  if (handlers.length !== 1 || handler === undefined) {
+    throw new TypeError(
+      `Checked Error End ${errorEnd.id} requires one direct matching boundary handler`,
+    );
+  }
+  return handler;
 }
 
 function lowerScopeCompletion(

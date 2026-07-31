@@ -48,7 +48,9 @@ def nodeArityValid (source : CheckedProcess) :
   | .serviceTask id _ _ _ _ =>
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).length = 1
-  | .embeddedSubProcess _ _ => false
+  | .embeddedSubProcess _ _
+  | .boundaryErrorEvent ..
+  | .errorEndEvent .. => false
   | .parallelGateway id .diverging =>
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).length = 2

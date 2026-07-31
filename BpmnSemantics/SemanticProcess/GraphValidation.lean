@@ -75,6 +75,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
   | .choose _ _ input _ _ _
+  | .throwError _ _ input _ _
   | .reachNoneEnd _ _ input => [input]
   | .synchronize _ _ inputs _ => inputs
 
@@ -90,6 +91,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .duplicate _ _ _ outputs => outputs
   | .choose _ _ _ candidates defaultOutput _ =>
       candidates.map (·.output) ++ [defaultOutput]
+  | .throwError _ _ _ _ handler => [handler.output]
   | .reachNoneEnd .. => []
   | .completeScope _ _ _ parentOutput => parentOutput.toList
 
@@ -157,6 +159,15 @@ private def operationRespectsScopes (program : Program)
                 | some parent, some output =>
                     placesOwnedBy program [output] parent
                 | _, _ => false
+      | .throwError _ _ input _ handler =>
+          handler.attachedScopeId = owner &&
+            placesOwnedBy program [input] owner &&
+            match definitionScope? program owner with
+            | some scope =>
+                match scope.parentScopeId with
+                | some parent => placesOwnedBy program [handler.output] parent
+                | none => false
+            | none => false
       | _ =>
           placesOwnedBy program
             (operationInputs operation ++ operationOutputs operation) owner

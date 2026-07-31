@@ -7,12 +7,14 @@ export enum CheckedProcessKind {
 export enum CheckedNodeKind {
   NoneStartEvent = "noneStartEvent",
   EmbeddedSubProcess = "embeddedSubProcess",
+  BoundaryErrorEvent = "boundaryErrorEvent",
   UserTask = "userTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
   ServiceTask = "serviceTask",
   ParallelGateway = "parallelGateway",
   ExclusiveGateway = "exclusiveGateway",
+  ErrorEndEvent = "errorEndEvent",
   NoneEndEvent = "noneEndEvent",
 }
 
@@ -56,6 +58,12 @@ export type CheckedBpmnErrorRoute = DeepReadonly<{
   errorName: string | null;
   code: string;
   outputFlowId: string;
+}>;
+
+export type ErrorReference = DeepReadonly<{
+  errorDefinitionId: string;
+  errorElementId: string;
+  code: string;
 }>;
 
 export const EffectProtocol = {
@@ -134,6 +142,13 @@ export type CheckedNode =
       childScopeId: string;
     }>
   | DeepReadonly<{
+      kind: CheckedNodeKind.BoundaryErrorEvent;
+      id: string;
+      attachedToRef: string;
+      error: ErrorReference;
+      outputFlowId: string;
+    }>
+  | DeepReadonly<{
       kind: CheckedNodeKind.UserTask;
       id: string;
       name: string | null;
@@ -160,6 +175,11 @@ export type CheckedNode =
       direction: GatewayDirection.Diverging;
       candidateFlowIds: [string, string];
       defaultFlowId: string;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.ErrorEndEvent;
+      id: string;
+      error: ErrorReference;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.NoneEndEvent;
@@ -218,6 +238,7 @@ export enum SemanticOperationKind {
   Duplicate = "duplicate",
   Synchronize = "synchronize",
   Choose = "choose",
+  ThrowError = "throwError",
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
 }
@@ -260,6 +281,19 @@ export type ControlPlaceScopeOwnership = DeepReadonly<{
 }>;
 
 export type BpmnErrorRoute = DeepReadonly<{
+  code: string;
+  output: string;
+  origin: {
+    kind: SemanticOriginKind.BpmnElement;
+    boundaryEventId: string;
+    errorDefinitionId: string;
+    errorElementId: string;
+    sequenceFlowId: string;
+  };
+}>;
+
+export type InterruptingErrorHandler = DeepReadonly<{
+  attachedScopeId: string;
   code: string;
   output: string;
   origin: {
@@ -357,6 +391,13 @@ export type SemanticOperation =
         candidates: [ConditionalCandidate, ConditionalCandidate];
         defaultOutput: string;
         defaultOrigin: BpmnSequenceFlowOrigin;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.ThrowError;
+        input: string;
+        error: ErrorReference;
+        handler: InterruptingErrorHandler;
       }>)
   | (OperationBase &
       DeepReadonly<{

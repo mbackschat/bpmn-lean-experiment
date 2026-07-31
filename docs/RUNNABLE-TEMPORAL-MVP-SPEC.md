@@ -136,7 +136,7 @@ The acceptance documentation must list the exact supported BPMN and variable sub
 
 ## Ordering consequence
 
-This runnable vertical product increment is complete. Uncovered BPMN mechanisms are now scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). The selected embedded Sub-Process Error-propagation proposal remains bounded and is reconsidered against that baseline-driven schedule.
+This runnable vertical product increment is complete. Uncovered BPMN mechanisms are now scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). The bounded embedded Sub-Process Error-propagation follow-on is now implemented under its separate [specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md).
 
 ## Closure review
 

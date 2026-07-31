@@ -32,6 +32,9 @@ import type {
 import {
   embeddedSubProcessPipelineCases,
 } from "./embedded-subprocess-pipeline-cases.ts";
+import {
+  subprocessErrorPipelineCases,
+} from "./subprocess-error-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -551,6 +554,7 @@ export const pipelineCases = Object.freeze([
     },
   ),
   ...embeddedSubProcessPipelineCases,
+  ...subprocessErrorPipelineCases,
   timerCase(),
   timerUserTaskCompositionCase(),
   intermediateCatchMessageCase(),

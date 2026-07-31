@@ -1,0 +1,74 @@
+{
+  "kind": "scenario",
+  "id": "subprocess-error-propagation-sibling-first",
+  "profile": "cibseven-2.2.0-subprocess-error-propagation-draft",
+  "bpmn": {
+    "id": "subprocess-error-propagation-process",
+    "relativePath": "scenarios/subprocess-error-propagation/process.bpmn",
+    "sha256": "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_SubProcessErrorPropagationProbe",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-sibling-work",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_SiblingWork",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-trigger-error",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_TriggerError",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-recover",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Recover",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/error/BoundaryErrorEventTest.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/subprocess/SubProcessTest.java"
+    ]
+  }
+}

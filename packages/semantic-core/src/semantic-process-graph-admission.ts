@@ -143,6 +143,15 @@ function operationRespectsScopes(
           ({ id, parentScopeId }) =>
             id === operation.childScopeId && parentScopeId === owner,
         );
+    case SemanticOperationKind.ThrowError: {
+      const attached = graph.definitionScopes.find(
+        ({ id }) => id === operation.handler.attachedScopeId,
+      );
+      return attached?.id === owner &&
+        attached.parentScopeId !== null &&
+        referencesOwnedBy([operation.input], owner) &&
+        referencesOwnedBy([operation.handler.output], attached.parentScopeId);
+    }
     case SemanticOperationKind.CompleteScope: {
       const scope = graph.definitionScopes.find(({ id }) => id === owner);
       return operation.scopeId === owner &&
@@ -296,6 +305,7 @@ function operationInputs(
     case SemanticOperationKind.AwaitEffect:
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Choose:
+    case SemanticOperationKind.ThrowError:
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
     case SemanticOperationKind.Synchronize:
@@ -329,6 +339,8 @@ function operationOutputs(
         ...operation.candidates.map(({ output }) => output),
         operation.defaultOutput,
       ];
+    case SemanticOperationKind.ThrowError:
+      return [operation.handler.output];
     case SemanticOperationKind.ReachNoneEnd:
       return [];
     case SemanticOperationKind.CompleteScope:

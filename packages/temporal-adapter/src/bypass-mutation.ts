@@ -88,6 +88,17 @@ const scopeConfiguration = {
   ),
   description: "scope-bypass mutation",
 } as const;
+const errorPropagationConfiguration = {
+  taskQueue: "bpmn-error-propagation-bypass-mutation",
+  workflowType: "runBpmnProcessErrorPropagationBypassMutation",
+  workflowsPath: fileURLToPath(
+    new URL(
+      "./error-propagation-bypass-mutation-workflows.js",
+      import.meta.url,
+    ),
+  ),
+  description: "Error propagation bypass mutation",
+} as const;
 const completionDataConfiguration = {
   taskQueue: "bpmn-completion-data-bypass-mutation",
   workflowType: "runBpmnProcessCompletionDataBypassMutation",
@@ -252,6 +263,55 @@ export async function runScopeBypassMutation(
       if (!Array.isArray(history.events)) {
         throw new TypeError(
           `${scopeConfiguration.description} history did not contain an events array`,
+        );
+      }
+      return {
+        trace: [...trace],
+        history: history as TemporalHistory,
+        completionOutcome,
+      };
+    },
+  );
+}
+
+export async function runErrorPropagationBypassMutation(
+  environment: TestWorkflowEnvironment,
+  scenario: Scenario,
+  semanticProcess: SemanticProcessProgram,
+  workflowId: string,
+  waitForTrace: WaitForTrace,
+): Promise<TemporalScopeBypassMutationExecution> {
+  const completion = requireCompletionStimuli(scenario)[0];
+  if (completion?.taskId.elementId !== "UserTask_TriggerError") {
+    throw new TypeError(
+      "Error propagation bypass requires Trigger Error first",
+    );
+  }
+  const start = requireStartStimulus(scenario);
+  return runRetainedTraceMutation(
+    environment,
+    start,
+    semanticProcess,
+    workflowId,
+    errorPropagationConfiguration,
+    async (handle) => {
+      await waitForTrace(handle, 3);
+      const completionResult = await submitUserTaskCompletionAtWorkflowId(
+        environment.client.workflow,
+        workflowId,
+        start.instanceId,
+        completion,
+      );
+      const completionOutcome = requireSemanticOutcome(completionResult);
+      const trace = await waitForTrace(handle, 5);
+      const history = await withDeadline(
+        handle.fetchHistory(),
+        operationDeadlineMs,
+        `${errorPropagationConfiguration.description} history fetch`,
+      );
+      if (!Array.isArray(history.events)) {
+        throw new TypeError(
+          `${errorPropagationConfiguration.description} history did not contain an events array`,
         );
       }
       return {

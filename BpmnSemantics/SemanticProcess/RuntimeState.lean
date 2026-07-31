@@ -345,6 +345,53 @@ def reachNoneEndToken (state : RuntimeState) (owner : ScopeOccurrenceId)
     tokens := removeToken state.tokens input owner
     endOccurrences := state.endOccurrences + 1 }
 
+private def occurrenceParent? (occurrences : List RuntimeScopeOccurrence)
+    (candidate : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
+  (occurrences.find? fun occurrence => decide (occurrence.id = candidate))
+    |>.bind (·.parent)
+
+private def occurrenceInSubtreeWithin
+    (occurrences : List RuntimeScopeOccurrence) (root candidate : ScopeOccurrenceId) :
+    Nat → Bool
+  | 0 => false
+  | fuel + 1 =>
+      if candidate = root then true
+      else match occurrenceParent? occurrences candidate with
+        | some parent => occurrenceInSubtreeWithin occurrences root parent fuel
+        | none => false
+
+/-- Whether one live occurrence is the selected scope occurrence or one of its descendants. -/
+def occurrenceInSubtree (occurrences : List RuntimeScopeOccurrence)
+    (root candidate : ScopeOccurrenceId) : Bool :=
+  occurrenceInSubtreeWithin occurrences root candidate (occurrences.length + 1)
+
+private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
+  { processInstanceId := wait.processInstanceId
+    elementId := ⟨wait.elementId.value⟩
+    activation := wait.activation }
+
+/-- Atomically remove all runtime owners in one scope-occurrence subtree and emit the caught route token in its live parent. Activation counters and End occurrence history are monotonic and deliberately survive interruption. -/
+def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
+    (output : ControlPlaceId) : RuntimeState :=
+  let interrupted := fun owner =>
+    occurrenceInSubtree state.scopeOccurrences root owner
+  let interruptedEffects := state.effectWaits.filter fun wait =>
+    interrupted wait.owner
+  { state with
+    tokens := addToken
+      (state.tokens.filter fun token => !interrupted token.owner) output parent
+    scopeOccurrences := state.scopeOccurrences.filter fun occurrence =>
+      !interrupted occurrence.id
+    waits := state.waits.filter fun wait => !interrupted wait.owner
+    messageWaits := state.messageWaits.filter fun wait => !interrupted wait.owner
+    timerWaits := state.timerWaits.filter fun wait => !interrupted wait.owner
+    effectWaits := state.effectWaits.filter fun wait => !interrupted wait.owner
+    variables :=
+      { state.variables with
+        activities := state.variables.activities.filter fun activity =>
+          !(interruptedEffects.any fun wait =>
+            activityScopeMatches (effectOccurrenceId wait) activity) } }
+
 def commonTokenOwner? (state : RuntimeState) (inputs : List ControlPlaceId) :
     Option ScopeOccurrenceId :=
   match inputs with

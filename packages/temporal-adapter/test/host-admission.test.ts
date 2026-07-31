@@ -194,3 +194,27 @@ test("admits embedded scope waits independently of semantic operation order", as
     },
   );
 });
+
+test("classifies Sub-Process Error propagation as passive ingress plus internal closure", async () => {
+  const program = await compileFixture(
+    "../../../scenarios/subprocess-error-propagation/process.bpmn",
+    "subprocess-error-propagation-process",
+    "cibseven-2.2.0-subprocess-error-propagation-draft",
+  );
+  assert.equal(
+    program.operations.some(
+      ({ kind }) => kind === SemanticOperationKind.ThrowError,
+    ),
+    true,
+  );
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [...program.operations].reverse(),
+    }),
+    { kind: TemporalHostCapabilityResultKind.Admitted },
+  );
+});

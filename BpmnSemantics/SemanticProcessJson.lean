@@ -165,6 +165,14 @@ private def decodeEffectDescriptor (json : Json) :
     { protocol := ← stringField json "protocol"
       operation := ← stringField json "operation" }
 
+private def decodeErrorReference (json : Json) :
+    Except String ErrorReference := do
+  requireObjectShape json ["code", "errorDefinitionId", "errorElementId"]
+  pure
+    { errorDefinitionId := ⟨← stringField json "errorDefinitionId"⟩
+      errorElementId := ⟨← stringField json "errorElementId"⟩
+      code := ← stringField json "code" }
+
 private def decodeCheckedCondition : Json →
     Except String (Option CheckedCondition)
   | .null => pure none
@@ -187,6 +195,15 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.embeddedSubProcess
           ⟨← stringField json "id"⟩
           ⟨← stringField json "childScopeId"⟩)
+  | "boundaryErrorEvent" =>
+      requireObjectShape json
+        ["attachedToRef", "error", "id", "kind", "outputFlowId"]
+      pure
+        (.boundaryErrorEvent
+          ⟨← stringField json "id"⟩
+          ⟨← stringField json "attachedToRef"⟩
+          (← decodeErrorReference (← field json "error"))
+          ⟨← stringField json "outputFlowId"⟩)
   | "userTask" =>
       requireObjectShape json ["id", "kind", "name"]
       pure
@@ -238,6 +255,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   | "noneEndEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneEndEvent ⟨← stringField json "id"⟩)
+  | "errorEndEvent" =>
+      requireObjectShape json ["error", "id", "kind"]
+      pure
+        (.errorEndEvent
+          ⟨← stringField json "id"⟩
+          (← decodeErrorReference (← field json "error")))
   | _ => throw s!"unsupported checked node kind {kind}"
 
 private def decodeCheckedSequenceFlow (json : Json) :
@@ -376,6 +399,24 @@ private def decodeBpmnErrorRoute (json : Json) :
                 errorElementId := ⟨← stringField origin "errorElementId"⟩
                 sequenceFlowId := ⟨← stringField origin "sequenceFlowId"⟩ } })
 
+private def decodeInterruptingErrorHandler (json : Json) :
+    Except String InterruptingErrorHandler := do
+  requireObjectShape json ["attachedScopeId", "code", "origin", "output"]
+  let origin ← field json "origin"
+  requireObjectShape origin
+    ["boundaryEventId", "errorDefinitionId", "errorElementId", "kind",
+      "sequenceFlowId"]
+  expectStringField origin "kind" "bpmnElement"
+  pure
+    { attachedScopeId := ⟨← stringField json "attachedScopeId"⟩
+      code := ← stringField json "code"
+      output := ⟨← stringField json "output"⟩
+      origin :=
+        { boundaryEventId := ⟨← stringField origin "boundaryEventId"⟩
+          errorDefinitionId := ⟨← stringField origin "errorDefinitionId"⟩
+          errorElementId := ⟨← stringField origin "errorElementId"⟩
+          sequenceFlowId := ⟨← stringField origin "sequenceFlowId"⟩ } }
+
 private def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
   decodeArray (fun value => ControlPlaceId.mk <$> value.getStr?) json
@@ -499,6 +540,16 @@ private def decodeOperation (json : Json) :
             (← field json "candidates"))
           ⟨← stringField json "defaultOutput"⟩
           (← decodeSequenceFlowOrigin (← field json "defaultOrigin")))
+  | "throwError" =>
+      requireObjectShape json
+        ["error", "handler", "id", "input", "kind", "origin"]
+      pure
+        (.throwError
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          (← decodeErrorReference (← field json "error"))
+          (← decodeInterruptingErrorHandler (← field json "handler")))
   | "reachNoneEnd" =>
       requireObjectShape json ["id", "input", "kind", "origin"]
       pure (.reachNoneEnd id origin ⟨← stringField json "input"⟩)

@@ -427,6 +427,33 @@ test("detects premature embedded Sub-Process exit after one child End", async ()
   );
 });
 
+test("detects a retained sibling after interrupting Sub-Process Error propagation", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const propagated = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "subprocess-error-propagation-trigger-first",
+    ),
+    "Sub-Process Error propagation artifact set",
+  );
+  const mutated = cloneArtifactSet(propagated);
+  const postTrigger = required(
+    mutated.evidence.producerObservations.taskQueries.find(
+      ({ afterCommandId }) => afterCommandId === "complete-trigger-error",
+    ),
+    "post-trigger task snapshot",
+  );
+  postTrigger.tasks.push({
+    elementId: "UserTask_SiblingWork",
+    name: "Sibling Work",
+  });
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /producer observation projection does not match canonical/,
+  );
+});
+
 test("detects a timer deadline projection mutation", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
   const timer = required(

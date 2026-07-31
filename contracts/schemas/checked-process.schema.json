@@ -276,6 +276,26 @@
         }
       }
     },
+    "errorReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "errorDefinitionId",
+        "errorElementId",
+        "code"
+      ],
+      "properties": {
+        "errorDefinitionId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "errorElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "code": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "node": {
       "oneOf": [
         {
@@ -310,6 +330,34 @@
               "$ref": "#/$defs/nonemptyString"
             },
             "childScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "attachedToRef",
+            "error",
+            "outputFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "boundaryErrorEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "attachedToRef": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "error": {
+              "$ref": "#/$defs/errorReference"
+            },
+            "outputFlowId": {
               "$ref": "#/$defs/nonemptyString"
             }
           }
@@ -476,6 +524,26 @@
             },
             "defaultFlowId": {
               "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "error"
+          ],
+          "properties": {
+            "kind": {
+              "const": "errorEndEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "error": {
+              "$ref": "#/$defs/errorReference"
             }
           }
         },

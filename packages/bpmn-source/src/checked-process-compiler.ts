@@ -41,11 +41,13 @@ import {
 } from "./checked-process-admission.js";
 import {
   projectIntermediateCatchMessage,
-  selectRootDefinitions,
 } from "./intermediate-catch-message-source.js";
 import type {
   RootDefinitionSelection,
-} from "./intermediate-catch-message-source.js";
+} from "./root-definition-selection.js";
+import {
+  selectRootDefinitions,
+} from "./root-definition-selection.js";
 import {
   collectScopedFlowElements,
   definitionScopeId,
@@ -53,6 +55,11 @@ import {
 import type {
   ScopedSourceElement,
 } from "./scoped-flow-elements.js";
+import {
+  hasDistinctErrorIdentity,
+  projectBoundaryErrorEvent,
+  projectErrorEndEvent,
+} from "./subprocess-error-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
@@ -140,7 +147,7 @@ export function compileCheckedProcess(
   );
   if (sourceNodes.length + sourceFlows.length !== scoped.elements.length) {
     return unsupported(
-      "The bounded compiler supports only ordinary embedded SubProcesses, None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, None End Events, and Sequence Flows.",
+      "The bounded compiler supports only ordinary embedded SubProcesses, selected boundary Error Events, None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, selected Error or None End Events, and Sequence Flows.",
     );
   }
 
@@ -182,7 +189,10 @@ export function compileCheckedProcess(
     ...nodes.map(({ id }) => id),
     ...sequenceFlows.map(({ id }) => id),
   ];
-  if (new Set(allIds).size !== allIds.length) {
+  if (
+    new Set(allIds).size !== allIds.length ||
+    !hasDistinctErrorIdentity(nodes, allIds)
+  ) {
     return unsupported(
       "The bounded compiler requires distinct Process, node, and Sequence Flow IDs.",
     );
@@ -251,6 +261,13 @@ function projectNodes(
           id,
           childScopeId: definitionScopeId(id),
         };
+      case bpmnTypes.boundaryEventType:
+        return projectBoundaryErrorEvent(
+          element,
+          id,
+          rootSelection.errorArtifact,
+          flows,
+        );
       case bpmnTypes.userTaskType: {
         const name = readOptionalName(element);
         return isPlainFlowNode(element) && name !== undefined
@@ -286,7 +303,11 @@ function projectNodes(
       case bpmnTypes.endEventType:
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneEndEvent, id }
-          : undefined;
+          : projectErrorEndEvent(
+              element,
+              id,
+              rootSelection.errorArtifact,
+            );
       default:
         return undefined;
     }
@@ -376,6 +397,7 @@ function isSupportedNodeType(type: unknown): boolean {
   return [
     bpmnTypes.startEventType,
     bpmnTypes.subProcessType,
+    bpmnTypes.boundaryEventType,
     bpmnTypes.intermediateCatchEventType,
     bpmnTypes.userTaskType,
     bpmnTypes.serviceTaskType,

@@ -12,6 +12,7 @@ import BpmnSemantics.UserTaskCompletionDataConformance
 import BpmnSemantics.ProcessStartDataConformance
 import BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance
 import BpmnSemantics.EmbeddedSubProcessCompletionConformance
+import BpmnSemantics.SubProcessErrorPropagationConformance
 
 /-! Root of the BPMN semantic contract library.
 

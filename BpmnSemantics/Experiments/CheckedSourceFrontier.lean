@@ -200,6 +200,10 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | noneStartEvent id => simp [fireNode?, notPending]
   | embeddedSubProcess id scopeId =>
       simp [nodeArityValid] at candidateArity
+  | boundaryErrorEvent id attachedToRef error outputFlowId =>
+      simp [nodeArityValid] at candidateArity
+  | errorEndEvent id error =>
+      simp [nodeArityValid] at candidateArity
   | intermediateCatchTimerEvent id duration => rfl
   | intermediateCatchMessageEvent id channel => rfl
   | serviceTask id descriptor inputs outputs route => rfl

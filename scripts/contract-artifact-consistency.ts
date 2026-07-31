@@ -89,6 +89,8 @@ function referencedControlPlaces(
         ...operation.candidates.map(({ output }) => output),
         operation.defaultOutput,
       ];
+    case "throwError":
+      return [operation.input, operation.handler.output];
     case "reachNoneEnd":
       return [operation.input];
     case "completeScope":
@@ -165,6 +167,7 @@ export function verifyCanonicalDefinitionOrder(
       case "awaitTimer":
       case "awaitMessage":
       case "awaitEffect":
+      case "throwError":
       case "reachNoneEnd":
       case "completeScope":
         break;

@@ -1,20 +1,20 @@
-# Embedded Sub-Process Error propagation proposal
+# Embedded Sub-Process Error propagation specification
 
 ## Status
 
-**Owner-approved bounded proposal with required review edits applied; the selected CIB Seven phase-zero lane is green and semantic implementation has not started.**
+**Implemented evidence-closed draft contract.**
 
 This is the first exceptional-exit follow-on after the implemented [ordinary embedded Sub-Process completion specification](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md). It selects one normal embedded Sub-Process whose only reachable child result is an exact-code Error End Event caught by one interrupting boundary Error Event attached to that Sub-Process. It establishes regional cancellation and direct-parent Error propagation by reusing the current definition-scope, runtime-occurrence, ownership, normal-completion, and passive Temporal foundations; it does not establish Event Sub-Process behavior.
 
-The representation and versioning boundary below is rebased on commit `a59f8a3`. `DefinitionScope`, `enterScope`, `reachNoneEnd`, `completeScope`, operation/control-place ownership, scope occurrences, scope-owned tokens and waits, quiescent normal completion, and multiple passive User Task hosting are implemented prerequisites rather than work in this proposal.
+`DefinitionScope`, `enterScope`, `reachNoneEnd`, `completeScope`, operation/control-place ownership, scope occurrences, scope-owned tokens and waits, quiescent normal completion, and multiple passive User Task hosting remain implemented prerequisites rather than Error-specific mechanisms.
 
-## Approved product question
+## Product boundary
 
-May the project implement the smallest standards-only nested-scope discriminator in which completing one child User Task reaches an Error End Event, propagation selects the exact matching boundary Error on the directly enclosing embedded Sub-Process, interruption removes a still-active sibling User Task and every other runtime owner inside that scope occurrence, and only an outer recovery User Task remains observable?
+This specification owns the smallest standards-only nested-scope discriminator in which completing one child User Task reaches an Error End Event, propagation selects the exact matching boundary Error on the directly enclosing embedded Sub-Process, interruption removes a still-active sibling User Task and every other runtime owner inside that scope occurrence, and only an outer recovery User Task remains observable.
 
-Approval authorizes only the source profile, semantic rules, additive Error definition boundary, atomic pre-release replacement, and evidence boundary in this proposal. It does not widen the implemented ordinary-completion profile and does not authorize A12 unchanged-model adoption, arbitrary nesting, or Event Sub-Processes.
+The contract includes only the source profile, semantic rules, additive Error definition boundary, atomic pre-release replacement, and evidence boundary below. It does not widen the implemented ordinary-completion profile and does not authorize A12 unchanged-model adoption, arbitrary nesting, or Event Sub-Processes.
 
-On 2026-07-31 the owner approved the vendor-neutral boundary and selected the CIB Seven `2.2.0` public-lifecycle agreement lane because that release is the current BPMN breadth baseline. The bounded phase-zero probe now agrees in both selected command orders and is classified as `CIB-AGR-0008`; retained evidence may join the capsule only at the unchanged public boundary. CIB cannot change vendor-neutral meaning.
+The selected CIB Seven `2.2.0` public-lifecycle lane agrees in both command orders and is classified as `CIB-AGR-0008`. Three answer-free schedules and their content-bound retained evidence join the capsule only at the unchanged public boundary; CIB does not define vendor-neutral meaning.
 
 ## Product claim
 
@@ -88,15 +88,15 @@ The profile rejects an absent normal Sub-Process output, catch-all Error boundar
 
 ## Admission account
 
-Admission extends the profile-parameterized gate; it must not add a named whole-topology predicate or another production disjunct.
+Admission extends the profile-parameterized gate without a named whole-topology predicate or another production disjunct.
 
 The profile capability owns exact source-node and Semantic Process operation multisets plus the already implemented maximum definition-scope depth of one child below the Process scope. Reusable scoped-graph validation continues to own distinct identities, legal source containment, same-scope Sequence Flow ownership, exact reference resolution, acyclicity, producer/consumer discipline, and the implemented parent input/output relation of the embedded Sub-Process. Its generic node-kind-driven progress account widens in both TypeScript and Lean: the per-scope exit class becomes None End Event or Error End Event, and a boundary Error receives one parent-local exceptional reachability edge from its attached Sub-Process node. The Error End has one incoming and no outgoing Sequence Flow; the boundary Error has no incoming and one outgoing Sequence Flow. Checked-node identity and arity switches add both explicit kinds.
 
 The validator treats normal Sequence Flow and Error propagation as different edge kinds. The parent-local attachment edge exists only for checked reachability/co-reachability and never becomes an ordinary Sequence Flow or crosses definition scopes. The child Error End counts as a child scope exit, while the boundary handler remains a parent-scope node. The existing `normalizedFlowSource` special case remains scoped to the inline Service Task `CheckedBpmnErrorRoute`; the new explicit boundary node's exceptional edge is constructed separately.
 
-Declaration order is not semantics. Focused source, Lean, and TypeScript checks must cover the inherited fork-output, child User Task, child Sequence Flow, and outer Sequence Flow reference permutations plus the new Error End position among child Flow Elements, boundary Error position among parent Flow Elements, relative order of the two outer None End Events, and root Error position among root elements. Combined representative permutations must produce the same lowered program, enabled wait multiset, and Trigger Error result.
+Declaration order is not semantics. Focused source, Lean, and TypeScript checks cover the inherited fork-output, child User Task, child Sequence Flow, and outer Sequence Flow reference permutations plus the new Error End position among child Flow Elements, boundary Error position among parent Flow Elements, relative order of the two outer None End Events, and root Error position among root elements. Combined representative permutations produce the same lowered program, enabled wait multiset, and Trigger Error result.
 
-The capsule-local preservation gate must execute Trigger-first and Sibling-first schedules and establish that every reachable stable state under the selected profile is terminal or has at least one explicit User Task resumption surface; no reachable stable running state may retain a token or active scope without an interaction. It must also establish that closure never chooses between multiple enabled internal operations by program list order and that the child's existing `completeScope` operation never competes with or precedes the enabled Error throw.
+The capsule-local preservation gate executes Trigger-first and Sibling-first schedules and establishes that every reachable stable state under the selected profile is terminal or has at least one explicit User Task resumption surface; no reachable stable running state retains a token or active scope without an interaction. It also establishes that closure never chooses between multiple enabled internal operations by program list order and that the child's existing `completeScope` operation never competes with or precedes the enabled Error throw.
 
 ## Checked source and Semantic Process definition
 
@@ -151,7 +151,7 @@ Runtime state already contains a root occurrence and an explicit child scope occ
 
 The child occurrence owns both child task occurrences, child control tokens, and any internal closure state created below it. The outer recovery User Task belongs to the root Process scope. Interruption removes only state owned by the selected child occurrence or a descendant; the root Process state and the handler output survive.
 
-Activation counters and `endOccurrences` are monotonic historical runtime facts rather than scope-owned live work. Regional cancellation preserves every task, Message, Timer, effect, and scope activation counter and preserves `endOccurrences`. The Trigger-first post-catch state therefore retains `endOccurrences = 0`, while the Sibling-first post-catch state retains `endOccurrences = 1`; both pure implementations must assert those exact internal values. Their canonical public Error result remains equal, but the full internal runtime states are deliberately not claimed equal.
+Activation counters and `endOccurrences` are monotonic historical runtime facts rather than scope-owned live work. Regional cancellation preserves every task, Message, Timer, effect, and scope activation counter and preserves `endOccurrences`. The Trigger-first post-catch state therefore retains `endOccurrences = 0`, while the Sibling-first post-catch state retains `endOccurrences = 1`; both pure implementations assert those exact internal values. Their canonical public Error result remains equal, but the full internal runtime states are deliberately not claimed equal.
 
 The public User Task occurrence shape remains unchanged. Under this exact profile there is one child scope occurrence, all BPMN element identifiers are document-unique, and no repeated or concurrent occurrence of the same User Task element is admitted, so the current process-instance, element, and activation tuple remains complete for callers. Repeated, multi-instance, or recursively nested scopes reopen the public identity contract.
 
@@ -171,7 +171,7 @@ Implemented rules `SUBPROC-ENTER-01`, `SUBPROC-WAIT-01`, `SUBPROC-END-01`, and `
 - `SUBERR-ADMIT-01` — a missing, catch-all, nonmatching, multiply matching, or non-direct handler is an admission rejection; the selected runtime never assigns semantics to an unresolved Error.
 - `SUBERR-PRESERVE-01` — all admitted declaration permutations and both child-command orders retain the same canonical Error result, remain within the closure limit, expose a User Task at every stable running state, and never require evaluator-order choice among enabled internal operations; this is observation-level equality, not full runtime-state equality across the two End histories.
 
-All nine new rules belong to the vendor-neutral BPMN layer. The selected CIB lane may calibrate their public lifecycle but cannot supply their meaning. This proposal selects no downstream A12 rule.
+All nine new rules belong to the vendor-neutral BPMN layer. The selected CIB lane calibrates their public lifecycle but cannot supply their meaning. This specification selects no downstream A12 rule.
 
 ## Commands and observations
 
@@ -198,7 +198,7 @@ The useful laws are:
 - fork and node declaration permutation preserves the two child waits and the propagated result;
 - every reachable stable state of the admitted program is terminal or User Task resumable.
 
-The nearest plausible checked non-law is global cancellation: interrupting one child scope does not permit removal of an unrelated root-owned task occurrence. A finite counterexample must keep such a root occurrence while canceling the child subtree. This is a semantic negative witness, not an additionally admitted source topology.
+The nearest plausible checked non-law is global cancellation: interrupting one child scope does not permit removal of an unrelated root-owned task occurrence. A finite counterexample keeps such a root occurrence while canceling the child subtree. This is a semantic negative witness, not an additionally admitted source topology.
 
 No theorem claims arbitrary nesting, general Error-handler search, unmatched-Error behavior, a new normal Sub-Process rule beyond the implemented prerequisite, general graph liveness, or equivalence between the source compiler and Lean.
 
@@ -210,15 +210,15 @@ After start, the semantic core returns two passive User Task waits. The current 
 
 Temporal must not model the BPMN child scope as a Temporal Child Workflow or use Temporal cancellation as semantic evidence. The complete Semantic Process definition and runtime state, including child scope ownership, remain Workflow state interpreted by the pure core.
 
-The focused refinement witness commits the Trigger Error Update, then stops the Worker immediately after that new throw/catch/cancel transition. A replacement Worker must recover the accepted Update result and the post-cancellation wait set containing only Recover before it receives the fresh stale Sibling Work command and, in a non-refusal execution, Recover completion. The gate then fetches and replays history and runs a bypass mutation that fabricates the post-cancellation result without invoking the semantic core. The complete pipeline additionally executes the Sibling-first schedule. The predecessor's replacement-before-second-child evidence remains the inherited scope-foundation gate and need not be duplicated here.
+The focused refinement witness commits the Trigger Error Update, then stops the Worker immediately after that new throw/catch/cancel transition. A replacement Worker recovers the accepted Update result and the post-cancellation wait set containing only Recover before it receives the fresh stale Sibling Work command and Recover completion. The gate then fetches and replays history and rejects a bypass mutation that fabricates the post-cancellation result without invoking the semantic core. The complete pipeline additionally executes the Sibling-first schedule. The predecessor's replacement-before-second-child evidence remains the inherited scope-foundation gate and is not duplicated here.
 
 The state relation preserves root definition identity, semantic Process instance identity, the one child scope occurrence while active, exact User Task occurrences, tokens, Process variables, Process status, and command-result classification. Temporal Workflow ID, Run ID, Update ID, replay task, and history Event identity remain host facts.
 
-Delivery ordering is explicit in each retained scenario: one completes Trigger Error first and one completes Sibling Work first. Both sequential orders must reach the same recovery result. Concurrently submitted child Updates remain excluded; Temporal may serialize them, but this capsule does not claim a BPMN fairness or race rule for that schedule.
+Delivery ordering is explicit in each retained scenario: one completes Trigger Error first and one completes Sibling Work first. Both sequential orders reach the same recovery result. Concurrently submitted child Updates remain excluded; Temporal may serialize them, but this capsule does not claim a BPMN fairness or race rule for that schedule.
 
 The zero-Signal invariant remains unchanged. The history witness requires User Task Update events and no Signal, Timer, Activity, or Child Workflow events. Existing pre-release histories are produced and replayed inside one disposable gate; no durable baseline or Workflow patch marker is introduced.
 
-The pre-start host-capability predicate must classify this profile as passive multi-User-Task ingress, classify `throwError` as internal semantic closure, and avoid treating nested ownership as a concurrent host-driven Timer or effect. Defensive Workflow assertions for impossible scope or wait shapes remain infrastructure failures and must be unreachable for admitted programs.
+The pre-start host-capability predicate classifies this profile as passive multi-User-Task ingress, classifies `throwError` as internal semantic closure, and does not treat nested ownership as a concurrent host-driven Timer or effect. Defensive Workflow assertions for impossible scope or wait shapes remain infrastructure failures and are unreachable for admitted programs.
 
 ## Selected CIB Seven `2.2.0` evidence lane
 
@@ -230,11 +230,7 @@ The five on-demand questions have this disposition:
 4. public deployment, runtime, and task services can observe the selected task set and Process completion without contributing a host-specific fact to canonical semantics;
 5. A12 Error End occurrences remain prioritization anchors, not an unchanged-model claim.
 
-The completed phase-zero probe uses the exact project-authored source and covers Trigger-first and Sibling-first schedules. In both orders CIB Seven `2.2.0` exposes only Recover while the Process remains running after the Error and reports Process completion only after Recover. This establishes selection of the recovery route at the unchanged public boundary under registered agreement `CIB-AGR-0008`; it does not establish that no additional hidden normal-path microstep occurred. The semantic implementation change must add a profile reference to that registered identifier, answer-free target scenarios, content-bound retained evidence, an existing-projector fidelity audit, an evidence-replacement route, and a sibling-retention or wrong-route mutation. No profile artifact may use an unregistered placeholder identifier.
-
-If CIB rejects the source, exposes a materially different public result, or requires an extension/configuration choice, semantic implementation stops before CIB enters the target set and the finding is classified in the relation register. The owner then decides whether to proceed standards-only or amend the compatibility boundary. The existing flat Task-attached `CIB-AGR-0005`, its caught-path mapping extension, and ordinary-scope `CIB-AGR-0007` do not authorize a nested propagation claim.
-
-If the owner later amends this approval to proceed standards-only after a classified CIB stop, the normative-authority profile reuses registered `CIB-AGR-0001` for the surrounding Process/User Task lifecycle and `CIB-OP-0001` for project semantic task identity. It must not carry `oracle` or `environment` fields and still cannot use a placeholder relationship identifier.
+The exact project-authored source and retained Trigger-first and Sibling-first schedules execute against CIB Seven `2.2.0`. In both orders CIB exposes only Recover while the Process remains running after the Error and reports Process completion only after Recover. This establishes selection of the recovery route at the unchanged public boundary under registered agreement `CIB-AGR-0008`; it does not establish that no additional hidden normal-path microstep occurred. The immutable profile references that agreement, the target scenarios remain answer-free, retained evidence is content-bound, the unchanged Java projector remains fidelity-classified, evidence replacement is explicit, and a raw sibling-retention mutation proves the projection detects the claim.
 
 ## Runtime-only and synthetic constructs
 
@@ -271,7 +267,7 @@ The shared XML-to-checked-source producer remains the principal correlation risk
 
 The existing `DefinitionScope`, checked node/Sequence Flow ownership arrays, Semantic Process operation/control-place ownership arrays, `enterScope`, `reachNoneEnd`, `completeScope`, scope occurrence, owned token/wait fields, runtime-state wire shape, public observation, public User Task identity, stimulus union, command-result union, and outcome union remain unchanged.
 
-Adding checked Error nodes, a checked boundary attachment, and `throwError` widens closed definition unions. It adds no required top-level field to either definition object, but exhaustive readers, schemas, validators, lowering, and evaluators still change together. Under the pre-release policy this is an approved breaking representation change and must replace every current producer and consumer atomically.
+Checked Error nodes, a checked boundary attachment, and `throwError` widen the closed definition unions. They add no top-level field to either definition object, but exhaustive readers, schemas, validators, lowering, and evaluators changed together under the pre-release atomic-replacement policy.
 
 The atomic change includes:
 
@@ -282,31 +278,29 @@ The atomic change includes:
 - all exhaustive switches, closed-kind guards, deep-readonly compile checks, artifact generators, scenario runners, differential comparators, verifiers, and mutations affected by the replaced unions;
 - the new answer-free scenarios and verifier-only expected results;
 - Temporal Workflow state, Query and Update integration, pre-start host-capability predicate, restart/replay/bypass tests, exact Event History assertions, and production lifecycle documentation;
-- graduation from `-PROPOSAL` to `-SPEC`, the capsule and documentation registries, every inbound link including the ordinary-completion specification and CIB breadth research, [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md), [profile-parameterized admission](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [Temporal lifecycle](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), [testing specification](../TESTING-SPEC.md), [implementation map](../IMPLEMENTATION-MAP.md), [plan](../PLAN.md), and the CIB relation-register dashboard counts when the selected lane registers its confirmed relationship.
+- this specification, the capsule and documentation registries, every inbound link including the ordinary-completion specification and CIB breadth research, [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md), [profile-parameterized admission](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [Temporal lifecycle](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), [testing specification](../TESTING-SPEC.md), [implementation map](../IMPLEMENTATION-MAP.md), [plan](../PLAN.md), and the CIB relation register.
 
-The current eleven-field canonical observation denominator, closed `activeWait.kind` values, fidelity table and schema-depth guard, Java CIB projector, and existing retained CIB evidence shapes remain unchanged because this capsule adds no observation field or wait kind. Their guards must nevertheless prove that no accidental scope/Error field or unsupported CIB claim was introduced. After a green phase-zero probe, the selected CIB lane's Java fixture/runner, current projector audit, artifact registration, retained evidence, fidelity coverage, and replacement-command route join the same atomic change without changing the canonical schema.
+The current eleven-field canonical observation denominator, closed `activeWait.kind` values, fidelity table and schema-depth guard, Java CIB projector, and retained CIB evidence shapes remain unchanged because this capsule adds no observation field or wait kind. Their guards prove that no accidental scope/Error field or unsupported CIB claim was introduced. The selected CIB lane's Java fixture/runner, current projector audit, artifact registration, retained evidence, fidelity coverage, and replacement-command route join the same atomic change without changing the canonical schema.
 
 No legacy reader, compatibility switch, migration function, Workflow patch branch, retained Event History, or embedded format counter is added under the pre-release policy.
 
-## Required, optional, and excluded work
+## Implemented and excluded surface
 
-Required work is the exact profile, checked Error nodes and boundary attachment, generic checked-graph progress widening, `throwError`, direct-parent exact handler, regional cancellation over the existing runtime ownership with monotonic counter preservation, public sibling-removal and stale-refusal witnesses, recovery-route selection without hidden-normal-microstep claims, Lean soundness and laws, independent TypeScript behavior, targeted preservation gate, post-throw Temporal restart/replay/bypass evidence, the selected CIB Seven `2.2.0` phase-zero and agreement lane, and same-change documentation closure.
+The implemented surface is the exact profile, checked Error nodes and boundary attachment, generic checked-graph progress widening, `throwError`, direct-parent exact handler, regional cancellation over the existing runtime ownership with monotonic counter preservation, public sibling-removal and stale-refusal witnesses, recovery-route selection without hidden-normal-microstep claims, Lean soundness and laws, independent TypeScript behavior, targeted preservation gate, post-throw Temporal restart/replay/bypass evidence, and the selected CIB Seven `2.2.0` agreement lane.
 
-No optional implementation is selected. The CIB Seven `2.2.0` lane is part of the approved closure boundary but enters the target set only after a confirmed relationship is registered in the same change and cannot change vendor-neutral semantics.
+No optional implementation is selected. The CIB Seven `2.2.0` lane is part of the closed target set under registered agreement `CIB-AGR-0008` and cannot change vendor-neutral semantics.
 
 Excluded work is any widening or reimplementation of ordinary Sub-Process completion beyond the structurally present negative route, arbitrary or recursive nesting, multiple scope occurrences, multiple or catch-all handlers, unmatched-Error runtime behavior, Error payload/data mapping, Intermediate Throw Error, Service Task faults, Event Sub-Processes, boundary handlers on other Activity kinds, Call Activities, transactions, compensation, termination, escalation, non-interrupting handlers, multi-instance, loops, concurrent command semantics, CIB compatibility beyond the selected lane, A12 façade adoption, and public scope-tree observation.
 
-## Required closure reflection and cost
+## Closure reflection and cost
 
-Before graduation, the separate epistemic-closure review must restate that the exact established claim is direct-parent exact-code Error propagation with regional cancellation, while general handler search is unsupported. It must audit the shared XML compiler and canonical projection as the main correlated assumptions; prove canonical results depend only on admitted definition/runtime state and explicit User Task commands; retain the unrelated-root global-cancellation non-law and the unreachable-normal-route witness; confirm that sibling disappearance and stale refusal are public discriminators; and keep normative, selected CIB, Lean, TypeScript, and Temporal claims separate.
+The exact established claim is direct-parent exact-code Error propagation with regional cancellation; general handler search remains unsupported. The shared XML compiler and canonical projection remain the principal correlated assumptions: Lean independently re-lowers the checked graph but does not parse XML, while CIB independently executes exact XML only at its declared public boundary. Canonical results depend only on admitted definition/runtime state and explicit User Task commands. The unrelated-root global-cancellation non-law and unreachable-normal-route witness are retained, and sibling disappearance plus state-preserving stale refusal separate the chosen account at the public boundary. Normative review, selected CIB behavior, Lean laws, TypeScript correspondence, and Temporal refinement remain distinct claims.
 
-The closure must require meaningful wrong-route, sibling-retention, and semantic-core-bypass mutations, confirm disposable pre-release histories and the unchanged public contract, inspect probe cleanup and duplicate builds, and decide whether the result changes the next CIB-breadth capsule. The implementation baseline is commit `be7845d`, recorded before these required approval edits or any semantic work. At closure, add the exact boundary and nonblank code/documentation churn to the [capsule cost ledger](../CAPSULE-COST-LEDGER.md) and compare it with ordinary embedded Sub-Process completion. This follow-on should be materially smaller because it reuses definition scopes, runtime ownership, normal completion, passive multi-task hosting, artifact discovery, and shared Worker bundles; if it is not, identify and remove one repeated process weight before the next capsule.
+Wrong-route, sibling-retention, and semantic-core-bypass mutations all fail as required. Histories are disposable pre-release artifacts, the public contract is unchanged, the CIB runner and Temporal server clean up, and the ordinary Temporal host reuses one bundle across initial, replacement, and replay Workers. The source-hygiene red gate exposed two oversized generic owners during closure; the repeated weight was removed by extracting typed Semantic Process operation admission in TypeScript and Error definition admission/lowering in Lean. The complete gate then exposed stale exhaustive checked-node readers in the frozen experiment; each reader now rejects both Error variants explicitly, so the ordinary transitive build guards atomic replacement without enlarging the experiment's claims. The implementation baseline is commit `be7845d`; the exact committed nonblank churn and comparison with ordinary embedded Sub-Process completion are recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md).
 
-## Acceptance and stop conditions
+## Re-open conditions
 
-The owner approved this exact product claim, the structurally present but unreachable normal route, internal scope occurrence with unchanged public task identity, atomic throw/catch/cancel closure, complete pre-release replacement list, and CIB Seven `2.2.0` evidence lane on 2026-07-31. With the independent review's required edits applied and baseline `be7845d` recorded, implementation is authorized; phase zero is the first implementation step.
-
-Stop and return to owner review if:
+Return to owner review if:
 
 - a valid admitted execution can normally quiesce inside the child scope;
 - direct-parent exact matching cannot avoid selecting by source or evaluator list order;
@@ -319,6 +313,6 @@ Stop and return to owner review if:
 - the breaking replacement cannot update all current producers and consumers atomically;
 - implementation would alter the existing normal Sub-Process account, silently establish unmatched-Error behavior, Event Sub-Process semantics, or another excluded proposition.
 
-## Re-open conditions
+## Separate follow-on capsules
 
 Open a separate capsule when a consumer requires a second nesting level, repeated or multi-instance scope occurrences, multiple-handler search, catch-all matching, unresolved Error observation, Event Sub-Processes, scope-local variables, compensation, CIB behavior beyond the selected public lane, or an A12 compatibility overlay. Re-open the existing ordinary-completion specification rather than this capsule if a consumer changes its normal scope lifecycle.

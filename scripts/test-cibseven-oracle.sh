@@ -11,7 +11,7 @@ timer_bpmn_path="$project_root/scenarios/intermediate-catch-timer/process.bpmn"
 service_task_bpmn_path="$project_root/scenarios/service-task-effect/process.bpmn"
 boundary_error_bpmn_path="$project_root/scenarios/boundary-error/process.bpmn"
 embedded_subprocess_bpmn_path="$project_root/scenarios/embedded-subprocess-completion/process.bpmn"
-subprocess_error_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenSubProcessErrorPropagationPhaseZeroProbeTest.bpmn"
+subprocess_error_probe_path="$project_root/scenarios/subprocess-error-propagation/process.bpmn"
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
 juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/exclusive-gateway-source-order.bpmn"
 

@@ -1,6 +1,8 @@
 import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.Transition
+import BpmnSemantics.SemanticProcess.ErrorPropagation
 import BpmnSemantics.SemanticProcess.Message
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.Execution

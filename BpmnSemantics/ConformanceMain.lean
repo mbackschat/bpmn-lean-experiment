@@ -4,6 +4,7 @@ import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.SemanticProcessConformance
 import BpmnSemantics.SemanticProcessJsonConformance
 import BpmnSemantics.ServiceTaskEffectConformance
+import BpmnSemantics.SubProcessErrorPropagationConformance
 import BpmnSemantics.UserTaskInteractionConformance
 
 /-! Executable entry point for the compile-time contract locks. -/
