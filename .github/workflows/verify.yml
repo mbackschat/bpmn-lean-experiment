@@ -114,3 +114,20 @@ jobs:
           # the CI ceiling explicitly rather than weakening the local budget.
           BPMN_PIPELINE_WARM_BUDGET_MS: "40000"
         run: ./scripts/verify.sh
+
+  # One stable check name for branch protection. Requiring the matrix jobs
+  # directly would name each platform, so editing the matrix would silently
+  # leave a stale requirement behind. `always()` is required: without it a
+  # failed matrix leaves this job skipped, and a skipped check can satisfy a
+  # required-check rule instead of blocking it.
+  verify-complete:
+    name: verify-complete
+    needs: verify
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every platform to have verified
+        run: |
+          echo "matrix result: ${{ needs.verify.result }}"
+          test "${{ needs.verify.result }}" = "success"
