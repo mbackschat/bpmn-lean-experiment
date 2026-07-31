@@ -60,7 +60,7 @@ private def startStimulus : Stimulus :=
     ⟨"Instance_1"⟩
 
 private def completionStimulus (commandId elementId : String) : Stimulus :=
-  .completeUserTaskInstance ⟨commandId⟩ (parallelTaskId elementId)
+  .completeUserTaskInstance ⟨commandId⟩ (parallelTaskId elementId) []
 
 private def parallelScenario (id : String) (completions : List Stimulus) :
     Scenario :=

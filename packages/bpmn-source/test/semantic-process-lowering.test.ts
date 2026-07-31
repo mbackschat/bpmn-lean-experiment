@@ -75,7 +75,7 @@ test("emits the canonical checked graph and Semantic Process for the sequential 
   const result = await compileFixture(
     "../../../scenarios/user-task-discovery-completion/process.bpmn",
     "sequential-user-task-process",
-    "cibseven-2.2.0-user-task-draft",
+    "cibseven-2.2.0-user-task-data-draft",
   );
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
@@ -221,7 +221,7 @@ test("admits timer and User Task composition only through its selected profile",
 
   for (const semanticProfile of [
     "cibseven-2.2.0-intermediate-catch-timer-draft",
-    "cibseven-2.2.0-user-task-draft",
+    "cibseven-2.2.0-user-task-data-draft",
     "unknown-profile",
   ]) {
     const rejected = await compileBpmnToSemanticProcess({

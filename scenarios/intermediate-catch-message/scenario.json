@@ -35,7 +35,8 @@
         "processInstanceId": "MessageInstance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
-      }
+      },
+      "submittedValues": []
     }
   ],
   "observations": [

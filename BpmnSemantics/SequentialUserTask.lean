@@ -24,10 +24,15 @@ def exactTaskInstanceId : UserTaskInstanceId :=
     elementId := ⟨"UserTask_Approve"⟩
     activation := 1 }
 
+def submittedValues : List VariableBinding :=
+  [ { name := "decision", value := .string "approved" }
+  , { name := "reviewNote", value := .null } ]
+
 def completionStimulus : Stimulus :=
   .completeUserTaskInstance
     ⟨"complete-user-task-instance"⟩
     exactTaskInstanceId
+    submittedValues
 
 def exactWait : UserTaskWait :=
   { processInstanceId := ⟨"Instance_1"⟩
@@ -47,6 +52,9 @@ def completedState : RuntimeState :=
   { afterStartState with
     control := .completed ⟨"Instance_1"⟩
     waits := []
+    variables :=
+      { afterStartState.variables with
+        process := { bindings := submittedValues } }
     endOccurrences := 1 }
 
 def runWithClosureLimit (closureLimit : Nat) : ScenarioRunner :=
@@ -76,7 +84,8 @@ theorem matching_completion_terminates :
 theorem no_completion_before_matching_command :
     applyStimulus scenarioClosureLimit program afterStartState
         (.completeUserTaskInstance ⟨"wrong-completion"⟩
-          { exactTaskInstanceId with elementId := ⟨"Other_Task"⟩ }) =
+          { exactTaskInstanceId with elementId := ⟨"Other_Task"⟩ }
+          submittedValues) =
       { outcome := .rejected
         state := afterStartState
         internalStepBoundExceeded := false
@@ -87,7 +96,8 @@ theorem wrong_activation_is_rejected
     (submittedActivation : Nat) (mismatch : submittedActivation ≠ 1) :
     applyStimulus scenarioClosureLimit program afterStartState
         (.completeUserTaskInstance ⟨"wrong-activation"⟩
-          { exactTaskInstanceId with activation := submittedActivation }) =
+          { exactTaskInstanceId with activation := submittedActivation }
+          submittedValues) =
       { outcome := .rejected
         state := afterStartState
         internalStepBoundExceeded := false
@@ -95,14 +105,15 @@ theorem wrong_activation_is_rejected
   exact task_identity_mismatch_is_rejected
     program exactWait ⟨"wrong-activation"⟩
       { exactTaskInstanceId with activation := submittedActivation }
-      0 (Or.inr (Or.inr mismatch))
+      submittedValues
+      0 afterStartState.variables (Or.inr (Or.inr mismatch))
 
 theorem element_id_alone_is_insufficient :
     let wrongTaskId := { exactTaskInstanceId with activation := 2 }
     wrongTaskId.elementId = exactTaskInstanceId.elementId ∧
       (applyStimulus scenarioClosureLimit program afterStartState
         (.completeUserTaskInstance
-          ⟨"wrong-activation"⟩ wrongTaskId)).outcome = .rejected := by
+          ⟨"wrong-activation"⟩ wrongTaskId submittedValues)).outcome = .rejected := by
   decide
 
 end BpmnSemantics.SequentialUserTask

@@ -21,7 +21,8 @@
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_A",
         "activation": 1
-      }
+      },
+      "submittedValues": []
     },
     {
       "kind": "completeUserTaskInstance",
@@ -30,7 +31,8 @@
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_A",
         "activation": 1
-      }
+      },
+      "submittedValues": []
     }
   ],
   "observations": [

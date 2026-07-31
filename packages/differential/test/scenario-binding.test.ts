@@ -20,7 +20,7 @@ import type { DeepMutable } from "./pipeline-types.ts";
 const admittedScenario: Scenario = {
   kind: ScenarioDocumentKind.Scenario,
   id: "user-task-wrong-activation",
-  profile: "cibseven-2.2.0-user-task-draft",
+  profile: "cibseven-2.2.0-user-task-data-draft",
   bpmn: {
     id: "sequential-user-task-process",
     relativePath: "scenarios/user-task-discovery-completion/process.bpmn",
@@ -42,6 +42,7 @@ const admittedScenario: Scenario = {
         elementId: "UserTask_Approve",
         activation: 2,
       },
+      submittedValues: [],
     },
   ],
   observations: [

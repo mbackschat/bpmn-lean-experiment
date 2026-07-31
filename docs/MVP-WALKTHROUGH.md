@@ -54,7 +54,7 @@ The exact task occurrence used for completion is:
 
 That third identity component matters. A second activation of the same BPMN element is not the same task occurrence, even though both share `UserTask_Approve`.
 
-The [draft profile](../profiles/cibseven-2.2.0-user-task-draft/profile.json) pins the CIB version, execution environment, feature surface, and public observation boundary. Expected CIB results live in separate immutable evidence artifacts so target inputs cannot smuggle in their oracle answer.
+The [draft profile](../profiles/cibseven-2.2.0-user-task-data-draft/profile.json) pins the CIB version, execution environment, feature surface, and public observation boundary. Expected CIB results live in separate immutable evidence artifacts so target inputs cannot smuggle in their oracle answer.
 
 ## 2. Admit BPMN and compile data, not source code
 
@@ -125,16 +125,20 @@ Lean also turns semantic review questions into general checked laws. The central
 theorem task_identity_mismatch_is_rejected
     (program : Program) (wait : UserTaskWait)
     (completionCommandId : SemanticId)
-    (submittedTaskId : UserTaskInstanceId) (logicalTimeMs : Nat)
+    (submittedTaskId : UserTaskInstanceId)
+    (submittedValues : List VariableBinding)
+    (logicalTimeMs : Nat)
+    (variables : ScopedVariables)
     (mismatch :
       submittedTaskId.processInstanceId ≠ wait.processInstanceId ∨
       submittedTaskId.elementId.value ≠ wait.task.id.value ∨
       submittedTaskId.activation ≠ wait.activation) :
     applyStimulus scenarioClosureLimit program
-        (singletonWaitingState wait logicalTimeMs)
-        (.completeUserTaskInstance completionCommandId submittedTaskId) =
+        (singletonWaitingState wait logicalTimeMs variables)
+        (.completeUserTaskInstance completionCommandId submittedTaskId
+          submittedValues) =
       { outcome := .rejected
-        state := singletonWaitingState wait logicalTimeMs
+        state := singletonWaitingState wait logicalTimeMs variables
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   rcases mismatch with processMismatch | remainingMismatch
@@ -385,21 +389,21 @@ The normal gate only checks; it never rewrites documentation. If a fragment is w
 
 For focused work, use the gate matrix in [TESTING-SPEC.md](TESTING-SPEC.md). The [semantic capsule](capsules/USER-TASK-INTERACTION-SPEC.md) owns the bounded meaning and evidence lanes; [PROJECT-DESIGN.md](PROJECT-DESIGN.md) explains the durable architecture and Lean’s assurance role.
 
-## What the MVP establishes
+## What the maintained execution slices establish
 
-Within one content-addressed sequential User Task slice, the repository establishes:
+Within the content-addressed execution slices recorded in the [implementation map](IMPLEMENTATION-MAP.md), the repository establishes:
 
 - exact-source admission through a checked BPMN graph into a project-owned Semantic Process program;
 - one reviewed operational account realized separately in Lean and TypeScript, agreeing exactly with pinned CIB observation at the fidelity recorded in the capsule;
 - strict Lean decoding, independent lowering equality, generic evaluator soundness, useful general Lean laws, and executable nearest non-laws;
-- Temporal Query/Update hosting that refines the pure core for the tested cases;
+- Temporal Query/Update, Signal, Timer, and Activity hosting that refines the pure core for the tested cases;
 - duplicate-command stability, cleanup, and same-gate live replay;
 - mutation-sensitive differential evidence within the feedback budgets.
 
-The MVP itself does not establish general BPMN parsing or execution, OMG conformance, immutable CIB compatibility, repeated occurrences of one task element, variables, assignment, forms, timers, messages, Activities, fault recovery, Search Attributes, a production task inbox, or a production Workflow lifecycle. Later capsule specs own any bounded additions and do not broaden the MVP claim retroactively.
+These slices do not establish general BPMN parsing or execution, OMG conformance, immutable CIB compatibility, repeated occurrences of one task element, general BPMN data association, forms, human-resource semantics, Search Attributes, or a production task inbox. The exact implemented variable, Timer, Message, Activity, boundary-error, gateway, and production Workflow-lifecycle subsets remain bounded by their owning specifications; agreement in one slice never broadens another.
 
 ## Additional bounded capsules
 
 The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, stale rejection with a live sibling, and the duplicate-left/no-right non-law. Content-bound CIB evidence calibrates both balanced completion orders and the live-sibling stale witness.
 
-The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md) adds one string-only argument/result/output-mapping path with a separate synchronous CIB `2.0.0` final-state relation. The nine-case pipeline connects these capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
+The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md) adds one string-only argument/result/output-mapping path with a separate synchronous CIB `2.0.0` final-state relation. The [User Task completion-data spec](capsules/USER-TASK-COMPLETION-DATA-SPEC.md) adds one canonical string/null submitted patch under selected CIB extension `CIB-EXT-0005`. The thirteen-case pipeline connects the maintained capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).

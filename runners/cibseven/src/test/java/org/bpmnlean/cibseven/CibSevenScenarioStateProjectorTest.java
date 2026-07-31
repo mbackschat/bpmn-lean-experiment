@@ -42,7 +42,8 @@ public class CibSevenScenarioStateProjectorTest {
 
         assertThrows(
             IllegalStateException.class,
-            () -> projector.observeState(root.getId(), "Instance_1", "start-process"));
+            () -> projector.observeState(
+                root.getId(), "Instance_1", "start-process", java.util.List.of()));
       } finally {
         engine
             .getRepositoryService()

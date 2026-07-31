@@ -30,6 +30,28 @@ def emptyScopedVariables : ScopedVariables :=
   { process := { bindings := [] }
     activities := [] }
 
+private def insertVariableBinding (binding : VariableBinding) :
+    List VariableBinding → List VariableBinding
+  | [] => [binding]
+  | candidate :: remaining =>
+      if binding.name < candidate.name then
+        binding :: candidate :: remaining
+      else
+        candidate :: insertVariableBinding binding remaining
+
+private def sortVariableBindings : List VariableBinding → List VariableBinding
+  | [] => []
+  | binding :: remaining =>
+      insertVariableBinding binding (sortVariableBindings remaining)
+
+/-- Canonically merge a User Task completion patch into Process scope, replacing equal names and retaining all unrelated bindings. -/
+def mergeProcessVariableBindings
+    (existing replacements : List VariableBinding) : List VariableBinding :=
+  let replacedNames := replacements.map (·.name)
+  sortVariableBindings
+    (replacements ++ existing.filter fun binding =>
+      !replacedNames.contains binding.name)
+
 def activityScopeMatches (owner : EffectOccurrenceId)
     (scope : ActivityVariableScope) : Bool :=
   decide (

@@ -38,6 +38,7 @@ const completion = {
     elementId: "Task_1",
     activation: 1,
   },
+  submittedValues: [],
 };
 const completedState: CompletedProcessReceipt["finalState"] = {
   kind: CanonicalObservationKind.State,

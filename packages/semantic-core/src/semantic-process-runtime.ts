@@ -18,6 +18,7 @@ import {
   addActivityVariableScope,
   completeActivityVariableScope,
   evaluateInputMappings,
+  mergeProcessVariableBindings,
 } from "./semantic-process-data.js";
 import {
   evaluateSimpleBooleanExpression,
@@ -129,6 +130,15 @@ function admit(
           userTaskWaits: state.userTaskWaits.filter(
             (candidate) => candidate !== wait,
           ),
+          variables: {
+            ...state.variables,
+            process: {
+              bindings: mergeProcessVariableBindings(
+                state.variables.process.bindings,
+                stimulus.submittedValues,
+              ),
+            },
+          },
         },
       };
     }

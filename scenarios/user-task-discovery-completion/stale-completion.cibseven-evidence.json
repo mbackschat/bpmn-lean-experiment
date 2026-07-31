@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-stale-completion",
-    "sha256": "d6940fac2800d1de10a3567fa68c984e3022cfdfac6f6416126e94385ed361ef"
+    "sha256": "3c9e92f8c894c733967b92a5c69e5ab0d30de8d100f09ed36c2ffbc131d654f4"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-draft",
-    "sha256": "f30b96607428e0546d169a47580d63c21e65734560d13136d6ac1fb8fd4e4a48"
+    "id": "cibseven-2.2.0-user-task-data-draft",
+    "sha256": "8d21a69914dedbbb5ccf6dac458b2c4727fa538a56ae909fa633189e7fa747b2"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -28,13 +28,31 @@
         "afterCommandId": "complete-user-task-instance",
         "processInstanceCount": 0,
         "engineClockTimeMs": 0,
-        "variables": []
+        "variables": [
+          {
+            "name": "decision",
+            "value": "approved"
+          },
+          {
+            "name": "reviewNote",
+            "value": null
+          }
+        ]
       },
       {
         "afterCommandId": "complete-stale-user-task-instance",
         "processInstanceCount": 0,
         "engineClockTimeMs": 0,
-        "variables": []
+        "variables": [
+          {
+            "name": "decision",
+            "value": "approved"
+          },
+          {
+            "name": "reviewNote",
+            "value": null
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -141,7 +159,21 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
-        "variables": [],
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       },
@@ -159,7 +191,21 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
-        "variables": [],
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       }

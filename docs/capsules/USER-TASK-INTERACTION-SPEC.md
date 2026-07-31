@@ -129,16 +129,17 @@ interface CompleteUserTaskInstance {
   readonly kind: "completeUserTaskInstance";
   readonly commandId: string;
   readonly taskId: UserTaskInstanceId;
+  readonly submittedValues: readonly UserTaskCompletionBinding[];
 }
 ```
 
-Completion commits only while that exact task occurrence is active. A wrong Process-instance ID, wrong BPMN element ID, wrong activation ordinal, or already completed occurrence is rejected with semantic state unchanged.
+Completion commits only while that exact task occurrence is active. A wrong Process-instance ID, wrong BPMN element ID, wrong activation ordinal, or already completed occurrence is rejected with semantic state unchanged. This capsule owns occurrence admission and lifecycle; the selected string/null Process-variable patch is separately owned by the [User Task completion-data specification](USER-TASK-COMPLETION-DATA-SPEC.md).
 
 The semantic rejection rule applies only when the command reaches an addressable semantic Process. Under the [Temporal Process lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), a distinct command first addressed after terminal Workflow completion cannot reach the semantic core and is classified as adapter-owned `processClosed`. The sequential stale witness therefore keeps exact CIB Seven, Lean, and TypeScript semantic agreement while Temporal agrees on the prefix through completion and asserts `processClosed` separately. The parallel live-sibling witness in the [parallel capsule](PARALLEL-FORK-JOIN-SPEC.md) keeps another task active so all four targets exercise this same semantic rejection proposition.
 
 The nearest checked non-law is: “matching the BPMN User Task element ID is sufficient for completion.” A witness with the correct element ID and wrong activation ordinal must be rejected.
 
-Claiming, delegation, assignment, actor identity, authorization, completion variables, form submission, and task output mapping are excluded. Carrying an actor or variables without those semantics would create a misleading contract.
+Claiming, delegation, assignment, actor identity, authorization, BPMN form semantics, task-local variables, BPMN data associations, and task output mapping are excluded. The selected completion patch must not be read as support for any of those broader features.
 
 ## IR and Lean consequence
 
@@ -203,7 +204,7 @@ The result supports continuing the architecture: Lean supplied a reusable full-o
 ## Explicit exclusions
 
 - claiming, unclaiming, assignment, candidate users or groups, delegation, ownership, authorization, and identity-provider integration;
-- forms, renderings, completion variables, data associations, and output mapping;
+- forms, renderings, completion values beyond the selected canonical string/null Process patch, data associations, and output mapping;
 - due dates, priority, suspension, cancellation, escalation, and boundary Events;
 - multiple or repeated User Task occurrences;
 - Search Attributes, Visibility-based discovery, and a production task inbox;

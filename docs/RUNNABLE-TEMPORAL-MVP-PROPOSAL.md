@@ -12,7 +12,7 @@ What is the smallest end-to-end product that lets a user run an admitted BPMN mo
 
 Ship one command-line-driven runtime that connects to a caller-supplied Temporal address, starts a Worker for the generic BPMN Process Workflow, admits exact BPMN XML before Workflow creation, starts one semantic Process instance, exposes its current canonical state by known Process-instance identity, and waits until the Process completes or fails infrastructurally.
 
-The first product acceptance model is the existing private executable `None Start Event → User Task → None End Event` shape plus the owner-approved completion-data extension in the [User Task completion-data proposal](capsules/USER-TASK-COMPLETION-DATA-PROPOSAL.md). The runtime must use the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update command boundary, and Temporal replay-safe code as the maintained evidence path. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
+The first product acceptance model is the existing private executable `None Start Event → User Task → None End Event` shape plus the implemented completion-data extension in the [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md). The runtime must use the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update command boundary, and Temporal replay-safe code as the maintained evidence path. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
 
 The supported subset is explicit. A document outside the named profile returns typed pre-start admission rejection; the runtime never silently ignores an unsupported BPMN construct or Camunda/CIB extension.
 
@@ -77,7 +77,7 @@ The response values are deterministic configuration. The MVP introduces no rando
 
 ## Required semantic boundary
 
-The dummy actor does not mutate semantic state directly. Completion data is a separately reviewed CIB-profile extension of the existing semantic command, owned by the [User Task completion-data proposal](capsules/USER-TASK-COMPLETION-DATA-PROPOSAL.md). That capsule must complete its pinned CIB Seven `2.2.0` probe and atomic wire/Lean/core/Temporal replacement before the MVP may claim that simulated form values become Process variables.
+The dummy actor does not mutate semantic state directly. Completion data is a separately reviewed CIB-profile extension of the existing semantic command, owned by the [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md). Its pinned CIB Seven `2.2.0` probe and atomic wire/Lean/core/Temporal replacement are complete, so the MVP may submit simulated form values only through that exact command.
 
 The host delay is not a BPMN Timer Event, does not produce a Temporal timer in the Process Workflow, and is absent from canonical BPMN state. It is explicit foreground-actor behavior that produces one ordinary external completion command. If the actor process exits during the delay, the Process and User Task remain durably waiting on Temporal; restarting or replacing the actor may submit the same content-bound command safely.
 

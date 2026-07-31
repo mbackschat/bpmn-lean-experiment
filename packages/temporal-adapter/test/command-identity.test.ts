@@ -29,6 +29,13 @@ const completion = {
     elementId: "Task_1",
     activation: 1,
   },
+  submittedValues: [
+    {
+      name: "answer",
+      value: { kind: VariableValueKind.String, value: "yes" },
+    },
+    { name: "cleared", value: { kind: VariableValueKind.Null } },
+  ],
 } as const;
 
 test("canonically encodes every typed stimulus field", () => {
@@ -43,7 +50,7 @@ test("canonically encodes every typed stimulus field", () => {
   );
   assert.equal(
     canonicalStimulusEncoding(completion),
-    '["completeUserTaskInstance","complete-task",["Instance_1","Task_1",1]]',
+    '["completeUserTaskInstance","complete-task",["Instance_1","Task_1",1],[["answer",["string","yes"]],["cleared",["null"]]]]',
   );
   assert.equal(
     canonicalStimulusEncoding({
@@ -71,7 +78,7 @@ test("canonically encodes every typed stimulus field", () => {
 test("derives fixed SHA-256 Update IDs from exact canonical content", () => {
   assert.equal(
     contentBoundUpdateId(completion),
-    "bpmn-command-sha256:6a8b84fc4b7902b4987fa232c449287ea5d01f921ae0931dad0400a78b39c72f",
+    "bpmn-command-sha256:402a16062747176079cbeee6ad890c391369ae2f95557ad14a8d3a422a280b14",
   );
   assert.equal(
     contentBoundUpdateId({

@@ -30,15 +30,15 @@ The script uses Homebrew Java 21 by default and the repository Maven wrapper.
 | Java | Release 21 |
 | Automatic job executor | Disabled |
 | Logical clock | Frozen at Unix epoch per scenario and restored in `finally` |
-| History | Audit with `P180D` default TTL; excluded from canonical observations |
+| History | Audit with `P180D` default TTL; supplies bounded final Process-variable evidence only for names introduced by committed completion commands |
 
 ## Semantic boundary
 
-Canonical traces include only stable deployment, command, Process state, wait, open semantic User Task, Timer, or effect occurrence, enabled interaction, and logical time. The runner maps generated CIB task IDs to project identity `(Process instance, BPMN element, activation ordinal)` and retains BPMN task names. Distinct active elements become distinct semantic occurrences sorted by semantic identity, and active waits preserve per-element multiplicity. The timer lane fixes the engine clock, proves the exact timer job ineligible before due time and eligible at due time, and executes it only after eligibility. The Service Task lane derives activity, protocol, and handler from public job-definition/deployed-model state, maps the singleton host wait to adapter-decided activation `1`, and records retry/invocation/mutation facts only as raw host evidence. Repeated live instances of one BPMN element remain rejected because deriving their activation ordinals from engine order would invent semantics. Generated deployment, definition, instance, execution, task, and job IDs never become comparison keys.
+Canonical traces include only stable deployment, command, Process state, wait, open semantic User Task, Timer, or effect occurrence, enabled interaction, Process variables, and logical time. The runner maps generated CIB task IDs to project identity `(Process instance, BPMN element, activation ordinal)` and retains BPMN task names. Distinct active elements become distinct semantic occurrences sorted by semantic identity, and active waits preserve per-element multiplicity. The timer lane fixes the engine clock, proves the exact timer job ineligible before due time and eligible at due time, and executes it only after eligibility. The Service Task lane derives activity, protocol, and handler from public job-definition/deployed-model state, maps the singleton host wait to adapter-decided activation `1`, and records retry/invocation/mutation facts only as raw host evidence. Repeated live instances of one BPMN element remain rejected because deriving their activation ordinals from engine order would invent semantics. Generated deployment, definition, instance, execution, task, and job IDs never become comparison keys.
 
 A wrong semantic occurrence is rejected by the oracle adapter before CIB host-task completion and leaves the task active. A stale completion is rejected after no matching live task remains. These mappings are classified in the [CIB–BPMN relationship register](../../docs/CIB-BPMN-RELATION-REGISTER.md), not mislabeled as raw CIB or BPMN identity semantics.
 
-Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query, timer-job, effect-job, and effect-execution snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open timers, open effects, and enabled interactions and therefore detects omitted tasks, timer-deadline drift, and effect-handler drift while treating raw query order as non-semantic. The persistent JSON-lines boundary preserves request identity and cleanup across all eight scenarios.
+Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query, timer-job, effect-job, effect-execution, and state-query snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open timers, open effects, enabled interactions, and the bounded Process-variable projection and therefore detects omitted tasks, timer-deadline drift, effect-handler drift, and final-variable drift while treating raw query order as non-semantic. Variable names enter that projection only after the corresponding semantic completion command has committed, so a future, rejected, wrong-activation, or stale submitted patch cannot influence the current observation. The persistent JSON-lines boundary preserves request identity and cleanup across all eight CIB Seven `2.2.0` scenarios.
 
 Ordinary verification never rewrites retained evidence. The explicit replacement operation is:
 
@@ -46,7 +46,7 @@ Ordinary verification never rewrites retained evidence. The explicit replacement
 ./scripts/pnpm.sh run replace:cib-evidence
 ```
 
-The package script supplies the exact replacement opt-in. The command executes all eight answer-free scenarios through the pinned runner, verifies producer identity and cleanup, and replaces only content-bound CIB evidence artifacts.
+The package script supplies the exact replacement opt-in. The command executes all ten answer-free CIB scenarios through their pinned `2.2.0` or `2.0.0` runners, verifies producer identity and cleanup, and replaces only content-bound CIB evidence artifacts.
 
 ## Source guide
 

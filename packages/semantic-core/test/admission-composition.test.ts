@@ -136,6 +136,7 @@ const completeTask = {
     elementId: "UserTask_Approve",
     activation: 1,
   },
+  submittedValues: [],
 } as const;
 
 test("admits one profile-selected timer and User Task composition through graph facts", () => {

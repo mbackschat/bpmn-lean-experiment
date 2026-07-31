@@ -4,6 +4,7 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.COMPLETED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus.RUNNING;
 
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.ProcessVariableSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
@@ -51,7 +52,8 @@ final class CibSevenScenarioStateProjector {
   ObservedState observeState(
       String engineInstanceId,
       String stableInstanceId,
-      String afterCommandId) {
+      String afterCommandId,
+      Iterable<String> committedCompletionVariableNames) {
     var runtime = processEngine.getRuntimeService();
     var childInstances =
         runtime
@@ -123,7 +125,9 @@ final class CibSevenScenarioStateProjector {
         activeWaitProjector.project(activeWaits, openTimers, openEffects);
     var engineClockTimeMs = ClockUtil.getCurrentTime().getTime();
     var logicalTimeMs = engineClockTimeMs - logicalEpoch.getTime();
-    var rawVariables = observeProcessVariables(engineInstanceId);
+    var rawVariables =
+        observeProcessVariables(
+            engineInstanceId, committedCompletionVariableNames);
     var variables =
         rawVariables.stream()
             .map(this::projectVariable)
@@ -158,8 +162,13 @@ final class CibSevenScenarioStateProjector {
   }
 
   private List<ProcessVariableSnapshot> observeProcessVariables(
-      String engineInstanceId) {
-    return List.of("myDocumentReference", "relationshipLinkId").stream()
+      String engineInstanceId,
+      Iterable<String> committedCompletionVariableNames) {
+    var observableNames =
+        new LinkedHashSet<>(
+            List.of("myDocumentReference", "relationshipLinkId"));
+    committedCompletionVariableNames.forEach(observableNames::add);
+    return observableNames.stream()
         .flatMap(
             name ->
                 processEngine

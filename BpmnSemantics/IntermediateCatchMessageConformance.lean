@@ -70,7 +70,7 @@ def exactDelivery : Stimulus :=
   .deliverMessage ⟨"deliver-message"⟩ subscriptionId channel
 
 def exactCompletion : Stimulus :=
-  .completeUserTaskInstance ⟨"complete-message-user-task"⟩ taskId
+  .completeUserTaskInstance ⟨"complete-message-user-task"⟩ taskId []
 
 def observations : List ObservationKind :=
   [ .deployment

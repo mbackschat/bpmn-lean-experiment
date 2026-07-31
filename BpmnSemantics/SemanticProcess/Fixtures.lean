@@ -11,7 +11,7 @@ open BpmnSemantics
 
 def sequentialCheckedProcess : CheckedProcess :=
   { identity :=
-      { semanticProfile := ⟨"cibseven-2.2.0-user-task-draft"⟩
+      { semanticProfile := ⟨"cibseven-2.2.0-user-task-data-draft"⟩
         sourceId := ⟨"sequential-user-task-process"⟩
         sourceSha256 :=
           "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
@@ -31,7 +31,7 @@ def sequentialCheckedProcess : CheckedProcess :=
 def sequentialProgram : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
-        semanticProfile := ⟨"cibseven-2.2.0-user-task-draft"⟩
+        semanticProfile := ⟨"cibseven-2.2.0-user-task-data-draft"⟩
         sourceId := ⟨"sequential-user-task-process"⟩
         sourceSha256 :=
           "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
@@ -203,6 +203,7 @@ def timerUserTaskCompositionComplete : Stimulus :=
     { processInstanceId := ⟨"CompositionInstance_1"⟩
       elementId := ⟨"UserTask_Approve"⟩
       activation := 1 }
+    []
 
 def timerUserTaskCompositionTimerWait : StimulusResult :=
   applyStimulus scenarioClosureLimit timerUserTaskCompositionProgram

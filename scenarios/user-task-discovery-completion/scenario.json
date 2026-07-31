@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "user-task-discovery-completion",
-  "profile": "cibseven-2.2.0-user-task-draft",
+  "profile": "cibseven-2.2.0-user-task-data-draft",
   "bpmn": {
     "id": "sequential-user-task-process",
     "relativePath": "scenarios/user-task-discovery-completion/process.bpmn",
@@ -21,7 +21,22 @@
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
-      }
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        },
+        {
+          "name": "reviewNote",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
     }
   ],
   "observations": [

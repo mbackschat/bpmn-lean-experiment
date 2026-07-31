@@ -180,6 +180,30 @@ test("binds status, logical time, and variables to raw state queries", async () 
     () => verifyArtifactSet(mapping),
     /producer observation projection does not match canonical variables/,
   );
+
+  const completion = cloneArtifactSet(
+    required(
+      artifactSets.find(
+        ({ scenario }) =>
+          scenario.id === "user-task-discovery-completion",
+      ),
+      "User Task completion artifact set",
+    ),
+  );
+  const completedVariable = requiredAt(
+    requiredAt(
+      rawStateSnapshots(completion),
+      1,
+      "raw completion state-query snapshots",
+    ).variables,
+    0,
+    "raw completion Process variables",
+  );
+  completedVariable.value = "denied";
+  assert.throws(
+    () => verifyArtifactSet(completion),
+    /producer observation projection does not match canonical variables/,
+  );
 });
 
 test("binds canonical semantic instance identity to the start stimulus", async () => {

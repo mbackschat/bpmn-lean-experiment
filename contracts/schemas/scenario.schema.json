@@ -261,7 +261,8 @@
       "required": [
         "kind",
         "commandId",
-        "taskId"
+        "taskId",
+        "submittedValues"
       ],
       "properties": {
         "kind": {
@@ -272,6 +273,12 @@
         },
         "taskId": {
           "$ref": "#/$defs/userTaskInstanceId"
+        },
+        "submittedValues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableBinding"
+          }
         }
       }
     },

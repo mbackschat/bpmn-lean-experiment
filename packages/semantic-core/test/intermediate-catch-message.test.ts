@@ -140,6 +140,7 @@ const completion = Object.freeze({
     elementId: "UserTask_Approve",
     activation: 1,
   },
+  submittedValues: [],
 });
 
 test("activates one exact Message subscription and delivers it once", () => {
@@ -247,7 +248,7 @@ test("admits the reverse mechanism order and refuses pre-activation delivery", (
 
 test("rejects Message capability drift without a topology predicate", () => {
   for (const semanticProfile of [
-    "cibseven-2.2.0-user-task-draft",
+    "cibseven-2.2.0-user-task-data-draft",
     "bpmn-2.0.2-timer-user-task-composition-draft",
     "unknown-profile",
   ]) {

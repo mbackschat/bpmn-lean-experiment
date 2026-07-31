@@ -67,7 +67,7 @@ The [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns standards disposi
 
 Before the next breadth capsule, deliver the [owner-approved runnable Temporal MVP](RUNNABLE-TEMPORAL-MVP-PROPOSAL.md): an ordinary external-Temporal Worker and command path for a documented admitted subset, plus a dummy actor that leaves the User Task durably waiting on Temporal during a realistic host delay and then simulates form input through the real semantic completion boundary.
 
-The dummy actor is host policy. It does not define BPMN User Task meaning, add a human-resource model, or justify UI, forms, identity, authorization, Search Attributes, or a task inbox. Completion data is a separately reviewed CIB-profile semantic extension under the [User Task completion-data proposal](capsules/USER-TASK-COMPLETION-DATA-PROPOSAL.md).
+The dummy actor is host policy. It does not define BPMN User Task meaning, add a human-resource model, or justify UI, forms, identity, authorization, Search Attributes, or a task inbox. Completion data is a separately reviewed CIB-profile semantic extension under the [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md).
 
 ## Authority model
 

@@ -39,7 +39,8 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.commandId === right.commandId &&
         left.taskId.processInstanceId === right.taskId.processInstanceId &&
         left.taskId.elementId === right.taskId.elementId &&
-        left.taskId.activation === right.taskId.activation
+        left.taskId.activation === right.taskId.activation &&
+        samePatch(left.submittedValues, right.submittedValues)
       );
     case StimulusKind.DeliverMessage:
       return (
@@ -91,7 +92,12 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
       );
     case StimulusKind.CompleteUserTaskInstance:
       return (
-        hasOnlyKeys(value, ["kind", "commandId", "taskId"]) &&
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "taskId",
+          "submittedValues",
+        ]) &&
         isNonEmptyString(value.commandId) &&
         isRecord(value.taskId) &&
         hasOnlyKeys(value.taskId, [
@@ -102,7 +108,10 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isNonEmptyString(value.taskId.processInstanceId) &&
         isNonEmptyString(value.taskId.elementId) &&
         Number.isSafeInteger(value.taskId.activation) &&
-        Number(value.taskId.activation) >= 1
+        Number(value.taskId.activation) >= 1 &&
+        Array.isArray(value.submittedValues) &&
+        value.submittedValues.every(isVariableBinding) &&
+        isCanonicallyOrderedPatch(value.submittedValues)
       );
     case StimulusKind.DeliverMessage:
       return (

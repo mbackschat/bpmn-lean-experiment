@@ -69,7 +69,7 @@ def observeStableState (source : CheckedProcess)
 
 def commandId : Stimulus → SemanticId
   | .startProcess id _ _
-  | .completeUserTaskInstance id _
+  | .completeUserTaskInstance id _ _
   | .fireTimer id _ _
   | .deliverMessage id _ _
   | .completeEffect id _ _ => id

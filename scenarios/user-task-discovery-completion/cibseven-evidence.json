@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-discovery-completion",
-    "sha256": "290a82d1ceb633711a47b1da1edaada2818dbf205326fa95307a88aac029bf9f"
+    "sha256": "b41cb0a62100156f9191a6a84e01136b803237097926264b74a100ffddb9a787"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-draft",
-    "sha256": "f30b96607428e0546d169a47580d63c21e65734560d13136d6ac1fb8fd4e4a48"
+    "id": "cibseven-2.2.0-user-task-data-draft",
+    "sha256": "8d21a69914dedbbb5ccf6dac458b2c4727fa538a56ae909fa633189e7fa747b2"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -28,7 +28,16 @@
         "afterCommandId": "complete-user-task-instance",
         "processInstanceCount": 0,
         "engineClockTimeMs": 0,
-        "variables": []
+        "variables": [
+          {
+            "name": "decision",
+            "value": "approved"
+          },
+          {
+            "name": "reviewNote",
+            "value": null
+          }
+        ]
       }
     ],
     "taskQueries": [
@@ -127,7 +136,21 @@
         "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
-        "variables": [],
+        "variables": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
         "enabledInteractions": [],
         "logicalTimeMs": 0
       }

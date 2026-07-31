@@ -8,6 +8,7 @@ import {
   SemanticOperationKind,
   StimulusKind,
   UserTaskLifecycleState,
+  VariableValueKind,
   advanceScenario,
   applyStimulus,
   deployScenario,
@@ -131,10 +132,79 @@ test("requires the full active task occurrence for completion", async () => {
       kind: StimulusKind.CompleteUserTaskInstance,
       commandId: "invalid-completion",
       taskId,
+      submittedValues: [],
     });
     assert.equal(result.outcome, CommandOutcome.Rejected);
     assert.deepEqual(result.state, started.state);
   }
+});
+
+test("atomically creates, replaces, preserves, and nulls Process variables on exact completion", async () => {
+  const { scenario } = await loadCase(
+    "scenario.json",
+    "cibseven-evidence.json",
+  );
+  const model = semanticProcessFor(scenario);
+  const started = applyStimulus(
+    model,
+    initialState,
+    requiredAt(scenario.stimuli, 0, "scenario stimuli"),
+  );
+  const stateWithExistingData = {
+    ...started.state,
+    variables: {
+      ...started.state.variables,
+      process: {
+        bindings: [
+          {
+            name: "decision",
+            value: { kind: VariableValueKind.String, value: "pending" },
+          },
+          {
+            name: "untouched",
+            value: { kind: VariableValueKind.String, value: "kept" },
+          },
+        ],
+      },
+    },
+  };
+  const completion = requiredAt(
+    scenario.stimuli,
+    1,
+    "scenario stimuli",
+  );
+  assert.equal(completion.kind, StimulusKind.CompleteUserTaskInstance);
+  if (completion.kind !== StimulusKind.CompleteUserTaskInstance) {
+    throw new TypeError("Expected the exact User Task completion stimulus");
+  }
+
+  const completed = applyStimulus(model, stateWithExistingData, completion);
+
+  assert.equal(completed.outcome, CommandOutcome.Committed);
+  assert.deepEqual(completed.state.variables.process.bindings, [
+    {
+      name: "decision",
+      value: { kind: VariableValueKind.String, value: "approved" },
+    },
+    { name: "reviewNote", value: { kind: VariableValueKind.Null } },
+    {
+      name: "untouched",
+      value: { kind: VariableValueKind.String, value: "kept" },
+    },
+  ]);
+
+  const rejected = applyStimulus(model, stateWithExistingData, {
+    ...completion,
+    taskId: { ...completion.taskId, activation: 2 },
+    submittedValues: [
+      {
+        name: "decision",
+        value: { kind: VariableValueKind.String, value: "denied" },
+      },
+    ],
+  });
+  assert.equal(rejected.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(rejected.state, stateWithExistingData);
 });
 
 test("preserves an omitted BPMN task name as null", async () => {

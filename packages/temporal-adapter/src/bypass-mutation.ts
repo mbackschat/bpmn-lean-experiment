@@ -79,6 +79,17 @@ const branchConfiguration = {
   ),
   description: "branch-bypass mutation",
 } as const;
+const completionDataConfiguration = {
+  taskQueue: "bpmn-completion-data-bypass-mutation",
+  workflowType: "runBpmnProcessCompletionDataBypassMutation",
+  workflowsPath: fileURLToPath(
+    new URL(
+      "./completion-data-bypass-mutation-workflows.js",
+      import.meta.url,
+    ),
+  ),
+  description: "completion-data-bypass mutation",
+} as const;
 const temporalTestIdentity = "bpmn-lean-test-runtime";
 const operationDeadlineMs = 5_000;
 const workerStartupDeadlineMs = 20_000;
@@ -87,7 +98,25 @@ const shutdownDeadlineMs = 10_000;
 
 type BypassMutationConfiguration =
   | typeof timerConfiguration
-  | typeof effectConfiguration;
+  | typeof effectConfiguration
+  | typeof completionDataConfiguration;
+
+export async function runCompletionDataBypassMutation(
+  environment: TestWorkflowEnvironment,
+  scenario: Scenario,
+  semanticProcess: SemanticProcessProgram,
+  workflowId: string,
+  waitForUserTask: WaitForUserTask,
+): Promise<TemporalTimerBypassMutationExecution> {
+  return runBypassMutation(
+    environment,
+    scenario,
+    semanticProcess,
+    workflowId,
+    completionDataConfiguration,
+    waitForUserTask,
+  );
+}
 
 export async function runTimerBypassMutation(
   environment: TestWorkflowEnvironment,

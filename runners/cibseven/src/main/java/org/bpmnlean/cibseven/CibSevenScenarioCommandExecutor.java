@@ -4,11 +4,16 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectExecutionSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.FireTimerStimulus;
+import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.bpmnlean.cibseven.ScenarioProtocol.SuccessfulEffectResult;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
@@ -56,8 +61,26 @@ final class CibSevenScenarioCommandExecutor {
           "Repeated active User Task element requires activation-ordinal derivation: "
               + taskId.elementId());
     }
-    processEngine.getTaskService().complete(tasks.getFirst().getId());
+    processEngine
+        .getTaskService()
+        .complete(
+            tasks.getFirst().getId(),
+            completionVariables(complete.submittedValues()));
     return COMMITTED;
+  }
+
+  private static Map<String, Object> completionVariables(
+      Iterable<VariableBinding> submittedValues) {
+    var variables = new LinkedHashMap<String, Object>();
+    for (var binding : submittedValues) {
+      Object value =
+          switch (binding.value()) {
+            case StringValue stringValue -> stringValue.value();
+            case NullValue ignored -> null;
+          };
+      variables.put(binding.name(), value);
+    }
+    return variables;
   }
 
   /**

@@ -18,9 +18,6 @@ def countBasedJoinReady (state : RuntimeState)
   inputs.foldl (fun count input => count + tokenMultiplicity state input) 0 ≥
     inputs.length
 
-def waitMultiplicity (state : RuntimeState) (taskId : TaskDefinitionId) : Nat :=
-  (state.waits.filter fun wait => decide (wait.task.id = taskId)).length
-
 def completeUserTask (state : RuntimeState) (processInstanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat) : Option RuntimeState :=
   match state.waits.find? fun wait =>
@@ -138,11 +135,6 @@ def runChoices (program : Program) : RuntimeState → List OperationId →
       | none => none
       | some successor => runChoices program successor choices
 
-def projectTokenMultiplicities (program : Program) (state : RuntimeState) :
-    List (ControlPlaceId × Nat) :=
-  program.controlPlaces.map fun place =>
-    (place.id, tokenMultiplicity state place.id)
-
 private structure ExternalAdmission where
   outcome : CommandOutcome
   state : RuntimeState
@@ -159,14 +151,22 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
             { outcome := .rejected, state }
       | .running _
       | .completed _ => { outcome := .rejected, state }
-  | .completeUserTaskInstance _ taskId =>
+  | .completeUserTaskInstance _ taskId submittedValues =>
       match state.control with
       | .running instanceId =>
           match completeUserTask state taskId.processInstanceId
               ⟨taskId.elementId.value⟩ taskId.activation with
           | some successor =>
               if taskId.processInstanceId = instanceId then
-                { outcome := .committed, state := successor }
+                { outcome := .committed
+                  state :=
+                    { successor with
+                      variables :=
+                        { successor.variables with
+                          process :=
+                            { bindings := mergeProcessVariableBindings
+                                successor.variables.process.bindings
+                                submittedValues } } } }
               else
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
@@ -307,12 +307,14 @@ def applyStimulus (closureLimit : Nat) (program : Program)
         ambiguousInternalChoice := false }
 
 
-def singletonWaitingState (wait : UserTaskWait) (logicalTimeMs : Nat := 0) :
+def singletonWaitingState (wait : UserTaskWait) (logicalTimeMs : Nat := 0)
+    (variables : ScopedVariables := emptyScopedVariables) :
     RuntimeState :=
   { initialState with
     control := .running wait.processInstanceId
     waits := [wait]
     activations := [{ taskId := wait.task.id, count := wait.activation }]
+    variables
     logicalTimeMs }
 
 /-- Isolated state used to state timer-refusal laws over the complete public timer occurrence identity and logical-time input. -/
@@ -445,16 +447,20 @@ theorem effect_result_route_failure_is_rejected
 theorem task_identity_mismatch_is_rejected
     (program : Program) (wait : UserTaskWait)
     (completionCommandId : SemanticId)
-    (submittedTaskId : UserTaskInstanceId) (logicalTimeMs : Nat)
+    (submittedTaskId : UserTaskInstanceId)
+    (submittedValues : List VariableBinding)
+    (logicalTimeMs : Nat)
+    (variables : ScopedVariables)
     (mismatch :
       submittedTaskId.processInstanceId ≠ wait.processInstanceId ∨
       submittedTaskId.elementId.value ≠ wait.task.id.value ∨
       submittedTaskId.activation ≠ wait.activation) :
     applyStimulus scenarioClosureLimit program
-        (singletonWaitingState wait logicalTimeMs)
-        (.completeUserTaskInstance completionCommandId submittedTaskId) =
+        (singletonWaitingState wait logicalTimeMs variables)
+        (.completeUserTaskInstance completionCommandId submittedTaskId
+          submittedValues) =
       { outcome := .rejected
-        state := singletonWaitingState wait logicalTimeMs
+        state := singletonWaitingState wait logicalTimeMs variables
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   rcases mismatch with processMismatch | remainingMismatch

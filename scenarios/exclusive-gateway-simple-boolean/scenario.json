@@ -21,7 +21,8 @@
         "processInstanceId": "SimpleBooleanInstance_1",
         "elementId": "Task_First",
         "activation": 1
-      }
+      },
+      "submittedValues": []
     }
   ],
   "observations": [

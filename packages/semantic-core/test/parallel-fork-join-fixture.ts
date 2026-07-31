@@ -133,5 +133,6 @@ export function completionStimulus(
       elementId,
       activation: 1,
     },
+    submittedValues: [],
   };
 }

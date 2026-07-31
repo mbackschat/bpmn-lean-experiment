@@ -131,7 +131,7 @@ function applyEffectPatch(
   if (patch === null) {
     return null;
   }
-  const localVariables = mergeBindings(arguments_, patch);
+  const localVariables = mergeProcessVariableBindings(arguments_, patch);
   const projected = outputMappings.map((mapping) => {
     const expression = mapping.expression;
     if (expression.kind !== MappingExpressionKind.LocalVariable) {
@@ -145,7 +145,7 @@ function applyEffectPatch(
     }
     return { name: mapping.target, value };
   });
-  return mergeBindings(processBindings, projected);
+  return mergeProcessVariableBindings(processBindings, projected);
 }
 
 function validatePatch(
@@ -184,7 +184,8 @@ function isPermittedValue(
   }
 }
 
-function mergeBindings(
+/** Applies a canonical create-or-replace patch to Process bindings without mutating either input. */
+export function mergeProcessVariableBindings(
   existing: ReadonlyArray<VariableBinding>,
   replacements: ReadonlyArray<VariableBinding>,
 ): ReadonlyArray<VariableBinding> {

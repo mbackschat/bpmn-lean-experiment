@@ -42,6 +42,7 @@ import type {
 } from "./contracts.js";
 import {
   runBranchBypassMutation,
+  runCompletionDataBypassMutation,
   runEffectBypassMutation,
   runTimerBypassMutation,
 } from "./bypass-mutation.js";
@@ -419,6 +420,22 @@ export class TemporalScenarioRunner {
       workflowId,
       (handle, minimumLength) =>
         this.waitForTrace(handle, minimumLength),
+    );
+  }
+
+  async runCompletionDataBypassMutation(
+    scenario: Scenario,
+    semanticProcess: SemanticProcessProgram,
+    workflowId: string,
+  ): Promise<TemporalTimerBypassMutationExecution> {
+    this.assertAvailable();
+    return runCompletionDataBypassMutation(
+      this.environment,
+      scenario,
+      semanticProcess,
+      workflowId,
+      (handle, completion) =>
+        this.waitForOpenUserTask(handle, completion),
     );
   }
 

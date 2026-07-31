@@ -58,6 +58,7 @@ export type CompleteUserTaskInstanceStimulus = DeepReadonly<{
   kind: StimulusKind.CompleteUserTaskInstance;
   commandId: string;
   taskId: UserTaskInstanceId;
+  submittedValues: UserTaskCompletionBinding[];
 }>;
 
 export type DeliverMessageStimulus = DeepReadonly<{
@@ -96,6 +97,9 @@ export type VariableBinding = DeepReadonly<{
   name: string;
   value: VariableValue;
 }>;
+
+export type UserTaskCompletionValue = VariableValue;
+export type UserTaskCompletionBinding = VariableBinding;
 
 export enum EffectExecutionResultKind {
   Success = "success",

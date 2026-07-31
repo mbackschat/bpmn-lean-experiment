@@ -18,6 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ import org.bpmnlean.cibseven.ScenarioProtocol.TaskQueryTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerJob;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerOccurrenceId;
+import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -204,6 +206,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     var effectJobs = new ArrayList<EffectJobSnapshot>();
     var effectExecutions = new ArrayList<EffectExecutionSnapshot>();
     var mappingExecutions = new ArrayList<MappingExecutionSnapshot>();
+    var committedCompletionVariableNames = new LinkedHashSet<String>();
     String deploymentId = null;
     String engineInstanceId = null;
     String stableInstanceId = null;
@@ -267,7 +270,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
-                    start.commandId());
+                    start.commandId(),
+                    committedCompletionVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -283,13 +287,19 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                     engineInstanceId, stableInstanceId, complete);
             timings.completeNanos = positiveElapsedSince(completeStartedAt);
             trace.add(new CommandObservation(complete.commandId(), outcome));
+            if (outcome == COMMITTED) {
+              complete.submittedValues().stream()
+                  .map(VariableBinding::name)
+                  .forEach(committedCompletionVariableNames::add);
+            }
 
             var projectionStartedAt = System.nanoTime();
             var observed =
                 stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
-                    complete.commandId());
+                    complete.commandId(),
+                    committedCompletionVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -315,7 +325,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
-                    fire.commandId());
+                    fire.commandId(),
+                    committedCompletionVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());
@@ -363,7 +374,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 stateProjector.observeState(
                     engineInstanceId,
                     stableInstanceId,
-                    complete.commandId());
+                    complete.commandId(),
+                    committedCompletionVariableNames);
             trace.add(observed.state());
             stateQueries.add(observed.stateQuery());
             taskQueries.add(observed.taskQuery());

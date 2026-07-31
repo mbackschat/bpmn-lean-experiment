@@ -185,7 +185,8 @@ The focused Temporal gate must demonstrate:
 - a normal exact completion closes the Workflow with a validated completed receipt;
 - every accepted racing Update completes before Workflow completion;
 - an exact retry after closure returns the original semantic result;
-- a different payload under the same semantic command ID cannot alias that result;
+- complete User Task Update identity includes the complete canonical submitted string/null patch;
+- a different task identity or submitted patch under the same semantic command ID cannot alias that result;
 - a conflicting command identity that reaches the Workflow returns `BpmnCommandIdentityConflict` without a Workflow Task failure;
 - malformed Message ingress returns `BpmnMessageIngressInvalid` without emitting a Signal;
 - a wrong-channel Signal is durably accepted by Temporal but returned as semantic rejection with exact state preservation;
@@ -196,6 +197,7 @@ The focused Temporal gate must demonstrate:
 - Workflow-ID reuse and Update-With-Start command ingress are absent;
 - Query and canonical result projections contain no Workflow ID, Run ID, or Update ID;
 - Query-derived command outcomes and terminal state reconcile with durable Update results and the completed receipt;
+- an outside-core completion-data write that forges the terminal variables but omits the corresponding core command result fails durable Query/Update reconciliation;
 - the sequential post-terminal schedule and parallel live-sibling stale witness preserve the semantic/adapter evidence split without coercion;
 - the produced histories replay and every Worker/server resource is cleaned up;
 - every pre-existing Workflow path retains zero Signal Events, while the Message path contains the exact ordered delivery Signal payloads and a seeded payload substitution fails the history check;

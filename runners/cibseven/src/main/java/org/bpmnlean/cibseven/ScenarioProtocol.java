@@ -21,7 +21,7 @@ public final class ScenarioProtocol {
 
   private ScenarioProtocol() {}
 
-  public enum CommandOutcome implements WireValue {
+  public enum CommandOutcome implements ScenarioWireValue {
     COMMITTED("committed"),
     ROLLED_BACK("rolledBack"),
     REJECTED("rejected"),
@@ -42,11 +42,11 @@ public final class ScenarioProtocol {
 
     @JsonCreator
     public static CommandOutcome fromWireValue(String value) {
-      return WireValue.parse(CommandOutcome.class, value);
+      return ScenarioWireValue.parse(CommandOutcome.class, value);
     }
   }
 
-  public enum ProcessStatus implements WireValue {
+  public enum ProcessStatus implements ScenarioWireValue {
     NOT_STARTED("notStarted"),
     RUNNING("running"),
     COMPLETED("completed");
@@ -65,11 +65,11 @@ public final class ScenarioProtocol {
 
     @JsonCreator
     public static ProcessStatus fromWireValue(String value) {
-      return WireValue.parse(ProcessStatus.class, value);
+      return ScenarioWireValue.parse(ProcessStatus.class, value);
     }
   }
 
-  public enum WaitKind implements WireValue {
+  public enum WaitKind implements ScenarioWireValue {
     USER_TASK("userTask"),
     TIMER("timer"),
     EFFECT("effect");
@@ -88,11 +88,11 @@ public final class ScenarioProtocol {
 
     @JsonCreator
     public static WaitKind fromWireValue(String value) {
-      return WireValue.parse(WaitKind.class, value);
+      return ScenarioWireValue.parse(WaitKind.class, value);
     }
   }
 
-  public enum UserTaskLifecycleState implements WireValue {
+  public enum UserTaskLifecycleState implements ScenarioWireValue {
     ACTIVE("active");
 
     private final String wireValue;
@@ -109,11 +109,11 @@ public final class ScenarioProtocol {
 
     @JsonCreator
     public static UserTaskLifecycleState fromWireValue(String value) {
-      return WireValue.parse(UserTaskLifecycleState.class, value);
+      return ScenarioWireValue.parse(UserTaskLifecycleState.class, value);
     }
   }
 
-  public enum ObservationKind implements WireValue {
+  public enum ObservationKind implements ScenarioWireValue {
     DEPLOYMENT("deployment"),
     COMMAND_RESULTS("commandResults"),
     PROCESS_STATUS("processStatus"),
@@ -139,20 +139,7 @@ public final class ScenarioProtocol {
 
     @JsonCreator
     public static ObservationKind fromWireValue(String value) {
-      return WireValue.parse(ObservationKind.class, value);
-    }
-  }
-
-  private interface WireValue {
-    String wireValue();
-
-    static <E extends Enum<E> & WireValue> E parse(Class<E> type, String value) {
-      for (var candidate : type.getEnumConstants()) {
-        if (candidate.wireValue().equals(value)) {
-          return candidate;
-        }
-      }
-      throw new IllegalArgumentException("Unsupported " + type.getSimpleName() + ": " + value);
+      return ScenarioWireValue.parse(ObservationKind.class, value);
     }
   }
 
@@ -231,10 +218,22 @@ public final class ScenarioProtocol {
   }
 
   public record CompleteUserTaskInstanceStimulus(
-      String commandId, UserTaskInstanceId taskId) implements Stimulus {
+      String commandId,
+      UserTaskInstanceId taskId,
+      List<VariableBinding> submittedValues) implements Stimulus {
     public CompleteUserTaskInstanceStimulus {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(taskId, "taskId");
+      submittedValues = List.copyOf(submittedValues);
+      for (var index = 1; index < submittedValues.size(); index++) {
+        if (WireStrings.compare(
+                submittedValues.get(index - 1).name(),
+                submittedValues.get(index).name())
+            >= 0) {
+          throw new IllegalArgumentException(
+              "submittedValues names must be unique and canonically ordered");
+        }
+      }
     }
   }
 
@@ -302,7 +301,9 @@ public final class ScenarioProtocol {
 
   public record VariableBinding(String name, VariableValue value) {
     public VariableBinding {
-      Objects.requireNonNull(name, "name");
+      if (name == null || name.isEmpty()) {
+        throw new IllegalArgumentException("variable binding name must be non-empty");
+      }
       Objects.requireNonNull(value, "value");
     }
   }

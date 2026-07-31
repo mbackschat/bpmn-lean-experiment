@@ -65,7 +65,7 @@ private def operationCardinalities (operations : List SemanticOperation) :
 
 private def profileAllowsCardinalities (profile : String)
     (counts : OperationCardinalities) : Bool :=
-  if profile = "cibseven-2.2.0-user-task-draft" then
+  if profile = "cibseven-2.2.0-user-task-data-draft" then
     counts =
       { emptyCardinalities with
         initiates := 1, userTasks := 1, terminates := 1 }

@@ -189,7 +189,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
             { outcome := .rejected, state }
       | .running _
       | .completed _ => { outcome := .rejected, state }
-  | .completeUserTaskInstance _ taskId =>
+  | .completeUserTaskInstance _ taskId _ =>
       match state.control with
       | .running instanceId =>
           match completeUserTask state taskId.processInstanceId

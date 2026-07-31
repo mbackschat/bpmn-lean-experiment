@@ -132,7 +132,8 @@ def scenario : Scenario :=
           (errorResult (some "Link limit reached"))
       , .completeUserTaskInstance
           ⟨"complete-boundary-user-task"⟩
-          taskId ]
+          taskId
+          [] ]
     observations :=
       [ .deployment
       , .commandResults

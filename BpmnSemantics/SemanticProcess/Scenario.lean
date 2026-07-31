@@ -9,9 +9,17 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+def waitMultiplicity (state : RuntimeState) (taskId : TaskDefinitionId) : Nat :=
+  (state.waits.filter fun wait => decide (wait.task.id = taskId)).length
+
+def projectTokenMultiplicities (program : Program) (state : RuntimeState) :
+    List (ControlPlaceId × Nat) :=
+  program.controlPlaces.map fun place =>
+    (place.id, tokenMultiplicity state place.id)
+
 private def commandId : Stimulus → SemanticId
   | .startProcess id _ _
-  | .completeUserTaskInstance id _
+  | .completeUserTaskInstance id _ _
   | .deliverMessage id _ _
   | .fireTimer id _ _
   | .completeEffect id _ _ => id

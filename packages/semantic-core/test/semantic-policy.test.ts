@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   StimulusKind,
   UserTaskLifecycleState,
+  VariableValueKind,
   applyStimulus,
   compareCanonicalStrings,
   initialState,
@@ -77,6 +78,12 @@ test("owns exact structural well-formedness for every current stimulus", () => {
       elementId: "Task",
       activation: 1,
     },
+    submittedValues: [
+      {
+        name: "answer",
+        value: { kind: VariableValueKind.String, value: "yes" },
+      },
+    ],
   };
 
   assert.equal(isWellFormedStimulus(start), true);
@@ -105,6 +112,24 @@ test("owns exact structural well-formedness for every current stimulus", () => {
       ...completion,
       taskId: { ...completion.taskId, hostTaskId: "host-only" },
     },
+    { ...completion, submittedValues: undefined },
+    {
+      ...completion,
+      submittedValues: [
+        completion.submittedValues[0],
+        completion.submittedValues[0],
+      ],
+    },
+    {
+      ...completion,
+      submittedValues: [
+        {
+          name: "before",
+          value: { kind: VariableValueKind.Null },
+        },
+        completion.submittedValues[0],
+      ],
+    },
     null,
   ]) {
     assert.equal(isWellFormedStimulus(malformed), false);
@@ -120,6 +145,12 @@ test("compares complete semantic stimulus identity independently of transport ID
       elementId: "Task",
       activation: 1,
     },
+    submittedValues: [
+      {
+        name: "answer",
+        value: { kind: VariableValueKind.String, value: "yes" },
+      },
+    ],
   } as const satisfies CompleteUserTaskInstanceStimulus;
 
   assert.equal(sameStimulus(completion, structuredClone(completion)), true);
@@ -127,6 +158,18 @@ test("compares complete semantic stimulus identity independently of transport ID
     sameStimulus(completion, {
       ...completion,
       taskId: { ...completion.taskId, activation: 2 },
+    }),
+    false,
+  );
+  assert.equal(
+    sameStimulus(completion, {
+      ...completion,
+      submittedValues: [
+        {
+          name: "answer",
+          value: { kind: VariableValueKind.String, value: "no" },
+        },
+      ],
     }),
     false,
   );

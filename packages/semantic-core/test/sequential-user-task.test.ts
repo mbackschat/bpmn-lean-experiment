@@ -9,6 +9,7 @@ import {
   ScenarioStepKind,
   SemanticOperationKind,
   StimulusKind,
+  VariableValueKind,
   advanceScenario,
   applyStimulus,
   deployScenario,
@@ -145,7 +146,15 @@ test("matching occurrence completion closes the Process", async () => {
     timerWaits: [],
     effectWaits: [],
     variables: {
-      process: { bindings: [] },
+      process: {
+        bindings: [
+          {
+            name: "decision",
+            value: { kind: VariableValueKind.String, value: "approved" },
+          },
+          { name: "reviewNote", value: { kind: VariableValueKind.Null } },
+        ],
+      },
       activities: [],
     },
     taskActivations: [
@@ -179,6 +188,7 @@ test("non-matching occurrence completion is rejected without state change", asyn
       elementId: "Other_Task",
       activation: 1,
     },
+    submittedValues: [],
   });
 
   assert.equal(rejected.outcome, CommandOutcome.Rejected);

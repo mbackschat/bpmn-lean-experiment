@@ -224,6 +224,19 @@ test("one clean server executes, captures, and replays the current capsule", asy
   );
 });
 
+test("completion-data bypass writes outside the core but fails durable reconciliation", async () => {
+  const input = await loadExecutionInput(requiredScenarioUrl(0));
+
+  await assert.rejects(
+    activeRunner().runCompletionDataBypassMutation(
+      input.scenario,
+      input.semanticProcess,
+      "user-task-completion-data-bypass",
+    ),
+    /Query trace and durable Event History contain different completed Update commands/u,
+  );
+});
+
 test("durable timer survives Worker absence at due time and replays exactly", async () => {
   const scenario = await loadJson<Scenario>(timerScenarioUrl);
   const input = await compileExecutionInput(scenario, timerBpmnUrl);

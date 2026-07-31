@@ -21,7 +21,8 @@ def exactCompletionInteraction : EnabledInteraction :=
   .completeUserTaskInstance exactTaskId
 
 def exactCompletionStimulus : Stimulus :=
-  .completeUserTaskInstance ⟨"complete-user-task-instance"⟩ exactTaskId
+  .completeUserTaskInstance
+    ⟨"complete-user-task-instance"⟩ exactTaskId submittedValues
 
 private def interactionObservations : List ObservationKind :=
   [ .deployment
@@ -38,7 +39,7 @@ private def interactionObservations : List ObservationKind :=
 private def interactionScenario (id : String) (stimuli : List Stimulus) : Scenario :=
   { kind := .scenario
     id := ⟨id⟩
-    profile := ⟨"cibseven-2.2.0-user-task-draft"⟩
+    profile := ⟨"cibseven-2.2.0-user-task-data-draft"⟩
     bpmn := contractScenario.bpmn
     stimuli
     observations := interactionObservations
@@ -53,13 +54,15 @@ def wrongActivationScenario : Scenario :=
   interactionScenario "user-task-wrong-activation"
     [ startStimulus
     , .completeUserTaskInstance ⟨"wrong-activation"⟩
-        { exactTaskId with activation := 2 } ]
+        { exactTaskId with activation := 2 } submittedValues ]
 
 def staleCompletionScenario : Scenario :=
   interactionScenario "user-task-stale-completion"
     [ startStimulus
     , exactCompletionStimulus
-    , .completeUserTaskInstance ⟨"complete-stale-user-task-instance"⟩ exactTaskId ]
+    , .completeUserTaskInstance
+        ⟨"complete-stale-user-task-instance"⟩ exactTaskId
+        [{ name := "decision", value := .string "denied" }] ]
 
 def waitingObservation : StateObservation :=
   { instanceId := ⟨"Instance_1"⟩
@@ -87,7 +90,7 @@ def completedObservation : StateObservation :=
     openMessageSubscriptions := []
     openTimers := []
     openEffects := []
-    variables := []
+    variables := submittedValues
     enabledInteractions := []
     logicalTimeMs := 0 }
 
@@ -146,7 +149,8 @@ example :
         (.completeUserTaskInstance ⟨"wrong-activation"⟩
           { processInstanceId := ⟨"Instance_1"⟩
             elementId := ⟨"UserTask_Approve"⟩
-            activation := 2 }) =
+            activation := 2 }
+          submittedValues) =
       { outcome := .rejected
         state := afterStartState
         internalStepBoundExceeded := false
@@ -159,7 +163,8 @@ example :
         program afterStartState
         (.completeUserTaskInstance ⟨"wrong-process-instance"⟩
           { exactTaskId with
-            processInstanceId := ⟨"Other_Instance"⟩ }) =
+            processInstanceId := ⟨"Other_Instance"⟩ }
+          submittedValues) =
       { outcome := .rejected
         state := afterStartState
         internalStepBoundExceeded := false
@@ -167,7 +172,8 @@ example :
   BpmnSemantics.SemanticProcess.task_identity_mismatch_is_rejected
     program exactWait ⟨"wrong-process-instance"⟩
       { exactTaskId with processInstanceId := ⟨"Other_Instance"⟩ }
-      0 (by simp [exactTaskId, exactWait])
+      submittedValues 0 afterStartState.variables
+      (by simp [exactTaskId, exactWait])
 
 example :
     let wrongTaskId := { exactTaskId with activation := 2 }
@@ -175,7 +181,8 @@ example :
       (BpmnSemantics.SemanticProcess.applyStimulus
         BpmnSemantics.SemanticProcess.scenarioClosureLimit
         program afterStartState
-        (.completeUserTaskInstance ⟨"wrong-activation"⟩ wrongTaskId)).outcome =
+        (.completeUserTaskInstance
+          ⟨"wrong-activation"⟩ wrongTaskId submittedValues)).outcome =
           .rejected :=
   element_id_alone_is_insufficient
 

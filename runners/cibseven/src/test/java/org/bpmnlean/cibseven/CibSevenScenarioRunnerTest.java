@@ -15,12 +15,15 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
+import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmActivityProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.PvmDefinitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
+import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
 import org.bpmnlean.cibseven.ScenarioProtocol.TransitionProjection;
 import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskInstanceId;
+import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -172,7 +175,9 @@ public class CibSevenScenarioRunnerTest {
             List.of(),
             List.of(),
             List.of(),
-            List.of(),
+            List.of(
+                new VariableBinding("decision", new StringValue("approved")),
+                new VariableBinding("reviewNote", new NullValue())),
             List.of(),
             0));
   }

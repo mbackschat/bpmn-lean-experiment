@@ -173,11 +173,13 @@ private def stimulusJson : Stimulus → Json
         , ("commandId", toJson commandId.value)
         , ("processId", toJson processId.value)
         , ("instanceId", toJson instanceId.value) ]
-  | .completeUserTaskInstance commandId taskId =>
+  | .completeUserTaskInstance commandId taskId submittedValues =>
       Json.mkObj
         [ ("kind", toJson "completeUserTaskInstance")
         , ("commandId", toJson commandId.value)
-        , ("taskId", occurrenceIdJson taskId) ]
+        , ("taskId", occurrenceIdJson taskId)
+        , ("submittedValues",
+            jsonArray (submittedValues.map variableBindingJson)) ]
   | .deliverMessage commandId subscriptionId channel =>
       Json.mkObj
         [ ("kind", toJson "deliverMessage")

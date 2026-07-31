@@ -36,6 +36,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.taskId.elementId,
           stimulus.taskId.activation,
         ],
+        stimulus.submittedValues.map(variableBindingTuple),
       ]);
     case StimulusKind.DeliverMessage:
       return canonicalTypedTupleEncoding([

@@ -86,7 +86,7 @@ test("retains exact source identity and compiles checked and semantic definition
   assert.deepEqual(result.checkedProcess, {
     kind: "checkedProcess",
     identity: {
-      semanticProfile: "cibseven-2.2.0-user-task-draft",
+      semanticProfile: "cibseven-2.2.0-user-task-data-draft",
       sourceId: "sequential-user-task-process",
       sourceSha256: "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
     },

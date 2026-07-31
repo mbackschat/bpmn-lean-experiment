@@ -265,6 +265,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
     kind: StimulusKind.CompleteUserTaskInstance,
     commandId: "reject-missing-task",
     taskId: taskId("Missing_UserTask"),
+    submittedValues: [],
   });
 
   assert.equal(step.kind, ScenarioStepKind.Terminal);

@@ -112,7 +112,8 @@ public class CibSevenScenarioCommandExecutorTest {
                       new UserTaskInstanceId(
                           "Instance_1",
                           "RepeatedTask",
-                          1))));
+                          1),
+                      java.util.List.of())));
     } finally {
       engine
           .getRepositoryService()

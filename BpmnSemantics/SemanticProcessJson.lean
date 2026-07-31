@@ -120,9 +120,27 @@ private def decodeVariableValue (json : Json) :
 private def decodeVariableBinding (json : Json) :
     Except String VariableBinding := do
   requireObjectShape json ["name", "value"]
+  let name ← stringField json "name"
+  if name.isEmpty then
+    throw "variable binding name must be non-empty"
   pure
-    { name := ← stringField json "name"
+    { name
       value := ← decodeVariableValue (← field json "value") }
+
+private def bindingNamesStrictlyIncrease : List VariableBinding → Bool
+  | []
+  | [_] => true
+  | left :: right :: remaining =>
+      decide (left.name < right.name) &&
+        bindingNamesStrictlyIncrease (right :: remaining)
+
+private def decodeCanonicalVariableBindings (json : Json) :
+    Except String (List VariableBinding) := do
+  let bindings ← decodeArray decodeVariableBinding json
+  if bindingNamesStrictlyIncrease bindings then
+    pure bindings
+  else
+    throw "variable bindings must have unique names in canonical order"
 
 private def decodeEffectExecutionResult (json : Json) :
     Except String EffectExecutionResult := do
@@ -159,11 +177,14 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           ⟨← stringField json "processId"⟩
           ⟨← stringField json "instanceId"⟩)
   | "completeUserTaskInstance" =>
-      requireObjectShape json ["commandId", "kind", "taskId"]
+      requireObjectShape json
+        ["commandId", "kind", "submittedValues", "taskId"]
       pure
         (.completeUserTaskInstance
           ⟨← stringField json "commandId"⟩
-          (← decodeOccurrenceId (← field json "taskId")))
+          (← decodeOccurrenceId (← field json "taskId"))
+          (← decodeCanonicalVariableBindings
+            (← field json "submittedValues")))
   | "deliverMessage" =>
       requireObjectShape json
         ["channel", "commandId", "kind", "subscriptionId"]

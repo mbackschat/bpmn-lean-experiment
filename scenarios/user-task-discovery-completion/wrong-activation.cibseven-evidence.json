@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-wrong-activation",
-    "sha256": "c912584322b3beb92f208ee4415817a1226897cebb0b58eea3947bbe9d2bbe1e"
+    "sha256": "5661ca5bc051c8caadf565af57b8c18af2e8015729f4ead4f3969fbbc66c9100"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-draft",
-    "sha256": "f30b96607428e0546d169a47580d63c21e65734560d13136d6ac1fb8fd4e4a48"
+    "id": "cibseven-2.2.0-user-task-data-draft",
+    "sha256": "8d21a69914dedbbb5ccf6dac458b2c4727fa538a56ae909fa633189e7fa747b2"
   },
   "producer": {
     "engine": "CIB Seven",
