@@ -2,7 +2,7 @@
 
 ## Status and owner decision
 
-**Draft proposal — owner approval required before implementation.** This capsule selects one directly addressed, payload-free Intermediate Catch Message Event in normal flow. It does not select an Intermediate Throw Message Event, Collaboration, Message Flow, BPMN CorrelationKey, CIB message-name/business-key behavior, or A12 façade compatibility.
+**Revised draft proposal — owner approval required before implementation.** Independent review accepted the direct-addressed catch on its merits and required the boundary corrections now recorded below. This capsule selects one directly addressed, payload-free Intermediate Catch Message Event in normal flow. It does not select an Intermediate Throw Message Event, Collaboration, Message Flow, BPMN CorrelationKey, CIB message-name/business-key behavior, or A12 façade compatibility.
 
 The proposed discriminator is:
 
@@ -15,13 +15,15 @@ None Start Event
 
 The trailing User Task is an already implemented mechanism. It keeps the semantic Process and Temporal Workflow live after the message is consumed so a second command with a fresh command ID can establish semantic stale refusal rather than only a post-closure transport result.
 
-Approval would establish the design boundary and authorize red/green implementation of this exact capsule. It would not approve any excluded message behavior.
+Approval would establish the design boundary, authorize red/green implementation of this exact capsule, reopen canonical wait ordering under owner decision 6, and narrow R8's zero-Signal assertion to the existing non-Message paths while requiring exact Signal history for this Message path. It would not approve any excluded message behavior.
 
 ## Exact question
 
-The capsule asks:
+In product terms, the capsule asks:
 
-> In one admitted acyclic single-token Process, can activation of a payload-free Intermediate Catch Message Event create one Process-owned subscription, can an external input addressed by its complete subscription occurrence and exact source channel consume it once, and can Temporal durably deliver and replay that input without defining BPMN matching or consumption?
+> May a client that already knows one running Process instance and the exact open Message subscription deliver one payload-free Message that resumes only that subscription once, with wrong or repeated deliveries leaving Process state unchanged and Temporal preserving delivery across Worker loss and replay?
+
+The known eventual consumer is the A12 Workflows `ProcessEngineClient` send-message façade and the eight retained A12 models containing Message Event Definitions. This first lower-layer slice does not yet satisfy that façade: message-name/business-key routing, modeled throw, payloads, CIB compatibility, and the A12 adapter contract remain separate work.
 
 The closest unsupported claim is key-based correlation of an otherwise unaddressed Message to one Process instance. This proposal deliberately does not make that claim.
 
@@ -46,21 +48,23 @@ The official CMOF and XSD establish the relevant Process, IntermediateCatchEvent
 
 ## Selected source profile
 
-The admitted document must contain exactly:
+The admitted document must contain this exact source-node and root-definition multiset:
 
 - one executable private Process;
 - one none Start Event;
 - one Intermediate Catch Event with one contained MessageEventDefinition;
 - one User Task;
 - one none End Event;
-- three Sequence Flows forming the stated linear topology;
+- three Sequence Flows forming one finite acyclic linear graph;
 - one Message root with no `itemRef`;
 - one Interface root with one Operation;
 - a MessageEventDefinition whose `messageRef` resolves to that Message and whose `operationRef` resolves to that Operation;
 - an Operation whose `inMessageRef` resolves to the same Message, with no `outMessageRef`, errors, or implementation reference;
 - no data inputs, data outputs, Data Associations, parser warnings, extension elements, expressions, additional Flow Nodes, or additional root elements.
 
-The profile rejects omitted or unresolved Message/Operation references even if a permissive engine would deploy them. It also rejects Message payload structure, referenced EventDefinitions, Message Start or End Events, Intermediate Throw Events, boundary Events, multiple EventDefinitions, Message Flow, Participant, Collaboration, CorrelationKey, CorrelationSubscription, Receive Task, Send Task, and repeated activation.
+Reusable checked-source graph validation, not a named topology predicate, must establish distinct identities, exact legal arities, one Start, at least one End, reference integrity, reachability, co-reachability, acyclicity, and the current producer/consumer discipline. The profile capability supplies only the exact node-kind and lowered-operation multisets. Those facts admit both linear mechanism orders: Message then User Task, selected by the end-to-end discriminator above, and User Task then Message, required as a focused admission and preservation witness. Production admission must not recognize either complete model path as a special shape.
+
+The profile rejects omitted or unresolved Message/Interface Operation references even if a permissive engine would deploy them. It also rejects Message payload structure, referenced EventDefinitions, Message Start or End Events, Intermediate Throw Events, boundary Events, multiple EventDefinitions, Message Flow, Participant, Collaboration, CorrelationKey, CorrelationSubscription, Receive Task, Send Task, and repeated activation.
 
 The direct-address restriction is profile narrowing, not a claim that BPMN CorrelationKey is invalid or unnecessary in broader models.
 
@@ -71,7 +75,7 @@ The checked graph retains the complete source channel needed to distinguish two 
 ```ts
 type MessageChannel = DeepReadonly<{
   interfaceId: string;
-  operationId: string;
+  interfaceOperationId: string;
   messageId: string;
 }>;
 
@@ -82,7 +86,9 @@ type CheckedIntermediateCatchMessageEvent = DeepReadonly<{
 }>;
 ```
 
-Source admission validates the payload-free Message and the complete MessageEventDefinition → Operation → input Message reference chain before constructing this node. The private moddle graph does not cross the `@bpmn-lean/bpmn-source` boundary.
+`interfaceOperationId` always denotes the BPMN `Interface.operation` identity. It is not a Semantic Process operation ID, a transport operation, or an effect descriptor operation.
+
+Source admission validates the payload-free Message and the complete MessageEventDefinition → BPMN Interface Operation → input Message reference chain before constructing this node. The private moddle graph does not cross the `@bpmn-lean/bpmn-source` boundary.
 
 The source node lowers to a reusable wait operation:
 
@@ -96,13 +102,22 @@ type AwaitMessageOperation = DeepReadonly<{
   };
   input: string;
   output: string;
-  channel: MessageChannel;
+  message: {
+    elementId: string;
+    channel: MessageChannel;
+  };
 }>;
 ```
 
 `awaitMessage` means “consume one input token and create one subscription for an exact channel.” It does not encode throwing, routing across Processes, boundary interruption, payload mapping, or key extraction as dormant options.
 
-The admitted program contains `initiate`, `awaitMessage`, `awaitUserTask`, and `terminate`. The profile-parameterized admission capability must authorize exactly one operation of each kind and reject every additional or simultaneously enabled internal operation.
+The redundant `message.elementId` is the Intermediate Catch Event identity used to construct the runtime occurrence. Program validation requires it to be nonempty and equal `origin.elementId`, requires all three channel identifiers to be nonempty in their separate domains, requires the input and output control places to exist and differ, and requires the channel to equal the checked node's resolved channel under exact lowering equality.
+
+The new operation passes the [Semantic Process IL growth stop](../SEMANTIC-PROCESS-IL-SPEC.md#growth-across-bpmn-event-diversity) because a named A12 send-message consumer and a concrete Temporal Signal refinement risk require a subscription lifecycle not represented by an existing operation. `awaitUserTask` lacks a definition-bound Message channel and represents human task completion; `awaitEffect` commits outbound host work and result handling rather than passive inbound delivery. Reusing either would erase the discriminator that the semantic core must check. A generic Event operation remains rejected.
+
+The lowering-side discriminator uses two separately admitted source fixtures that hold the Catch Event ID and Sequence Flows fixed while replacing the sole Interface/Operation/Message chain and repointing both EventDefinition references. The checked channel and `awaitMessage.message.channel` must change to the replacement `(interfaceId, interfaceOperationId, messageId)` triple; a stale or fixture-constant lowerer must fail exact Lean lowering equality and the source mutation test. A separate hostile source containing both chains remains rejected by the exact root-definition multiset.
+
+The admitted program contains the exact operation multiset one `initiate`, one `awaitMessage`, one `awaitUserTask`, and one `terminate`. Profile-parameterized capability admits that multiset; reusable graph facts determine whether Message or User Task occurs first. Capability tests must reject an unknown profile, an existing profile, and every changed cardinality without adding a whole-program execution-surface predicate.
 
 ## Subscription identity, correlation input, and scope
 
@@ -132,7 +147,7 @@ type DeliverMessageStimulus = DeepReadonly<{
 }>;
 ```
 
-The caller names the exact semantic Process instance through `subscriptionId.processInstanceId`; the production client derives the existing collision-resistant Workflow address from that semantic identity. The core still checks the full occurrence and channel against committed subscription state.
+The caller supplies both fields. `subscriptionId` is the correlation selector: it names the exact semantic Process instance and subscription occurrence, and the production client derives the existing collision-resistant Workflow address from its Process-instance component. `channel` is a caller-supplied definition-consistency assertion copied from the public subscription, not a second correlation key. Wrong-component witnesses are synthetic test inputs over those caller-supplied fields; none is a channel value invented by Temporal or the semantic core.
 
 This is infrastructure-assisted instance routing in the bounded BPMN account. It is not BPMN key-based or context-based correlation, message-name matching, broadcast, or a global search over subscriptions.
 
@@ -146,7 +161,7 @@ An omitted payload and a JSON `null`, empty object, empty string, or Process-var
 
 ### `MSG-WAIT-01` — activate one Process-owned subscription
 
-When `awaitMessage` has one input token and no subscription for that activation exists, it consumes exactly one token and creates exactly one subscription with the complete occurrence identity and source channel.
+When `awaitMessage` has one input token and no subscription for that activation exists, it consumes exactly one token and creates exactly one subscription with the complete occurrence identity and definition-resolved channel in `awaitMessage.message`.
 
 Internal closure stops at the subscription. It does not create the output token or advance the trailing User Task.
 
@@ -154,7 +169,7 @@ This is a vendor-neutral BPMN rule.
 
 ### `MSG-DELIVER-01` — correlate and consume the exact subscription once
 
-A `deliverMessage` stimulus commits if and only if the Process is running and its complete subscription identity and channel equal one active subscription.
+A `deliverMessage` stimulus commits if and only if the Process is running, its complete `subscriptionId` directly addresses one active subscription, its caller-supplied channel equals that subscription's channel, and the active subscription channel still equals the admitted `awaitMessage.message.channel` for that element. The full identity performs correlation; the two channel equalities establish definition consistency and do not perform a global channel lookup.
 
 Commit removes that subscription, creates one token on the operation output, and resumes internal closure. In the admitted topology closure creates the trailing User Task occurrence and stops there.
 
@@ -162,7 +177,9 @@ The one-to-one direct-address match is a selected project profile rule over the 
 
 ### `MSG-REFUSE-01` — reject wrong and stale delivery without state change
 
-A delivery with a different Process instance, Event element, activation ordinal, interface, operation, or Message rejects with exact committed-state preservation.
+A delivery with a different Process instance, Event element, activation ordinal, Interface, Interface Operation, or Message rejects with exact committed-state preservation.
+
+A well-formed delivery applied before the addressed subscription is active rejects under the same no-active-subscription rule. In the supported production path no Workflow exists before Process start. A Signal accepted immediately after Workflow creation is queued after the already enqueued start stimulus, so the Message-first profile activates its subscription before that delivery reaches the core; the reverse User-Task-first profile rejects a delivery attempted while the User Task is still open because its Message subscription does not yet exist.
 
 A fresh command ID targeting an already consumed subscription is stale and rejects with exact state preservation while the trailing User Task keeps the Process live.
 
@@ -180,7 +197,15 @@ The stable message-wait state projects:
 
 After a matching delivery commits, no message subscription or message interaction remains and the existing trailing User Task projection is the only resumption surface.
 
-Canonical `activeWaits` ordering becomes User Task, Message, Timer, then effect by semantic kind, followed by element identity within each kind. This inserts Message without changing the relative order of any existing kind pair.
+Canonical `activeWaits` ordering becomes User Task, Message, Timer, then effect by semantic kind, followed by Unicode scalar-value element-ID order within each kind. This inserts Message without changing the relative order of any existing kind pair.
+
+## Owner-decision 6 ordering reopen
+
+Adding Message changes the closed wait-kind domain and therefore triggers owner decision 6 even though the selected graph never exposes mixed waits. Implementation must replace Lean's current within-kind program-order premise with an explicit element-ID sort, matching the TypeScript and CIB projectors. An order-coincidence theorem is not selected because it would preserve the fragile ID-sorted-program premise that this domain change is required to reopen.
+
+The synthetic Lean and TypeScript projection fixture must contain one wait of each of the four kinds with element IDs chosen so a global element-ID sort disagrees with the selected semantic-kind order. A second same-kind pair in reverse storage/program order must establish within-kind element-ID sorting rather than only the four-kind rank.
+
+`PAR-PROJECT-01` remains the owner of the canonical `activeWaits` grouping and `(kind, elementId)` order. Its proposition does not change, but its evidence row and synthetic lock must be restated over the new four-member kind domain. The Message capsule adds no parallel behavior and makes no claim about concurrent Message waits.
 
 ## Runtime-only and synthetic constructs
 
@@ -203,16 +228,18 @@ The minimum useful laws are:
 
 - exact `awaitMessage` activation creates one subscription and preserves its complete channel;
 - exact matching delivery consumes that one subscription and opens the trailing User Task;
-- any mismatch in the six address/channel components rejects with exact state preservation;
+- any mismatch in the six address/definition components rejects with exact state preservation;
 - a consumed subscription cannot be consumed again under a fresh command ID;
 - the start closure requires exactly two internal steps, fails at a one-step limit, and remains below the configured closure limit;
 - the post-message closure requires exactly one internal step;
 - every stable running state in the admitted program exposes exactly one resumption surface;
 - no admitted state enables more than one internal operation.
 
-The nearest checked non-law is “Message identity alone selects a subscription.” Two states with the same Message ID but a different subscription activation or Operation must not be treated as the same delivery target.
+The reverse User-Task-then-Message program is a required focused witness under the same profile capability. Its start closure exposes only the User Task, exact task completion exposes only the Message subscription, exact Message delivery terminates, each automatic boundary stays within the same closure limit, no stable state enables multiple internal operations, and every stable running state has exactly one public resumption surface. These are admission and preservation checks, not a second end-to-end scenario or a second semantic account.
 
-The targeted preservation gate must also retain an executable synthetic stranded-token rejection so admission cannot mistake non-terminal quiescence without an ingress surface for progress.
+The nearest checked non-law is “Message identity alone selects a subscription.” Two states with the same Message ID but a different subscription activation or BPMN Interface Operation must not be treated as the same delivery target.
+
+The exact source-to-result claim at risk is that generic graph admission plus the profile multiset lowers either legal order to the same mechanism sequence dictated by its Sequence Flows, and that closure stops at the first reachable external wait rather than advancing through it. The reference-chain lowering discriminator, both-order closure witnesses, operation-array permutation check, closure-bound failures, single-enabledness checks, and synthetic stranded-token rejection form the targeted preservation gate. It remains narrower than universal source-to-run preservation.
 
 ## Temporal hosting and refinement preflight
 
@@ -220,11 +247,43 @@ The targeted preservation gate must also retain an executable synthetic stranded
 
 The production adapter adds one typed Signal carrying exactly `DeliverMessageStimulus`. Signal is selected because message arrival is asynchronous ingress; Service acknowledgement means only that Temporal accepted the Signal for the addressed Workflow, not that BPMN correlation committed.
 
-The synchronous Signal handler validates the closed wire shape and command-identity reuse, then enqueues the stimulus. It does not inspect or mutate semantic subscription state. The existing single main Workflow loop remains the only caller of the pure semantic core and the only mutator of committed semantic state.
+The supported project client accepts `unknown`, validates the closed stimulus shape and addressed Process instance before calling Temporal, and rejects malformed input as typed adapter request failure `BpmnMessageIngressInvalid` without sending a Signal. A malformed payload introduced by raw Temporal access, an incompatible deployment, or corrupt history is outside the supported producer boundary and is an infrastructure/replay incompatibility, never `CommandOutcome.Rejected`.
 
-The canonical command observation records committed or rejected semantic processing. A caller requiring that result must read an authoritative application projection or the existing diagnostic trace Query after processing; this capsule does not mislabel Signal acceptance as `committed`.
+The synchronous Signal handler receives only the validated closed shape. For a new command ID it records the exact accepted stimulus and enqueues it. For an exact duplicate it leaves the first record and queue unchanged. Reuse of an accepted command ID with different well-formed content records `BpmnCommandIdentityConflict` as an adapter request failure for that attempted content without throwing from the Signal handler, failing a Workflow Task, or applying a semantic transition. The existing single main Workflow loop remains the only caller of the pure semantic core and the only mutator of committed semantic state.
 
 Signal-With-Start is excluded. The Process must already have been admitted and started. The Workflow enqueues the start stimulus before registering handlers, so any Signal accepted immediately after start is ordered after semantic start input.
+
+### Semantic result and lifecycle resolution
+
+Signal acknowledgement does not return `ProcessCommandResult`. The project `submitMessageDelivery` client sends the Signal and then resolves the exact accepted stimulus through a new read-only message-delivery-result Query backed by the Workflow's durable accepted-stimulus/result ledger. While processing is pending the Query returns `pending`; after the main loop records the command observation it returns the exact semantic outcome. The client then returns the existing `ProcessCommandResultKind.Semantic` envelope. `MSG-REFUSE-01` is therefore publicly distinguishable from Signal acceptance while the Workflow remains live.
+
+```ts
+type MessageDeliveryResolution = DeepReadonly<
+  | {
+      kind: "pending";
+      stimulus: DeliverMessageStimulus;
+    }
+  | {
+      kind: "semantic";
+      stimulus: DeliverMessageStimulus;
+      outcome: CommandOutcome;
+    }
+  | {
+      kind: "requestFailure";
+      stimulus: DeliverMessageStimulus;
+      failure: "commandIdentityConflict";
+    }
+>;
+
+type MessageDeliveryRecord = Exclude<
+  MessageDeliveryResolution,
+  { kind: "pending" }
+>;
+```
+
+The completed Process receipt gains a required `messageDeliveryRecords` collection containing each accepted exact Message stimulus and either its first semantic outcome or its typed identity-conflict request failure. Records preserve accepted Signal history order; exact duplicates add no record. This host ledger is deterministic under replay but is not canonical BPMN state or trace. It is required because the reverse User-Task-then-Message order can close on Message delivery before a result Query succeeds. On closed-execution resolution, the client validates the receipt and returns the retained semantic result for the exact stimulus, rethrows the recorded `BpmnCommandIdentityConflict` for conflicting content, returns `processClosed` only when no record exists for a distinct command, and returns `processUnknown` only when neither execution nor receipt is retained.
+
+Malformed input never enters `messageDeliveryRecords`. Exact duplicate Signals reuse the first record. A Signal accepted by Temporal but not yet processed may produce a transient `pending`; client deadline or Service unavailability remains infrastructure failure. The diagnostic trace Query remains harness-only and is not the production result API.
 
 ### Wait, ordering, duplicates, and closure
 
@@ -232,7 +291,7 @@ The subscription remains semantic-core state. Temporal stores only the Workflow 
 
 Signals are serialized in their durable Workflow-history order and enter the semantic core as explicit ordered stimuli. The exact profile has one subscription and no message race. Concurrent routing, fairness, global matching, and selection among multiple subscriptions are excluded.
 
-Two identical Signal deliveries with the same command ID and content are coalesced through the existing accepted-stimulus and result ledger. Two different command IDs are two semantic attempts: the first eligible delivery can commit and a later one must reject as stale if the Workflow remains live.
+Two identical Signal deliveries with the same command ID and content are coalesced through the accepted-stimulus and Message result ledger. Two different command IDs are two semantic attempts: the first eligible delivery can commit and a later one must reject as stale if the Workflow remains live.
 
 After the valid delivery, the existing User Task Update completes the Process. A Signal addressed only after Workflow closure is a Temporal closed-Workflow transport result, not a fabricated semantic stale rejection.
 
@@ -240,9 +299,13 @@ No timer, Activity, external effect, cancellation scope, retry policy, or Contin
 
 ### Host-capability obligation
 
-The newly reachable wait sets are exactly one Message subscription before delivery and exactly one User Task after delivery. Pre-start host admission must accept both and reject every mixed or multiple host-wait shape outside the profile.
+The host predicate classifies Message subscriptions as passive external ingress, in the same scheduling class as User Task Updates, not as host-driven Timer/effect work. It must add `awaitMessage` to that explicit vocabulary rather than rely on the absence of a Timer/effect case.
 
-The generic Signal handler can wake the main loop without a timer/effect scheduler branch. The runtime invariant throw remains defensive only; typed pre-start admission must establish the reachable wait-set contract before Workflow start.
+For Message then User Task, the reachable wait sets are exactly one passive Message subscription followed by one passive User Task. For User Task then Message, they are the same two singleton passive wait sets in reverse order. Pre-start host admission must accept both graph orders through the same operation multiset and generic graph facts. The generic Signal handler wakes the main loop without a timer/effect scheduler branch; no mixed or multiple wait set becomes reachable in this capsule. The runtime invariant throw remains defensive only.
+
+### R8 Signal-history amendment
+
+Owner approval explicitly narrows decision R8's zero-Signal assertion. `test:temporal` must continue to require zero Signal Events for every existing Update-, Timer-, and Activity-driven scenario. The Message history must instead contain exactly the submitted Message Signal Events with exact payload/content binding, including the Worker-down delivery, stale fresh-command delivery, exact duplicate, and identity-conflicting attempt; malformed client input produces none. Missing, extra, or payload-substituted Signal history must fail a seeded history mutation. This is an amendment to R8, not an inference from choosing Signal.
 
 ### Smallest live-history witness
 
@@ -251,13 +314,17 @@ The live witness must:
 1. start the exact admitted Process and observe one open Message subscription;
 2. stop the Worker;
 3. deliver one exact Signal while no Worker polls;
-4. start a replacement Worker and require the matching command to commit into the trailing User Task state;
-5. send a fresh-command stale delivery for the consumed subscription and require semantic rejection with unchanged User Task state;
+4. start a replacement Worker and require result resolution to return the matching semantic commit into the trailing User Task state;
+5. send a fresh-command stale delivery for the consumed subscription and require result resolution to return semantic rejection with unchanged User Task state;
 6. repeat the original Signal and require the first committed result without another transition;
-7. complete the User Task through the existing Update path;
-8. capture the disposable history, require the Signal Event and command observations, replay it, and clean the server.
+7. reuse the original command ID with a different well-formed channel and require `BpmnCommandIdentityConflict` without a Workflow Task failure or semantic transition;
+8. reject malformed client input before Signal submission and require no corresponding Signal Event;
+9. complete the User Task through the existing Update path;
+10. capture the disposable history, require exactly the submitted Signal Events and command/result reconciliation, replay it, and clean the server.
 
 The nearest adapter counterexample is a handler that advances the Process solely because the Signal addressed the Workflow, without checking the committed subscription channel and occurrence through the semantic core. A wrong-channel Signal must remain durably accepted by Temporal yet semantically rejected, separating transport acceptance from BPMN delivery.
+
+A separate focused reverse-order witness completes the leading User Task, observes the Message subscription, delivers the matching Signal that closes the Process, and recovers its semantic result from the completed receipt. That witness is required to prove the broader profile and host predicate do not depend on the primary scenario's trailing User Task remaining live.
 
 ## CIB Seven classification
 
@@ -267,38 +334,55 @@ The trailing User Task reuses existing `CIB-AGR-0001` and `CIB-OP-0001` only for
 
 Pinned CIB message evidence is therefore not a prerequisite for this direct-addressed standards slice. It becomes mandatory before selecting any CIB-dependent message rule or compatibility claim, including message-name/business-key matching, correlation to one versus all executions, variable payload delivery, unmatched-message failure, transaction timing, modeled throw behavior, or A12 send-message façade results. That later work must add the smallest relationship-register entry, probe, fidelity classification, and mutation together; this proposal supplies no placeholder ID.
 
+The five on-demand CIB conditions from the compatibility-scope decision are disposed explicitly:
+
+| On-demand condition | Disposition for this capsule |
+|---|---|
+| BPMN leaves a material operational choice and the selected profile adopts CIB's choice | No. Direct full-subscription addressing is an explicit project restriction; no CIB choice is adopted. |
+| Source uses a selected `camunda:*` extension | No. The admitted source is BPMN-only and rejects extension elements. |
+| A behavioral compatibility claim needs a pinned separating observation | No. CIB Message execution is absent from the declared target set and no compatibility claim is made. |
+| A CIB host mechanism or configuration can change the bounded public result | No. Temporal Signal is the selected project host; no CIB job, transaction, or RuntimeService behavior enters the result. |
+| An A12 adoption requirement cannot be expressed through an already selected CIB contract | Not yet. The A12 send-message façade is the known eventual consumer, but this standards slice deliberately does not claim its message-name/business-key/payload contract. Reopen CIB and A12 evidence before that adapter is selected. |
+
+Pre-activation delivery also adds no CIB question: pure semantic delivery with no active addressed subscription rejects, the supported Message-first Workflow orders start before Signal processing, the reverse profile can reject while its leading User Task remains open, and delivery to a nonexistent pre-start Workflow is an adapter `processUnknown`/transport classification rather than a CIB or BPMN result.
+
 ## Evidence matrix
 
 | Rule | BPMN/profile | Lean | TypeScript | CIB | Temporal | Negative witness and mutation |
 |---|---|---|---|---|---|---|
 | `MSG-WAIT-01` | Clauses 10.5.1 and 10.5.4 plus exact source profile | Declarative activation, evaluator, soundness, and exact wait law | Independent activation and projection | Not claimed | Query observes the core-owned wait before delivery | Mutation drops or changes the projected channel and the comparator must disagree |
-| `MSG-DELIVER-01` | Clause 8.4.2 plus direct-address profile restriction | Exact-match relation, evaluator, and consumption law | Independent exact match and consumption | Not claimed | Durable Signal reaches only the core queue; restart and replay preserve the committed result | Wrong-channel Signal is transport-accepted but semantically rejected |
-| `MSG-REFUSE-01` | Direct-address and one-consumption profile | Quantified mismatch/stale state-preservation law | Full mismatch, stale, duplicate-content, and identity-conflict cases | Not claimed | Fresh stale Signal rejects while Workflow is live; duplicate Signal reuses the first result | Mutation matches by Message ID alone and must accept a case the real account rejects |
-| `MSG-OBSERVE-01` | Observation profile | Exact canonical subscription/interaction projection | Independent canonical projection and ordering | Not claimed | Query/history/result reconciliation and replay | Comparator mutation removes the subscription or leaves it visible after consumption |
+| `MSG-DELIVER-01` | Clause 8.4.2 plus direct-address and definition-consistency profile restriction | Exact-address relation, channel-consistency invariant, evaluator, and consumption law | Independent exact address/definition check and consumption | Not claimed | Durable Signal reaches only the core queue; restart and result resolution preserve the committed result | Wrong-channel Signal is transport-accepted but semantically rejected |
+| `MSG-REFUSE-01` | Direct-address and one-consumption profile | Quantified mismatch/pre-activation/stale state-preservation law | Full mismatch, pre-activation, stale, duplicate-content, and identity-conflict cases | Not claimed | Message result Query/receipt distinguishes semantic refusal; malformed and identity-conflicting inputs retain adapter classifications | Mutation matches by Message ID alone and must accept a case the real account rejects |
+| `MSG-OBSERVE-01` | Observation profile plus `PAR-PROJECT-01` | Exact canonical subscription/interaction projection and four-kind element-sorted lock | Independent canonical projection and ordering | Not claimed | Query/history/result reconciliation and replay | Comparator mutation removes the subscription, leaves it visible after consumption, or globally sorts waits by element ID |
 
-Lean, TypeScript, and Temporal all consume the one TypeScript-produced checked graph and Semantic Process program. Lean independently recomputes checked-graph-to-program lowering but does not parse BPMN XML, so agreement cannot detect a shared XML-to-checked-channel defect. Source mutation tests must separately reject a changed `operationRef`, changed `inMessageRef`, added `itemRef`, and unresolved QName.
+Lean, TypeScript, and Temporal all consume the one TypeScript-produced checked graph and Semantic Process program. Lean independently recomputes checked-graph-to-program lowering but does not parse BPMN XML, so agreement cannot detect a shared XML-to-checked-channel defect. Source mutation tests must separately reject an inconsistent `operationRef`, inconsistent `inMessageRef`, added `itemRef`, unresolved QName, and extra root-definition chain. The paired valid-chain discriminator must additionally prove that checked projection and lowering preserve the resolved replacement triple rather than a fixture-constant value.
 
 ## Versioning consequences
 
-Implementation is a breaking pre-release contract replacement. It adds one checked node kind, one Semantic Process operation kind, one stimulus kind, one runtime wait and activation counter, one wait kind, one required `openMessageSubscriptions` state field, and one enabled-interaction variant.
+Implementation is a breaking pre-release contract replacement. It adds one checked node kind, one Semantic Process operation kind, one stimulus kind, one runtime wait and activation counter, one member of the closed `activeWait.kind` enum, one required `openMessageSubscriptions` state field, one enabled-interaction variant, one Message Signal, one result Query, and required Message delivery records in the completed receipt.
 
-The semantic profile, answer-free scenario, checked graph, Semantic Process program, canonical result, all JSON Schemas, Lean decoders/encoders, TypeScript producers/consumers, differential pipeline, Temporal Signal contract, fixtures, and tests must change atomically. No legacy reader, optional compatibility field, format counter, Workflow patch branch, or retained history is permitted before an immutable baseline exists.
+The semantic profile, answer-free scenario, checked graph, Semantic Process program, canonical result, all JSON Schemas, Lean decoders/encoders, TypeScript producers/consumers, Java CIB projector, differential pipeline, Temporal Signal/Query/client/receipt contracts, fixtures, and tests must change atomically. [PROFILE-PARAMETERIZED-ADMISSION-SPEC.md](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) must add the new capability and both-order preservation evidence; [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) must add asynchronous Signal result resolution, receipt recovery, malformed/conflict classification, and the R8 amendment; the pre-start host-capability predicate and its specification/tests must classify Message as passive ingress; [SEMANTIC-PROCESS-IL-SPEC.md](../SEMANTIC-PROCESS-IL-SPEC.md) must add the operation, well-formedness, lowering, runtime, and supported/absent boundaries; and the `PAR-PROJECT-01` evidence row must name the four-kind sorted lock.
 
-The existing five-arm `CommandOutcome` and completed Process receipt remain unchanged. Signal delivery adds no suspended outcome and no resume entry point: the Process is already represented as running with a public subscription, and the ordinary Workflow loop resumes when input arrives.
+Adding required `openMessageSubscriptions` changes the canonical state denominator from ten to eleven top-level fields. All ten retained CIB evidence envelopes must gain the empty field through the explicit `./scripts/pnpm.sh run replace:cib-evidence` command after the Java projector emits it. The canonical CIB fidelity table and schema-depth guard must change from their reviewed ten-field denominator to the complete eleven-field denominator and classify the empty Message collection and every nested Message field honestly. Ordinary verification must never rewrite those artifacts.
 
-No dependency addition, removal, upgrade, vendoring, or license-bound source is required.
+The existing `CommandOutcome` arms and `ProcessCommandResult` union remain unchanged, but the completed receipt does change by gaining the Message delivery ledger used for Signal-result recovery. Signal delivery adds no suspended semantic outcome and no core resume entry point: the Process is already represented as running with a public subscription, and the ordinary Workflow loop resumes when input arrives. `BpmnMessageIngressInvalid` and `BpmnCommandIdentityConflict` remain adapter request failures outside `CommandOutcome`.
+
+Owner approval must explicitly amend R8 from a universal zero-Signal assertion to zero Signal Events for every pre-existing path plus exact, mutation-sensitive Signal Events for the Message path. Without that owner decision, implementation remains blocked even if every other edit is accepted.
+
+No legacy reader, optional compatibility field, format counter, Workflow patch branch, or retained history is permitted before an immutable baseline exists. No dependency addition, removal, upgrade, vendoring, or license-bound source is required.
 
 ## Required, optional, and excluded
 
 Required for capsule closure:
 
-- exact source admission and lowering for the selected payload-free catch shape;
-- complete occurrence and channel identity;
+- node-kind/profile-multiset admission plus generic graph validation for both legal mechanism orders, with exact source admission and lowering for the payload-free catch;
+- complete occurrence identity, caller-supplied definition consistency, operation-payload element identity, and the reference-selection lowering discriminator;
 - one-consumption, wrong/stale refusal, duplicate-content behavior, and public subscription projection;
 - declarative Lean relation, evaluator soundness, useful laws, and checked non-law;
 - independent TypeScript behavior;
-- targeted closure, multiple-enabledness, resumability, and host-admission checks;
-- durable Signal ingress, Worker absence, live stale refusal, duplicate delivery, history, replay, cleanup, and a meaningful mutation.
+- targeted both-order closure, multiple-enabledness, resumability, stranded-state, four-kind ordering, and passive-ingress host-admission checks;
+- durable Signal ingress, malformed/conflicting request classification, result Query/receipt recovery, Worker absence, live stale refusal, duplicate delivery, exact Signal history, replay, cleanup, and meaningful semantic/history mutations;
+- atomic eleven-field canonical replacement, retained CIB evidence replacement, fidelity/guard update, lifecycle/admission/IL specification updates, and the owner-approved R8 amendment.
 
 Optional after this capsule, under separate approval:
 
@@ -318,6 +402,8 @@ Excluded:
 
 ## Approval test
 
-Owner approval should answer one question: is direct complete-subscription addressing an acceptable first standards slice, with BPMN key correlation and modeled throw explicitly deferred?
+Owner approval should answer this product question: may the first receive-message capability require the caller to know the running Process instance and exact open subscription, accept no payload, resume that subscription once, and defer send-by-message-name/business-key, modeled throw, and A12 façade compatibility?
 
-If yes, implementation begins from this proposal under red/green TDD and the complete atomic contract boundary above. If no, do not edit production semantics; replace this proposal with the chosen correlation and catch/throw boundary first.
+Approval must also say yes to two consequences: implement element-ID sorting in Lean and restate `PAR-PROJECT-01` evidence over four wait kinds under decision 6; and amend R8 so all existing paths retain zero-Signal evidence while this Message path requires exact Signal history.
+
+If all three answers are yes, implementation begins from this proposal under red/green TDD and the complete atomic contract boundary above. If any answer is no, do not edit production semantics; replace the rejected correlation, ordering, or Temporal-history boundary first.
