@@ -243,7 +243,7 @@ Intermediate Catch Timer PT1S
 None End
 ```
 
-The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) own their semantic rules, observations, laws, non-laws, witnesses, runtime-information invariants, evidence matrices, assurance boundaries, and exclusions. The [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source contract, six admitted operations, lowering, well-formedness, exact Lean proof boundary, event-growth policy, maintained obligations, and stop criteria.
+The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) own their semantic rules, observations, laws, non-laws, witnesses, runtime-information invariants, evidence matrices, assurance boundaries, and exclusions. The [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source contract, current operation families, lowering, well-formedness, exact Lean proof boundary, event-growth policy, maintained obligations, and stop criteria.
 
 ## Ordered work
 

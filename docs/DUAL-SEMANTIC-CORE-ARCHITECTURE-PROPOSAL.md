@@ -228,7 +228,7 @@ If the trigger occurs, the rejected experiment design below is the starting poin
 ### Included
 
 - Java 21;
-- the current six Semantic Process operations;
+- the six Semantic Process operations that existed when this experiment was rejected;
 - the sequential User Task, balanced parallel fork/join, and exact `PT1S` timer slices;
 - strict program and stimulus admission;
 - private Java runtime state;
