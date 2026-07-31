@@ -28,6 +28,31 @@ import {
   runPipelineCases,
 } from "./pipeline-harness.ts";
 
+/**
+ * Warm-pipeline feedback budget in milliseconds.
+ *
+ * The default protects the developer feedback loop on a workstation. It is a
+ * host-speed observation, not a semantic invariant, so a slower environment
+ * declares its own budget through `BPMN_PIPELINE_WARM_BUDGET_MS` instead of
+ * weakening the workstation figure for everyone. Every lane still asserts a
+ * hard ceiling, and an overridden budget is announced with the measurement.
+ */
+const defaultWarmBudgetMs = 15_000;
+
+function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
+  const declared = environment.BPMN_PIPELINE_WARM_BUDGET_MS;
+  if (declared === undefined) {
+    return defaultWarmBudgetMs;
+  }
+  const budget = Number.parseFloat(declared);
+  if (!Number.isFinite(budget) || budget <= 0) {
+    throw new TypeError(
+      `BPMN_PIPELINE_WARM_BUDGET_MS must be a positive number of milliseconds, received ${JSON.stringify(declared)}`,
+    );
+  }
+  return budget;
+}
+
 const cleanCibProjection = {
   deployments: 0,
   processDefinitions: 0,
@@ -334,9 +359,15 @@ test(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,
     );
+    const warmBudget = warmBudgetMs(process.env);
+    if (warmBudget !== defaultWarmBudgetMs) {
+      console.log(
+        `BPMN_PIPELINE_WARM_BUDGET ${warmBudget.toFixed(0)}ms declared instead of the ${defaultWarmBudgetMs}ms workstation budget`,
+      );
+    }
     assert.ok(
-      report.phaseMs.warmTotal < 15_000,
-      `warm pipeline took ${report.phaseMs.warmTotal.toFixed(3)}ms`,
+      report.phaseMs.warmTotal < warmBudget,
+      `warm pipeline took ${report.phaseMs.warmTotal.toFixed(3)}ms against a ${warmBudget.toFixed(0)}ms budget`,
     );
     if (report.buildMode === "measured") {
       const coldTotal = report.phaseMs.coldTotal;

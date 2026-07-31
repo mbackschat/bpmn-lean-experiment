@@ -64,4 +64,8 @@ jobs:
       - name: Verify
         env:
           CI: "true"
+          # Shared runners are slower than the workstation the 15s warm
+          # feedback budget targets: ubuntu-latest measured 19.6s. This declares
+          # the CI ceiling explicitly rather than weakening the local budget.
+          BPMN_PIPELINE_WARM_BUDGET_MS: "40000"
         run: ./scripts/verify.sh
