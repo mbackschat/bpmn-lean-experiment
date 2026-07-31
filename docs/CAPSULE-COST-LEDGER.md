@@ -19,6 +19,7 @@ The denominator begins when commit-bounded measurement became mandatory. Earlier
 | [Process-start data](capsules/PROCESS-START-DATA-SPEC.md) | `416df39..07e7f17` | `+289/-77` | `+104/-36` | Unknown | Smallest measured data increment; reuses Process scope and the existing start boundary. |
 | [Runnable Temporal MVP](RUNNABLE-TEMPORAL-MVP-SPEC.md) | `9b58437..32df044` | `+950/-132` | `+58/-22` | Unknown | Adds the first strict external-runtime config, command, event/result, exit, and orchestration boundary. |
 | [Ordinary embedded Sub-Process completion](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) | `5b34977..a59f8a3` | `+5266/-1698` | `+283/-158` | Unknown | Adds the first definition/runtime occurrence ownership model and atomically replaces all consumers; future nested-scope capsules should reuse this foundation and be materially smaller unless they add another cross-layer contract. |
+| [Embedded Sub-Process Error propagation](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) | `be7845d..d07f893` | `+3293/-398` | `+203/-120` | Unknown | Materially smaller than the ordinary completion foundation while adding a new checked-node and transition family across every evidence lane; regional cancellation and direct-parent handler resolution reuse the existing scope-occurrence model as intended. |
 
 ## Unknown historical measurements
 
