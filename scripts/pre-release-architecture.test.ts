@@ -71,6 +71,46 @@ test("keeps active code on one replace-in-place pre-release contract", async () 
   assert.deepEqual(findings, []);
 });
 
+test("starts every cached ephemeral server through the owner that creates its cache", async () => {
+  // A cached-download executable needs its download directory to exist first.
+  // The owner creates it, so a second configuration site would reintroduce a
+  // gate that passes only where an earlier run left the cache behind.
+  const executableMarker = ["cached", "-download"].join("");
+  const owner = path.join(
+    "packages/temporal-adapter/src",
+    "ephemeral-server.ts",
+  );
+  const adapterRoots = [
+    "packages/temporal-adapter/src",
+    "packages/temporal-adapter/test",
+    "packages/temporal-adapter/calibration",
+  ];
+  const files = (await Promise.all(adapterRoots.map(sourceFiles))).flat();
+  const configurationSites: string[] = [];
+
+  for (const relativePath of files) {
+    if (relativePath === owner) {
+      continue;
+    }
+    const source = await readFile(path.join(projectRoot, relativePath), "utf8");
+    if (source.includes(executableMarker)) {
+      configurationSites.push(relativePath);
+    }
+  }
+
+  assert.deepEqual(
+    configurationSites,
+    [],
+    `only ${owner} may configure a cached ephemeral server executable`,
+  );
+  const ownerSource = await readFile(path.join(projectRoot, owner), "utf8");
+  assert.match(
+    ownerSource,
+    /mkdir\([^)]*\{\s*recursive:\s*true\s*\}/u,
+    `${owner} must create the download directory before starting a server`,
+  );
+});
+
 test("keeps pre-release Temporal replay evidence disposable", async () => {
   const temporalTestFiles = await sourceFiles("packages/temporal-adapter/test");
   assert.deepEqual(

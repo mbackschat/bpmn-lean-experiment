@@ -28,7 +28,7 @@ import type {
   StartProcessStimulus,
   StateObservation,
 } from "@bpmn-lean/semantic-core";
-import { TestWorkflowEnvironment } from "@temporalio/testing";
+import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import { Worker } from "@temporalio/worker";
 import type {
   WorkflowHandle,
@@ -42,6 +42,7 @@ import {
   ProcessCommandResultKind,
   bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
+  createCachedLocalEnvironment,
   isCompletedProcessReceipt,
   startBpmnProcess,
   submitMessageDelivery,
@@ -97,17 +98,9 @@ test("Signal delivery survives Worker absence and resolves live or from the comp
     "intermediate-catch-message-reverse",
   );
   const environment = await withDeadline(
-    TestWorkflowEnvironment.createLocal({
-      server: {
-        executable: {
-          type: "cached-download",
-          version: "v1.8.1",
-          downloadDir: temporalCacheDirectory,
-        },
-      },
-      client: {
-        identity: "bpmn-lean-message-probe",
-      },
+    createCachedLocalEnvironment({
+      identity: "bpmn-lean-message-probe",
+      downloadDirectory: temporalCacheDirectory,
     }),
     40_000,
     "Temporal Message environment startup",

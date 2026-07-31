@@ -3,6 +3,7 @@ export * from "./command-identity.js";
 export * from "./contracts.js";
 export * from "./deterministic-sha256.js";
 export * from "./effect-probe.js";
+export * from "./ephemeral-server.js";
 export * from "./effect-transport.js";
 export * from "./harness-evidence.js";
 export * from "./host-admission.js";

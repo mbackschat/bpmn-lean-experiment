@@ -22,7 +22,7 @@ import {
   WorkflowExecutionAlreadyStartedError,
 } from "@temporalio/client";
 import type { WorkflowHandle } from "@temporalio/client";
-import { TestWorkflowEnvironment } from "@temporalio/testing";
+import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import { Worker } from "@temporalio/worker";
 
 import type { OpenUserTask } from "@bpmn-lean/semantic-core";
@@ -44,6 +44,7 @@ import {
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   contentBoundUpdateId,
+  createCachedLocalEnvironment,
   isCompletedProcessReceipt,
   processWorkflowId,
   startBpmnProcess,
@@ -80,17 +81,9 @@ test("closed Workflow retains accepted command result without accepting a new co
   assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
 
   const environment = await withDeadline(
-    TestWorkflowEnvironment.createLocal({
-      server: {
-        executable: {
-          type: "cached-download",
-          version: "v1.8.1",
-          downloadDir: temporalCacheDirectory,
-        },
-      },
-      client: {
-        identity: "bpmn-lean-lifecycle-probe",
-      },
+    createCachedLocalEnvironment({
+      identity: "bpmn-lean-lifecycle-probe",
+      downloadDirectory: temporalCacheDirectory,
     }),
     40_000,
     "Temporal lifecycle environment startup",

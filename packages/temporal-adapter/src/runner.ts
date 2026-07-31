@@ -1,4 +1,3 @@
-import { mkdir } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 
 import type {
@@ -13,6 +12,10 @@ import type {
   WorkflowHandle,
 } from "@temporalio/client";
 import { TestWorkflowEnvironment } from "@temporalio/testing";
+import {
+  createCachedLocalEnvironment,
+  createCachedTimeSkippingEnvironment,
+} from "./ephemeral-server.js";
 import {
   bpmnOpenUserTasksQueryName,
   bpmnTraceQueryName,
@@ -107,23 +110,11 @@ export class TemporalScenarioRunner {
   static async create(
     options: TemporalScenarioRunnerOptions,
   ): Promise<TemporalScenarioRunner> {
-    await withDeadline(
-      mkdir(options.downloadDirectory, { recursive: true }),
-      operationDeadlineMs,
-      "Temporal CLI cache creation",
-    );
     const environment = await withDeadline(
-      TestWorkflowEnvironment.createLocal({
-        server: {
-          executable: {
-            type: "cached-download",
-            version: options.cliVersion,
-            downloadDir: options.downloadDirectory,
-          },
-        },
-        client: {
-          identity: temporalTestIdentity,
-        },
+      createCachedLocalEnvironment({
+        identity: temporalTestIdentity,
+        downloadDirectory: options.downloadDirectory,
+        cliVersion: options.cliVersion,
       }),
       environmentStartupDeadlineMs,
       "Temporal environment startup",
@@ -134,23 +125,10 @@ export class TemporalScenarioRunner {
   static async createTimeSkipping(
     options: TemporalTimeSkippingRunnerOptions,
   ): Promise<TemporalScenarioRunner> {
-    await withDeadline(
-      mkdir(options.downloadDirectory, { recursive: true }),
-      operationDeadlineMs,
-      "Temporal test-server cache creation",
-    );
     const environment = await withDeadline(
-      TestWorkflowEnvironment.createTimeSkipping({
-        server: {
-          executable: {
-            type: "cached-download",
-            version: "default",
-            downloadDir: options.downloadDirectory,
-          },
-        },
-        client: {
-          identity: temporalTestIdentity,
-        },
+      createCachedTimeSkippingEnvironment({
+        identity: temporalTestIdentity,
+        downloadDirectory: options.downloadDirectory,
       }),
       environmentStartupDeadlineMs,
       "Temporal time-skipping environment startup",
