@@ -10,5 +10,7 @@ export * from "./message-delivery-ledger.js";
 export * from "./process-address.js";
 export * from "./process-client.js";
 export * from "./runner.js";
+export * from "./scenario-admission.js";
+export * from "./scenario-stimulus-sequencing.js";
 export * from "./timer-command.js";
 export { isCompletedProcessReceipt } from "./runner-support.js";

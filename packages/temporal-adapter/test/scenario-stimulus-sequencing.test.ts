@@ -8,10 +8,10 @@ import type {
   CompleteUserTaskInstanceStimulus,
   Scenario,
 } from "@bpmn-lean/semantic-core";
-
 import {
   requiresHostProgressBeforeCompletion,
-} from "../dist/scenario-stimulus-sequencing.js";
+} from "@bpmn-lean/temporal-adapter";
+
 import {
   loadJson,
   requiredScenarioUrl,

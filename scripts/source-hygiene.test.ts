@@ -131,6 +131,54 @@ function directTypeScriptHarnessFiles(): string[] {
   return shownConfig.files.filter((path) => !path.endsWith(".d.ts"));
 }
 
+/**
+ * Specifiers TypeScript resolves: `from` clauses, side-effect imports, and
+ * literal dynamic imports.
+ *
+ * `new URL("../dist/workflows.js", import.meta.url)` is deliberately outside
+ * this pattern. A runtime bundler path is not a resolved module specifier, so
+ * it places no requirement on the type gate.
+ */
+const resolvedSpecifierPattern =
+  /(?:\bfrom\s*|\bimport\s*\(?\s*)["']([^"']+)["']/gu;
+
+/**
+ * Lines that can carry an import statement.
+ *
+ * A line whose first nonblank character opens a string literal is quoted
+ * fixture text — policy tests and generators contain import syntax as data, and
+ * a text scanner cannot otherwise separate the two. Real statements begin with
+ * `import`, `export`, or the closing brace of a multi-line clause.
+ */
+function importBearingLines(source: string): string[] {
+  return source
+    .split(/\r?\n/u)
+    .filter((line) => !/^\s*["'`]/u.test(line));
+}
+
+function isProjectBuildOutput(specifier: string): boolean {
+  const projectOwned =
+    specifier.startsWith(".") || specifier.startsWith("@bpmn-lean/");
+  return projectOwned && /(?:^|\/)dist\//u.test(specifier);
+}
+
+/**
+ * Reports resolved specifiers that reach into project build output.
+ *
+ * The harness type gate maps `@bpmn-lean/*` to package sources so it needs no
+ * prior build. A `dist/` specifier reintroduces an undeclared generated input:
+ * it type-checks against whatever declarations an earlier build happened to
+ * leave behind, and a clean checkout cannot resolve it at all. A published
+ * dependency's own `dist` directory stays admissible.
+ */
+function generatedOutputImports(path: string, source: string): string[] {
+  return importBearingLines(source)
+    .flatMap((line) => [...line.matchAll(resolvedSpecifierPattern)])
+    .flatMap(([, specifier]) => (specifier === undefined ? [] : [specifier]))
+    .filter(isProjectBuildOutput)
+    .map((specifier) => `${path}: ${specifier}`);
+}
+
 function erasableSyntaxDiagnostics(
   paths: ReadonlyArray<string>,
   environment: NodeJS.ProcessEnv = process.env,
@@ -321,6 +369,43 @@ test("direct TypeScript syntax rejection is color-independent", () => {
   } finally {
     unlinkSync(pendingSource);
   }
+});
+
+test("the build-output policy separates static specifiers from runtime paths", () => {
+  assert.deepEqual(
+    generatedOutputImports(
+      "probe.test.ts",
+      [
+        'import { helper } from "../dist/helper.js";',
+        "import {",
+        "  sequencing,",
+        '} from "../dist/sequencing.js";',
+        'export { law } from "./dist/law.js";',
+        'import "@bpmn-lean/temporal-adapter/dist/side-effect.js";',
+        'const late = await import("./dist/late.js");',
+        'import { Ajv2020 } from "ajv/dist/2020.js";',
+        'const bundle = new URL("../dist/workflows.js", import.meta.url);',
+        'import { contract } from "@bpmn-lean/semantic-core";',
+      ].join("\n"),
+    ),
+    [
+      "probe.test.ts: ../dist/helper.js",
+      "probe.test.ts: ../dist/sequencing.js",
+      "probe.test.ts: ./dist/law.js",
+      "probe.test.ts: @bpmn-lean/temporal-adapter/dist/side-effect.js",
+      "probe.test.ts: ./dist/late.js",
+    ],
+  );
+});
+
+test("the harness type gate resolves no project build output", () => {
+  assert.deepEqual(
+    directTypeScriptHarnessFiles().flatMap((path) =>
+      generatedOutputImports(path, readFileSync(path, "utf8")),
+    ),
+    [],
+    "the harness gate must type-check from package sources alone; import the package entry point instead of its build output",
+  );
 });
 
 test("direct TypeScript harnesses use only erasable syntax", () => {

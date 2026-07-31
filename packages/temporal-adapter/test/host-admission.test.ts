@@ -21,10 +21,8 @@ import {
   TemporalHostCapabilityResultKind,
   assessBpmnProcessAdmission,
   assessTemporalHostCapability,
-} from "@bpmn-lean/temporal-adapter";
-import {
   requireScenarioAdmission,
-} from "../dist/scenario-admission.js";
+} from "@bpmn-lean/temporal-adapter";
 
 const limits = Object.freeze({
   maxBytes: 1024 * 1024,
