@@ -34,6 +34,59 @@ async function markdownFiles(
   return nested.flat();
 }
 
+/**
+ * Reference checkouts recorded in `docs/SOURCES.md` live beside this
+ * repository, so their relative links resolve only on a host that has cloned
+ * them. See the reference and source discipline in `CLAUDE.md`.
+ */
+const referenceCheckoutRoot = path.resolve(projectRoot, "../oss");
+
+const LinkScope = {
+  Repository: "repository",
+  ReferenceCheckout: "referenceCheckout",
+  Foreign: "foreign",
+} as const;
+type LinkScope = (typeof LinkScope)[keyof typeof LinkScope];
+
+function contains(root: string, resolved: string): boolean {
+  const relative = path.relative(root, resolved);
+  return (
+    relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative)
+  );
+}
+
+function linkScope(resolved: string): LinkScope {
+  if (contains(projectRoot, resolved)) {
+    return LinkScope.Repository;
+  }
+  return contains(referenceCheckoutRoot, resolved)
+    ? LinkScope.ReferenceCheckout
+    : LinkScope.Foreign;
+}
+
+/**
+ * Whether an unresolvable target is a defect.
+ *
+ * A missing reference checkout is an absent research input, which every clean
+ * checkout and CI run has; a target that escapes this repository without
+ * landing in the reference tree is a broken link, including a relative path
+ * with one `..` too many.
+ */
+function requiresResolution(scope: LinkScope): boolean {
+  switch (scope) {
+    case LinkScope.Repository:
+      return true;
+    case LinkScope.ReferenceCheckout:
+      return false;
+    case LinkScope.Foreign:
+      return true;
+    default: {
+      const unreachable: never = scope;
+      return unreachable;
+    }
+  }
+}
+
 /** The leading `split` segment, or the whole value when no separator occurs. */
 function firstSegment(value: string, separator: string | RegExp): string {
   const [first] = value.split(separator);
@@ -64,6 +117,7 @@ test("keeps project-authored local Markdown links resolvable", async () => {
     ...(await Promise.all(documentRoots.map(markdownFiles))).flat(),
   ];
   const missing: string[] = [];
+  const absentReferences: string[] = [];
 
   for (const relativeDocumentPath of files) {
     const documentPath = path.join(projectRoot, relativeDocumentPath);
@@ -73,12 +127,50 @@ test("keeps project-authored local Markdown links resolvable", async () => {
       try {
         await access(resolved);
       } catch {
-        missing.push(`${relativeDocumentPath} -> ${target}`);
+        const scope = linkScope(resolved);
+        const finding = `${relativeDocumentPath} -> ${target}`;
+        if (requiresResolution(scope)) {
+          missing.push(finding);
+        } else {
+          absentReferences.push(finding);
+        }
       }
     }
   }
 
   assert.deepEqual(missing, []);
+  if (absentReferences.length > 0) {
+    // Announced rather than silent: this run verified fewer links than a host
+    // with the recorded reference checkouts present.
+    console.log(
+      `MARKDOWN_LINK_CHECK: ${absentReferences.length} reference-checkout links unverified because ${referenceCheckoutRoot} is absent`,
+    );
+  }
+});
+
+test("link resolution separates repository links from reference checkouts", () => {
+  assert.equal(
+    linkScope(path.join(projectRoot, "docs/PLAN.md")),
+    LinkScope.Repository,
+  );
+  // The exact form `docs/SOURCES.md` records, which a clean checkout and CI
+  // cannot resolve.
+  assert.equal(
+    linkScope(
+      path.resolve(path.join(projectRoot, "docs"), "../../oss/cibseven/cibseven"),
+    ),
+    LinkScope.ReferenceCheckout,
+  );
+  // One `..` too many escapes the repository without reaching the reference
+  // tree, so it stays a broken link rather than an absent research input.
+  assert.equal(
+    linkScope(path.resolve(projectRoot, "../PLAN.md")),
+    LinkScope.Foreign,
+  );
+
+  assert.equal(requiresResolution(LinkScope.Repository), true);
+  assert.equal(requiresResolution(LinkScope.ReferenceCheckout), false);
+  assert.equal(requiresResolution(LinkScope.Foreign), true);
 });
 
 test("keeps maintained documentation indexed and role-named", async () => {
