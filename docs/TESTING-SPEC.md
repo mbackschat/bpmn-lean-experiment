@@ -65,7 +65,7 @@ There is no JavaScript exception left: every project-authored module is strict T
 
 The semantic-core type-test configuration compiles without emitting JavaScript and locks developer-facing contract properties that runtime tests cannot observe. Its `DeepReadonly<T>` witness requires top-level, nested, array-element, tuple-element, and discriminated-union payload mutation to fail at compile time while callback types remain callable and tuples retain exact positions. `test:semantic-core` and `test:semantic` both run this gate.
 
-The Temporal focused and pipeline gates start a local server and may need authorization to bind ports in a managed sandbox. They use pinned CLI `v1.8.1` cached under ignored `.cache/temporal-cli/`.
+The Temporal gates start a local server. In a managed sandbox, request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:temporal`, `./scripts/pnpm.sh run test:pipeline`, or `./scripts/pnpm.sh run test:timer-time-skipping`; do not run a restricted probe first. An ephemeral-server startup error containing `Operation not permitted` or `EPERM` identifies sandbox-denied local binding, not a port collision or semantic-test failure. The gates use pinned CLI `v1.8.1` cached under ignored `.cache/temporal-cli/`.
 
 ## Red/green semantic workflow
 

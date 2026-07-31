@@ -6,6 +6,12 @@ import { fileURLToPath } from "node:url";
 const verifyScriptPath = fileURLToPath(
   new URL("./verify.sh", import.meta.url),
 );
+const contributorGuidePath = fileURLToPath(
+  new URL("../CLAUDE.md", import.meta.url),
+);
+const testingSpecPath = fileURLToPath(
+  new URL("../docs/TESTING-SPEC.md", import.meta.url),
+);
 const checkedSourceRelationMainPath = fileURLToPath(
   new URL(
     "../BpmnSemantics/Experiments/CheckedSourceRelationMain.lean",
@@ -43,6 +49,18 @@ test("default verification includes the focused Temporal history gate", async ()
     verifyScriptPath,
     "./scripts/pnpm.sh run test:temporal",
   );
+});
+
+test("managed-sandbox guidance preauthorizes every Temporal server gate", async () => {
+  const contributorGuide = await readFile(contributorGuidePath, "utf8");
+  const testingSpec = await readFile(testingSpecPath, "utf8");
+  for (const source of [contributorGuide, testingSpec]) {
+    assert.match(source, /managed sandbox/i);
+    assert.match(source, /before (?:the )?first attempt/i);
+    assert.match(source, /`\.\/scripts\/verify\.sh`/);
+    assert.match(source, /`\.\/scripts\/pnpm\.sh run test:temporal`/);
+    assert.match(source, /`\.\/scripts\/pnpm\.sh run test:pipeline`/);
+  }
 });
 
 test("default verification builds and executes the checked-source proof experiment", async () => {

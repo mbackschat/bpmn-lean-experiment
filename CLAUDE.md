@@ -257,6 +257,8 @@ For CIB or Temporal source changes, preserve a clean pinned evidence lane and fo
 
 The Lean toolchain is pinned in [lean-toolchain](lean-toolchain) and currently has no external Lake packages.
 
+In a managed sandbox, agents must request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:temporal`, `./scripts/pnpm.sh run test:pipeline`, or `./scripts/pnpm.sh run test:timer-time-skipping`. Do not probe by running one of these commands inside the restricted sandbox first. An ephemeral Temporal server startup error containing `Operation not permitted` or `EPERM` means the sandbox denied the local listener; it is not evidence of a port collision or a failing semantic test.
+
 Current verification gate:
 
 ```sh
