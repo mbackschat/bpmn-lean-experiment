@@ -1,0 +1,19 @@
+version: 2
+
+# Workflow actions are pinned to exact commits, which trades silent drift for
+# silent staleness. These updates arrive as pull requests that run the complete
+# verification matrix and require the explicit dependency approval recorded in
+# CLAUDE.md; nothing upgrades itself.
+#
+# Only the workflow ecosystem is enabled. Lake, Node, pnpm, and Maven versions
+# are pinned deliberately alongside a semantic profile and toolchain, so their
+# upgrades stay owner-initiated rather than proposed on a schedule.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "ci(deps)"
+    open-pull-requests-limit: 3
