@@ -247,7 +247,7 @@ The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Intermed
 
 ## Ordered work
 
-1. **Next documentation boundary — embedded Sub-Process Error propagation:** rebase the [retained proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) on the implemented ordinary-scope foundation, run the documentation and infrastructure gates, and return it for owner approval without semantic implementation.
+1. **Owner checkpoint — embedded Sub-Process Error propagation:** review the [rebased proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) and approve or reject its direct-parent exact-code product boundary, structurally present but unreachable normal route, atomic throw/catch/cancel closure, unchanged runtime/public state shapes, and recommended optional CIB Seven `2.2.0` public-agreement lane. Do not begin semantic implementation before that decision.
 
 Completed commit-bounded capsule measurements live in the [capsule cost ledger](CAPSULE-COST-LEDGER.md); implemented and absent claims live in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). Git and the owning specifications retain completed implementation history.
 
@@ -291,7 +291,9 @@ The ordinary embedded Sub-Process completion capsule is closed at a59f8a3 under 
 
 The reusable artifact roundtrip now discovers profiles, scenarios, and retained evidence; requires exact registry and pipeline coverage; checks CIB evidence routing and normative-only separation; and requires one seeded semantic mutation per pipeline case. Its owning rules are in [TESTING-SPEC.md](TESTING-SPEC.md).
 
-Resume with the single ordered item above: rebase the [embedded Sub-Process Error-propagation proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) on the implemented definition-scope and runtime-occurrence foundation, then return it for owner approval. Do not implement Error propagation in that change.
+The [embedded Sub-Process Error-propagation proposal](capsules/SUBPROCESS-ERROR-PROPAGATION-PROPOSAL.md) is rebased on the implemented definition-scope, runtime-occurrence, ownership, normal-completion, passive-hosting, and artifact-roundtrip foundations. It adds only checked Error/boundary definition facts, `throwError`, direct-parent handler resolution, and regional cancellation; the current runtime-state, public observation, stimulus, command-result, and outcome shapes remain unchanged.
+
+Resume at the single owner checkpoint above. The recommendation is to approve the exact vendor-neutral boundary and include its bounded CIB Seven `2.2.0` phase-zero/public-agreement lane; if the probe disagrees, implementation must stop for relationship classification rather than importing CIB behavior into BPMN meaning. Do not implement Error propagation before that approval.
 
 The compositional-admission experiment remains accepted and frozen; do not begin another stage without a documented reopen trigger and owner approval. The runnable MVP remains implemented and owns no Temporal server or port lifecycle.
 
