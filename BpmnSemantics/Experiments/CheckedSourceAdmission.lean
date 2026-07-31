@@ -122,6 +122,13 @@ private def excludedExclusiveGateway : CheckedNode :=
   .exclusiveGateway ⟨"Choice"⟩
     [⟨"Flow_First"⟩, ⟨"Flow_Second"⟩] ⟨"Flow_Default"⟩
 
+private def excludedMessageCatch : CheckedNode :=
+  .intermediateCatchMessageEvent ⟨"MessageCatch"⟩
+    { interfaceId := ⟨"Interface"⟩
+      interfaceOperationId := ⟨"Operation"⟩
+      messageId := ⟨"Message"⟩
+    }
+
 private def excludedBoundaryRoute : CheckedBpmnErrorRoute :=
   { boundaryEventId := ⟨"BoundaryError"⟩
     boundaryEventName := none
@@ -157,6 +164,11 @@ theorem composedWaitSurfaceIsExact :
 theorem exclusiveGatewayRemainsOutsideFrozenExperiment :
     nodeArityValid twoSegmentSource excludedExclusiveGateway = false ∧
       composedNodeSurfaceValid excludedExclusiveGateway = false := by
+  decide
+
+/-- Production Message support does not silently expand the frozen structured-admission experiment. -/
+theorem messageCatchRemainsOutsideFrozenExperiment :
+    composedNodeSurfaceValid excludedMessageCatch = false := by
   decide
 
 private def threeCycle : List (GraphEdge NodeId) :=
@@ -205,6 +217,7 @@ def stageTwoAdmissionChecks : Bool :=
     composedNodeSurfaceValid exactProbeServiceNode &&
     !nodeArityValid twoSegmentSource excludedExclusiveGateway &&
     !composedNodeSurfaceValid excludedExclusiveGateway &&
+    !composedNodeSurfaceValid excludedMessageCatch &&
     !composedNodeSurfaceValid
       (exactProbeServiceNode (some excludedBoundaryRoute)) &&
     structuredAdmissionDecider twoSegmentSource &&

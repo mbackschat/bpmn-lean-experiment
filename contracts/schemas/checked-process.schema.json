@@ -78,6 +78,26 @@
         }
       }
     },
+    "messageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interfaceId",
+        "interfaceOperationId",
+        "messageId"
+      ],
+      "properties": {
+        "interfaceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "interfaceOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "mappingExpression": {
       "oneOf": [
         {
@@ -93,6 +113,26 @@
             },
             "value": {
               "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "channel"
+          ],
+          "properties": {
+            "kind": {
+              "const": "intermediateCatchMessageEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "channel": {
+              "$ref": "#/$defs/messageChannel"
             }
           }
         },

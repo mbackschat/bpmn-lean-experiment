@@ -46,6 +46,8 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
             split at result <;> try simp at result
             obtain ⟨remaining, parsed, rfl⟩ := result
             simp [segmentNodes, ih _ _ parsed]
+        | intermediateCatchMessageEvent _ _ =>
+            simp [parseFrom, nodeResult] at result
         | exclusiveGateway _ _ _ =>
             simp [parseFrom, nodeResult] at result
         | parallelGateway _ direction =>

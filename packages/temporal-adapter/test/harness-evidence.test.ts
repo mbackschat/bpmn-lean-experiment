@@ -45,6 +45,7 @@ const completedState: CompletedProcessReceipt["finalState"] = {
   status: ProcessStatus.Completed,
   activeWaits: [],
   openUserTasks: [],
+  openMessageSubscriptions: [],
   openTimers: [],
   openEffects: [],
   variables: [],
@@ -73,6 +74,7 @@ const trace: ReadonlyArray<CanonicalObservation> = [
       },
     ],
     openUserTasks: [],
+    openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [],
     variables: [],
@@ -97,6 +99,7 @@ const receipt: CompletedProcessReceipt = {
   processId: "Process_1",
   processInstanceId: "Instance_1",
   finalState: completedState,
+  messageDeliveryRecords: [],
 };
 
 test("requires canonical Process variables in a completed receipt", () => {

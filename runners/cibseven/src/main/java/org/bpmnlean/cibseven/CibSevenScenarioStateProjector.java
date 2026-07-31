@@ -137,6 +137,7 @@ final class CibSevenScenarioStateProjector {
             isRunning ? RUNNING : COMPLETED,
             allWaits,
             openUserTasks,
+            List.of(),
             openTimers,
             openEffects,
             variables,

@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, payload-free Service Task effect, CreateDocument data, interrupting boundary-error, and Simple Boolean Exclusive Gateway capsules.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free Service Task effect, CreateDocument data, interrupting boundary-error, and Simple Boolean Exclusive Gateway capsules.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, three profile-mapped Service Task source shapes, one exact attached interrupting Error route, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, three profile-mapped Service Task source shapes, one exact attached interrupting Error route, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -104,6 +104,12 @@ type CheckedCondition = DeepReadonly<{
   body: string;
 }>;
 
+type MessageChannel = DeepReadonly<{
+  interfaceId: string;
+  interfaceOperationId: string;
+  messageId: string;
+}>;
+
 type CheckedServiceTask = DeepReadonly<{
   kind: "serviceTask";
   id: string;
@@ -127,6 +133,11 @@ type CheckedNode = DeepReadonly<
       kind: "intermediateCatchTimerEvent";
       id: string;
       durationLiteral: "PT1S";
+    }
+  | {
+      kind: "intermediateCatchMessageEvent";
+      id: string;
+      channel: MessageChannel;
     }
   | CheckedServiceTask
   | {
@@ -247,6 +258,15 @@ type SemanticOperation = DeepReadonly<
       };
     })
   | (OperationBase & {
+      kind: "awaitMessage";
+      input: string;
+      output: string;
+      message: {
+        elementId: string;
+        channel: MessageChannel;
+      };
+    })
+  | (OperationBase & {
       kind: "awaitEffect";
       input: string;
       output: string;
@@ -287,13 +307,13 @@ type SemanticOperation = DeepReadonly<
 
 String identifiers are wire representations, not permission to treat distinct identifier domains interchangeably in Lean or implementation code. Lean must use distinct types for process, node, Sequence Flow, operation, control-place, task-definition, and task-occurrence identifiers where those domains can be confused.
 
-Semantic operation payloads carry their own element identifier when runtime occurrence identity depends on that element. That identifier is deliberately redundant with `origin.elementId`: program validation requires exact equality, runtime construction reads the semantic payload field, and source traceability reads `origin`. `awaitUserTask`, `awaitTimer`, and `awaitEffect` establish this convention; future occurrence-producing operations must follow it rather than derive runtime identity directly from source provenance.
+Semantic operation payloads carry their own element identifier when runtime occurrence identity depends on that element. That identifier is deliberately redundant with `origin.elementId`: program validation requires exact equality, runtime construction reads the semantic payload field, and source traceability reads `origin`. `awaitUserTask`, `awaitTimer`, `awaitMessage`, and `awaitEffect` establish this convention; future occurrence-producing operations must follow it rather than derive runtime identity directly from source provenance.
 
 Definition arrays and unordered references are canonically sorted by identifier. `choose.candidates` is the deliberate exception: its tuple order is semantic evaluation order derived from process-level XML Sequence Flow declaration order. Gateway `<outgoing>` reference order does not determine that tuple.
 
 ### Runtime state
 
-Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task, timer, and effect occurrences, committed immutable effect arguments, explicitly scoped variables, the logical clock, committed command outcomes, and any explicit semantic choices.
+Runtime state is not part of `SemanticProcessProgram`. It includes control-place token multiplicities, enabled external interactions, semantic task, Message-subscription, timer, and effect occurrences, committed immutable effect arguments, explicitly scoped variables, the logical clock, committed command outcomes, and any explicit semantic choices.
 
 The implemented runtime contains one `ScopedVariables` value. Its `process.bindings` survive Activity completion and alone project to canonical `variables`. Each entry in `activities` contains `owner` plus `bindings`, where `owner` is the complete semantic effect occurrence `(processInstanceId, elementId, activation)`. Effect activation creates exactly one owned local scope from evaluated inputs. Matching completion requires exactly one matching owner, evaluates the validated patch and output mappings against that scope, updates Process bindings, and removes only that scope atomically. Missing or duplicate owners reject completion with exact state preservation. The complete replacement contract and discriminators belong to the [scoped runtime data specification](capsules/SCOPED-DATA-SPEC.md).
 
@@ -311,6 +331,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | Sequence Flow | `ControlPlace` |
 | User Task | `awaitUserTask` |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
+| exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
 | exact payload-free Service Task source shape | `awaitEffect` with the registered neutral Activity/probe descriptor and empty mappings |
 | exact A12-shaped CreateDocument source shape and mappings | `awaitEffect` with the registered neutral Activity/mapped-success descriptor, normalized literal input, and local-reference output mapping |
 | exact A12-shaped interrupting boundary Error source shape | `awaitEffect` with the registered neutral Activity/mapped-boundary-error descriptor, normalized mapping pair, and one committed `bpmnErrorRoute` |
@@ -351,6 +372,12 @@ An accepted completion for that occurrence removes the wait and adds one token t
 Internal closure stops at the timer wait. An exact `fireTimer` stimulus commits only when its full occurrence identity is active and its submitted logical time equals the deadline. Commit removes the wait, advances logical time to the deadline, adds one token to the output control place, and resumes closure. Any occurrence-identity or logical-time mismatch is rejected with exact state preservation.
 
 The exact `PT1S` lexical value remains in the checked graph; Lean and TypeScript lower it independently to `1000`. Physical clock origin, scheduler latency, CIB job identity, and Temporal timer identity do not enter the program or runtime semantics. The complete rule and race-free refinement boundary belong to the [Intermediate Catch Timer capsule](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md).
+
+### Message subscription wait
+
+`awaitMessage` is enabled when its input control place contains at least one token and no subscription for that firing already exists. Firing consumes exactly one input token and creates one Process-owned subscription containing the full Process-instance, Catch Event, and activation identity plus the complete resolved Interface, Interface Operation, and Message channel. Internal closure stops at that public resumption surface.
+
+An exact `deliverMessage` stimulus commits only when its full subscription identity and complete channel equal the active subscription. Commit removes the subscription, adds one token to the operation output, and resumes closure. A pre-activation, wrong-identity, wrong-channel, stale, or repeated well-formed delivery is rejected with exact state preservation. The operation carries no payload and does not perform key-based correlation, global routing, or modeled Message throw. The complete rules and Signal refinement belong to the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md).
 
 ### External effect wait, bounded data mapping, and typed business error
 
@@ -400,6 +427,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every `choose` has exactly two distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement;
 - every operation payload element identifier matches its BPMN origin;
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
+- every admitted `awaitMessage` has a Message element matching its BPMN origin and a complete nonempty Interface, Interface Operation, and Message channel selected from the checked source reference chain;
 - every admitted `awaitEffect` has a profile-permitted descriptor and the exact mapping pair for that descriptor;
 - mapping targets are nonempty and unique, literal inputs remain exact strings, and local-variable outputs refer only to the admitted result-local name;
 - every non-null `bpmnErrorRoute` has a nonempty exact code, a distinct existing boundary output, complete source provenance, and the exact profile-permitted handler/mapping combination;
@@ -484,26 +512,27 @@ The maintained implementation supports exactly:
 - one or more User Tasks permitted by the two approved capsules;
 - one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
 - one finite acyclic linear composition containing exactly one exact `PT1S` Intermediate Catch Timer Event and one User Task under the profile-parameterized admission specification;
+- one directly addressed payload-free Intermediate Catch Message Event plus one User Task in either finite acyclic linear order under the profile-parameterized admission specification;
 - one exact Service Task binding under its single-token success-only effect capsule;
 - one exact A12-shaped CreateDocument Service Task with one literal string input and one local-reference output mapping;
 - one exact A12-shaped Service Task with the same bounded mapping mechanism and one attached exact-code interrupting Error route;
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;
 - one divergent Exclusive Gateway with exactly two Simple Boolean v1 conditions and one conditionless default under process-level Sequence Flow declaration order;
 - none End Events permitted by the capsules;
-- `initiate`, `awaitUserTask`, `awaitTimer`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, and `terminate`;
+- `initiate`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, and `terminate`;
 - token multiplicity per Sequence Flow;
-- semantic task, timer, and effect occurrence identity, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
-- the canonical observation boundary including `openTimers`, effect arguments in `openEffects`, and Process `variables`.
+- semantic task, Message-subscription, timer, and effect occurrence identity, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
+- the canonical observation boundary including `openMessageSubscriptions`, `openTimers`, effect arguments in `openEffects`, and Process `variables`.
 
-The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, payload-free Service Task, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
 The following remain unsupported:
 
 - general BPMN 2.0.2 import or conformance;
-- event subtypes beyond the admitted none Start, exact normal-flow `PT1S` Intermediate Catch Timer, exact attached interrupting Error route, and none End Events;
-- other timer forms, other boundary Events, catch-all or propagated Errors, Error throws, Error End Events, messages, signals, escalation, cancellation, compensation, and terminate semantics;
+- event subtypes beyond the admitted none Start, exact normal-flow `PT1S` Intermediate Catch Timer, exact normal-flow payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
+- other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, other boundary Events, catch-all or propagated Errors, Error throws, Error End Events, signals as BPMN semantics, escalation, cancellation, compensation, and terminate semantics;
 - subprocess scopes, call activities, transactions, event subprocesses, and propagation;
 - converging or mixed Exclusive Gateways, missing-default or non-binary conditional routing, inclusive, complex, and event-based gateways;
 - loops, multi-instance activities, condition consumers beyond the admitted Exclusive Gateway, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond the two exact pairs;
@@ -518,14 +547,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, timer, Timer/User Task composition, payload-free effect, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway exact-source fixtures lower deterministically;
+- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, CreateDocument, boundary-error, and Simple Boolean Exclusive Gateway exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, payload-free effect, CreateDocument data/mapping, boundary-error, and Simple Boolean conditional-choice separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, CreateDocument data/mapping, boundary-error, and Simple Boolean conditional-choice separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

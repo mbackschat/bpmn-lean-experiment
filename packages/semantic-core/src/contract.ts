@@ -33,6 +33,7 @@ export enum ScenarioDocumentKind {
 export enum StimulusKind {
   StartProcess = "startProcess",
   CompleteUserTaskInstance = "completeUserTaskInstance",
+  DeliverMessage = "deliverMessage",
   FireTimer = "fireTimer",
   CompleteEffect = "completeEffect",
 }
@@ -51,11 +52,19 @@ export type OccurrenceId = DeepReadonly<{
 }>;
 
 export type UserTaskInstanceId = OccurrenceId;
+export type MessageSubscriptionId = OccurrenceId;
 
 export type CompleteUserTaskInstanceStimulus = DeepReadonly<{
   kind: StimulusKind.CompleteUserTaskInstance;
   commandId: string;
   taskId: UserTaskInstanceId;
+}>;
+
+export type DeliverMessageStimulus = DeepReadonly<{
+  kind: StimulusKind.DeliverMessage;
+  commandId: string;
+  subscriptionId: MessageSubscriptionId;
+  channel: import("./semantic-process-contract.js").MessageChannel;
 }>;
 
 export type TimerOccurrenceId = OccurrenceId;
@@ -115,6 +124,7 @@ export type CompleteEffectStimulus = DeepReadonly<{
 export type Stimulus =
   | StartProcessStimulus
   | CompleteUserTaskInstanceStimulus
+  | DeliverMessageStimulus
   | FireTimerStimulus
   | CompleteEffectStimulus;
 
@@ -126,6 +136,7 @@ export enum ProcessStatus {
 
 export enum WaitKind {
   UserTask = "userTask",
+  Message = "message",
   Timer = "timer",
   Effect = "effect",
 }
@@ -170,7 +181,20 @@ export type CompleteUserTaskInstanceInteraction = DeepReadonly<{
   taskId: UserTaskInstanceId;
 }>;
 
-export type EnabledInteraction = CompleteUserTaskInstanceInteraction;
+export type DeliverMessageInteraction = DeepReadonly<{
+  kind: StimulusKind.DeliverMessage;
+  subscriptionId: MessageSubscriptionId;
+  channel: import("./semantic-process-contract.js").MessageChannel;
+}>;
+
+export type EnabledInteraction =
+  | CompleteUserTaskInstanceInteraction
+  | DeliverMessageInteraction;
+
+export type OpenMessageSubscription = DeepReadonly<{
+  id: MessageSubscriptionId;
+  channel: import("./semantic-process-contract.js").MessageChannel;
+}>;
 
 export type OpenTimer = DeepReadonly<{
   id: TimerOccurrenceId;
@@ -189,6 +213,7 @@ export type StateObservation = DeepReadonly<{
   status: ProcessStatus;
   activeWaits: ActiveWait[];
   openUserTasks: OpenUserTask[];
+  openMessageSubscriptions: OpenMessageSubscription[];
   openTimers: OpenTimer[];
   openEffects: OpenEffect[];
   variables: VariableBinding[];

@@ -147,6 +147,7 @@ function operationInputs(
     case SemanticOperationKind.Initiate:
       return [];
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect:
     case SemanticOperationKind.Duplicate:
@@ -164,6 +165,7 @@ function operationOutputs(
   switch (operation.kind) {
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.Synchronize:
       return [operation.output];

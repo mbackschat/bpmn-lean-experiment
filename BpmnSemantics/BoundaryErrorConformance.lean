@@ -166,6 +166,7 @@ def waitingObservation : StateObservation :=
     activeWaits :=
       [{ elementId := effectId.elementId, kind := .effect, multiplicity := 1 }]
     openUserTasks := []
+    openMessageSubscriptions := []
     openTimers := []
     openEffects :=
       [{ id := effectId
@@ -186,6 +187,7 @@ def caughtObservation : StateObservation :=
       [{ id := taskId
          name := some "Expected User Task After BPMN Error"
          state := .active }]
+    openMessageSubscriptions := []
     openTimers := []
     openEffects := []
     variables := [expectedVariable]

@@ -49,6 +49,7 @@ public final class CibSevenCreateDocumentScenarioRunnerTest {
                   List.of(),
                   List.of(),
                   List.of(),
+                  List.of(),
                   List.of(expectedVariable),
                   List.of(),
                   0)),

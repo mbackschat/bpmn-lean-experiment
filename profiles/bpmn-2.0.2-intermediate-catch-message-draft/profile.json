@@ -1,0 +1,83 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-intermediate-catch-message-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-direct-payload-free-intermediate-catch-message",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 8.4.2",
+      "Clause 8.4.11",
+      "Clause 8.5",
+      "Clause 10.5",
+      "Clause 10.5.1",
+      "Clause 10.5.4",
+      "Clause 10.5.5",
+      "Table 10.99"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "intermediate-catch-message-event",
+      "payload-free-message",
+      "interface-operation-input-message",
+      "direct-subscription-addressing",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "direct-subscription-addressing"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-message-compatibility",
+    "message-payload",
+    "message-name-routing",
+    "business-key-correlation",
+    "bpmn-correlation-key",
+    "modeled-message-throw",
+    "message-flow",
+    "collaboration",
+    "receive-task",
+    "send-task",
+    "boundary-message-event",
+    "message-start-event",
+    "message-end-event",
+    "repeated-message-activation",
+    "parallel-interaction",
+    "timers",
+    "service-tasks",
+    "gateways",
+    "variables",
+    "expressions",
+    "vendor-extensions",
+    "a12-adoption-coverage"
+  ]
+}

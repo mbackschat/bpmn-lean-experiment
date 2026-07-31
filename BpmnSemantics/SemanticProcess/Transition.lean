@@ -30,6 +30,14 @@ structure TimerWait where
   output : ControlPlaceId
   deriving Repr, DecidableEq
 
+structure MessageWait where
+  processInstanceId : SemanticId
+  elementId : NodeId
+  activation : Nat
+  channel : MessageChannel
+  output : ControlPlaceId
+  deriving Repr, DecidableEq
+
 structure EffectWait where
   processInstanceId : SemanticId
   elementId : NodeId
@@ -51,6 +59,11 @@ structure TimerActivation where
   count : Nat
   deriving Repr, DecidableEq
 
+structure MessageActivation where
+  elementId : NodeId
+  count : Nat
+  deriving Repr, DecidableEq
+
 structure EffectActivation where
   elementId : NodeId
   count : Nat
@@ -61,10 +74,12 @@ structure RuntimeState where
   initiationPending : Bool
   tokens : List ControlPlaceId
   waits : List UserTaskWait
+  messageWaits : List MessageWait
   timerWaits : List TimerWait
   effectWaits : List EffectWait
   variables : ScopedVariables
   activations : List TaskActivation
+  messageActivations : List MessageActivation
   timerActivations : List TimerActivation
   effectActivations : List EffectActivation
   endOccurrences : Nat
@@ -76,10 +91,12 @@ def initialState : RuntimeState :=
     initiationPending := false
     tokens := []
     waits := []
+    messageWaits := []
     timerWaits := []
     effectWaits := []
     variables := emptyScopedVariables
     activations := []
+    messageActivations := []
     timerActivations := []
     effectActivations := []
     endOccurrences := 0
@@ -131,6 +148,17 @@ private def setTimerActivationCount (activations : List TimerActivation)
     activations.filter fun activation =>
       decide (activation.elementId ≠ elementId)
 
+private def messageActivationCount (state : RuntimeState)
+    (elementId : NodeId) : Nat :=
+  (state.messageActivations.find? fun activation =>
+    decide (activation.elementId = elementId)).map (·.count) |>.getD 0
+
+private def setMessageActivationCount (activations : List MessageActivation)
+    (elementId : NodeId) (count : Nat) : List MessageActivation :=
+  { elementId, count } ::
+    activations.filter fun activation =>
+      decide (activation.elementId ≠ elementId)
+
 private def effectActivationCount (state : RuntimeState) (elementId : NodeId) :
     Nat :=
   (state.effectActivations.find? fun activation =>
@@ -167,6 +195,22 @@ private def activateTimer (state : RuntimeState) (instanceId : SemanticId)
         output } :: state.timerWaits
     timerActivations :=
       setTimerActivationCount state.timerActivations timer.elementId activation }
+
+private def activateMessage (state : RuntimeState) (instanceId : SemanticId)
+    (input output : ControlPlaceId) (message : MessageDefinition) :
+    RuntimeState :=
+  let activation := messageActivationCount state message.elementId + 1
+  { state with
+    tokens := removeToken state.tokens input
+    messageWaits :=
+      { processInstanceId := instanceId
+        elementId := message.elementId
+        activation
+        channel := message.channel
+        output } :: state.messageWaits
+    messageActivations :=
+      setMessageActivationCount state.messageActivations
+        message.elementId activation }
 
 private def activateEffect (state : RuntimeState) (instanceId : SemanticId)
     (input output : ControlPlaceId) (effect : EffectDefinition)
@@ -212,7 +256,8 @@ private def terminateToken (state : RuntimeState) (instanceId : SemanticId)
     (input : ControlPlaceId) : RuntimeState :=
   let tokens := removeToken state.tokens input
   let completed :=
-    tokens.isEmpty && state.waits.isEmpty && state.timerWaits.isEmpty &&
+    tokens.isEmpty && state.waits.isEmpty && state.messageWaits.isEmpty &&
+      state.timerWaits.isEmpty &&
       state.effectWaits.isEmpty &&
       !state.initiationPending
   { state with
@@ -246,6 +291,14 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
         (.awaitTimer id origin input output timer)
         state
         (activateTimer state instanceId input output timer)
+  | awaitMessage (id origin input output message) (state : RuntimeState)
+      (instanceId : SemanticId)
+      (running : state.control = .running instanceId)
+      (enabled : hasToken state input = true) :
+      OperationStep
+        (.awaitMessage id origin input output message)
+        state
+        (activateMessage state instanceId input output message)
   | awaitEffect (id origin input output effect bpmnErrorRoute)
       (state : RuntimeState)
       (instanceId : SemanticId)
@@ -313,6 +366,15 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
       | .running instanceId =>
           if hasToken state input then
             some (activateTimer state instanceId input output timer)
+          else
+            none
+      | .notStarted
+      | .completed _ => none
+  | .awaitMessage _ _ input output message =>
+      match state.control with
+      | .running instanceId =>
+          if hasToken state input then
+            some (activateMessage state instanceId input output message)
           else
             none
       | .notStarted
@@ -387,6 +449,17 @@ theorem fire_sound (operation : SemanticOperation)
           · simp [fire?, controlEq, enabled] at result
             subst after
             exact .awaitTimer id origin input output timer before
+              instanceId controlEq enabled
+          · simp [fire?, controlEq, enabled] at result
+  | awaitMessage id origin input output message =>
+      cases controlEq : before.control with
+      | notStarted => simp [fire?, controlEq] at result
+      | completed instanceId => simp [fire?, controlEq] at result
+      | running instanceId =>
+          by_cases enabled : hasToken before input = true
+          · simp [fire?, controlEq, enabled] at result
+            subst after
+            exact .awaitMessage id origin input output message before
               instanceId controlEq enabled
           · simp [fire?, controlEq, enabled] at result
   | awaitEffect id origin input output effect bpmnErrorRoute =>

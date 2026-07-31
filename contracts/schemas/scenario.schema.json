@@ -39,6 +39,9 @@
             "$ref": "#/$defs/completeUserTaskInstance"
           },
           {
+            "$ref": "#/$defs/deliverMessage"
+          },
+          {
             "$ref": "#/$defs/fireTimer"
           },
           {
@@ -229,6 +232,29 @@
     "userTaskInstanceId": {
       "$ref": "#/$defs/occurrenceId"
     },
+    "messageSubscriptionId": {
+      "$ref": "#/$defs/occurrenceId"
+    },
+    "messageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interfaceId",
+        "interfaceOperationId",
+        "messageId"
+      ],
+      "properties": {
+        "interfaceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "interfaceOperationId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
     "completeUserTaskInstance": {
       "type": "object",
       "additionalProperties": false,
@@ -246,6 +272,30 @@
         },
         "taskId": {
           "$ref": "#/$defs/userTaskInstanceId"
+        }
+      }
+    },
+    "deliverMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "subscriptionId",
+        "channel"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deliverMessage"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "subscriptionId": {
+          "$ref": "#/$defs/messageSubscriptionId"
+        },
+        "channel": {
+          "$ref": "#/$defs/messageChannel"
         }
       }
     },
@@ -422,6 +472,26 @@
         }
       }
     },
+    "enabledDeliverMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "subscriptionId",
+        "channel"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deliverMessage"
+        },
+        "subscriptionId": {
+          "$ref": "#/$defs/messageSubscriptionId"
+        },
+        "channel": {
+          "$ref": "#/$defs/messageChannel"
+        }
+      }
+    },
     "activeWait": {
       "type": "object",
       "additionalProperties": false,
@@ -437,6 +507,7 @@
         "kind": {
           "enum": [
             "userTask",
+            "message",
             "timer",
             "effect"
           ]
@@ -486,6 +557,22 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 9007199254740991
+        }
+      }
+    },
+    "openMessageSubscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "channel"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/messageSubscriptionId"
+        },
+        "channel": {
+          "$ref": "#/$defs/messageChannel"
         }
       }
     },
@@ -582,6 +669,7 @@
         "status",
         "activeWaits",
         "openUserTasks",
+        "openMessageSubscriptions",
         "openTimers",
         "openEffects",
         "variables",
@@ -614,6 +702,12 @@
             "$ref": "#/$defs/openUserTask"
           }
         },
+        "openMessageSubscriptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openMessageSubscription"
+          }
+        },
         "openTimers": {
           "type": "array",
           "items": {
@@ -635,7 +729,14 @@
         "enabledInteractions": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/enabledCompleteUserTaskInstance"
+            "oneOf": [
+              {
+                "$ref": "#/$defs/enabledCompleteUserTaskInstance"
+              },
+              {
+                "$ref": "#/$defs/enabledDeliverMessage"
+              }
+            ]
           }
         },
         "logicalTimeMs": {

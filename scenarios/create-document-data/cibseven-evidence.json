@@ -92,6 +92,7 @@
         "status": "completed",
         "activeWaits": [],
         "openUserTasks": [],
+        "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
         "variables": [

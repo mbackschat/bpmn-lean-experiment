@@ -74,6 +74,10 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/timer-user-task-composition/scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/intermediate-catch-message/scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

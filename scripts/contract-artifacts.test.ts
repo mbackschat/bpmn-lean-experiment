@@ -38,7 +38,7 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 test("separates normative profile authority from executable CIB oracle authority", async () => {
   const artifactSets =
     await readAndVerifyNormativeArtifactSets(projectRoot);
-  assert.equal(artifactSets.length, 2);
+  assert.equal(artifactSets.length, 3);
   for (const artifactSet of artifactSets) {
     assert.equal(
       artifactSet.profile.normativeAuthority.name,

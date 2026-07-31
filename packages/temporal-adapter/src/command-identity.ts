@@ -37,6 +37,21 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.taskId.activation,
         ],
       ]);
+    case StimulusKind.DeliverMessage:
+      return canonicalTypedTupleEncoding([
+        stimulus.kind,
+        stimulus.commandId,
+        [
+          stimulus.subscriptionId.processInstanceId,
+          stimulus.subscriptionId.elementId,
+          stimulus.subscriptionId.activation,
+        ],
+        [
+          stimulus.channel.interfaceId,
+          stimulus.channel.interfaceOperationId,
+          stimulus.channel.messageId,
+        ],
+      ]);
     case StimulusKind.FireTimer:
       return canonicalTypedTupleEncoding([
         stimulus.kind,

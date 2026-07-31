@@ -47,6 +47,7 @@ const calibratedResult: ScenarioResult = {
         },
       ],
       openUserTasks: [],
+      openMessageSubscriptions: [],
       openTimers: [],
       openEffects: [],
       variables: [],

@@ -140,10 +140,22 @@ test("both orders expose the approved stable public observations", () => {
     },
   ]);
   assert.deepEqual(
-    aWaiting.enabledInteractions.map(({ kind, taskId }) => ({
-      kind,
-      taskId,
-    })),
+    aWaiting.enabledInteractions.map((interaction) => {
+      switch (interaction.kind) {
+        case StimulusKind.CompleteUserTaskInstance:
+          return interaction;
+        case StimulusKind.DeliverMessage:
+          throw new Error(
+            "parallel User Task state exposed a Message interaction",
+          );
+        default: {
+          const unreachable: never = interaction;
+          throw new Error(
+            `unsupported enabled interaction ${JSON.stringify(unreachable)}`,
+          );
+        }
+      }
+    }),
     [
       {
         kind: StimulusKind.CompleteUserTaskInstance,
@@ -213,17 +225,31 @@ test("task projection ignores internal wait storage order", () => {
 test("active wait projection orders by semantic kind before element ID", () => {
   const state: RuntimeState = {
     ...runningState([]),
-    userTaskWaits: [wait("Z_UserTask", "Z")],
+    userTaskWaits: [
+      wait("Z_UserTask", "Z"),
+      wait("B_UserTask", "B"),
+    ],
+    messageWaits: [
+      {
+        id: taskId("A_Message"),
+        channel: {
+          interfaceId: "Interface_Projection",
+          interfaceOperationId: "Operation_Projection",
+          messageId: "Message_Projection",
+        },
+        output: "place:Flow_MessageToEnd",
+      },
+    ],
     timerWaits: [
       {
-        id: taskId("A_Timer"),
+        id: taskId("C_Timer"),
         deadlineMs: 1000,
         output: "place:Flow_TimerToEnd",
       },
     ],
     effectWaits: [
       {
-        id: taskId("M_Effect"),
+        id: taskId("D_Effect"),
         descriptor: {
           protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
           operation: "urn:bpmn-lean:effect-operation:probe-v1",
@@ -245,17 +271,27 @@ test("active wait projection orders by semantic kind before element ID", () => {
   assert.equal(step.observations[1]?.kind, CanonicalObservationKind.State);
   assert.deepEqual(stateObservationAt(step.observations, 1).activeWaits, [
     {
+      elementId: "B_UserTask",
+      kind: WaitKind.UserTask,
+      multiplicity: 1,
+    },
+    {
       elementId: "Z_UserTask",
       kind: WaitKind.UserTask,
       multiplicity: 1,
     },
     {
-      elementId: "A_Timer",
+      elementId: "A_Message",
+      kind: WaitKind.Message,
+      multiplicity: 1,
+    },
+    {
+      elementId: "C_Timer",
       kind: WaitKind.Timer,
       multiplicity: 1,
     },
     {
-      elementId: "M_Effect",
+      elementId: "D_Effect",
       kind: WaitKind.Effect,
       multiplicity: 1,
     },

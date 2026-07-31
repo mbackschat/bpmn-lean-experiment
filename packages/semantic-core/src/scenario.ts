@@ -11,6 +11,7 @@ import type {
   ActiveWait,
   CanonicalObservation,
   OpenUserTask,
+  OpenMessageSubscription,
   OpenTimer,
   OpenEffect,
   OccurrenceId,
@@ -77,8 +78,9 @@ export type ScenarioStep =
 
 const waitKindOrder = {
   [WaitKind.UserTask]: 0,
-  [WaitKind.Timer]: 1,
-  [WaitKind.Effect]: 2,
+  [WaitKind.Message]: 1,
+  [WaitKind.Timer]: 2,
+  [WaitKind.Effect]: 3,
 } as const satisfies Record<WaitKind, number>;
 
 export type ScenarioDeployment = DeepReadonly<{
@@ -109,6 +111,14 @@ export function projectOpenTimers(
     .sort(compareOpenOccurrences);
 }
 
+export function projectOpenMessageSubscriptions(
+  state: RuntimeState,
+): ReadonlyArray<OpenMessageSubscription> {
+  return state.messageWaits
+    .map(({ id, channel }) => ({ id, channel }))
+    .sort(compareOpenOccurrences);
+}
+
 export function projectOpenEffects(
   state: RuntimeState,
 ): ReadonlyArray<OpenEffect> {
@@ -134,13 +144,23 @@ function observeStableState(state: RuntimeState): StateObservation | null {
             : ProcessStatus.Completed,
         activeWaits: projectActiveWaits(state),
         openUserTasks: projectOpenUserTasks(state),
+        openMessageSubscriptions: projectOpenMessageSubscriptions(state),
         openTimers: projectOpenTimers(state),
         openEffects: projectOpenEffects(state),
         variables: state.variables.process.bindings,
-        enabledInteractions: projectOpenUserTasks(state).map((task) => ({
-          kind: StimulusKind.CompleteUserTaskInstance,
-          taskId: task.id,
-        })),
+        enabledInteractions: [
+          ...projectOpenUserTasks(state).map((task) => ({
+            kind: StimulusKind.CompleteUserTaskInstance,
+            taskId: task.id,
+          } as const)),
+          ...projectOpenMessageSubscriptions(state).map(
+            (subscription) => ({
+              kind: StimulusKind.DeliverMessage,
+              subscriptionId: subscription.id,
+              channel: subscription.channel,
+            } as const),
+          ),
+        ],
         logicalTimeMs: state.logicalTimeMs,
       };
     case ControlStateKind.NotStarted:
@@ -165,6 +185,13 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
       (timerMultiplicities.get(wait.id.elementId) ?? 0) + 1,
     );
   }
+  const messageMultiplicities = new Map<string, number>();
+  for (const wait of state.messageWaits) {
+    messageMultiplicities.set(
+      wait.id.elementId,
+      (messageMultiplicities.get(wait.id.elementId) ?? 0) + 1,
+    );
+  }
   const effectMultiplicities = new Map<string, number>();
   for (const wait of state.effectWaits) {
     effectMultiplicities.set(
@@ -177,6 +204,13 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
       ([elementId, multiplicity]) => ({
         elementId,
         kind: WaitKind.UserTask,
+        multiplicity,
+      }),
+    ),
+    ...[...messageMultiplicities.entries()].map(
+      ([elementId, multiplicity]) => ({
+        elementId,
+        kind: WaitKind.Message,
         multiplicity,
       }),
     ),

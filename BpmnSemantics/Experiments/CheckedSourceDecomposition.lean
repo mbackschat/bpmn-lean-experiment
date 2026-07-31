@@ -90,6 +90,7 @@ def parseFrom (source : CheckedProcess) :
               | _, _ => none
           | _ => none
       | some (.noneStartEvent _)
+      | some (.intermediateCatchMessageEvent ..)
       | some (.parallelGateway _ .converging)
       | some (.exclusiveGateway ..)
       | none => none
@@ -129,6 +130,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
         inputMappings.isEmpty &&
         outputMappings.isEmpty &&
         route.isNone
+  | .intermediateCatchMessageEvent .. => false
   | .exclusiveGateway .. => false
   | _ => true
 

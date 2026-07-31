@@ -1,5 +1,6 @@
 import type {
   EffectOccurrenceId,
+  MessageSubscriptionId,
   OccurrenceId,
   TimerOccurrenceId,
   UserTaskInstanceId,
@@ -9,6 +10,7 @@ import type { DeepReadonly } from "./deep-readonly.js";
 import type {
   BpmnErrorRoute,
   EffectDescriptor,
+  MessageChannel,
   VariableMapping,
 } from "./semantic-process-contract.js";
 import { compareCanonicalStrings } from "./wire.js";
@@ -44,6 +46,12 @@ export type SemanticUserTaskWait = DeepReadonly<{
 export type SemanticTimerWait = DeepReadonly<{
   id: TimerOccurrenceId;
   deadlineMs: number;
+  output: string;
+}>;
+
+export type SemanticMessageWait = DeepReadonly<{
+  id: MessageSubscriptionId;
+  channel: MessageChannel;
   output: string;
 }>;
 
@@ -83,10 +91,12 @@ export type RuntimeState = DeepReadonly<{
   initiationPending: boolean;
   controlTokens: ControlPlaceTokens[];
   userTaskWaits: SemanticUserTaskWait[];
+  messageWaits: SemanticMessageWait[];
   timerWaits: SemanticTimerWait[];
   effectWaits: SemanticEffectWait[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
+  messageActivations: ActivationCounter[];
   timerActivations: ActivationCounter[];
   effectActivations: ActivationCounter[];
   endOccurrences: number;
@@ -98,6 +108,7 @@ export const initialState: RuntimeState = {
   initiationPending: false,
   controlTokens: [],
   userTaskWaits: [],
+  messageWaits: [],
   timerWaits: [],
   effectWaits: [],
   variables: {
@@ -105,6 +116,7 @@ export const initialState: RuntimeState = {
     activities: [],
   },
   taskActivations: [],
+  messageActivations: [],
   timerActivations: [],
   effectActivations: [],
   endOccurrences: 0,
@@ -178,6 +190,13 @@ export function compareUserTaskWaits(
 export function compareTimerWaits(
   left: SemanticTimerWait,
   right: SemanticTimerWait,
+): number {
+  return compareOccurrences(left.id, right.id);
+}
+
+export function compareMessageWaits(
+  left: SemanticMessageWait,
+  right: SemanticMessageWait,
 ): number {
   return compareOccurrences(left.id, right.id);
 }

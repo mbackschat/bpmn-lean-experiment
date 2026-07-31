@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.Transition
+import BpmnSemantics.SemanticProcess.Message
 
 /-! # Semantic Process external execution
 
@@ -172,6 +172,18 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _ => { outcome := .rejected, state }
+  | .deliverMessage _ subscriptionId channel =>
+      match state.control with
+      | .running instanceId =>
+          match deliverMessage program state subscriptionId channel with
+          | some successor =>
+              if subscriptionId.processInstanceId = instanceId then
+                { outcome := .committed, state := successor }
+              else
+                { outcome := .rejected, state }
+          | none => { outcome := .rejected, state }
+      | .notStarted
+      | .completed _ => { outcome := .rejected, state }
   | .fireTimer _ timerId logicalTimeMs =>
       match state.control with
       | .running instanceId =>
@@ -215,6 +227,7 @@ def stableStateResumable (state : RuntimeState) : Bool :=
   | .notStarted => false
   | .running _ =>
       !state.waits.isEmpty ||
+        !state.messageWaits.isEmpty ||
         !state.timerWaits.isEmpty ||
         !state.effectWaits.isEmpty
   | .completed _ => true

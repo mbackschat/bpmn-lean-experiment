@@ -69,6 +69,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiate .. => []
   | .awaitUserTask _ _ input _ _
   | .awaitTimer _ _ input _ _
+  | .awaitMessage _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
   | .choose _ _ input _ _ _
@@ -79,6 +80,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output
   | .awaitUserTask _ _ _ output _
   | .awaitTimer _ _ _ output _
+  | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output => [output]
   | .awaitEffect _ _ _ output _ route =>
       output :: route.toList.map (·.output)

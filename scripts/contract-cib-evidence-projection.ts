@@ -26,8 +26,9 @@ import {
 
 const activeWaitKindRank = {
   userTask: 0,
-  timer: 1,
-  effect: 2,
+  message: 1,
+  timer: 2,
+  effect: 3,
 } as const satisfies Record<
   StateObservation["activeWaits"][number]["kind"],
   number
@@ -113,6 +114,7 @@ export function verifyProducerProjection(
       | "status"
       | "activeWaits"
       | "openUserTasks"
+      | "openMessageSubscriptions"
       | "openTimers"
       | "openEffects"
       | "variables"
@@ -122,6 +124,7 @@ export function verifyProducerProjection(
       status: stateProjection.status,
       activeWaits,
       openUserTasks: taskProjection.openUserTasks,
+      openMessageSubscriptions: [],
       openTimers: timerProjection.openTimers,
       openEffects: effectProjection.openEffects,
       variables: stateProjection.variables,
@@ -383,6 +386,10 @@ function projectTaskQuery(
   StateObservation,
   "activeWaits" | "openUserTasks" | "enabledInteractions"
 > {
+  type UserTaskInteraction = Extract<
+    StateObservation["enabledInteractions"][number],
+    { readonly taskId: OccurrenceId }
+  >;
   const multiplicities = new Map<string, number>();
   const byElement = new Map<string, TaskQueryTask>();
   for (const task of tasks) {
@@ -426,9 +433,7 @@ function projectTaskQuery(
     openUserTasks,
     enabledInteractions: openUserTasks.map((task) => ({
       kind:
-        "completeUserTaskInstance" as StateObservation[
-          "enabledInteractions"
-        ][number]["kind"],
+        "completeUserTaskInstance" as UserTaskInteraction["kind"],
       taskId: task.id,
     })),
   };

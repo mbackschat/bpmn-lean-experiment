@@ -234,6 +234,30 @@ setHandler(
   () => projectOpenUserTasks(state),
 );
 setHandler(
+  bpmnMessageDeliveryResultQuery,
+  (stimulus) =>
+    findMessageDeliveryResolution(
+      messageDeliveryResolutions,
+      stimulus,
+    ) ?? null,
+);
+setHandler(bpmnDeliverMessageSignal, (stimulus) => {
+  validateDeliverMessageSignal(stimulus);
+  const accepted = acceptedStimulus(
+    acceptedStimuli,
+    stimulus.commandId,
+  );
+  const acceptance = acceptMessageDelivery(
+    messageDeliveryResolutions,
+    stimulus,
+    accepted,
+  );
+  if (acceptance.enqueue) {
+    acceptedStimuli.push(stimulus);
+    pendingStimuli.push(stimulus);
+  }
+});
+setHandler(
   bpmnCompleteUserTaskUpdate,
   async (stimulus) => {
     enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);

@@ -50,6 +50,7 @@ public class CibSevenIntermediateCatchTimerTest {
                   RUNNING,
                   List.of(new ActiveWait("TimerCatch_PT1S", TIMER, 1)),
                   List.of(),
+                  List.of(),
                   List.of(new OpenTimer(timerId, 1000)),
                   List.of(),
                   List.of(),
@@ -59,6 +60,7 @@ public class CibSevenIntermediateCatchTimerTest {
               new StateObservation(
                   "Instance_1",
                   COMPLETED,
+                  List.of(),
                   List.of(),
                   List.of(),
                   List.of(),

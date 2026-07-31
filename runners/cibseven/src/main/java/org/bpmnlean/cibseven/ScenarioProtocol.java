@@ -17,7 +17,7 @@ public final class ScenarioProtocol {
 
   public static final String SCENARIO_KIND = "scenario";
   public static final String SCENARIO_RESULT_KIND = "scenarioResult";
-  private static final long MAX_SAFE_WIRE_INTEGER = 9007199254740991L;
+  static final long MAX_SAFE_WIRE_INTEGER = 9007199254740991L;
 
   private ScenarioProtocol() {}
 
@@ -416,6 +416,7 @@ public final class ScenarioProtocol {
       ProcessStatus status,
       List<ActiveWait> activeWaits,
       List<OpenUserTask> openUserTasks,
+      List<ScenarioMessageProtocol.OpenMessageSubscription> openMessageSubscriptions,
       List<OpenTimer> openTimers,
       List<OpenEffect> openEffects,
       List<VariableBinding> variables,
@@ -427,6 +428,7 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(status, "status");
       activeWaits = List.copyOf(activeWaits);
       openUserTasks = List.copyOf(openUserTasks);
+      openMessageSubscriptions = List.copyOf(openMessageSubscriptions);
       openTimers = List.copyOf(openTimers);
       openEffects = List.copyOf(openEffects);
       variables = List.copyOf(variables);

@@ -23,6 +23,10 @@ import {
   evaluateSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
 import {
+  createMessageWait,
+  deliverMessage,
+} from "./semantic-process-message.js";
+import {
   addToken,
   compareEffectWaits,
   compareTimerWaits,
@@ -50,6 +54,7 @@ export type {
   RuntimeState,
   ScopedVariables,
   SemanticEffectWait,
+  SemanticMessageWait,
   SemanticTimerWait,
   SemanticUserTaskWait,
 } from "./semantic-process-state.js";
@@ -126,6 +131,12 @@ function admit(
           ),
         },
       };
+    }
+    case StimulusKind.DeliverMessage: {
+      const next = deliverMessage(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.FireTimer: {
       const wait = state.timerWaits.find((candidate) =>
@@ -247,6 +258,7 @@ export function isStableStateResumable(state: RuntimeState): boolean {
       return false;
     case ControlStateKind.Running:
       return state.userTaskWaits.length > 0 ||
+        state.messageWaits.length > 0 ||
         state.timerWaits.length > 0 ||
         state.effectWaits.length > 0;
     case ControlStateKind.Completed:
@@ -292,6 +304,10 @@ export function applyInternalOperation(
     case SemanticOperationKind.AwaitUserTask:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
         ? createUserTaskWait(operation, state)
+        : null;
+    case SemanticOperationKind.AwaitMessage:
+      return tokenMultiplicity(state.controlTokens, operation.input) > 0
+        ? createMessageWait(operation, state)
         : null;
     case SemanticOperationKind.AwaitTimer:
       return tokenMultiplicity(state.controlTokens, operation.input) > 0
@@ -457,6 +473,7 @@ function terminate(
   const completed =
     controlTokens.length === 0 &&
     state.userTaskWaits.length === 0 &&
+    state.messageWaits.length === 0 &&
     state.timerWaits.length === 0 &&
     state.effectWaits.length === 0 &&
     !state.initiationPending;

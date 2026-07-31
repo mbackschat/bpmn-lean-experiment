@@ -176,6 +176,7 @@ test("runs the exact answer-free caught-Error scenario", () => {
       name: "Expected User Task After BPMN Error",
       state: "active",
     }],
+    openMessageSubscriptions: [],
     openTimers: [],
     openEffects: [],
     variables: [{

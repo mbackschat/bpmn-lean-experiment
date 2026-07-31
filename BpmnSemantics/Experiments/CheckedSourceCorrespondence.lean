@@ -54,10 +54,12 @@ private def lowerState
     initiationPending := state.initiationPending
     tokens := state.tokens.map flowControlPlaceId
     waits := state.waits.map lowerWait
+    messageWaits := []
     timerWaits := []
     effectWaits := []
     variables := emptyScopedVariables
     activations := state.activations.map lowerActivation
+    messageActivations := []
     timerActivations := []
     effectActivations := []
     endOccurrences := state.endOccurrences

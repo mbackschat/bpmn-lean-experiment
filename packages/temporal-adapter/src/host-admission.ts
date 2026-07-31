@@ -16,9 +16,9 @@ import type {
 /**
  * Conservatively proves the current single-host-driven-wait contract.
  *
- * User Task waits are passive ingress and may coexist. A token split combined
- * with a timer or effect can create more than one host-driven branch, which
- * requires a scheduler that this adapter does not implement.
+ * User Task and Message waits are passive ingress and may coexist. A token
+ * split combined with a timer or effect can create more than one host-driven
+ * branch, which requires a scheduler that this adapter does not implement.
  */
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
@@ -26,11 +26,23 @@ export function assessTemporalHostCapability(
   const canSplitTokens = program.operations.some(
     ({ kind }) => kind === SemanticOperationKind.Duplicate,
   );
-  const hasHostDrivenWait = program.operations.some(
-    ({ kind }) =>
-      kind === SemanticOperationKind.AwaitTimer ||
-      kind === SemanticOperationKind.AwaitEffect,
-  );
+  const hasHostDrivenWait = program.operations.some(({ kind }) => {
+    switch (kind) {
+      case SemanticOperationKind.AwaitTimer:
+      case SemanticOperationKind.AwaitEffect:
+        return true;
+      case SemanticOperationKind.Initiate:
+      case SemanticOperationKind.AwaitUserTask:
+      case SemanticOperationKind.AwaitMessage:
+      case SemanticOperationKind.Duplicate:
+      case SemanticOperationKind.Synchronize:
+      case SemanticOperationKind.Choose:
+      case SemanticOperationKind.Terminate:
+        return false;
+      default:
+        return assertNever(kind);
+    }
+  });
   if (canSplitTokens && hasHostDrivenWait) {
     return {
       kind: TemporalHostCapabilityResultKind.Rejected,
@@ -43,4 +55,10 @@ export function assessTemporalHostCapability(
     };
   }
   return { kind: TemporalHostCapabilityResultKind.Admitted };
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(
+    `Unsupported operation in Temporal host admission: ${String(value)}`,
+  );
 }

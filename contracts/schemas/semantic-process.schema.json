@@ -133,6 +133,42 @@
         }
       }
     },
+    "messageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interfaceId",
+        "interfaceOperationId",
+        "messageId"
+      ],
+      "properties": {
+        "interfaceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "interfaceOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "messageDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "channel"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "channel": {
+          "$ref": "#/$defs/messageChannel"
+        }
+      }
+    },
     "initiate": {
       "type": "object",
       "additionalProperties": false,
@@ -234,6 +270,38 @@
         },
         "timer": {
           "$ref": "#/$defs/timerDefinition"
+        }
+      }
+    },
+    "awaitMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "message"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitMessage"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "message": {
+          "$ref": "#/$defs/messageDefinition"
         }
       }
     },
@@ -646,6 +714,9 @@
         },
         {
           "$ref": "#/$defs/awaitTimer"
+        },
+        {
+          "$ref": "#/$defs/awaitMessage"
         },
         {
           "$ref": "#/$defs/awaitEffect"

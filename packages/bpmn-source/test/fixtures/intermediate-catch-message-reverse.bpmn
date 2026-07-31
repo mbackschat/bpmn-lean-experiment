@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_IntermediateCatchMessageReverse"
+  targetNamespace="https://bpmn-lean.local/tests/intermediate-catch-message-reverse">
+  <bpmn:message id="Message_ApprovalRequest" name="Approval request"/>
+  <bpmn:interface id="Interface_ProcessMessages" name="Process messages">
+    <bpmn:operation id="Operation_ReceiveApprovalRequest" name="Receive approval request">
+      <bpmn:inMessageRef>Message_ApprovalRequest</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_IntermediateCatchMessageReverse" name="User task then message" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_Approve" name="Approve">
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToMessage</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="MessageCatch_ApprovalRequest">
+      <bpmn:incoming>Flow_TaskToMessage</bpmn:incoming>
+      <bpmn:outgoing>Flow_MessageToEnd</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ApprovalRequest" messageRef="Message_ApprovalRequest" operationRef="Operation_ReceiveApprovalRequest"/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_MessageToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="StartEvent_1" targetRef="UserTask_Approve"/>
+    <bpmn:sequenceFlow id="Flow_TaskToMessage" sourceRef="UserTask_Approve" targetRef="MessageCatch_ApprovalRequest"/>
+    <bpmn:sequenceFlow id="Flow_MessageToEnd" sourceRef="MessageCatch_ApprovalRequest" targetRef="EndEvent_1"/>
+  </bpmn:process>
+</bpmn:definitions>

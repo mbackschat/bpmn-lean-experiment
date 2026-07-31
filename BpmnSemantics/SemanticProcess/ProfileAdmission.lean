@@ -10,6 +10,7 @@ namespace BpmnSemantics.SemanticProcess
 private structure OperationCardinalities where
   initiates : Nat
   userTasks : Nat
+  messages : Nat
   timers : Nat
   effects : Nat
   duplicates : Nat
@@ -21,6 +22,7 @@ private structure OperationCardinalities where
 private def emptyCardinalities : OperationCardinalities :=
   { initiates := 0
     userTasks := 0
+    messages := 0
     timers := 0
     effects := 0
     duplicates := 0
@@ -36,6 +38,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .intermediateCatchTimerEvent .. =>
         { counts with timers := counts.timers + 1 }
+    | .intermediateCatchMessageEvent .. =>
+        { counts with messages := counts.messages + 1 }
     | .serviceTask .. => { counts with effects := counts.effects + 1 }
     | .parallelGateway _ .diverging =>
         { counts with duplicates := counts.duplicates + 1 }
@@ -51,6 +55,7 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
     | .awaitUserTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .awaitTimer .. => { counts with timers := counts.timers + 1 }
+    | .awaitMessage .. => { counts with messages := counts.messages + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
     | .duplicate .. => { counts with duplicates := counts.duplicates + 1 }
     | .synchronize .. =>
@@ -95,6 +100,11 @@ private def profileAllowsCardinalities (profile : String)
     counts =
       { emptyCardinalities with
         initiates := 1, userTasks := 1, timers := 1, terminates := 1 }
+  else if profile =
+      "bpmn-2.0.2-intermediate-catch-message-draft" then
+    counts =
+      { emptyCardinalities with
+        initiates := 1, userTasks := 1, messages := 1, terminates := 1 }
   else
     false
 

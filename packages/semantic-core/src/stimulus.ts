@@ -15,6 +15,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
     case StimulusKind.CompleteUserTaskInstance:
+    case StimulusKind.DeliverMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
       return stimulus.commandId;
@@ -39,6 +40,13 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.taskId.processInstanceId === right.taskId.processInstanceId &&
         left.taskId.elementId === right.taskId.elementId &&
         left.taskId.activation === right.taskId.activation
+      );
+    case StimulusKind.DeliverMessage:
+      return (
+        right.kind === StimulusKind.DeliverMessage &&
+        left.commandId === right.commandId &&
+        sameOccurrenceId(left.subscriptionId, right.subscriptionId) &&
+        sameMessageChannel(left.channel, right.channel)
       );
     case StimulusKind.FireTimer:
       return (
@@ -96,6 +104,18 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         Number.isSafeInteger(value.taskId.activation) &&
         Number(value.taskId.activation) >= 1
       );
+    case StimulusKind.DeliverMessage:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "subscriptionId",
+          "channel",
+        ]) &&
+        isNonEmptyString(value.commandId) &&
+        isOccurrenceId(value.subscriptionId) &&
+        isMessageChannel(value.channel)
+      );
     case StimulusKind.FireTimer:
       return (
         hasOnlyKeys(value, [
@@ -128,6 +148,36 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
     default:
       return false;
   }
+}
+
+function sameOccurrenceId(
+  left: import("./contract.js").OccurrenceId,
+  right: import("./contract.js").OccurrenceId,
+): boolean {
+  return left.processInstanceId === right.processInstanceId &&
+    left.elementId === right.elementId &&
+    left.activation === right.activation;
+}
+
+function sameMessageChannel(
+  left: import("./semantic-process-contract.js").MessageChannel,
+  right: import("./semantic-process-contract.js").MessageChannel,
+): boolean {
+  return left.interfaceId === right.interfaceId &&
+    left.interfaceOperationId === right.interfaceOperationId &&
+    left.messageId === right.messageId;
+}
+
+function isMessageChannel(value: unknown): boolean {
+  return isRecord(value) &&
+    hasOnlyKeys(value, [
+      "interfaceId",
+      "interfaceOperationId",
+      "messageId",
+    ]) &&
+    isNonEmptyString(value.interfaceId) &&
+    isNonEmptyString(value.interfaceOperationId) &&
+    isNonEmptyString(value.messageId);
 }
 
 function sameEffectResult(

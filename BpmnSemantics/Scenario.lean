@@ -38,6 +38,7 @@ structure OccurrenceId where
   deriving Repr, DecidableEq
 
 abbrev UserTaskInstanceId := OccurrenceId
+abbrev MessageSubscriptionId := OccurrenceId
 abbrev TimerOccurrenceId := OccurrenceId
 abbrev EffectOccurrenceId := OccurrenceId
 
@@ -77,15 +78,33 @@ structure OpenUserTask where
   state : UserTaskLifecycleState
   deriving Repr, DecidableEq
 
+structure MessageChannel where
+  interfaceId : SemanticId
+  interfaceOperationId : SemanticId
+  messageId : SemanticId
+  deriving Repr, DecidableEq
+
+structure OpenMessageSubscription where
+  id : MessageSubscriptionId
+  channel : MessageChannel
+  deriving Repr, DecidableEq
+
 /-- Command-ID-free capabilities derived solely from semantic runtime state. -/
 inductive EnabledInteraction where
   | completeUserTaskInstance (taskId : UserTaskInstanceId)
+  | deliverMessage
+      (subscriptionId : MessageSubscriptionId)
+      (channel : MessageChannel)
   deriving Repr, DecidableEq
 
 /-- External inputs currently admitted by the User Task scenario boundary. -/
 inductive Stimulus where
   | startProcess (commandId : SemanticId) (processId : SemanticId) (instanceId : SemanticId)
   | completeUserTaskInstance (commandId : SemanticId) (taskId : UserTaskInstanceId)
+  | deliverMessage
+      (commandId : SemanticId)
+      (subscriptionId : MessageSubscriptionId)
+      (channel : MessageChannel)
   | fireTimer (commandId : SemanticId) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
   | completeEffect
       (commandId : SemanticId)
@@ -103,6 +122,7 @@ inductive ProcessStatus where
 /-- Semantic wait categories supported by the current milestone contract. -/
 inductive WaitKind where
   | userTask
+  | message
   | timer
   | effect
   deriving Repr, DecidableEq
@@ -133,6 +153,7 @@ structure StateObservation where
   status : ProcessStatus
   activeWaits : List ActiveWait
   openUserTasks : List OpenUserTask
+  openMessageSubscriptions : List OpenMessageSubscription
   openTimers : List OpenTimer
   openEffects : List OpenEffect
   variables : List VariableBinding

@@ -12,6 +12,7 @@
     "included": [
       "Definitions and executable Process identity",
       "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ServiceTask, ParallelGateway, ExclusiveGateway, EndEvent, and SequenceFlow type identity",
+      "MessageEventDefinition, Message, Interface, and Operation type identity plus messageRef, operationRef, inMessageRef, payload, implementation, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
@@ -38,6 +39,10 @@
     "startEventType": "bpmn:StartEvent",
     "intermediateCatchEventType": "bpmn:IntermediateCatchEvent",
     "timerEventDefinitionType": "bpmn:TimerEventDefinition",
+    "messageEventDefinitionType": "bpmn:MessageEventDefinition",
+    "messageType": "bpmn:Message",
+    "interfaceType": "bpmn:Interface",
+    "operationType": "bpmn:Operation",
     "boundaryEventType": "bpmn:BoundaryEvent",
     "errorEventDefinitionType": "bpmn:ErrorEventDefinition",
     "errorType": "bpmn:Error",
@@ -79,6 +84,30 @@
       "name": "TimerEventDefinition",
       "directSuperClasses": [
         "EventDefinition"
+      ]
+    },
+    {
+      "name": "MessageEventDefinition",
+      "directSuperClasses": [
+        "EventDefinition"
+      ]
+    },
+    {
+      "name": "Message",
+      "directSuperClasses": [
+        "RootElement"
+      ]
+    },
+    {
+      "name": "Interface",
+      "directSuperClasses": [
+        "RootElement"
+      ]
+    },
+    {
+      "name": "Operation",
+      "directSuperClasses": [
+        "BaseElement"
       ]
     },
     {
@@ -303,6 +332,102 @@
       "lower": 0,
       "upper": 1,
       "containment": true
+    },
+    {
+      "owner": "MessageEventDefinition",
+      "name": "messageRef",
+      "type": "Message",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "MessageEventDefinition",
+      "name": "operationRef",
+      "type": "Operation",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Message",
+      "name": "name",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Message",
+      "name": "itemRef",
+      "type": "ItemDefinition",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Interface",
+      "name": "name",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Interface",
+      "name": "operations",
+      "type": "Operation",
+      "lower": 1,
+      "upper": "*",
+      "containment": true
+    },
+    {
+      "owner": "Interface",
+      "name": "implementationRef",
+      "type": "Element",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Operation",
+      "name": "name",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Operation",
+      "name": "inMessageRef",
+      "type": "Message",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Operation",
+      "name": "outMessageRef",
+      "type": "Message",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Operation",
+      "name": "errorRefs",
+      "type": "Error",
+      "lower": 0,
+      "upper": "*",
+      "containment": false
+    },
+    {
+      "owner": "Operation",
+      "name": "implementationRef",
+      "type": "Element",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
     },
     {
       "owner": "StartEvent",

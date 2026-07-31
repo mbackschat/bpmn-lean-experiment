@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.Transition
+import BpmnSemantics.SemanticProcess.Message
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcess.Fixtures

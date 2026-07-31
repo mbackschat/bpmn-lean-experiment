@@ -101,6 +101,36 @@ test("admits each reachable wait set of the new linear composition", async () =>
   );
 });
 
+test("classifies Message and User Task as passive ingress in either operation order", async () => {
+  const program = await compileFixture(
+    "../../../scenarios/intermediate-catch-message/process.bpmn",
+    "intermediate-catch-message-process",
+    "bpmn-2.0.2-intermediate-catch-message-draft",
+  );
+  const waitKinds = program.operations.flatMap(({ kind }) =>
+    kind === SemanticOperationKind.AwaitMessage ||
+    kind === SemanticOperationKind.AwaitUserTask
+      ? [kind]
+      : []
+  );
+  assert.deepEqual(waitKinds.sort(), [
+    SemanticOperationKind.AwaitMessage,
+    SemanticOperationKind.AwaitUserTask,
+  ].sort());
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [...program.operations].reverse(),
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Admitted,
+    },
+  );
+});
+
 test("keeps passive parallel User Tasks separate from host-driven waits", async () => {
   const parallel = await compileFixture(
     "../../../scenarios/parallel-fork-join/process.bpmn",

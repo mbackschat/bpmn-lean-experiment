@@ -61,6 +61,7 @@ function referencedControlPlaces(
       return [operation.output];
     case "awaitUserTask":
     case "awaitTimer":
+    case "awaitMessage":
     case "awaitEffect":
       return [operation.input, operation.output];
     case "duplicate":
@@ -116,6 +117,7 @@ export function verifyCanonicalDefinitionOrder(
       case "initiate":
       case "awaitUserTask":
       case "awaitTimer":
+      case "awaitMessage":
       case "awaitEffect":
       case "terminate":
         break;
@@ -207,6 +209,14 @@ export function verifyDefinitionReferences(
     ) {
       throw new Error(
         `operation ${operation.id} timer identity differs from its BPMN origin`,
+      );
+    }
+    if (
+      operation.kind === "awaitMessage" &&
+      operation.message.elementId !== operation.origin.elementId
+    ) {
+      throw new Error(
+        `operation ${operation.id} Message identity differs from its BPMN origin`,
       );
     }
     if (

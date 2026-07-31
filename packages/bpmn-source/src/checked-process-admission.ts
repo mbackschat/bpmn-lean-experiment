@@ -48,6 +48,8 @@ function semanticOperationKind(node: CheckedNode): SemanticOperationKind {
       return SemanticOperationKind.AwaitUserTask;
     case CheckedNodeKind.IntermediateCatchTimerEvent:
       return SemanticOperationKind.AwaitTimer;
+    case CheckedNodeKind.IntermediateCatchMessageEvent:
+      return SemanticOperationKind.AwaitMessage;
     case CheckedNodeKind.ServiceTask:
       return SemanticOperationKind.AwaitEffect;
     case CheckedNodeKind.ParallelGateway:
@@ -106,6 +108,7 @@ function hasSelectedArity(
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.UserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:
+    case CheckedNodeKind.IntermediateCatchMessageEvent:
     case CheckedNodeKind.ServiceTask:
       return incoming === 1 && outgoing === 1;
     case CheckedNodeKind.ParallelGateway:

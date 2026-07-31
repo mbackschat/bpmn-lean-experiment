@@ -126,6 +126,7 @@ def waitingObservation : StateObservation :=
          kind := .effect
          multiplicity := 1 }]
     openUserTasks := []
+    openMessageSubscriptions := []
     openTimers := []
     openEffects := [{ id := effectId, descriptor, arguments }]
     variables := []
@@ -137,6 +138,7 @@ def completedObservation : StateObservation :=
     status := .completed
     activeWaits := []
     openUserTasks := []
+    openMessageSubscriptions := []
     openTimers := []
     openEffects := []
     variables := [expectedVariable "Document:42"]

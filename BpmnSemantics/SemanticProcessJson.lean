@@ -97,6 +97,15 @@ private def decodeOccurrenceId (json : Json) :
       elementId := ⟨← stringField json "elementId"⟩
       activation }
 
+private def decodeMessageChannel (json : Json) :
+    Except String MessageChannel := do
+  requireObjectShape json
+    ["interfaceId", "interfaceOperationId", "messageId"]
+  pure
+    { interfaceId := ⟨← stringField json "interfaceId"⟩
+      interfaceOperationId := ⟨← stringField json "interfaceOperationId"⟩
+      messageId := ⟨← stringField json "messageId"⟩ }
+
 private def decodeVariableValue (json : Json) :
     Except String VariableValue := do
   match ← stringField json "kind" with
@@ -155,6 +164,14 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
         (.completeUserTaskInstance
           ⟨← stringField json "commandId"⟩
           (← decodeOccurrenceId (← field json "taskId")))
+  | "deliverMessage" =>
+      requireObjectShape json
+        ["channel", "commandId", "kind", "subscriptionId"]
+      pure
+        (.deliverMessage
+          ⟨← stringField json "commandId"⟩
+          (← decodeOccurrenceId (← field json "subscriptionId"))
+          (← decodeMessageChannel (← field json "channel")))
   | "fireTimer" =>
       requireObjectShape json
         ["commandId", "kind", "logicalTimeMs", "timerId"]
@@ -300,6 +317,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.intermediateCatchTimerEvent
           ⟨← stringField json "id"⟩
           (← stringField json "durationLiteral"))
+  | "intermediateCatchMessageEvent" =>
+      requireObjectShape json ["channel", "id", "kind"]
+      pure
+        (.intermediateCatchMessageEvent
+          ⟨← stringField json "id"⟩
+          (← decodeMessageChannel (← field json "channel")))
   | "serviceTask" =>
       requireObjectShape json
         ["bpmnErrorRoute", "descriptor", "id", "inputMappings", "kind",
@@ -399,6 +422,13 @@ private def decodeTimerDefinition (json : Json) :
     { elementId := ⟨← stringField json "elementId"⟩
       durationMs := ← decodeSafeNat (← field json "durationMs") }
 
+private def decodeMessageDefinition (json : Json) :
+    Except String MessageDefinition := do
+  requireObjectShape json ["channel", "elementId"]
+  pure
+    { elementId := ⟨← stringField json "elementId"⟩
+      channel := ← decodeMessageChannel (← field json "channel") }
+
 private def decodeEffectDefinition (json : Json) :
     Except String EffectDefinition := do
   requireObjectShape json
@@ -495,6 +525,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
           (← decodeTimerDefinition (← field json "timer")))
+  | "awaitMessage" =>
+      requireObjectShape json
+        ["id", "input", "kind", "message", "origin", "output"]
+      pure
+        (.awaitMessage
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "output"⟩
+          (← decodeMessageDefinition (← field json "message")))
   | "awaitEffect" =>
       requireObjectShape json
         ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",

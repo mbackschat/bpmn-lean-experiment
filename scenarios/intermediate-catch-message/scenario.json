@@ -1,0 +1,66 @@
+{
+  "kind": "scenario",
+  "id": "intermediate-catch-message",
+  "profile": "bpmn-2.0.2-intermediate-catch-message-draft",
+  "bpmn": {
+    "id": "intermediate-catch-message-process",
+    "relativePath": "scenarios/intermediate-catch-message/process.bpmn",
+    "sha256": "41ba50066e54fa1a01340b185afb04c70d1acc761f902a8f321f31eb095f2515"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-message-process",
+      "processId": "Process_IntermediateCatchMessage",
+      "instanceId": "MessageInstance_1"
+    },
+    {
+      "kind": "deliverMessage",
+      "commandId": "deliver-message",
+      "subscriptionId": {
+        "processInstanceId": "MessageInstance_1",
+        "elementId": "MessageCatch_ApprovalRequest",
+        "activation": 1
+      },
+      "channel": {
+        "interfaceId": "Interface_ProcessMessages",
+        "interfaceOperationId": "Operation_ReceiveApprovalRequest",
+        "messageId": "Message_ApprovalRequest"
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-message-user-task",
+      "taskId": {
+        "processInstanceId": "MessageInstance_1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §8.4.2",
+      "BPMN 2.0.2 §8.4.11",
+      "BPMN 2.0.2 §8.5",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

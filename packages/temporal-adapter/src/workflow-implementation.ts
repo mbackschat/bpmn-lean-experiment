@@ -22,6 +22,7 @@ import type {
   CanonicalObservation,
   CompleteEffectStimulus,
   CompleteUserTaskInstanceStimulus,
+  DeliverMessageStimulus,
   OpenUserTask,
   RuntimeState,
   SemanticProcessProgram,
@@ -36,23 +37,35 @@ import {
   allHandlersFinished,
   condition,
   defineQuery,
+  defineSignal,
   defineUpdate,
   setHandler,
 } from "@temporalio/workflow";
 
 import {
   bpmnCompleteUserTaskUpdateName,
+  bpmnDeliverMessageSignalName,
+  bpmnMessageDeliveryResultQueryName,
   bpmnOpenUserTasksQueryName,
   bpmnTraceQueryName,
 } from "./contracts.js";
 import type {
   BpmnCompleteUserTaskUpdateArguments,
+  BpmnDeliverMessageSignalArguments,
+  BpmnMessageDeliveryResultQueryArguments,
   CompletedProcessReceipt,
+  MessageDeliveryResolution,
 } from "./contracts.js";
 import type {
   EffectExecutionResult,
   EffectRequest,
 } from "./effect-probe.js";
+import {
+  acceptMessageDelivery,
+  completedMessageDeliveryRecords,
+  findMessageDeliveryResolution,
+  recordMessageDeliveryOutcome,
+} from "./message-delivery-ledger.js";
 import {
   completeEffectStimulus,
   effectTransportKey,
@@ -69,6 +82,13 @@ export const bpmnCompleteUserTaskUpdate = defineUpdate<
   CommandOutcome,
   BpmnCompleteUserTaskUpdateArguments
 >(bpmnCompleteUserTaskUpdateName);
+export const bpmnDeliverMessageSignal = defineSignal<
+  BpmnDeliverMessageSignalArguments
+>(bpmnDeliverMessageSignalName);
+export const bpmnMessageDeliveryResultQuery = defineQuery<
+  MessageDeliveryResolution | null,
+  BpmnMessageDeliveryResultQueryArguments
+>(bpmnMessageDeliveryResultQueryName);
 
 type CommandResultLedgerEntry = Readonly<{
   commandId: string;
@@ -95,6 +115,7 @@ export async function runBpmnProcessWithHostEffects(
   const pendingStimuli: Stimulus[] = [];
   const acceptedStimuli: Stimulus[] = [];
   const commandResults: CommandResultLedgerEntry[] = [];
+  const messageDeliveryResolutions: MessageDeliveryResolution[] = [];
   let state: RuntimeState = initialState;
 
   // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
@@ -106,6 +127,30 @@ export async function runBpmnProcessWithHostEffects(
     bpmnOpenUserTasksQuery,
     () => projectOpenUserTasks(state),
   );
+  setHandler(
+    bpmnMessageDeliveryResultQuery,
+    (stimulus) =>
+      findMessageDeliveryResolution(
+        messageDeliveryResolutions,
+        stimulus,
+      ) ?? null,
+  );
+  setHandler(bpmnDeliverMessageSignal, (stimulus) => {
+    validateDeliverMessageSignal(stimulus);
+    const accepted = acceptedStimulus(
+      acceptedStimuli,
+      stimulus.commandId,
+    );
+    const acceptance = acceptMessageDelivery(
+      messageDeliveryResolutions,
+      stimulus,
+      accepted,
+    );
+    if (acceptance.enqueue) {
+      acceptedStimuli.push(stimulus);
+      pendingStimuli.push(stimulus);
+    }
+  });
   setHandler(
     bpmnCompleteUserTaskUpdate,
     async (stimulus) => {
@@ -248,7 +293,21 @@ export async function runBpmnProcessWithHostEffects(
       ) {
         failRejectedHostEffectResult(state, stimulus);
       }
-      recordCommandOutcome(commandResults, stimulus, step.observations);
+      const outcome = recordCommandOutcome(
+        commandResults,
+        stimulus,
+        step.observations,
+      );
+      if (
+        stimulus.kind === StimulusKind.DeliverMessage &&
+        outcome !== undefined
+      ) {
+        recordMessageDeliveryOutcome(
+          messageDeliveryResolutions,
+          stimulus,
+          outcome,
+        );
+      }
       trace.push(...step.observations);
       switch (step.kind) {
         case ScenarioStepKind.Committed:
@@ -279,6 +338,9 @@ export async function runBpmnProcessWithHostEffects(
     processId: semanticProcess.processId,
     processInstanceId: start.instanceId,
     finalState: requireCompletedState(trace, start.instanceId),
+    messageDeliveryRecords: completedMessageDeliveryRecords(
+      messageDeliveryResolutions,
+    ),
   };
 }
 
@@ -330,7 +392,7 @@ function recordCommandOutcome(
   results: CommandResultLedgerEntry[],
   stimulus: Stimulus,
   observations: ReadonlyArray<CanonicalObservation>,
-): void {
+): CommandOutcome | undefined {
   const commandId = stimulusCommandId(stimulus);
   const observation = observations.find(
     (candidate) =>
@@ -341,7 +403,7 @@ function recordCommandOutcome(
     observation === undefined ||
     observation.kind !== CanonicalObservationKind.Command
   ) {
-    return;
+    return undefined;
   }
   const existing = commandOutcome(results, commandId);
   if (existing !== undefined && existing !== observation.outcome) {
@@ -350,6 +412,7 @@ function recordCommandOutcome(
   if (existing === undefined) {
     results.push({ commandId, outcome: observation.outcome });
   }
+  return observation.outcome;
 }
 
 function commandOutcome(
@@ -378,6 +441,20 @@ function validateCompleteUserTaskUpdate(
   );
   if (accepted !== undefined) {
     requireSameCommandStimulus(accepted, value);
+  }
+}
+
+function validateDeliverMessageSignal(
+  stimulus: DeliverMessageStimulus,
+): void {
+  const value = stimulus as unknown;
+  if (
+    !isWellFormedStimulus(value) ||
+    value.kind !== StimulusKind.DeliverMessage
+  ) {
+    throw new TypeError(
+      "Message Signal must contain one well-formed delivery stimulus",
+    );
   }
 }
 

@@ -14,9 +14,7 @@ import type {
 } from "@temporalio/client";
 import { TestWorkflowEnvironment } from "@temporalio/testing";
 import {
-  bpmnProcessWorkflowType,
   bpmnOpenUserTasksQueryName,
-  bpmnSemanticTaskQueue,
   bpmnTraceQueryName,
   TemporalCompletionDelivery,
   TemporalExecutionSchedule,
@@ -81,8 +79,11 @@ import {
   TemporalWorkerHost,
 } from "./temporal-worker-host.js";
 import {
-  requireScenarioAdmission,
-} from "./scenario-admission.js";
+  deliverScenarioMessages,
+} from "./runner-message-delivery.js";
+import {
+  startScenarioWorkflow,
+} from "./runner-workflow-start.js";
 import {
   requiresHostProgressBeforeCompletion,
 } from "./scenario-stimulus-sequencing.js";
@@ -223,19 +224,12 @@ export class TemporalScenarioRunner {
     this.assertAvailable();
     validateExecutionOptions(scenario, options);
     const start = requireStartStimulus(scenario);
-    requireScenarioAdmission(start, semanticProcess);
-    const handle = await withDeadline(
-      this.environment.client.workflow.start<BpmnProcessWorkflow>(
-        bpmnProcessWorkflowType,
-        {
-          taskQueue: bpmnSemanticTaskQueue,
-          workflowId: options.workflowId,
-          workflowIdReusePolicy: "REJECT_DUPLICATE",
-          args: [start, semanticProcess],
-        },
-      ),
+    const handle = await startScenarioWorkflow(
+      this.environment.client.workflow,
+      start,
+      semanticProcess,
+      options.workflowId,
       operationDeadlineMs,
-      "Workflow start",
     );
 
     const waitTrace = await withDeadline(
@@ -244,6 +238,13 @@ export class TemporalScenarioRunner {
       "Workflow wait-state observation",
     );
 
+    await deliverScenarioMessages(
+      this.environment.client.workflow,
+      handle.workflowId,
+      start.instanceId,
+      scenario,
+      operationDeadlineMs,
+    );
     const completions = requireCompletionStimuli(scenario);
     const firstCompletion = completions[0];
     if (

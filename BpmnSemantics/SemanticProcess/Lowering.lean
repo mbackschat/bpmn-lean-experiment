@@ -89,6 +89,13 @@ private def lowerNode (source : CheckedProcess) : CheckedNode → SemanticOperat
         (firstPlace (outgoingPlaces source id))
         { elementId := id
           durationMs := if durationLiteral = "PT1S" then 1000 else 0 }
+  | .intermediateCatchMessageEvent id channel =>
+      .awaitMessage
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        { elementId := id, channel }
   | .serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
       .awaitEffect
         (nodeOperationId id)
@@ -229,6 +236,11 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .intermediateCatchTimerEvent id durationLiteral =>
       durationLiteral = "PT1S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .intermediateCatchMessageEvent id channel =>
+      nonempty channel.interfaceId.value &&
+        nonempty channel.interfaceOperationId.value &&
+        nonempty channel.messageId.value &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1
   | .serviceTask id descriptor inputMappings outputMappings route =>
       (descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
         ((descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1" &&
@@ -328,6 +340,17 @@ private def operationWellFormed (places : List ControlPlace) :
         nonempty timer.elementId.value &&
         decide (origin.elementId = timer.elementId) &&
         timer.durationMs = 1000 &&
+        placeExists places input &&
+        placeExists places output
+  | .awaitMessage id origin input output message =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty message.elementId.value &&
+        decide (origin.elementId = message.elementId) &&
+        nonempty message.channel.interfaceId.value &&
+        nonempty message.channel.interfaceOperationId.value &&
+        nonempty message.channel.messageId.value &&
+        decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output
   | .awaitEffect id origin input output effect bpmnErrorRoute =>

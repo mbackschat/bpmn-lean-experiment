@@ -11,6 +11,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
   | .intermediateCatchTimerEvent id _
+  | .intermediateCatchMessageEvent id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveGateway id _ _

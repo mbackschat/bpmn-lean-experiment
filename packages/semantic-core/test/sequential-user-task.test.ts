@@ -73,6 +73,7 @@ test("start closes at one stable User Task wait", async () => {
         output: "place:Flow_TaskToEnd",
       },
     ],
+    messageWaits: [],
     timerWaits: [],
     effectWaits: [],
     variables: {
@@ -82,6 +83,7 @@ test("start closes at one stable User Task wait", async () => {
     taskActivations: [
       { elementId: "UserTask_Approve", count: 1 },
     ],
+    messageActivations: [],
     timerActivations: [],
     effectActivations: [],
     endOccurrences: 0,
@@ -139,6 +141,7 @@ test("matching occurrence completion closes the Process", async () => {
     initiationPending: false,
     controlTokens: [],
     userTaskWaits: [],
+    messageWaits: [],
     timerWaits: [],
     effectWaits: [],
     variables: {
@@ -148,6 +151,7 @@ test("matching occurrence completion closes the Process", async () => {
     taskActivations: [
       { elementId: "UserTask_Approve", count: 1 },
     ],
+    messageActivations: [],
     timerActivations: [],
     effectActivations: [],
     endOccurrences: 1,

@@ -15,11 +15,11 @@ This separation avoids routing every consumer through document-version switches 
 | Artifact | Identity and responsibility |
 |---|---|
 | Semantic profile | Stable `kind`; versioned semantic `id`; exactly one normative authority or pinned executable oracle/configuration; selected feature surface, observation boundary, CIB–BPMN relationship references, and optional exact-source-binding-to-neutral-effect registrations |
-| Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, timer firing, and effect-result stimuli, requested observations, and provenance |
-| Canonical result | Outcome plus canonical observation trace including semantic task, timer, and effect occurrences and canonical Process variables; no target-specific host data |
+| Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, timer firing, Message delivery, and effect-result stimuli, requested observations, and provenance |
+| Canonical result | Outcome plus canonical observation trace including semantic task, Message subscription, timer, and effect occurrences and canonical Process variables; no target-specific host data |
 | CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; raw runtime/history state-query, task, timer, effect, and mapping observations plus canonical result |
-| Checked BPMN graph | Current `checkedProcess` contract; source-facing admitted graph with exact source/profile identity, profile-registered neutral effect descriptors, and no raw Camunda/A12 binding or runtime semantics |
-| Semantic Process program | Current `semanticProcess` contract; compiler/source/profile identity, typed control places and operations including neutral effect descriptors, and no mutable runtime state |
+| Checked BPMN graph | Current `checkedProcess` contract; source-facing admitted graph with exact source/profile identity, resolved Message channels, profile-registered neutral effect descriptors, and no raw Camunda/A12 binding or runtime semantics |
+| Semantic Process program | Current `semanticProcess` contract; compiler/source/profile identity, typed control places and operations including Message subscription and neutral effect descriptors, and no mutable runtime state |
 | Pipeline report | Stable `kind`; ephemeral verification report, provenance, comparisons, replay count, isolation, and timings |
 
 Neutral scenarios contain no expected answer. CIB evidence is a separate immutable verifier input bound to the exact scenario and profile bytes. Target runners never receive it, and ordinary verification never regenerates it.
@@ -43,10 +43,10 @@ Portable assertions are verifier-side claims over canonical results or relations
 ## Schemas
 
 - [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates current draft profiles with exactly one normative or executable-oracle authority.
-- [scenario.schema.json](schemas/scenario.schema.json) validates the twelve answer-free User Task, balanced-parallel, Intermediate Catch Timer, Timer/User Task composition, Service Task effect, CreateDocument data, boundary-error, and Simple Boolean Exclusive Gateway scenarios.
+- [scenario.schema.json](schemas/scenario.schema.json) validates the thirteen answer-free User Task, balanced-parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, Service Task effect, CreateDocument data, boundary-error, and Simple Boolean Exclusive Gateway scenarios.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.
 - [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.
 - [semantic-process.schema.json](schemas/semantic-process.schema.json) validates the immutable Semantic Process definition contract.
 
-The checked BPMN graph and Semantic Process schemas freeze the artifact boundaries from [the Semantic Process IL spec](../docs/SEMANTIC-PROCESS-IL-SPEC.md). The bounded source compiler produces both artifacts after structural graph and exact profile-capability admission has mapped raw Service Task bindings to registered neutral effect identities, while the sequential, balanced-parallel, Intermediate Catch Timer, Timer/User Task composition, payload-free Service Task, CreateDocument data, and boundary-error execution paths consume only the Semantic Process program. The schemas validate transport shape; they do not establish raw source translation, lowering correspondence, or operational semantics.
+The checked BPMN graph and Semantic Process schemas freeze the artifact boundaries from [the Semantic Process IL spec](../docs/SEMANTIC-PROCESS-IL-SPEC.md). The bounded source compiler produces both artifacts after structural graph and exact profile-capability admission has resolved Message definition chains and mapped raw Service Task bindings to registered neutral effect identities, while the sequential, balanced-parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, CreateDocument data, and boundary-error execution paths consume only the Semantic Process program. The schemas validate transport shape; they do not establish raw source translation, lowering correspondence, or operational semantics.

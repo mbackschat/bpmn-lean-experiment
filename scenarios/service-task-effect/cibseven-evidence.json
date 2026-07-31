@@ -112,6 +112,7 @@
           }
         ],
         "openUserTasks": [],
+        "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [
           {
@@ -142,6 +143,7 @@
         "status": "completed",
         "activeWaits": [],
         "openUserTasks": [],
+        "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
         "variables": [],

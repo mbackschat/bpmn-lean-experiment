@@ -124,6 +124,7 @@ def waitingObservation : StateObservation :=
           kind := .timer
           multiplicity := 1 } ]
     openUserTasks := []
+    openMessageSubscriptions := []
     openTimers := [{ id := timerId, deadlineMs := 1000 }]
     openEffects := []
     variables := []
@@ -135,6 +136,7 @@ def completedObservation : StateObservation :=
     status := .completed
     activeWaits := []
     openUserTasks := []
+    openMessageSubscriptions := []
     openTimers := []
     openEffects := []
     variables := []

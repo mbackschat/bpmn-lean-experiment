@@ -1,5 +1,5 @@
 /**
- * Production-facing Process start and User Task command ingress.
+ * Production-facing Process start, User Task Update, and Message Signal ingress.
  *
  * Resolution after a failed Update lookup follows the lifecycle contract: retained Update result,
  * completed receipt, then unknown Process.
@@ -7,12 +7,14 @@
 import type {
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  DeliverMessageStimulus,
   SemanticProcessProgram,
   StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   StimulusKind,
   isWellFormedStimulus,
+  sameStimulus,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -26,12 +28,17 @@ import type {
 import {
   TemporalHostCapabilityResultKind,
   bpmnCompleteUserTaskUpdateName,
+  bpmnDeliverMessageSignalName,
+  bpmnMessageDeliveryResultQueryName,
+  MessageDeliveryResolutionKind,
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
   ProcessCommandResultKind,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
+  CompletedProcessReceipt,
+  MessageDeliveryResolution,
   ProcessCommandResult,
   TemporalHostAdmissionFailure,
 } from "./contracts.js";
@@ -51,6 +58,15 @@ import {
 } from "./runner-support.js";
 
 const operationDeadlineMs = 5_000;
+const messageResolutionPollMs = 20;
+
+export class BpmnMessageIngressInvalid extends TypeError {
+  override readonly name = "BpmnMessageIngressInvalid";
+}
+
+export class BpmnCommandIdentityConflict extends Error {
+  override readonly name = "BpmnCommandIdentityConflict";
+}
 
 export enum BpmnProcessAdmissionResultKind {
   Admitted = "admitted",
@@ -241,4 +257,174 @@ export async function submitUserTaskCompletionAtWorkflowId(
     }
     throw error;
   }
+}
+
+export async function submitMessageDelivery(
+  client: WorkflowClient,
+  processInstanceId: string,
+  stimulus: unknown,
+): Promise<ProcessCommandResult> {
+  return submitMessageDeliveryAtWorkflowId(
+    client,
+    processWorkflowId(processInstanceId),
+    processInstanceId,
+    stimulus,
+  );
+}
+
+export async function submitMessageDeliveryAtWorkflowId(
+  client: WorkflowClient,
+  workflowId: string,
+  processInstanceId: string,
+  stimulus: unknown,
+): Promise<ProcessCommandResult> {
+  const delivery = requireMessageDelivery(processInstanceId, stimulus);
+  const handle = client.getHandle<BpmnProcessWorkflow>(workflowId);
+  try {
+    await withDeadline(
+      handle.signal<
+        [DeliverMessageStimulus]
+      >(bpmnDeliverMessageSignalName, delivery),
+      operationDeadlineMs,
+      `Workflow Signal ${delivery.commandId}`,
+    );
+  } catch (error: unknown) {
+    if (!(error instanceof WorkflowNotFoundError)) {
+      throw error;
+    }
+    return resolveClosedMessageDelivery(
+      handle,
+      processInstanceId,
+      delivery,
+    );
+  }
+
+  const deadline = Date.now() + operationDeadlineMs;
+  while (Date.now() < deadline) {
+    try {
+      const resolution = await withDeadline(
+        handle.query<
+          MessageDeliveryResolution | null,
+          [DeliverMessageStimulus]
+        >(
+          bpmnMessageDeliveryResultQueryName,
+          delivery,
+        ),
+        Math.max(1, deadline - Date.now()),
+        `Message delivery Query ${delivery.commandId}`,
+      );
+      if (
+        resolution !== null &&
+        resolution.kind !== MessageDeliveryResolutionKind.Pending
+      ) {
+        return resolveMessageDeliveryRecord(resolution);
+      }
+    } catch (error: unknown) {
+      if (error instanceof WorkflowNotFoundError) {
+        return resolveClosedMessageDelivery(
+          handle,
+          processInstanceId,
+          delivery,
+        );
+      }
+      throw error;
+    }
+    await new Promise<void>((resolve) =>
+      setTimeout(resolve, messageResolutionPollMs)
+    );
+  }
+  throw new Error(
+    `Message delivery ${delivery.commandId} did not resolve before the client deadline`,
+  );
+}
+
+function requireMessageDelivery(
+  processInstanceId: string,
+  stimulus: unknown,
+): DeliverMessageStimulus {
+  if (
+    !isWellFormedStimulus(stimulus) ||
+    stimulus.kind !== StimulusKind.DeliverMessage ||
+    stimulus.subscriptionId.processInstanceId !== processInstanceId
+  ) {
+    throw new BpmnMessageIngressInvalid(
+      "Message delivery must be well-formed and address the named Process instance",
+    );
+  }
+  return stimulus;
+}
+
+async function resolveClosedMessageDelivery(
+  handle: WorkflowHandle<BpmnProcessWorkflow>,
+  processInstanceId: string,
+  stimulus: DeliverMessageStimulus,
+): Promise<ProcessCommandResult> {
+  try {
+    const receipt = requireCompletedProcessReceipt(
+      await withDeadline(
+        handle.result(),
+        operationDeadlineMs,
+        "retained completed Process receipt",
+      ),
+    );
+    if (receipt.processInstanceId !== processInstanceId) {
+      throw new TypeError(
+        "Temporal Workflow receipt does not match the addressed Process instance",
+      );
+    }
+    const retained = receipt.messageDeliveryRecords.find(
+      ({ stimulus: candidate }) => sameStimulus(candidate, stimulus),
+    );
+    if (retained !== undefined) {
+      return resolveMessageDeliveryRecord(retained);
+    }
+    return closedCommandResult(stimulus, receipt);
+  } catch (error: unknown) {
+    if (error instanceof WorkflowNotFoundError) {
+      return {
+        kind: ProcessCommandResultKind.ProcessUnknown,
+        commandId: stimulus.commandId,
+        processInstanceId,
+      };
+    }
+    throw error;
+  }
+}
+
+function resolveMessageDeliveryRecord(
+  resolution: Exclude<
+    MessageDeliveryResolution,
+    { kind: typeof MessageDeliveryResolutionKind.Pending }
+  >,
+): ProcessCommandResult {
+  switch (resolution.kind) {
+    case MessageDeliveryResolutionKind.Semantic:
+      return semanticCommandResult(
+        resolution.stimulus.commandId,
+        resolution.outcome,
+      );
+    case MessageDeliveryResolutionKind.RequestFailure:
+      throw new BpmnCommandIdentityConflict(
+        `Command ID ${resolution.stimulus.commandId} was reused with a different stimulus`,
+      );
+    default:
+      return assertNever(resolution);
+  }
+}
+
+function closedCommandResult(
+  stimulus: DeliverMessageStimulus,
+  receipt: CompletedProcessReceipt,
+): ProcessCommandResult {
+  return {
+    kind: ProcessCommandResultKind.ProcessClosed,
+    commandId: stimulus.commandId,
+    receipt,
+  };
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(
+    `Unsupported Message delivery resolution: ${String(value)}`,
+  );
 }

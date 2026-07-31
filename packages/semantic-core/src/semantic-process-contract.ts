@@ -8,6 +8,7 @@ export enum CheckedNodeKind {
   NoneStartEvent = "noneStartEvent",
   UserTask = "userTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
+  IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
   ServiceTask = "serviceTask",
   ParallelGateway = "parallelGateway",
   ExclusiveGateway = "exclusiveGateway",
@@ -106,6 +107,12 @@ export type CheckedCondition = DeepReadonly<{
   body: string;
 }>;
 
+export type MessageChannel = DeepReadonly<{
+  interfaceId: string;
+  interfaceOperationId: string;
+  messageId: string;
+}>;
+
 type CheckedServiceTask = DeepReadonly<{
   kind: CheckedNodeKind.ServiceTask;
   id: string;
@@ -129,6 +136,11 @@ export type CheckedNode =
       kind: CheckedNodeKind.IntermediateCatchTimerEvent;
       id: string;
       durationLiteral: "PT1S";
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.IntermediateCatchMessageEvent;
+      id: string;
+      channel: MessageChannel;
     }>
   | CheckedServiceTask
   | DeepReadonly<{
@@ -174,6 +186,7 @@ export enum SemanticProcessCompilerId {
 export enum SemanticOperationKind {
   Initiate = "initiate",
   AwaitUserTask = "awaitUserTask",
+  AwaitMessage = "awaitMessage",
   AwaitTimer = "awaitTimer",
   AwaitEffect = "awaitEffect",
   Duplicate = "duplicate",
@@ -256,6 +269,16 @@ export type SemanticOperation =
         timer: {
           elementId: string;
           durationMs: 1000;
+        };
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.AwaitMessage;
+        input: string;
+        output: string;
+        message: {
+          elementId: string;
+          channel: MessageChannel;
         };
       }>)
   | (OperationBase &

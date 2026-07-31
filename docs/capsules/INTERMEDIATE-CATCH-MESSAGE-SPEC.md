@@ -1,10 +1,10 @@
-# Intermediate Catch Message proposal
+# Intermediate Catch Message specification
 
-## Status and owner decision
+## Status
 
-**Owner-approved implementation proposal — approved on 2026-07-31, not yet implemented.** Independent review accepted the direct-addressed catch on its merits and required the boundary corrections now recorded below. The owner approved the direct payload-free subscription boundary, the decision-6 ordering reopen, and the R8 Signal-history amendment together. This capsule selects one directly addressed, payload-free Intermediate Catch Message Event in normal flow. It does not select an Intermediate Throw Message Event, Collaboration, Message Flow, BPMN CorrelationKey, CIB message-name/business-key behavior, or A12 façade compatibility.
+**Implemented evidence-closed draft contract.** This capsule selects one directly addressed, payload-free Intermediate Catch Message Event in normal flow. It does not select an Intermediate Throw Message Event, Collaboration, Message Flow, BPMN CorrelationKey, CIB message-name/business-key behavior, or A12 façade compatibility.
 
-The proposed discriminator is:
+The discriminator is:
 
 ```text
 None Start Event
@@ -15,23 +15,21 @@ None Start Event
 
 The trailing User Task is an already implemented mechanism. It keeps the semantic Process and Temporal Workflow live after the message is consumed so a second command with a fresh command ID can establish semantic stale refusal rather than only a post-closure transport result.
 
-Approval establishes the design boundary, authorizes red/green implementation of this exact capsule, reopens canonical wait ordering under owner decision 6, and narrows R8's zero-Signal assertion to the existing non-Message paths while requiring exact Signal history for this Message path. It does not approve any excluded message behavior.
+## Exact claim
 
-## Exact question
-
-In product terms, the capsule asks:
+In product terms, the capsule establishes:
 
 > May a client that already knows one running Process instance and the exact open Message subscription deliver one payload-free Message that resumes only that subscription once, with wrong or repeated deliveries leaving Process state unchanged and Temporal preserving delivery across Worker loss and replay?
 
 The known eventual consumer is the A12 Workflows `ProcessEngineClient` send-message façade and the eight retained A12 models containing Message Event Definitions. This first lower-layer slice does not yet satisfy that façade: message-name/business-key routing, modeled throw, payloads, CIB compatibility, and the A12 adapter contract remain separate work.
 
-The closest unsupported claim is key-based correlation of an otherwise unaddressed Message to one Process instance. This proposal deliberately does not make that claim.
+The closest unsupported claim is key-based correlation of an otherwise unaddressed Message to one Process instance. This specification deliberately does not make that claim.
 
 ## Why this is catch-only
 
 BPMN 2.0.2 requires a Message Flow to connect separate Pools and prohibits one between objects in the same Pool. A true modeled throw/catch pair therefore introduces at least two Participants, two Process instances, Collaboration and Message Flow structure, outbound-message commitment, cross-Workflow routing, and delivery-failure semantics.
 
-Combining those concerns with the first subscription transition would make the capsule a Collaboration and multi-instance routing capsule rather than the smallest Message Event lifecycle. This proposal selects the catching shape and treats the external sender as ingress outside the admitted Process. An Intermediate Throw Message Event remains the next distinct proposition after direct subscription and consumption are closed.
+Combining those concerns with the first subscription transition would make the capsule a Collaboration and multi-instance routing capsule rather than the smallest Message Event lifecycle. This specification selects the catching shape and treats the external sender as ingress outside the admitted Process. An Intermediate Throw Message Event remains the next distinct proposition after direct subscription and consumption are closed.
 
 ## Normative basis
 
@@ -359,9 +357,9 @@ Lean, TypeScript, and Temporal all consume the one TypeScript-produced checked g
 
 ## Versioning consequences
 
-Implementation is a breaking pre-release contract replacement. It adds one checked node kind, one Semantic Process operation kind, one stimulus kind, one runtime wait and activation counter, one member of the closed `activeWait.kind` enum, one required `openMessageSubscriptions` state field, one enabled-interaction variant, one Message Signal, one result Query, and required Message delivery records in the completed receipt.
+This capsule was implemented as one breaking pre-release contract replacement. It adds one checked node kind, one Semantic Process operation kind, one stimulus kind, one runtime wait and activation counter, one member of the closed `activeWait.kind` enum, one required `openMessageSubscriptions` state field, one enabled-interaction variant, one Message Signal, one result Query, and required Message delivery records in the completed receipt.
 
-The semantic profile, answer-free scenario, checked graph, Semantic Process program, canonical result, all JSON Schemas, Lean decoders/encoders, TypeScript producers/consumers, Java CIB projector, differential pipeline, Temporal Signal/Query/client/receipt contracts, fixtures, and tests must change atomically. [PROFILE-PARAMETERIZED-ADMISSION-SPEC.md](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) must add the new capability and both-order preservation evidence; [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) must add asynchronous Signal result resolution, receipt recovery, malformed/conflict classification, and the R8 amendment; the pre-start host-capability predicate and its specification/tests must classify Message as passive ingress; [SEMANTIC-PROCESS-IL-SPEC.md](../SEMANTIC-PROCESS-IL-SPEC.md) must add the operation, well-formedness, lowering, runtime, and supported/absent boundaries; and the `PAR-PROJECT-01` evidence row must name the four-kind sorted lock.
+The semantic profile, answer-free scenario, checked graph, Semantic Process program, canonical result, all JSON Schemas, Lean decoders/encoders, TypeScript producers/consumers, Java CIB projector, differential pipeline, Temporal Signal/Query/client/receipt contracts, fixtures, and tests changed atomically. [PROFILE-PARAMETERIZED-ADMISSION-SPEC.md](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns the new capability and both-order preservation evidence; [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns asynchronous Signal result resolution, receipt recovery, malformed/conflict classification, and the R8 amendment; the pre-start host-capability predicate classifies Message as passive ingress; [SEMANTIC-PROCESS-IL-SPEC.md](../SEMANTIC-PROCESS-IL-SPEC.md) owns the operation, well-formedness, lowering, runtime, and supported/absent boundaries; and the `PAR-PROJECT-01` evidence row names the four-kind sorted lock.
 
 Adding required `openMessageSubscriptions` changes the canonical state denominator from ten to eleven top-level fields. All ten retained CIB evidence envelopes must gain the empty field through the explicit `./scripts/pnpm.sh run replace:cib-evidence` command after the Java projector emits it. The canonical CIB fidelity table and schema-depth guard must change from their reviewed ten-field denominator to the complete eleven-field denominator and classify the empty Message collection and every nested Message field honestly. Ordinary verification must never rewrite those artifacts.
 
@@ -371,9 +369,9 @@ The owner explicitly amended R8 from a universal zero-Signal assertion to zero S
 
 No legacy reader, optional compatibility field, format counter, Workflow patch branch, or retained history is permitted before an immutable baseline exists. No dependency addition, removal, upgrade, vendoring, or license-bound source is required.
 
-## Required, optional, and excluded
+## Maintained, optional, and excluded
 
-Required for capsule closure:
+Maintained requirements:
 
 - node-kind/profile-multiset admission plus generic graph validation for both legal mechanism orders, with exact source admission and lowering for the payload-free catch;
 - complete occurrence identity, caller-supplied definition consistency, operation-payload element identity, and the reference-selection lowering discriminator;
@@ -399,11 +397,3 @@ Excluded:
 - payloads, variables, Data Associations, correlation expressions, and business keys;
 - cross-Workflow send, child Workflow, Nexus, external broker, Continue-As-New, and retained production histories;
 - BPMN Process Execution Conformance, broad Message Event support, CIB message compatibility, and A12 adoption coverage.
-
-## Approval test
-
-The owner answered yes to this product question: may the first receive-message capability require the caller to know the running Process instance and exact open subscription, accept no payload, resume that subscription once, and defer send-by-message-name/business-key, modeled throw, and A12 façade compatibility?
-
-The owner also approved both consequences: implement element-ID sorting in Lean and restate `PAR-PROJECT-01` evidence over four wait kinds under decision 6; and amend R8 so all existing paths retain zero-Signal evidence while this Message path requires exact Signal history.
-
-Implementation now begins from this proposal under red/green TDD and the complete atomic contract boundary above.

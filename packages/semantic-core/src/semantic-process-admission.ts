@@ -201,6 +201,24 @@ function isWellFormedOperation(
         value.timer.elementId === value.origin.elementId &&
         value.timer.durationMs === 1000
       );
+    case SemanticOperationKind.AwaitMessage:
+      return (
+        hasOnlyKeys(value, [
+          "id",
+          "kind",
+          "origin",
+          "input",
+          "output",
+          "message",
+        ]) &&
+        isPlaceReference(value.input, placeIds) &&
+        isPlaceReference(value.output, placeIds) &&
+        value.input !== value.output &&
+        isRecord(value.message) &&
+        hasOnlyKeys(value.message, ["elementId", "channel"]) &&
+        value.message.elementId === value.origin.elementId &&
+        isMessageChannel(value.message.channel)
+      );
     case SemanticOperationKind.AwaitEffect:
       return (
         hasOnlyKeys(value, [
@@ -266,6 +284,18 @@ function isWellFormedOperation(
     default:
       return false;
   }
+}
+
+function isMessageChannel(value: unknown): boolean {
+  return isRecord(value) &&
+    hasOnlyKeys(value, [
+      "interfaceId",
+      "interfaceOperationId",
+      "messageId",
+    ]) &&
+    isNonEmptyString(value.interfaceId) &&
+    isNonEmptyString(value.interfaceOperationId) &&
+    isNonEmptyString(value.messageId);
 }
 
 function isSupportedEffectContract(
@@ -385,6 +415,7 @@ function isSupportedScenario(value: unknown): value is Scenario {
       .every(
         (stimulus) =>
           stimulus.kind === StimulusKind.CompleteUserTaskInstance ||
+          stimulus.kind === StimulusKind.DeliverMessage ||
           stimulus.kind === StimulusKind.FireTimer ||
           stimulus.kind === StimulusKind.CompleteEffect,
       ) &&

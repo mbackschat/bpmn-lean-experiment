@@ -47,6 +47,7 @@ def observeStableState (source : CheckedProcess)
                     kind := .userTask
                     multiplicity }
           openUserTasks := tasks
+          openMessageSubscriptions := []
           openTimers := []
           openEffects := []
           variables := []
@@ -59,6 +60,7 @@ def observeStableState (source : CheckedProcess)
           status := .completed
           activeWaits := []
           openUserTasks := []
+          openMessageSubscriptions := []
           openTimers := []
           openEffects := []
           variables := []
@@ -69,6 +71,7 @@ def commandId : Stimulus → SemanticId
   | .startProcess id _ _
   | .completeUserTaskInstance id _
   | .fireTimer id _ _
+  | .deliverMessage id _ _
   | .completeEffect id _ _ => id
 
 structure ScenarioExecution where

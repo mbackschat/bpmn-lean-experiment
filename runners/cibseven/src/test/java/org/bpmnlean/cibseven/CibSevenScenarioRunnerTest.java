@@ -160,12 +160,14 @@ public class CibSevenScenarioRunnerTest {
             List.of(),
             List.of(),
             List.of(),
+            List.of(),
             List.of(completionInteraction),
             0),
         new CommandObservation("complete-user-task-instance", COMMITTED),
         new StateObservation(
             INSTANCE_ID,
             COMPLETED,
+            List.of(),
             List.of(),
             List.of(),
             List.of(),
@@ -223,6 +225,7 @@ public class CibSevenScenarioRunnerTest {
             List.of(),
             List.of(),
             List.of(),
+            List.of(),
             List.of(
                 new CompleteUserTaskInstanceInteraction(taskA.id()),
                 new CompleteUserTaskInstanceInteraction(taskB.id())),
@@ -238,6 +241,7 @@ public class CibSevenScenarioRunnerTest {
             List.of(),
             List.of(),
             List.of(),
+            List.of(),
             List.of(new CompleteUserTaskInstanceInteraction(remaining.id())),
             0),
         new CommandObservation(
@@ -246,6 +250,7 @@ public class CibSevenScenarioRunnerTest {
         new StateObservation(
             INSTANCE_ID,
             COMPLETED,
+            List.of(),
             List.of(),
             List.of(),
             List.of(),

@@ -78,6 +78,36 @@ test("rejects a meaningful invalid task-projection mutation", async () => {
   );
 });
 
+test("rejects a CIB Message subscription projection without producer evidence", async () => {
+  const artifactSets = await readAndVerifyArtifactSets(projectRoot);
+  const interaction = required(
+    artifactSets.find(
+      ({ scenario }) =>
+        scenario.id === "user-task-discovery-completion",
+    ),
+    "User Task artifact set",
+  );
+  const mutated = cloneArtifactSet(interaction);
+  const state = requireMutableState(mutated.evidence.result.trace[2]);
+  state.openMessageSubscriptions.push({
+    id: {
+      processInstanceId: state.instanceId,
+      elementId: "MessageCatch",
+      activation: 1,
+    },
+    channel: {
+      interfaceId: "Interface_Order",
+      interfaceOperationId: "Operation_Receive",
+      messageId: "Message_Order",
+    },
+  });
+
+  assert.throws(
+    () => verifyArtifactSet(mutated),
+    /producer observation projection does not match canonical openMessageSubscriptions/,
+  );
+});
+
 test("binds status, logical time, and variables to raw state queries", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
 
@@ -169,7 +199,21 @@ test("binds canonical semantic instance identity to the start stimulus", async (
     task.id.processInstanceId = state.instanceId;
   }
   for (const interaction of state.enabledInteractions) {
-    interaction.taskId.processInstanceId = state.instanceId;
+    switch (interaction.kind) {
+      case "completeUserTaskInstance":
+        interaction.taskId.processInstanceId = state.instanceId;
+        break;
+      case "deliverMessage":
+        interaction.subscriptionId.processInstanceId =
+          state.instanceId;
+        break;
+      default: {
+        const unreachable: never = interaction;
+        throw new Error(
+          `unsupported enabled interaction ${JSON.stringify(unreachable)}`,
+        );
+      }
+    }
   }
 
   assert.throws(

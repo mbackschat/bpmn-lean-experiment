@@ -3,6 +3,7 @@ import type {
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
+  DeliverMessageStimulus,
   OpenEffect,
   OpenTimer,
   OpenUserTask,
@@ -23,6 +24,9 @@ export const bpmnProcessWorkflowType = "runBpmnProcess";
 export const bpmnTraceQueryName = "bpmn-trace";
 export const bpmnOpenUserTasksQueryName = "bpmn-open-user-tasks";
 export const bpmnCompleteUserTaskUpdateName = "bpmn-complete-user-task";
+export const bpmnDeliverMessageSignalName = "bpmn-deliver-message";
+export const bpmnMessageDeliveryResultQueryName =
+  "bpmn-message-delivery-result";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
 export enum TemporalHostCapabilityResultKind {
@@ -55,7 +59,41 @@ export type CompletedProcessReceipt = DeepReadonly<{
   finalState: StateObservation & {
     status: ProcessStatus.Completed;
   };
+  messageDeliveryRecords: MessageDeliveryRecord[];
 }>;
+
+export const MessageDeliveryResolutionKind = {
+  Pending: "pending",
+  Semantic: "semantic",
+  RequestFailure: "requestFailure",
+} as const;
+
+export type MessageDeliveryResolutionKind =
+  typeof MessageDeliveryResolutionKind[
+    keyof typeof MessageDeliveryResolutionKind
+  ];
+
+export type MessageDeliveryResolution = DeepReadonly<
+  | {
+      kind: typeof MessageDeliveryResolutionKind.Pending;
+      stimulus: DeliverMessageStimulus;
+    }
+  | {
+      kind: typeof MessageDeliveryResolutionKind.Semantic;
+      stimulus: DeliverMessageStimulus;
+      outcome: CommandOutcome;
+    }
+  | {
+      kind: typeof MessageDeliveryResolutionKind.RequestFailure;
+      stimulus: DeliverMessageStimulus;
+      failure: "commandIdentityConflict";
+    }
+>;
+
+export type MessageDeliveryRecord = Exclude<
+  MessageDeliveryResolution,
+  { kind: typeof MessageDeliveryResolutionKind.Pending }
+>;
 
 export enum ProcessCommandResultKind {
   Semantic = "semantic",
@@ -185,4 +223,12 @@ export type TemporalInteractionEvidence = DeepReadonly<{
 
 export type BpmnCompleteUserTaskUpdateArguments = [
   stimulus: CompleteUserTaskInstanceStimulus,
+];
+
+export type BpmnDeliverMessageSignalArguments = [
+  stimulus: DeliverMessageStimulus,
+];
+
+export type BpmnMessageDeliveryResultQueryArguments = [
+  stimulus: DeliverMessageStimulus,
 ];

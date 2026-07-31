@@ -139,6 +139,7 @@
             "state": "active"
           }
         ],
+        "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
         "variables": [],
@@ -189,6 +190,7 @@
             "state": "active"
           }
         ],
+        "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
         "variables": [],
@@ -231,6 +233,7 @@
             "state": "active"
           }
         ],
+        "openMessageSubscriptions": [],
         "openTimers": [],
         "openEffects": [],
         "variables": [],

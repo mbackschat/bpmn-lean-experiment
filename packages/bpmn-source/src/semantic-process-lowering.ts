@@ -94,6 +94,17 @@ function lowerNode(
           durationMs: normalizeTimerDuration(node.durationLiteral),
         },
       };
+    case CheckedNodeKind.IntermediateCatchMessageEvent:
+      return {
+        ...base,
+        kind: SemanticOperationKind.AwaitMessage,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        message: {
+          elementId: node.id,
+          channel: node.channel,
+        },
+      };
     case CheckedNodeKind.ServiceTask:
       return {
         ...base,

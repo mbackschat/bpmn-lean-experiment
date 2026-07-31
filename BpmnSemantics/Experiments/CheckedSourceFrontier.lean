@@ -199,6 +199,7 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   cases candidate with
   | noneStartEvent id => simp [fireNode?, notPending]
   | intermediateCatchTimerEvent id duration => rfl
+  | intermediateCatchMessageEvent id channel => rfl
   | serviceTask id descriptor inputs outputs route => rfl
   | exclusiveGateway id candidateFlowIds defaultFlowId =>
       simp [nodeArityValid] at candidateArity

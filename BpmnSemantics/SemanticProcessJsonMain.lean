@@ -29,6 +29,7 @@ private def processStatusJson : ProcessStatus → Json
 
 private def waitKindJson : WaitKind → Json
   | .userTask => toJson "userTask"
+  | .message => toJson "message"
   | .timer => toJson "timer"
   | .effect => toJson "effect"
 
@@ -52,6 +53,18 @@ private def openUserTaskJson (task : OpenUserTask) : Json :=
     [ ("id", occurrenceIdJson task.id)
     , ("name", toJson task.name)
     , ("state", userTaskLifecycleStateJson task.state) ]
+
+private def messageChannelJson (channel : MessageChannel) : Json :=
+  Json.mkObj
+    [ ("interfaceId", toJson channel.interfaceId.value)
+    , ("interfaceOperationId", toJson channel.interfaceOperationId.value)
+    , ("messageId", toJson channel.messageId.value) ]
+
+private def openMessageSubscriptionJson
+    (subscription : OpenMessageSubscription) : Json :=
+  Json.mkObj
+    [ ("id", occurrenceIdJson subscription.id)
+    , ("channel", messageChannelJson subscription.channel) ]
 
 private def openTimerJson (timer : OpenTimer) : Json :=
   Json.mkObj
@@ -99,6 +112,11 @@ private def enabledInteractionJson : EnabledInteraction → Json
       Json.mkObj
         [ ("kind", toJson "completeUserTaskInstance")
         , ("taskId", occurrenceIdJson taskId) ]
+  | .deliverMessage subscriptionId channel =>
+      Json.mkObj
+        [ ("kind", toJson "deliverMessage")
+        , ("subscriptionId", occurrenceIdJson subscriptionId)
+        , ("channel", messageChannelJson channel) ]
 
 private def stateObservationJson (state : StateObservation) : Json :=
   Json.mkObj
@@ -107,6 +125,9 @@ private def stateObservationJson (state : StateObservation) : Json :=
     , ("status", processStatusJson state.status)
     , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
     , ("openUserTasks", jsonArray (state.openUserTasks.map openUserTaskJson))
+    , ("openMessageSubscriptions",
+        jsonArray
+          (state.openMessageSubscriptions.map openMessageSubscriptionJson))
     , ("openTimers", jsonArray (state.openTimers.map openTimerJson))
     , ("openEffects", jsonArray (state.openEffects.map openEffectJson))
     , ("variables", jsonArray (state.variables.map variableBindingJson))
@@ -157,6 +178,12 @@ private def stimulusJson : Stimulus → Json
         [ ("kind", toJson "completeUserTaskInstance")
         , ("commandId", toJson commandId.value)
         , ("taskId", occurrenceIdJson taskId) ]
+  | .deliverMessage commandId subscriptionId channel =>
+      Json.mkObj
+        [ ("kind", toJson "deliverMessage")
+        , ("commandId", toJson commandId.value)
+        , ("subscriptionId", occurrenceIdJson subscriptionId)
+        , ("channel", messageChannelJson channel) ]
   | .fireTimer commandId timerId logicalTimeMs =>
       Json.mkObj
         [ ("kind", toJson "fireTimer")

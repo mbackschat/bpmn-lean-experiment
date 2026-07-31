@@ -74,6 +74,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
       | .notStarted
       | .completed _ => none
   | .intermediateCatchTimerEvent _ _ => none
+  | .intermediateCatchMessageEvent _ _ => none
   | .serviceTask _ _ _ _ _ => none
   | .exclusiveGateway _ _ _ => none
   | .parallelGateway id .diverging =>
@@ -122,6 +123,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
             exact .userTask id name before instanceId controlEq enabled
           · simp [fireNode?, controlEq, enabled] at result
   | intermediateCatchTimerEvent id durationLiteral =>
+      simp [fireNode?] at result
+  | intermediateCatchMessageEvent id channel =>
       simp [fireNode?] at result
   | serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
       simp [fireNode?] at result
@@ -200,6 +203,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
       | .notStarted
       | .completed _ => { outcome := .rejected, state }
   | .fireTimer _ _ _ => { outcome := .unsupported, state }
+  | .deliverMessage _ _ _ => { outcome := .unsupported, state }
   | .completeEffect _ _ _ => { outcome := .unsupported, state }
 
 def enabledTransitions (source : CheckedProcess)

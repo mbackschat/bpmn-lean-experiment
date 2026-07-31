@@ -45,6 +45,23 @@ test("canonically encodes every typed stimulus field", () => {
     canonicalStimulusEncoding(completion),
     '["completeUserTaskInstance","complete-task",["Instance_1","Task_1",1]]',
   );
+  assert.equal(
+    canonicalStimulusEncoding({
+      kind: StimulusKind.DeliverMessage,
+      commandId: "deliver-message",
+      subscriptionId: {
+        processInstanceId: "Instance_1",
+        elementId: "MessageCatch_1",
+        activation: 1,
+      },
+      channel: {
+        interfaceId: "MessageInterface_1",
+        interfaceOperationId: "ReceiveMessage_1",
+        messageId: "Message_1",
+      },
+    }),
+    '["deliverMessage","deliver-message",["Instance_1","MessageCatch_1",1],["MessageInterface_1","ReceiveMessage_1","Message_1"]]',
+  );
   assert.throws(
     () => canonicalStimulusEncoding({ ...completion, extra: true }),
     /well-formed semantic stimulus/,

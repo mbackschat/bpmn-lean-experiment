@@ -32,6 +32,7 @@ export function requiresHostProgressBeforeCompletion(
       switch (stimulus.kind) {
         case StimulusKind.FireTimer:
         case StimulusKind.CompleteEffect:
+        case StimulusKind.DeliverMessage:
           return true;
         case StimulusKind.StartProcess:
         case StimulusKind.CompleteUserTaskInstance:

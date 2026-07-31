@@ -12,6 +12,7 @@ open BpmnSemantics
 private def commandId : Stimulus → SemanticId
   | .startProcess id _ _
   | .completeUserTaskInstance id _
+  | .deliverMessage id _ _
   | .fireTimer id _ _
   | .completeEffect id _ _ => id
 
@@ -25,6 +26,11 @@ private def timerDefinitions (program : Program) : List TimerDefinition :=
     | .awaitTimer _ _ _ _ timer => some timer
     | _ => none
 
+private def messageDefinitions (program : Program) : List MessageDefinition :=
+  program.operations.filterMap fun
+    | .awaitMessage _ _ _ _ message => some message
+    | _ => none
+
 private def effectDefinitions (program : Program) : List EffectDefinition :=
   program.operations.filterMap fun
     | .awaitEffect _ _ _ _ effect _ => some effect
@@ -34,9 +40,28 @@ def timerWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
   (state.timerWaits.filter fun wait =>
     decide (wait.elementId = elementId)).length
 
+def messageWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
+  (state.messageWaits.filter fun wait =>
+    decide (wait.elementId = elementId)).length
+
 def effectWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
   (state.effectWaits.filter fun wait =>
     decide (wait.elementId = elementId)).length
+
+private def insertActiveWaitByElementId (wait : ActiveWait) :
+    List ActiveWait → List ActiveWait
+  | [] => [wait]
+  | candidate :: remaining =>
+      if wait.elementId.value < candidate.elementId.value then
+        wait :: candidate :: remaining
+      else
+        candidate :: insertActiveWaitByElementId wait remaining
+
+private def sortActiveWaitsByElementId : List ActiveWait → List ActiveWait
+  | [] => []
+  | wait :: remaining =>
+      insertActiveWaitByElementId wait
+        (sortActiveWaitsByElementId remaining)
 
 private def activeWaits (program : Program) (state : RuntimeState) :
     List ActiveWait :=
@@ -49,6 +74,16 @@ private def activeWaits (program : Program) (state : RuntimeState) :
         some
           { elementId := ⟨task.id.value⟩
             kind := .userTask
+            multiplicity }
+  let messageWaits :=
+    (messageDefinitions program).filterMap fun message =>
+      let multiplicity := messageWaitMultiplicity state message.elementId
+      if multiplicity = 0 then
+        none
+      else
+        some
+          { elementId := ⟨message.elementId.value⟩
+            kind := .message
             multiplicity }
   let timerWaits :=
     (timerDefinitions program).filterMap fun timer =>
@@ -70,7 +105,10 @@ private def activeWaits (program : Program) (state : RuntimeState) :
           { elementId := ⟨effect.elementId.value⟩
             kind := .effect
             multiplicity }
-  taskWaits ++ timerWaits ++ effectWaits
+  sortActiveWaitsByElementId taskWaits ++
+    sortActiveWaitsByElementId messageWaits ++
+    sortActiveWaitsByElementId timerWaits ++
+    sortActiveWaitsByElementId effectWaits
 
 private def openUserTasks (program : Program) (state : RuntimeState) :
     List OpenUserTask :=
@@ -94,6 +132,17 @@ private def openTimers (program : Program) (state : RuntimeState) :
               activation := wait.activation }
           deadlineMs := wait.deadlineMs }
 
+private def openMessageSubscriptions (program : Program)
+    (state : RuntimeState) : List OpenMessageSubscription :=
+  (messageDefinitions program).flatMap fun message =>
+    (state.messageWaits.filter fun wait =>
+      decide (wait.elementId = message.elementId)).map fun wait =>
+        { id :=
+            { processInstanceId := wait.processInstanceId
+              elementId := ⟨message.elementId.value⟩
+              activation := wait.activation }
+          channel := wait.channel }
+
 private def openEffects (program : Program) (state : RuntimeState) :
     List OpenEffect :=
   (effectDefinitions program).flatMap fun effect =>
@@ -113,16 +162,20 @@ def observeStableState (program : Program) (state : RuntimeState) :
   | .notStarted => none
   | .running instanceId =>
       let tasks := openUserTasks program state
+      let messages := openMessageSubscriptions program state
       some
         { instanceId
           status := .running
           activeWaits := activeWaits program state
           openUserTasks := tasks
+          openMessageSubscriptions := messages
           openTimers := openTimers program state
           openEffects := openEffects program state
           variables := state.variables.process.bindings
           enabledInteractions :=
-            tasks.map fun task => .completeUserTaskInstance task.id
+            tasks.map (fun task => .completeUserTaskInstance task.id) ++
+              messages.map fun subscription =>
+                .deliverMessage subscription.id subscription.channel
           logicalTimeMs := state.logicalTimeMs }
   | .completed instanceId =>
       some
@@ -130,6 +183,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           status := .completed
           activeWaits := []
           openUserTasks := []
+          openMessageSubscriptions := []
           openTimers := []
           openEffects := []
           variables := state.variables.process.bindings

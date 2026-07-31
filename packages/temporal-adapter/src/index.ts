@@ -6,6 +6,7 @@ export * from "./effect-probe.js";
 export * from "./effect-transport.js";
 export * from "./harness-evidence.js";
 export * from "./host-admission.js";
+export * from "./message-delivery-ledger.js";
 export * from "./process-address.js";
 export * from "./process-client.js";
 export * from "./runner.js";

@@ -20,7 +20,7 @@ For every currently selected profile, source and program admission require:
 4. exact checked-source-to-program lowering equality before Lean evaluation;
 5. capsule-local closure, enabledness, and stable-state resumability evidence for each newly reachable structure.
 
-The profile capability names kinds and cardinalities, not complete node IDs, Sequence Flow IDs, or one full model path. The Timer/User Task composition profile therefore permits both finite acyclic linear orders selected by graph facts and its exact operation multiset; production code contains no seventh whole-topology predicate. The retained end-to-end scenario selects Timer then User Task, while focused source, Lean, and TypeScript checks also cover User Task then Timer so the broader structural admission is not accidental.
+The profile capability names kinds and cardinalities, not complete node IDs, Sequence Flow IDs, or one full model path. The Timer/User Task and Message/User Task composition profiles therefore permit both finite acyclic linear orders selected by graph facts and their exact operation multisets; production code contains no whole-topology predicate for either profile. Each retained end-to-end scenario selects the new mechanism before the User Task, while focused source, Lean, and TypeScript checks also cover the reverse order so the broader structural admission is not accidental.
 
 The closest unsupported claim is arbitrary serial composition. Admission does not infer an unbounded grammar, repeated Timer or User Task mechanisms, loops, arbitrary graph cardinalities, or general BPMN Process Execution Conformance.
 
@@ -36,6 +36,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | Normative parallel fork/join | one `initiate`, one `duplicate`, two `awaitUserTask`, one `synchronize`, one `terminate` |
 | BPMN Simple Boolean Exclusive Gateway | one `initiate`, one `choose`, three `awaitUserTask`, three `terminate` |
 | BPMN Timer/User Task composition | one `initiate`, one `awaitTimer`, one `awaitUserTask`, one `terminate` |
+| BPMN Intermediate Catch Message | one `initiate`, one `awaitMessage`, one `awaitUserTask`, one `terminate` |
 
 Profile capability does not replace operation-payload validation. Exact Timer duration, effect descriptor and mapping, boundary route, gateway condition, source-language, origin, and arity restrictions remain checked by their existing owners.
 
@@ -63,6 +64,8 @@ The Timer/User Task composition establishes the following executable facts indep
 
 The reverse User Task/Timer ordering independently reaches a resumable User Task wait, then a resumable Timer wait, never exposes more than one enabled internal operation at a stable boundary, and completes under the same closure limit.
 
+The Message/User Task capability applies the same gate to a newly introduced subscription mechanism. Message-first start closure requires exactly two internal steps before the Message wait and rejects a one-step limit; exact delivery requires one internal step before the trailing User Task wait. The reverse order reaches the User Task first, then the Message wait. Both orders expose exactly one public resumption surface at every stable running boundary, never expose multiple enabled internal operations, complete under the configured closure limit, and retain a synthetic stranded-token rejection. The source reference-chain discriminator proves that generic graph lowering preserves the selected Interface, Interface Operation, and Message channel rather than a fixture constant.
+
 These checks decide the current stuck-state question without widening the public observation contract: a newly admitted capsule must prove that no reachable stable running state is stranded. Failure blocks admission of that capsule. `semanticFailure` and a new public status therefore remain unnecessary while such a state is unreachable; if a future capsule needs to expose one, it must reopen the observation contract explicitly.
 
 This is a targeted executable preservation result, not a proof of general closure soundness, arbitrary-graph progress, or universal source-to-program run preservation.
@@ -74,15 +77,15 @@ Semantic admission and Temporal host capability are separate decisions. After se
 - `admitted` when the current host can realize every reachable wait-set shape covered by its conservative structural predicate;
 - `rejected` with `concurrentHostDrivenWaits` when a token split combined with a Timer or effect can create a host-driven concurrent branch.
 
-Passive parallel User Tasks remain admitted because they use external Update ingress. The linear Timer/User Task composition remains admitted because its waits are sequential. A token split with a Timer or effect is rejected even when a more precise future reachability analysis might prove a particular shape safe; widening that capability requires a deterministic multi-wait scheduler and its own replay evidence.
+Passive parallel User Tasks and Message subscriptions remain admitted because they use external Update or Signal ingress and require no Workflow-created host driver. The linear Timer/User Task composition remains admitted because its waits are sequential. A token split with a Timer or effect is rejected even when a more precise future reachability analysis might prove a particular shape safe; widening that capability requires a deterministic multi-wait scheduler and its own replay evidence.
 
 The Workflow retains defensive invariant failures for impossible projected wait cardinalities. They are not an admission result and must be unreachable for every program accepted by the pre-start gate.
 
 ## Evidence
 
-The [answer-free composition scenario](../scenarios/timer-user-task-composition/scenario.json) is consumed from the same exact source/profile identity by Lean, the independently implemented TypeScript semantic core, and Temporal. The differential pipeline requires exact canonical agreement and a one-millisecond Timer-deadline mutation. CIB is deliberately absent from the target set.
+The [answer-free Timer/User Task composition scenario](../scenarios/timer-user-task-composition/scenario.json) and [answer-free Message/User Task scenario](../scenarios/intermediate-catch-message/scenario.json) are consumed from the same exact source/profile identity by Lean, the independently implemented TypeScript semantic core, and Temporal. The differential pipeline requires exact canonical agreement plus a one-millisecond Timer-deadline mutation and a Message-channel mutation. CIB is deliberately absent from both target sets.
 
-The focused Temporal witness schedules one durable Timer from committed semantic state, observes the later User Task, completes it through Update ingress, reaches the same canonical result as the core, and replays the fetched history. The runner never delivers the scenario Timer stimulus.
+The focused Temporal Timer witness schedules one durable Timer from committed semantic state, observes the later User Task, completes it through Update ingress, reaches the same canonical result as the core, and replays the fetched history. The runner never delivers the scenario Timer stimulus. The Message witness treats the subscription as passive ingress, delivers the exact Signal while the Worker is absent, resolves the semantic result through the Message ledger Query, completes the later User Task, and replays both mechanism orders.
 
 Generic structural rejection, profile mismatch, closure-bound exhaustion, multiple-enabledness, stranded-state non-resumability, pre-start host rejection, durable Timer history, exact target agreement, and the seeded deadline mutation are distinct executable checks. Agreement does not establish general BPMN conformance or independent semantic-account selection.
 
@@ -94,13 +97,13 @@ The only synthetic negative state is a test-owned stranded running state used to
 
 ## Versioning consequences
 
-The checked BPMN graph, Semantic Process program, scenario, canonical-result, and CIB evidence wire shapes are unchanged. The new profile and scenario are additional current artifacts.
+The Timer/User Task checkpoint left the checked BPMN graph, Semantic Process program, scenario, canonical-result, and CIB evidence wire shapes unchanged. The later Intermediate Catch Message capsule replaced the current checked-node, operation, stimulus, state-observation, and CIB evidence shapes atomically; all retained CIB states carry an empty `openMessageSubscriptions` field because CIB is not a Message target.
 
 The production start API now returns a typed `started | rejected` adapter result so semantic or host-capability refusal is observable before Workflow creation. Under the pre-release replace-in-place policy, the sole production-lifecycle consumer was updated atomically; no legacy throwing start path or compatibility reader remains.
 
 ## Exclusions and re-open conditions
 
-This specification does not add repeated mechanisms, multiple Timers, multiple effects, mixed concurrent waits, a general serial grammar, message subscriptions, scope propagation, arbitrary graph liveness, CIB admission equivalence, or A12 adoption coverage.
+This specification does not add repeated mechanisms, multiple Timers, multiple effects, multiple live Message subscriptions, mixed concurrent host-driven waits, a general serial grammar, key-based/global Message correlation, scope propagation, arbitrary graph liveness, CIB admission equivalence, or A12 adoption coverage.
 
 Reopen this contract when:
 

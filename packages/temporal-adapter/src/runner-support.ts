@@ -10,6 +10,7 @@ import type {
   CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
+  DeliverMessageStimulus,
   FireTimerStimulus,
   OpenEffect,
   OpenTimer,
@@ -54,6 +55,9 @@ import {
 import {
   timerFiringCommandId,
 } from "./timer-command.js";
+import {
+  isMessageDeliveryRecord,
+} from "./message-delivery-ledger.js";
 
 export type PreparedEffectExecution = Readonly<{
   request: EffectRequest;
@@ -180,6 +184,28 @@ export function requireCompletionStimuli(
     switch (stimulus.kind) {
       case StimulusKind.CompleteUserTaskInstance:
         return [stimulus];
+      case StimulusKind.DeliverMessage:
+      case StimulusKind.FireTimer:
+      case StimulusKind.CompleteEffect:
+        return [];
+      case StimulusKind.StartProcess:
+        throw new TypeError(
+          "Only the first scenario stimulus may start the Process",
+        );
+      default:
+        return assertNever(stimulus);
+    }
+  });
+}
+
+export function requireMessageDeliveryStimuli(
+  scenario: Scenario,
+): ReadonlyArray<DeliverMessageStimulus> {
+  return scenario.stimuli.slice(1).flatMap((stimulus) => {
+    switch (stimulus.kind) {
+      case StimulusKind.DeliverMessage:
+        return [stimulus];
+      case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.FireTimer:
       case StimulusKind.CompleteEffect:
         return [];
@@ -200,6 +226,7 @@ export function requireOptionalTimerStimulus(
   for (const stimulus of scenario.stimuli.slice(1)) {
     switch (stimulus.kind) {
       case StimulusKind.CompleteUserTaskInstance:
+      case StimulusKind.DeliverMessage:
       case StimulusKind.CompleteEffect:
         break;
       case StimulusKind.FireTimer:
@@ -242,6 +269,7 @@ export function requireOptionalEffectExecution(
       case StimulusKind.CompleteEffect:
         return [stimulus];
       case StimulusKind.CompleteUserTaskInstance:
+      case StimulusKind.DeliverMessage:
       case StimulusKind.FireTimer:
         return [];
       case StimulusKind.StartProcess:
@@ -409,6 +437,7 @@ export function isCompletedProcessReceipt(
     "processId",
     "processInstanceId",
     "finalState",
+    "messageDeliveryRecords",
   ])) {
     return false;
   }
@@ -437,6 +466,7 @@ export function isCompletedProcessReceipt(
       "status",
       "activeWaits",
       "openUserTasks",
+      "openMessageSubscriptions",
       "openTimers",
       "openEffects",
       "variables",
@@ -450,6 +480,8 @@ export function isCompletedProcessReceipt(
     finalState.activeWaits.length === 0 &&
     Array.isArray(finalState.openUserTasks) &&
     finalState.openUserTasks.length === 0 &&
+    Array.isArray(finalState.openMessageSubscriptions) &&
+    finalState.openMessageSubscriptions.length === 0 &&
     Array.isArray(finalState.openTimers) &&
     finalState.openTimers.length === 0 &&
     Array.isArray(finalState.openEffects) &&
@@ -457,6 +489,8 @@ export function isCompletedProcessReceipt(
     Array.isArray(finalState.variables) &&
     Array.isArray(finalState.enabledInteractions) &&
     finalState.enabledInteractions.length === 0 &&
+    Array.isArray(value.messageDeliveryRecords) &&
+    value.messageDeliveryRecords.every(isMessageDeliveryRecord) &&
     Number.isSafeInteger(finalState.logicalTimeMs) &&
     Number(finalState.logicalTimeMs) >= 0
   );

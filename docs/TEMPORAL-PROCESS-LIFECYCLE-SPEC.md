@@ -8,7 +8,7 @@
 
 This specification defines the production lifecycle shared by the admitted semantic capsules. It answers how semantic and host-capability admission is reported before Workflow creation, when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
-It does not itself add BPMN semantics, a task inbox, Activities, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The separately approved [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority.
+It does not itself add BPMN semantics, a task inbox, Activities, cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, and the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) composes one passive subscription with durable Signal ingress and result recovery.
 
 ## Selected lifecycle
 
@@ -53,6 +53,18 @@ enum ProcessCommandResultKind {
   ProcessUnknown = "processUnknown",
 }
 
+type MessageDeliveryRecord =
+  | Readonly<{
+      kind: "semantic";
+      stimulus: DeliverMessageStimulus;
+      outcome: CommandOutcome;
+    }>
+  | Readonly<{
+      kind: "requestFailure";
+      stimulus: DeliverMessageStimulus;
+      failure: "commandIdentityConflict";
+    }>;
+
 interface CompletedProcessReceipt {
   readonly definition: SemanticProcessIdentity;
   readonly processId: string;
@@ -60,6 +72,7 @@ interface CompletedProcessReceipt {
   readonly finalState: StateObservation & {
     readonly status: ProcessStatus.Completed;
   };
+  readonly messageDeliveryRecords: MessageDeliveryRecord[];
 }
 
 type ProcessCommandResult =
@@ -90,7 +103,7 @@ type ProcessCommandResult =
 
 Workflow cancellation, termination, timeout, failure, service unavailability, Worker unavailability, client deadline, malformed terminal receipt, and replay incompatibility are infrastructure failures. They do not become any member of this result union.
 
-A malformed command and reuse of one semantic command ID for a different well-formed stimulus are adapter request failures rather than semantic outcomes. The conflicting-identity failure type is `BpmnCommandIdentityConflict`; it is non-retryable and must reject the Update without failing or retrying the Workflow Task.
+A malformed command and reuse of one semantic command ID for a different well-formed stimulus are adapter request failures rather than semantic outcomes. Update ingress reports conflicting identity as non-retryable `BpmnCommandIdentityConflict` without failing or retrying the Workflow Task. Message Signal ingress validates before sending and reports malformed input as `BpmnMessageIngressInvalid`; a well-formed conflicting Signal cannot return a handler error, so the Workflow records `commandIdentityConflict` durably and the result Query/client translates that record to `BpmnCommandIdentityConflict`.
 
 ## Identity and retry contract
 
@@ -110,7 +123,7 @@ The adapter defines one canonical typed stimulus encoding and a SHA-256 digest. 
 
 ## Workflow lifetime contract
 
-The production start boundary first checks the explicit start stimulus and Semantic Process program through semantic execution admission, then checks the program through the separate Temporal host-capability predicate. Only an `admitted` result calls `client.start`. The current conservative host predicate accepts passive parallel User Task ingress and linear Timer/User Task composition, but rejects a token split combined with a Timer or effect wait as `concurrentHostDrivenWaits`.
+The production start boundary first checks the explicit start stimulus and Semantic Process program through semantic execution admission, then checks the program through the separate Temporal host-capability predicate. Only an `admitted` result calls `client.start`. The current conservative host predicate accepts passive User Task Update and Message Signal ingress plus linear Timer/User Task composition, but rejects a token split combined with a Timer or effect wait as `concurrentHostDrivenWaits`.
 
 The production Workflow receives that admitted Semantic Process program and one explicit start stimulus. It does not receive a future scenario command list.
 
@@ -142,6 +155,16 @@ For one well-formed command and known semantic Process address:
 
 Looking up the Update result before classifying closure closes the race where Temporal accepted the command but the caller lost its response as the Workflow completed.
 
+## Message Signal ingress resolution
+
+`submitMessageDelivery` requires the semantic Process address plus one complete well-formed `deliverMessage` stimulus. The caller-supplied subscription identity and resolved definition channel are both semantic address material; the Signal name is only transport.
+
+The client validates the stimulus before Signal submission. A malformed or instance-conflicting request throws `BpmnMessageIngressInvalid` and emits no Signal. For well-formed input it sends `bpmn-deliver-message`, then polls the read-only `bpmn-message-delivery-result` Query for the exact stimulus. The Workflow-local ledger reports `pending`, the exact semantic outcome, or durable `commandIdentityConflict`. Only the main semantic loop records a semantic outcome.
+
+An exact repeated Signal is coalesced to the original record and never causes a second core transition. Reuse of the command ID with a different well-formed Message stimulus records identity conflict without throwing from the Signal handler. Wrong subscription identity, wrong channel, pre-activation delivery, and stale delivery are ordinary semantic rejections because they are well-formed inputs that reach the core.
+
+If the Workflow closes before the client receives its Query result, the completed receipt's ordered `messageDeliveryRecords` recover the exact semantic outcome or request failure. If no matching record exists, the ordinary `processClosed`/`processUnknown` lifecycle classification applies. Signal transport acceptance alone never implies BPMN Message consumption.
+
 ## Conformance evidence extraction
 
 The differential runner may transport a replay-reconstructed canonical trace through a post-completion Query. This is a harness-only evidence-extraction contract, not the production canonical-observation API.
@@ -164,6 +187,10 @@ The focused Temporal gate must demonstrate:
 - an exact retry after closure returns the original semantic result;
 - a different payload under the same semantic command ID cannot alias that result;
 - a conflicting command identity that reaches the Workflow returns `BpmnCommandIdentityConflict` without a Workflow Task failure;
+- malformed Message ingress returns `BpmnMessageIngressInvalid` without emitting a Signal;
+- a wrong-channel Signal is durably accepted by Temporal but returned as semantic rejection with exact state preservation;
+- exact duplicate Message delivery recovers the original outcome without a second semantic transition, while conflicting well-formed reuse is durably recorded and returned as `BpmnCommandIdentityConflict`;
+- Worker absence after Message Signal acceptance preserves later semantic delivery, receipt recovery, and replay;
 - a distinct post-closure command returns `processClosed`;
 - a never-existing address returns `processUnknown`;
 - Workflow-ID reuse and Update-With-Start command ingress are absent;
@@ -171,6 +198,7 @@ The focused Temporal gate must demonstrate:
 - Query-derived command outcomes and terminal state reconcile with durable Update results and the completed receipt;
 - the sequential post-terminal schedule and parallel live-sibling stale witness preserve the semantic/adapter evidence split without coercion;
 - the produced histories replay and every Worker/server resource is cleaned up;
+- every pre-existing Workflow path retains zero Signal Events, while the Message path contains the exact ordered delivery Signal payloads and a seeded payload substitution fails the history check;
 - a seeded command-ID-only Update-key mutation makes the payload-conflict witness fail.
 
 The complete applicable pipeline must remain green. No production legacy lifecycle, finite scenario-stimulus-count lifetime, or compatibility branch is retained during pre-release.
@@ -187,7 +215,7 @@ Excluded from this specification:
 - Workflow-ID reuse, Update-With-Start, and host-derived semantic identity;
 - Continue-As-New and cross-Run command-result lookup;
 - cancellation, termination, timeout, reset, pause, failure, and operator-repair semantics;
-- Activities, effects, messages, Search Attributes, forms, variables, task discovery, and timer forms or races beyond the separately specified exact Intermediate Catch Timer capsule.
+- Activities and effects beyond their separate capsules, Message payloads, key-based/global Message routing, modeled Message throw, Search Attributes, forms, variables beyond the current observation, task discovery, and timer forms or races beyond the separately specified exact Intermediate Catch Timer capsule.
 
 ## Re-open conditions
 

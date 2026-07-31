@@ -9,6 +9,8 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
   IntermediateCatchTimer:
     "cibseven-2.2.0-intermediate-catch-timer-draft",
+  IntermediateCatchMessage:
+    "bpmn-2.0.2-intermediate-catch-message-draft",
   ParallelForkJoin: "parallel-fork-join-draft",
   ServiceTaskEffect: "cibseven-2.2.0-service-task-effect-draft",
   TimerUserTaskComposition:
@@ -45,6 +47,13 @@ function requiredOperationKinds(
       return [
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitTimer,
+        SemanticOperationKind.Terminate,
+      ];
+    case SemanticProfileId.IntermediateCatchMessage:
+      return [
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitMessage,
+        SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.Terminate,
       ];
     case SemanticProfileId.ServiceTaskEffect:

@@ -87,6 +87,7 @@ inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | userTask (id : NodeId) (name : Option String)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
+  | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
   | serviceTask
       (id : NodeId)
       (descriptor : EffectDescriptor)
@@ -105,6 +106,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .userTask id _
   | .intermediateCatchTimerEvent id _
+  | .intermediateCatchMessageEvent id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveGateway id _ _
@@ -154,6 +156,11 @@ structure TimerDefinition where
   durationMs : Nat
   deriving Repr, DecidableEq
 
+structure MessageDefinition where
+  elementId : NodeId
+  channel : MessageChannel
+  deriving Repr, DecidableEq
+
 structure EffectDefinition where
   elementId : NodeId
   descriptor : EffectDescriptor
@@ -197,6 +204,12 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (timer : TimerDefinition)
+  | awaitMessage
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (output : ControlPlaceId)
+      (message : MessageDefinition)
   | awaitEffect
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -231,6 +244,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
   | .awaitUserTask id _ _ _ _
   | .awaitTimer id _ _ _ _
+  | .awaitMessage id _ _ _ _
   | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _

@@ -333,18 +333,34 @@ private def mixedWaitProjectionProgram : Program :=
           ⟨"place:user-input"⟩
           ⟨"place:user-output"⟩
           { id := ⟨"Z_UserTask"⟩, name := some "Z" }
+      , .awaitUserTask
+          ⟨"operation:B_UserTask"⟩
+          { elementId := ⟨"B_UserTask"⟩ }
+          ⟨"place:user-b-input"⟩
+          ⟨"place:user-b-output"⟩
+          { id := ⟨"B_UserTask"⟩, name := some "B" }
+      , .awaitMessage
+          ⟨"operation:A_Message"⟩
+          { elementId := ⟨"A_Message"⟩ }
+          ⟨"place:message-input"⟩
+          ⟨"place:message-output"⟩
+          { elementId := ⟨"A_Message"⟩
+            channel :=
+              { interfaceId := ⟨"Interface_Projection"⟩
+                interfaceOperationId := ⟨"Operation_Projection"⟩
+                messageId := ⟨"Message_Projection"⟩ } }
       , .awaitTimer
-          ⟨"operation:A_Timer"⟩
-          { elementId := ⟨"A_Timer"⟩ }
+          ⟨"operation:C_Timer"⟩
+          { elementId := ⟨"C_Timer"⟩ }
           ⟨"place:timer-input"⟩
           ⟨"place:timer-output"⟩
-          { elementId := ⟨"A_Timer"⟩, durationMs := 1000 }
+          { elementId := ⟨"C_Timer"⟩, durationMs := 1000 }
       , .awaitEffect
-          ⟨"operation:M_Effect"⟩
-          { elementId := ⟨"M_Effect"⟩ }
+          ⟨"operation:D_Effect"⟩
+          { elementId := ⟨"D_Effect"⟩ }
           ⟨"place:effect-input"⟩
           ⟨"place:effect-output"⟩
-          { elementId := ⟨"M_Effect"⟩
+          { elementId := ⟨"D_Effect"⟩
             descriptor :=
               { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
                 operation := "urn:bpmn-lean:effect-operation:probe-v1" }
@@ -359,16 +375,29 @@ private def mixedWaitProjectionState : RuntimeState :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
           task := { id := ⟨"Z_UserTask"⟩, name := some "Z" }
           activation := 1
-          output := ⟨"place:user-output"⟩ } ]
+          output := ⟨"place:user-output"⟩ }
+      , { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          task := { id := ⟨"B_UserTask"⟩, name := some "B" }
+          activation := 1
+          output := ⟨"place:user-b-output"⟩ } ]
+    messageWaits :=
+      [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
+          elementId := ⟨"A_Message"⟩
+          activation := 1
+          channel :=
+            { interfaceId := ⟨"Interface_Projection"⟩
+              interfaceOperationId := ⟨"Operation_Projection"⟩
+              messageId := ⟨"Message_Projection"⟩ }
+          output := ⟨"place:message-output"⟩ } ]
     timerWaits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
-          elementId := ⟨"A_Timer"⟩
+          elementId := ⟨"C_Timer"⟩
           activation := 1
           deadlineMs := 1000
           output := ⟨"place:timer-output"⟩ } ]
     effectWaits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
-          elementId := ⟨"M_Effect"⟩
+          elementId := ⟨"D_Effect"⟩
           activation := 1
           descriptor :=
             { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
@@ -378,18 +407,24 @@ private def mixedWaitProjectionState : RuntimeState :=
           output := ⟨"place:effect-output"⟩
           bpmnErrorRoute := none } ] }
 
-/-- With one wait per kind, this lock fixes only the cross-kind order (User Task before Timer before effect). Within a kind the projection follows program operation order; within-kind element-ID order is neither implemented as a sort nor exercised by this fixture. -/
+/-- This four-kind lock makes a global element-ID sort disagree with semantic-kind order and reverses the two User Task definitions so the projection must also sort by element ID within a kind. -/
 theorem active_wait_projection_orders_by_semantic_kind :
     (observeStableState mixedWaitProjectionProgram mixedWaitProjectionState).map
         (·.activeWaits) =
       some
-        [ { elementId := ⟨"Z_UserTask"⟩
+        [ { elementId := ⟨"B_UserTask"⟩
             kind := .userTask
             multiplicity := 1 }
-        , { elementId := ⟨"A_Timer"⟩
+        , { elementId := ⟨"Z_UserTask"⟩
+            kind := .userTask
+            multiplicity := 1 }
+        , { elementId := ⟨"A_Message"⟩
+            kind := .message
+            multiplicity := 1 }
+        , { elementId := ⟨"C_Timer"⟩
             kind := .timer
             multiplicity := 1 }
-        , { elementId := ⟨"M_Effect"⟩
+        , { elementId := ⟨"D_Effect"⟩
             kind := .effect
             multiplicity := 1 } ] := by
   decide

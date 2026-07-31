@@ -39,6 +39,13 @@ import {
 import {
   isAdmittedCheckedProcess,
 } from "./checked-process-admission.js";
+import {
+  projectIntermediateCatchMessage,
+  selectRootDefinitions,
+} from "./intermediate-catch-message-source.js";
+import type {
+  RootDefinitionSelection,
+} from "./intermediate-catch-message-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
@@ -78,17 +85,16 @@ export function compileCheckedProcess(
   }
 
   const rootElements = asElementArray(definitions.rootElements);
-  if (
-    rootElements === undefined ||
-    rootElements.length !== 1 ||
-    rootElements[0]?.$type !== bpmnTypes.processType
-  ) {
+  const rootSelection = rootElements === undefined
+    ? undefined
+    : selectRootDefinitions(rootElements, semanticProfile);
+  if (rootSelection === undefined) {
     return unsupported(
-      "The bounded compiler requires exactly one bpmn:Process root element.",
+      "The bounded compiler requires exactly the selected profile's Process and root-definition multiset.",
     );
   }
 
-  const process = rootElements[0];
+  const process = rootSelection.process;
   if (
     !hasOnlyOwnKeys(process, [
       "$type",
@@ -132,7 +138,12 @@ export function compileCheckedProcess(
       "Every Sequence Flow requires a distinct ID and resolved source and target references.",
     );
   }
-  const nodes = projectNodes(sourceNodes, sequenceFlows, definitions);
+  const nodes = projectNodes(
+    sourceNodes,
+    sequenceFlows,
+    definitions,
+    rootSelection,
+  );
   if (nodes === undefined) {
     return unsupported(
       "Every admitted node requires a supported plain shape, distinct ID, and gateway direction consistent with its arity.",
@@ -183,6 +194,7 @@ function projectNodes(
   elements: ReadonlyArray<ElementRecord>,
   flows: ReadonlyArray<CheckedSequenceFlow>,
   definitions: ElementRecord,
+  rootSelection: RootDefinitionSelection,
 ): ReadonlyArray<CheckedNode> | undefined {
   const projected = elements.map((element) => {
     const id = readId(element);
@@ -207,7 +219,11 @@ function projectNodes(
               id,
               durationLiteral: "PT1S",
             }
-          : undefined;
+          : projectIntermediateCatchMessage(
+              element,
+              id,
+              rootSelection.messageArtifacts,
+            );
       case bpmnTypes.serviceTaskType:
         return projectServiceTask(element, definitions, id);
       case bpmnTypes.parallelGatewayType: {

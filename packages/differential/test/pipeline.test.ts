@@ -74,6 +74,7 @@ test(
         "parallel-fork-join-stale-a-while-b-active",
         "intermediate-catch-timer-pt1s",
         "timer-user-task-composition",
+        "intermediate-catch-message",
         "exclusive-gateway-simple-boolean-first-true",
         "service-task-effect-success",
         "a12-create-document-data",
@@ -311,7 +312,7 @@ test(
       }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: 14,
+      liveHistories: 15,
     });
     assert.deepEqual(report.leanDefinitionMutation, {
       kind: "rejected",
@@ -325,7 +326,10 @@ test(
       kind: "rejected",
       mutation: "parallelControlPlaceProvenanceErasure",
     });
-    assert.equal(report.isolation.temporalWorkflowIds.length, 24);
+    assert.equal(
+      report.isolation.temporalWorkflowIds.length,
+      pipelineCases.length * 2,
+    );
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
       report.isolation.temporalWorkflowIds.length,
