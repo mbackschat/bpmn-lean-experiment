@@ -44,7 +44,7 @@ function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
   if (declared === undefined) {
     return defaultWarmBudgetMs;
   }
-  const budget = Number.parseFloat(declared);
+  const budget = Number(declared);
   if (!Number.isFinite(budget) || budget <= 0) {
     throw new TypeError(
       `BPMN_PIPELINE_WARM_BUDGET_MS must be a positive number of milliseconds, received ${JSON.stringify(declared)}`,
@@ -52,6 +52,16 @@ function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
   }
   return budget;
 }
+
+test("rejects a warm-pipeline budget with trailing units", () => {
+  assert.throws(
+    () =>
+      warmBudgetMs({
+        BPMN_PIPELINE_WARM_BUDGET_MS: "40000ms",
+      }),
+    TypeError,
+  );
+});
 
 const cleanCibProjection = {
   deployments: 0,

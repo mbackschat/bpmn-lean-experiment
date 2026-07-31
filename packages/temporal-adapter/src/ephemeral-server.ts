@@ -17,18 +17,27 @@ import { TestWorkflowEnvironment } from "@temporalio/testing";
 /** Pinned Temporal CLI release providing the local ephemeral server. */
 export const temporalCliVersion = "v1.8.1";
 
-export type CachedEphemeralServerOptions = Readonly<{
+type CachedEnvironmentOptions = Readonly<{
   /** Client identity recorded on the ephemeral server's connections. */
   identity: string;
   /** Executable cache directory, created when absent. */
   downloadDirectory: string;
-  /** Defaults to {@link temporalCliVersion}. */
-  cliVersion?: string;
 }>;
+
+/** Options for the host-clock Temporal CLI environment. */
+export type CachedLocalEnvironmentOptions = Readonly<
+  CachedEnvironmentOptions & {
+    /** Defaults to {@link temporalCliVersion}. */
+    cliVersion?: string;
+  }
+>;
+
+/** Options for the SDK-owned time-skipping test environment. */
+export type CachedTimeSkippingEnvironmentOptions = CachedEnvironmentOptions;
 
 /** Starts a local ephemeral server that advances time with the host clock. */
 export async function createCachedLocalEnvironment(
-  options: CachedEphemeralServerOptions,
+  options: CachedLocalEnvironmentOptions,
 ): Promise<TestWorkflowEnvironment> {
   await mkdir(options.downloadDirectory, { recursive: true });
   return TestWorkflowEnvironment.createLocal({
@@ -52,7 +61,7 @@ export async function createCachedLocalEnvironment(
  * SDK's own pinned `default` release rather than {@link temporalCliVersion}.
  */
 export async function createCachedTimeSkippingEnvironment(
-  options: CachedEphemeralServerOptions,
+  options: CachedTimeSkippingEnvironmentOptions,
 ): Promise<TestWorkflowEnvironment> {
   await mkdir(options.downloadDirectory, { recursive: true });
   return TestWorkflowEnvironment.createTimeSkipping({
