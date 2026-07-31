@@ -2,10 +2,21 @@ name: Verify
 
 on:
   pull_request:
+  # Branch pushes are covered by their pull request, so restricting this to the
+  # default branch keeps one run per change instead of two.
   push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Superseded branch runs are cancelled, while every commit on the default
+  # branch keeps its own completed verification record.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   verify:
@@ -57,6 +68,19 @@ jobs:
           build: false
           test: false
           use-mathlib-cache: false
+
+      - name: Cache Lean build output
+        # lean-action only restores `.lake`; it registers no save step because
+        # verify.sh owns the build. Without this, every run rebuilds Lean from
+        # scratch, which measured 79s of a 213s Ubuntu run. The key is the exact
+        # Lean source state, so an unchanged tree hits and a changed tree falls
+        # back to the newest prefix match for an incremental rebuild.
+        uses: actions/cache@v5
+        with:
+          path: .lake
+          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'BpmnSemantics/**/*.lean') }}
+          restore-keys: |
+            lake-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
