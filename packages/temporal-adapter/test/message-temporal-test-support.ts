@@ -48,6 +48,14 @@ export type MessageWorkerLease = Readonly<{
   failure: () => unknown;
 }>;
 
+/** Shared durable runtime owned by the Message test suite, not by an individual case. */
+export type MessageTemporalCaseContext = Readonly<{
+  environment: TestWorkflowEnvironment;
+  suspendWorker: () => Promise<void>;
+  resumeWorker: () => Promise<void>;
+  retainHistory: (history: TemporalHistory, workflowId: string) => void;
+}>;
+
 const operationDeadlineMs = 10_000;
 
 /** Test-only adapter mutation proving that the direct channel is observable before delivery. */

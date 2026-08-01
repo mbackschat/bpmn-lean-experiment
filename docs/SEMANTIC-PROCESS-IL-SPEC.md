@@ -176,12 +176,18 @@ type CheckedNode = DeepReadonly<
   | {
       kind: "intermediateCatchMessageEvent";
       id: string;
-      channel: MessageChannel;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
     }
   | {
       kind: "receiveTask";
       id: string;
-      channel: MessageChannel;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.DirectMessage }
+      >;
     }
   | CheckedServiceTask
   | {

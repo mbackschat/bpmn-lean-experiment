@@ -93,6 +93,28 @@ test("lowers one exact Message-addressed Receive Task to direct awaitMessage", a
   assert.equal(JSON.stringify(result.semanticProcess).includes("newInvoiceMessage"), false);
 });
 
+test("normalizes an explicit false instantiate attribute", async () => {
+  const xml = await readFile(sourceUrl, "utf8");
+  const explicitFalse = xml.replace(
+    'messageRef="Message_NewInvoice"',
+    'messageRef="Message_NewInvoice" instantiate="false"',
+  );
+  assert.notEqual(explicitFalse, xml);
+
+  const ordinary = requireAccepted(await compile(new TextEncoder().encode(xml)));
+  const explicit = requireAccepted(
+    await compile(new TextEncoder().encode(explicitFalse)),
+  );
+  assert.deepEqual(
+    withoutSourceDigest(explicit.checkedProcess),
+    withoutSourceDigest(ordinary.checkedProcess),
+  );
+  assert.deepEqual(
+    withoutSourceDigest(explicit.semanticProcess),
+    withoutSourceDigest(ordinary.semanticProcess),
+  );
+});
+
 test("derives the direct channel from messageRef rather than fixture identity", async () => {
   const xml = await readFile(sourceUrl, "utf8");
   const changed = xml

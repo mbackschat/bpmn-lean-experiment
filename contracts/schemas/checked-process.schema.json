@@ -158,16 +158,6 @@
         }
       }
     },
-    "messageChannel": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/operationMessageChannel"
-        },
-        {
-          "$ref": "#/$defs/directMessageChannel"
-        }
-      ]
-    },
     "operationMessageChannel": {
       "type": "object",
       "additionalProperties": false,

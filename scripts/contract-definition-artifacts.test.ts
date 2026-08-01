@@ -35,7 +35,7 @@ import type {
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-test("keeps every MessageChannel schema on the same closed union", async () => {
+test("keeps executable and scenario MessageChannel schemas on the same closed union", async () => {
   const values = [
     {
       kind: "operationMessage",
@@ -64,7 +64,6 @@ test("keeps every MessageChannel schema on the same closed union", async () => {
   ] as const;
 
   for (const schemaName of [
-    "checked-process.schema.json",
     "semantic-process.schema.json",
     "scenario.schema.json",
   ]) {
@@ -132,6 +131,39 @@ test("binds checked Message node kinds to their exact channel arms", async () =>
     id: "ReceiveTask_1",
     channel: operationChannel,
   }), false);
+});
+
+test("keeps every checked-process schema definition reachable", async () => {
+  const schema = JSON.parse(
+    await readFile(
+      `${projectRoot}/contracts/schemas/checked-process.schema.json`,
+      "utf8",
+    ),
+  ) as Readonly<Record<string, unknown>>;
+  const definitions = schema.$defs;
+  assert.ok(isRecord(definitions));
+
+  const root = Object.fromEntries(
+    Object.entries(schema).filter(([key]) => key !== "$defs"),
+  );
+  const reachable = new Set<string>();
+  const pending = [...localDefinitionReferences(root)];
+  while (pending.length > 0) {
+    const name = pending.pop();
+    assert.ok(name !== undefined);
+    if (reachable.has(name)) {
+      continue;
+    }
+    const definition = definitions[name];
+    assert.notEqual(definition, undefined, `missing $defs.${name}`);
+    reachable.add(name);
+    pending.push(...localDefinitionReferences(definition));
+  }
+
+  assert.deepEqual(
+    [...reachable].sort(compareCanonicalStrings),
+    Object.keys(definitions).sort(compareCanonicalStrings),
+  );
 });
 
 test("accepts the canonical checked-process and Semantic Process contract shapes", async () => {
@@ -285,3 +317,35 @@ test("rejects non-canonical definition and unordered-reference order", async () 
     /operation operation:Gateway_Fork outputs must be sorted/,
   );
 });
+
+function localDefinitionReferences(value: unknown): Set<string> {
+  const references = new Set<string>();
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      for (const reference of localDefinitionReferences(item)) {
+        references.add(reference);
+      }
+    }
+    return references;
+  }
+  if (!isRecord(value)) {
+    return references;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "$ref" && typeof child === "string") {
+      const match = /^#\/\$defs\/(.+)$/u.exec(child);
+      if (match?.[1] !== undefined) {
+        references.add(match[1]);
+      }
+      continue;
+    }
+    for (const reference of localDefinitionReferences(child)) {
+      references.add(reference);
+    }
+  }
+  return references;
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}

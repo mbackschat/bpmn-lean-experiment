@@ -310,7 +310,7 @@ For Message then User Task, the reachable wait sets are exactly one passive Mess
 
 ### R8 Signal-history amendment
 
-The 2026-07-31 owner approval explicitly narrows decision R8's zero-Signal assertion. `test:temporal` must continue to require zero Signal Events for every existing Update-, Timer-, and Activity-driven scenario. The Message history must instead contain exactly the submitted Message Signal Events with exact payload/content binding, including the Worker-down delivery, stale fresh-command delivery, exact duplicate, and identity-conflicting attempt; malformed client input produces none. Missing, extra, or payload-substituted Signal history must fail a seeded history mutation. This is an amendment to R8, not an inference from choosing Signal.
+The 2026-07-31 owner approval explicitly narrows decision R8's zero-Signal assertion. `test:temporal` must continue to require zero Signal Events for every existing Update-, Timer-, and Activity-driven scenario. The Message histories must instead contain exactly the submitted Message Signal Events with exact payload/content binding, including Worker-down delivery, stale fresh-command delivery, exact duplicate, and identity-conflicting attempts; malformed client input produces none. Missing, extra, or payload-substituted Signal history must fail a seeded history mutation. This is an amendment to R8, not an inference from choosing Signal.
 
 ### Smallest live-history witness
 
