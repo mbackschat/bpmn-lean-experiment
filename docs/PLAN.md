@@ -137,9 +137,9 @@ The owner-approved [CreateDocument data and mapping specification](capsules/CREA
 
 **Disposition:** Stage 3b is accepted and frozen. The compositional-admission programme is superseded; later proof stages and its composed profile are not the next work.
 
-## BPMN coverage program after the reviewer proto-MVP
+## BPMN coverage program through and after the reviewer proto-MVP
 
-The boundary-error capsule is closed. The reusable BPMN mechanism-coverage programme remains the long-term route to Process Execution Conformance, but its next breadth increment is scheduled after the reviewer proto-MVP below. A12 remains a prioritization and acceptance input, and CIB remains an on-demand overlay.
+The boundary-error capsule is closed. The reusable BPMN mechanism-coverage programme remains the long-term route to Process Execution Conformance. Three new breadth increments—Inclusive Gateway, Event-Based Gateway, and Call Activity—are now scheduled into the reviewer proto-MVP below. A12 remains a prioritization and acceptance input, and CIB remains an on-demand overlay.
 
 ### Work unit 1 — establish the coverage denominator and mechanism map
 
@@ -171,7 +171,7 @@ Then add broader nested execution scope, Sub-Process structure, interruption, an
 
 ### Subsequent mechanism queue
 
-After those foundations, prioritize User Task performer/assignment and data behavior, inclusive and event-based gateways, additional start/intermediate/end Events, loop and multi-instance Activities, compensation, Business Rule Tasks, and Script Tasks according to normative dependency and implementation leverage. A12 frequency breaks ties; it does not remove standard families from the eventual conformance target.
+After the proto-MVP gateway and Call Activity slices, prioritize User Task performer/assignment and data behavior, additional start/intermediate/end Events, loop and multi-instance Activities, compensation, Business Rule Tasks, and Script Tasks according to normative dependency and implementation leverage. A12 frequency breaks ties; it does not remove standard families from the eventual conformance target.
 
 ### CIB on-demand gate
 
@@ -257,9 +257,9 @@ The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Intermed
 
 ## Reviewer proto-MVP milestone
 
-The next product milestone is a reviewer-facing end-to-end demonstration of the architecture over a deliberately small catalog of bounded executable BPMN profiles. It is not a claim that arbitrary combinations of the catalog elements are admitted, and it does not replace the BPMN requirement ledger as the conformance denominator.
+The next product milestone is a reviewer-facing end-to-end demonstration of the architecture over a deliberately small catalog of bounded executable BPMN profiles. It has an early preview over the six already implemented slices and an expanded proto-MVP exit gate that also requires one bounded Inclusive Gateway, Event-Based Gateway, and Call Activity slice. It is not a claim that arbitrary combinations of the catalog elements are admitted, and it does not replace the BPMN requirement ledger as the conformance denominator.
 
-The catalog contains the smallest implemented slices that expose each important seam:
+The early preview contains the smallest implemented slices that already expose the core architecture:
 
 | Demonstration model | BPMN mechanism | Architectural seam demonstrated |
 |---|---|---|
@@ -270,11 +270,21 @@ The catalog contains the smallest implemented slices that expose each important 
 | bounded Parallel Gateway fork/join | token multiplicity and synchronization | reusable graph execution and cross-target semantic agreement without inventing a host-specific scheduler |
 | embedded Sub-Process with interrupting boundary Error | scope ownership, typed fault propagation, and interruption | nested runtime ownership, exceptional completion, durable hosting, replay, and selected CIB comparison |
 
+The expanded proto-MVP adds three separately reviewed slices:
+
+| Planned demonstration | New proposition | Required architectural seam |
+|---|---|---|
+| bounded Inclusive Gateway split/join | select every true outgoing condition and synchronize only the branches activated for that gateway occurrence | reuse typed condition evaluation and token multiplicity while preserving the selected branch set needed by the converging join |
+| bounded Event-Based Gateway race | arm competing external catches, commit exactly one winner, and cancel every losing subscription or timer without exposing a host scheduling choice as BPMN semantics | compose the existing Message and Timer wait mechanisms with explicit race identity, atomic winner selection, cancellation, Worker replacement, and replay |
+| bounded Call Activity | resolve one called Process definition, create a separately owned called Process instance, and complete the caller only after normal called-instance completion | preserve definition/instance identity, parent-child lifecycle, durable invocation, result recovery, and replay without equating a BPMN Call Activity with a Temporal Child Workflow |
+
+Those rows define planning outcomes, not approved profiles. Each needs its own normative/CIB classification, proposal review, Temporal preflight, semantic checkpoint if triggered, implementation evidence, closure review, and exact exclusion set before it enters the executable catalog.
+
 The demonstration must show the same boundary in order: exact BPMN XML bytes → checked project-owned graph → Semantic Process IL → Lean reference behavior and laws → independent TypeScript semantic-core result → Temporal durability → differential comparison → retained CIB evidence only where the selected profile claims it. Each catalog entry must state its exact admission profile, public observation, nearest unsupported claim, and whether CIB is an oracle lane or deliberately absent.
 
-The milestone excludes general model composition, general expression languages, loops and multi-instance Activities, event races, Call Activities, Collaborations and Message Flows, payload and correlation, compensation and transactions, assignment and authorization, a task-list UI, migration, and production Event History compatibility. The reviewer path uses the existing artifact catalogs and gates; it adds no second runner, demo-only semantic mode, or hand-maintained expected result.
+The milestone excludes general model composition, general expression languages, loops and multi-instance Activities, Event-Based Gateway races beyond the one reviewed discriminator, Call Activity mappings or lifecycle variants beyond the one reviewed discriminator, Collaborations and Message Flows, payload and correlation, compensation and transactions, assignment and authorization, a task-list UI, migration, and production Event History compatibility. The reviewer path uses the existing artifact catalogs and gates; it adds no second runner, demo-only semantic mode, or hand-maintained expected result.
 
-Success requires the Receive Task closure correction audit to pass, one documented command path to exercise the catalog from source through durable execution and replay, and an evidence map that prevents success in one lane from being presented as BPMN conformance or broad CIB compatibility. Only then does work resume on the next BPMN breadth capsule and the exhaustive denominator programme.
+The early preview requires the Receive Task closure correction audit to pass and one documented command path over the six implemented slices. Proto-MVP success additionally requires approved and closed Inclusive Gateway, Event-Based Gateway, and Call Activity capsules, one command path that exercises all nine catalog entries from source through durable execution and replay, and an evidence map that prevents success in one lane from being presented as BPMN conformance or broad CIB compatibility. Only then does work resume on the remaining BPMN breadth queue and exhaustive denominator programme.
 
 ## Ordered work
 
@@ -282,8 +292,13 @@ Success requires the Receive Task closure correction audit to pass, one document
 2. **Completed — reproducible CIB Seven breadth refresh:** `pnpm research:cib-breadth` inventories the pinned 1,144-file corpus with fixture-tested, namespace-insensitive structural classification and records both file and occurrence counts without treating them as conformance evidence.
 3. **Completed — Message-addressed Receive Task semantic review checkpoint:** the project-authored phase-zero fixture passed against packaged CIB Seven `2.2.0` before any Message-channel change, selecting `cibseven-2.2.0-message-addressed-receive-task-draft` and `CIB-AGR-0009`. The atomic closed-channel replacement, exact source admission/lowering, combined declaration-order discriminator, and reused Lean/semantic-core Message behavior are implemented at checkpoint `7226733`; its independent review required checked-source and observation-evidence corrections, then passed correction audit at `5a74bad`.
 4. **Awaiting closure correction audit — Message-addressed Receive Task:** external fresh-session review target `3881a7a` returned required edits. Correction target `f5f9caf` tightens the checked-node contract excerpt, aligns the retained-CIB mutation claim with its actual evidence owner, reports the measured cost direction plainly, and closes the five advisories without changing the selected semantic account. Pause for the same reviewer thread's audit without admitting addressless legacy signal, operation-addressed invention, payload, correlation, repetition, Collaboration, or adjacent Event loci.
-5. **Blocked on correction audit — package the reviewer proto-MVP:** the walkthrough and exact six-entry claim/evidence catalog are prepared as part of the closure documentation. After the audit passes, graduate the Receive Task proposal and expose one reproducible reviewer command path over the existing artifact and pipeline catalogs.
-6. **Then — resume reusable BPMN breadth:** continue the requirement-denominator and mechanism-map work before selecting the next capsule. Prefer mechanisms that expand Process Execution coverage across models; use CIB breadth and A12 prevalence only to order equal-value candidates.
+5. **Blocked on correction audit — package the six-slice reviewer preview:** the walkthrough and exact six-entry claim/evidence catalog are prepared as part of the closure documentation. After the audit passes, graduate the Receive Task proposal and expose one reproducible reviewer command path over the existing artifact and pipeline catalogs.
+6. **Then — prepare the proto-MVP expansion:** deepen the requirement denominator and mechanism dependency map for Inclusive Gateway, Event-Based Gateway, and Call Activity; classify any selected CIB relationships; and mint the independent proposal-review handoff for the first bounded slice. This planning decision does not approve any semantic account.
+7. **Then — bounded Inclusive Gateway capsule:** establish subset selection and occurrence-specific inclusive synchronization by reusing the implemented typed condition and token mechanisms without claiming arbitrary gateway topology.
+8. **Then — bounded Event-Based Gateway capsule:** establish explicit competing catches, one atomic winner, loser cancellation, durable recovery, and replay by composing the existing Message and Timer wait mechanisms without inheriting host race order.
+9. **Then — bounded Call Activity capsule:** establish called-definition resolution, separate called-instance ownership, normal parent-child completion, durable invocation, and replay without assuming that Temporal Child Workflow identity is BPMN identity.
+10. **Then — package the nine-slice reviewer proto-MVP:** add the three closed slices to the artifact and pipeline catalogs, keep one meaningful seeded mutation per case, update the walkthrough and claim/evidence map, and expose one reproducible end-to-end reviewer command.
+11. **Then — resume the remaining BPMN breadth queue:** continue the exhaustive requirement denominator and select subsequent capsules by reusable Process Execution leverage, using CIB breadth and A12 prevalence only to order equal-value candidates.
 
 Completed commit-bounded capsule measurements live in the [capsule cost ledger](CAPSULE-COST-LEDGER.md); implemented and absent claims live in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). Git and the owning specifications retain completed implementation history.
 

@@ -1,6 +1,6 @@
 # End-to-end MVP walkthrough
 
-This walkthrough follows one representative executable BPMN Process through every assurance boundary, then identifies the six bounded models that form the reviewer proto-MVP. It is the quickest way to understand why CIB Seven, Lean, the TypeScript semantic core, Temporal, and the differential harness all exist—and why none of them can replace the others.
+This walkthrough follows one representative executable BPMN Process through every assurance boundary, then identifies the six bounded models that form the implemented reviewer preview. The expanded reviewer proto-MVP will add separately reviewed Inclusive Gateway, Event-Based Gateway, and Call Activity slices. It is the quickest way to understand why CIB Seven, Lean, the TypeScript semantic core, Temporal, and the differential harness all exist—and why none of them can replace the others.
 
 The representative path is deliberately narrow:
 
@@ -8,7 +8,7 @@ The representative path is deliberately narrow:
 None Start Event → User Task → None End Event
 ```
 
-That path covers lifecycle execution plus discovery and exact completion of one User Task occurrence, including wrong-activation and stale-completion counterexamples. The proto-MVP does not widen this source profile; it demonstrates the same architecture over a catalog of six separately bounded and already implemented mechanisms. The exact implemented and absent surfaces remain owned by the [implementation map](IMPLEMENTATION-MAP.md).
+That path covers lifecycle execution plus discovery and exact completion of one User Task occurrence, including wrong-activation and stale-completion counterexamples. The implemented preview does not widen this source profile; it demonstrates the same architecture over six separately bounded mechanisms. The three planned proto-MVP additions remain unsupported until their independent capsule lifecycles close. The exact implemented and absent surfaces remain owned by the [implementation map](IMPLEMENTATION-MAP.md).
 
 ## The whole path
 
@@ -374,9 +374,9 @@ The current batch retains one mutation per registered scenario. The User Task ca
 
 The complete pipeline batches twenty-one cases. Three remain standards-only, while eighteen have content-bound CIB evidence under an explicit relation. Each case runs once in Lean and the pure core, twice under isolated Temporal Workflow identities, and only against the CIB release declared by its profile. Twenty-three resulting live histories replay before teardown.
 
-## Reviewer proto-MVP catalog
+## Implemented reviewer preview catalog
 
-The early reviewer demonstration selects six of those cases because together they expose the complete architectural idea without claiming arbitrary composition:
+The early reviewer preview selects six cases because together they expose the complete architectural idea without claiming arbitrary composition:
 
 | Reviewer case | What it demonstrates | Exact boundary |
 |---|---|---|
@@ -387,7 +387,19 @@ The early reviewer demonstration selects six of those cases because together the
 | `parallel-fork-join-a-then-b` plus its reverse schedule | token multiplicity, independent waits, synchronization, and order-independent public completion | one balanced two-branch fork/join, not arbitrary graph composition or broad CIB parallel compatibility |
 | `subprocess-error-propagation-trigger-first` plus its sibling/stale schedules | nested scope ownership, typed Error propagation, regional interruption, Worker replacement, and replay | one directly enclosing embedded Sub-Process with one exact-code interrupting boundary handler, not handler search, Event Sub-Processes, or general cancellation |
 
-For each row, the reviewer can inspect the same source-to-evidence path: exact XML → checked graph → Semantic Process IL → Lean result/laws → independent TypeScript result → Temporal durable execution/replay → selected CIB observation where claimed → mutation-sensitive differential comparison. Passing all six is a demonstration of the architecture over six bounded profiles, not a claim that their BPMN elements may be combined freely in one model.
+For each row, the reviewer can inspect the same source-to-evidence path: exact XML → checked graph → Semantic Process IL → Lean result/laws → independent TypeScript result → Temporal durable execution/replay → selected CIB observation where claimed → mutation-sensitive differential comparison. Passing all six is an early demonstration of the architecture over six bounded profiles, not a claim that their BPMN elements may be combined freely in one model.
+
+## Planned proto-MVP expansion
+
+The proto-MVP exit gate adds three material semantic slices after their independent review lifecycles close:
+
+| Planned case | Required demonstration | Still excluded |
+|---|---|---|
+| bounded Inclusive Gateway split/join | all true outgoing conditions are selected and the join waits for exactly the branches activated for that gateway occurrence | arbitrary topology, mixed gateway directions, general expression languages, and unstructured inclusive synchronization |
+| bounded Message-versus-Timer Event-Based Gateway | competing catches become observable together, exactly one explicit event wins, and the losing subscription or timer is canceled durably and replayably | other target kinds, instantiate gateways, multiple winners, correlation, and host-order-defined semantics |
+| bounded Call Activity normal completion | one `calledElement` resolves to a separately owned Process instance whose normal completion releases the caller with definition and instance identities preserved | general binding, input/output mapping, version/tenant selection, faults, cancellation propagation, recursion, and multi-instance calls |
+
+These are planning boundaries, not implemented claims. Their owning proposals may tighten the discriminator if normative research, a CIB probe, or the mandatory Temporal preflight exposes a missing distinction.
 
 The walkthrough command is the existing prepared pipeline, not a demo-only runner:
 
