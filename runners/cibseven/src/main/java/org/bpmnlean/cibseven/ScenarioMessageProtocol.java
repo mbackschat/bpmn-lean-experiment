@@ -1,5 +1,7 @@
 package org.bpmnlean.cibseven;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.Objects;
 
 /** Message-specific canonical wire records retained as empty projections by the CIB runner. */
@@ -19,11 +21,29 @@ public final class ScenarioMessageProtocol {
     }
   }
 
-  public record MessageChannel(
-      String interfaceId, String interfaceOperationId, String messageId) {
-    public MessageChannel {
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(
+        value = OperationMessageChannel.class,
+        name = "operationMessage"),
+    @JsonSubTypes.Type(value = DirectMessageChannel.class, name = "directMessage")
+  })
+  public sealed interface MessageChannel
+      permits OperationMessageChannel, DirectMessageChannel {}
+
+  public record OperationMessageChannel(
+      String interfaceId,
+      String interfaceOperationId,
+      String messageId) implements MessageChannel {
+    public OperationMessageChannel {
       Objects.requireNonNull(interfaceId, "interfaceId");
       Objects.requireNonNull(interfaceOperationId, "interfaceOperationId");
+      Objects.requireNonNull(messageId, "messageId");
+    }
+  }
+
+  public record DirectMessageChannel(String messageId) implements MessageChannel {
+    public DirectMessageChannel {
       Objects.requireNonNull(messageId, "messageId");
     }
   }

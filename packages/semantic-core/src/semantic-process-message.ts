@@ -8,10 +8,12 @@ import {
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
 import type {
-  MessageChannel,
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import {
+  sameMessageChannel,
+} from "./message-channel.js";
 import {
   addToken,
   compareMessageWaits,
@@ -78,7 +80,10 @@ export function deliverMessage(
   const wait = state.messageWaits.find((candidate) =>
     sameOccurrence(candidate.id, stimulus.subscriptionId)
   );
-  if (wait === undefined || !sameChannel(wait.channel, stimulus.channel)) {
+  if (
+    wait === undefined ||
+    !sameMessageChannel(wait.channel, stimulus.channel)
+  ) {
     return null;
   }
   const operation = program.operations.find(
@@ -93,7 +98,7 @@ export function deliverMessage(
   );
   if (
     operation === undefined ||
-    !sameChannel(wait.channel, operation.message.channel)
+    !sameMessageChannel(wait.channel, operation.message.channel)
   ) {
     return null;
   }
@@ -104,10 +109,4 @@ export function deliverMessage(
       (candidate) => candidate !== wait,
     ),
   };
-}
-
-function sameChannel(left: MessageChannel, right: MessageChannel): boolean {
-  return left.interfaceId === right.interfaceId &&
-    left.interfaceOperationId === right.interfaceOperationId &&
-    left.messageId === right.messageId;
 }

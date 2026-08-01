@@ -104,9 +104,7 @@ private def syntheticState : RuntimeState :=
           elementId := ⟨"ChildMessage"⟩
           activation := 1
           channel :=
-            { interfaceId := ⟨"Interface"⟩
-              interfaceOperationId := ⟨"Operation"⟩
-              messageId := ⟨"Message"⟩ }
+            (.operationMessage ⟨"Interface"⟩ ⟨"Operation"⟩ ⟨"Message"⟩)
           output := ⟨"place:MessageOutput"⟩ } ]
     timerWaits :=
       [ { processInstanceId := instanceId

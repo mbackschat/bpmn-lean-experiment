@@ -16,6 +16,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.2.0-intermediate-catch-timer-draft",
   IntermediateCatchMessage:
     "bpmn-2.0.2-intermediate-catch-message-draft",
+  MessageAddressedReceiveTask:
+    "cibseven-2.2.0-message-addressed-receive-task-draft",
   ParallelForkJoin: "parallel-fork-join-draft",
   ServiceTaskEffect: "cibseven-2.2.0-service-task-effect-draft",
   TimerUserTaskComposition:
@@ -75,6 +77,12 @@ function requiredCheckedProcessShape(
         start,
         CheckedNodeKind.IntermediateCatchMessageEvent,
         CheckedNodeKind.UserTask,
+        end,
+      ]);
+    case SemanticProfileId.MessageAddressedReceiveTask:
+      return rootChecked([
+        start,
+        CheckedNodeKind.ReceiveTask,
         end,
       ]);
     case SemanticProfileId.ServiceTaskEffect:
@@ -182,6 +190,13 @@ function requiredProgramShape(
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitMessage,
         SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case SemanticProfileId.MessageAddressedReceiveTask:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitMessage,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);

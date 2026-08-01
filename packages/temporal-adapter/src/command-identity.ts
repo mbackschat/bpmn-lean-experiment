@@ -2,14 +2,19 @@ import { createHash } from "node:crypto";
 
 import {
   EffectExecutionResultKind,
+  MessageChannelKind,
   StimulusKind,
   VariableValueKind,
   isWellFormedStimulus,
 } from "@bpmn-lean/semantic-core";
 import type {
+  MessageChannel,
   Stimulus,
   VariableBinding,
 } from "@bpmn-lean/semantic-core";
+import type {
+  CanonicalTupleValue,
+} from "./canonical-encoding.js";
 
 import { canonicalTypedTupleEncoding } from "./canonical-encoding.js";
 
@@ -48,11 +53,7 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
           stimulus.subscriptionId.elementId,
           stimulus.subscriptionId.activation,
         ],
-        [
-          stimulus.channel.interfaceId,
-          stimulus.channel.interfaceOperationId,
-          stimulus.channel.messageId,
-        ],
+        messageChannelTuple(stimulus.channel),
       ]);
     case StimulusKind.FireTimer:
       return canonicalTypedTupleEncoding([
@@ -78,6 +79,24 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
       ]);
     default:
       return assertNever(stimulus);
+  }
+}
+
+function messageChannelTuple(
+  channel: MessageChannel,
+): ReadonlyArray<CanonicalTupleValue> {
+  switch (channel.kind) {
+    case MessageChannelKind.OperationMessage:
+      return [
+        channel.kind,
+        channel.interfaceId,
+        channel.interfaceOperationId,
+        channel.messageId,
+      ];
+    case MessageChannelKind.DirectMessage:
+      return [channel.kind, channel.messageId];
+    default:
+      return assertNever(channel);
   }
 }
 

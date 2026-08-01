@@ -1,5 +1,7 @@
 import {
+  MessageChannelKind,
   SemanticProfileId,
+  isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import type {
   MessageChannel,
@@ -19,12 +21,39 @@ import type {
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
-export type MessageRootArtifacts = Readonly<{
+type OperationMessageRootArtifacts = Readonly<{
   message: ElementRecord;
   interface: ElementRecord;
   operation: ElementRecord;
-  channel: MessageChannel;
+  channel: Extract<
+    MessageChannel,
+    { kind: typeof MessageChannelKind.OperationMessage }
+  >;
 }>;
+
+type DirectMessageRootArtifacts = Readonly<{
+  message: ElementRecord;
+  channel: Extract<
+    MessageChannel,
+    { kind: typeof MessageChannelKind.DirectMessage }
+  >;
+}>;
+
+export type MessageRootArtifacts =
+  | OperationMessageRootArtifacts
+  | DirectMessageRootArtifacts;
+
+export function isOperationMessageRootArtifacts(
+  artifacts: MessageRootArtifacts | undefined,
+): artifacts is OperationMessageRootArtifacts {
+  return artifacts?.channel.kind === MessageChannelKind.OperationMessage;
+}
+
+export function isDirectMessageRootArtifacts(
+  artifacts: MessageRootArtifacts | undefined,
+): artifacts is DirectMessageRootArtifacts {
+  return artifacts?.channel.kind === MessageChannelKind.DirectMessage;
+}
 
 export type RootDefinitionSelection = Readonly<{
   process: ElementRecord;
@@ -45,6 +74,8 @@ export function selectRootDefinitions(
   switch (semanticProfile) {
     case SemanticProfileId.IntermediateCatchMessage:
       return selectMessageRoots(rootElements, process);
+    case SemanticProfileId.MessageAddressedReceiveTask:
+      return selectDirectMessageRoots(rootElements, process);
     case SemanticProfileId.SubProcessErrorPropagation:
       return selectErrorRoots(rootElements, process);
     default:
@@ -105,7 +136,46 @@ function selectMessageRoots(
       message,
       interface: interface_,
       operation,
-      channel: { interfaceId, interfaceOperationId, messageId },
+      channel: {
+        kind: MessageChannelKind.OperationMessage,
+        interfaceId,
+        interfaceOperationId,
+        messageId,
+      },
+    },
+    errorArtifact: undefined,
+  };
+}
+
+function selectDirectMessageRoots(
+  rootElements: ReadonlyArray<ElementRecord>,
+  process: ElementRecord,
+): RootDefinitionSelection | undefined {
+  const messages = elementsOfType(rootElements, bpmnTypes.messageType);
+  const message = messages[0];
+  if (
+    rootElements.length !== 2 ||
+    messages.length !== 1 ||
+    message === undefined ||
+    !hasOnlyOwnKeys(message, ["$type", "id", "name"]) ||
+    typeof message.name !== "string" ||
+    message.name.length === 0 ||
+    !isWellFormedWireString(message.name)
+  ) {
+    return undefined;
+  }
+  const messageId = readId(message);
+  if (messageId === undefined) {
+    return undefined;
+  }
+  return {
+    process,
+    messageArtifacts: {
+      message,
+      channel: {
+        kind: MessageChannelKind.DirectMessage,
+        messageId,
+      },
     },
     errorArtifact: undefined,
   };

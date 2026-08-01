@@ -146,10 +146,7 @@ private def excludedExclusiveGateway : CheckedNode :=
 
 private def excludedMessageCatch : CheckedNode :=
   .intermediateCatchMessageEvent ⟨"MessageCatch"⟩
-    { interfaceId := ⟨"Interface"⟩
-      interfaceOperationId := ⟨"Operation"⟩
-      messageId := ⟨"Message"⟩
-    }
+    (.operationMessage ⟨"Interface"⟩ ⟨"Operation"⟩ ⟨"Message"⟩)
 
 private def excludedEmbeddedSubProcess : CheckedNode :=
   .embeddedSubProcess ⟨"EmbeddedSubProcess"⟩ ⟨"scope:child"⟩

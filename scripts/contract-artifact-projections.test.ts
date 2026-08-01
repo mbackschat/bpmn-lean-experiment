@@ -96,6 +96,7 @@ test("rejects a CIB Message subscription projection without producer evidence", 
       activation: 1,
     },
     channel: {
+      kind: "operationMessage",
       interfaceId: "Interface_Order",
       interfaceOperationId: "Operation_Receive",
       messageId: "Message_Order",

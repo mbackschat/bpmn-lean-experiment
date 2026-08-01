@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  MessageChannelKind,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
@@ -380,6 +381,7 @@ test("regional interruption removes every child runtime owner and preserves root
       },
       owner: child.id,
       channel: {
+        kind: MessageChannelKind.OperationMessage,
         interfaceId: "SyntheticInterface",
         interfaceOperationId: "SyntheticOperation",
         messageId: "SyntheticMessage",

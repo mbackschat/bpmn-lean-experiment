@@ -9,6 +9,7 @@ import { test } from "node:test";
 
 import {
   EffectExecutionResultKind,
+  MessageChannelKind,
   StimulusKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
@@ -68,12 +69,29 @@ test("canonically encodes every typed stimulus field", () => {
         activation: 1,
       },
       channel: {
+        kind: MessageChannelKind.OperationMessage,
         interfaceId: "MessageInterface_1",
         interfaceOperationId: "ReceiveMessage_1",
         messageId: "Message_1",
       },
     }),
-    '["deliverMessage","deliver-message",["Instance_1","MessageCatch_1",1],["MessageInterface_1","ReceiveMessage_1","Message_1"]]',
+    '["deliverMessage","deliver-message",["Instance_1","MessageCatch_1",1],["operationMessage","MessageInterface_1","ReceiveMessage_1","Message_1"]]',
+  );
+  assert.equal(
+    canonicalStimulusEncoding({
+      kind: StimulusKind.DeliverMessage,
+      commandId: "deliver-direct-message",
+      subscriptionId: {
+        processInstanceId: "Instance_1",
+        elementId: "ReceiveTask_1",
+        activation: 1,
+      },
+      channel: {
+        kind: MessageChannelKind.DirectMessage,
+        messageId: "Message_1",
+      },
+    }),
+    '["deliverMessage","deliver-direct-message",["Instance_1","ReceiveTask_1",1],["directMessage","Message_1"]]',
   );
   assert.throws(
     () => canonicalStimulusEncoding({ ...completion, extra: true }),

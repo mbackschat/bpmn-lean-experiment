@@ -10,6 +10,10 @@ import {
   compareCanonicalStrings,
   isWellFormedWireString,
 } from "./wire.js";
+import {
+  isMessageChannel,
+  sameMessageChannel,
+} from "./message-channel.js";
 
 export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
@@ -171,27 +175,6 @@ function sameOccurrenceId(
   return left.processInstanceId === right.processInstanceId &&
     left.elementId === right.elementId &&
     left.activation === right.activation;
-}
-
-function sameMessageChannel(
-  left: import("./semantic-process-contract.js").MessageChannel,
-  right: import("./semantic-process-contract.js").MessageChannel,
-): boolean {
-  return left.interfaceId === right.interfaceId &&
-    left.interfaceOperationId === right.interfaceOperationId &&
-    left.messageId === right.messageId;
-}
-
-function isMessageChannel(value: unknown): boolean {
-  return isRecord(value) &&
-    hasOnlyKeys(value, [
-      "interfaceId",
-      "interfaceOperationId",
-      "messageId",
-    ]) &&
-    isNonEmptyString(value.interfaceId) &&
-    isNonEmptyString(value.interfaceOperationId) &&
-    isNonEmptyString(value.messageId);
 }
 
 function sameEffectResult(

@@ -51,6 +51,8 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
             simp [segmentNodes, ih _ _ parsed]
         | intermediateCatchMessageEvent _ _ =>
             simp [parseFrom, nodeResult] at result
+        | receiveTask _ _ =>
+            simp [parseFrom, nodeResult] at result
         | exclusiveGateway _ _ _ =>
             simp [parseFrom, nodeResult] at result
         | parallelGateway _ direction =>

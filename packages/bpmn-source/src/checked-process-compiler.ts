@@ -42,6 +42,9 @@ import {
 import {
   projectIntermediateCatchMessage,
 } from "./intermediate-catch-message-source.js";
+import {
+  projectReceiveTask,
+} from "./receive-task-source.js";
 import type {
   RootDefinitionSelection,
 } from "./root-definition-selection.js";
@@ -147,7 +150,7 @@ export function compileCheckedProcess(
   );
   if (sourceNodes.length + sourceFlows.length !== scoped.elements.length) {
     return unsupported(
-      "The bounded compiler supports only ordinary embedded SubProcesses, selected boundary Error Events, None Start Events, exact PT1S Intermediate Catch Timer Events, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, selected Error or None End Events, and Sequence Flows.",
+      "The bounded compiler supports only ordinary embedded SubProcesses, selected boundary Error Events, None Start Events, exact PT1S Intermediate Catch Timer Events, selected Message Receive Tasks, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, selected Error or None End Events, and Sequence Flows.",
     );
   }
 
@@ -286,6 +289,12 @@ function projectNodes(
               id,
               rootSelection.messageArtifacts,
             );
+      case bpmnTypes.receiveTaskType:
+        return projectReceiveTask(
+          element,
+          id,
+          rootSelection.messageArtifacts,
+        );
       case bpmnTypes.serviceTaskType:
         return projectServiceTask(element, definitions, id);
       case bpmnTypes.parallelGatewayType: {
@@ -399,6 +408,7 @@ function isSupportedNodeType(type: unknown): boolean {
     bpmnTypes.subProcessType,
     bpmnTypes.boundaryEventType,
     bpmnTypes.intermediateCatchEventType,
+    bpmnTypes.receiveTaskType,
     bpmnTypes.userTaskType,
     bpmnTypes.serviceTaskType,
     bpmnTypes.parallelGatewayType,

@@ -214,24 +214,48 @@
       }
     },
     "messageChannel": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "interfaceId",
-        "interfaceOperationId",
-        "messageId"
-      ],
-      "properties": {
-        "interfaceId": {
-          "$ref": "#/$defs/nonemptyString"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "interfaceId",
+            "interfaceOperationId",
+            "messageId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "operationMessage"
+            },
+            "interfaceId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "interfaceOperationId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "messageId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
         },
-        "interfaceOperationId": {
-          "$ref": "#/$defs/nonemptyString"
-        },
-        "messageId": {
-          "$ref": "#/$defs/nonemptyString"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "messageId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "directMessage"
+            },
+            "messageId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
         }
-      }
+      ]
     },
     "messageDefinition": {
       "type": "object",

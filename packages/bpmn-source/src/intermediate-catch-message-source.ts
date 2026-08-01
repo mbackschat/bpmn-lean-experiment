@@ -16,6 +16,9 @@ import {
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import {
+  isOperationMessageRootArtifacts,
+} from "./root-definition-selection.js";
 import type {
   MessageRootArtifacts,
 } from "./root-definition-selection.js";
@@ -31,7 +34,7 @@ export function projectIntermediateCatchMessage(
   { kind: CheckedNodeKind.IntermediateCatchMessageEvent }
 > | undefined {
   if (
-    artifacts === undefined ||
+    !isOperationMessageRootArtifacts(artifacts) ||
     !hasOnlyOwnKeys(element, [
       "$type",
       "id",

@@ -119,11 +119,23 @@ type CheckedCondition = DeepReadonly<{
   body: string;
 }>;
 
-type MessageChannel = DeepReadonly<{
-  interfaceId: string;
-  interfaceOperationId: string;
-  messageId: string;
-}>;
+const MessageChannelKind = {
+  OperationMessage: "operationMessage",
+  DirectMessage: "directMessage",
+} as const;
+
+type MessageChannel = DeepReadonly<
+  | {
+      kind: typeof MessageChannelKind.OperationMessage;
+      interfaceId: string;
+      interfaceOperationId: string;
+      messageId: string;
+    }
+  | {
+      kind: typeof MessageChannelKind.DirectMessage;
+      messageId: string;
+    }
+>;
 
 type CheckedServiceTask = DeepReadonly<{
   kind: "serviceTask";
@@ -163,6 +175,11 @@ type CheckedNode = DeepReadonly<
     }
   | {
       kind: "intermediateCatchMessageEvent";
+      id: string;
+      channel: MessageChannel;
+    }
+  | {
+      kind: "receiveTask";
       id: string;
       channel: MessageChannel;
     }
@@ -422,6 +439,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | User Task | `awaitUserTask` |
 | exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
+| exact payload-free direct-Message Receive Task | `awaitMessage` with Receive Task identity and the resolved direct Message arm; no Interface or Operation is synthesized |
 | exact payload-free Service Task source shape | `awaitEffect` with the registered neutral Activity/probe descriptor and empty mappings |
 | exact A12-shaped CreateDocument source shape and mappings | `awaitEffect` with the registered neutral Activity/mapped-success descriptor, normalized literal input, and local-reference output mapping |
 | exact A12-shaped interrupting boundary Error source shape | `awaitEffect` with the registered neutral Activity/mapped-boundary-error descriptor, normalized mapping pair, and one committed `bpmnErrorRoute` |
@@ -468,9 +486,9 @@ The exact `PT1S` lexical value remains in the checked graph; Lean and TypeScript
 
 ### Message subscription wait
 
-`awaitMessage` is enabled when its input control place contains at least one token and no subscription for that firing already exists. Firing consumes exactly one input token and creates one Process-owned subscription containing the full Process-instance, Catch Event, and activation identity plus the complete resolved Interface, Interface Operation, and Message channel. Internal closure stops at that public resumption surface.
+`awaitMessage` is enabled when its input control place contains at least one token and no subscription for that firing already exists. Firing consumes exactly one input token and creates one Process-owned subscription containing the full Process-instance, Message-wait element, and activation identity plus one complete closed channel arm. An Intermediate Catch Message Event uses `operationMessage` with resolved Interface, Interface Operation, and Message identities; a direct-Message Receive Task uses `directMessage` with only the resolved Message identity. Internal closure stops at that public resumption surface.
 
-An exact `deliverMessage` stimulus commits only when its full subscription identity and complete channel equal the active subscription. Commit removes the subscription, adds one token to the operation output, and resumes closure. A pre-activation, wrong-identity, wrong-channel, stale, or repeated well-formed delivery is rejected with exact state preservation. The operation carries no payload and does not perform key-based correlation, global routing, or modeled Message throw. The complete rules and Signal refinement belong to the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md).
+An exact `deliverMessage` stimulus commits only when its full subscription identity and complete discriminated channel equal the active subscription. Arm kind and every field in that arm participate in equality; matching `messageId` under different arms is not equality. Commit removes the subscription, adds one token to the operation output, and resumes closure. A pre-activation, wrong-identity, wrong-channel, stale, or repeated well-formed delivery is rejected with exact state preservation. The operation carries no payload and does not perform key-based correlation, global routing, or modeled Message throw. The implemented operation-addressed rules and Signal refinement belong to the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md); the approved direct-Message specialization belongs to the [Receive Task proposal](capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md) until its Temporal lane closes and the capsule graduates.
 
 ### External effect wait, bounded data mapping, and typed business error
 
@@ -531,7 +549,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every `choose` has exactly two distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement;
 - every operation payload element identifier matches its BPMN origin;
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
-- every admitted `awaitMessage` has a Message element matching its BPMN origin and a complete nonempty Interface, Interface Operation, and Message channel selected from the checked source reference chain;
+- every admitted `awaitMessage` has a Message-wait element matching its BPMN origin and exactly one closed channel arm: `operationMessage` requires nonempty Interface, Interface Operation, and Message identities, while `directMessage` requires only a nonempty Message identity and forbids Interface fields;
 - every admitted `awaitEffect` has a profile-permitted descriptor and the exact mapping pair for that descriptor;
 - mapping targets are nonempty and unique, literal inputs remain exact strings, and local-variable outputs refer only to the admitted result-local name;
 - every non-null `bpmnErrorRoute` has a nonempty exact code, a distinct existing boundary output, complete source provenance, and the exact profile-permitted handler/mapping combination;

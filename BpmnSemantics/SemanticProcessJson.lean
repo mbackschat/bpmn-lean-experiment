@@ -222,6 +222,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.intermediateCatchMessageEvent
           ⟨← stringField json "id"⟩
           (← decodeMessageChannel (← field json "channel")))
+  | "receiveTask" =>
+      requireObjectShape json ["channel", "id", "kind"]
+      pure
+        (.receiveTask
+          ⟨← stringField json "id"⟩
+          (← decodeMessageChannel (← field json "channel")))
   | "serviceTask" =>
       requireObjectShape json
         ["bpmnErrorRoute", "descriptor", "id", "inputMappings", "kind",

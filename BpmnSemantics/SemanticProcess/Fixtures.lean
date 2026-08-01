@@ -391,9 +391,8 @@ private def mixedWaitProjectionProgram : Program :=
           ⟨"place:message-output"⟩
           { elementId := ⟨"A_Message"⟩
             channel :=
-              { interfaceId := ⟨"Interface_Projection"⟩
-                interfaceOperationId := ⟨"Operation_Projection"⟩
-                messageId := ⟨"Message_Projection"⟩ } }
+              (.operationMessage ⟨"Interface_Projection"⟩
+                ⟨"Operation_Projection"⟩ ⟨"Message_Projection"⟩) }
       , .awaitTimer
           ⟨"operation:C_Timer"⟩
           { elementId := ⟨"C_Timer"⟩ }
@@ -437,9 +436,8 @@ private def mixedWaitProjectionState : RuntimeState :=
           elementId := ⟨"A_Message"⟩
           activation := 1
           channel :=
-            { interfaceId := ⟨"Interface_Projection"⟩
-              interfaceOperationId := ⟨"Operation_Projection"⟩
-              messageId := ⟨"Message_Projection"⟩ }
+            (.operationMessage ⟨"Interface_Projection"⟩
+              ⟨"Operation_Projection"⟩ ⟨"Message_Projection"⟩)
           output := ⟨"place:message-output"⟩ } ]
     timerWaits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩

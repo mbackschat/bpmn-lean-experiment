@@ -4,6 +4,7 @@ import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.Conformance
 import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.IntermediateCatchMessageConformance
+import BpmnSemantics.ReceiveTaskConformance
 import BpmnSemantics.ServiceTaskEffectConformance
 import BpmnSemantics.CreateDocumentDataConformance
 import BpmnSemantics.BoundaryErrorConformance

@@ -11,6 +11,7 @@ import { test } from "node:test";
 import {
   BpmnCompilationStatus,
   CheckedNodeKind,
+  MessageChannelKind,
   SemanticOperationKind,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
@@ -62,6 +63,7 @@ test("resolves and lowers the exact Message reference chain", async () => {
     "intermediate-catch-message-process",
   );
   const channel = {
+    kind: MessageChannelKind.OperationMessage,
     interfaceId: "Interface_ProcessMessages",
     interfaceOperationId: "Operation_ReceiveApprovalRequest",
     messageId: "Message_ApprovalRequest",
@@ -151,6 +153,7 @@ test("derives Message channel identity from references rather than fixture const
     SemanticOperationKind.AwaitMessage,
   );
   assert.deepEqual(operation.message.channel, {
+    kind: MessageChannelKind.OperationMessage,
     interfaceId: "Interface_Other",
     interfaceOperationId: "Operation_ReceiveOther",
     messageId: "Message_Other",

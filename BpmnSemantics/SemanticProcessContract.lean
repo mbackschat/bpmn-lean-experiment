@@ -101,6 +101,7 @@ inductive CheckedNode where
   | userTask (id : NodeId) (name : Option String)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
+  | receiveTask (id : NodeId) (channel : MessageChannel)
   | serviceTask
       (id : NodeId)
       (descriptor : EffectDescriptor)
@@ -123,6 +124,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
+  | .receiveTask id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveGateway id _ _

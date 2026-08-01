@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ControlStateKind,
+  MessageChannelKind,
   SemanticOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
@@ -33,6 +34,7 @@ const messageProfile =
   "bpmn-2.0.2-intermediate-catch-message-draft";
 
 const channel = Object.freeze({
+  kind: MessageChannelKind.OperationMessage,
   interfaceId: "Interface_ProcessMessages",
   interfaceOperationId: "Operation_ReceiveApprovalRequest",
   messageId: "Message_ApprovalRequest",

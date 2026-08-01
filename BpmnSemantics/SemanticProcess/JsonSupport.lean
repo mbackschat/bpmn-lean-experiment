@@ -92,12 +92,18 @@ def decodeOccurrenceId (json : Json) :
 
 def decodeMessageChannel (json : Json) :
     Except String MessageChannel := do
-  requireObjectShape json
-    ["interfaceId", "interfaceOperationId", "messageId"]
-  pure
-    { interfaceId := ⟨← stringField json "interfaceId"⟩
-      interfaceOperationId := ⟨← stringField json "interfaceOperationId"⟩
-      messageId := ⟨← stringField json "messageId"⟩ }
+  match ← stringField json "kind" with
+  | "operationMessage" =>
+      requireObjectShape json
+        ["interfaceId", "interfaceOperationId", "kind", "messageId"]
+      pure (.operationMessage
+        ⟨← stringField json "interfaceId"⟩
+        ⟨← stringField json "interfaceOperationId"⟩
+        ⟨← stringField json "messageId"⟩)
+  | "directMessage" =>
+      requireObjectShape json ["kind", "messageId"]
+      pure (.directMessage ⟨← stringField json "messageId"⟩)
+  | kind => throw s!"unsupported Message channel {kind}"
 
 def decodeVariableValue (json : Json) :
     Except String VariableValue := do

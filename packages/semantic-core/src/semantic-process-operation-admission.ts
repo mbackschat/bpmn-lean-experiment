@@ -12,6 +12,9 @@ import {
   isWellFormedChooseOperation,
 } from "./simple-boolean-choice-admission.js";
 import {
+  isMessageChannel,
+} from "./message-channel.js";
+import {
   compareCanonicalStrings,
   isWellFormedWireString,
 } from "./wire.js";
@@ -252,18 +255,6 @@ function isErrorReference(value: unknown): value is Readonly<{
     isNonEmptyString(value.errorDefinitionId) &&
     isNonEmptyString(value.errorElementId) &&
     isNonEmptyString(value.code);
-}
-
-function isMessageChannel(value: unknown): boolean {
-  return isRecord(value) &&
-    hasOnlyKeys(value, [
-      "interfaceId",
-      "interfaceOperationId",
-      "messageId",
-    ]) &&
-    isNonEmptyString(value.interfaceId) &&
-    isNonEmptyString(value.interfaceOperationId) &&
-    isNonEmptyString(value.messageId);
 }
 
 function isSupportedEffectContract(

@@ -127,6 +127,7 @@ function lowerNode(
         },
       });
     case CheckedNodeKind.IntermediateCatchMessageEvent:
+    case CheckedNodeKind.ReceiveTask:
       return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitMessage,

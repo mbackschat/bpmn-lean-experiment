@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { Ajv2020 } from "ajv/dist/2020.js";
+
 import {
   compareCanonicalStrings,
   readAndVerifyArtifactSets,
@@ -32,6 +34,60 @@ import type {
 } from "./contract-artifact-test-fixtures.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+test("keeps every MessageChannel schema on the same closed union", async () => {
+  const values = [
+    {
+      kind: "operationMessage",
+      interfaceId: "Interface_1",
+      interfaceOperationId: "Operation_1",
+      messageId: "Message_1",
+    },
+    {
+      kind: "directMessage",
+      messageId: "Message_1",
+    },
+  ] as const;
+  const invalidValues = [
+    { kind: "directMessage" },
+    {
+      kind: "directMessage",
+      messageId: "Message_1",
+      interfaceId: "Interface_1",
+    },
+    {
+      kind: "operationMessage",
+      interfaceId: "Interface_1",
+      messageId: "Message_1",
+    },
+    { kind: "otherMessage", messageId: "Message_1" },
+  ] as const;
+
+  for (const schemaName of [
+    "checked-process.schema.json",
+    "semantic-process.schema.json",
+    "scenario.schema.json",
+  ]) {
+    const schema = JSON.parse(
+      await readFile(
+        `${projectRoot}/contracts/schemas/${schemaName}`,
+        "utf8",
+      ),
+    ) as { readonly $defs: Readonly<Record<string, unknown>> };
+    const validate = new Ajv2020({ strict: true }).compile({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      $defs: schema.$defs,
+      $ref: "#/$defs/messageChannel",
+    });
+
+    for (const value of values) {
+      assert.equal(validate(value), true, schemaName);
+    }
+    for (const value of invalidValues) {
+      assert.equal(validate(value), false, schemaName);
+    }
+  }
+});
 
 test("accepts the canonical checked-process and Semantic Process contract shapes", async () => {
   for (const artifacts of [

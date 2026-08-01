@@ -14,6 +14,7 @@ def isWaitNode : CheckedNode → Bool
   | .intermediateCatchTimerEvent ..
   | .serviceTask .. => true
   | .intermediateCatchMessageEvent .. => false
+  | .receiveTask .. => false
   | _ => false
 
 inductive SegmentAt (source : CheckedProcess) :
@@ -168,6 +169,8 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | intermediateCatchTimerEvent id duration =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | intermediateCatchMessageEvent id channel =>
+            simp [parseFrom, nodeResult] at result
+        | receiveTask id channel =>
             simp [parseFrom, nodeResult] at result
         | serviceTask id descriptor inputs outputs route =>
             grind [parseFrom, mappedWait_sound, isWaitNode]

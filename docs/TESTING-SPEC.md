@@ -206,6 +206,7 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openMessageSubscriptions[].id.elementId` | `not-claimed` | No retained CIB Message-subscription projection |
 | `openMessageSubscriptions[].id.activation` | `not-claimed` | No retained CIB Message-subscription projection |
 | `openMessageSubscriptions[].channel` | `not-claimed` | No retained CIB Message-subscription projection |
+| `openMessageSubscriptions[].channel.kind` | `not-claimed` | No retained CIB Message-subscription projection |
 | `openMessageSubscriptions[].channel.interfaceId` | `not-claimed` | No retained CIB Message-subscription projection |
 | `openMessageSubscriptions[].channel.interfaceOperationId` | `not-claimed` | No retained CIB Message-subscription projection |
 | `openMessageSubscriptions[].channel.messageId` | `not-claimed` | No retained CIB Message-subscription projection |
@@ -240,6 +241,7 @@ This table classifies the complete current field denominator of `scenario.schema
 | `enabledInteractions[].subscriptionId.elementId` | `not-claimed` | No retained CIB Message-delivery interaction |
 | `enabledInteractions[].subscriptionId.activation` | `not-claimed` | No retained CIB Message-delivery interaction |
 | `enabledInteractions[].channel` | `not-claimed` | No retained CIB Message-delivery interaction |
+| `enabledInteractions[].channel.kind` | `not-claimed` | No retained CIB Message-delivery interaction |
 | `enabledInteractions[].channel.interfaceId` | `not-claimed` | No retained CIB Message-delivery interaction |
 | `enabledInteractions[].channel.interfaceOperationId` | `not-claimed` | No retained CIB Message-delivery interaction |
 | `enabledInteractions[].channel.messageId` | `not-claimed` | No retained CIB Message-delivery interaction |

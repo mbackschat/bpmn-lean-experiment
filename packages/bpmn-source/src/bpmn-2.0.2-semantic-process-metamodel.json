@@ -11,8 +11,8 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, EndEvent, and SequenceFlow type identity",
-      "MessageEventDefinition, Message, Interface, and Operation type identity plus messageRef, operationRef, inMessageRef, payload, implementation, and collection bounds used by Message admission",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, EndEvent, and SequenceFlow type identity",
+      "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
       "SequenceFlow sourceRef and targetRef reference targets",
@@ -49,6 +49,7 @@
     "errorType": "bpmn:Error",
     "formalExpressionType": "bpmn:FormalExpression",
     "userTaskType": "bpmn:UserTask",
+    "receiveTaskType": "bpmn:ReceiveTask",
     "serviceTaskType": "bpmn:ServiceTask",
     "subProcessType": "bpmn:SubProcess",
     "parallelGatewayType": "bpmn:ParallelGateway",
@@ -156,6 +157,12 @@
     },
     {
       "name": "UserTask",
+      "directSuperClasses": [
+        "Task"
+      ]
+    },
+    {
+      "name": "ReceiveTask",
       "directSuperClasses": [
         "Task"
       ]
@@ -370,6 +377,39 @@
       "owner": "Message",
       "name": "itemRef",
       "type": "ItemDefinition",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "ReceiveTask",
+      "name": "implementation",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "ReceiveTask",
+      "name": "instantiate",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": false
+    },
+    {
+      "owner": "ReceiveTask",
+      "name": "operationRef",
+      "type": "Operation",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "ReceiveTask",
+      "name": "messageRef",
+      "type": "Message",
       "lower": 0,
       "upper": 1,
       "containment": false

@@ -45,6 +45,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
+  | .receiveTask id _
   | .serviceTask id _ _ _ _ =>
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).length = 1

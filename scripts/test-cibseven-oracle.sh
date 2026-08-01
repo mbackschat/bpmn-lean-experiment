@@ -14,7 +14,7 @@ embedded_subprocess_bpmn_path="$project_root/scenarios/embedded-subprocess-compl
 subprocess_error_probe_path="$project_root/scenarios/subprocess-error-propagation/process.bpmn"
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
 juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/exclusive-gateway-source-order.bpmn"
-receive_task_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenReceiveTaskPhaseZeroProbeTest.bpmn"
+receive_task_probe_path="$project_root/scenarios/message-addressed-receive-task/process.bpmn"
 
 test -f "$maven_settings"
 

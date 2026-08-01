@@ -5,6 +5,7 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
+  MessageChannelKind,
   ProcessStatus,
   ScenarioStepKind,
   ScenarioOutcomeKind,
@@ -237,6 +238,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
         id: taskId("A_Message"),
         owner,
         channel: {
+          kind: MessageChannelKind.OperationMessage,
           interfaceId: "Interface_Projection",
           interfaceOperationId: "Operation_Projection",
           messageId: "Message_Projection",

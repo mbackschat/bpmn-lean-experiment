@@ -14,9 +14,10 @@ def profileId : ProfileId :=
   ⟨"bpmn-2.0.2-intermediate-catch-message-draft"⟩
 
 def channel : MessageChannel :=
-  { interfaceId := ⟨"Interface_ProcessMessages"⟩
-    interfaceOperationId := ⟨"Operation_ReceiveApprovalRequest"⟩
-    messageId := ⟨"Message_ApprovalRequest"⟩ }
+  .operationMessage
+    ⟨"Interface_ProcessMessages"⟩
+    ⟨"Operation_ReceiveApprovalRequest"⟩
+    ⟨"Message_ApprovalRequest"⟩
 
 def sourceIdentity : SourceIdentity :=
   { semanticProfile := profileId
@@ -230,11 +231,14 @@ def mismatchedDeliveries : List Stimulus :=
   , .deliverMessage ⟨"wrong-activation"⟩
       { subscriptionId with activation := 2 } channel
   , .deliverMessage ⟨"wrong-interface"⟩ subscriptionId
-      { channel with interfaceId := ⟨"OtherInterface"⟩ }
+      (.operationMessage ⟨"OtherInterface"⟩
+        ⟨"Operation_ReceiveApprovalRequest"⟩ ⟨"Message_ApprovalRequest"⟩)
   , .deliverMessage ⟨"wrong-operation"⟩ subscriptionId
-      { channel with interfaceOperationId := ⟨"OtherOperation"⟩ }
+      (.operationMessage ⟨"Interface_ProcessMessages"⟩
+        ⟨"OtherOperation"⟩ ⟨"Message_ApprovalRequest"⟩)
   , .deliverMessage ⟨"wrong-message"⟩ subscriptionId
-      { channel with messageId := ⟨"OtherMessage"⟩ } ]
+      (.operationMessage ⟨"Interface_ProcessMessages"⟩
+        ⟨"Operation_ReceiveApprovalRequest"⟩ ⟨"OtherMessage"⟩) ]
 
 /-- Every direct address or definition-consistency mismatch rejects with exact state preservation. -/
 theorem every_message_mismatch_preserves_state :

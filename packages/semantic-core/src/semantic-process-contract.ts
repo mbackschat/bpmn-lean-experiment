@@ -11,6 +11,7 @@ export enum CheckedNodeKind {
   UserTask = "userTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
+  ReceiveTask = "receiveTask",
   ServiceTask = "serviceTask",
   ParallelGateway = "parallelGateway",
   ExclusiveGateway = "exclusiveGateway",
@@ -116,11 +117,26 @@ export type CheckedCondition = DeepReadonly<{
   body: string;
 }>;
 
-export type MessageChannel = DeepReadonly<{
-  interfaceId: string;
-  interfaceOperationId: string;
-  messageId: string;
-}>;
+export const MessageChannelKind = {
+  OperationMessage: "operationMessage",
+  DirectMessage: "directMessage",
+} as const;
+
+export type MessageChannelKind =
+  typeof MessageChannelKind[keyof typeof MessageChannelKind];
+
+export type MessageChannel = DeepReadonly<
+  | {
+      kind: typeof MessageChannelKind.OperationMessage;
+      interfaceId: string;
+      interfaceOperationId: string;
+      messageId: string;
+    }
+  | {
+      kind: typeof MessageChannelKind.DirectMessage;
+      messageId: string;
+    }
+>;
 
 type CheckedServiceTask = DeepReadonly<{
   kind: CheckedNodeKind.ServiceTask;
@@ -160,6 +176,11 @@ export type CheckedNode =
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.IntermediateCatchMessageEvent;
+      id: string;
+      channel: MessageChannel;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.ReceiveTask;
       id: string;
       channel: MessageChannel;
     }>

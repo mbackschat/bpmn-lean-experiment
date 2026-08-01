@@ -243,24 +243,48 @@
       "$ref": "#/$defs/occurrenceId"
     },
     "messageChannel": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "interfaceId",
-        "interfaceOperationId",
-        "messageId"
-      ],
-      "properties": {
-        "interfaceId": {
-          "$ref": "#/$defs/nonEmptyString"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "interfaceId",
+            "interfaceOperationId",
+            "messageId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "operationMessage"
+            },
+            "interfaceId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "interfaceOperationId": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "messageId": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
         },
-        "interfaceOperationId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "messageId": {
-          "$ref": "#/$defs/nonEmptyString"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "messageId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "directMessage"
+            },
+            "messageId": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
         }
-      }
+      ]
     },
     "completeUserTaskInstance": {
       "type": "object",

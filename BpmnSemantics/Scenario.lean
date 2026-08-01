@@ -78,11 +78,19 @@ structure OpenUserTask where
   state : UserTaskLifecycleState
   deriving Repr, DecidableEq
 
-structure MessageChannel where
-  interfaceId : SemanticId
-  interfaceOperationId : SemanticId
-  messageId : SemanticId
+inductive MessageChannel where
+  | operationMessage
+      (interfaceId interfaceOperationId messageId : SemanticId)
+  | directMessage (messageId : SemanticId)
   deriving Repr, DecidableEq
+
+/-- The exact identifier requirements shared by checked and lowered Message waits. -/
+def MessageChannel.identifiersNonempty : MessageChannel → Bool
+  | .operationMessage interfaceId interfaceOperationId messageId =>
+      !interfaceId.value.isEmpty &&
+        !interfaceOperationId.value.isEmpty &&
+        !messageId.value.isEmpty
+  | .directMessage messageId => !messageId.value.isEmpty
 
 structure OpenMessageSubscription where
   id : MessageSubscriptionId

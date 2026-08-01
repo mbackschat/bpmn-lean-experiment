@@ -4,7 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.runtime.EventSubscription;
 import org.junit.AfterClass;
@@ -13,12 +14,14 @@ import org.junit.Test;
 
 /**
  * Calibrates the public CIB Seven 2.2.0 subscription lifecycle for one project-authored,
- * Message-addressed Receive Task before any Message-channel wire replacement begins.
+ * Message-addressed Receive Task without assigning the host subscription its semantic address.
  */
 public final class CibSevenReceiveTaskPhaseZeroProbeTest {
 
-  private static final String RESOURCE =
-      "org/bpmnlean/cibseven/CibSevenReceiveTaskPhaseZeroProbeTest.bpmn";
+  private static final Path PROJECT_ROOT =
+      Path.of("../..").toAbsolutePath().normalize();
+  private static final Path RESOURCE =
+      PROJECT_ROOT.resolve("scenarios/message-addressed-receive-task/process.bpmn");
   private static final String PROCESS_ID =
       "Process_MessageAddressedReceiveTaskProbe";
   private static final String RECEIVE_TASK_ID =
@@ -90,15 +93,7 @@ public final class CibSevenReceiveTaskPhaseZeroProbeTest {
   }
 
   private static String readResource() throws IOException {
-    try (var input =
-        CibSevenReceiveTaskPhaseZeroProbeTest.class
-            .getClassLoader()
-            .getResourceAsStream(RESOURCE)) {
-      if (input == null) {
-        throw new IOException("missing phase-zero resource: " + RESOURCE);
-      }
-      return new String(input.readAllBytes(), StandardCharsets.UTF_8);
-    }
+    return Files.readString(RESOURCE);
   }
 
   private record ProbeDeployment(ProcessEngine owner, String deploymentId)

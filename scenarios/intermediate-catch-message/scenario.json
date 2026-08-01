@@ -24,6 +24,7 @@
         "activation": 1
       },
       "channel": {
+        "kind": "operationMessage",
         "interfaceId": "Interface_ProcessMessages",
         "interfaceOperationId": "Operation_ReceiveApprovalRequest",
         "messageId": "Message_ApprovalRequest"

@@ -54,11 +54,17 @@ private def openUserTaskJson (task : OpenUserTask) : Json :=
     , ("name", toJson task.name)
     , ("state", userTaskLifecycleStateJson task.state) ]
 
-private def messageChannelJson (channel : MessageChannel) : Json :=
-  Json.mkObj
-    [ ("interfaceId", toJson channel.interfaceId.value)
-    , ("interfaceOperationId", toJson channel.interfaceOperationId.value)
-    , ("messageId", toJson channel.messageId.value) ]
+private def messageChannelJson : MessageChannel → Json
+  | .operationMessage interfaceId interfaceOperationId messageId =>
+      Json.mkObj
+        [ ("kind", toJson "operationMessage")
+        , ("interfaceId", toJson interfaceId.value)
+        , ("interfaceOperationId", toJson interfaceOperationId.value)
+        , ("messageId", toJson messageId.value) ]
+  | .directMessage messageId =>
+      Json.mkObj
+        [ ("kind", toJson "directMessage")
+        , ("messageId", toJson messageId.value) ]
 
 private def openMessageSubscriptionJson
     (subscription : OpenMessageSubscription) : Json :=

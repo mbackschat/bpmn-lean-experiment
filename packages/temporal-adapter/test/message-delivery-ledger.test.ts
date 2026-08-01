@@ -8,6 +8,7 @@ import { test } from "node:test";
 
 import {
   CommandOutcome,
+  MessageChannelKind,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -31,6 +32,7 @@ const delivery = {
     activation: 1,
   },
   channel: {
+    kind: MessageChannelKind.OperationMessage,
     interfaceId: "MessageInterface_1",
     interfaceOperationId: "ReceiveMessage_1",
     messageId: "Message_1",

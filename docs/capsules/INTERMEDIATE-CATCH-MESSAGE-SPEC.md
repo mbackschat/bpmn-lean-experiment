@@ -71,11 +71,18 @@ The direct-address restriction is profile narrowing, not a claim that BPMN Corre
 The checked graph retains the complete source channel needed to distinguish two otherwise identical subscriptions:
 
 ```ts
-type MessageChannel = DeepReadonly<{
-  interfaceId: string;
-  interfaceOperationId: string;
-  messageId: string;
-}>;
+type MessageChannel = DeepReadonly<
+  | {
+      kind: "operationMessage";
+      interfaceId: string;
+      interfaceOperationId: string;
+      messageId: string;
+    }
+  | {
+      kind: "directMessage";
+      messageId: string;
+    }
+>;
 
 type CheckedIntermediateCatchMessageEvent = DeepReadonly<{
   kind: "intermediateCatchMessageEvent";
@@ -84,7 +91,7 @@ type CheckedIntermediateCatchMessageEvent = DeepReadonly<{
 }>;
 ```
 
-`interfaceOperationId` always denotes the BPMN `Interface.operation` identity. It is not a Semantic Process operation ID, a transport operation, or an effect descriptor operation.
+This implemented capsule always produces the `operationMessage` arm. The later owner-approved [Receive Task capsule](RECEIVE-TASK-MESSAGE-PROPOSAL.md) atomically widened the one current wire contract with the `directMessage` arm while preserving this capsule's exact meaning. `interfaceOperationId` always denotes the BPMN `Interface.operation` identity. It is not a Semantic Process operation ID, a transport operation, or an effect descriptor operation.
 
 Source admission validates the payload-free Message and the complete MessageEventDefinition → BPMN Interface Operation → input Message reference chain before constructing this node. The private moddle graph does not cross the `@bpmn-lean/bpmn-source` boundary.
 
@@ -109,13 +116,13 @@ type AwaitMessageOperation = DeepReadonly<{
 
 `awaitMessage` means “consume one input token and create one subscription for an exact channel.” It does not encode throwing, routing across Processes, boundary interruption, payload mapping, or key extraction as dormant options.
 
-The redundant `message.elementId` is the Intermediate Catch Event identity used to construct the runtime occurrence. Program validation requires it to be nonempty and equal `origin.elementId`, requires all three channel identifiers to be nonempty in their separate domains, requires the input and output control places to exist and differ, and requires the channel to equal the checked node's resolved channel under exact lowering equality.
+The redundant `message.elementId` is the Intermediate Catch Event identity used to construct the runtime occurrence. Program validation requires it to be nonempty and equal `origin.elementId`, requires the `operationMessage` discriminant plus all three channel identifiers to be nonempty in their separate domains, requires the input and output control places to exist and differ, and requires the channel to equal the checked node's resolved channel under exact lowering equality.
 
 The new operation passes the [Semantic Process IL growth stop](../SEMANTIC-PROCESS-IL-SPEC.md#growth-across-bpmn-event-diversity) because a named A12 send-message consumer and a concrete Temporal Signal refinement risk require a subscription lifecycle not represented by an existing operation. `awaitUserTask` lacks a definition-bound Message channel and represents human task completion; `awaitEffect` commits outbound host work and result handling rather than passive inbound delivery. Reusing either would erase the discriminator that the semantic core must check. A generic Event operation remains rejected.
 
-The lowering-side discriminator uses two separately admitted source fixtures that hold the Catch Event ID and Sequence Flows fixed while replacing the sole Interface/Operation/Message chain and repointing both EventDefinition references. The checked channel and `awaitMessage.message.channel` must change to the replacement `(interfaceId, interfaceOperationId, messageId)` triple; a stale or fixture-constant lowerer must fail exact Lean lowering equality and the source mutation test. A separate hostile source containing both chains remains rejected by the exact root-definition multiset.
+The lowering-side discriminator uses two separately admitted source fixtures that hold the Catch Event ID and Sequence Flows fixed while replacing the sole Interface/Operation/Message chain and repointing both EventDefinition references. The checked channel and `awaitMessage.message.channel` must remain `operationMessage` and change to the replacement `(interfaceId, interfaceOperationId, messageId)` triple; a stale or fixture-constant lowerer must fail exact Lean lowering equality and the source mutation test. A separate hostile source containing both chains remains rejected by the exact root-definition multiset.
 
-The admitted program contains the exact operation multiset one `initiate`, one `awaitMessage`, one `awaitUserTask`, and one `terminate`. Profile-parameterized capability admits that multiset; reusable graph facts determine whether Message or User Task occurs first. Capability tests must reject an unknown profile, an existing profile, and every changed cardinality without adding a whole-program execution-surface predicate.
+The admitted program contains exactly one `initiate`, one `awaitMessage`, one `awaitUserTask`, one `reachNoneEnd`, and one root `completeScope`. Profile-parameterized capability admits that multiset; reusable graph facts determine whether Message or User Task occurs first. Capability tests must reject an unknown profile, an existing profile, and every changed cardinality without adding a whole-program execution-surface predicate.
 
 ## Subscription identity, correlation input, and scope
 

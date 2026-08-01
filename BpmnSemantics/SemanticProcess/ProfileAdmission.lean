@@ -40,6 +40,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with timers := counts.timers + 1 }
     | .intermediateCatchMessageEvent .. =>
         { counts with messages := counts.messages + 1 }
+    | .receiveTask .. =>
+        { counts with messages := counts.messages + 1 }
     | .serviceTask .. => { counts with effects := counts.effects + 1 }
     | .parallelGateway _ .diverging =>
         { counts with duplicates := counts.duplicates + 1 }
@@ -97,6 +99,9 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1,
       { starts := 1, userTasks := 1, messages := 1, ends := 1 })
   else if profile =
+      "cibseven-2.2.0-message-addressed-receive-task-draft" then
+    some (1, { starts := 1, messages := 1, ends := 1 })
+  else if profile =
       "cibseven-2.2.0-embedded-subprocess-completion-draft" then
     some (2,
       { starts := 2, embeddedScopes := 1, userTasks := 3,
@@ -133,6 +138,10 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-intermediate-catch-message-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, messages := 1, ends := 1 })
+  else if profile =
+      "cibseven-2.2.0-message-addressed-receive-task-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, messages := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-embedded-subprocess-completion-draft" then
     some (2,

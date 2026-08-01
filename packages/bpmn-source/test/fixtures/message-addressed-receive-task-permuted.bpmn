@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_MessageAddressedReceiveTaskProbe"
+  targetNamespace="https://bpmn-lean.local/receive-task-phase-zero">
+  <bpmn:process
+    id="Process_MessageAddressedReceiveTaskProbe"
+    isExecutable="true">
+    <bpmn:endEvent id="EndEvent_ProcessCompleted">
+      <bpmn:incoming>SequenceFlow_ReceiveToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow
+      id="SequenceFlow_ReceiveToEnd"
+      sourceRef="ReceiveTask_WaitForInvoice"
+      targetRef="EndEvent_ProcessCompleted" />
+    <bpmn:receiveTask
+      id="ReceiveTask_WaitForInvoice"
+      name="Wait for invoice"
+      messageRef="Message_NewInvoice">
+      <bpmn:outgoing>SequenceFlow_ReceiveToEnd</bpmn:outgoing>
+      <bpmn:incoming>SequenceFlow_StartToReceive</bpmn:incoming>
+    </bpmn:receiveTask>
+    <bpmn:sequenceFlow
+      id="SequenceFlow_StartToReceive"
+      sourceRef="StartEvent_ProcessStarted"
+      targetRef="ReceiveTask_WaitForInvoice" />
+    <bpmn:startEvent id="StartEvent_ProcessStarted">
+      <bpmn:outgoing>SequenceFlow_StartToReceive</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:message
+    id="Message_NewInvoice"
+    name="newInvoiceMessage" />
+</bpmn:definitions>

@@ -136,6 +136,14 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
         { elementId := id, channel }, scopeId)
+  | .receiveTask id channel =>
+      nodeScopeId? source id |>.map fun scopeId =>
+      (.awaitMessage
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        { elementId := id, channel }, scopeId)
   | .serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
       nodeScopeId? source id |>.map fun scopeId =>
       (.awaitEffect
@@ -389,9 +397,10 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       durationLiteral = "PT1S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .intermediateCatchMessageEvent id channel =>
-      nonempty channel.interfaceId.value &&
-        nonempty channel.interfaceOperationId.value &&
-        nonempty channel.messageId.value &&
+      channel.identifiersNonempty &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .receiveTask id channel =>
+      channel.identifiersNonempty &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .serviceTask id descriptor inputMappings outputMappings route =>
       (descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
@@ -511,9 +520,7 @@ private def operationWellFormed (places : List ControlPlace) :
         nonempty origin.elementId.value &&
         nonempty message.elementId.value &&
         decide (origin.elementId = message.elementId) &&
-        nonempty message.channel.interfaceId.value &&
-        nonempty message.channel.interfaceOperationId.value &&
-        nonempty message.channel.messageId.value &&
+        message.channel.identifiersNonempty &&
         decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output

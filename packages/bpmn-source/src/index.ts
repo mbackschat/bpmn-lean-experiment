@@ -2,6 +2,7 @@ export {
   CheckedNodeKind,
   CheckedProcessKind,
   GatewayDirection,
+  MessageChannelKind,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,

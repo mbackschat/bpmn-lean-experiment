@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved after independent review and required corrections; CIB Seven `2.2.0` phase zero is green under `CIB-AGR-0009`. No Receive Task source or execution support is implemented.**
+**Owner-approved after independent review and required corrections; CIB Seven `2.2.0` phase zero is green under `CIB-AGR-0009`, and the source/Lean/semantic-core checkpoint is implemented. Receive Task profile artifacts, retained CIB evidence, differential registration, and Temporal refinement remain pending, so this document has not graduated to `-SPEC`.**
 
 ## Exact question
 
@@ -278,17 +278,17 @@ Pre-activation CIB delivery is excluded. The phase-zero runner starts the Proces
 
 | Rule | BPMN/profile | Lean | TypeScript | CIB option | Temporal | Negative witness and mutation |
 |---|---|---|---|---|---|---|
-| `RECV-ADDRESS-01` | Clause 10 Receive Task plus exact direct-Message source profile | Independent checked-node lowering equality preserves `directMessage` | Source projection and lowering preserve changed Message reference | Raw event name observed; canonical Message ID honestly classified | Signal payload and ledger retain the direct arm | Same `messageId` under `operationMessage` rejects; source replacement must change the lowered arm |
-| `RECV-WAIT-01` | Clauses 10 and 13.3.3 | Existing activation semantics specialized to exact direct subscription | Independent start closure and subscription projection | Public subscription exists after Process start | Query before delivery exposes the direct wait | Auto-completion or dropped-subscription mutations diverge before delivery |
-| `RECV-COMPLETE-01` | Clause 13.3.3 plus existing direct-address profile | Existing `MessageDeliveryStep`, evaluator, soundness, and exact fixture result | Independent exact delivery and Process completion | Public delivery removes subscription and completes Process | Worker-absent Signal, result recovery, terminal receipt, replay | Removed/changed Signal history or retained subscription must fail |
-| `RECV-REFUSE-01` | Existing direct-address and one-consumption restriction | Wrong kind, wrong Message, early, and consumed controls preserve state at their valid boundary | Independent refusal and state preservation | Not claimed beyond phase-zero ordering | Malformed/conflict classifications and wrong-kind live control | Matcher that compares only `messageId` accepts the separating case |
-| `RECV-OBSERVE-01` | Existing eleven-field observation profile | Exact direct subscription/interaction projection | Independent canonical projection | New nested channel-kind paths receive unconditional fidelity rows; the whole direct channel is adapter-decided if the retained lane lands | Query and terminal receipt derive from committed core state | Comparator/projector mutation changes or erases a public field |
+| `RECV-ADDRESS-01` | Clause 10 Receive Task plus exact direct-Message source profile | Implemented checked-node lowering equality preserves `directMessage` | Implemented source projection and lowering preserve a changed Message reference | Phase zero observes the raw event name; canonical Message ID remains adapter-decided | Current Signal/ledger consumers encode and validate both channel arms; Receive Task host witness pending | Same `messageId` under `operationMessage` rejects; source replacement changes the lowered arm |
+| `RECV-WAIT-01` | Clauses 10 and 13.3.3 | Implemented exact two-step start closure and direct subscription | Implemented independent start closure and subscription projection | Public subscription exists after Process start | Receive Task Query witness pending | Exact wait checks reject auto-completion or a dropped subscription |
+| `RECV-COMPLETE-01` | Clause 13.3.3 plus existing direct-address profile | Implemented `MessageDeliveryStep` specialization, soundness, and exact two-step completion | Implemented independent exact delivery and Process completion | Public delivery removes subscription and completes Process | Worker-absence, result recovery, terminal receipt, and replay pending | Exact result rejects a retained subscription or incomplete closure |
+| `RECV-REFUSE-01` | Existing direct-address and one-consumption restriction | Implemented wrong-kind, wrong-Message, early, and consumed controls | Implemented independent refusal and state preservation | Not claimed beyond phase-zero ordering | Malformed/conflict and live wrong-kind Receive Task controls pending | Matcher comparing only `messageId` accepts the checked wrong-kind case |
+| `RECV-OBSERVE-01` | Existing eleven-field observation profile | Implemented exact direct subscription/interaction projection | Implemented independent canonical projection | Nested channel-kind fidelity rows are unconditional; retained direct channel remains pending and adapter-decided | Receive Task Query and terminal receipt pending | Schema and semantic guards reject changed, mixed, or erased public channel fields |
 
 Lean and TypeScript consume the same TypeScript-produced checked source and program artifact. Lean re-lowers the checked graph independently but does not parse BPMN XML. CIB deploys the exact source bytes but does not inspect the checked graph. The paired Message-reference/source-kind mutations and artifact-roundtrip equality are therefore mandatory controls for the shared XML-producer risk; agreement among execution targets alone cannot detect a shared source projection defect.
 
 ## Atomic versioning consequences
 
-Implementation is one pre-release replacement of the current Message-address representation. It must update all producers and consumers in one change, with no optional compatibility arm, format counter, fallback reader, or Workflow patch branch.
+The semantic checkpoint completes one pre-release replacement of the current Message-address representation across every existing producer and consumer. It uses no optional compatibility arm, format counter, fallback reader, or Workflow patch branch. The remaining Receive Task lanes add new profile, scenario, evidence, differential, and Temporal consumers on that single current contract; they do not perform another channel migration.
 
 The atomic set includes:
 
