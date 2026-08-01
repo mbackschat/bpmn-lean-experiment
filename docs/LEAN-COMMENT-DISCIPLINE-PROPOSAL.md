@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft. A read-only fresh external review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**. This revision addresses those findings and awaits a correction audit in the same reviewer thread; the receipt remains pending and records no approval. The proposal is not owner-approved and authorizes no source, instruction, or gate changes.
+Draft. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. The proposal review gate is complete and the proposal is ready for owner decision. It is not owner-approved and authorizes no source, instruction, or gate changes.
 
 ## Decision requested
 
@@ -12,7 +12,7 @@ Approve a Lean commenting contract that increases locally available semantic inf
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `995dfd8` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `995dfd8` | `external-fresh-session` | `approve-with-required-edits` | `c882d9c` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
