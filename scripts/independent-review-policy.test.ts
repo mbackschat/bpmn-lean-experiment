@@ -10,6 +10,7 @@ const documentationRoot = path.join(projectRoot, "docs");
 const capsuleRoot = path.join(projectRoot, "docs/capsules");
 
 const reviewPolicyBaseline = "f1ef362";
+const subagentReviewPolicyBaseline = "b361681";
 const expectedGrandfatheredReviewDocuments = [
   "docs/CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md",
   "docs/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md",
@@ -85,6 +86,31 @@ function isReviewCommitTarget(value: string): boolean {
     { cwd: projectRoot, stdio: "ignore" },
   );
   return isAncestor.status === 0;
+}
+
+function isCommitAncestor(ancestor: string, descendant: string): boolean {
+  const result = spawnSync(
+    "git",
+    ["merge-base", "--is-ancestor", ancestor, descendant],
+    { cwd: projectRoot, stdio: "ignore" },
+  );
+  assert.ok(
+    result.status === 0 || result.status === 1,
+    `cannot compare commits ${ancestor} and ${descendant}`,
+  );
+  return result.status === 0;
+}
+
+function usesSubagentReviewPolicy(value: string): boolean {
+  assert.equal(
+    isReviewCommitTarget(subagentReviewPolicyBaseline),
+    true,
+    "the immutable sub-agent review-policy baseline must remain an ancestor of HEAD",
+  );
+  const isStrictHistoricalAncestor =
+    isCommitAncestor(value, subagentReviewPolicyBaseline) &&
+    !isCommitAncestor(subagentReviewPolicyBaseline, value);
+  return !isStrictHistoricalAncestor;
 }
 
 function gitLines(arguments_: ReadonlyArray<string>): ReadonlyArray<string> {
@@ -198,7 +224,13 @@ function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
       true,
       `${context} needs an immutable review target`,
     );
-    if (row.stage === ReviewStage.SemanticCheckpoint) {
+    if (usesSubagentReviewPolicy(row.target)) {
+      assert.equal(
+        row.isolation,
+        "fork-turns-none",
+        `${context} requires an isolated same-effort sub-agent`,
+      );
+    } else if (row.stage === ReviewStage.SemanticCheckpoint) {
       assert.ok(
         row.isolation === "external-fresh-session" || row.isolation === "fork-turns-none",
         `${context} must be context-isolated`,
@@ -256,12 +288,11 @@ function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
   assert.equal(row.correctionAudit, "not-applicable");
 }
 
-function assertExternallyApproved(row: ReviewReceipt, relativePath: string): void {
+function assertIndependentlyApproved(row: ReviewReceipt, relativePath: string): void {
   assert.ok(
     approvedVerdicts.has(row.verdict),
     `${relativePath} cannot cross ${row.stage} with verdict ${row.verdict}`,
   );
-  assert.equal(row.isolation, "external-fresh-session");
 }
 
 function receiptRow(
@@ -300,18 +331,18 @@ test("requires review receipts for active proposals and post-policy specificatio
     const document = await readFile(path.join(projectRoot, relativePath), "utf8");
     const receipt = parseReceipt(document, relativePath);
     if (relativePath.endsWith("-PROPOSAL.md") && isOwnerApproved(document)) {
-      assertExternallyApproved(
+      assertIndependentlyApproved(
         receiptRow(receipt, ReviewStage.Proposal, relativePath),
         relativePath,
       );
       continue;
     }
     if (relativePath.endsWith("-SPEC.md")) {
-      assertExternallyApproved(
+      assertIndependentlyApproved(
         receiptRow(receipt, ReviewStage.Proposal, relativePath),
         relativePath,
       );
-      assertExternallyApproved(
+      assertIndependentlyApproved(
         receiptRow(receipt, ReviewStage.Closure, relativePath),
         relativePath,
       );
@@ -343,6 +374,53 @@ test("rejects syntactically valid names that are not review commits", () => {
   assert.equal(isReviewCommitTarget("deadbee"), false);
 });
 
+test("requires prospective cold reviews to use an isolated sub-agent", () => {
+  assert.doesNotThrow(() =>
+    assertReceiptRow(
+      {
+        stage: ReviewStage.Proposal,
+        target: "16904dd",
+        isolation: "external-fresh-session",
+        verdict: "approve",
+        correctionAudit: "not-required",
+      },
+      "historical-proposal",
+    ),
+  );
+  for (const stage of [
+    ReviewStage.Proposal,
+    ReviewStage.SemanticCheckpoint,
+    ReviewStage.Closure,
+  ]) {
+    assert.throws(
+      () =>
+        assertReceiptRow(
+          {
+            stage,
+            target: subagentReviewPolicyBaseline,
+            isolation: "external-fresh-session",
+            verdict: "approve",
+            correctionAudit: "not-required",
+          },
+          `prospective-${stage}`,
+        ),
+      /requires an isolated same-effort sub-agent/u,
+    );
+    assert.doesNotThrow(() =>
+      assertReceiptRow(
+        {
+          stage,
+          target: subagentReviewPolicyBaseline,
+          isolation: "fork-turns-none",
+          verdict: "approve",
+          correctionAudit: "not-required",
+        },
+        `prospective-${stage}`,
+      ),
+    );
+  }
+});
+
 test("keeps the cold-review lifecycle in its documentation owners", async () => {
   const [
     contributorGuide,
@@ -360,10 +438,15 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
 
   assert.match(contributorGuide, /^### Independent cold review$/mu);
   assert.match(contributorGuide, /may not approve, append, rebase, or replace/u);
+  assert.match(contributorGuide, /without a model or reasoning override/u);
   assert.match(testingSpec, /^## Independent cold-review gate$/mu);
   assert.match(testingSpec, /external-fresh-session/u);
   assert.match(testingSpec, /fork-turns-none/u);
+  assert.match(testingSpec, /`fork_turns: "none"`/u);
   assert.match(testingSpec, new RegExp(reviewPolicyBaseline, "u"));
+  assert.match(testingSpec, new RegExp(subagentReviewPolicyBaseline, "u"));
+  assert.match(testingSpec, /same model and reasoning effort/u);
+  assert.match(testingSpec, /omits both model and reasoning-effort overrides/u);
   assert.match(testingSpec, /byte-identical/u);
   assert.match(testingSpec, /must delete the capsule-specific pending barrier/u);
   assert.match(documentationDiscipline, /Independent cold-review receipt/u);

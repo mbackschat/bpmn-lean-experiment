@@ -91,7 +91,7 @@ A status never changes the suffix contract. An owner-approved but unimplemented 
 
 When a proposal is implemented:
 
-1. complete the external closure review and record the approved `Independent cold-review receipt` required by [TESTING-SPEC.md](TESTING-SPEC.md#review-receipt); pre-policy documents in the closed executable grandfather set do not receive invented historical receipts;
+1. complete the independent closure review and record the approved `Independent cold-review receipt` required by [TESTING-SPEC.md](TESTING-SPEC.md#review-receipt); pre-policy documents in the closed executable grandfather set do not receive invented historical receipts;
 2. move the stable implemented contract into the corresponding `-SPEC.md`;
 3. update every current producer, consumer, schema, test, evidence lane, and documentation owner in the same change;
 4. remove implementation sequencing and completed-work narration from the spec;

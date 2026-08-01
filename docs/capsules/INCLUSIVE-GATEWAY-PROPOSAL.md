@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft proposal. Not owner-approved; no implementation is authorized. Awaiting independent external proposal review.**
+**Draft proposal. Not owner-approved; no implementation is authorized. Awaiting its already-started independent external proposal review.**
 
 ## Independent cold-review receipt
 
@@ -12,7 +12,7 @@
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` awaits the external fresh-session handoff.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its already-started external fresh-session review remains valid; every later review target uses the same-model/same-effort `fork-turns-none` rule.
 
 ## Exact question
 
@@ -198,4 +198,4 @@ After independent proposal review, approve or reject these choices together:
 4. a standards-first Lean/TypeScript/Temporal target set with no CIB relationship or evidence lane in the first capsule; and
 5. the exact exclusions and atomic pre-release replacement policy above.
 
-Implementation may begin only after an external fresh-session proposal review is approved, any required corrections pass the same-thread audit, and explicit owner approval is recorded in this Status section.
+Implementation may begin only after this already-started external fresh-session proposal review is approved, any required corrections pass a warm audit by that same reviewer, and explicit owner approval is recorded in this Status section. Its later semantic-checkpoint and closure reviews use context-cold sub-agents under the prospective policy.
