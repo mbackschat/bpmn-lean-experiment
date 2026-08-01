@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. Closure review of implementation target `db7c94c` returned **APPROVE WITH REQUIRED EDITS**; the guard-composition correction and advisory cleanup are pending a committed same-thread correction audit before this proposal is archived or deleted. External-session isolation remains unattested in the receipt until that audit closes.
+Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. Closure review of implementation target `db7c94c` returned **APPROVE WITH REQUIRED EDITS**; the guard-composition correction and advisory cleanup are committed at `35ae276` and pending same-thread correction audit before this proposal is archived or deleted. External-session isolation remains unattested in the receipt until that audit closes.
 
 ## Decision requested
 
