@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. Implementation is authorized under the reviewed scope; closure review remains required before the proposal is archived or deleted.
+Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. The reviewed implementation is complete and its immutable target will be recorded by a docs-only follow-up; the required external fresh-session closure review remains pending before this proposal is archived or deleted.
 
 ## Decision requested
 
@@ -249,6 +249,14 @@ An approved implementation is complete only when:
 - any `tokei` result is reported as diagnostic context only and no threshold exists in source, package scripts, or CI;
 - the implementation changes no semantic output, wire artifact, or public evidence claim, and changes no theorem proposition except for the approved `CommandOutcome.isCommit` consolidation;
 - after implementation and the required closure review, the stable instruction and gate contracts remain in `CLAUDE.md` and `TESTING-SPEC.md`, and this proposal is archived or deleted with registry and inbound-link updates rather than graduated into a redundant standalone `-SPEC.md`.
+
+## Implementation closure account
+
+The implementation establishes two machine-checkable structural claims and no prose-quality score: every tracked or non-ignored pending Lean source has a module document in the required position, and every maintained non-experimental file whose basename is exactly or ends in `Conformance.lean` has no anonymous top-level `example`. The 95 prior anonymous facts remain as 90 proposition-preserving public theorems plus the exhaustive `CommandOutcome.isCommit` law; the two User Task capsule rows cite the resulting named facts. The source splits preserve narrow checked-process admission, Semantic Process structural validation, cross-artifact binding, and JSON role owners without creating a 600-line exception.
+
+The targeted comment correction adds one shared runtime representation invariant and documents only the selected execution, strict-JSON, artifact-admission, and scenario support/run boundaries. It also deletes the redundant `observeStableState` docstring and the trailing header that owned no content. No comment density, declaration coverage, word count, or generated stub enters source, scripts, package commands, or CI. No wire artifact, evaluator result, profile, evidence claim, or public observation changes; the exhaustive `CommandOutcome.isCommit` statement is the only changed theorem proposition authorized by this proposal.
+
+The nearest unsupported claim is that passing the guard proves a comment or theorem name is informative. It proves only placement and naming structure; semantic surplus, truth, durability, and the accepted filename-scope escape remain human review obligations. The scanner is deliberately a focused literal-aware classifier rather than a complete Lean parser, so an unanticipated lexical form is another residual risk. The principal common-mode risk is that the implementation author and closure reviewer read the same names, comments, and source structure as adequate even though no independent instrument can measure recoverable information. The sparse-valid fixture, exact literal fixtures, deletion test, and external closure review are the bounded defenses; none is evidence for a target comment ratio.
 
 ## Risks and mitigations
 

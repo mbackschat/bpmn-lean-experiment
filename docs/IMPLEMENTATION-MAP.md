@@ -69,6 +69,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - enforced implementation-surface reviewability through per-surface implemented/absent sections and a 120-word review-unit ceiling
 - commit-bounded nonblank code/document capsule-cost measurement with a parser self-test and explicit unknown treatment for missing historical baselines
 - dependency-free source-hygiene enforcement over tracked and pending Lean/TypeScript/JavaScript/Java source with a 600-nonblank-line review target, 1000-line hard ceiling, exact import-only Lean umbrellas, allowlist-free rejection of every hand-written `.js`/`.cjs`/`.mjs` module, required Lean module-document placement, descriptive public names for maintained non-experimental conformance facts, literal-aware diagnostics, an explicit sparse-valid anti-boilerplate fixture, and no current reviewed exceptions
+- a Lean semantic-surplus comment contract with one shared runtime representation invariant and selected execution, strict-JSON, artifact-admission, and scenario support/run boundary documentation; no blanket declaration backfill was performed
 - responsibility-owned Lean semantics, Temporal lifecycle, differential pipeline, contract verification, and CIB runner collaborators
 - focused and full gates
 - GitHub Actions verification on Ubuntu and macOS with the warm feedback budget unchanged
@@ -77,6 +78,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 
 - Release packaging, published libraries, production deployment
 - automatic proof of semantic cohesion or function/class responsibility
+- comment-density, word-count, or declaration-documentation scoring; generated comment stubs
 - Semgrep or tree-sitter dependency
 
 ### A12 Workflows downstream adoption

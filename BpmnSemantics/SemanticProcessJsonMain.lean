@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcessJson
 import Lean.Data.Json
 
