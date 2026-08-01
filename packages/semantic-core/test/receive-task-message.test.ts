@@ -2,13 +2,17 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
   MessageChannelKind,
+  ProcessStatus,
   SemanticOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   StimulusKind,
+  WaitKind,
+  advanceScenario,
   applyStimulus,
   initialState,
   isWellFormedSemanticProcessProgram,
@@ -26,6 +30,7 @@ import {
   rootScopedProgram,
   rootScopeOccurrence,
 } from "./root-scope-fixture.ts";
+import { stateObservationAt } from "./canonical-observations.ts";
 
 const profile = "cibseven-2.2.0-message-addressed-receive-task-draft";
 const channel = Object.freeze({
@@ -107,6 +112,47 @@ test("reuses awaitMessage to wait and complete one direct Receive Task", () => {
   assert.deepEqual(completed.state.control, {
     kind: ControlStateKind.Completed,
     instanceId: start.instanceId,
+  });
+});
+
+test("projects the direct Receive Task subscription and interaction", () => {
+  const waitingStep = advanceScenario(program, initialState, start);
+  assert.deepEqual(stateObservationAt(waitingStep.observations, 1), {
+    kind: CanonicalObservationKind.State,
+    instanceId: start.instanceId,
+    status: ProcessStatus.Running,
+    activeWaits: [{
+      elementId: subscriptionId.elementId,
+      kind: WaitKind.Message,
+      multiplicity: 1,
+    }],
+    openUserTasks: [],
+    openMessageSubscriptions: [{ id: subscriptionId, channel }],
+    openTimers: [],
+    openEffects: [],
+    variables: [],
+    enabledInteractions: [{
+      kind: StimulusKind.DeliverMessage,
+      subscriptionId,
+      channel,
+    }],
+    logicalTimeMs: 0,
+  });
+
+  const waiting = applyStimulus(program, initialState, start);
+  const completedStep = advanceScenario(program, waiting.state, delivery);
+  assert.deepEqual(stateObservationAt(completedStep.observations, 1), {
+    kind: CanonicalObservationKind.State,
+    instanceId: start.instanceId,
+    status: ProcessStatus.Completed,
+    activeWaits: [],
+    openUserTasks: [],
+    openMessageSubscriptions: [],
+    openTimers: [],
+    openEffects: [],
+    variables: [],
+    enabledInteractions: [],
+    logicalTimeMs: 0,
   });
 });
 

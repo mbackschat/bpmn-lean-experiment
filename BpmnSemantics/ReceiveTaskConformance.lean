@@ -51,6 +51,26 @@ def checkedProcess : CheckedProcess :=
 def program : Program :=
   lowerCheckedProcess checkedProcess
 
+def locusSwappedCheckedProcess : CheckedProcess :=
+  { checkedProcess with
+    nodes :=
+      [ .noneEndEvent ⟨"EndEvent_ProcessCompleted"⟩
+      , .intermediateCatchMessageEvent
+          ⟨"ReceiveTask_WaitForInvoice"⟩ channel
+      , .noneStartEvent ⟨"StartEvent_ProcessStarted"⟩ ] }
+
+def operationAddressedChannel : MessageChannel :=
+  .operationMessage ⟨"Interface_ProcessMessages"⟩
+    ⟨"Operation_ReceiveApprovalRequest"⟩ ⟨"Message_NewInvoice"⟩
+
+def crossArmCheckedProcess : CheckedProcess :=
+  { checkedProcess with
+    nodes :=
+      [ .noneEndEvent ⟨"EndEvent_ProcessCompleted"⟩
+      , .receiveTask
+          ⟨"ReceiveTask_WaitForInvoice"⟩ operationAddressedChannel
+      , .noneStartEvent ⟨"StartEvent_ProcessStarted"⟩ ] }
+
 def subscriptionId : MessageSubscriptionId :=
   { processInstanceId := ⟨"ReceiveTaskInstance_1"⟩
     elementId := ⟨"ReceiveTask_WaitForInvoice"⟩
@@ -72,9 +92,44 @@ def waitingResult : StimulusResult :=
 def completedResult : StimulusResult :=
   applyStimulus scenarioClosureLimit program waitingResult.state exactDelivery
 
+def waitingObservation : StateObservation :=
+  { instanceId := subscriptionId.processInstanceId
+    status := .running
+    activeWaits :=
+      [{ elementId := subscriptionId.elementId
+         kind := .message
+         multiplicity := 1 }]
+    openUserTasks := []
+    openMessageSubscriptions := [{ id := subscriptionId, channel }]
+    openTimers := []
+    openEffects := []
+    variables := []
+    enabledInteractions := [.deliverMessage subscriptionId channel]
+    logicalTimeMs := 0 }
+
+def completedObservation : StateObservation :=
+  { waitingObservation with
+    status := .completed
+    activeWaits := []
+    openMessageSubscriptions := []
+    enabledInteractions := [] }
+
 /-- The selected checked node and reused operation multiset pass independent definition binding. -/
 theorem exact_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
+  decide
+
+/-- The Receive Task profile rejects a Catch Event even when lowering would erase the locus. -/
+theorem catch_event_locus_is_not_receive_task_source :
+    checkedProfileCapabilitiesValid locusSwappedCheckedProcess = false ∧
+      definitionBindingValid locusSwappedCheckedProcess
+        (lowerCheckedProcess locusSwappedCheckedProcess) = false := by
+  decide
+
+/-- A checked Receive Task cannot carry the operation-addressed Event channel arm. -/
+theorem receive_task_rejects_operation_message_channel :
+    definitionBindingValid crossArmCheckedProcess
+      (lowerCheckedProcess crossArmCheckedProcess) = false := by
   decide
 
 /-- Lowering preserves the Receive Task element and direct Message arm without an invented Interface or Operation. -/
@@ -95,6 +150,8 @@ theorem lowering_preserves_direct_message_address :
 theorem start_closure_uses_two_internal_steps :
     (applyStimulus 1 program initialState startStimulus).internalStepBoundExceeded =
         true ∧
+      (applyStimulus 2 program initialState startStimulus).internalStepBoundExceeded =
+        false ∧
       waitingResult.internalStepBoundExceeded = false ∧
       enabledInternalOperationCount program waitingResult.state = 0 := by
   decide
@@ -112,10 +169,19 @@ theorem activation_creates_exact_direct_subscription :
       stableStateResumable waitingResult.state = true := by
   decide
 
+/-- Canonical observation exposes the complete direct subscription and its sole interaction. -/
+theorem canonical_observation_preserves_direct_subscription :
+    observeStableState program waitingResult.state = some waitingObservation ∧
+      observeStableState program completedResult.state =
+        some completedObservation := by
+  decide
+
 /-- Exact delivery needs the End and root-completion steps, then terminates with no subscription. -/
 theorem exact_delivery_completes_after_two_internal_steps :
     (applyStimulus 1 program waitingResult.state
         exactDelivery).internalStepBoundExceeded = true ∧
+      (applyStimulus 2 program waitingResult.state
+        exactDelivery).internalStepBoundExceeded = false ∧
       completedResult.outcome = .committed ∧
       completedResult.internalStepBoundExceeded = false ∧
       completedResult.state.messageWaits = [] ∧

@@ -161,46 +161,52 @@
     "messageChannel": {
       "oneOf": [
         {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "interfaceId",
-            "interfaceOperationId",
-            "messageId"
-          ],
-          "properties": {
-            "kind": {
-              "const": "operationMessage"
-            },
-            "interfaceId": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "interfaceOperationId": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "messageId": {
-              "$ref": "#/$defs/nonemptyString"
-            }
-          }
+          "$ref": "#/$defs/operationMessageChannel"
         },
         {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "messageId"
-          ],
-          "properties": {
-            "kind": {
-              "const": "directMessage"
-            },
-            "messageId": {
-              "$ref": "#/$defs/nonemptyString"
-            }
-          }
+          "$ref": "#/$defs/directMessageChannel"
         }
       ]
+    },
+    "operationMessageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "interfaceId",
+        "interfaceOperationId",
+        "messageId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "operationMessage"
+        },
+        "interfaceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "interfaceOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "directMessageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "messageId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "directMessage"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
     },
     "mappingExpression": {
       "oneOf": [
@@ -445,7 +451,7 @@
               "$ref": "#/$defs/nonemptyString"
             },
             "channel": {
-              "$ref": "#/$defs/messageChannel"
+              "$ref": "#/$defs/operationMessageChannel"
             }
           }
         },
@@ -465,7 +471,7 @@
               "$ref": "#/$defs/nonemptyString"
             },
             "channel": {
-              "$ref": "#/$defs/messageChannel"
+              "$ref": "#/$defs/directMessageChannel"
             }
           }
         },

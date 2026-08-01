@@ -15,6 +15,7 @@ private structure ShapeCardinalities where
   scopeEntries : Nat := 0
   userTasks : Nat := 0
   messages : Nat := 0
+  receiveTasks : Nat := 0
   timers : Nat := 0
   effects : Nat := 0
   duplicates : Nat := 0
@@ -41,7 +42,7 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .intermediateCatchMessageEvent .. =>
         { counts with messages := counts.messages + 1 }
     | .receiveTask .. =>
-        { counts with messages := counts.messages + 1 }
+        { counts with receiveTasks := counts.receiveTasks + 1 }
     | .serviceTask .. => { counts with effects := counts.effects + 1 }
     | .parallelGateway _ .diverging =>
         { counts with duplicates := counts.duplicates + 1 }
@@ -100,7 +101,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
       { starts := 1, userTasks := 1, messages := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-message-addressed-receive-task-draft" then
-    some (1, { starts := 1, messages := 1, ends := 1 })
+    some (1, { starts := 1, receiveTasks := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-embedded-subprocess-completion-draft" then
     some (2,

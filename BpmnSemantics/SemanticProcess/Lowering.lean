@@ -397,10 +397,14 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       durationLiteral = "PT1S" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .intermediateCatchMessageEvent id channel =>
-      channel.identifiersNonempty &&
+      (match channel with
+        | .operationMessage .. => channel.identifiersNonempty
+        | .directMessage .. => false) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .receiveTask id channel =>
-      channel.identifiersNonempty &&
+      (match channel with
+        | .operationMessage .. => false
+        | .directMessage .. => channel.identifiersNonempty) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .serviceTask id descriptor inputMappings outputMappings route =>
       (descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&

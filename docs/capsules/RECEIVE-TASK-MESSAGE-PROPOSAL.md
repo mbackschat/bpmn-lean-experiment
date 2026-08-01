@@ -12,7 +12,7 @@
 | Semantic checkpoint | `7226733` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal review and its correction audit are complete. The semantic checkpoint review is pending at immutable target `7226733` and blocks profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal work. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
+The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` returned required edits; approval remains pending the same reviewer's correction audit. Profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal work remain blocked. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Exact question
 

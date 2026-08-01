@@ -89,6 +89,51 @@ test("keeps every MessageChannel schema on the same closed union", async () => {
   }
 });
 
+test("binds checked Message node kinds to their exact channel arms", async () => {
+  const schema = JSON.parse(
+    await readFile(
+      `${projectRoot}/contracts/schemas/checked-process.schema.json`,
+      "utf8",
+    ),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const validate = new Ajv2020({ strict: true }).compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: schema.$defs,
+    $ref: "#/$defs/node",
+  });
+  const operationChannel = {
+    kind: "operationMessage",
+    interfaceId: "Interface_1",
+    interfaceOperationId: "Operation_1",
+    messageId: "Message_1",
+  } as const;
+  const directChannel = {
+    kind: "directMessage",
+    messageId: "Message_1",
+  } as const;
+
+  assert.equal(validate({
+    kind: "intermediateCatchMessageEvent",
+    id: "CatchEvent_1",
+    channel: operationChannel,
+  }), true);
+  assert.equal(validate({
+    kind: "receiveTask",
+    id: "ReceiveTask_1",
+    channel: directChannel,
+  }), true);
+  assert.equal(validate({
+    kind: "intermediateCatchMessageEvent",
+    id: "CatchEvent_1",
+    channel: directChannel,
+  }), false);
+  assert.equal(validate({
+    kind: "receiveTask",
+    id: "ReceiveTask_1",
+    channel: operationChannel,
+  }), false);
+});
+
 test("accepts the canonical checked-process and Semantic Process contract shapes", async () => {
   for (const artifacts of [
     parallelDefinitionArtifacts(),

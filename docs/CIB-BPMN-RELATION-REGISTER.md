@@ -182,7 +182,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0009 — Message-addressed Receive Task subscription lifecycle
 
-**Status:** Reviewed bounded agreement; phase-zero evidence complete and semantic implementation pending
+**Status:** Reviewed bounded agreement; phase-zero evidence and the source/Lean/semantic-core checkpoint are complete, while retained CIB projection remains pending
 
 **BPMN basis:** BPMN 2.0.2 Clause 10 and Table 10.10 define a Receive Task as waiting for a Message from an external Participant and completing when that Message is received. Clause 13.3.3 repeats that activation waits for the associated Message and that Message arrival completes the Activity.
 

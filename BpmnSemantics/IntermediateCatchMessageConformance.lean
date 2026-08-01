@@ -58,6 +58,15 @@ def checkedProcess : CheckedProcess :=
 def program : Program :=
   lowerCheckedProcess checkedProcess
 
+def directChannelCheckedProcess : CheckedProcess :=
+  { checkedProcess with
+    nodes := checkedProcess.nodes.map fun node =>
+      match node with
+      | .intermediateCatchMessageEvent id _ =>
+          .intermediateCatchMessageEvent id
+            (.directMessage ⟨"Message_ApprovalRequest"⟩)
+      | other => other }
+
 def subscriptionId : MessageSubscriptionId :=
   { processInstanceId := ⟨"MessageInstance_1"⟩
     elementId := ⟨"MessageCatch_ApprovalRequest"⟩
@@ -177,6 +186,12 @@ theorem exact_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
   decide
 
+/-- A checked Intermediate Catch Message Event requires its complete Operation address. -/
+theorem catch_event_rejects_direct_message_channel :
+    definitionBindingValid directChannelCheckedProcess
+      (lowerCheckedProcess directChannelCheckedProcess) = false := by
+  decide
+
 /-- Canonical lowering retains the complete reference-resolved channel and Catch Event identity. -/
 theorem lowering_preserves_message_channel :
     program.operations.find? (fun operation =>
@@ -195,6 +210,8 @@ theorem lowering_preserves_message_channel :
 theorem start_closure_uses_two_internal_steps :
     (applyStimulus 1 program initialState startStimulus).internalStepBoundExceeded =
         true ∧
+      (applyStimulus 2 program initialState startStimulus).internalStepBoundExceeded =
+        false ∧
       messageWaitingResult.internalStepBoundExceeded = false ∧
       enabledInternalOperationCount program messageWaitingResult.state = 0 := by
   decide
