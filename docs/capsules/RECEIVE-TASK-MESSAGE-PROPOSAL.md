@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft for independent review and owner approval. No Receive Task source or execution support is implemented.**
+**Independent review completed with required corrections applied; awaiting owner approval. No Receive Task source or execution support is implemented.**
 
 ## Exact question
 
@@ -18,22 +18,31 @@ BPMN 2.0.2 Clause 10 and Table 10.10 define a Receive Task as a Task that waits 
 
 Clause 8.4.2 applies the same correlation concepts to Message Catch Events and Receive Tasks. Closed OMG issue [BPMN2-201](https://issues.omg.org/issues/BPMN2-201) clarifies that Message Intermediate Catch Events use the same correlation behavior as Receive Tasks, while [BPMN2-222](https://issues.omg.org/issues/BPMN2-222) corrects the Receive Task `operationRef` wording. Those corrections support reusing the subscription mechanism without inventing an Operation where the source has none.
 
-The exact profile does not decide the general meaning of the Receive Task `implementation` attribute. It requires that attribute to be omitted and makes no transport-implementation claim. General Web Service binding, implementation selection, and the open issue around this attribute remain outside the capsule.
+The profile admits a source document that omits the Receive Task `implementation` attribute. Omission is not neutral: `tReceiveTask/@implementation` defaults to `##WebService` in the BPMN XSD, and Table 10.10 names Web service as the default technology. The installed `bpmn-moddle@10.0.0` Receive Task descriptor does not materialize that default, so checked-source admission can verify only that the raw attribute is absent. The profile records the resulting `##WebService` meaning explicitly but deliberately does not realize or claim Web-service transport; Temporal Signal is the bounded project host for the selected semantic Message input. This is a profile limitation, not evidence that the default is absent. Non-default implementation values and general Web-service binding remain outside the capsule.
 
 ## Selected source profile
 
 The vendor-neutral source profile contains:
 
 - exactly one BPMN `Definitions` document with one private `Process` whose `isExecutable` value is explicitly true;
-- exactly one root `Message` with a nonempty ID and no `itemRef`; its name may be absent for vendor-neutral execution, while the optional CIB lane requires a nonempty name because CIB exposes that name in its public Message subscription;
+- exactly one root `Message` with a nonempty ID, a nonempty name, and no `itemRef`; the name requirement follows the recommended CIB-backed target because CIB exposes that name in its public Message subscription, while vendor-neutral identity remains the Message ID;
 - no root Interface and therefore no Interface Operation, and no root Error, Signal, Escalation, Collaboration, or other executable definition;
 - one None Start Event, one Receive Task, one None End Event, and two unconditional Sequence Flows in the root Process;
-- a Receive Task with exactly one incoming and one outgoing Sequence Flow, a resolved `messageRef` to the sole root Message, omitted `operationRef`, omitted `implementation`, omitted `instantiate` or its normalized false value, and no I/O specification, DataInput, DataOutput, Data Association, loop characteristics, ResourceRole, extension element, or boundary Event;
+- a Receive Task with exactly one incoming and one outgoing Sequence Flow, a resolved `messageRef` to the sole root Message, omitted `operationRef`, a raw omitted `implementation` whose normative default is recorded as `##WebService`, omitted `instantiate` or its normalized false value, and no I/O specification, DataInput, DataOutput, Data Association, loop characteristics, ResourceRole, extension element, or boundary Event;
 - no alternative start, branch, repetition, nested scope, or modeled sender.
 
 Admission is node-kind plus profile multiset plus generic graph facts. It must not add a predicate for the literal Start → Receive Task → End topology. The checked-source capability owns the exact node-kind multiset and Receive Task property restrictions; reusable graph validation owns identifiers, references, arity, ownership, reachability, co-reachability, acyclicity, and Sequence Flow producer/consumer facts.
 
 Declaration order is not semantics. Reordering the root Process and Message declarations, the three FlowNode declarations, the two Sequence Flow declarations, the Process `flowElement` references, and the Receive Task incoming/outgoing reference declarations must preserve the same checked graph, lowered program, stable Message wait, and completed result. One combined representative permutation is sufficient; this is not a theorem over every XML serialization.
+
+## Profile identity and declared targets
+
+The owner selection determines the profile identity before any checked process, Semantic Process program, scenario result, retained evidence, or artifact hash is produced:
+
+- the recommended CIB-backed selection uses profile ID `cibseven-2.2.0-message-addressed-receive-task-draft`, the published CIB Seven `2.2.0` oracle at tag revision `834a9874760de8a0107f7c1b32806e37f17fb017`, and the declared target set CIB Seven, Lean, TypeScript, and Temporal; BPMN meaning remains owned by this OMG-grounded capsule and the new CIB relationship classifies only observed agreement;
+- declining retained CIB evidence uses profile ID `bpmn-2.0.2-message-addressed-receive-task-draft`, normative authority OMG BPMN `2.0.2`, and the declared target set Lean, TypeScript, and Temporal; it adds no Receive-Task-specific CIB relationship or CIB execution target.
+
+Phase zero may run before the recommended profile artifact exists, but the profile ID is not changed after artifacts are produced. If phase zero disagrees, stop before authoring either target artifact and return the classification and profile choice to the owner. Under the recommended CIB-backed answer, the one shared source fixture requires the nonempty root Message name stated above.
 
 ## Closed Message-address representation
 
@@ -63,7 +72,7 @@ The implemented Intermediate Catch Message source always produces `operationMess
 
 `messageId` is the BPMN root Message identity. It is not a Message name, broker topic, CIB subscription name, business key, correlation key, Workflow ID, or transport operation. The Process instance and exact runtime occurrence remain selected by `subscriptionId`; `channel` remains a caller-supplied definition-consistency assertion rather than a global lookup key.
 
-This shape is the smallest complete representation because two implemented source consumers require different definition paths with the same runtime subscription and delivery contract. Making Interface fields optional would create illegal mixed shapes and weak compiler errors. Inventing an Interface or Operation for Receive Task would assert definitions absent from the source. Renaming `channel` to `address` would add contract churn without changing the selected distinction, so it is not proposed.
+This shape is the smallest complete representation because the implemented Intermediate Catch Message consumer and the proposed Receive Task consumer require different definition paths with the same runtime subscription and delivery contract. Making Interface fields optional would create illegal mixed shapes and weak compiler errors. Inventing an Interface or Operation for Receive Task would assert definitions absent from the source. Renaming `channel` to `address` would add contract churn without changing the selected distinction, so it is not proposed.
 
 ## Checked source and lowering
 
@@ -105,9 +114,28 @@ For Receive Task, both `origin.elementId` and `message.elementId` are the Receiv
 
 No new Semantic Process operation is justified. Receive Task activation consumes one input token, creates one passive definition-addressed subscription, waits, consumes that subscription after exact delivery, and emits one output token—the same semantic lifecycle already represented by `awaitMessage` and `deliverMessage`. The source kind remains available in the checked graph and exact lowering proof, while the IL carries only the reusable execution distinction. A Receive-Task-specific operation would duplicate an evaluator and fail the [Semantic Process IL stop criterion](../SEMANTIC-PROCESS-IL-SPEC.md#growth-across-bpmn-event-diversity).
 
-The lowering discriminator holds FlowNode and Sequence Flow IDs fixed while changing the root Message ID and the Receive Task `messageRef`; the checked direct channel and lowered `awaitMessage.message.channel` must change together. A second source mutation replaces the Receive Task with an Intermediate Catch Message Event while preserving the graph IDs; it must produce the existing `operationMessage` arm only when the complete Interface → Operation → Message chain is present. These cases distinguish source-kind-aware lowering from a fixture constant or optional-field account.
+The lowering discriminator holds FlowNode and Sequence Flow IDs fixed within the Receive Task profile while changing the root Message ID and the Receive Task `messageRef`; the checked direct channel and lowered `awaitMessage.message.channel` must change together. The source-kind discriminator is a cross-profile pair over the two separately admitted fixtures: the existing Intermediate Catch Message scenario under `bpmn-2.0.2-intermediate-catch-message-draft` must lower its complete Interface → Operation → Message chain to `operationMessage`, while the new Receive Task fixture under its selected profile must lower the direct Message reference to `directMessage`. Each graph must reject under the other's profile before lowering. These cases distinguish source-kind-aware profile selection and lowering from a fixture constant, optional-field account, or impossible same-shape mutation.
 
 The frozen checked-source experiment modules must add an exhaustive `receiveTask` arm that explicitly reports the variant unsupported in that lane. They must not acquire provisional Receive Task semantics.
+
+## IL reuse classification and erased distinctions
+
+The [IL growth rule](../SEMANTIC-PROCESS-IL-SPEC.md#growth-across-bpmn-event-diversity) is discharged as follows:
+
+| Distinction | Selected Receive Task value | Preservation or deliberate erasure |
+|---|---|---|
+| Trigger source | External BPMN Message | Preserved by `directMessage.messageId` |
+| Direction | Inbound/catching | Preserved by passive `awaitMessage` plus external `deliverMessage`; no outbound intent exists |
+| BPMN locus | Activity rather than Intermediate Catch Event | Preserved in checked source and exact lowering, deliberately erased from the IL and public wait projection |
+| Interruption | None in ordinary Sequence Flow | No distinction is needed in the admitted graph; boundary attachment and interruption are rejected |
+| Scope ownership | One root Process occurrence | Preserved by the existing scope-owned Message wait |
+| Subscription cardinality | Exactly one activation and one live subscription | Preserved by profile cardinality, activation identity, and runtime wait state |
+| Correlation | Direct complete occurrence plus definition-consistency channel | Preserved by `subscriptionId` and structural channel equality; key/name/global correlation is rejected |
+| Payload/data | No ItemDefinition, Data Output, or Data Association | Absence is preserved by source rejection and no payload field; Receive Task data transfer is excluded |
+
+The reused IL therefore cannot distinguish a stable Receive Task wait from a stable Intermediate Catch Message wait except through their element identities and channel arms; both project as `WaitKind.Message`. Inside this capsule that erasure is unobservable because Activity-only lifecycle features—boundary attachment, loop or Multi-Instance characteristics, compensation, data output, instantiation, and Activity-kind-specific public observation—are all rejected. Any consumer needing one of those distinctions reopens the IL decision before admission widens.
+
+Implementation atomically rewrites the [IL specification](../SEMANTIC-PROCESS-IL-SPEC.md): the lowering table adds the direct-Message Receive Task mapping; `awaitMessage` operational semantics says Message-wait element identity rather than Catch Event identity; and well-formedness accepts the closed `operationMessage | directMessage` channel with exact nonempty fields instead of requiring an Interface/Operation/Message triple universally.
 
 ## Semantic Process admission
 
@@ -128,7 +156,7 @@ The targeted preservation gate establishes only the admitted fixture and its rep
 - a one-step closure limit reports internal-step-bound exhaustion, while the configured limit reaches the wait;
 - no checked stable state has more than one enabled internal operation;
 - the stable running prefix has exactly one explicit Message resumption surface;
-- exact delivery removes the subscription, executes `reachNoneEnd` and `completeScope`, and produces the terminal completed state within the configured closure limit;
+- exact delivery requires exactly two internal steps—`reachNoneEnd` then `completeScope`—and produces the terminal completed state; a one-step post-delivery limit reports internal-step-bound exhaustion;
 - a synthetic stranded-token state is not resumable and is not confused with the checked prefix.
 
 This is not arbitrary serial admission, a universal liveness theorem, or proof that every valid Receive Task Process progresses.
@@ -155,7 +183,7 @@ This is the vendor-neutral receive/complete proposition plus the existing projec
 
 ### `RECV-REFUSE-01` — wrong, early, and consumed deliveries preserve state
 
-A delivery with the wrong Process instance, Receive Task element, activation, channel discriminant, or Message ID rejects with exact committed-state preservation. A well-formed delivery before an active subscription exists rejects. A fresh command targeting the consumed subscription rejects at the semantic core, though a post-terminal Temporal call remains the adapter-owned `processClosed` result under the existing lifecycle contract.
+A delivery with the wrong Process instance, Receive Task element, activation, channel discriminant, or Message ID rejects with exact committed-state preservation. A well-formed delivery before an active subscription exists rejects. A fresh command targeting the consumed subscription rejects at the semantic core. This selected topology completes immediately after delivery, so no Temporal witness can expose that semantic stale result while the Workflow remains live; a post-terminal Temporal call instead returns the adapter-owned `processClosed` result under the existing lifecycle contract.
 
 Identical-command replay and command-ID/content conflicts retain their existing Temporal classifications. No new outcome arm is added.
 
@@ -220,11 +248,13 @@ A focused malformed/wrong-kind control runs while the subscription is live and m
 
 This witness rechecks information preservation across a breaking nested wire change. It does not count as a second semantic derivation of Message delivery and does not establish external-broker, cross-Workflow, broadcast, or global-correlation behavior.
 
+Implementation also restates testing rule R8 from one singular Message path to every approved Signal-bearing Message path: all non-Message paths retain zero Signal Events, while each Message path asserts its own exact, mutation-sensitive Signal sequence. Existing zero-Signal assertions on Update-driven paths remain unchanged.
+
 ## Optional CIB Seven `2.2.0` agreement lane
 
 The recommendation is to include the CIB lane because CIB Seven `2.2.0` executable breadth is the owner's selected near-term ordering baseline and its Receive Task public subscription is a new compatibility claim not covered by the standards-only Intermediate Catch Message capsule. CIB remains evidence, not semantic authority.
 
-Phase zero must run before relationship registration, profile artifact authoring, or semantic implementation. Deploy one project-authored MIT fixture matching the selected source, start it through CIB public services, observe exactly one Message event subscription tied to the Receive Task, deliver with `messageEventReceived(subscription.eventName, subscription.executionId)`, observe the subscription removed, and observe the Process completed. The optional lane requires a nonempty root Message name solely so CIB's public delivery API has an observable event name.
+Phase zero must run before relationship registration, profile artifact authoring, or semantic implementation. Deploy one project-authored MIT fixture matching the selected source, start it through CIB public services, observe exactly one Message event subscription tied to the Receive Task, deliver with `messageEventReceived(subscription.eventName, subscription.executionId)`, observe the subscription removed, and observe the Process completed. The recommended CIB-backed lane uses the profile's required nonempty root Message name solely so CIB's public delivery API has an observable event name.
 
 If phase zero agrees, add the next available normative-agreement relationship for “Message-addressed Receive Task waits and completes after public Message delivery” and, if retained canonical projection maps CIB's execution/subscription identity to the semantic occurrence, the next available permitted-operational-detail relationship for that mapping. Assign identifiers only when the register entries and verifier evidence land; do not put placeholders in a profile. If CIB disagrees, stop, classify the difference, and do not change vendor-neutral meaning.
 
@@ -250,7 +280,7 @@ Pre-activation CIB delivery is excluded. The phase-zero runner starts the Proces
 | `RECV-WAIT-01` | Clauses 10 and 13.3.3 | Existing activation semantics specialized to exact direct subscription | Independent start closure and subscription projection | Public subscription exists after Process start | Query before delivery exposes the direct wait | Auto-completion or dropped-subscription mutations diverge before delivery |
 | `RECV-COMPLETE-01` | Clause 13.3.3 plus existing direct-address profile | Existing `MessageDeliveryStep`, evaluator, soundness, and exact fixture result | Independent exact delivery and Process completion | Public delivery removes subscription and completes Process | Worker-absent Signal, result recovery, terminal receipt, replay | Removed/changed Signal history or retained subscription must fail |
 | `RECV-REFUSE-01` | Existing direct-address and one-consumption restriction | Wrong kind, wrong Message, early, and consumed controls preserve state at their valid boundary | Independent refusal and state preservation | Not claimed beyond phase-zero ordering | Malformed/conflict classifications and wrong-kind live control | Matcher that compares only `messageId` accepts the separating case |
-| `RECV-OBSERVE-01` | Existing eleven-field observation profile | Exact direct subscription/interaction projection | Independent canonical projection | Nested fields receive explicit fidelity labels if lane lands | Query and terminal receipt derive from committed core state | Comparator/projector mutation changes or erases a public field |
+| `RECV-OBSERVE-01` | Existing eleven-field observation profile | Exact direct subscription/interaction projection | Independent canonical projection | New nested channel-kind paths receive unconditional fidelity rows; the whole direct channel is adapter-decided if the retained lane lands | Query and terminal receipt derive from committed core state | Comparator/projector mutation changes or erases a public field |
 
 Lean and TypeScript consume the same TypeScript-produced checked source and program artifact. Lean re-lowers the checked graph independently but does not parse BPMN XML. CIB deploys the exact source bytes but does not inspect the checked graph. The paired Message-reference/source-kind mutations and artifact-roundtrip equality are therefore mandatory controls for the shared XML-producer risk; agreement among execution targets alone cannot detect a shared source projection defect.
 
@@ -268,8 +298,9 @@ The atomic set includes:
 - TypeScript semantic contracts, operation/stimulus admission, message evaluator, runtime projection, focused tests, and compile-time immutability/exhaustiveness checks;
 - Temporal command-identity encoding, Signal validation, message result ledger and receipt, Workflow/client tests, host-capability classification, exact-history checks, replay, and semantic/history bypass controls;
 - the differential catalog, scenario/profile/result artifacts, target arithmetic, meaningful direct-kind mutation, and declared-target pipeline registration;
-- the Java CIB protocol/projector, retained raw evidence, fidelity table and schema-depth guard if the owner includes the optional CIB lane; existing CIB evidence with empty Message collections changes only if the current schema or producer output requires replacement;
-- [SEMANTIC-PROCESS-IL-SPEC.md](../SEMANTIC-PROCESS-IL-SPEC.md), [PROFILE-PARAMETERIZED-ADMISSION-SPEC.md](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [TESTING-SPEC.md](../TESTING-SPEC.md), the BPMN and CIB ledgers/registers, documentation registries, [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), [PLAN.md](../PLAN.md), and this proposal's graduation to `-SPEC`;
+- the Java `ScenarioMessageProtocol.MessageChannel` record, the complete CIB fidelity table in [TESTING-SPEC.md](../TESTING-SPEC.md), and its schema-depth guard unconditionally, because all three consume the one current channel schema even when existing CIB states contain empty Message collections;
+- conditionally on the retained CIB lane, the new relationship-register entries, nonempty raw and canonical Message-subscription evidence, and the currently empty projection in `scripts/contract-cib-evidence-projection.ts` plus its producer-evidence guard in `scripts/contract-artifact-projections.test.ts`; existing CIB evidence with empty Message collections changes only if the new schema or producer output changes its exact bytes;
+- [SEMANTIC-PROCESS-IL-SPEC.md](../SEMANTIC-PROCESS-IL-SPEC.md), [PROFILE-PARAMETERIZED-ADMISSION-SPEC.md](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [TEMPORAL-PROCESS-LIFECYCLE-SPEC.md](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md), [TESTING-SPEC.md](../TESTING-SPEC.md), the BPMN and CIB ledgers/registers, [profiles/README.md](../../profiles/README.md), [scenarios/README.md](../../scenarios/README.md), the documentation registries, [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), [PLAN.md](../PLAN.md), and this proposal's graduation to `-SPEC`;
 - the artifact catalog, inbound document links, source-hygiene/doc-fragment guards, capsule cost ledger, and exact implementation counts.
 
 The eleven top-level canonical state fields, `WaitKind`, `StimulusKind`, `CommandOutcome`, `ProcessStatus`, `ProcessCommandResult`, runtime-state collections, and Temporal transport family remain unchanged. Only the nested Message channel and closed checked-node union change. If implementation discovers that one of those claimed-unchanged surfaces must widen, stop and return the new product decision to the owner.
@@ -283,7 +314,7 @@ No dependency addition, removal, upgrade, vendoring, or A12 source use is requir
 This capsule excludes:
 
 - Receive Task without `messageRef`, including CIB's legacy `signal(executionId)` path;
-- `operationRef`, non-default `implementation`, `instantiate=true`, Process instantiation, Message Start behavior, and pre-activation buffering;
+- `operationRef`, realizing the default `##WebService` transport, every non-default `implementation`, `instantiate=true`, Process instantiation, Message Start behavior, and pre-activation buffering;
 - Message payload, `itemRef`, I/O specifications, DataInput/DataOutput, Data Associations, variable writes, and form or simulated-human input;
 - Message name matching as vendor-neutral identity, CorrelationKey, CorrelationSubscription, business-key/global correlation, broadcast, multiple subscriptions, and races;
 - Collaboration, Participant, Message Flow, Conversation, Send Task, modeled Message throw, Intermediate Throw Message, End/Boundary/Event-SubProcess Message Events, and event-based Gateway;
@@ -306,7 +337,7 @@ Before graduation, record:
 7. distinct BPMN, CIB, Lean, TypeScript, Temporal, projection, and mutation claims;
 8. the pre-release history policy and one meaningful mutation for every new evidence projection;
 9. feedback timing, server/port cleanup, duplicated builds, artifact coupling, documentation placement, and removable process weight;
-10. a commit-bounded code/document delta against the implemented Intermediate Catch Message capsule as the nearest same-layer comparison, with one repeated process weight removed if this reuse capsule is not materially cheaper;
+10. a commit-bounded code/document delta against User Task completion data (`+651/-94` code, `+84/-63` documentation) as the nearest mechanism-reuse comparator and scoped runtime data (`+540/-73` code, `+134/-11` documentation) as the nearest atomic-representation comparator; the larger Intermediate Catch Message capsule remains a historical ceiling, not the primary cost comparator, and one repeated process weight is removed if this capsule is not materially cheaper than the applicable comparator;
 11. whether the result changes the next CIB-ordered capsule ranking;
 12. an independent review of the normative account, address replacement, CIB fidelity boundary, and Temporal witness before owner approval.
 
@@ -316,7 +347,7 @@ Approve or reject these product choices together:
 
 1. admit the exact non-instantiating, payload-free, direct-Message Receive Task slice and represent Message channels as the closed `operationMessage | directMessage` union above;
 2. reuse `awaitMessage`, `deliverMessage`, the existing canonical Message resumption surface, and Temporal Signal/result-ledger mechanism rather than add a Receive-Task-specific runtime transition;
-3. include the recommended CIB Seven `2.2.0` phase-zero and retained normative-agreement/operational-mapping lane if the probe agrees;
+3. run the recommended CIB Seven `2.2.0` phase zero and, if it agrees, select `cibseven-2.2.0-message-addressed-receive-task-draft` plus the retained normative-agreement/operational-mapping lane; declining that retained lane selects `bpmn-2.0.2-message-addressed-receive-task-draft` before any target artifact is produced;
 4. apply the atomic pre-release replacement and exclusions exactly as stated.
 
 The known eventual consumer is the BPMN engine's CIB Seven breadth roadmap. This capsule does not claim that A12 currently contains or requires Receive Task, and it does not add a downstream product adapter.
