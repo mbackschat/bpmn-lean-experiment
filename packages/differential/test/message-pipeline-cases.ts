@@ -21,6 +21,7 @@ import {
 import type {
   MutableScenarioResult,
   MutableStateObservation,
+  ObservationValueDisagreement,
   PipelineCase,
 } from "./pipeline-types.ts";
 
@@ -82,7 +83,14 @@ function mutateDirectMessageChannelKind(
   };
 }
 
-const intermediateCatchMessageCase = Object.freeze({
+const intermediateCatchMessageDisagreement: ObservationValueDisagreement = {
+  kind: DisagreementKind.ObservationValue,
+  path: "trace[2].openMessageSubscriptions[0].channel.messageId",
+  expected: "Message_ApprovalRequest",
+  actual: "Message_ApprovalRequest-mutated",
+};
+
+const intermediateCatchMessageCase: PipelineCase = Object.freeze({
   id: "intermediate-catch-message",
   scenarioRelativePath:
     "scenarios/intermediate-catch-message/scenario.json",
@@ -97,15 +105,17 @@ const intermediateCatchMessageCase = Object.freeze({
   effectSchedules: null,
   replaySelection: PipelineReplaySelection.Primary,
   injectMutation: mutateOperationMessageId,
-  expectedInjectedDisagreement: {
-    kind: DisagreementKind.ObservationValue,
-    path: "trace[2].openMessageSubscriptions[0].channel.messageId",
-    expected: "Message_ApprovalRequest",
-    actual: "Message_ApprovalRequest-mutated",
-  },
-}) satisfies PipelineCase;
+  expectedInjectedDisagreement: intermediateCatchMessageDisagreement,
+});
 
-const messageAddressedReceiveTaskCase = Object.freeze({
+const messageAddressedReceiveTaskDisagreement: ObservationValueDisagreement = {
+  kind: DisagreementKind.ObservationValue,
+  path: "trace[2].openMessageSubscriptions[0].channel.interfaceId",
+  expected: undefined,
+  actual: "Interface_Mutated",
+};
+
+const messageAddressedReceiveTaskCase: PipelineCase = Object.freeze({
   id: "message-addressed-receive-task",
   scenarioRelativePath:
     "scenarios/message-addressed-receive-task/scenario.json",
@@ -126,13 +136,8 @@ const messageAddressedReceiveTaskCase = Object.freeze({
   effectSchedules: null,
   replaySelection: PipelineReplaySelection.Primary,
   injectMutation: mutateDirectMessageChannelKind,
-  expectedInjectedDisagreement: {
-    kind: DisagreementKind.ObservationValue,
-    path: "trace[2].openMessageSubscriptions[0].channel.interfaceId",
-    expected: undefined,
-    actual: "Interface_Mutated",
-  },
-}) satisfies PipelineCase;
+  expectedInjectedDisagreement: messageAddressedReceiveTaskDisagreement,
+});
 
 export const messagePipelineCases = Object.freeze([
   intermediateCatchMessageCase,

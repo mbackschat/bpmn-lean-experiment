@@ -8,6 +8,7 @@ import type {
   StateObservation,
   VariableBinding,
   VariableValueKind,
+  WaitKind,
 } from "../packages/semantic-core/src/index.ts";
 import type {
   CibSevenEvidence,
@@ -439,7 +440,7 @@ function projectMessageSubscriptions(
   return {
     activeWaits: subscriptions.map((subscription) => ({
       elementId: subscription.elementId,
-      kind: "message" as const,
+      kind: "message" as WaitKind.Message,
       multiplicity: 1,
     })),
     openMessageSubscriptions,
