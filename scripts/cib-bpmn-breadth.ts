@@ -594,7 +594,7 @@ async function main(): Promise<void> {
       await access(corpusRoot);
     } catch {
       throw new Error(
-        `pinned CIB Seven checkout is absent at ${corpusRoot}; run ./scripts/setup-external-sources.sh all`,
+        `pinned CIB Seven checkout is absent at ${corpusRoot}; run ./scripts/setup-external-sources.sh research`,
       );
     }
   }

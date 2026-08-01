@@ -8,8 +8,8 @@ set -eu
 
 scope=${1:-verify}
 case "$scope" in
-  verify|all) ;;
-  *) echo "usage: $0 [verify|all]" >&2; exit 2 ;;
+  verify|adoption|research|all) ;;
+  *) echo "usage: $0 [verify|adoption|research|all]" >&2; exit 2 ;;
 esac
 
 script_dir=${0%/*}
@@ -26,6 +26,12 @@ is_git_checkout_root() {
   test "$physical_candidate" = "$physical_candidate_root"
 }
 
+scope_selects() {
+  requested_scope=$1
+  declared_scope=$2
+  test "$requested_scope" = "all" || test "$requested_scope" = "$declared_scope"
+}
+
 BPMN_CORPUS_ROOT="$external_root/omg-bpmn-2.0.2" "$script_dir/verify-bpmn-corpus.sh"
 
 checked=0
@@ -34,8 +40,10 @@ submodules=0
 while IFS="	" read -r source_scope relative_path remote reference revision material_kind; do
   case "$source_scope" in
     \#*|"") continue ;;
+    verify|adoption|research) ;;
+    *) echo "external source lock has invalid scope $source_scope for $relative_path" >&2; exit 1 ;;
   esac
-  if test "$scope" = "verify" && test "$source_scope" != "verify"; then
+  if ! scope_selects "$scope" "$source_scope"; then
     continue
   fi
 

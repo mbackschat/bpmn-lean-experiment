@@ -30,7 +30,7 @@ Never claim BPMN conformance or CIB compatibility beyond the exact profile and e
 1. Read the current checkpoint and exact resume point in [PLAN.md](docs/PLAN.md).
 2. Read the implemented/absent boundary in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 3. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes.
-4. Run `./scripts/doctor.sh verify`. It inventories every declared external pin, dependency owner, and cache even when the selected scope does not require all of them. On a fresh machine, follow [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md); provision missing inputs rather than weakening or skipping their lanes. Run the `all` setup and doctor scope before source-grounded work using registered research checkouts.
+4. Run `./scripts/doctor.sh verify`. It inventories every declared external pin, dependency owner, and cache even when the selected scope does not require all of them. On a fresh machine, follow [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md); provision missing inputs rather than weakening or skipping their lanes. Use the `research` scope before source-grounded work using registered research checkouts. Use the separate `adoption` scope only when the task explicitly requires optional A12 exact-source evidence; never infer that evidence from the complete MIT engine `verify` gate.
 5. Run the current applicable gate from [TESTING-SPEC.md](docs/TESTING-SPEC.md).
 6. Take the first incomplete work item unless the user explicitly changes scope.
 

@@ -8,8 +8,8 @@ set -eu
 
 scope=${1:-verify}
 case "$scope" in
-  verify|all) ;;
-  *) echo "usage: $0 [verify|all]" >&2; exit 2 ;;
+  verify|adoption|research|all) ;;
+  *) echo "usage: $0 [verify|adoption|research|all]" >&2; exit 2 ;;
 esac
 
 script_dir=${0%/*}
@@ -25,6 +25,12 @@ is_git_checkout_root() {
   physical_candidate=$(CDPATH= cd "$candidate" && pwd -P)
   physical_candidate_root=$(CDPATH= cd "$candidate_root" && pwd -P)
   test "$physical_candidate" = "$physical_candidate_root"
+}
+
+scope_selects() {
+  requested_scope=$1
+  declared_scope=$2
+  test "$requested_scope" = "all" || test "$requested_scope" = "$declared_scope"
 }
 
 cleanup() {
@@ -48,8 +54,10 @@ fi
 while IFS="	" read -r source_scope relative_path remote reference revision material_kind; do
   case "$source_scope" in
     \#*|"") continue ;;
+    verify|adoption|research) ;;
+    *) echo "external source lock has invalid scope $source_scope for $relative_path" >&2; exit 1 ;;
   esac
-  if test "$scope" = "verify" && test "$source_scope" != "verify"; then
+  if ! scope_selects "$scope" "$source_scope"; then
     continue
   fi
   if test "$material_kind" != "repository"; then
@@ -57,8 +65,12 @@ while IFS="	" read -r source_scope relative_path remote reference revision mater
   fi
 
   checkout="$external_root/$relative_path"
-  if test -e "$checkout"; then
+  if is_git_checkout_root "$checkout"; then
     continue
+  fi
+  if test -e "$checkout"; then
+    echo "external source target exists but is not a Git checkout root: $checkout; preserve or remove it explicitly" >&2
+    exit 1
   fi
   mkdir -p "${checkout%/*}"
   temporary_checkout="$checkout.bootstrap.$$"
@@ -72,8 +84,10 @@ done < "$lock_path"
 while IFS="	" read -r source_scope relative_path remote reference revision material_kind; do
   case "$source_scope" in
     \#*|"") continue ;;
+    verify|adoption|research) ;;
+    *) echo "external source lock has invalid scope $source_scope for $relative_path" >&2; exit 1 ;;
   esac
-  if test "$scope" = "verify" && test "$source_scope" != "verify"; then
+  if ! scope_selects "$scope" "$source_scope"; then
     continue
   fi
   case "$material_kind" in
@@ -87,6 +101,10 @@ while IFS="	" read -r source_scope relative_path remote reference revision mater
   checkout="$external_root/$relative_path"
   if is_git_checkout_root "$checkout"; then
     continue
+  fi
+  if test -e "$checkout"; then
+    echo "external source target exists but is not a Git checkout root: $checkout; preserve or remove it explicitly" >&2
+    exit 1
   fi
   if ! is_git_checkout_root "$parent_checkout"; then
     echo "external submodule parent is absent at $parent_checkout" >&2

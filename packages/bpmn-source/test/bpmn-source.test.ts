@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -455,37 +455,6 @@ test("rejects executable drift outside the exact A12 CreateDocument profile", as
     });
     assert.equal(result.status, BpmnCompilationStatus.Rejected);
   }
-});
-
-test("admits the registered A12 CreateDocument checkout unchanged", async () => {
-  const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
-    projectRoot,
-    "../oss",
-  );
-  const targetPath = path.join(
-    externalRoot,
-    "a12/a12-workflows/workflows-engine/src/testFixtures/resources/bpmn/CreateDocument.bpmn",
-  );
-  try {
-    await access(targetPath);
-  } catch {
-    assert.fail(
-      `registered A12 Workflows source is absent at ${targetPath}; run ./scripts/setup-external-sources.sh verify`,
-    );
-  }
-
-  const sourceBytes = await readFile(targetPath);
-  const result = await compileBpmnToSemanticProcess({
-    bytes: sourceBytes,
-    sourceId: "a12-workflows-create-document",
-    expectedSha256: undefined,
-    semanticProfile: "cibseven-2.0.0-a12-create-document-draft",
-    limits,
-  });
-
-  assert.equal(result.status, BpmnCompilationStatus.Accepted);
-  assert.deepEqual(result.diagnostics, []);
-  assert.deepEqual([...result.copyExactBytes()], [...sourceBytes]);
 });
 
 test("enforces the caller-provided byte limit before parsing", async () => {

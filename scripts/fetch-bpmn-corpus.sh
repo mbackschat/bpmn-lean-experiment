@@ -22,11 +22,13 @@ if ! command -v curl >/dev/null 2>&1; then
   exit 1
 fi
 
-download_root=$(mktemp -d "${TMPDIR:-/tmp}/bpmn-corpus-fetch.XXXXXX")
+corpus_parent=${corpus_root%/*}
+mkdir -p "$corpus_parent"
+download_root=$(mktemp -d "$corpus_parent/.bpmn-corpus-fetch.XXXXXX")
 
 cleanup() {
   case "$download_root" in
-    */bpmn-corpus-fetch.*) rm -rf "$download_root" ;;
+    */.bpmn-corpus-fetch.*) rm -rf "$download_root" ;;
     *) echo "refusing to clean unexpected temporary path: $download_root" >&2 ;;
   esac
 }
@@ -58,7 +60,6 @@ fetch_file "examples/BPMN-2.0-by-Example.zip" "https://www.omg.org/cgi-bin/doc?d
 fetch_file "examples/BPMN-2.0-machine-readable-examples.zip" "https://www.omg.org/cgi-bin/doc?dtc/10-06-03.zip"
 
 BPMN_CORPUS_ROOT="$download_root" "$script_dir/verify-bpmn-corpus.sh"
-mkdir -p "${corpus_root%/*}"
 mv "$download_root" "$corpus_root"
 trap - 0 1 2 3 15
 echo "BPMN corpus installed at $corpus_root"

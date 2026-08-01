@@ -42,6 +42,11 @@ test("locks every registered external Git checkout for portable setup", async ()
   assert.deepEqual(
     locked.filter((source) => source.scope === "verify")
       .map((source) => source.relativePath),
+    [],
+  );
+  assert.deepEqual(
+    locked.filter((source) => source.scope === "adoption")
+      .map((source) => source.relativePath),
     ["a12/a12-workflows"],
   );
   for (const source of locked) {
@@ -89,16 +94,33 @@ test("locks every registered external Git checkout for portable setup", async ()
   );
 });
 
-test("owns setup, fail-closed preflight, doctor, and CI provisioning", async () => {
-  const [setup, preflight, doctor, verification, workflow, guide, readme, caches] =
+test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", async () => {
+  const [
+    setup,
+    preflight,
+    doctor,
+    verification,
+    adoptionGate,
+    adoptionCheck,
+    corpusFetch,
+    workflow,
+    guide,
+    readme,
+    packageManifest,
+    caches,
+  ] =
     await Promise.all([
       readFile(path.join(projectRoot, "scripts/setup-external-sources.sh"), "utf8"),
       readFile(path.join(projectRoot, "scripts/check-external-sources.sh"), "utf8"),
       readFile(path.join(projectRoot, "scripts/doctor.sh"), "utf8"),
       readFile(path.join(projectRoot, "scripts/verify.sh"), "utf8"),
+      readFile(path.join(projectRoot, "scripts/test-a12-adoption.sh"), "utf8"),
+      readFile(path.join(projectRoot, "packages/bpmn-source/calibration/a12-adoption-source.ts"), "utf8"),
+      readFile(path.join(projectRoot, "scripts/fetch-bpmn-corpus.sh"), "utf8"),
       readFile(path.join(projectRoot, ".github/workflows/verify.yml"), "utf8"),
       readFile(path.join(projectRoot, "docs/CONTRIBUTOR-SETUP-GUIDE.md"), "utf8"),
       readFile(path.join(projectRoot, "README.md"), "utf8"),
+      readFile(path.join(projectRoot, "package.json"), "utf8"),
       readFile(path.join(projectRoot, "scripts/workspace-cache.lock"), "utf8"),
     ]);
 
@@ -107,6 +129,8 @@ test("owns setup, fail-closed preflight, doctor, and CI provisioning", async () 
   assert.match(setup, /git clone/u);
   assert.match(setup, /submodule update --init/u);
   assert.match(setup, /rev-parse --show-toplevel/u);
+  assert.doesNotMatch(setup, /if test -e "\$checkout"; then\s+continue/u);
+  assert.match(setup, /exists but is not a Git checkout root/u);
   assert.match(preflight, /verify-bpmn-corpus\.sh/u);
   assert.match(preflight, /git -C "\$checkout" rev-parse HEAD/u);
   assert.match(preflight, /git -C "\$checkout" remote get-url origin/u);
@@ -123,8 +147,18 @@ test("owns setup, fail-closed preflight, doctor, and CI provisioning", async () 
   assert.match(doctor, /DOCTOR_CACHE_ARTIFACT/u);
   assert.match(doctor, /2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a/u);
   assert.match(verification, /doctor\.sh verify/u);
+  assert.match(verification, /A12_ADOPTION_EVIDENCE status=not-run/u);
+  assert.doesNotMatch(verification, /^\.\/scripts\/test-a12-adoption\.sh$/mu);
+  assert.match(adoptionGate, /check-external-sources\.sh" adoption/u);
+  assert.match(adoptionGate, /a12-adoption-source\.ts/u);
+  assert.match(adoptionCheck, /CreateDocument\.bpmn/u);
+  assert.match(adoptionCheck, /TestProcessWithRelationshipModeledDocumentModels_DocRef\.bpmn/u);
+  assert.match(adoptionCheck, /BPMN_EXTERNAL_ROOT/u);
+  assert.match(packageManifest, /"test:a12-adoption"/u);
+  assert.match(corpusFetch, /mktemp -d "\$corpus_parent\/\.bpmn-corpus-fetch\.XXXXXX"/u);
   assert.match(workflow, /setup-external-sources\.sh verify/u);
-  assert.match(guide, /setup-external-sources\.sh all/u);
+  assert.match(guide, /setup-external-sources\.sh adoption/u);
+  assert.match(guide, /doctor\.sh research/u);
   assert.match(guide, /workspace meta-repository/u);
   assert.match(readme, /CONTRIBUTOR-SETUP-GUIDE\.md/u);
   for (const dependencyOwner of [
@@ -182,27 +216,34 @@ test("owns setup, fail-closed preflight, doctor, and CI provisioning", async () 
 test("external evidence consumers fail closed and honor the shared root", async () => {
   const [
     sourceTest,
+    adoptionCheck,
     metamodel,
     miwg,
     breadth,
     cibGate,
+    cibTests,
     validator,
   ] = await Promise.all([
     readFile(path.join(projectRoot, "packages/bpmn-source/test/bpmn-source.test.ts"), "utf8"),
+    readFile(path.join(projectRoot, "packages/bpmn-source/calibration/a12-adoption-source.ts"), "utf8"),
     readFile(path.join(projectRoot, "scripts/check-bpmn-semantic-process-metamodel.ts"), "utf8"),
     readFile(path.join(projectRoot, "packages/bpmn-source/calibration/miwg-observation.ts"), "utf8"),
     readFile(path.join(projectRoot, "scripts/cib-bpmn-breadth.ts"), "utf8"),
     readFile(path.join(projectRoot, "scripts/test-cibseven-oracle.sh"), "utf8"),
+    readFile(path.join(projectRoot, "scripts/run-cibseven-tests.ts"), "utf8"),
     readFile(path.join(projectRoot, "scripts/validate-bpmn-xml.sh"), "utf8"),
   ]);
 
-  for (const consumer of [sourceTest, metamodel, miwg, breadth, validator]) {
+  for (const consumer of [adoptionCheck, metamodel, miwg, breadth, validator]) {
     assert.match(consumer, /BPMN_EXTERNAL_ROOT/u);
   }
   assert.doesNotMatch(sourceTest, /context\.skip/u);
+  assert.doesNotMatch(sourceTest, /a12\/a12-workflows/u);
   assert.doesNotMatch(metamodel, /METAMODEL_CHECK skipped/u);
   assert.doesNotMatch(miwg, /BPMN_MIWG_IMPORT skipped/u);
   assert.match(cibGate, /check-external-sources\.sh" verify/u);
-  assert.match(cibGate, /runner tree is review-frozen/u);
+  assert.doesNotMatch(cibGate, /runner_a12_model/u);
+  assert.match(cibTests, /!CibSevenBoundaryErrorPhaseZeroProbeTest/u);
+  assert.doesNotMatch(cibTests, /externalTargetCarriesTheReviewedEmptyAttributeShape/u);
   assert.doesNotMatch(validator, /well-formedness only/u);
 });

@@ -48,8 +48,17 @@ async function runTests(extraArguments: readonly string[]): Promise<void> {
   process.stderr.write(result.stderr);
 }
 
-await runTests([]);
+const boundaryErrorSemanticMethods = [
+  "derivesTheExactProfileAndMapsSuccessfulOutput",
+  "recordsThatCaughtErrorsStillApplyTheOutputMapping",
+  "recordsTheTargetShapedNullLocalWriteAndOutputMapping",
+  "recordsOutputMappingFailureAfterTheDefaultUnhandledPath",
+  "isolatesDefaultUnhandledBehaviorWithoutAnOutputMapping",
+  "preservesAndExecutesAnExplicitEmptyErrorCodeVariable",
+] as const;
+
+await runTests(["-Dtest=*Test,!CibSevenBoundaryErrorPhaseZeroProbeTest"]);
 await runTests([
   "-Dcibseven.version=2.0.0",
-  "-Dtest=CibSevenBoundaryErrorPhaseZeroProbeTest,CibSevenBoundaryErrorScenarioRunnerTest,CibSevenExclusiveGatewayJuelProbeTest,CibSevenIsolatedJuelRuntimeProbeTest",
+  `-Dtest=CibSevenBoundaryErrorPhaseZeroProbeTest#${boundaryErrorSemanticMethods.join("+")},CibSevenBoundaryErrorScenarioRunnerTest,CibSevenExclusiveGatewayJuelProbeTest,CibSevenIsolatedJuelRuntimeProbeTest`,
 ]);

@@ -1,5 +1,5 @@
-# scope<TAB>path under BPMN_EXTERNAL_ROOT<TAB>canonical remote<TAB>immutable reference<TAB>exact revision<TAB>material kind
-verify	a12/a12-workflows	https://github.com/mgm-tp/a12-workflows.git	commit	bb79e490ecc1bfebfb959c79edb44264aa003060	repository
+# scope (verify|adoption|research)<TAB>path under BPMN_EXTERNAL_ROOT<TAB>canonical remote<TAB>immutable reference<TAB>exact revision<TAB>material kind
+adoption	a12/a12-workflows	https://github.com/mgm-tp/a12-workflows.git	commit	bb79e490ecc1bfebfb959c79edb44264aa003060	repository
 research	cibseven/cibseven	https://github.com/cibseven/cibseven.git	commit	5a45b47ea22688d774de97277c3ff7013f54fdd2	repository
 research	temporal/sdk-typescript	https://github.com/temporalio/sdk-typescript.git	commit	2595d1b62cf5c3ff1748df0df2f9b303902bb31c	repository
 research	temporal/samples-typescript	https://github.com/temporalio/samples-typescript.git	commit	fb0aa23d75394a132646de883842dfacdacd5aa0	repository

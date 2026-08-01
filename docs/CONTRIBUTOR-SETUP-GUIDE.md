@@ -17,7 +17,7 @@ nvm use
 ./scripts/verify.sh
 ```
 
-`setup-external-sources.sh` provisions the external sibling root at `../oss` by default. Set `BPMN_EXTERNAL_ROOT` to an absolute directory when repositories on a machine use another shared location. Setup, diagnosis, the schema/metamodel checks, TypeScript source evidence, MIWG calibration, and CIB breadth inventory honor that override. The CIB Java gate temporarily also requires its retained A12 witness at default sibling `../oss` because the pending Receive Task semantic-review barrier freezes that runner tree; the gate fails explicitly rather than skipping when the default witness is absent. Removing that narrow compatibility preflight is required with the first permitted post-review runner edit.
+`setup-external-sources.sh` provisions the external sibling root at `../oss` by default. Set `BPMN_EXTERNAL_ROOT` to an absolute directory when repositories on a machine use another shared location. Setup, diagnosis, schema/metamodel checks, the explicit A12 source-adoption check, MIWG calibration, CIB breadth inventory, and the complete default gate honor that override.
 
 The setup script is intentionally narrower than a machine package installer. Install the prerequisites listed in the top-level [README](../README.md) with the operating system's normal package manager, then let the script provision only content whose exact identity this repository owns.
 
@@ -25,27 +25,37 @@ The setup script is intentionally narrower than a machine package installer. Ins
 
 | Scope | Inputs | Required for |
 |---|---|---|
-| `verify` | The 15-file official OMG BPMN 2.0.2 corpus and the exact A12 Workflows checkout used by retained source-boundary evidence | The default verification gate and CI |
-| `all` | Everything in `verify` plus every pinned Git research checkout registered in [SOURCES.md](SOURCES.md) | Research, calibration, breadth inventory, and source-grounded proposal work |
+| `verify` | The 15-file official OMG BPMN 2.0.2 corpus; no A12 checkout | The complete MIT engine verification gate and CI |
+| `adoption` | The OMG corpus plus exact A12 Workflows `release/2025.06` source at its pinned commit | Optional downstream exact-source evidence through `./scripts/test-a12-adoption.sh` |
+| `research` | The OMG corpus plus every checkout registered as research input, including the A12 full-stack blueprint | Calibration, breadth inventory, and source-grounded proposal work |
+| `all` | The union of `verify`, `adoption`, and `research` | A deliberately complete multi-purpose workspace |
 
-The name `verify` is deliberate: A12 Workflows remains external EUPL research/evidence and is not an engine runtime or build dependency. It is nevertheless mandatory for the default gate because two retained checks compare project-authored artifacts with exact external source facts.
+The scope split is an architecture boundary. Default verification is complete for the MIT BPMN engine and does not obtain or inspect A12. The optional adoption lane is not a weakened default lane: when selected, it fails unless the external EUPL-1.2 checkout is present at the exact pinned pristine revision and both registered source facts pass. `verify.sh` announces `A12_ADOPTION_EVIDENCE status=not-run` so absence of downstream evidence is explicit without turning A12 into a lower-layer dependency.
+
+Run the exact A12 source-adoption lane only after deliberately selecting that license-separated input:
+
+```sh
+./scripts/setup-external-sources.sh adoption
+./scripts/doctor.sh adoption
+./scripts/test-a12-adoption.sh
+```
 
 Prepare a full research workstation with:
 
 ```sh
-./scripts/setup-external-sources.sh all
-./scripts/doctor.sh all
+./scripts/setup-external-sources.sh research
+./scripts/doctor.sh research
 ```
 
-An explicitly invoked research lane must fail when its registered input is absent or at the wrong revision. It must never skip, substitute web memory, or make a weaker claim.
+An explicitly invoked adoption or research lane must fail when its registered input is absent or at the wrong revision. It must never skip, substitute web memory, or make a weaker claim. `all` is available when one task genuinely needs every class of material; it is not the routine setup recommendation.
 
 ## What setup guarantees
 
 [`external-sources.lock`](../scripts/external-sources.lock) is the machine-readable Git material inventory. Each row fixes a scope, relative path, canonical GitHub remote, immutable-reference kind, full 40-character commit, and whether the material is a top-level repository or a named submodule of another locked repository. A release branch is recorded in [SOURCES.md](SOURCES.md) as provenance context but never substitutes for the commit. When the inspected commit has an exact tag, the lock records and validates the tag-to-commit association; untagged sources say `commit` explicitly. The OMG corpus has a separate [official-input digest manifest](reference/bpmn-2.0.2/LOCAL-CORPUS.sha256) because it is an OMG download set rather than a Git repository.
 
-Setup downloads the OMG inputs only from `www.omg.org`, verifies all hashes in a temporary directory, and installs the corpus only after the complete set passes. Top-level Git inputs are cloned to temporary paths and detached at their exact revisions before atomic installation. Declared submodules are then initialized from the superproject gitlink and independently verified against their redundant lock rows. An existing initialized target is never reset, cleaned, switched, or overwritten.
+Setup downloads the OMG inputs only from `www.omg.org`, stages them inside the target parent filesystem, verifies all hashes, and installs the corpus with one same-filesystem rename only after the complete set passes. Top-level Git inputs are cloned to temporary paths and detached at their exact revisions before atomic installation. Declared submodules are then initialized from the superproject gitlink and independently verified against their redundant lock rows. An existing initialized target is never reset, cleaned, switched, or overwritten.
 
-If an existing checkout has the wrong revision or tracked/untracked source changes, setup stops and reports it. Preserve the work, then explicitly repair the checkout, select another `BPMN_EXTERNAL_ROOT`, or replace the checkout after deciding that its local state is disposable. The automation does not make that destructive decision.
+If a target path is a partial or non-Git directory, or an existing checkout has the wrong revision or tracked/untracked source changes, setup stops and distinguishes those cases. Preserve the work, then explicitly repair the checkout, select another `BPMN_EXTERNAL_ROOT`, or replace the checkout after deciding that its local state is disposable. The automation does not make that destructive decision.
 
 [`doctor.sh`](../scripts/doctor.sh) is read-only. It checks Git, curl, XML and hash tools, exact Node and pnpm versions, Java 21 using the project Java-home resolver, Lean/Lake, installed workspace packages, corpus hashes, canonical Git remotes, exact commits, declared tag associations, superproject gitlinks, and checkout cleanliness. It always lists all seventeen external Git material pins—thirteen top-level repositories and four submodules—including research inputs outside the selected scope, then verifies the selected scope.
 
@@ -53,16 +63,17 @@ The doctor hashes all eighteen dependency owners: every Node selector and worksp
 
 The Maven wrapper pins release `3.8.8` by versioned Maven Central URL, while the tracked wrapper JAR identifies wrapper `3.2.0` and Git pins both files. The known distribution SHA-256 is `2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a`, but adding the wrapper-enforced checksum is blocked by the pending Receive Task review's runner-tree freeze and must be the first permitted post-review runner infrastructure edit. Node `24.18.0`, pnpm `11.18.0`, Lean `v4.31.0`, Temporal SDK `1.21.0`, Temporal CLI `v1.8.1`, CIB Seven artifacts `2.0.0`/`2.2.0`, and every direct package dependency remain exact in their owning manifests. Java is intentionally a checked Java 21 capability range rather than a vendor-specific binary pin; the doctor reports the resolved home used on the machine.
 
-Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MIWG_ROOT`. Those variables select another complete input for the named command; they do not allow the default gate or CI to omit an input.
+Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MIWG_ROOT`. Those variables select another complete input for the named command; they do not allow the default gate or CI to omit an input. `BPMN_EXTERNAL_ROOT` applies uniformly to all four setup/check/doctor scopes and to the optional A12 adoption harness.
 
 ## Coding-agent startup checklist
 
 1. Read the current checkpoint in [PLAN.md](PLAN.md) and exact implemented/absent boundary in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 2. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated work.
 3. Run `./scripts/doctor.sh verify`. If it reports missing external inputs, run `./scripts/setup-external-sources.sh verify`; if it reports missing workspace packages, install the frozen pnpm lock.
-4. Use `./scripts/setup-external-sources.sh all` and `./scripts/doctor.sh all` before a task that depends on any research checkout.
-5. Never report a skipped, well-formedness-only, web-substituted, or locally remembered lane as the registered evidence lane. Missing material is an infrastructure failure.
-6. Do not add an unregistered checkout, change a revision, or establish a fork without updating [SOURCES.md](SOURCES.md), the lock, license/provenance facts, and the applicable evidence owner in the same reviewed change.
+4. Use `./scripts/setup-external-sources.sh research` and `./scripts/doctor.sh research` before a task that depends on registered research checkouts.
+5. Use `./scripts/setup-external-sources.sh adoption` and `./scripts/test-a12-adoption.sh` only when the task explicitly needs the optional A12 exact-source evidence lane. Never infer A12 evidence from a green default gate.
+6. Never report a skipped, web-substituted, locally remembered, or absent selected lane as evidence. Missing material is an infrastructure failure for the lane that selected it; a lane outside the selected scope makes no claim.
+7. Do not add an unregistered checkout, change a revision, or establish a fork without updating [SOURCES.md](SOURCES.md), the lock, license/provenance facts, and the applicable evidence owner in the same reviewed change.
 
 ## Why the engine repository has no submodules
 
@@ -80,4 +91,4 @@ A fork is not a place to mix instrumentation into the pristine evidence baseline
 
 ## CI contract
 
-Both CI platforms provision the `verify` scope from the repository-owned lock and hash manifest before installing workspace packages and running the full gate. Network availability is part of provisioning, not semantic execution. Once provisioned, verification is fail-closed and offline with respect to those source identities; a missing or mismatched input fails before semantic claims are evaluated.
+Both CI platforms provision the `verify` scope from the repository-owned OMG hash manifest before installing workspace packages and running the full MIT engine gate. They do not fetch A12. Network availability is part of provisioning, not semantic execution. Once provisioned, verification is fail-closed and offline with respect to the normative corpus identity; a missing or mismatched input fails before semantic claims are evaluated. A hosted A12 adoption job may be added only as a separately named opt-in job that invokes the same fail-closed `adoption` scope and never becomes a prerequisite for the engine gate.

@@ -8,8 +8,8 @@ set -u
 
 scope=${1:-verify}
 case "$scope" in
-  verify|all) ;;
-  *) echo "usage: $0 [verify|all]" >&2; exit 2 ;;
+  verify|adoption|research|all) ;;
+  *) echo "usage: $0 [verify|adoption|research|all]" >&2; exit 2 ;;
 esac
 
 script_dir=${0%/*}

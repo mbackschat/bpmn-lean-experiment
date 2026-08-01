@@ -10,7 +10,7 @@ The [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) is implemented: 
 
 Use [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for the live implemented/absent boundary and [PLAN.md](docs/PLAN.md) for the active checkpoint and work order.
 
-A new machine does not need a prearranged external-source tree. The [contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md) and repository-owned setup/doctor scripts provision and verify every exact external input required by the selected work scope; missing material fails rather than reducing a gate.
+A new machine does not need a prearranged external-source tree. The [contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md) and repository-owned setup/doctor scripts provision and verify every exact external input required by the selected work scope; missing material fails the selected lane rather than reducing it. The default `verify` scope is complete for the MIT engine and never requires A12's EUPL source; downstream exact-source evidence is a separate, explicitly selected `adoption` scope.
 
 The doctor also inventories every declared external repository and submodule, every dependency-lock owner, and every known local/external cache root. It reports canonical remotes, immutable commits or exact tags, superproject gitlinks, manifest SHA-256 values, tool locations/versions, cache presence, and cache size so a contributor or coding agent can see the whole prepared workspace rather than only the first missing item.
 
@@ -126,6 +126,8 @@ Useful focused gates:
 ./scripts/pnpm.sh run test:temporal
 ./scripts/pnpm.sh run test:pipeline
 ```
+
+When a task explicitly needs the optional A12 exact-source evidence, provision and run it separately with `./scripts/setup-external-sources.sh adoption` followed by `./scripts/test-a12-adoption.sh`.
 
 The complete gate matrix and evidence boundaries are in [TESTING-SPEC.md](docs/TESTING-SPEC.md).
 
