@@ -1,4 +1,8 @@
+import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.Transition
@@ -9,4 +13,4 @@ import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcess.Fixtures
 
-/-! Import-only umbrella for the bounded Semantic Process lowering, operational semantics, reusable laws, scenario projection, and retained topology fixtures. -/
+/-! Import-only umbrella for checked-process admission, canonical lowering, Semantic Process validation and execution, reusable laws, scenario projection, and retained topology fixtures. -/

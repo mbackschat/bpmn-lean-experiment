@@ -20,6 +20,7 @@ const reviewedLargeFiles = new Map<string, string>();
 const leanUmbrellaModules = [
   "BpmnSemantics.lean",
   "BpmnSemantics/SemanticProcess.lean",
+  "BpmnSemantics/SemanticProcessJson.lean",
 ] as const;
 
 type SourceMeasurement = Readonly<{

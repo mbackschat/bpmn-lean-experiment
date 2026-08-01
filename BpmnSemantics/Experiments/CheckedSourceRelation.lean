@@ -1,7 +1,9 @@
 import BpmnSemantics.Experiments.CheckedSourceSemantics
 import BpmnSemantics.ParallelForkJoinConformance
 import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.UserTaskInteractionConformance
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelation — positional-lowering discriminator

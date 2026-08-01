@@ -1,5 +1,7 @@
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Semantic Process scenario projection
 

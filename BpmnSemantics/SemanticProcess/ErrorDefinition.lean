@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 
 /-! # Error definition admission and lowering
 
@@ -9,22 +9,12 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def nodeScopeId? (source : CheckedProcess) (nodeId : NodeId) :
-    Option DefinitionScopeId :=
-  (source.nodeScopes.find? fun ownership =>
-    decide (ownership.nodeId = nodeId)).map (·.scopeId)
-
 private def attachedChildScope? (source : CheckedProcess)
     (attachedToRef : NodeId) : Option DefinitionScopeId :=
   source.nodes.findSome? fun
     | .embeddedSubProcess id childScopeId =>
         if id = attachedToRef then some childScopeId else none
     | _ => none
-
-private def sequenceFlowScopeId? (source : CheckedProcess)
-    (flowId : SequenceFlowId) : Option DefinitionScopeId :=
-  (source.sequenceFlowScopes.find? fun ownership =>
-    decide (ownership.sequenceFlowId = flowId)).map (·.scopeId)
 
 /-- Lower the unique directly attached exact-code handler already required by checked admission. -/
 def lowerInterruptingErrorHandler (source : CheckedProcess)
@@ -72,12 +62,13 @@ private def directHandlerMatches (source : CheckedProcess)
         attachedChildScope? source attachedToRef = some throwingScopeId &&
         (source.definitionScopes.find? fun scope =>
           decide (scope.id = throwingScopeId)).bind (·.parentScopeId) =
-            nodeScopeId? source id &&
+            checkedNodeScopeId? source id &&
         source.sequenceFlows.any fun flow =>
           decide (
             flow.id = outputFlowId &&
             flow.sourceId = id &&
-            sequenceFlowScopeId? source flow.id = nodeScopeId? source id)
+            checkedSequenceFlowScopeId? source flow.id =
+              checkedNodeScopeId? source id)
   | _ => false
 
 /-- Require every Error End Event to have exactly one direct-parent, exact-code interrupting handler. -/
@@ -85,7 +76,7 @@ def checkedErrorHandlersValid (source : CheckedProcess) : Bool :=
   source.nodes.all fun
     | .errorEndEvent id error =>
         errorReferenceValid error &&
-          match nodeScopeId? source id with
+          match checkedNodeScopeId? source id with
           | none => false
           | some throwingScopeId =>
               (source.nodes.filter

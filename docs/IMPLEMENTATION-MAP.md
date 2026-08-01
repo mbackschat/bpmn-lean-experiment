@@ -245,7 +245,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - Project-owned strict JSON parser with duplicate-key, unpaired-surrogate, and safe-integer rejection
 - strict checked-graph, Semantic Process, and external scenario decoders with exact-key and closed-variant rejection
 - executable JSON edge-case and Unicode scalar-order locks
-- independent checked-graph validation with scope-tree/ownership plus empty/flowless/dangling regressions and standalone program graph validation for exact ownership, producer/consumer shape, reachability, co-reachability, and acyclicity
+- separate checked-process admission, Semantic Process structural validation, and cross-artifact binding owners; a narrow shared definition-artifact invariant owner contains only nonempty identity, lowercase SHA-256, and canonical string-order predicates, while the existing checked/program graph modules retain topology, ownership, producer/consumer, reachability, co-reachability, and acyclicity
 - canonical lowerer with definition-identity and Sequence-Flow-origin preservation laws
 - exact per-artifact lowering equality before evaluation
 - generic scope-owned flow-identified token-multiplicity runtime with root and child definition-scope occurrences
@@ -270,6 +270,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - ordinary embedded Sub-Process exact lowering, entry/two-child-wait prefix, both completion orders, sibling survival, quiescent child completion, outer continuation, root completion, generic nonquiescent-completion refusal, and stranded-child non-resumability
 - direct-parent Error exact lowering, declarative/executable `throwError` soundness, both child-command orders, regional subtree cancellation, monotonic counter preservation, unreachable normal output, stale-sibling refusal, root-work preservation, and global-cancellation non-law
 - generic catalog-driven result emitter that consumes and echoes the same admitted scenario documents
+- strict JSON role owners for answer-free scenarios, combined checked-process/program definitions with shared semantic-element decoders, and independently validated cross-artifact definition input, assembled through an enforced import-only umbrella
 - saturation-certified executable path completeness and declarative acyclicity
 - experiment-only split direct checked-node account, general operation-prefix order theorem, two-segment enabled-transition correspondence checkpoint, executable structured parser, declarative graph-derived tail and whole-process decomposition, tail-parser soundness, unique Start/End, complete node/Flow coverage, decomposition uniqueness up to branch exchange, positive reachability soundness, graph-derived single-token exact and two-token permutation enabled-list localization, and renamed public divergence
 

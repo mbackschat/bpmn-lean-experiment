@@ -73,6 +73,16 @@ def evaluateInputMappings : List VariableMapping →
       some [{ name := target, value := .string value }]
   | _ => none
 
+def singleStringLiteralMapping : List VariableMapping → Bool
+  | [{ target, expression := .stringLiteral value }] =>
+      !target.isEmpty && !value.isEmpty
+  | _ => false
+
+def singleLocalVariableMapping : List VariableMapping → Bool
+  | [{ target, expression := .localVariable name }] =>
+      !target.isEmpty && !name.isEmpty
+  | _ => false
+
 def applyEffectPatch
     (_arguments : List VariableBinding)
     (outputMappings : List VariableMapping)

@@ -31,23 +31,26 @@ private def normalizedFlowSource (nodes : List CheckedNode)
           if route.boundaryEventId = sourceId then some id else none
       | _ => none).getD sourceId
 
-private def nodeScope? (source : CheckedProcess) (nodeId : NodeId) :
+def checkedNodeScopeId? (source : CheckedProcess) (nodeId : NodeId) :
     Option DefinitionScopeId :=
   (source.nodeScopes.find? fun ownership =>
     decide (ownership.nodeId = nodeId)).map (·.scopeId)
 
-private def flowScope? (source : CheckedProcess) (flowId : SequenceFlowId) :
+def checkedSequenceFlowScopeId? (source : CheckedProcess)
+    (flowId : SequenceFlowId) :
     Option DefinitionScopeId :=
   (source.sequenceFlowScopes.find? fun ownership =>
     decide (ownership.sequenceFlowId = flowId)).map (·.scopeId)
 
 private def scopedNodes (source : CheckedProcess) (scopeId : DefinitionScopeId) :
     List CheckedNode :=
-  source.nodes.filter fun node => nodeScope? source (checkedNodeId node) == some scopeId
+  source.nodes.filter fun node =>
+    checkedNodeScopeId? source (checkedNodeId node) == some scopeId
 
 private def scopedFlows (source : CheckedProcess) (scopeId : DefinitionScopeId) :
     List CheckedSequenceFlow :=
-  source.sequenceFlows.filter fun flow => flowScope? source flow.id == some scopeId
+  source.sequenceFlows.filter fun flow =>
+    checkedSequenceFlowScopeId? source flow.id == some scopeId
 
 private def checkedEdges (source : CheckedProcess)
     (flows : List CheckedSequenceFlow) : List (GraphEdge NodeId) :=
