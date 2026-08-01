@@ -47,6 +47,9 @@ type CibRunnerResult = Readonly<{
     cleanup: Readonly<Record<string, number>>;
     stateQueries: ReadonlyArray<unknown>;
     taskQueries: ReadonlyArray<unknown>;
+    messageSubscriptions: ReadonlyArray<Readonly<{
+      subscriptions: ReadonlyArray<unknown>;
+    }>>;
     timerJobs: ReadonlyArray<unknown>;
     effectJobs: ReadonlyArray<Readonly<{
       jobs: ReadonlyArray<unknown>;
@@ -114,6 +117,11 @@ function requireCleanDiagnostics(
   if (!Array.isArray(result.diagnostics.timerJobs)) {
     throw new Error(
       `CIB scenario ${result.scenarioId} omitted raw timer-job observations`,
+    );
+  }
+  if (!Array.isArray(result.diagnostics.messageSubscriptions)) {
+    throw new Error(
+      `CIB scenario ${result.scenarioId} omitted raw Message-subscription observations`,
     );
   }
   if (
@@ -271,6 +279,14 @@ async function replaceEvidence() {
             producerObservations: {
               stateQueries: result.diagnostics.stateQueries,
               taskQueries: result.diagnostics.taskQueries,
+              ...(result.diagnostics.messageSubscriptions.some(
+                ({ subscriptions }) => subscriptions.length > 0,
+              )
+                ? {
+                    messageSubscriptions:
+                      result.diagnostics.messageSubscriptions,
+                  }
+                : {}),
               timerJobs: result.diagnostics.timerJobs,
               ...(result.diagnostics.effectJobs.some(
                 ({ jobs }) => jobs.length > 0,

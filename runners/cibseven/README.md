@@ -6,7 +6,7 @@ It is calibration infrastructure, not a reusable BPMN semantic kernel. A read-on
 
 Bounded test-only probes sit beside the retained oracle cases. The generated-ID consistency probe checks the host-identity premise of `CIB-OP-0001`. The Process-start/User Task completion-data phase-zero probe records first-task visibility of public start variables for selected [`CIB-EXT-0006`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0006--public-process-start-installs-initial-process-variables) plus task, runtime, and history variable maps for selected [`CIB-EXT-0005`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables), including present null, no-data, unknown-ID, and stale-ID controls. The schema-valid parallel-gateway probe sends two arrivals through one incoming flow while the other branch remains open and records the resulting downstream activation as candidate deviation [`CIB-DEV-0001`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-dev-0001--parallel-join-activates-from-duplicate-arrivals-through-one-incoming-flow). The Sub-Process Error-propagation phase-zero probe runs Trigger-first and Sibling-first against one exact project-authored source and records recovery-route selection at the public Process/task boundary under [`CIB-AGR-0008`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-agr-0008--exact-code-error-propagation-from-an-embedded-sub-process); it cannot expose hidden engine microsteps or internal cancellation representation. The balanced parallel cases calibrate only the normative fork/join slice; they do not turn that negative probe into a CIB parallel-compatibility claim.
 
-The Message-addressed Receive Task phase-zero probe deploys one project-authored payload-free source, observes the public Message subscription's activity, name, execution, and Process-instance facts, consumes it through `messageEventReceived`, and proves subscription removal plus Process completion before any Message-channel wire replacement under [`CIB-AGR-0009`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-agr-0009--message-addressed-receive-task-subscription-lifecycle). It does not claim that the CIB Message name exposes the BPMN Message ID or establish addressless signal, payload, correlation, or transport semantics.
+The Message-addressed Receive Task phase-zero probe deploys one project-authored payload-free source, observes the public Message subscription's activity, name, execution, and Process-instance facts, consumes it through `messageEventReceived`, and proves subscription removal plus Process completion before any Message-channel wire replacement under [`CIB-AGR-0009`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-agr-0009--message-addressed-receive-task-subscription-lifecycle). The ordinary runner now retains the same subscription lifecycle, derives the direct source Message ID from the deployed Receive Task definition, and maps the generated host subscription to canonical occurrence identity under [`CIB-OP-0005`](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-op-0005--cib-message-subscription-mapped-to-project-semantic-subscription-identity). It does not claim that the CIB Message name exposes the BPMN Message ID or establish addressless signal, payload, correlation, or transport semantics.
 
 ## Run
 
@@ -27,7 +27,7 @@ The script uses Homebrew Java 21 by default and the repository Maven wrapper.
 | Setting | Value |
 |---|---|
 | CIB Seven | `org.cibseven.bpm:cibseven-engine:2.2.0` |
-| BPMN Model API | Direct test-scope `org.cibseven.bpm.model:cibseven-bpmn-model` at the same release; already engine-transitive |
+| BPMN Model API | Direct `org.cibseven.bpm.model:cibseven-bpmn-model` at the same release; the main runner uses the typed deployed Receive Task reference and probes use the typed fixture builder |
 | Database | H2 `2.3.232`, isolated in memory per runner |
 | Java | Release 21 |
 | Automatic job executor | Disabled |
@@ -40,7 +40,7 @@ Canonical traces include only stable deployment, command, Process state, wait, o
 
 A wrong semantic occurrence is rejected by the oracle adapter before CIB host-task completion and leaves the task active. A stale completion is rejected after no matching live task remains. These mappings are classified in the [CIB–BPMN relationship register](../../docs/CIB-BPMN-RELATION-REGISTER.md), not mislabeled as raw CIB or BPMN identity semantics.
 
-Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query, timer-job, effect-job, effect-execution, and state-query snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open timers, open effects, enabled interactions, and the bounded Process-variable projection and therefore detects omitted tasks, timer-deadline drift, effect-handler drift, and final-variable drift while treating raw query order as non-semantic. Variable names enter that projection only after the corresponding semantic start or completion command has committed, so a future, rejected, wrong-activation, or stale submitted patch cannot influence the current observation. The persistent JSON-lines boundary preserves request identity and cleanup across all eight CIB Seven `2.2.0` scenarios.
+Diagnostics include engine/database versions, phase timings, the PVM definition projection, raw task-query, Message-subscription, timer-job, effect-job, effect-execution, and state-query snapshots, and post-run cleanup counts. Retained evidence stores the raw producer observations beside the canonical projection; the verifier independently reconstructs active waits, open tasks, open Message subscriptions, open timers, open effects, enabled interactions, and the bounded Process-variable projection and therefore detects omitted tasks or subscriptions, direct Message drift, timer-deadline drift, effect-handler drift, and final-variable drift while treating raw query order as non-semantic. Variable names enter that projection only after the corresponding semantic start or completion command has committed, so a future, rejected, wrong-activation, or stale submitted patch cannot influence the current observation. The persistent JSON-lines boundary preserves request identity and cleanup across all sixteen CIB Seven `2.2.0` scenarios.
 
 Ordinary verification never rewrites retained evidence. The explicit replacement operation is:
 
@@ -48,17 +48,21 @@ Ordinary verification never rewrites retained evidence. The explicit replacement
 ./scripts/pnpm.sh run replace:cib-evidence
 ```
 
-The package script supplies the exact replacement opt-in. The command executes all ten answer-free CIB scenarios through their pinned `2.2.0` or `2.0.0` runners, verifies producer identity and cleanup, and replaces only content-bound CIB evidence artifacts.
+The package script supplies the exact replacement opt-in. The command executes all eighteen answer-free CIB scenarios through their pinned `2.2.0` or `2.0.0` runners, verifies producer identity and cleanup, and replaces only content-bound CIB evidence artifacts.
 
 ## Source guide
 
 | File | Responsibility |
 |---|---|
 | [ScenarioProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) | Current typed scenario, trace, outcome, diagnostics, and PVM vocabulary |
+| [ScenarioInteractionProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioInteractionProtocol.java) | Closed canonical interaction union |
+| [ScenarioMessageProtocol.java](src/main/java/org/bpmnlean/cibseven/ScenarioMessageProtocol.java) | Message stimulus, channel, subscription, and interaction vocabulary |
 | [ScenarioJson.java](src/main/java/org/bpmnlean/cibseven/ScenarioJson.java) | Strict Jackson codec |
 | [ScenarioVariableBindings.java](src/main/java/org/bpmnlean/cibseven/ScenarioVariableBindings.java) | Canonical string/null binding-list validation and CIB engine-map projection shared by start and completion |
 | [CibSevenScenarioRunner.java](src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | Deploy/start/query/complete runner, clock control, projection, timing, and cleanup |
 | [CibSevenUserTaskProjector.java](src/main/java/org/bpmnlean/cibseven/CibSevenUserTaskProjector.java) | Engine-task-to-semantic-occurrence projection, deterministic sorting, and per-element wait multiplicity |
+| [CibSevenMessageSubscriptionGateway.java](src/main/java/org/bpmnlean/cibseven/CibSevenMessageSubscriptionGateway.java) | Public Message-subscription query and delivery with generated host identity kept local |
+| [CibSevenMessageProjector.java](src/main/java/org/bpmnlean/cibseven/CibSevenMessageProjector.java) | Exact Receive Task subscription, active-wait, direct-channel, and delivery-interaction projection |
 | [CibSevenPipelineExportBridge.java](src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | Explicit test-scope bridge used by the Node pipeline |
 | [CibSevenConsistencyProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenConsistencyProbeTest.java) | Bounded generated-ID rejection consistency witness |
 | [CibSevenUserTaskCompletionDataPhaseZeroProbeTest.java](src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskCompletionDataPhaseZeroProbeTest.java) | Public User Task variable read, completion merge, present-null, final-history, no-data, unknown-ID, and stale-ID calibration |

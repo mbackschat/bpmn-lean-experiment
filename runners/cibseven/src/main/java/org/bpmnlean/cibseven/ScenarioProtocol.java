@@ -71,6 +71,7 @@ public final class ScenarioProtocol {
 
   public enum WaitKind implements ScenarioWireValue {
     USER_TASK("userTask"),
+    MESSAGE("message"),
     TIMER("timer"),
     EFFECT("effect");
 
@@ -186,12 +187,16 @@ public final class ScenarioProtocol {
     @JsonSubTypes.Type(
         value = CompleteUserTaskInstanceStimulus.class,
         name = "completeUserTaskInstance"),
+    @JsonSubTypes.Type(
+        value = ScenarioMessageProtocol.DeliverMessageStimulus.class,
+        name = "deliverMessage"),
     @JsonSubTypes.Type(value = FireTimerStimulus.class, name = "fireTimer"),
     @JsonSubTypes.Type(value = CompleteEffectStimulus.class, name = "completeEffect")
   })
   public sealed interface Stimulus
       permits StartProcessStimulus,
           CompleteUserTaskInstanceStimulus,
+          ScenarioMessageProtocol.DeliverMessageStimulus,
           FireTimerStimulus,
           CompleteEffectStimulus {
     String commandId();
@@ -372,22 +377,6 @@ public final class ScenarioProtocol {
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
-    @JsonSubTypes.Type(
-        value = CompleteUserTaskInstanceInteraction.class,
-        name = "completeUserTaskInstance")
-  })
-  public sealed interface EnabledInteraction
-      permits CompleteUserTaskInstanceInteraction {}
-
-  public record CompleteUserTaskInstanceInteraction(UserTaskInstanceId taskId)
-      implements EnabledInteraction {
-    public CompleteUserTaskInstanceInteraction {
-      Objects.requireNonNull(taskId, "taskId");
-    }
-  }
-
-  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
-  @JsonSubTypes({
     @JsonSubTypes.Type(value = DeploymentObservation.class, name = "deployment"),
     @JsonSubTypes.Type(value = CommandObservation.class, name = "command"),
     @JsonSubTypes.Type(value = StateObservation.class, name = "state")
@@ -418,7 +407,7 @@ public final class ScenarioProtocol {
       List<OpenTimer> openTimers,
       List<OpenEffect> openEffects,
       List<VariableBinding> variables,
-      List<EnabledInteraction> enabledInteractions,
+      List<ScenarioInteractionProtocol.EnabledInteraction> enabledInteractions,
       long logicalTimeMs)
       implements CanonicalObservation {
     public StateObservation {
@@ -498,6 +487,7 @@ public final class ScenarioProtocol {
       PvmDefinitionProjection pvmDefinition,
       List<CibStateQueryEvidence.StateQuerySnapshot> stateQueries,
       List<TaskQuerySnapshot> taskQueries,
+      List<CibStateQueryEvidence.MessageSubscriptionSnapshot> messageSubscriptions,
       List<TimerJobSnapshot> timerJobs,
       List<EffectJobSnapshot> effectJobs,
       List<EffectExecutionSnapshot> effectExecutions,
@@ -513,6 +503,7 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(pvmDefinition, "pvmDefinition");
       stateQueries = List.copyOf(stateQueries);
       taskQueries = List.copyOf(taskQueries);
+      messageSubscriptions = List.copyOf(messageSubscriptions);
       timerJobs = List.copyOf(timerJobs);
       effectJobs = List.copyOf(effectJobs);
       effectExecutions = List.copyOf(effectExecutions);

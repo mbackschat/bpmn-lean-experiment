@@ -12,6 +12,7 @@ import type {
 import type {
   CibSevenEvidence,
   MappingExecutionSnapshot,
+  MessageSubscriptionEvidence,
   ProcessVariableSnapshot,
   TaskQueryTask,
   TimerJob,
@@ -41,13 +42,20 @@ export function verifyProducerProjection(
   const stateSnapshots = evidence.producerObservations.stateQueries;
   const taskSnapshots = evidence.producerObservations.taskQueries;
   const timerSnapshots = evidence.producerObservations.timerJobs;
+  const states = collectCanonicalStates(evidence.result.trace);
+  const messageSnapshots =
+    evidence.producerObservations.messageSubscriptions ??
+    states.map(({ afterCommandId }) => ({
+      afterCommandId,
+      subscriptions: [],
+    }));
   const effectSnapshots =
     evidence.producerObservations.effectJobs ??
     statesWithEmptyEffectSnapshots(evidence.result.trace);
-  const states = collectCanonicalStates(evidence.result.trace);
   if (
     states.length !== stateSnapshots.length ||
     states.length !== taskSnapshots.length ||
+    states.length !== messageSnapshots.length ||
     states.length !== timerSnapshots.length ||
     states.length !== effectSnapshots.length
   ) {
@@ -60,10 +68,12 @@ export function verifyProducerProjection(
     const stateSnapshot = stateSnapshots[index];
     const taskSnapshot = taskSnapshots[index];
     const timerSnapshot = timerSnapshots[index];
+    const messageSnapshot = messageSnapshots[index];
     const effectSnapshot = effectSnapshots[index];
     if (
       stateSnapshot === undefined ||
       taskSnapshot === undefined ||
+      messageSnapshot === undefined ||
       timerSnapshot === undefined ||
       effectSnapshot === undefined
     ) {
@@ -72,6 +82,7 @@ export function verifyProducerProjection(
     if (
       stateSnapshot.afterCommandId !== state.afterCommandId ||
       taskSnapshot.afterCommandId !== state.afterCommandId ||
+      messageSnapshot.afterCommandId !== state.afterCommandId ||
       timerSnapshot.afterCommandId !== state.afterCommandId ||
       effectSnapshot.afterCommandId !== state.afterCommandId
     ) {
@@ -94,12 +105,17 @@ export function verifyProducerProjection(
       expectedInstanceId,
       timerSnapshot.jobs,
     );
+    const messageProjection = projectMessageSubscriptions(
+      expectedInstanceId,
+      messageSnapshot.subscriptions,
+    );
     const effectProjection = projectEffectJobs(
       expectedInstanceId,
       effectSnapshot.jobs,
     );
     const activeWaits = [
       ...taskProjection.activeWaits,
+      ...messageProjection.activeWaits,
       ...timerProjection.activeWaits,
       ...effectProjection.activeWaits,
     ].sort((left, right) => {
@@ -124,11 +140,15 @@ export function verifyProducerProjection(
       status: stateProjection.status,
       activeWaits,
       openUserTasks: taskProjection.openUserTasks,
-      openMessageSubscriptions: [],
+      openMessageSubscriptions:
+        messageProjection.openMessageSubscriptions,
       openTimers: timerProjection.openTimers,
       openEffects: effectProjection.openEffects,
       variables: stateProjection.variables,
-      enabledInteractions: taskProjection.enabledInteractions,
+      enabledInteractions: [
+        ...taskProjection.enabledInteractions,
+        ...messageProjection.enabledInteractions,
+      ],
       logicalTimeMs: stateProjection.logicalTimeMs,
     };
     for (
@@ -377,6 +397,58 @@ function projectTimerJobs(
     .sort((left, right) =>
       compareTaskIdentities(left.id, right.id));
   return { activeWaits, openTimers };
+}
+
+function projectMessageSubscriptions(
+  instanceId: string,
+  subscriptions: ReadonlyArray<MessageSubscriptionEvidence>,
+): Pick<
+  StateObservation,
+  "activeWaits" | "openMessageSubscriptions" | "enabledInteractions"
+> {
+  type MessageInteraction = Extract<
+    StateObservation["enabledInteractions"][number],
+    { readonly subscriptionId: OccurrenceId }
+  >;
+  if (subscriptions.length > 1) {
+    throw new Error(
+      "producer Message projection supports one live Receive Task subscription",
+    );
+  }
+  for (const subscription of subscriptions) {
+    if (
+      !subscription.processInstanceIdMatches ||
+      !subscription.executionIdPresent
+    ) {
+      throw new Error(
+        "producer Message subscription omitted its live CIB identity",
+      );
+    }
+  }
+  const openMessageSubscriptions = subscriptions.map((subscription) => ({
+    id: {
+      processInstanceId: instanceId,
+      elementId: subscription.elementId,
+      activation: 1,
+    },
+    channel: {
+      kind: "directMessage" as const,
+      messageId: subscription.messageId,
+    },
+  }));
+  return {
+    activeWaits: subscriptions.map((subscription) => ({
+      elementId: subscription.elementId,
+      kind: "message" as const,
+      multiplicity: 1,
+    })),
+    openMessageSubscriptions,
+    enabledInteractions: openMessageSubscriptions.map((subscription) => ({
+      kind: "deliverMessage" as MessageInteraction["kind"],
+      subscriptionId: subscription.id,
+      channel: subscription.channel,
+    })),
+  };
 }
 
 function projectTaskQuery(

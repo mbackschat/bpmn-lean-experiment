@@ -127,9 +127,9 @@ The gate:
 - requires stable document kinds and no embedded format counters;
 - verifies scenario/profile SHA-256 bindings in retained CIB evidence;
 - requires every profile relationship ID to exist in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md);
-- checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, canonical unordered-array order, and raw CIB task-query, timer-job, effect-job, and effect-execution observations against their canonical projections, including an enforced empty Message-subscription projection because CIB is not a Message target;
+- checks cross-artifact source/profile/process identity, source-origin references, unique definition identifiers, canonical unordered-array order, and raw CIB task-query, Message-subscription, timer-job, effect-job, and effect-execution observations against their canonical projections; non-Message CIB cases retain enforced empty Message collections;
 - pins every schema integer to the JavaScript-safe range, checks Unicode scalar-value ordering across BMP and supplementary-plane identifiers without normalization, and rejects duplicate decoded keys and unpaired surrogates from exact JSON bytes;
-- distinguishes unknown and missing fields, closed-enum violations, explicit `null` from absence, unsafe and non-integral numbers, answer smuggling, stale evidence, unknown relationships, invalid task, Message, timer, or effect activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw producer observations, duplicate raw semantic task identities, unclaimed CIB Message-subscription drift, timer-deadline projection drift, raw Service Task binding drift, and neutral effect-operation drift.
+- distinguishes unknown and missing fields, closed-enum violations, explicit `null` from absence, unsafe and non-integral numbers, answer smuggling, stale evidence, unknown relationships, invalid task, Message, timer, or effect activation, dangling graph/program references, invalid gateway arity, definition identity drift, order-dependent definitions, omitted raw producer observations, duplicate raw semantic task identities, missing or changed retained CIB Message subscriptions, timer-deadline projection drift, raw Service Task binding drift, and neutral effect-operation drift.
 
 Retained CIB evidence is verifier-only. Target runners never receive it, and ordinary green runs never regenerate it.
 
@@ -185,7 +185,7 @@ The Java 21 runner deploys exact BPMN, starts a Process, queries active tasks an
 
 Compatible tests reuse one class-owned embedded engine instead of rebuilding the same H2/CIB configuration per test. The shared boundary-error phase-zero fixture still deploys one definition per test and requires zero deployments, runtime Processes, tasks, jobs, incidents, historic Processes, historic Activities, and historic variables before and after every session. Probes that require a distinct engine configuration remain isolated.
 
-PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw state-query, task-query, timer-job, and effect-job snapshots are retained as producer observations. The evidence verifier reconstructs status, waits, open interactions, Process variables, and logical time from them, while binding semantic instance identity to the answer-free start stimulus. Its reconstruction deliberately reuses the adapter's element-ID ordering, profile translation, and constant activation/state/argument rules rather than deriving them independently. Process variables are read from runtime or history only for names introduced by already committed start or completion commands; names from future, rejected, wrong-activation, or stale commands cannot influence an earlier/current observation. Mutations cover Process status, logical time, start and completion Process variables, initial parallel tasks, live siblings after stale completion, and timer deadlines. The CIB wait, scheduler eligibility, due transition, and completion are engine-observed; timer occurrence identity and logical deadline mapping are adapter-derived. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated deployment/runtime/history cleanup.
+PVM definition data remains diagnostic. Generated engine IDs are excluded from canonical identity. Raw state-query, task-query, Message-subscription, timer-job, and effect-job snapshots are retained as producer observations. The evidence verifier reconstructs status, waits, open interactions, Process variables, and logical time from them, while binding semantic instance identity to the answer-free start stimulus. Its reconstruction deliberately reuses the adapter's element-ID ordering, profile translation, and constant activation/state/argument rules rather than deriving them independently. Process variables are read from runtime or history only for names introduced by already committed start or completion commands; names from future, rejected, wrong-activation, or stale commands cannot influence an earlier/current observation. Mutations cover Process status, logical time, start and completion Process variables, initial parallel tasks, live siblings after stale completion, direct Message identity and subscription removal, and timer deadlines. The CIB wait, scheduler eligibility, due transition, and completion are engine-observed; timer occurrence identity and logical deadline mapping are adapter-derived. The consistency probe supports only the host-identity premise of `CIB-OP-0001`; it is not activation-ordinal evidence. The duplicate-same-flow probe is calibration evidence only: it does not enter the normative balanced target result or production semantic account. Every retained scenario must report a clean projection after teardown, and each bounded probe owns isolated deployment/runtime/history cleanup.
 
 The owner-approved local feedback target for the complete two-release CIB gate is 10–15 seconds with compiled test classes. This is a diagnostic target, not a CI assertion: cold compilation and host contention remain visible rather than being hidden by a relaxed bound. Under competing background CPU work, record POSIX `time -p` `real`, `user`, and `sys`; `real` captures the experienced delay, while `user` and `sys` measure only the gate's process tree and therefore separate repository work from unrelated background CPU. Never compare a new run until an interrupted predecessor's process group is confirmed terminated.
 
@@ -198,8 +198,8 @@ This table classifies the complete current field denominator of `scenario.schema
 | `kind` | `not-claimed` | Canonical wire discriminator |
 | `instanceId` | `not-claimed` | Scenario-supplied semantic identity, never a generated CIB Process-instance ID |
 | `status` | `adapter-derived` | `running` or `completed` from retained public Process-instance query count |
-| `activeWaits` | `adapter-derived` | Merge, semantic-kind rank, and Unicode element-ID sort over retained task/timer/effect facts; the retained CIB cases have no Message wait |
-| `activeWaits[].elementId` | `engine-observed` | Task definition key or job-definition Activity ID |
+| `activeWaits` | `adapter-derived` | Merge, semantic-kind rank, and Unicode element-ID sort over retained task/subscription/timer/effect facts |
+| `activeWaits[].elementId` | `engine-observed` | Task definition key, Message-subscription Activity ID, or job-definition Activity ID |
 | `activeWaits[].kind` | `adapter-derived` | Classification by the engine collection and admitted host relation |
 | `activeWaits[].multiplicity` | `adapter-derived` | Count of retained live facts after unsupported repeated timer/effect identities are refused |
 | `openUserTasks` | `adapter-derived` | Canonical projection and sort over retained public task-query rows |
@@ -209,16 +209,16 @@ This table classifies the complete current field denominator of `scenario.schema
 | `openUserTasks[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
 | `openUserTasks[].name` | `engine-observed` | Public task name, including `null` |
 | `openUserTasks[].state` | `adapter-decided` | Canonical `active` stamp for rows returned by the live-task query |
-| `openMessageSubscriptions` | `not-claimed` | The Message capsule has no CIB target; every retained CIB projection is explicitly empty |
-| `openMessageSubscriptions[].id` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].id.processInstanceId` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].id.elementId` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].id.activation` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].channel` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].channel.kind` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].channel.interfaceId` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].channel.interfaceOperationId` | `not-claimed` | No retained CIB Message-subscription projection |
-| `openMessageSubscriptions[].channel.messageId` | `not-claimed` | No retained CIB Message-subscription projection |
+| `openMessageSubscriptions` | `adapter-derived` | Canonical singleton projection over the retained public Receive Task subscription under `CIB-OP-0005`; other retained CIB cases are empty |
+| `openMessageSubscriptions[].id` | `adapter-derived` | Composite semantic subscription occurrence identity |
+| `openMessageSubscriptions[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `openMessageSubscriptions[].id.elementId` | `engine-observed` | Public Message-subscription Activity ID |
+| `openMessageSubscriptions[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated or concurrent subscriptions are refused |
+| `openMessageSubscriptions[].channel` | `adapter-decided` | The exact admitted Receive Task profile selects a direct source Message reference |
+| `openMessageSubscriptions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` discriminant |
+| `openMessageSubscriptions[].channel.interfaceId` | `not-claimed` | Structurally absent from the direct-Message arm |
+| `openMessageSubscriptions[].channel.interfaceOperationId` | `not-claimed` | Structurally absent from the direct-Message arm |
+| `openMessageSubscriptions[].channel.messageId` | `adapter-decided` | Deployed Receive Task Message reference; CIB's public subscription API exposes only its Message name |
 | `openTimers` | `adapter-derived` | Canonical projection and sort over retained timer-job rows |
 | `openTimers[].id` | `adapter-derived` | Composite semantic timer occurrence identity |
 | `openTimers[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
@@ -243,24 +243,24 @@ This table classifies the complete current field denominator of `scenario.schema
 | `variables[].value` | `adapter-derived` | Raw nullable string projected into the canonical discriminated value |
 | `variables[].value.kind` | `adapter-derived` | `string` or `null` selected from the raw host value |
 | `variables[].value.value` | `engine-observed` | Exact host string when the value is non-null |
-| `enabledInteractions` | `adapter-derived` | One completion interaction per retained live User Task |
-| `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects `completeUserTaskInstance` |
-| `enabledInteractions[].subscriptionId` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].subscriptionId.processInstanceId` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].subscriptionId.elementId` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].subscriptionId.activation` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].channel` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].channel.kind` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].channel.interfaceId` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].channel.interfaceOperationId` | `not-claimed` | No retained CIB Message-delivery interaction |
-| `enabledInteractions[].channel.messageId` | `not-claimed` | No retained CIB Message-delivery interaction |
+| `enabledInteractions` | `adapter-derived` | One project command interaction per retained live User Task or Receive Task Message subscription |
+| `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects task completion or Message delivery from the retained host collection |
+| `enabledInteractions[].subscriptionId` | `adapter-derived` | Reuses the projected Message subscription occurrence |
+| `enabledInteractions[].subscriptionId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `enabledInteractions[].subscriptionId.elementId` | `engine-observed` | Public Message-subscription Activity ID |
+| `enabledInteractions[].subscriptionId.activation` | `adapter-decided` | Same singleton ordinal as the projected subscription |
+| `enabledInteractions[].channel` | `adapter-decided` | Reuses the profile-owned direct Message channel |
+| `enabledInteractions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` discriminant |
+| `enabledInteractions[].channel.interfaceId` | `not-claimed` | Structurally absent from the direct-Message arm |
+| `enabledInteractions[].channel.interfaceOperationId` | `not-claimed` | Structurally absent from the direct-Message arm |
+| `enabledInteractions[].channel.messageId` | `adapter-decided` | Same deployed Receive Task Message reference as the projected subscription |
 | `enabledInteractions[].taskId` | `adapter-derived` | Reuses the projected User Task occurrence |
 | `enabledInteractions[].taskId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
 | `enabledInteractions[].taskId.elementId` | `engine-observed` | Public task definition key |
 | `enabledInteractions[].taskId.activation` | `adapter-decided` | Same unsupported singleton ordinal as the projected User Task |
 | `logicalTimeMs` | `adapter-derived` | Retained controlled engine-clock reading relative to the fixed logical epoch |
 
-Retained `stateQueries` bind canonical status, logical time, and the bounded Process-variable projection to raw public runtime/history queries and the controlled engine clock. The projector's set of eligible variable names is derived only from start or completion commands after the runner observes their committed semantic outcome; this prevents scenario look-ahead and rejected-command leakage while leaving each retained name and raw nullable value engine-observed. Task, timer, and effect snapshots continue to bind the five wait/interaction collections. `kind` remains schema-guarded, while every semantic instance component is checked against the answer-free start stimulus rather than a generated host ID. The verifier deliberately shares the Java projector's projection rules, so it establishes raw-to-canonical consistency and is not a third independent semantic producer.
+Retained `stateQueries` bind canonical status, logical time, and the bounded Process-variable projection to raw public runtime/history queries and the controlled engine clock. The projector's set of eligible variable names is derived only from start or completion commands after the runner observes their committed semantic outcome; this prevents scenario look-ahead and rejected-command leakage while leaving each retained name and raw nullable value engine-observed. Task, Message-subscription, timer, and effect snapshots bind the five wait/interaction collections. `kind` remains schema-guarded, while every semantic instance component is checked against the answer-free start stimulus rather than a generated host ID. The verifier deliberately shares the Java projector's projection rules, so it establishes raw-to-canonical consistency and is not a third independent semantic producer.
 
 The neutral layer repair did not increase source-binding independence. Lean independently recomputes and checks neutral checked-graph-to-program lowering. The raw Camunda binding to neutral protocol/operation translation is performed by the shared source/profile projection and rechecked by the CIB raw-binding mutation; Lean does not derive that translation from source bytes.
 

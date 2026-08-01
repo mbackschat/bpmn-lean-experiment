@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.EFFECT;
+import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.MESSAGE;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.TIMER;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.USER_TASK;
 import static org.junit.Assert.assertEquals;
@@ -26,10 +27,12 @@ public class CibSevenActiveWaitProjectorTest {
     assertEquals(
         List.of(
             new ActiveWait("Z_UserTask", USER_TASK, 1),
+            new ActiveWait("B_Message", MESSAGE, 1),
             new ActiveWait("A_Timer", TIMER, 1),
             new ActiveWait("M_Effect", EFFECT, 1)),
         projector.project(
             List.of(new ActiveWait("Z_UserTask", USER_TASK, 1)),
+            List.of(new ActiveWait("B_Message", MESSAGE, 1)),
             List.of(openTimer("A_Timer")),
             List.of(openEffect("M_Effect"))));
   }
@@ -40,6 +43,7 @@ public class CibSevenActiveWaitProjectorTest {
         IllegalStateException.class,
         () ->
             projector.project(
+                List.of(),
                 List.of(),
                 List.of(openTimer("Timer_A"), openTimer("Timer_A")),
                 List.of()));

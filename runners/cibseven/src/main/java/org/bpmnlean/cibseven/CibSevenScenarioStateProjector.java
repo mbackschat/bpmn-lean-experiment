@@ -7,12 +7,13 @@ import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.ProcessVariableSnapshot;
+import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscriptionSnapshot;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.StateQuerySnapshot;
 import org.bpmnlean.cibseven.CibSevenUserTaskProjector.HostUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.CleanupProjection;
-import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
+import org.bpmnlean.cibseven.ScenarioInteractionProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectJobSnapshot;
-import org.bpmnlean.cibseven.ScenarioProtocol.EnabledInteraction;
+import org.bpmnlean.cibseven.ScenarioInteractionProtocol.EnabledInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenTimer;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.TaskQuerySnapshot;
@@ -33,6 +34,7 @@ final class CibSevenScenarioStateProjector {
   private final ProcessEngine processEngine;
   private final CibSevenUserTaskProjector userTaskProjector;
   private final CibSevenEffectProjector effectProjector;
+  private final CibSevenMessageProjector messageProjector;
   private final CibSevenActiveWaitProjector activeWaitProjector;
   private final Date logicalEpoch;
 
@@ -40,11 +42,13 @@ final class CibSevenScenarioStateProjector {
       ProcessEngine processEngine,
       CibSevenUserTaskProjector userTaskProjector,
       CibSevenEffectProjector effectProjector,
+      CibSevenMessageProjector messageProjector,
       CibSevenActiveWaitProjector activeWaitProjector,
       Date logicalEpoch) {
     this.processEngine = processEngine;
     this.userTaskProjector = userTaskProjector;
     this.effectProjector = effectProjector;
+    this.messageProjector = messageProjector;
     this.activeWaitProjector = activeWaitProjector;
     this.logicalEpoch = logicalEpoch;
   }
@@ -95,11 +99,14 @@ final class CibSevenScenarioStateProjector {
     var activeWaits = userTaskProjector.activeWaits(hostTasks);
     var openUserTasks =
         userTaskProjector.openUserTasks(stableInstanceId, hostTasks);
-    var enabledInteractions =
+    var taskInteractions =
         openUserTasks.stream()
             .<EnabledInteraction>map(
                 task -> new CompleteUserTaskInstanceInteraction(task.id()))
             .toList();
+    var messages =
+        messageProjector.project(
+            engineInstanceId, stableInstanceId, afterCommandId);
     var timerJobSnapshot = observeTimerJobs(engineInstanceId, afterCommandId, isRunning);
     var openTimers =
         timerJobSnapshot.jobs().stream()
@@ -122,7 +129,13 @@ final class CibSevenScenarioStateProjector {
             .map(CibSevenEffectProjector.ProjectedEffectWait::openEffect)
             .toList();
     var allWaits =
-        activeWaitProjector.project(activeWaits, openTimers, openEffects);
+        activeWaitProjector.project(
+            activeWaits, messages.activeWaits(), openTimers, openEffects);
+    var enabledInteractions =
+        java.util.stream.Stream.concat(
+                taskInteractions.stream(),
+                messages.enabledInteractions().stream())
+            .toList();
     var engineClockTimeMs = ClockUtil.getCurrentTime().getTime();
     var logicalTimeMs = engineClockTimeMs - logicalEpoch.getTime();
     var rawVariables =
@@ -141,7 +154,7 @@ final class CibSevenScenarioStateProjector {
             isRunning ? RUNNING : COMPLETED,
             allWaits,
             openUserTasks,
-            List.of(),
+            messages.openSubscriptions(),
             openTimers,
             openEffects,
             variables,
@@ -153,6 +166,7 @@ final class CibSevenScenarioStateProjector {
             engineClockTimeMs,
             rawVariables),
         taskQuery,
+        messages.evidence(),
         timerJobSnapshot,
         new EffectJobSnapshot(
             afterCommandId,
@@ -267,6 +281,7 @@ final class CibSevenScenarioStateProjector {
       StateObservation state,
       StateQuerySnapshot stateQuery,
       TaskQuerySnapshot taskQuery,
+      MessageSubscriptionSnapshot messageSubscriptions,
       TimerJobSnapshot timerJobs,
       EffectJobSnapshot effectJobs) {}
 }

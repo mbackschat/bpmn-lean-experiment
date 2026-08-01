@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.Objects;
 
-/** Message-specific canonical wire records retained as empty projections by the CIB runner. */
+/** Message-specific canonical wire records shared by the CIB runner and scenario contract. */
 public final class ScenarioMessageProtocol {
 
   private ScenarioMessageProtocol() {}
@@ -52,6 +52,26 @@ public final class ScenarioMessageProtocol {
       MessageSubscriptionId id, MessageChannel channel) {
     public OpenMessageSubscription {
       Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(channel, "channel");
+    }
+  }
+
+  public record DeliverMessageStimulus(
+      String commandId,
+      MessageSubscriptionId subscriptionId,
+      MessageChannel channel) implements ScenarioProtocol.Stimulus {
+    public DeliverMessageStimulus {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(subscriptionId, "subscriptionId");
+      Objects.requireNonNull(channel, "channel");
+    }
+  }
+
+  public record DeliverMessageInteraction(
+      MessageSubscriptionId subscriptionId, MessageChannel channel)
+      implements ScenarioInteractionProtocol.EnabledInteraction {
+    public DeliverMessageInteraction {
+      Objects.requireNonNull(subscriptionId, "subscriptionId");
       Objects.requireNonNull(channel, "channel");
     }
   }

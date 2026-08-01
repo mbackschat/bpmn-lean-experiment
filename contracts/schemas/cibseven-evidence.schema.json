@@ -80,6 +80,12 @@
             "$ref": "#/$defs/taskQuerySnapshot"
           }
         },
+        "messageSubscriptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/messageSubscriptionSnapshot"
+          }
+        },
         "timerJobs": {
           "type": "array",
           "items": {
@@ -250,6 +256,58 @@
           "items": {
             "$ref": "#/$defs/timerJob"
           }
+        }
+      }
+    },
+    "messageSubscriptionSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterCommandId",
+        "subscriptions"
+      ],
+      "properties": {
+        "afterCommandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subscriptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/messageSubscriptionEvidence"
+          },
+          "maxItems": 1
+        }
+      }
+    },
+    "messageSubscriptionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "eventName",
+        "messageId",
+        "processInstanceIdMatches",
+        "executionIdPresent"
+      ],
+      "properties": {
+        "elementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "eventName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "messageId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "processInstanceIdMatches": {
+          "const": true
+        },
+        "executionIdPresent": {
+          "const": true
         }
       }
     },

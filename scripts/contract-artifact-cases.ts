@@ -47,6 +47,12 @@ export const artifactCases = Object.freeze([
   }),
   Object.freeze({
     scenarioRelativePath:
+      "scenarios/message-addressed-receive-task/scenario.json",
+    evidenceRelativePath:
+      "scenarios/message-addressed-receive-task/cibseven-evidence.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
       "scenarios/service-task-effect/scenario.json",
     evidenceRelativePath:
       "scenarios/service-task-effect/cibseven-evidence.json",

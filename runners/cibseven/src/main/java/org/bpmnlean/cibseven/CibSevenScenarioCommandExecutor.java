@@ -4,6 +4,8 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 
 import java.util.Date;
+import org.bpmnlean.cibseven.ScenarioMessageProtocol.DeliverMessageStimulus;
+import org.bpmnlean.cibseven.ScenarioMessageProtocol.DirectMessageChannel;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
@@ -13,12 +15,13 @@ import org.bpmnlean.cibseven.ScenarioProtocol.SuccessfulEffectResult;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
 
-/** Executes the three admitted CIB command realizations against one engine instance. */
+/** Executes the admitted CIB command realizations against one engine instance. */
 final class CibSevenScenarioCommandExecutor {
 
   private final ProcessEngine processEngine;
   private final CibSevenEffectProjector effectProjector;
   private final CibSevenEffectProbe effectProbe;
+  private final CibSevenMessageSubscriptionGateway messageGateway;
   private final Date logicalEpoch;
 
   CibSevenScenarioCommandExecutor(
@@ -29,7 +32,31 @@ final class CibSevenScenarioCommandExecutor {
     this.processEngine = processEngine;
     this.effectProjector = effectProjector;
     this.effectProbe = effectProbe;
+    this.messageGateway = new CibSevenMessageSubscriptionGateway(processEngine);
     this.logicalEpoch = logicalEpoch;
+  }
+
+  CommandOutcome deliverMessage(
+      String engineInstanceId,
+      String stableInstanceId,
+      DeliverMessageStimulus delivery) {
+    var submitted = delivery.subscriptionId();
+    if (!submitted.processInstanceId().equals(stableInstanceId)
+        || submitted.activation() != 1
+        || !(delivery.channel() instanceof DirectMessageChannel channel)) {
+      return REJECTED;
+    }
+    var subscriptions = messageGateway.find(engineInstanceId);
+    if (subscriptions.size() != 1) {
+      return REJECTED;
+    }
+    var subscription = subscriptions.getFirst();
+    if (!subscription.elementId().equals(submitted.elementId())
+        || !subscription.messageId().equals(channel.messageId())) {
+      return REJECTED;
+    }
+    messageGateway.deliver(subscription);
+    return COMMITTED;
   }
 
   CommandOutcome completeUserTaskInstance(

@@ -122,6 +122,19 @@ type TimerJobSnapshot = Readonly<{
   jobs: ReadonlyArray<TimerJob>;
 }>;
 
+export type MessageSubscriptionEvidence = Readonly<{
+  elementId: string;
+  eventName: string;
+  messageId: string;
+  processInstanceIdMatches: boolean;
+  executionIdPresent: boolean;
+}>;
+
+type MessageSubscriptionSnapshot = Readonly<{
+  afterCommandId: string;
+  subscriptions: ReadonlyArray<MessageSubscriptionEvidence>;
+}>;
+
 export type EffectJob = Readonly<{
   elementId: string;
   activation: number;
@@ -165,6 +178,7 @@ export type CibSevenEvidence = Readonly<{
   producerObservations: Readonly<{
     stateQueries: ReadonlyArray<StateQuerySnapshot>;
     taskQueries: ReadonlyArray<TaskQuerySnapshot>;
+    messageSubscriptions?: ReadonlyArray<MessageSubscriptionSnapshot>;
     timerJobs: ReadonlyArray<TimerJobSnapshot>;
     effectJobs?: ReadonlyArray<EffectJobSnapshot>;
     effectExecutions?: ReadonlyArray<EffectExecutionSnapshot>;

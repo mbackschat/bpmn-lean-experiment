@@ -41,7 +41,6 @@
       <groupId>org.cibseven.bpm.model</groupId>
       <artifactId>cibseven-bpmn-model</artifactId>
       <version>${cibseven.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>

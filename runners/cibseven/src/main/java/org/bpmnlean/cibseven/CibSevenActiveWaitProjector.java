@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.EFFECT;
+import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.MESSAGE;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.TIMER;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.USER_TASK;
 
@@ -21,9 +22,11 @@ final class CibSevenActiveWaitProjector {
 
   List<ActiveWait> project(
       List<ActiveWait> userTaskWaits,
+      List<ActiveWait> messageWaits,
       List<OpenTimer> openTimers,
       List<OpenEffect> openEffects) {
     var projected = new ArrayList<>(userTaskWaits);
+    projected.addAll(messageWaits);
     var timerElements = new HashSet<String>();
     for (var timer : openTimers) {
       var elementId = timer.id().elementId();
@@ -57,8 +60,9 @@ final class CibSevenActiveWaitProjector {
   private static int kindRank(WaitKind kind) {
     return switch (kind) {
       case USER_TASK -> 0;
-      case TIMER -> 1;
-      case EFFECT -> 2;
+      case MESSAGE -> 1;
+      case TIMER -> 2;
+      case EFFECT -> 3;
     };
   }
 }

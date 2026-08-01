@@ -34,4 +34,26 @@ public final class CibStateQueryEvidence {
       Objects.requireNonNull(name, "name");
     }
   }
+
+  /** Raw public-subscription facts plus the adapter-decided deployed Message identity. */
+  public record MessageSubscriptionSnapshot(
+      String afterCommandId, List<MessageSubscription> subscriptions) {
+    public MessageSubscriptionSnapshot {
+      Objects.requireNonNull(afterCommandId, "afterCommandId");
+      subscriptions = List.copyOf(subscriptions);
+    }
+  }
+
+  public record MessageSubscription(
+      String elementId,
+      String eventName,
+      String messageId,
+      boolean processInstanceIdMatches,
+      boolean executionIdPresent) {
+    public MessageSubscription {
+      Objects.requireNonNull(elementId, "elementId");
+      Objects.requireNonNull(eventName, "eventName");
+      Objects.requireNonNull(messageId, "messageId");
+    }
+  }
 }

@@ -182,15 +182,15 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0009 — Message-addressed Receive Task subscription lifecycle
 
-**Status:** Reviewed bounded agreement; phase-zero evidence and the source/Lean/semantic-core checkpoint are complete, while retained CIB projection remains pending
+**Status:** Reviewed bounded agreement with retained public-subscription evidence
 
 **BPMN basis:** BPMN 2.0.2 Clause 10 and Table 10.10 define a Receive Task as waiting for a Message from an external Participant and completing when that Message is received. Clause 13.3.3 repeats that activation waits for the associated Message and that Message arrival completes the Activity.
 
 **Pinned CIB observation:** CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017` starts one exact project-authored None Start → Message-addressed Receive Task → None End Process and exposes exactly one public Message event subscription. The subscription reports the Receive Task activity ID, the root Message name, the live Process-instance ID, and a generated execution ID. Delivering through `messageEventReceived(subscription.eventName, subscription.executionId)` removes the subscription and completes the Process.
 
-**Evidence:** [Project-authored phase-zero BPMN fixture](../scenarios/message-addressed-receive-task/process.bpmn), [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenReceiveTaskPhaseZeroProbeTest.java), [Receive Task proposal](capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md), and [CIB runner documentation](../runners/cibseven/README.md).
+**Evidence:** [Project-authored scenario and exact BPMN fixture](../scenarios/message-addressed-receive-task/README.md), [content-bound retained evidence](../scenarios/message-addressed-receive-task/cibseven-evidence.json), [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenReceiveTaskPhaseZeroProbeTest.java), [Receive Task proposal](capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md), and [CIB runner documentation](../runners/cibseven/README.md).
 
-**Fidelity boundary:** Subscription existence, activity ID, event name, generated execution ID, Process-instance ID, removal, and Process completion are engine-observed through public CIB services. The Message name is a source-admission fact only in the project: it never enters the checked graph, Semantic Process program, runtime state, or canonical observation. CIB does not expose the BPMN Message ID through this subscription API, so canonical `messageId`, semantic Process-instance identity, and activation remain adapter-derived or adapter-decided when retained canonical evidence lands.
+**Fidelity boundary:** Subscription existence, activity ID, event name, generated execution ID, Process-instance ID, removal, and Process completion are engine-observed through public CIB services. Retained evidence records the generated identities only as presence/match facts and never exports them as comparison keys. The Message name is a source-admission fact only in the project: it never enters the checked graph, Semantic Process program, runtime state, or canonical observation. CIB does not expose the BPMN Message ID through this subscription API, so `CIB-OP-0005` maps the deployed Receive Task reference to the adapter-decided canonical `messageId`; semantic Process-instance identity and activation remain adapter supplied.
 
 **Boundary:** This agreement is limited to one private executable Process with one non-instantiating, payload-free Receive Task carrying one direct `messageRef`, one named root Message, and no `operationRef`, Message Flow, Collaboration, correlation key, loop, Multi-Instance, boundary Event, or data association. It does not cover the addressless CIB execution-signal path, pre-activation delivery, Message buffering, transport binding, Web-service realization, payload, global correlation, repeated activation, or general Receive Task compatibility.
 
@@ -344,6 +344,18 @@ The proposed project host does not treat JUEL as an application effect or expose
 **Evidence:** [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), [packaged-engine gateway rollback probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java), and the [Temporal hosting preflight](research/TEMPORAL-EXECUTION-RESEARCH.md#expression-language-hosting).
 
 **Boundary:** The private continuation is a project durability mechanism, not a CIB or BPMN public state. Syntax rejection remains an admission failure. Temporal Worker loss, timeout, malformed transport, cancellation, and exhausted retries remain infrastructure or adapter failures; terminal Activity failure discards the continuation, fails the originating Update outside the semantic result algebra, preserves the committed User Task wait, and resumes the queued input loop. This mapping does not authorize a general transaction emulator, arbitrary expression side effects, or rollback of external effects.
+
+### CIB-OP-0005 — CIB Message subscription mapped to project semantic subscription identity
+
+**Status:** Reviewed operational mapping selected by the Receive Task capsule
+
+CIB creates a generated execution identity for the public Message event subscription and addresses delivery through the subscription's Message name plus execution ID. BPMN does not prescribe either host identity, while the project addresses an exact runtime occurrence by `(Process instance, BPMN element, activation ordinal)` and checks the source Message ID through a closed `directMessage` channel.
+
+For the one admitted non-repeating Receive Task, the oracle adapter maps the sole live CIB subscription's activity ID to activation `1`, replaces CIB's generated Process-instance identity with the scenario's stable semantic instance identity, and derives the direct Message ID from the deployed Receive Task definition rather than equating it with CIB's event name. It keeps the generated execution ID local to the public query/delivery call. Missing, multiple, mismatched, or already consumed subscriptions are refused before public delivery.
+
+This mapping preserves the subscription lifecycle classified by `CIB-AGR-0009` without claiming identity equivalence across CIB, Lean, TypeScript, and Temporal. Evidence belongs to the [Message-addressed Receive Task scenario](../scenarios/message-addressed-receive-task/README.md), its content-bound retained result, and the [Receive Task capsule](capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md).
+
+**Boundary:** The mapping is limited to one live, direct-Message, activation-`1` Receive Task subscription in one Process instance. It does not establish Message-name/Message-ID equivalence, general correlation, repeated activation, multiple subscriptions, buffered delivery, Message Event compatibility, or global Message routing.
 
 ## Configuration-specific register
 

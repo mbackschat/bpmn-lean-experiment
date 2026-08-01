@@ -1,0 +1,155 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-addressed-receive-task",
+    "sha256": "8703e5be116373bb61972f937e1b21c790d6e77265a531ce9b640004bb51f5a9"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-message-addressed-receive-task-draft",
+    "sha256": "edac5f01249e87fc0c8be82b6bfa21b80c36108baf9468e908328adf7440ca83"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-receive-task",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "deliver-receive-task-message",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-receive-task",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-receive-task-message",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-receive-task",
+        "subscriptions": [
+          {
+            "elementId": "ReceiveTask_WaitForInvoice",
+            "eventName": "newInvoiceMessage",
+            "messageId": "Message_NewInvoice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-receive-task-message",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-receive-task",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-receive-task-message",
+        "jobs": []
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-receive-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ReceiveTaskInstance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ReceiveTask_WaitForInvoice",
+            "kind": "message",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [
+          {
+            "id": {
+              "processInstanceId": "ReceiveTaskInstance_1",
+              "elementId": "ReceiveTask_WaitForInvoice",
+              "activation": 1
+            },
+            "channel": {
+              "kind": "directMessage",
+              "messageId": "Message_NewInvoice"
+            }
+          }
+        ],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [],
+        "enabledInteractions": [
+          {
+            "kind": "deliverMessage",
+            "subscriptionId": {
+              "processInstanceId": "ReceiveTaskInstance_1",
+              "elementId": "ReceiveTask_WaitForInvoice",
+              "activation": 1
+            },
+            "channel": {
+              "kind": "directMessage",
+              "messageId": "Message_NewInvoice"
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-receive-task-message",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ReceiveTaskInstance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

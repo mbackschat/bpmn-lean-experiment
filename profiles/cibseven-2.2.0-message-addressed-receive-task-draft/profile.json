@@ -1,0 +1,81 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-message-addressed-receive-task-draft",
+  "status": "immutable",
+  "claim": "message-addressed-receive-task-direct-payload-free",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.2.0",
+    "revision": "834a9874760de8a0107f7c1b32806e37f17fb017"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "message-addressed-receive-task",
+      "payload-free-message",
+      "direct-message-reference",
+      "direct-subscription-addressing",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "direct-subscription-addressing"
+    ],
+    "relationships": [
+      "CIB-AGR-0009",
+      "CIB-OP-0005",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "addressless-receive-task",
+    "operation-addressed-receive-task",
+    "receive-task-instantiation",
+    "web-service-transport-realization",
+    "message-payload",
+    "message-item-definition",
+    "message-name-as-canonical-identity",
+    "business-key-correlation",
+    "bpmn-correlation-key",
+    "message-flow",
+    "collaboration",
+    "modeled-message-throw",
+    "message-start-event",
+    "message-boundary-event",
+    "event-subprocess",
+    "repeated-message-activation",
+    "loops",
+    "multi-instance",
+    "subprocesses",
+    "cancellation",
+    "concurrent-commands",
+    "a12-adoption-coverage"
+  ]
+}

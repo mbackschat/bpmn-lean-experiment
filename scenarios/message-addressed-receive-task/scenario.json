@@ -1,0 +1,56 @@
+{
+  "kind": "scenario",
+  "id": "message-addressed-receive-task",
+  "profile": "cibseven-2.2.0-message-addressed-receive-task-draft",
+  "bpmn": {
+    "id": "message-addressed-receive-task-process",
+    "relativePath": "scenarios/message-addressed-receive-task/process.bpmn",
+    "sha256": "2793f384239ccc0cc4fd9a6d558b53f97c8a3ec724083cf1702d684861397b2a"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-receive-task",
+      "processId": "Process_MessageAddressedReceiveTaskProbe",
+      "instanceId": "ReceiveTaskInstance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "deliverMessage",
+      "commandId": "deliver-receive-task-message",
+      "subscriptionId": {
+        "processInstanceId": "ReceiveTaskInstance_1",
+        "elementId": "ReceiveTask_WaitForInvoice",
+        "activation": 1
+      },
+      "channel": {
+        "kind": "directMessage",
+        "messageId": "Message_NewInvoice"
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §8.4.2",
+      "BPMN 2.0.2 §10 Table 10.10",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java"
+    ]
+  }
+}

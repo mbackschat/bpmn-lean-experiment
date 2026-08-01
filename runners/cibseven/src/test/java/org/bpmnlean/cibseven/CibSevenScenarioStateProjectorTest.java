@@ -37,6 +37,8 @@ public class CibSevenScenarioStateProjectorTest {
                 engine,
                 new CibSevenUserTaskProjector(),
                 new CibSevenEffectProjector(),
+                new CibSevenMessageProjector(
+                    new CibSevenMessageSubscriptionGateway(engine)),
                 new CibSevenActiveWaitProjector(),
                 new Date(0));
 

@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceInteraction;
+import org.bpmnlean.cibseven.ScenarioInteractionProtocol.CompleteUserTaskInstanceInteraction;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.OpenUserTask;
 import org.bpmnlean.cibseven.ScenarioProtocol.NullValue;
@@ -40,6 +40,8 @@ public class CibSevenScenarioRunnerTest {
       PROJECT_ROOT.resolve("scenarios/parallel-fork-join");
   private static final Path EMBEDDED_SUBPROCESS_ROOT =
       PROJECT_ROOT.resolve("scenarios/embedded-subprocess-completion");
+  private static final Path RECEIVE_TASK_ROOT =
+      PROJECT_ROOT.resolve("scenarios/message-addressed-receive-task");
   private static CibSevenScenarioRunner runner;
 
   @BeforeClass
@@ -111,6 +113,30 @@ public class CibSevenScenarioRunnerTest {
     assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
     assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
     // end::cib-user-task-probe[]
+  }
+
+  @Test
+  public void projectsAndConsumesTheDirectMessageReceiveTaskSubscription()
+      throws Exception {
+    var scenario = ScenarioJson.read(RECEIVE_TASK_ROOT.resolve("scenario.json"));
+    var evidence =
+        ScenarioJson.readEvidenceResult(
+            RECEIVE_TASK_ROOT.resolve("cibseven-evidence.json"));
+
+    var result = runner.run(scenario, PROJECT_ROOT);
+
+    assertEquals(evidence.outcome(), result.outcome());
+    assertEquals(evidence.trace(), result.trace());
+    assertEquals(
+        "newInvoiceMessage",
+        result
+            .diagnostics()
+            .messageSubscriptions()
+            .getFirst()
+            .subscriptions()
+            .getFirst()
+            .eventName());
+    assertEquals(ScenarioProtocol.CleanupProjection.clean(), result.diagnostics().cleanup());
   }
 
   @Test
