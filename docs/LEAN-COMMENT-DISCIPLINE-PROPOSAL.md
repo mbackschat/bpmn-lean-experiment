@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. The reviewed implementation is complete and its immutable target will be recorded by a docs-only follow-up; the required external fresh-session closure review remains pending before this proposal is archived or deleted.
+Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. Implementation closure target `db7c94c` is committed and pending the required external fresh-session closure review before this proposal is archived or deleted; external-session isolation has not yet been attested.
 
 ## Decision requested
 
@@ -14,7 +14,7 @@ Approve a Lean commenting contract that increases locally available semantic inf
 |---|---|---|---|---|
 | Proposal | `995dfd8` | `external-fresh-session` | `approve-with-required-edits` | `c882d9c` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `db7c94c` | `not-recorded` | `pending` | `not-applicable` |
 
 This proposal does not select BPMN meaning, a profile, a runtime representation, a proof boundary, or a Temporal refinement claim, so no semantic checkpoint is required. The requested proposal review is nevertheless external and read-only because the main risk is a governance rule whose incentives produce worse source.
 
