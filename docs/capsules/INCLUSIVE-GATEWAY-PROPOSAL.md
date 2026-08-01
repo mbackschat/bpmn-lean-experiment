@@ -2,17 +2,17 @@
 
 ## Status
 
-**Draft proposal. Not owner-approved; no implementation is authorized. The independent proposal review returned required edits; correction audit is pending.**
+**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. Implementation is authorized within the exact proposal boundary.**
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `16904dd` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `16904dd` | `external-fresh-session` | `approve-with-required-edits` | `0b52d15` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its completed external fresh-session review remains valid; the receipt stays pending until the same reviewer audits the correction target. Every later review target uses the same-model/same-effort `fork-turns-none` rule.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its external fresh-session review remains valid; the same reviewer passed correction audit `0b52d15` without a material redesign. Every later review target uses the same-model/same-effort `fork-turns-none` rule.
 
 ## Exact question
 
@@ -43,7 +43,7 @@ The admitted document contains exactly one self-contained `Definitions` and one 
 
 `Definitions.expressionLanguage` is exactly `urn:bpmn-lean:expression:simple-boolean:v1`. Both conditional Flows contain one admitted BPMN `tFormalExpression`; neither has a per-expression language override. The default has no condition. The representative fixture uses `isPresent("takeA")` and `isPresent("takeB")`, but the profile admits any two independently valid Simple Boolean v1 bodies.
 
-All nodes and Sequence Flows belong to the root definition scope. Every reference resolves, every branch runs directly from the split through its User Task to the join, and the graph is acyclic, reachable, and co-reachable. There is no alternate entry, exit, cross-branch Flow, nested scope, boundary Event, loop characteristic, or additional incoming Flow at either Gateway. For each Gateway, `gatewayDirection` may be omitted, `unspecified`, or equal to the direction derived from this admitted arity; an opposite direction is rejected. This follows the CMOF default and the implemented Parallel and Exclusive Gateway admission convention while retaining topology-derived direction as the authority. Source admission tests must distinguish all four forms rather than proving only the representative omission.
+All nodes and Sequence Flows belong to the root definition scope. Every reference resolves, every branch runs directly from the split through its User Task to the join, and the graph is acyclic, reachable, and co-reachable. There is no alternate entry, exit, cross-branch Flow, nested scope, boundary Event, loop characteristic, or additional incoming Flow at either Gateway. For each Gateway, `gatewayDirection` may be omitted, `unspecified`, or equal to the direction derived from this admitted arity; an opposite direction and the `mixed` literal are rejected because the admitted arity is not mixed. This follows the CMOF default and the implemented Parallel and Exclusive Gateway admission convention while retaining topology-derived direction as the authority. Source admission tests must distinguish omitted, `unspecified`, matching, opposite, and `mixed` forms rather than proving only the representative omission.
 
 XML declaration order and Gateway incoming/outgoing reference order are non-semantic. Admission and lowering preserve each Sequence Flow identity while canonicalizing contract collections. Candidate evaluation order is non-semantic because Table 13.3 explicitly permits any evaluation order and every expression is pure, total after admission, and evaluated against the same committed Process bindings.
 
@@ -210,4 +210,4 @@ After independent proposal review, approve or reject these choices together:
 4. a standards-first Lean/TypeScript/Temporal target set with no CIB relationship or evidence lane in the first capsule; and
 5. the exact exclusions and atomic pre-release replacement policy above.
 
-Implementation may begin only after the warm correction audit by the original proposal reviewer closes every required finding and explicit owner approval is recorded in this Status section. Its later semantic-checkpoint and closure reviews use context-cold sub-agents under the prospective policy.
+Implementation may proceed within the exact approved boundary. Its semantic-checkpoint and closure reviews use context-cold same-effort sub-agents under the current policy.
