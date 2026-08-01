@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. The proposal review gate is complete and the proposal is ready for owner decision. It is not owner-approved and authorizes no source, instruction, or gate changes.
+Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. Implementation is authorized under the reviewed scope; closure review remains required before the proposal is archived or deleted.
 
 ## Decision requested
 
