@@ -4,18 +4,20 @@ This document owns source provenance and controlled reference navigation. Refere
 
 Hosted verification also executes external GitHub Actions. Their exact revisions are recorded where they are used, as a commit pin plus a version comment on each `uses:` line in [.github/workflows/verify.yml](../.github/workflows/verify.yml); that file owns them, and this document deliberately keeps no second copy to drift from it.
 
-Local external reference trees are checked out under `~/Projects/oss`. Treat that location as a portable workspace convention rather than source identity: the repository and revision recorded for each source below remain authoritative, and the checkouts remain read-only research inputs unless an explicitly named experiment follows the instrumentation policy.
+Local external reference trees live by default under repository sibling `../oss`; `BPMN_EXTERNAL_ROOT` selects another shared root. The machine-readable [`external-sources.lock`](../scripts/external-sources.lock) binds every registered top-level Git tree and Git submodule below to its canonical GitHub remote, full revision, immutable commit/exact-tag classification, relative path, material kind, and provisioning scope. Branch and release names in this document provide human provenance context only; the 40-character commit is the immutable identity, and an exact tag is additionally checked only when it resolves to that commit. The [contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md) owns clean-machine commands, complete dependency/cache inventory, diagnosis, and the decision to use an exact lock rather than engine-repository submodules. The repositories and revisions recorded here remain provenance authority, and the checkouts remain read-only research inputs unless an explicitly named experiment follows the instrumentation policy.
+
+Run `./scripts/setup-external-sources.sh verify` for every input required by the default gate, or `./scripts/setup-external-sources.sh all` before source-grounded research. `./scripts/doctor.sh verify` and `./scripts/doctor.sh all` are the corresponding read-only preflights. No evidence lane may silently skip or degrade when a registered input is absent.
 
 ## Project-created local reference checkouts
 
-The following checkouts under `~/Projects/oss` were cloned specifically for this project. Future research must inspect the applicable trees rather than relying only on remembered summaries or web search. The links are root-relative workspace navigation; the repository and evidence revision remain the source identity.
+The following checkouts under default sibling `../oss` were cloned specifically for this project. Future research must inspect the applicable trees rather than relying only on remembered summaries or web search. The links show the default workspace navigation; the repository and evidence revision remain the source identity when `BPMN_EXTERNAL_ROOT` selects another location.
 
 | Local checkout | Repository and evidence revision | Project role |
 |---|---|---|
 | [`cibseven/cibseven`](../../oss/cibseven/cibseven) | `cibseven/cibseven` at `5a45b47ea22688d774de97277c3ff7013f54fdd2` | Pinned complete CIB Seven source oracle and diagnostic reference |
 | [`temporal/sdk-typescript`](../../oss/temporal/sdk-typescript) | `temporalio/sdk-typescript` at `2595d1b62cf5c3ff1748df0df2f9b303902bb31c` | TypeScript SDK implementation evidence |
 | [`temporal/samples-typescript`](../../oss/temporal/samples-typescript) | `temporalio/samples-typescript` at `fb0aa23d75394a132646de883842dfacdacd5aa0` | Concrete Workflow, Activity, testing, and interpreter examples |
-| [`temporal/documentation`](../../oss/temporal/documentation) | `temporalio/documentation` at `16c1899a0380eaf3457a0b163b2b2232c39a5d` | Temporal behavior and operational contract documentation |
+| [`temporal/documentation`](../../oss/temporal/documentation) | `temporalio/documentation` at `16c1899a0380eaf3457a0b163b2b2b2232c39a5d` | Temporal behavior and operational contract documentation |
 | [`bpmn-io/bpmn-moddle`](../../oss/bpmn-io/bpmn-moddle) | `bpmn-io/bpmn-moddle` at `47d8f75eed773829f20537adbb7086b290096006` | BPMN XML and metamodel implementation reference |
 | [`bpmn-miwg/bpmn-miwg-test-suite`](../../oss/bpmn-miwg/bpmn-miwg-test-suite) | `bpmn-miwg/bpmn-miwg-test-suite` at `cb2629519cee6280ab521f99dc46a9815a221a35` | BPMN interchange corpus |
 | [`uniba-dsg/betsy`](../../oss/uniba-dsg/betsy) | `uniba-dsg/betsy` at `fd402415665e914ba7e4d9948de66c4156f08bab` | Historical cross-engine execution cases |
@@ -23,6 +25,15 @@ The following checkouts under `~/Projects/oss` were cloned specifically for this
 | [`webassembly-spec`](../../oss/webassembly-spec) | `WebAssembly/spec` at `dfa3f32a881aecc60a8c792da3c25787ccb15572` | Specification/interpreter/conformance-workbench precedent |
 | [`wasm-spectec`](../../oss/wasm-spectec) | `Wasm-DSL/spectec` at `acc6e834ff403c82554d081237f327346190ad96` | SpecTec development and multi-backend mechanization evidence |
 | [`spectec`](../../oss/spectec) | `zilinc/spectec` at `6191426aeaa1e9a30f2372526b5d1018eb34f0ac` | Generated Lean/Isabelle experiment evidence |
+
+Four of those exact trees declare source submodules. They are material parts of the registered research source rather than incidental Git metadata, so setup initializes them and the preflight checks the canonical remote, superproject gitlink, exact checkout revision, and cleanliness independently:
+
+| Local submodule checkout | Repository and superproject-pinned revision | Owning checkout |
+|---|---|---|
+| [`temporal/sdk-typescript/packages/core-bridge/sdk-core`](../../oss/temporal/sdk-typescript/packages/core-bridge/sdk-core) | `temporalio/sdk-rust` at `3dac9013b9031e5ffd51d7335838585b2db42efb` | `temporal/sdk-typescript` |
+| [`webassembly-spec/document/core/util/katex`](../../oss/webassembly-spec/document/core/util/katex) | `KaTeX/KaTeX` tag `v0.13.19` at `e751278cff42fada16dba6df331fda52aaa90f73` | `webassembly-spec` |
+| [`wasm-spectec/document/core/util/katex`](../../oss/wasm-spectec/document/core/util/katex) | `KaTeX/KaTeX` tag `v0.13.19` at `e751278cff42fada16dba6df331fda52aaa90f73` | `wasm-spectec` |
+| [`spectec/document/core/util/katex`](../../oss/spectec/document/core/util/katex) | `KaTeX/KaTeX` tag `v0.13.19` at `e751278cff42fada16dba6df331fda52aaa90f73` | `spectec` |
 
 The pre-existing A12 sibling checkouts were not cloned for this project and therefore are not part of this registry. Their exact inspected revisions and roles remain recorded in their owning sections below. Ignore unknown or unregistered repositories and folders; local presence alone never makes a tree a project research input.
 
@@ -47,7 +58,7 @@ Project-authored code and documentation are released under the root [MIT License
 |---|---|---|
 | Lean `v4.31.0` toolchain and Lake | Apache-2.0 in the installed distribution and the [upstream Lean repository](https://github.com/leanprover/lean4) | External toolchain, not vendored or redistributed; it retains its own license |
 | Lake packages | `lake-manifest.json` records an empty `packages` array | No external Lean package license enters the tracked source or package graph |
-| Shell verification tools | Git, `jq`, `xmllint`, and `shasum` are environment prerequisites | Invoked as external tools and not distributed by this repository |
+| Shell verification tools | Git, curl, `jq`, `xmllint`, and either `shasum` or `sha256sum` are environment prerequisites | Invoked as external tools and not distributed by this repository; setup fetches exact inputs and doctor verifies availability |
 | Node and pnpm | Node `24.18.0` and pnpm `11.18.0`; Homebrew formulae report MIT | External runtime and package manager; exact nvm/asdf pins and a non-mutating Homebrew fallback are tracked; the project wrapper disables pnpm's automatic project-driven CLI switching after performing its own exact version check so offline and sandboxed runs cannot stall in a hidden tool download |
 | TypeScript compiler graph | `typescript@7.0.2` and the resolved `@typescript/typescript-darwin-arm64@7.0.2` platform package are Apache-2.0 | Development-only compiler; exact integrities are locked, packages are not vendored, and no runtime dependency enters the semantic core |
 | Node TypeScript declarations | Direct development dependency `@types/node@24.13.3` and its locked `undici-types@7.18.2` dependency are MIT | Strict no-emit checking for directly executed Node TypeScript harnesses only; Node 24 performs runtime type stripping, neither package enters runtime or the semantic core, and both are removable if Node later supplies an equivalent checked declaration surface |
@@ -74,7 +85,7 @@ The normative standard source is OMG **Business Process Model and Notation, Vers
 - `https://www.omg.org/spec/BPMN/machine-readable`
 - `https://issues.omg.org/issues/spec/BPMN/2.0.2`
 
-The downloaded PDF, digital-first Markdown conversion, figures, and normative CMOF/XSD/XSLT files are described in the local [BPMN 2.0.2 reference corpus](reference/bpmn-2.0.2/README.md). They are Git-ignored because the full Markdown is a modified copy of the copyrighted standard; the tracked [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md) is an original project digest.
+The downloaded PDF, normative CMOF/XSD/XSLT files, informative examples, and optional digital-first conversion cache are described by the tracked [BPMN 2.0.2 reference pointer](reference/bpmn-2.0.2/README.md). The source material lives outside this repository at the default sibling `../oss/omg-bpmn-2.0.2`; the project fetches only official OMG inputs and verifies their tracked hashes before installation. The full Markdown is a modified copy of the copyrighted standard and remains external; the tracked [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md) is an original project digest.
 
 ## Architecture handoff
 
@@ -175,7 +186,7 @@ The [`dsl-interpreter`](https://github.com/temporalio/samples-typescript/tree/fb
 
 ## Temporal documentation
 
-Pinned baseline checkout: [temporalio/documentation at `16c1899`](https://github.com/temporalio/documentation/tree/16c1899a0380eaf3457a0b163b2b2232c39a5d)
+Pinned baseline checkout: [temporalio/documentation at `16c1899`](https://github.com/temporalio/documentation/tree/16c1899a0380eaf3457a0b163b2b2b2232c39a5d)
 
 - Remote: `https://github.com/temporalio/documentation.git`
 - Inspected revision: `16c1899a0380eaf3457a0b163b2b2b2232c39a5d`

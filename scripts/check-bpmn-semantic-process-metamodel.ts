@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseStrictJson } from "./strict-json.ts";
@@ -45,11 +46,13 @@ const manifestPath = fileURLToPath(
     import.meta.url,
   ),
 );
-const cmofPath = fileURLToPath(
-  new URL(
-    "../docs/reference/bpmn-2.0.2/machine-readable/BPMN20.cmof",
-    import.meta.url,
-  ),
+const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
+  projectRoot,
+  "../oss",
+);
+const cmofPath = process.env["BPMN_CMOF_PATH"] ?? path.join(
+  externalRoot,
+  "omg-bpmn-2.0.2/machine-readable/BPMN20.cmof",
 );
 
 function requireRecord(
@@ -169,8 +172,10 @@ function decodeMetamodelManifest(text: string): MetamodelManifest {
 try {
   await access(cmofPath);
 } catch {
-  console.log("BPMN_SEMANTIC_PROCESS_METAMODEL_CHECK skipped: local normative CMOF is absent");
-  process.exit(0);
+  console.error(
+    `BPMN normative CMOF is absent at ${cmofPath}; run ./scripts/setup-external-sources.sh verify or set BPMN_CMOF_PATH`,
+  );
+  process.exit(1);
 }
 
 const manifest = decodeMetamodelManifest(await readFile(manifestPath, "utf8"));

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
+import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   BpmnCompilationStatus,
@@ -40,6 +42,7 @@ const createDocumentUrl = new URL(
   "../../../scenarios/create-document-data/process.bpmn",
   import.meta.url,
 );
+const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 // The retained scenario is a tracked answer-free document locked by the
 // contract gate, so its declared type is the current wire contract.
 const scenario = JSON.parse(
@@ -454,19 +457,24 @@ test("rejects executable drift outside the exact A12 CreateDocument profile", as
   }
 });
 
-test("admits the registered A12 CreateDocument checkout unchanged when available", async (context) => {
-  const targetUrl = new URL(
-    "../../../../oss/a12/a12-workflows/workflows-engine/src/testFixtures/resources/bpmn/CreateDocument.bpmn",
-    import.meta.url,
+test("admits the registered A12 CreateDocument checkout unchanged", async () => {
+  const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
+    projectRoot,
+    "../oss",
+  );
+  const targetPath = path.join(
+    externalRoot,
+    "a12/a12-workflows/workflows-engine/src/testFixtures/resources/bpmn/CreateDocument.bpmn",
   );
   try {
-    await access(targetUrl);
+    await access(targetPath);
   } catch {
-    context.skip("registered A12 Workflows checkout is unavailable");
-    return;
+    assert.fail(
+      `registered A12 Workflows source is absent at ${targetPath}; run ./scripts/setup-external-sources.sh verify`,
+    );
   }
 
-  const sourceBytes = await readFile(targetUrl);
+  const sourceBytes = await readFile(targetPath);
   const result = await compileBpmnToSemanticProcess({
     bytes: sourceBytes,
     sourceId: "a12-workflows-create-document",

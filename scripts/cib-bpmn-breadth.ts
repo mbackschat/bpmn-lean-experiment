@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -137,11 +137,14 @@ const candidateMetricNames = [
   "receiveTask.withoutMessageRef",
 ] as const;
 
-const defaultCorpusRoot = fileURLToPath(
-  new URL(
-    "../../oss/cibseven/cibseven/engine/src/test/resources/org/cibseven/bpm/engine/test/bpmn/",
-    import.meta.url,
-  ),
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
+  projectRoot,
+  "../oss",
+);
+const defaultCorpusRoot = path.join(
+  externalRoot,
+  "cibseven/cibseven/engine/src/test/resources/org/cibseven/bpm/engine/test/bpmn",
 );
 
 export function classifyBpmnXml(xml: string): BpmnBreadthClassification {
@@ -586,6 +589,15 @@ async function main(): Promise<void> {
     );
   }
   const corpusRoot = path.resolve(suppliedRoot ?? defaultCorpusRoot);
+  if (suppliedRoot === undefined) {
+    try {
+      await access(corpusRoot);
+    } catch {
+      throw new Error(
+        `pinned CIB Seven checkout is absent at ${corpusRoot}; run ./scripts/setup-external-sources.sh all`,
+      );
+    }
+  }
   const report = await inventoryCibBpmnCorpus(corpusRoot);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }

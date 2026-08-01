@@ -17,6 +17,18 @@ juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibse
 receive_task_probe_path="$project_root/scenarios/message-addressed-receive-task/process.bpmn"
 
 test -f "$maven_settings"
+"$project_root/scripts/check-external-sources.sh" verify
+
+# The pending Receive Task semantic-review barrier freezes the Java runner tree.
+# Its retained A12 source witness still resolves the default sibling directly,
+# so this entry point fails instead of letting that JUnit witness skip when a
+# custom external root is selected. Remove this compatibility preflight when
+# the approved post-review runner edit makes the witness honor the shared root.
+runner_a12_model="$project_root/../oss/a12/a12-workflows/workflows-engine/src/testFixtures/resources/bpmn/TestProcessWithRelationshipModeledDocumentModels_DocRef.bpmn"
+if ! test -f "$runner_a12_model"; then
+  echo "CIB Seven's retained A12 witness requires $runner_a12_model while the runner tree is review-frozen; provision the default ../oss root before running this gate" >&2
+  exit 1
+fi
 
 "$project_root/scripts/validate-bpmn-xml.sh" \
   "$sequential_bpmn_path" \

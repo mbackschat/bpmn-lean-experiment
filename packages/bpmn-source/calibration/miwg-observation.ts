@@ -5,7 +5,7 @@
  * place, requires the pinned revision, and records only how far each model gets
  * at the current source/profile boundary. It is not an execution-conformance
  * claim, so a rejected model is an expected classification rather than a
- * failure. It skips silently when the checkout is absent.
+ * failure. Missing evidence is an infrastructure failure, never a skip.
  */
 import assert from "node:assert/strict";
 import { readFile, readdir, access } from "node:fs/promises";
@@ -20,9 +20,13 @@ import {
 } from "@bpmn-lean/bpmn-source";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const defaultSuiteRoot = path.resolve(
+const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
   projectRoot,
-  "../oss/bpmn-miwg/bpmn-miwg-test-suite",
+  "../oss",
+);
+const defaultSuiteRoot = path.join(
+  externalRoot,
+  "bpmn-miwg/bpmn-miwg-test-suite",
 );
 const suiteRoot = process.env["BPMN_MIWG_ROOT"] ?? defaultSuiteRoot;
 const expectedRevision = "cb2629519cee6280ab521f99dc46a9815a221a35";
@@ -30,8 +34,9 @@ const expectedRevision = "cb2629519cee6280ab521f99dc46a9815a221a35";
 try {
   await access(suiteRoot);
 } catch {
-  console.log("BPMN_MIWG_IMPORT skipped: pinned local checkout is absent");
-  process.exit(0);
+  throw new Error(
+    `pinned MIWG checkout is absent at ${suiteRoot}; run ./scripts/setup-external-sources.sh all or set BPMN_MIWG_ROOT`,
+  );
 }
 
 const actualRevision = execFileSync("git", ["rev-parse", "HEAD"], {

@@ -26,7 +26,7 @@ switch (compilation.status) {
 
 The parser deadline bounds Promise settlement but cannot preempt synchronous parser CPU. Production handling of untrusted uploads still requires Worker or process isolation.
 
-The bounded [CMOF-derived manifest](src/bpmn-2.0.2-semantic-process-metamodel.json) records only the types, inheritance, references, multiplicities, containment, and defaults consumed by this compiler. The local checker compares those facts with the exact ignored normative `BPMN20.cmof` when available. It does not claim a complete BPMN metamodel or operational semantics.
+The bounded [CMOF-derived manifest](src/bpmn-2.0.2-semantic-process-metamodel.json) records only the types, inheritance, references, multiplicities, containment, and defaults consumed by this compiler. The local checker compares those facts with the exact external normative `BPMN20.cmof`; absence is an infrastructure failure, never a skipped or reduced metamodel lane. It does not claim a complete BPMN metamodel or operational semantics.
 
 Run the focused gate:
 

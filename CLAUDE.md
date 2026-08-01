@@ -30,8 +30,9 @@ Never claim BPMN conformance or CIB compatibility beyond the exact profile and e
 1. Read the current checkpoint and exact resume point in [PLAN.md](docs/PLAN.md).
 2. Read the implemented/absent boundary in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md).
 3. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes.
-4. Run the current applicable gate from [TESTING-SPEC.md](docs/TESTING-SPEC.md).
-5. Take the first incomplete work item unless the user explicitly changes scope.
+4. Run `./scripts/doctor.sh verify`. It inventories every declared external pin, dependency owner, and cache even when the selected scope does not require all of them. On a fresh machine, follow [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md); provision missing inputs rather than weakening or skipping their lanes. Run the `all` setup and doctor scope before source-grounded work using registered research checkouts.
+5. Run the current applicable gate from [TESTING-SPEC.md](docs/TESTING-SPEC.md).
+6. Take the first incomplete work item unless the user explicitly changes scope.
 
 Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely on chat history for project state.
 
@@ -47,7 +48,7 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 | Temporal adapter, interpreter hosting, production lifecycle, replay, messaging, Activities, retries, timers, cancellation, or deployment | [TEMPORAL-EXECUTION-RESEARCH.md](docs/research/TEMPORAL-EXECUTION-RESEARCH.md) and the [production lifecycle specification](docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) |
 | Refinement, equivalence, liveness, fairness, TLA+, or auxiliary formal tools | [TLA-AND-BISIMULATION-RESEARCH.md](docs/research/TLA-AND-BISIMULATION-RESEARCH.md) |
 | CIB Seven or Temporal source instrumentation/acceleration | [REFERENCE-INSTRUMENTATION-POLICY.md](docs/REFERENCE-INSTRUMENTATION-POLICY.md) |
-| External checkout or fixture provenance | [SOURCES.md](docs/SOURCES.md) |
+| External checkout, clean-machine setup, or fixture provenance | [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md) and [SOURCES.md](docs/SOURCES.md) |
 
 Read the complete selected document before acting on it.
 
@@ -248,6 +249,7 @@ Use one owner for each fact and link to it elsewhere:
 | External-system and semantic-background findings | [docs/research](docs/research/README.md) |
 | Bounded executable questions and results | [docs/experiments](docs/experiments/README.md) |
 | Gates, evidence lanes, and test procedure | [TESTING-SPEC.md](docs/TESTING-SPEC.md) |
+| Clean-machine and coding-agent setup | [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md) |
 | External revisions, licenses, and checkout navigation | [SOURCES.md](docs/SOURCES.md) |
 
 Before adding, renaming, moving, graduating, archiving, or deleting a document, follow [DOC-DISCIPLINE.md](docs/DOC-DISCIPLINE.md). `-SPEC` is reserved for an implemented current contract; approved but unimplemented intent remains `-PROPOSAL`. Write one Markdown paragraph per line without hard wrapping. Use regular relative Markdown links for other project documents. Update the owner and every index or inbound link in the same change, and avoid copying live inventories.
@@ -262,11 +264,11 @@ The rationale and transfer limits for the semantic-capsule workflow are recorded
 
 Reference checkouts are research inputs, never runtime dependencies of Lean or the semantic core. Navigate them through relative links recorded in [SOURCES.md](docs/SOURCES.md); never commit absolute home paths, usernames, hostnames, credentials, or machine-specific state.
 
-External reference trees are available under `~/Projects/oss`. Whenever an external implementation is relevant to the current question, inspect the applicable pinned checkout there before relying on memory, generated summaries, or web search; do not skip the local source lane merely because it sits outside this repository. If a relevant repository is absent, clone it there on demand so research can use efficient local source inspection such as `rg`; keep the checkout a read-only research input, pin the exact revision used, and record its remote, revision, license, and role in [SOURCES.md](docs/SOURCES.md). Cloning a reference repository does not approve it as a project dependency or semantic authority.
+External reference trees live by default under repository sibling `../oss`, with `BPMN_EXTERNAL_ROOT` as the portable override. Use the exact repository-owned setup and doctor workflow in [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md); never rely on a machine already containing the trees. Whenever an external implementation is relevant, inspect the applicable pinned checkout before relying on memory, generated summaries, or web search. An absent or mismatched registered input is an infrastructure failure, not permission to skip the lane. Cloning a reference repository does not approve it as a project dependency or semantic authority.
 
 Project-authored code and documentation are released under the [MIT License](LICENSE). Do not copy, vendor, link, or redistribute external material under that license without verifying compatibility, preserving required notices and attribution, and recording the decision in [SOURCES.md](docs/SOURCES.md). The stricter A12 boundary in the non-negotiable rules applies even if another technical or licensing arrangement might otherwise be possible.
 
-The downloaded OMG PDF, its Markdown conversion, extracted figures, and machine-readable corpus are local Git-ignored research material under [docs/reference/bpmn-2.0.2](docs/reference/bpmn-2.0.2/README.md). Track only project-authored digests, provenance, and hashes; do not stage or redistribute the ignored corpus.
+The downloaded OMG PDF, machine-readable files, examples, Markdown conversion, and extracted figures are external local research material described by [the tracked reference pointer](docs/reference/bpmn-2.0.2/README.md) and stored by default at sibling `../oss/omg-bpmn-2.0.2`. Track only project-authored digests, provenance, hashes, and fetch/verification tooling; do not stage or redistribute the external corpus.
 
 For CIB or Temporal source changes, preserve a clean pinned evidence lane and follow the branch, provenance, noninterference, and shadow-equivalence rules in [REFERENCE-INSTRUMENTATION-POLICY.md](docs/REFERENCE-INSTRUMENTATION-POLICY.md).
 

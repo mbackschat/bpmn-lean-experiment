@@ -1,0 +1,18 @@
+# scope<TAB>path under BPMN_EXTERNAL_ROOT<TAB>canonical remote<TAB>immutable reference<TAB>exact revision<TAB>material kind
+verify	a12/a12-workflows	https://github.com/mgm-tp/a12-workflows.git	commit	bb79e490ecc1bfebfb959c79edb44264aa003060	repository
+research	cibseven/cibseven	https://github.com/cibseven/cibseven.git	commit	5a45b47ea22688d774de97277c3ff7013f54fdd2	repository
+research	temporal/sdk-typescript	https://github.com/temporalio/sdk-typescript.git	commit	2595d1b62cf5c3ff1748df0df2f9b303902bb31c	repository
+research	temporal/samples-typescript	https://github.com/temporalio/samples-typescript.git	commit	fb0aa23d75394a132646de883842dfacdacd5aa0	repository
+research	temporal/documentation	https://github.com/temporalio/documentation.git	commit	16c1899a0380eaf3457a0b163b2b2b2232c39a5d	repository
+research	bpmn-io/bpmn-moddle	https://github.com/bpmn-io/bpmn-moddle.git	commit	47d8f75eed773829f20537adbb7086b290096006	repository
+research	bpmn-miwg/bpmn-miwg-test-suite	https://github.com/bpmn-miwg/bpmn-miwg-test-suite.git	commit	cb2629519cee6280ab521f99dc46a9815a221a35	repository
+research	uniba-dsg/betsy	https://github.com/uniba-dsg/betsy.git	commit	fd402415665e914ba7e4d9948de66c4156f08bab	repository
+research	fuml-reference-implementation	https://github.com/ModelDriven/fUML-Reference-Implementation.git	tag:v1.5.0a	45e506336d4cd56965d4ad3b684149245f899f3a	repository
+research	webassembly-spec	https://github.com/WebAssembly/spec.git	commit	dfa3f32a881aecc60a8c792da3c25787ccb15572	repository
+research	wasm-spectec	https://github.com/Wasm-DSL/spectec.git	commit	acc6e834ff403c82554d081237f327346190ad96	repository
+research	spectec	https://github.com/zilinc/spectec.git	commit	6191426aeaa1e9a30f2372526b5d1018eb34f0ac	repository
+research	a12/a12-full-stack-project-template	https://github.com/mgm-tp/a12-full-stack-project-template.git	commit	5083b5cd2b99dbc6b58da8124a00407c1e4e5e0d	repository
+research	temporal/sdk-typescript/packages/core-bridge/sdk-core	https://github.com/temporalio/sdk-rust.git	commit	3dac9013b9031e5ffd51d7335838585b2db42efb	submodule:temporal/sdk-typescript
+research	webassembly-spec/document/core/util/katex	https://github.com/KaTeX/KaTeX.git	tag:v0.13.19	e751278cff42fada16dba6df331fda52aaa90f73	submodule:webassembly-spec
+research	wasm-spectec/document/core/util/katex	https://github.com/KaTeX/KaTeX.git	tag:v0.13.19	e751278cff42fada16dba6df331fda52aaa90f73	submodule:wasm-spectec
+research	spectec/document/core/util/katex	https://github.com/KaTeX/KaTeX.git	tag:v0.13.19	e751278cff42fada16dba6df331fda52aaa90f73	submodule:spectec

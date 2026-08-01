@@ -44,6 +44,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 |---|---|
 | Top-level [README.md](../README.md) | New readers; durable purpose, architecture, quick start, and routes to the live implementation map and plan |
 | [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) | Contributors and agents; filename-role contracts, spec/proposal lifecycle, document homes, same-change triggers, and archive rules aligned with `a12-rulekit` |
+| [CONTRIBUTOR-SETUP-GUIDE.md](CONTRIBUTOR-SETUP-GUIDE.md) | Contributors and coding agents; clean-machine prerequisites, exact external-source provisioning, fail-closed doctor checks, and submodule/fork policy |
 | [MVP-WALKTHROUGH.md](MVP-WALKTHROUGH.md) | New readers and reviewers; source-synchronized tour through exact BPMN input, executable IR, CIB, Lean, the semantic core, Temporal, comparison, mutation, and replay |
 | [RUNNABLE-TEMPORAL-MVP-SPEC.md](RUNNABLE-TEMPORAL-MVP-SPEC.md) | Product users and adapter contributors; implemented external-Temporal command, documented bounded subset, dummy actor around a durable User Task wait, simulated form-input contract, operating commands, exit classifications, acceptance evidence, and exclusions |
 | [archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Preserved supplied architecture and assurance brief; current decisions and release gates have moved to active owners |
@@ -97,8 +98,8 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
 | [PLAN.md](PLAN.md) | Resuming agents and owners; current checkpoint, approved implementation sequence, next steps, and stop conditions |
 | [TESTING-SPEC.md](TESTING-SPEC.md) | Contributors; red/green workflow and verification gates |
-| [SOURCES.md](SOURCES.md) | Researchers; provenance and controlled reference-checkout navigation |
-| [reference/bpmn-2.0.2/README.md](reference/bpmn-2.0.2/README.md) | Researchers; local BPMN 2.0.2 corpus, conversion QA, license boundary, and reproducibility hashes |
+| [SOURCES.md](SOURCES.md) | Researchers; provenance, machine-readable pins, and controlled external-source navigation |
+| [reference/bpmn-2.0.2/README.md](reference/bpmn-2.0.2/README.md) | Researchers; external BPMN 2.0.2 corpus location, official fetch/verification procedure, conversion-cache boundary, and reproducibility hashes |
 | [../contracts/README.md](../contracts/README.md) | Cross-language contributors; current language-neutral schemas, artifact roles, content identity, and pre-release evolution policy |
 | [../CLAUDE.md](../CLAUDE.md) | Contributors and agents; mandatory repository workflow and architecture boundaries |
 

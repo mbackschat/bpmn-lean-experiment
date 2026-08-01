@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
  *
  * The oracle is the validator's own exit status and announcement, exercised
  * against a temporary schema rather than the pinned OMG corpus: that corpus is
- * Git-ignored, so a test bound to it would silently stop checking anything
+ * external, so a test bound to it would silently stop checking anything
  * wherever it is absent — the exact failure this gate exists to prevent.
  */
 const validatorPath = fileURLToPath(
@@ -70,18 +70,17 @@ test("absent xmllint fails with an actionable installation message", () => {
   assert.match(run.stderr, /libxml2-utils/u);
 });
 
-test("an absent pinned schema announces reduced validation", () => {
+test("an absent pinned schema fails with the bootstrap command", () => {
   const run = runValidator([scenarioBpmnPath], {
     ...process.env,
     BPMN_XSD_PATH: join(tmpdir(), "absent-bpmn20.xsd"),
   });
 
-  assert.equal(run.status, 0);
-  assert.match(run.stdout, /well-formedness only/u);
-  assert.match(run.stdout, /no schema conformance claim/u);
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /setup-external-sources\.sh verify/u);
 });
 
-test("reduced validation still rejects malformed XML", () => {
+test("well-formedness cannot substitute for the required schema", () => {
   withWorkspace((workspace) => {
     const malformedPath = join(workspace, "malformed.bpmn");
     writeFileSync(malformedPath, "<definitions>\n", "utf8");
@@ -91,7 +90,8 @@ test("reduced validation still rejects malformed XML", () => {
       BPMN_XSD_PATH: join(workspace, "absent.xsd"),
     });
 
-    assert.notEqual(run.status, 0);
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, /setup-external-sources\.sh verify/u);
   });
 });
 

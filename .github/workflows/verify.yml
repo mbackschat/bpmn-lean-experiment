@@ -90,6 +90,9 @@ jobs:
           test: false
           use-mathlib-cache: false
 
+      - name: Provision pinned external inputs
+        run: ./scripts/setup-external-sources.sh verify
+
       - name: Cache Lean build output
         # lean-action only restores `.lake`; it registers no save step because
         # verify.sh owns the build. Without this, every run rebuilds Lean from

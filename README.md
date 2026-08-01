@@ -10,6 +10,10 @@ The [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) is implemented: 
 
 Use [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for the live implemented/absent boundary and [PLAN.md](docs/PLAN.md) for the active checkpoint and work order.
 
+A new machine does not need a prearranged external-source tree. The [contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md) and repository-owned setup/doctor scripts provision and verify every exact external input required by the selected work scope; missing material fails rather than reducing a gate.
+
+The doctor also inventories every declared external repository and submodule, every dependency-lock owner, and every known local/external cache root. It reports canonical remotes, immutable commits or exact tags, superproject gitlinks, manifest SHA-256 values, tool locations/versions, cache presence, and cache size so a contributor or coding agent can see the whole prepared workspace rather than only the first missing item.
+
 ## Why this project exists
 
 BPMN, CIB Seven, and Temporal solve different problems:
@@ -96,7 +100,8 @@ Lean does not automatically prove the parser, CIB, TypeScript, Temporal, databas
 
 Prerequisites:
 
-- Git, `jq`, `xmllint`, and `shasum`;
+- Git, `jq`, and `xmllint`;
+- `curl` and either `shasum` or `sha256sum`;
 - Lean through `elan`, honoring [lean-toolchain](lean-toolchain);
 - Node `24.18.0`, selected through [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew fallback;
 - pnpm `11.18.0`;
@@ -106,7 +111,9 @@ Prerequisites:
 ```sh
 nvm install
 nvm use
+./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
+./scripts/doctor.sh verify
 ./scripts/verify.sh
 ```
 
@@ -149,6 +156,7 @@ scripts/             Maintained verification and infrastructure guards
 | Need | Read |
 |---|---|
 | Understand the complete MVP | [MVP-WALKTHROUGH.md](docs/MVP-WALKTHROUGH.md) |
+| Prepare a clean machine or coding agent | [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md) |
 | Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Resume the next work | [PLAN.md](docs/PLAN.md) |
