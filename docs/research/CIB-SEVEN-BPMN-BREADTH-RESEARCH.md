@@ -1,6 +1,6 @@
 # CIB Seven 2.2.0 executable BPMN breadth
 
-## Status and question
+## Status
 
 This research inventories the pinned CIB Seven core BPMN test-resource corpus to answer one scheduling question: which uncovered reusable BPMN Process Execution mechanism should follow the runnable Temporal MVP and the implemented scope-completion/Error-propagation pair?
 

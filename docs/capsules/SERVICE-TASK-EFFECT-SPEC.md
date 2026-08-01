@@ -1,5 +1,9 @@
 # Service Task effect specification
 
+## Status
+
+Implemented current capsule contract; exact evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
+
 ## Role
 
 This specification owns the approved bounded meaning, host-refinement contract, witnesses, and exclusions for one extension-bound Service Task effect. Exact current implementation and evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).

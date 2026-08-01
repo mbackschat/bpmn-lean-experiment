@@ -1,5 +1,9 @@
 # Typed BPMN Error and interrupting boundary-error specification
 
+## Status
+
+Implemented current capsule contract; exact evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
+
 ## Role
 
 This specification owns the implemented semantic contract and retained decision record for one bounded typed business-error result and one matching interrupting BPMN Error boundary route. Exact implementation status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the A12 product denominator belongs in the [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md).

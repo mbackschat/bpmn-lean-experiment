@@ -1,5 +1,7 @@
 # Dual semantic-core architecture proposal
 
+## Status
+
 **Status:** Owner-rejected on 2026-07-26; retained as the rejected-account record and as the starting point if its exact reopen trigger occurs
 
 ## Owner decision

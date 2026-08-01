@@ -1,6 +1,6 @@
 # Formal-methods toolbox: TLA+, behavioral relations, and alternatives
 
-## Status and disposition
+## Status
 
 This note evaluates which formal capabilities could strengthen the project’s assurance architecture. TLA+, simulation, and bisimulation are available options, not prescribed architecture. They may be used together, independently, or not at all when the existing Lean, differential, replay, and fault-injection pipeline answers the question more directly. This is a capability map, not an approved tool dependency, implemented specification, proof, or conformance claim.
 

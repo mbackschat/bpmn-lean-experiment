@@ -1,5 +1,7 @@
 # CIB Seven BPMN extensions and execution-API research
 
+## Status
+
 **Status:** Research result; family-level inventory complete for the pinned CIB Seven source, durable compatibility scope and read-only JUEL delegation direction approved, individual behavioral lanes selected only by approved capsules
 
 **Scope:** The Camunda BPMN extension namespace retained by CIB Seven, Service Task execution bindings, Java delegates and beans, expressions, Script Tasks, FEEL, external tasks, and the compatibility claims each mechanism would require.

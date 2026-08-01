@@ -1,5 +1,9 @@
 # Process-transfer research from `a12-kernel-lean`
 
+## Status
+
+Completed bounded research input; adopted process disciplines are owned by current project specifications and contributor guidance.
+
 ## Purpose and conclusion
 
 This bounded study asks how the sibling `a12-kernel-lean` experiment turns runtime probes into durable evidence, captures semantic knowledge in Lean, and keeps formal code synchronized with language-neutral specification documents. It transfers process disciplines, not A12 domain semantics.

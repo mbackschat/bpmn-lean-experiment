@@ -1,5 +1,9 @@
 # Testing and evidence specification
 
+## Status
+
+Implemented living gate contract.
+
 This document owns maintained gates, test procedure, evidence separation, mutation requirements, cleanup, and feedback budgets. It is not a chronological test diary.
 
 ## Default verification
@@ -381,9 +385,9 @@ The CIB evidence owner must classify every field of `scenario.schema.json#/$defs
 
 ## Independent cold-review gate
 
-A semantic capsule is material for this gate when it selects or changes BPMN meaning, a semantic profile or CIB relationship, checked-source or Semantic Process IL representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. Routine implementation cleanup, mechanical correction, and infrastructure work that cannot change one of those claims does not create a capsule review cycle, although an architecture checkpoint may still receive an independent review when the milestone reflection identifies a correlated risk.
+A document is material for this gate when it selects or changes BPMN meaning, a semantic profile or CIB relationship, checked-source or Semantic Process IL representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. Most such documents are semantic capsules, but cross-cutting root proposals and specifications are governed by the same content rule. Routine implementation cleanup, mechanical correction, and infrastructure work that cannot change one of those claims does not create a review cycle, although an architecture checkpoint may still receive an independent review when the milestone reflection identifies a correlated risk.
 
-Each material capsule has two mandatory external reviews and one conditional intermediate review:
+Each material proposal-to-specification lifecycle has two mandatory external reviews and one conditional intermediate review:
 
 | Stage | Review target and timing | Required isolation | Boundary |
 |---|---|---|---|
@@ -419,7 +423,7 @@ Common-mode risks and the nearest unsupported claim
 
 ### Review receipt
 
-The capsule records a concise receipt rather than copying a chat transcript or full review report:
+The governed proposal or specification records a concise receipt rather than copying a chat transcript or full review report:
 
 ```markdown
 ## Independent cold-review receipt
@@ -433,7 +437,7 @@ The capsule records a concise receipt rather than copying a chat transcript or f
 
 Completed review targets and correction audits use 7–40 lowercase hexadecimal Git commit IDs that resolve to commit objects and are ancestors of `HEAD`; a plausible hexadecimal token alone is not an immutable receipt. The required CI workflow therefore checks out full Git history rather than a depth-one snapshot, and the infrastructure guard locks that prerequisite. `approve` and `reject` use `not-required` for their correction audit; `approve-with-required-edits` names the audited correction commit. A new draft proposal may initially use `not-recorded | not-recorded | pending | not-applicable`, because a commit cannot contain its own Git identity; a docs-only follow-up records the immutable proposal target before the prompt is handed off. Other pending stages name their committed target, use `not-recorded` isolation, and use `not-applicable` for the audit. A semantically unnecessary intermediate review uses `not-applicable` in the other three cells and `not-required` as verdict; otherwise it and closure use `not-reached` until their immutable targets exist. The receipt-update commit is not itself the target unless its substantive content is expressly included in the reviewed range.
 
-[`scripts/independent-review-policy.test.ts`](../scripts/independent-review-policy.test.ts) requires this receipt on every active proposal and every post-policy specification, reads owner approval from the proposal's required `## Status` section, requires externally approved proposal state before owner-approved status, and requires externally approved proposal and closure states before a post-policy spec can graduate. The pre-policy specifications are fixed exactly by immutable baseline commit `f1ef362` rather than backfilled with unverifiable receipts; an agent or contributor may not extend or rebase that exception set, and every specification absent from that baseline is post-policy. While the Receive Task semantic checkpoint remains pending, the guard requires its target to remain the plan/map blocker and requires the blocked profile, scenario, CIB runner, differential, and Temporal roots to stay byte-identical to that target regardless of file type or path naming. Source/Lean/core corrections remain possible for the same-reviewer audit; no next-lane work does. Recording approval must delete the capsule-specific pending barrier in the same change, so its provisional path inventory cannot become dead enforcement code.
+[`scripts/independent-review-policy.test.ts`](../scripts/independent-review-policy.test.ts) recursively governs active `-PROPOSAL.md` and `-SPEC.md` documents under `docs/` regardless of directory, excluding archived and locally ingested reference material. It requires receipts on every governed proposal and every post-policy specification, reads owner approval from the proposal's required `## Status` section, requires externally approved proposal state before owner-approved status, and requires externally approved proposal and closure states before a post-policy spec can graduate. The exact pre-policy grandfather set is selected and fixed by immutable baseline commit `f1ef362`: active specifications plus the three legacy root proposals present there are grandfathered, while the already-receipted Receive Task capsule proposal is not. An agent or contributor may not extend, append, or rebase that selection rule or its expected membership, and every later specification is post-policy. While the Receive Task semantic checkpoint remains pending, the guard requires its target to remain the plan/map blocker and requires the blocked profile, scenario, CIB runner, differential, and Temporal roots to stay byte-identical to that target regardless of file type or path naming. Source/Lean/core corrections remain possible for the same-reviewer audit; no next-lane work does. Recording approval must delete the capsule-specific pending barrier in the same change, so its provisional path inventory cannot become dead enforcement code.
 
 The executable gate validates repository facts, not the truth of an external UI session. A contributor who records `external-fresh-session` is attesting that the prompt was handed to a context-isolated external agent and that the recorded verdict reflects its report. Branch protection can require the infrastructure gate, but Git cannot cryptographically prove reviewer coldness; review receipts, exact immutable targets, and the no-inherited-context protocol make that remaining trust boundary explicit.
 

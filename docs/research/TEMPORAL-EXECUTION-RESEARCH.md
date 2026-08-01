@@ -1,6 +1,6 @@
 # Temporal execution and TypeScript SDK research
 
-## Status and purpose
+## Status
 
 This note records the Temporal mechanisms that constrain the BPMN adapter architecture. It surveys the core execution, programming, durability, interaction, visibility, testing, and lifecycle features available at the pinned references; it does not attempt to catalog Temporal Cloud commercial administration, security administration, or every Worker capacity-tuning option. It is a research baseline, not an approved Temporal dependency, BPMN mapping, retry policy, deployment strategy, or semantic-profile decision.
 

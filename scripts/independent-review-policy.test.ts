@@ -6,26 +6,35 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const documentationRoot = path.join(projectRoot, "docs");
 const capsuleRoot = path.join(projectRoot, "docs/capsules");
 
 const reviewPolicyBaseline = "f1ef362";
-const expectedPrePolicySpecifications = [
-  "BOUNDARY-ERROR-SPEC.md",
-  "CREATE-DOCUMENT-DATA-SPEC.md",
-  "EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md",
-  "EXCLUSIVE-GATEWAY-CONDITION-SPEC.md",
-  "INTERMEDIATE-CATCH-MESSAGE-SPEC.md",
-  "INTERMEDIATE-CATCH-TIMER-SPEC.md",
-  "PARALLEL-FORK-JOIN-SPEC.md",
-  "PROCESS-START-DATA-SPEC.md",
-  "SCOPED-DATA-SPEC.md",
-  "SERVICE-TASK-EFFECT-SPEC.md",
-  "SUBPROCESS-ERROR-PROPAGATION-SPEC.md",
-  "USER-TASK-COMPLETION-DATA-SPEC.md",
-  "USER-TASK-INTERACTION-SPEC.md",
+const expectedGrandfatheredReviewDocuments = [
+  "docs/CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md",
+  "docs/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md",
+  "docs/DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md",
+  "docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md",
+  "docs/RUNNABLE-TEMPORAL-MVP-SPEC.md",
+  "docs/SEMANTIC-PROCESS-IL-SPEC.md",
+  "docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md",
+  "docs/TESTING-SPEC.md",
+  "docs/capsules/BOUNDARY-ERROR-SPEC.md",
+  "docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md",
+  "docs/capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md",
+  "docs/capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md",
+  "docs/capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md",
+  "docs/capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md",
+  "docs/capsules/PARALLEL-FORK-JOIN-SPEC.md",
+  "docs/capsules/PROCESS-START-DATA-SPEC.md",
+  "docs/capsules/SCOPED-DATA-SPEC.md",
+  "docs/capsules/SERVICE-TASK-EFFECT-SPEC.md",
+  "docs/capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md",
+  "docs/capsules/USER-TASK-COMPLETION-DATA-SPEC.md",
+  "docs/capsules/USER-TASK-INTERACTION-SPEC.md",
 ] as const;
-const prePolicySpecifications: ReadonlySet<string> = new Set(
-  expectedPrePolicySpecifications,
+const grandfatheredReviewDocuments: ReadonlySet<string> = new Set(
+  expectedGrandfatheredReviewDocuments,
 );
 
 const ReviewStage = {
@@ -91,7 +100,7 @@ function gitLines(arguments_: ReadonlyArray<string>): ReadonlyArray<string> {
   return result.stdout.split("\n").filter(Boolean);
 }
 
-function baselineSpecifications(): ReadonlyArray<string> {
+function baselineGrandfatheredReviewDocuments(): ReadonlyArray<string> {
   assert.equal(
     isReviewCommitTarget(reviewPolicyBaseline),
     true,
@@ -103,10 +112,25 @@ function baselineSpecifications(): ReadonlyArray<string> {
     "--name-only",
     reviewPolicyBaseline,
     "--",
-    "docs/capsules",
+    "docs",
   ])
-    .filter((file) => file.endsWith("-SPEC.md"))
-    .map((file) => path.basename(file))
+    .filter((file) => !file.startsWith("docs/archived/"))
+    .filter((file) => !file.startsWith("docs/reference/"))
+    .filter(
+      (file) =>
+        file.endsWith("-SPEC.md") ||
+        /^docs\/[^/]+-PROPOSAL\.md$/u.test(file),
+    )
+    .sort();
+}
+
+async function activeReviewDocumentPaths(): Promise<ReadonlyArray<string>> {
+  return (await readdir(documentationRoot, { recursive: true }))
+    .map((file) => file.split(path.sep).join("/"))
+    .filter((file) => !file.startsWith("archived/"))
+    .filter((file) => !file.startsWith("reference/"))
+    .filter((file) => file.endsWith("-PROPOSAL.md") || file.endsWith("-SPEC.md"))
+    .map((file) => `docs/${file}`)
     .sort();
 }
 
@@ -251,47 +275,47 @@ function receiptRow(
 }
 
 test("requires review receipts for active proposals and post-policy specifications", async () => {
-  const capsuleFiles = await readdir(capsuleRoot);
-  assert.deepEqual(
-    baselineSpecifications(),
-    [...expectedPrePolicySpecifications].sort(),
-    "the pre-policy exception set is fixed by its immutable baseline",
+  const reviewDocuments = await activeReviewDocumentPaths();
+  const archivedDocuments = new Set(
+    await readdir(path.join(documentationRoot, "archived")),
   );
-  for (const file of prePolicySpecifications) {
+  assert.deepEqual(
+    baselineGrandfatheredReviewDocuments(),
+    [...expectedGrandfatheredReviewDocuments].sort(),
+    "the pre-policy exception set is fixed by its immutable baseline and selection rule",
+  );
+  for (const relativePath of grandfatheredReviewDocuments) {
+    const archivedPath = `docs/archived/${path.basename(relativePath)}`;
     assert.ok(
-      capsuleFiles.includes(file),
-      `${file} is a stale pre-policy specification exception`,
+      reviewDocuments.includes(relativePath) ||
+        archivedDocuments.has(path.basename(relativePath)),
+      `${relativePath} must remain active or move to ${archivedPath}`,
     );
   }
-  const proposals = capsuleFiles.filter((file) => file.endsWith("-PROPOSAL.md"));
-  const postPolicySpecifications = capsuleFiles.filter(
-    (file) => file.endsWith("-SPEC.md") && !prePolicySpecifications.has(file),
+  const governedDocuments = reviewDocuments.filter(
+    (relativePath) => !grandfatheredReviewDocuments.has(relativePath),
   );
 
-  for (const file of proposals) {
-    const relativePath = `docs/capsules/${file}`;
-    const document = await readFile(path.join(capsuleRoot, file), "utf8");
+  for (const relativePath of governedDocuments) {
+    const document = await readFile(path.join(projectRoot, relativePath), "utf8");
     const receipt = parseReceipt(document, relativePath);
-    if (isOwnerApproved(document)) {
+    if (relativePath.endsWith("-PROPOSAL.md") && isOwnerApproved(document)) {
       assertExternallyApproved(
         receiptRow(receipt, ReviewStage.Proposal, relativePath),
         relativePath,
       );
+      continue;
     }
-  }
-
-  for (const file of postPolicySpecifications) {
-    const relativePath = `docs/capsules/${file}`;
-    const document = await readFile(path.join(capsuleRoot, file), "utf8");
-    const receipt = parseReceipt(document, relativePath);
-    assertExternallyApproved(
-      receiptRow(receipt, ReviewStage.Proposal, relativePath),
-      relativePath,
-    );
-    assertExternallyApproved(
-      receiptRow(receipt, ReviewStage.Closure, relativePath),
-      relativePath,
-    );
+    if (relativePath.endsWith("-SPEC.md")) {
+      assertExternallyApproved(
+        receiptRow(receipt, ReviewStage.Proposal, relativePath),
+        relativePath,
+      );
+      assertExternallyApproved(
+        receiptRow(receipt, ReviewStage.Closure, relativePath),
+        relativePath,
+      );
+    }
   }
 });
 
@@ -306,6 +330,13 @@ test("recognizes owner approval independently of status formatting", () => {
   for (const document of variants) {
     assert.equal(isOwnerApproved(document), true, document);
   }
+});
+
+test("review jurisdiction is independent of documentation directory", async () => {
+  const governed = await activeReviewDocumentPaths();
+  assert.ok(governed.includes("docs/SEMANTIC-PROCESS-IL-SPEC.md"));
+  assert.ok(governed.includes("docs/CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md"));
+  assert.ok(governed.includes("docs/capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md"));
 });
 
 test("rejects syntactically valid names that are not review commits", () => {

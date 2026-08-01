@@ -1,5 +1,9 @@
 # CreateDocument data and mapping specification
 
+## Status
+
+Implemented current capsule contract; exact evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md).
+
 ## Role
 
 This specification owns the approved bounded source, data, mapping, effect-result, host-refinement, evidence, and exclusion contract for the A12-shaped `CreateDocument` slice. Exact current implementation and evidence status belongs in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).

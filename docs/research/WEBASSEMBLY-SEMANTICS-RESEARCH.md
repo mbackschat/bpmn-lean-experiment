@@ -1,5 +1,7 @@
 # WebAssembly semantics architecture research and BPMN transfer
 
+## Status
+
 **Status:** Research result and bounded recommendation; no new project architecture, dependency, generator, or semantic DSL is adopted by this document
 
 **Inspected baseline:** WebAssembly specification repository revision [`dfa3f32a881aecc60a8c792da3c25787ccb15572`](https://github.com/WebAssembly/spec/tree/dfa3f32a881aecc60a8c792da3c25787ccb15572), plus the standalone SpecTec development repositories and experimental mechanization branches recorded in [Sources](../SOURCES.md#webassembly-specification-and-semantics-workbench), checked out on 2026-07-24

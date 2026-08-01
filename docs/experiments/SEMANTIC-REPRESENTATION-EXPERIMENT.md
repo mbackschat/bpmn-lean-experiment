@@ -1,5 +1,7 @@
 # Semantic representation experiment
 
+## Status
+
 **Status:** Executed, provisional candidates retained
 
 **Purpose:** Test foundational representation distinctions before selecting the production BPMN source model, executable IR, runtime state, or semantic core transition system.

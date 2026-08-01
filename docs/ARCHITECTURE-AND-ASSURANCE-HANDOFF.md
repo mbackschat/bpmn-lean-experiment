@@ -1,5 +1,7 @@
 # Architecture and Assurance Handoff: A Versioned CIB-seven BPMN Semantic Profile with Lean, TypeScript, and Temporal
 
+## Status
+
 **Document status:** Architecture and assurance handoff
 **Primary audience:** Coding agents and engineers responsible for formal semantics, workflow-runtime behavior, conformance infrastructure, and Temporal integration
 **Purpose:** Define the motivation, boundaries, semantic contracts, component responsibilities, assurance strategy, and acceptance criteria for a BPMN execution system whose observable behavior is compatible with a pinned CIB-seven reference engine

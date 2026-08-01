@@ -1,5 +1,7 @@
 # Checked-source relation experiment
 
+## Status
+
 **Status:** Stages 1 through 3b are accepted and frozen experimental results; Stage 3b closes at 298 new or materially rewritten nonblank Lean lines, excluding 11 relocated lines; the staged production-admission programme was superseded on 2026-07-30; full preservation remains unresolved and not adopted
 
 **Question:** Can a direct token-game account over `CheckedProcess` support a run-level observational lowering-preservation theorem for the then-current five Semantic Process operation families without reusing lowering or IL execution as source semantics?

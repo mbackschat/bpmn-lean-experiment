@@ -1,5 +1,7 @@
 # Compositional BPMN admission and lowering proposal
 
+## Status
+
 **Status:** Owner-approved on 2026-07-28, then superseded as a staged production-admission programme on 2026-07-30; completed Stages 1 through 3b remain frozen experimental results; no composed profile or widened production admission was adopted
 
 ## Current disposition

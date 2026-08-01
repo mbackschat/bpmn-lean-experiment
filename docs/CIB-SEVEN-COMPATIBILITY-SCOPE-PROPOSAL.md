@@ -1,5 +1,7 @@
 # CIB Seven compatibility scope proposal
 
+## Status
+
 **Status:** Owner-approved on 2026-07-26, amended on 2026-07-30 with the profile-selected JUEL delegation direction and exact dependency set, and amended on 2026-07-31 to make CIB Seven `2.2.0` the near-term BPMN breadth-ordering baseline; JUEL is deferred behind the standards-first Simple Boolean expression profile, its dependency graph is unadopted, and the Java evaluator remains absent
 
 ## Question

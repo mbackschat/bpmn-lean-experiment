@@ -1,6 +1,6 @@
 # CIB Seven 2.0 A12 target baseline
 
-## Status and question
+## Status
 
 This research assesses whether the CIB Seven `2.0.0` release used by A12 Workflows `release/2025.06` can reuse the project's current CIB Seven `2.2.0` semantic-profile evidence for the smallest maintained A12 Service Task path.
 

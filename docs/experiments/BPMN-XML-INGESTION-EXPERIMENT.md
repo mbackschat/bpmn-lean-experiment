@@ -1,5 +1,9 @@
 # BPMN XML ingestion experiment
 
+## Status
+
+Executed; the bytes-plus-derived-view account was adopted at the checked-source boundary.
+
 ## Question and accounts
 
 Can the published `bpmn-moddle@10.0.0` package provide the first structural BPMN ingestion boundary without becoming the source of record or losing distinctions that the semantic pipeline needs?

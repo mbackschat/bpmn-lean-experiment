@@ -62,9 +62,19 @@ The following names identify repository-wide owners and do not require another s
 
 Directory `README.md` files are registries or local entry points, not independent policy owners.
 
+### Suffixless singleton exceptions
+
+The executable filename guard permits exactly these suffixless names under `docs/`; the longer list above also names singleton owners whose filenames already satisfy the role grammar or live at repository root:
+
+- `README.md`;
+- `PROJECT-DESIGN.md`;
+- `PLAN.md`;
+- `SOURCES.md`;
+- `DOC-DISCIPLINE.md`.
+
 ## Status is separate from role
 
-Every proposal, spec, research result, experiment, decision, policy, target, and handoff must state its status near the beginning when the filename alone cannot communicate current maturity.
+Every maintained proposal, spec, research result, experiment, decision, policy, target, and handoff must contain an exact `## Status` section within its first 15 nonblank lines. Archived and locally ingested reference documents are outside this current-status rule.
 
 Use plain status language such as:
 
@@ -81,11 +91,11 @@ A status never changes the suffix contract. An owner-approved but unimplemented 
 
 When a proposal is implemented:
 
-1. complete the external closure review and record the approved `Independent cold-review receipt` required by [TESTING-SPEC.md](TESTING-SPEC.md#review-receipt); pre-policy specifications remain explicitly grandfathered by the executable gate rather than receiving invented historical receipts;
+1. complete the external closure review and record the approved `Independent cold-review receipt` required by [TESTING-SPEC.md](TESTING-SPEC.md#review-receipt); pre-policy documents in the closed executable grandfather set do not receive invented historical receipts;
 2. move the stable implemented contract into the corresponding `-SPEC.md`;
 3. update every current producer, consumer, schema, test, evidence lane, and documentation owner in the same change;
 4. remove implementation sequencing and completed-work narration from the spec;
-5. move the resolved proposal to `docs/archived/` when its rationale or measurement record remains useful, or delete it when it has no durable information beyond Git history;
+5. move residual rejected, superseded, or historically useful rationale to `docs/archived/`, or delete it when Git contains all remaining history; successful graduation does not require preserving a second proposal copy beside the spec;
 6. update the documentation registry and all inbound links atomically.
 
 Do not leave a `-PROPOSAL.md` describing a shipped current surface. Do not create a `-SPEC.md` merely because a design has been approved.
@@ -106,8 +116,8 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 | Checked graph and Semantic Process IL before implementation | `SEMANTIC-PROCESS-IL-SPEC.md` |
 | Checked graph and Semantic Process IL after implementation | `SEMANTIC-PROCESS-IL-SPEC.md` |
 | CIB behavior relative to BPMN | `CIB-BPMN-RELATION-REGISTER.md` |
-| Reviewed BPMN requirement dispositions | `BPMN-REQUIREMENT-LEDGER.md` |
-| External-system findings | `research/*-RESEARCH.md` |
+| Reviewed normative BPMN requirement dispositions | root `BPMN-REQUIREMENT-LEDGER.md` |
+| External-system and downstream-product findings, including their bounded compatibility ledgers | `research/*-RESEARCH.md` and `research/*-LEDGER.md` |
 | Bounded executable questions | `experiments/*-EXPERIMENT.md` |
 | Adopted one-time architecture or dependency choice | `*-DECISION.md` |
 | Mandatory research-lane procedure | `*-POLICY.md` |
@@ -131,6 +141,8 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 ## Writing and linking
 
 Write one Markdown paragraph per line without fixed-column hard wrapping. Prefer a small table or diagram when it makes a comparison, ownership split, data flow, or lifecycle easier to scan.
+
+Markdown line count is not a useful generic size metric under the one-paragraph-per-line rule. Reviewability is enforced at the ownership and review-unit boundary: split a document when it combines unrelated owners, makes mandatory context impractical to read in full, or exceeds an applicable document-specific executable limit.
 
 Use regular relative Markdown links for project documents. Do not duplicate an owned fact merely to avoid a link.
 

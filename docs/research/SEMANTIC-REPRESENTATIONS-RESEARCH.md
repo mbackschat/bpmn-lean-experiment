@@ -1,5 +1,7 @@
 # Semantic representations and execution-model research
 
+## Status
+
 **Status:** Research result; source-model → data-IR → interpreter direction adopted; the bounded checked-graph and Semantic Process IL definition contract is now selected, while runtime representations remain implementation-specific
 
 **Scope:** CIB Seven BPMN Model API, deployment parser, PVM definition and runtime representations, fUML Activity execution, PSSM State Machine execution, and candidate consequences for the project’s BPMN source model, Lean semantics, pure TypeScript semantic core, and Temporal adapter.
