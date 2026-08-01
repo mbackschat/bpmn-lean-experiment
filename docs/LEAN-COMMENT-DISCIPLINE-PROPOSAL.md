@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-01. A read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**, and the same reviewer audited correction commit `c882d9c` and closed every required finding. Closure review of implementation target `db7c94c` returned **APPROVE WITH REQUIRED EDITS**; the guard-composition correction and advisory cleanup are committed at `35ae276` and pending same-thread correction audit before this proposal is archived or deleted. External-session isolation remains unattested in the receipt until that audit closes.
+Implemented and closure-reviewed. Owner-approved on 2026-08-01 after a read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS** and the same reviewer audited correction `c882d9c`. Closure review of implementation target `db7c94c` also returned **APPROVE WITH REQUIRED EDITS**; the same reviewer audited correction target `916e427` and closed every required finding. The stable instruction and gate contracts live in `CLAUDE.md` and `TESTING-SPEC.md`; this proposal is ready for archival as rationale and review provenance rather than as a current contract.
 
 ## Decision requested
 
@@ -14,7 +14,7 @@ Approve a Lean commenting contract that increases locally available semantic inf
 |---|---|---|---|---|
 | Proposal | `995dfd8` | `external-fresh-session` | `approve-with-required-edits` | `c882d9c` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `db7c94c` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `db7c94c` | `external-fresh-session` | `approve-with-required-edits` | `916e427` |
 
 This proposal does not select BPMN meaning, a profile, a runtime representation, a proof boundary, or a Temporal refinement claim, so no semantic checkpoint is required. The requested proposal review is nevertheless external and read-only because the main risk is a governance rule whose incentives produce worse source.
 
