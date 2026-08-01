@@ -22,7 +22,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 8 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Reviewed normative agreements | 9 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 4 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -179,6 +179,20 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Fidelity boundary:** Live Process existence and exact active task-definition keys are engine-observed through public runtime and task services. They establish selection of the recovery route and disappearance of the live sibling at that boundary. They do not expose the CIB execution tree, prove how regional cancellation is represented internally, or prove that no additional hidden normal-path microstep occurred.
 
 **Boundary:** This agreement is limited to one private executable Process, one ordinary embedded Sub-Process, one child Parallel Gateway, two distinct child User Tasks, one exact-code Error End Event, one matching interrupting boundary Error Event attached directly to that Sub-Process, and one outer recovery User Task. The stale schedule's recovery-state prefix remains evidence for this agreement, but mapping the removed generated host task and its refusal to the project semantic occurrence/result belongs to `CIB-OP-0001`. Catch-all or unmatched Errors, multiple handlers, ancestor search, arbitrary nesting, Event Sub-Processes, payload or data mapping, concurrent task commands, project semantic occurrence identity, stale-command refusal, and general Error compatibility remain outside this agreement.
+
+### CIB-AGR-0009 — Message-addressed Receive Task subscription lifecycle
+
+**Status:** Reviewed bounded agreement; phase-zero evidence complete and semantic implementation pending
+
+**BPMN basis:** BPMN 2.0.2 Clause 10 and Table 10.10 define a Receive Task as waiting for a Message from an external Participant and completing when that Message is received. Clause 13.3.3 repeats that activation waits for the associated Message and that Message arrival completes the Activity.
+
+**Pinned CIB observation:** CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017` starts one exact project-authored None Start → Message-addressed Receive Task → None End Process and exposes exactly one public Message event subscription. The subscription reports the Receive Task activity ID, the root Message name, the live Process-instance ID, and a generated execution ID. Delivering through `messageEventReceived(subscription.eventName, subscription.executionId)` removes the subscription and completes the Process.
+
+**Evidence:** [Project-authored phase-zero BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenReceiveTaskPhaseZeroProbeTest.bpmn), [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenReceiveTaskPhaseZeroProbeTest.java), [Receive Task proposal](capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md), and [CIB runner documentation](../runners/cibseven/README.md).
+
+**Fidelity boundary:** Subscription existence, activity ID, event name, generated execution ID, Process-instance ID, removal, and Process completion are engine-observed through public CIB services. The Message name is a source-admission fact only in the project: it never enters the checked graph, Semantic Process program, runtime state, or canonical observation. CIB does not expose the BPMN Message ID through this subscription API, so canonical `messageId`, semantic Process-instance identity, and activation remain adapter-derived or adapter-decided when retained canonical evidence lands.
+
+**Boundary:** This agreement is limited to one private executable Process with one non-instantiating, payload-free Receive Task carrying one direct `messageRef`, one named root Message, and no `operationRef`, Message Flow, Collaboration, correlation key, loop, Multi-Instance, boundary Event, or data association. It does not cover the addressless CIB execution-signal path, pre-activation delivery, Message buffering, transport binding, Web-service realization, payload, global correlation, repeated activation, or general Receive Task compatibility.
 
 ## Interpretation register
 
@@ -399,6 +413,7 @@ The admitted source has exactly two non-default conditions and one conditionless
 | User Task completion with a public variable map | `CIB-EXT-0005` under `CIB-CFG-0001` | Task-service and history observations establish create/overwrite/preserve, present null, merge-before-continuation, no-data preservation, and no write on unknown or stale generated IDs; BPMN does not define this host completion API or universal form-to-Process-variable mapping |
 | Process start with a public variable map | `CIB-EXT-0006` under `CIB-CFG-0001` | Runtime-service and first-task observations establish initial Process-variable visibility before completion; BPMN does not define this host start API or universal start-map semantics |
 | Exact-code Error End propagation from an embedded Sub-Process | `CIB-AGR-0008` | Both child-command orders expose only Recover after the Error and complete only after Recover; retained raw task-state mutation detects a wrongly retained child sibling without claiming hidden execution-tree microsteps |
+| Message-addressed Receive Task subscription and completion | `CIB-AGR-0009` | A project-authored direct-Message Receive Task exposes one public Message subscription; exact public delivery removes it and completes the Process, without equating CIB's event name or generated execution ID with project semantic identity |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
 | External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |
 

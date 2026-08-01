@@ -2,7 +2,7 @@
 
 ## Status
 
-**Independent review completed with required corrections applied; awaiting owner approval. No Receive Task source or execution support is implemented.**
+**Owner-approved after independent review and required corrections; CIB Seven `2.2.0` phase zero is green under `CIB-AGR-0009`. No Receive Task source or execution support is implemented.**
 
 ## Exact question
 
@@ -43,6 +43,8 @@ The owner selection determines the profile identity before any checked process, 
 - declining retained CIB evidence uses profile ID `bpmn-2.0.2-message-addressed-receive-task-draft`, normative authority OMG BPMN `2.0.2`, and the declared target set Lean, TypeScript, and Temporal; it adds no Receive-Task-specific CIB relationship or CIB execution target.
 
 Phase zero may run before the recommended profile artifact exists, but the profile ID is not changed after artifacts are produced. If phase zero disagrees, stop before authoring either target artifact and return the classification and profile choice to the owner. Under the recommended CIB-backed answer, the one shared source fixture requires the nonempty root Message name stated above.
+
+The required root Message name is a source-admission fact only: lowering never places it in the checked graph, Semantic Process program, runtime state, or canonical observation. This deliberate information boundary is why the CIB lane classifies canonical `messageId` as adapter-decided rather than deriving it from CIB's public subscription name.
 
 ## Closed Message-address representation
 
@@ -254,9 +256,9 @@ Implementation also restates testing rule R8 from one singular Message path to e
 
 The recommendation is to include the CIB lane because CIB Seven `2.2.0` executable breadth is the owner's selected near-term ordering baseline and its Receive Task public subscription is a new compatibility claim not covered by the standards-only Intermediate Catch Message capsule. CIB remains evidence, not semantic authority.
 
-Phase zero must run before relationship registration, profile artifact authoring, or semantic implementation. Deploy one project-authored MIT fixture matching the selected source, start it through CIB public services, observe exactly one Message event subscription tied to the Receive Task, deliver with `messageEventReceived(subscription.eventName, subscription.executionId)`, observe the subscription removed, and observe the Process completed. The recommended CIB-backed lane uses the profile's required nonempty root Message name solely so CIB's public delivery API has an observable event name.
+Phase zero ran before relationship registration, profile artifact authoring, semantic implementation, or any Message-channel wire replacement. The project-authored fixture passed against packaged CIB Seven `2.2.0`: Process start exposed exactly one Message event subscription with the expected Receive Task activity ID and Message name plus nonempty execution and Process-instance identities; `messageEventReceived(subscription.eventName, subscription.executionId)` removed the subscription and completed the Process. This green result selects `cibseven-2.2.0-message-addressed-receive-task-draft` and the retained CIB lane under `CIB-AGR-0009`. The profile's required nonempty root Message name exists solely so CIB's public delivery API has an observable event name.
 
-If phase zero agrees, add the next available normative-agreement relationship for “Message-addressed Receive Task waits and completes after public Message delivery” and, if retained canonical projection maps CIB's execution/subscription identity to the semantic occurrence, the next available permitted-operational-detail relationship for that mapping. Assign identifiers only when the register entries and verifier evidence land; do not put placeholders in a profile. If CIB disagrees, stop, classify the difference, and do not change vendor-neutral meaning.
+`CIB-AGR-0009` owns the observed agreement that a Message-addressed Receive Task waits and completes after public Message delivery. If retained canonical projection maps CIB's execution/subscription identity to the semantic occurrence, the next available permitted-operational-detail relationship must own that mapping when its verifier evidence lands; no placeholder enters the profile. The owner-preauthorized standards-only fallback was not needed.
 
 The retained CIB producer may expose raw Process-instance count and the live Message subscription's activity ID, event name, and generated execution ID. Canonical `messageId`, Process-instance identity, and activation remain profile/adapter-derived or adapter-decided unless a public CIB API independently exposes them. A seeded raw-event-name or subscription-removal mutation must reach a classified canonical field or the verifier must reject the evidence directly. No hidden execution tree, transaction microstep, subscription-table row, or Message-ID/name equivalence is claimed.
 
