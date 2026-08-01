@@ -35,7 +35,7 @@ The warm-pipeline assertion is a feedback budget, not a semantic invariant. Its 
 
 `xmllint` is the only host tool verification expects the platform to provide. Node, pnpm, Java, and the Lean toolchain arrive at pinned versions through the workflow setup actions, Maven arrives through the committed `runners/cibseven/mvnw` wrapper, and `git` plus `sed` are present on every supported image; [`scripts/pnpm.sh`](../scripts/pnpm.sh) treats its Homebrew locations as a fallback after the PATH check, so it resolves the same pinned versions on a runner. The macOS images resolve an `xmllint` already, while the Ubuntu image has no libxml2 package, so the workflow installs `libxml2-utils` there. Adding another host tool to a verification script requires the same review: confirm an equivalent package exists on every supported image, or provide the tool through a pinned action or committed wrapper.
 
-pnpm 11's implicit virtual-store choice is execution-context-sensitive: ordinary execution may select the shared global projection while `CI=true` selects the repository-local projection. This repository deliberately runs verification in CI mode and may reuse the same worktree for ordinary developer commands, so relying on that implicit choice would make one `node_modules` alternate between incompatible layouts. [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) therefore pins the supported CI-oriented `enableGlobalVirtualStore: false` mode, keeping the dependency projection isolated under the repository-local `node_modules/.pnpm` while the content-addressable package store remains shared. The infrastructure gate removes possible overrides, checks the effective value with and without `CI=true`, and executes a bare `./scripts/pnpm.sh run check:doc-fragments`; an unexpected install-state purge or reinstall attempt is a gate failure.
+pnpm 11's implicit virtual-store choice is execution-context-sensitive: ordinary execution may select the shared global projection while `CI=true` selects the repository-local projection. This repository deliberately runs verification in CI mode and may reuse the same worktree for ordinary developer commands, so relying on that implicit choice would make one `node_modules` alternate between incompatible layouts. [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) therefore pins the supported CI-oriented `enableGlobalVirtualStore: false` mode, keeping the dependency projection isolated under the repository-local `node_modules/.pnpm` while the content-addressable package store remains shared. The infrastructure gate removes possible overrides, checks the effective value with and without `CI=true`, and executes a bare `./scripts/pnpm.sh run check:source-hygiene`; an unexpected install-state purge or reinstall attempt is a gate failure.
 
 Always finish with:
 
@@ -377,17 +377,6 @@ The warm budget is less than 15 seconds after prepared builds. The cold budget i
 [The verification workflow](../.github/workflows/verify.yml) runs `./scripts/verify.sh` on `ubuntu-latest` and `macos-latest` with the repository-pinned Node and pnpm versions, Java 21, and the Lean toolchain selected by `lean-toolchain`. It installs the frozen pnpm lockfile and relies on the Maven wrapper and Temporal test environment for their pinned artifacts.
 
 The 15-second prepared-pipeline warm budget remains a hard assertion on both CI operating systems. Dependency installation and compilation occur before the prepared pipeline measurement, so runner provisioning does not consume that budget. The 45-second cold budget remains a measured local `test:pipeline` assertion and is not reported as zero in prepared CI mode. If a hosted runner repeatedly exceeds the warm budget, treat that as evidence to classify runner variance or optimize the gate; changing, suppressing, or conditionally weakening either budget requires an explicit owner decision.
-
-## Documentation-fragment gate
-
-Code excerpts in the MVP walkthrough are synchronized from tagged source regions:
-
-```sh
-./scripts/pnpm.sh run sync:doc-fragments
-./scripts/pnpm.sh run check:doc-fragments
-```
-
-Normal verification checks only. After changing a tagged region, test the source first and then run the explicit synchronization command.
 
 ## Pre-release architecture guard
 

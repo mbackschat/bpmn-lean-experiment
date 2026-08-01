@@ -53,7 +53,7 @@ test("pins the repository-local virtual store in ordinary and CI execution", asy
   );
 
   await runPnpm(
-    ["run", "check:doc-fragments"],
+    ["run", "check:source-hygiene"],
     pnpmEnvironment(undefined),
   );
 });

@@ -256,8 +256,6 @@ Before adding, renaming, moving, graduating, archiving, or deleting a document, 
 
 Keep the top-level `README.md` as a durable project front door. Do not put live status, evidence counts, current support inventories, or next-work narration there; link to [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) and [PLAN.md](docs/PLAN.md) instead.
 
-Keep the [MVP walkthrough](docs/MVP-WALKTHROUGH.md) as ordinary Markdown; do not introduce Showboat for code walkthroughs. Canonical walkthrough excerpts come from tagged regions in compiling or executable source. After changing a tagged region, run `./scripts/pnpm.sh run sync:doc-fragments`, review the resulting prose and diff, and leave `./scripts/pnpm.sh run check:doc-fragments` green. Never hand-edit a synchronized fence merely to satisfy the checker.
-
 The rationale and transfer limits for the semantic-capsule workflow are recorded in [the `a12-kernel-lean` process-transfer study](docs/research/A12-KERNEL-LEAN-PROCESS-RESEARCH.md).
 
 ## Reference and source discipline
@@ -312,12 +310,6 @@ Strict no-emit gate for directly executed TypeScript harnesses:
 
 ```sh
 ./scripts/pnpm.sh run check:harness-types
-```
-
-Source-synchronized walkthrough fragment gate:
-
-```sh
-./scripts/pnpm.sh run check:doc-fragments
 ```
 
 Optional local pinned MIWG observation gate:

@@ -27,7 +27,6 @@ type ScopedOperation = Readonly<{
 export function lowerCheckedProcess(
   source: CheckedProcess,
 ): SemanticProcessProgram {
-  // tag::semantic-process-lowering[]
   const nodeOperations = source.nodes.flatMap((node) =>
     lowerNode(node, source)
   );
@@ -67,7 +66,6 @@ export function lowerCheckedProcess(
       .map(({ operation }) => operation)
       .sort(compareIds),
   };
-  // end::semantic-process-lowering[]
   return program;
 }
 

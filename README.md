@@ -4,7 +4,7 @@ Making BPMN execution durable, explainable, and continuously checkable.
 
 This project builds a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. Its primary implementation roadmap is OMG BPMN Process Execution coverage, with CIB Seven `2.2.0` executable breadth ordering the near-term standards schedule. Selected CIB Seven behavior is layered on as versioned compatibility profiles, and evidence-backed A12 Workflows replacement is a downstream adoption goal implemented through bounded adapters rather than product semantics in the core. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture) owns the exact boundaries and separate coverage measures.
 
-Start with the [end-to-end MVP walkthrough](docs/MVP-WALKTHROUGH.md) to follow exact BPMN XML through source admission, checked-graph projection, Semantic Process lowering, CIB observation, Lean definitions and laws, TypeScript evaluation, Temporal Query/Update hosting, differential comparison, mutation, and replay.
+Use the [implementation map](docs/IMPLEMENTATION-MAP.md) for the exact implemented and absent surface, and the [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) to exercise every registered scenario through its declared semantic, compatibility, durability, mutation, and replay lanes.
 
 The [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) is implemented: one command admits exact BPMN XML, connects its Worker to an existing Temporal service, shows the durable User Task and selected Process input, waits three seconds, submits simulated form values through the real Update, and reports the final Process state. It deliberately introduces no UI, task inbox, or identity system.
 
@@ -157,7 +157,7 @@ scripts/             Maintained verification and infrastructure guards
 
 | Need | Read |
 |---|---|
-| Understand the complete MVP | [MVP-WALKTHROUGH.md](docs/MVP-WALKTHROUGH.md) |
+| Inspect and run the complete implemented catalog | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) and the [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) |
 | Prepare a clean machine or coding agent | [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md) |
 | Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |

@@ -182,31 +182,40 @@ function repositoryPaths(projectRoot: string): Promise<ReadonlyArray<string>> {
 export async function repositoryBoundaryFiles(
   projectRoot: string,
 ): Promise<ReadonlyArray<BoundaryFile>> {
-  const candidates = (
-    await Promise.all(
-      (await repositoryPaths(projectRoot)).map(async (relativePath) => {
-        const fileStatus = await lstat(path.join(projectRoot, relativePath));
-        return fileStatus.isSymbolicLink() || isInspectedFile(relativePath)
-          ? [{ relativePath, isSymbolicLink: fileStatus.isSymbolicLink() }]
-          : [];
-      }),
-    )
-  ).flat();
+  const files = await Promise.all(
+    (await repositoryPaths(projectRoot)).map((relativePath) =>
+      readBoundaryFile(projectRoot, relativePath)
+    ),
+  );
+  return files.filter((file): file is BoundaryFile => file !== null);
+}
 
-  return Promise.all(
-    candidates.map(async ({ relativePath, isSymbolicLink }) => {
-      const absolutePath = path.join(projectRoot, relativePath);
-      if (isSymbolicLink) {
-        return {
-          path: relativePath,
-          bytes: Buffer.alloc(0),
-          symlinkTarget: await readlink(absolutePath),
-        };
-      }
+async function readBoundaryFile(
+  projectRoot: string,
+  relativePath: string,
+): Promise<BoundaryFile | null> {
+  const absolutePath = path.join(projectRoot, relativePath);
+  try {
+    const fileStatus = await lstat(absolutePath);
+    if (fileStatus.isSymbolicLink()) {
       return {
         path: relativePath,
-        bytes: await readFile(absolutePath),
+        bytes: Buffer.alloc(0),
+        symlinkTarget: await readlink(absolutePath),
       };
-    }),
-  );
+    }
+    return isInspectedFile(relativePath)
+      ? { path: relativePath, bytes: await readFile(absolutePath) }
+      : null;
+  } catch (error: unknown) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      return null;
+    }
+    throw error;
+  }
 }

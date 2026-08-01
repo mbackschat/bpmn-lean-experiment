@@ -156,7 +156,6 @@ export function compareCase(
       result: temporalResult.primary.result,
     });
   }
-  // tag::four-target-comparison[]
   const comparison = (() => {
     if (
       cibConfiguration?.relation === CibCaseRelation.ExactSemantic
@@ -179,7 +178,6 @@ export function compareCase(
       ),
     );
   })();
-  // end::four-target-comparison[]
   const cibHostComparison =
     cibConfiguration?.relation ===
       CibCaseRelation.SynchronousFinalState
@@ -310,7 +308,6 @@ export function compareCase(
       `Unexpected CIB retry execution for ${scenario.id}`,
     );
   }
-  // tag::seeded-disagreement[]
   const injectedResult = mutableClone(semanticCoreResult);
   pipelineCase.injectMutation(injectedResult);
   const injectedReference =
@@ -332,7 +329,6 @@ export function compareCase(
       },
     ],
   );
-  // end::seeded-disagreement[]
   const completionStimuli = scenario.stimuli.slice(1).filter(
     (stimulus) =>
       stimulus.kind === StimulusKind.CompleteUserTaskInstance,

@@ -518,7 +518,6 @@ function closeInternal(
   };
 }
 
-// tag::apply-stimulus[]
 export function applyStimulus(
   program: SemanticProcessProgram,
   state: RuntimeState,
@@ -551,7 +550,6 @@ export function applyStimulus(
       return assertNever(admission.outcome);
   }
 }
-// end::apply-stimulus[]
 
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported semantic variant: ${JSON.stringify(value)}`);

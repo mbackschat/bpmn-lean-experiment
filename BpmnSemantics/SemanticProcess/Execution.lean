@@ -377,7 +377,6 @@ theorem effect_result_route_failure_is_rejected
   simp [applyStimulus, rejectedAdmission]
 
 /-- Any mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
--- tag::task-identity-law[]
 theorem task_identity_mismatch_is_rejected
     (program : Program) (wait : UserTaskWait)
     (completionCommandId : SemanticId)
@@ -424,7 +423,6 @@ theorem task_identity_mismatch_is_rejected
         exact activationMismatch exactMatch.2.symm
       simp [applyStimulus, admitStimulus, completeUserTask,
         singletonWaitingState, noMatch]
--- end::task-identity-law[]
 
 /-- Any mismatch in the full timer-occurrence identity or exact logical deadline rejects firing with exact state preservation. This one law covers both early and late firing. -/
 theorem timer_identity_or_time_mismatch_is_rejected

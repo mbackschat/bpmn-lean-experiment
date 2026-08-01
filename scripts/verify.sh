@@ -12,7 +12,6 @@ echo "A12_ADOPTION_EVIDENCE status=not-run command=./scripts/test-a12-adoption.s
 ./scripts/pnpm.sh run test:contracts
 ./scripts/pnpm.sh run check:harness-types
 ./scripts/pnpm.sh run check:source-hygiene
-./scripts/pnpm.sh run check:doc-fragments
 
 ./scripts/validate-bpmn-xml.sh "$bpmn_path"
 

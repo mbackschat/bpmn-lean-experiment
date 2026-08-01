@@ -70,7 +70,6 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - commit-bounded nonblank code/document capsule-cost measurement with a parser self-test and explicit unknown treatment for missing historical baselines
 - dependency-free source-hygiene enforcement over tracked and pending Lean/TypeScript/JavaScript/Java source with a 600-nonblank-line review target, 1000-line hard ceiling, exact import-only Lean umbrellas, allowlist-free rejection of every hand-written `.js`/`.cjs`/`.mjs` module, and no current reviewed exceptions
 - responsibility-owned Lean semantics, Temporal lifecycle, differential pipeline, contract verification, and CIB runner collaborators
-- source-synchronized walkthrough
 - focused and full gates
 - GitHub Actions verification on Ubuntu and macOS with the warm feedback budget unchanged
 

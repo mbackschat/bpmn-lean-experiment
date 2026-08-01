@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  rm,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -62,6 +70,26 @@ test("keeps tracked and pending repository material inside the A12 boundary", as
     assessA12Boundary(await repositoryBoundaryFiles(projectRoot)),
     [],
   );
+});
+
+test("excludes tracked paths deleted from the worktree", async () => {
+  const fixtureRoot = await mkdtemp(
+    path.join(tmpdir(), "bpmn-a12-boundary-deletion-"),
+  );
+  try {
+    const deletedPath = path.join(fixtureRoot, "deleted.ts");
+    execFileSync("git", ["init"], { cwd: fixtureRoot, stdio: "ignore" });
+    await writeFile(deletedPath, "export {};\n", "utf8");
+    execFileSync("git", ["add", "deleted.ts"], {
+      cwd: fixtureRoot,
+      stdio: "ignore",
+    });
+    await unlink(deletedPath);
+
+    assert.deepEqual(await repositoryBoundaryFiles(fixtureRoot), []);
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
 });
 
 test("binds the CreateDocument scenario to a distinct project-authored fixture", async () => {

@@ -32,14 +32,19 @@ type SourceHygieneAssessment = Readonly<{
 }>;
 
 function worktreeSourceFiles(): string[] {
-  return execFileSync(
+  const paths = execFileSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard"],
     { encoding: "utf8" },
-  )
-    .split("\n")
+  ).split("\n");
+  return presentSourceFiles(paths);
+}
+
+function presentSourceFiles(paths: ReadonlyArray<string>): string[] {
+  return paths
     .filter((path) => /\.(?:c?js|java|lean|mjs|ts)$/u.test(path))
-    .filter((path) => !path.includes("/dist/"));
+    .filter((path) => !path.includes("/dist/"))
+    .filter((path) => existsSync(path));
 }
 
 function nonblankLines(path: string): number {
@@ -280,6 +285,18 @@ test("source enumeration includes non-ignored files before commit", () => {
   } finally {
     unlinkSync(pendingSource);
   }
+});
+
+test("source enumeration excludes files deleted from the worktree", () => {
+  const deletedSource = ".source-hygiene-deleted-probe.ts";
+  assert.equal(existsSync(deletedSource), false);
+  assert.deepEqual(
+    presentSourceFiles([
+      "scripts/source-hygiene.test.ts",
+      deletedSource,
+    ]),
+    ["scripts/source-hygiene.test.ts"],
+  );
 });
 
 test("the JavaScript-module policy admits no extension and no location", () => {

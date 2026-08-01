@@ -100,7 +100,6 @@ public class CibSevenScenarioRunnerTest {
         ScenarioJson.readEvidenceResult(
             CAPSULE_ROOT.resolve("stale-completion.cibseven-evidence.json"));
 
-    // tag::cib-user-task-probe[]
     var rejected = runner.run(wrongScenario, PROJECT_ROOT);
     var stale = runner.run(staleScenario, PROJECT_ROOT);
 
@@ -112,7 +111,6 @@ public class CibSevenScenarioRunnerTest {
     assertEquals(stale.trace().get(4), stale.trace().get(6));
     assertEquals(ScenarioProtocol.CleanupProjection.clean(), rejected.diagnostics().cleanup());
     assertEquals(ScenarioProtocol.CleanupProjection.clean(), stale.diagnostics().cleanup());
-    // end::cib-user-task-probe[]
   }
 
   @Test

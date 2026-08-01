@@ -131,7 +131,6 @@ export async function runBpmnProcessWithHostEffects(
   // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
   enqueueStimulus(acceptedStimuli, pendingStimuli, start);
 
-  // tag::temporal-semantic-boundary[]
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
     bpmnOpenUserTasksQuery,
@@ -187,7 +186,6 @@ export async function runBpmnProcessWithHostEffects(
         validateCompleteUserTaskUpdate(acceptedStimuli, stimulus),
     },
   );
-  // end::temporal-semantic-boundary[]
 
   while (true) {
     if (

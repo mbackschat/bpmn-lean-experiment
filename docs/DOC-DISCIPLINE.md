@@ -153,7 +153,6 @@ Write documents as current contracts or arguments, not changelogs. Preserve hist
 After a documentation change, run:
 
 ```sh
-./scripts/pnpm.sh run check:doc-fragments
 ./scripts/verify.sh
 git diff --check
 ```
