@@ -108,6 +108,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     readme,
     packageManifest,
     caches,
+    mavenWrapperProperties,
   ] =
     await Promise.all([
       readFile(path.join(projectRoot, "scripts/setup-external-sources.sh"), "utf8"),
@@ -122,6 +123,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       readFile(path.join(projectRoot, "README.md"), "utf8"),
       readFile(path.join(projectRoot, "package.json"), "utf8"),
       readFile(path.join(projectRoot, "scripts/workspace-cache.lock"), "utf8"),
+      readFile(path.join(projectRoot, "runners/cibseven/.mvn/wrapper/maven-wrapper.properties"), "utf8"),
     ]);
 
   assert.match(setup, /external-sources\.lock/u);
@@ -161,6 +163,10 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(guide, /doctor\.sh research/u);
   assert.match(guide, /workspace meta-repository/u);
   assert.match(readme, /CONTRIBUTOR-SETUP-GUIDE\.md/u);
+  assert.match(
+    mavenWrapperProperties,
+    /^distributionSha256Sum=2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a$/mu,
+  );
   for (const dependencyOwner of [
     ".nvmrc",
     ".node-version",
