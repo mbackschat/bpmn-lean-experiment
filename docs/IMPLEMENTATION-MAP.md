@@ -61,7 +61,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - shared `CLAUDE.md`/`AGENTS.md`
 - A12-aligned document roles and proposal/spec lifecycle
 - enforced documentation index, filename-role, and local-link guards
-- enforced independent cold-review receipts for active proposals and post-policy specifications, with proposal/closure isolation, conditional semantic checkpoints, correction-audit targets, graduation blocking, and an exact Receive Task pending-lane barrier
+- enforced independent cold-review receipts for active proposals and post-policy specifications, with Status-section approval detection, object-database and `HEAD`-ancestry validation, an immutable-baseline grandfather set, proposal/closure isolation, conditional semantic checkpoints, correction-audit targets, graduation blocking, and a commit-diff Receive Task pending-lane barrier
 - enforced A12 boundary checks for source-license headers, dependency coordinates, exact external fixture bytes, external-checkout links, lower-layer bean identities, and the project-authored CreateDocument fixture provenance
 - enforced implementation-surface reviewability through per-surface implemented/absent sections and a 120-word review-unit ceiling
 - commit-bounded nonblank code/document capsule-cost measurement with a parser self-test and explicit unknown treatment for missing historical baselines

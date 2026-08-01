@@ -93,22 +93,88 @@ function firstSegment(value: string, separator: string | RegExp): string {
   return first ?? value;
 }
 
-function localLinkTargets(markdown: string): ReadonlyArray<string> {
+type LocalLinkTarget = Readonly<{
+  relativePath: string;
+  fragment: string | null;
+}>;
+
+function localLinkTargets(markdown: string): ReadonlyArray<LocalLinkTarget> {
   return [...markdown.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/gu)]
     .flatMap((match) => (match[1] === undefined ? [] : [match[1].trim()]))
-    .filter(
-      (target) =>
-        !target.startsWith("#") &&
-        !/^[a-z][a-z0-9+.-]*:/iu.test(target),
-    )
+    .filter((target) => !/^[a-z][a-z0-9+.-]*:/iu.test(target))
     .map((target) => {
       const withoutTitle = target.startsWith("<")
         ? target.slice(1, target.indexOf(">"))
         : firstSegment(target, /\s+/u);
-      return decodeURIComponent(firstSegment(withoutTitle, "#"));
+      const hashIndex = withoutTitle.indexOf("#");
+      const encodedPath =
+        hashIndex === -1 ? withoutTitle : withoutTitle.slice(0, hashIndex);
+      const encodedFragment =
+        hashIndex === -1 ? null : withoutTitle.slice(hashIndex + 1);
+      return {
+        relativePath: decodeURIComponent(encodedPath),
+        fragment:
+          encodedFragment === null ? null : decodeURIComponent(encodedFragment),
+      };
     })
-    .filter(Boolean);
+    .filter((target) => target.relativePath !== "" || target.fragment !== null);
 }
+
+function markdownHeadingText(value: string): string {
+  return value
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1")
+    .replace(/!?\[([^\]]*)\]\[[^\]]*\]/gu, "$1")
+    .replace(/<[^>]+>/gu, "")
+    .replace(/[`*_~]/gu, "")
+    .replace(/\\([\\`*_{}\[\]()#+.!-])/gu, "$1");
+}
+
+function githubHeadingSlug(value: string): string {
+  return markdownHeadingText(value)
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .replace(/[^\p{L}\p{M}\p{N}\p{Pc}\s-]/gu, "")
+    .replace(/\s/gu, "-");
+}
+
+function markdownAnchors(markdown: string): ReadonlySet<string> {
+  const anchors = new Set<string>();
+  const slugCounts = new Map<string, number>();
+  const headingPattern = /^#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$/gmu;
+  for (const match of markdown.matchAll(headingPattern)) {
+    const heading = match[1];
+    assert.ok(heading);
+    const base = githubHeadingSlug(heading);
+    if (base === "") {
+      continue;
+    }
+    const occurrence = slugCounts.get(base) ?? 0;
+    slugCounts.set(base, occurrence + 1);
+    anchors.add(occurrence === 0 ? base : `${base}-${occurrence}`);
+  }
+  const explicitAnchorPattern = /<(?:a|h[1-6]|span)\b[^>]*(?:id|name)=["']([^"']+)["'][^>]*>/gimu;
+  for (const match of markdown.matchAll(explicitAnchorPattern)) {
+    const anchor = match[1];
+    assert.ok(anchor);
+    anchors.add(anchor);
+  }
+  return anchors;
+}
+
+test("retains same-document and cross-document anchor targets", () => {
+  assert.deepEqual(
+    localLinkTargets(
+      "[same](#review-receipt) and [cross](TESTING-SPEC.md#independent-cold-review-gate)",
+    ),
+    [
+      { relativePath: "", fragment: "review-receipt" },
+      {
+        relativePath: "TESTING-SPEC.md",
+        fragment: "independent-cold-review-gate",
+      },
+    ],
+  );
+});
 
 test("keeps project-authored local Markdown links resolvable", async () => {
   const files = [
@@ -123,16 +189,33 @@ test("keeps project-authored local Markdown links resolvable", async () => {
     const documentPath = path.join(projectRoot, relativeDocumentPath);
     const markdown = await readFile(documentPath, "utf8");
     for (const target of localLinkTargets(markdown)) {
-      const resolved = path.resolve(path.dirname(documentPath), target);
+      const resolved =
+        target.relativePath === ""
+          ? documentPath
+          : path.resolve(path.dirname(documentPath), target.relativePath);
       try {
         await access(resolved);
       } catch {
         const scope = linkScope(resolved);
-        const finding = `${relativeDocumentPath} -> ${target}`;
+        const finding = `${relativeDocumentPath} -> ${target.relativePath}`;
         if (requiresResolution(scope)) {
           missing.push(finding);
         } else {
           absentReferences.push(finding);
+        }
+        continue;
+      }
+      if (
+        target.fragment !== null &&
+        linkScope(resolved) === LinkScope.Repository &&
+        path.extname(resolved).toLocaleLowerCase("en-US") === ".md"
+      ) {
+        const targetMarkdown =
+          resolved === documentPath ? markdown : await readFile(resolved, "utf8");
+        if (!markdownAnchors(targetMarkdown).has(target.fragment)) {
+          missing.push(
+            `${relativeDocumentPath} -> ${target.relativePath}#${target.fragment}`,
+          );
         }
       }
     }
@@ -178,11 +261,15 @@ test("keeps maintained documentation indexed and role-named", async () => {
   const registryPath = path.join(projectRoot, "docs/README.md");
   const registry = await readFile(registryPath, "utf8");
   const indexedFiles = new Set(
-    localLinkTargets(registry).map((target) =>
-      path.relative(
-        projectRoot,
-        path.resolve(path.dirname(registryPath), target),
-      ),
+    localLinkTargets(registry).flatMap((target) =>
+      target.relativePath === ""
+        ? []
+        : [
+            path.relative(
+              projectRoot,
+              path.resolve(path.dirname(registryPath), target.relativePath),
+            ),
+          ],
     ),
   );
   const unindexedFiles = documentationFiles

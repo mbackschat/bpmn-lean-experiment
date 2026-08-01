@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { access, readdir, readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -7,7 +8,8 @@ import { fileURLToPath } from "node:url";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const capsuleRoot = path.join(projectRoot, "docs/capsules");
 
-const prePolicySpecifications = new Set([
+const reviewPolicyBaseline = "f1ef362";
+const expectedPrePolicySpecifications = [
   "BOUNDARY-ERROR-SPEC.md",
   "CREATE-DOCUMENT-DATA-SPEC.md",
   "EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md",
@@ -21,7 +23,10 @@ const prePolicySpecifications = new Set([
   "SUBPROCESS-ERROR-PROPAGATION-SPEC.md",
   "USER-TASK-COMPLETION-DATA-SPEC.md",
   "USER-TASK-INTERACTION-SPEC.md",
-]);
+] as const;
+const prePolicySpecifications: ReadonlySet<string> = new Set(
+  expectedPrePolicySpecifications,
+);
 
 const ReviewStage = {
   Proposal: "Proposal",
@@ -42,6 +47,68 @@ type ReviewReceipt = Readonly<{
 const receiptHeading = "## Independent cold-review receipt";
 const commitPattern = /^[0-9a-f]{7,40}$/u;
 const approvedVerdicts = new Set(["approve", "approve-with-required-edits"]);
+
+function isOwnerApproved(document: string): boolean {
+  const statusHeading = /^## Status\s*$/mu.exec(document);
+  assert.ok(statusHeading, "active capsule proposal needs a Status section");
+  const statusStart = statusHeading.index + statusHeading[0].length;
+  const followingHeading = /^##\s+/gmu;
+  followingHeading.lastIndex = statusStart;
+  const next = followingHeading.exec(document);
+  const statusSection = document.slice(statusStart, next?.index ?? document.length);
+  return /\bOwner-approved\b/u.test(statusSection);
+}
+
+function isReviewCommitTarget(value: string): boolean {
+  if (!commitPattern.test(value)) {
+    return false;
+  }
+  const exists = spawnSync("git", ["cat-file", "-e", `${value}^{commit}`], {
+    cwd: projectRoot,
+    stdio: "ignore",
+  });
+  if (exists.status !== 0) {
+    return false;
+  }
+  const isAncestor = spawnSync(
+    "git",
+    ["merge-base", "--is-ancestor", value, "HEAD"],
+    { cwd: projectRoot, stdio: "ignore" },
+  );
+  return isAncestor.status === 0;
+}
+
+function gitLines(arguments_: ReadonlyArray<string>): ReadonlyArray<string> {
+  const result = spawnSync("git", arguments_, {
+    cwd: projectRoot,
+    encoding: "utf8",
+  });
+  assert.equal(
+    result.status,
+    0,
+    `git ${arguments_.join(" ")} failed: ${result.stderr}`,
+  );
+  return result.stdout.split("\n").filter(Boolean);
+}
+
+function baselineSpecifications(): ReadonlyArray<string> {
+  assert.equal(
+    isReviewCommitTarget(reviewPolicyBaseline),
+    true,
+    "the immutable review-policy baseline must remain an ancestor of HEAD",
+  );
+  return gitLines([
+    "ls-tree",
+    "-r",
+    "--name-only",
+    reviewPolicyBaseline,
+    "--",
+    "docs/capsules",
+  ])
+    .filter((file) => file.endsWith("-SPEC.md"))
+    .map((file) => path.basename(file))
+    .sort();
+}
 
 function parseReviewStage(value: string): ReviewStage {
   switch (value) {
@@ -102,7 +169,11 @@ function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
   const context = `${relativePath} ${row.stage}`;
 
   if (approvedVerdicts.has(row.verdict) || row.verdict === "reject") {
-    assert.match(row.target, commitPattern, `${context} needs an immutable review target`);
+    assert.equal(
+      isReviewCommitTarget(row.target),
+      true,
+      `${context} needs an immutable review target`,
+    );
     if (row.stage === ReviewStage.SemanticCheckpoint) {
       assert.ok(
         row.isolation === "external-fresh-session" || row.isolation === "fork-turns-none",
@@ -116,9 +187,9 @@ function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
       );
     }
     if (row.verdict === "approve-with-required-edits") {
-      assert.match(
-        row.correctionAudit,
-        commitPattern,
+      assert.equal(
+        isReviewCommitTarget(row.correctionAudit),
+        true,
         `${context} required edits need a correction-audit target`,
       );
     } else {
@@ -133,7 +204,11 @@ function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
       assert.equal(row.correctionAudit, "not-applicable");
       return;
     }
-    assert.match(row.target, commitPattern, `${context} needs the pending review target`);
+    assert.equal(
+      isReviewCommitTarget(row.target),
+      true,
+      `${context} needs the pending review target`,
+    );
     assert.equal(row.isolation, "not-recorded");
     assert.equal(row.correctionAudit, "not-applicable");
     return;
@@ -177,6 +252,11 @@ function receiptRow(
 
 test("requires review receipts for active proposals and post-policy specifications", async () => {
   const capsuleFiles = await readdir(capsuleRoot);
+  assert.deepEqual(
+    baselineSpecifications(),
+    [...expectedPrePolicySpecifications].sort(),
+    "the pre-policy exception set is fixed by its immutable baseline",
+  );
   for (const file of prePolicySpecifications) {
     assert.ok(
       capsuleFiles.includes(file),
@@ -192,7 +272,7 @@ test("requires review receipts for active proposals and post-policy specificatio
     const relativePath = `docs/capsules/${file}`;
     const document = await readFile(path.join(capsuleRoot, file), "utf8");
     const receipt = parseReceipt(document, relativePath);
-    if (/\*\*Owner-approved\b/u.test(document)) {
+    if (isOwnerApproved(document)) {
       assertExternallyApproved(
         receiptRow(receipt, ReviewStage.Proposal, relativePath),
         relativePath,
@@ -215,21 +295,49 @@ test("requires review receipts for active proposals and post-policy specificatio
   }
 });
 
+test("recognizes owner approval independently of status formatting", () => {
+  const variants = [
+    "## Status\n\n**Owner-approved after independent review.**",
+    "## Status\n\n**Status:** Owner-approved on 2026-07-26.",
+    "## Status\n\nOwner-approved on 2026-08-01.",
+    "## Status\n\n**Status: Owner-approved**",
+  ];
+
+  for (const document of variants) {
+    assert.equal(isOwnerApproved(document), true, document);
+  }
+});
+
+test("rejects syntactically valid names that are not review commits", () => {
+  assert.equal(isReviewCommitTarget("deadbee"), false);
+});
+
 test("keeps the cold-review lifecycle in its documentation owners", async () => {
-  const [contributorGuide, testingSpec, documentationDiscipline, capsuleRegistry] =
-    await Promise.all([
+  const [
+    contributorGuide,
+    testingSpec,
+    documentationDiscipline,
+    capsuleRegistry,
+    verificationWorkflow,
+  ] = await Promise.all([
       readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
       readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8"),
       readFile(path.join(projectRoot, "docs/DOC-DISCIPLINE.md"), "utf8"),
       readFile(path.join(capsuleRoot, "README.md"), "utf8"),
+      readFile(path.join(projectRoot, ".github/workflows/verify.yml"), "utf8"),
     ]);
 
   assert.match(contributorGuide, /^### Independent cold review$/mu);
+  assert.match(contributorGuide, /may not approve, append, rebase, or replace/u);
   assert.match(testingSpec, /^## Independent cold-review gate$/mu);
   assert.match(testingSpec, /external-fresh-session/u);
   assert.match(testingSpec, /fork-turns-none/u);
+  assert.match(testingSpec, new RegExp(reviewPolicyBaseline, "u"));
+  assert.match(testingSpec, /byte-identical/u);
+  assert.match(testingSpec, /must delete the capsule-specific pending barrier/u);
   assert.match(documentationDiscipline, /Independent cold-review receipt/u);
   assert.match(capsuleRegistry, /Independent cold-review receipt/u);
+  assert.match(verificationWorkflow, /^\s+fetch-depth: 0$/mu);
 });
 
 test("blocks Receive Task downstream lanes while its semantic review is pending", async () => {
@@ -242,9 +350,11 @@ test("blocks Receive Task downstream lanes while its semantic review is pending"
     relativePath,
   );
 
-  if (checkpoint.verdict !== "pending") {
-    return;
-  }
+  assert.equal(
+    checkpoint.verdict,
+    "pending",
+    "delete this capsule-specific barrier in the same change that records semantic-checkpoint approval",
+  );
 
   const [plan, implementationMap] = await Promise.all([
     readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8"),
@@ -254,41 +364,30 @@ test("blocks Receive Task downstream lanes while its semantic review is pending"
   assert.match(plan, /independent cold review[^.]*pending/iu);
   assert.match(implementationMap, /independent cold review[^.]*pending/iu);
 
-  const forbiddenUntilReview = [
-    "profiles/cibseven-2.2.0-message-addressed-receive-task-draft/profile.json",
-    "scenarios/message-addressed-receive-task/scenario.json",
+  const protectedRoots = [
+    "packages/differential",
+    "packages/temporal-adapter",
+    "profiles",
+    "runners",
+    "scenarios",
   ];
-  for (const blockedPath of forbiddenUntilReview) {
-    await assert.rejects(
-      access(path.join(projectRoot, blockedPath)),
-      `${blockedPath} must not exist before semantic review approval`,
-    );
-  }
-
-  const downstreamSourceRoots = [
-    "packages/differential/src",
-    "packages/differential/test",
-    "packages/temporal-adapter/src",
-    "packages/temporal-adapter/test",
-  ];
-  const blockedMarkers = [
-    "cibseven-2.2.0-message-addressed-receive-task-draft",
-    "message-addressed-receive-task",
-  ];
-  for (const root of downstreamSourceRoots) {
-    const files = await readdir(path.join(projectRoot, root), { recursive: true });
-    for (const file of files) {
-      if (typeof file !== "string" || !file.endsWith(".ts")) {
-        continue;
-      }
-      const source = await readFile(path.join(projectRoot, root, file), "utf8");
-      for (const marker of blockedMarkers) {
-        assert.equal(
-          source.includes(marker),
-          false,
-          `${path.join(root, file)} crosses the pending semantic checkpoint`,
-        );
-      }
-    }
-  }
+  const changedSinceCheckpoint = gitLines([
+    "diff",
+    "--name-only",
+    checkpoint.target,
+    "--",
+    ...protectedRoots,
+  ]);
+  const untracked = gitLines([
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "--",
+    ...protectedRoots,
+  ]);
+  assert.deepEqual(
+    [...new Set([...changedSinceCheckpoint, ...untracked])].sort(),
+    [],
+    `downstream-lane roots must remain byte-identical to pending checkpoint ${checkpoint.target}`,
+  );
 });

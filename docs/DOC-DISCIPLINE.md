@@ -146,4 +146,4 @@ After a documentation change, run:
 git diff --check
 ```
 
-The infrastructure gate enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names above, and fails if a project-authored local Markdown link is stale. A rename is incomplete until that guard and every applicable focused gate are green.
+The infrastructure gate enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names above, and fails if a project-authored local Markdown file or heading anchor is stale. A rename is incomplete until that guard and every applicable focused gate are green.

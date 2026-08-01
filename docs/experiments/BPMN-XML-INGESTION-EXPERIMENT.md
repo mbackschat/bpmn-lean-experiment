@@ -43,7 +43,7 @@ const { xml: serialized } = await moddle.toXML(imported.rootElement);
 const reparsed = await moddle.fromXML(serialized);
 ```
 
-No retained executable was added because the candidate dependency is not approved. If approved, the package tests listed in [the proposed decision](../BPMN-XML-INGESTION-DECISION.md#first-implementation-slice-after-approval) replace this one-off probe with a project-owned gate.
+No retained executable was added because the candidate dependency is not approved. If approved, the package tests listed in [the proposed decision](../BPMN-XML-INGESTION-DECISION.md#implemented-first-slice) replace this one-off probe with a project-owned gate.
 
 ## Results
 
