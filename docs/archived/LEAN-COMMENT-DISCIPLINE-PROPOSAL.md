@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and closure-reviewed. Owner-approved on 2026-08-01 after a read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS** and the same reviewer audited correction `c882d9c`. Closure review of implementation target `db7c94c` also returned **APPROVE WITH REQUIRED EDITS**; the same reviewer audited correction target `916e427` and closed every required finding. The stable instruction and gate contracts live in `CLAUDE.md` and `TESTING-SPEC.md`; this proposal is ready for archival as rationale and review provenance rather than as a current contract.
+Archived after completed closure review on 2026-08-02. Owner-approved on 2026-08-01 after a read-only external fresh-session review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS** and the same reviewer audited correction `c882d9c`. Closure review of implementation target `db7c94c` also returned **APPROVE WITH REQUIRED EDITS**; the same reviewer audited correction target `916e427` and closed every required finding. The stable instruction and gate contracts live in [`CLAUDE.md`](../../CLAUDE.md) and [`TESTING-SPEC.md`](../TESTING-SPEC.md); this archived proposal retains rationale and review provenance rather than owning a current contract.
 
 ## Decision requested
 
@@ -22,7 +22,7 @@ This proposal does not select BPMN meaning, a profile, a runtime representation,
 
 Lean is both executable source and an assurance artifact in this project. A reader must be able to recover the intended observable behavior, representation invariants, ownership rules, refusal boundaries, proof limits, and realistic wrong alternatives without reconstructing all of them from distant specifications. Names and types carry much of that information, but they cannot always carry why an ordering is observable, why a stronger theorem is false, which identity owns a token or wait, or which wire fact a strict decoder preserves.
 
-The project already states the correct principle in [CLAUDE.md](../CLAUDE.md): comments document semantic surplus, there is no target comment density, and stale or broader-than-evidence comments are defects. The sibling A12 Lean project states materially the same principle. The discrepancy is therefore not primarily a missing philosophy; it is an uneven application of that philosophy and a lack of objective guardrails around the few structural practices that can be checked safely.
+The project already states the correct principle in [CLAUDE.md](../../CLAUDE.md): comments document semantic surplus, there is no target comment density, and stale or broader-than-evidence comments are defects. The sibling A12 Lean project states materially the same principle. The discrepancy is therefore not primarily a missing philosophy; it is an uneven application of that philosophy and a lack of objective guardrails around the few structural practices that can be checked safely.
 
 Too little explanation has concrete assurance costs. Anonymous conformance facts are difficult to cite in review findings, distinguish in searches, or relate to the owning claim. Central runtime structures expose ownership and lifecycle fields whose joint invariant is not recoverable from their declarations alone. Boundary functions can preserve distinctions such as duplicate-key rejection or committed-state visibility without making that contract obvious at the call site.
 
@@ -42,7 +42,7 @@ tokei -t=Java,Kotlin,TypeScript,Lean
 
 It reported 56,478 code lines and 1,372 comment lines for this project, compared with 100,386 code lines and 8,591 comment lines for the Lean-only A12 sibling. Those values are 2.43 and 8.56 comment lines per 100 code lines respectively, a 3.52-fold difference. The project measurement came from a changing worktree and is retained only as the trigger for this proposal.
 
-For an immutable comparison, a clean checkout of project commit `cab74e26b1bbbd47467fdc7d13ea5771b44bf9f2` reports 56,705 code lines and 1,375 comment lines across the selected languages. The [registered A12 comparison revision](SOURCES.md#lean-sibling-experiment) at commit `50fdd19f1b349b1a85755e5d105c920a944119ca` reports 100,386 Lean code lines and 8,591 comment lines. The conclusion is unchanged: 2.42 versus 8.56 comment lines per 100 code lines, or approximately 3.53-fold.
+For an immutable comparison, a clean checkout of project commit `cab74e26b1bbbd47467fdc7d13ea5771b44bf9f2` reports 56,705 code lines and 1,375 comment lines across the selected languages. The [registered A12 comparison revision](../SOURCES.md#lean-sibling-experiment) at commit `50fdd19f1b349b1a85755e5d105c920a944119ca` reports 100,386 Lean code lines and 8,591 comment lines. The conclusion is unchanged: 2.42 versus 8.56 comment lines per 100 code lines, or approximately 3.53-fold.
 
 The mixed-language comparison is useful as a repository-level signal but is not like-for-like. On the same immutable baselines, this project's Lean sources contain 10,399 code lines and 467 comment lines, or 4.49 comments per 100 code lines. A12 contains 8.56, leaving an approximately 1.91-fold Lean-to-Lean difference. Neither ratio establishes that either codebase has the right amount of documentation.
 
@@ -75,7 +75,7 @@ The root invariant is:
 
 ## Proposed instruction contract
 
-The existing `Comments — document semantic surplus` section in [CLAUDE.md](../CLAUDE.md) remains authoritative and gains the following Lean-specific rules:
+The existing `Comments — document semantic surplus` section in [CLAUDE.md](../../CLAUDE.md) remains authoritative and gains the following Lean-specific rules:
 
 1. Apply a deletion test to every added or materially changed comment: if deleting it loses no contract, invariant, ordering rule, failure distinction, ownership fact, evidence provenance, resource boundary, or realistic false alternative, delete it and improve the name, type, theorem statement, or module structure instead.
 2. Never add or retain a comment to satisfy a ratio, coverage count, minimum word count, public-declaration quota, or guard. Never generate comment or docstring stubs.
@@ -156,7 +156,7 @@ These extractions are not comment-placement tricks. They address already-visible
 
 ## Executable guard design
 
-Keep [`scripts/source-hygiene.test.ts`](../scripts/source-hygiene.test.ts) as the owner of file-size, import-only umbrella, JavaScript, build-output, and erasable-syntax policy. It is already 445 nonblank lines and does not absorb the new Lean policy tests.
+Keep [`scripts/source-hygiene.test.ts`](../../scripts/source-hygiene.test.ts) as the owner of file-size, import-only umbrella, JavaScript, build-output, and erasable-syntax policy. It is already 445 nonblank lines and does not absorb the new Lean policy tests.
 
 Add `scripts/lean-source-contracts.test.ts` as the owner of module-document placement and named maintained-conformance facts. Add `scripts/lean-source-analysis.ts` as the shared owner of maintained Lean worktree discovery and lexical analysis. Its discovery function enumerates tracked and non-ignored pending Lean sources. Its scanner distinguishes code, line comments, nested block comments, string literals, and exact character-literal tokens, honors escapes, and preserves newline positions so diagnostics remain exact. A character literal is entered only after complete lookahead recognizes `'`, one Unicode source character or one valid Lean escape sequence, and its closing `'`; an unmatched apostrophe or identifier prime remains code. Comment state is recognized first and dominates both literal states, so apostrophes and quotes inside comments cannot open a literal. In particular, `--`, `/-`, and `-/` inside literals are data, never comment delimiters. The general source-hygiene owner retains its generic multi-language worktree enumeration and uses the shared scanner for import-only Lean umbrellas; the Lean-contract owner imports the dedicated Lean discovery function rather than duplicating enumeration.
 
@@ -207,14 +207,14 @@ If question 1 has no concrete answer, delete the comment. If question 2 is yes, 
 
 ### Required if approved
 
-- Add the instruction contract to [CLAUDE.md](../CLAUDE.md) without duplicating the entire proposal.
+- Add the instruction contract to [CLAUDE.md](../../CLAUDE.md) without duplicating the entire proposal.
 - Add the separate Lean source-contract test owner, share maintained-Lean discovery and literal-aware scanning through the focused analysis owner, and join both tests to the existing gate.
 - Remove anonymous examples from the maintained non-experimental conformance surface.
 - Apply only the targeted semantic-surplus corrections described above.
 - Resolve the two near-target module ownership issues before adding prose that would breach the source-hygiene target.
-- Update the Lean evidence cells for `UTASK-DISCOVER-01` and `UTASK-REFUSE-02` in [USER-TASK-INTERACTION-SPEC.md](capsules/USER-TASK-INTERACTION-SPEC.md): cite the three new checked theorem names specified above rather than `waitingObservation`, `expectedStaleCompletionTrace`, or another fixture definition.
-- Update [TESTING-SPEC.md](TESTING-SPEC.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and [PLAN.md](PLAN.md) when the guard and source correction are implemented; update the [documentation registry](README.md) atomically when the proposal is archived or deleted at closure.
-- Treat the implementation as a bounded enabling increment: record its clean implementation baseline and reviewed closure commit in [CAPSULE-COST-LEDGER.md](CAPSULE-COST-LEDGER.md), and compare its code and documentation churn with the nearest source-hygiene increment.
+- Update the Lean evidence cells for `UTASK-DISCOVER-01` and `UTASK-REFUSE-02` in [USER-TASK-INTERACTION-SPEC.md](../capsules/USER-TASK-INTERACTION-SPEC.md): cite the three new checked theorem names specified above rather than `waitingObservation`, `expectedStaleCompletionTrace`, or another fixture definition.
+- Update [TESTING-SPEC.md](../TESTING-SPEC.md), [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and [PLAN.md](../PLAN.md) when the guard and source correction are implemented; update the [documentation registry](../README.md) atomically when the proposal is archived or deleted at closure.
+- Treat the implementation as a bounded enabling increment: record its clean implementation baseline and reviewed closure commit in [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md), and compare its code and documentation churn with the nearest source-hygiene increment.
 
 ### Optional and non-gating
 
@@ -273,7 +273,7 @@ The nearest unsupported claim is that passing the guard proves a comment or theo
 
 ## External review contract
 
-The external reviewer should work read-only against the committed proposal target and read this proposal, the comment and Lean hygiene sections of [CLAUDE.md](../CLAUDE.md), the source-hygiene and independent-review sections of [TESTING-SPEC.md](TESTING-SPEC.md), [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md), [`scripts/source-hygiene.test.ts`](../scripts/source-hygiene.test.ts), and the Lean modules named under targeted source corrections.
+The external reviewer should work read-only against the committed proposal target and read this proposal, the comment and Lean hygiene sections of [CLAUDE.md](../../CLAUDE.md), the source-hygiene and independent-review sections of [TESTING-SPEC.md](../TESTING-SPEC.md), [DOC-DISCIPLINE.md](../DOC-DISCIPLINE.md), [`scripts/source-hygiene.test.ts`](../../scripts/source-hygiene.test.ts), and the Lean modules named under targeted source corrections.
 
 The review should answer:
 
@@ -287,4 +287,4 @@ The review should answer:
 8. Do any instructions encourage copied, stale, broader-than-evidence, or status-bearing comments?
 9. Is any required measure missing, disproportionate, or better expressed as a human review rule than a machine guard?
 
-Use the verdict and finding format in [the independent cold-review gate](TESTING-SPEC.md#independent-cold-review-gate). In particular, classify any boilerplate incentive as a required finding rather than an advisory style preference.
+Use the verdict and finding format in [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). In particular, classify any boilerplate incentive as a required finding rather than an advisory style preference.

@@ -7,7 +7,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Task | Read |
 |---|---|
 | Add, rename, graduate, archive, or classify a document | [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) |
-| Review the proposed Lean comment discipline and anti-boilerplate guardrails | [LEAN-COMMENT-DISCIPLINE-PROPOSAL.md](LEAN-COMMENT-DISCIPLINE-PROPOSAL.md) |
+| Change or review the implemented Lean comment discipline and anti-boilerplate guardrails | [CLAUDE.md](../CLAUDE.md#comments--document-semantic-surplus), [TESTING-SPEC.md](TESTING-SPEC.md#default-verification), and the [archived proposal rationale](archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md) |
 | Understand BPMN core, CIB overlay, and A12 adoption layering | [PROJECT-DESIGN.md](PROJECT-DESIGN.md#layered-product-architecture), [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md#layering-and-coverage-accounting), and [PLAN.md](PLAN.md) |
 | Review compositional BPMN source admission and lowering | [Profile-parameterized admission specification](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [archived compositional BPMN admission proposal](archived/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md), [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [Semantic Process IL specification](SEMANTIC-PROCESS-IL-SPEC.md), and [checked-source experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) |
 | Inspect and run the complete implemented catalog | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) and the [complete differential/refinement pipeline](TESTING-SPEC.md#complete-differentialrefinement-pipeline) |
@@ -45,7 +45,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 |---|---|
 | Top-level [README.md](../README.md) | New readers; durable purpose, architecture, quick start, and routes to the live implementation map and plan |
 | [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) | Contributors and agents; filename-role contracts, spec/proposal lifecycle, document homes, same-change triggers, and archive rules aligned with `a12-rulekit` |
-| [LEAN-COMMENT-DISCIPLINE-PROPOSAL.md](LEAN-COMMENT-DISCIPLINE-PROPOSAL.md) | Owner, Lean contributors, and external reviewers; proposed semantic-surplus commenting contract, anti-boilerplate boundaries, targeted Lean corrections, and objective source-hygiene enforcement |
+| [archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md](archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md) | Completed Lean comment-discipline proposal; historical motivation, anti-boilerplate rationale, implementation closure account, and approved external-review receipts whose stable contracts live in `CLAUDE.md` and `TESTING-SPEC.md` |
 | [CONTRIBUTOR-SETUP-GUIDE.md](CONTRIBUTOR-SETUP-GUIDE.md) | Contributors and coding agents; clean-machine prerequisites, exact external-source provisioning, fail-closed doctor checks, and submodule/fork policy |
 | [RUNNABLE-TEMPORAL-MVP-SPEC.md](RUNNABLE-TEMPORAL-MVP-SPEC.md) | Product users and adapter contributors; implemented external-Temporal command, documented bounded subset, dummy actor around a durable User Task wait, simulated form-input contract, operating commands, exit classifications, acceptance evidence, and exclusions |
 | [archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Preserved supplied architecture and assurance brief; current decisions and release gates have moved to active owners |
