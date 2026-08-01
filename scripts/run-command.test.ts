@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 
-import { runCommand } from "./run-command.ts";
+import { CommandTimeoutError, runCommand } from "./run-command.ts";
 
 test(
   "terminates a timed-out process group before descendants can escape",
@@ -36,7 +36,12 @@ test(
           timeoutMs: 200,
           terminationGraceMs: 50,
         }),
-        /exceeded 200ms/u,
+        (error: unknown) => {
+          assert.ok(error instanceof CommandTimeoutError);
+          assert.equal(error.timeoutMs, 200);
+          assert.match(error.message, /exceeded 200ms/u);
+          return true;
+        },
       );
       await delay(700);
       await assert.rejects(access(markerPath), { code: "ENOENT" });

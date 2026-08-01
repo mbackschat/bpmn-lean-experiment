@@ -63,7 +63,7 @@ The doctor hashes all eighteen dependency owners: every Node selector and worksp
 
 The Maven wrapper pins release `3.8.8` by versioned Maven Central URL and enforces distribution SHA-256 `2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a`; the tracked wrapper JAR identifies wrapper `3.2.0`, and Git pins both wrapper files. Node `24.18.0`, pnpm `11.18.0`, Lean `v4.31.0`, Temporal SDK `1.21.0`, Temporal CLI `v1.8.1`, CIB Seven artifacts `2.0.0`/`2.2.0`, and every direct package dependency remain exact in their owning manifests. Java is intentionally a checked Java 21 capability range rather than a vendor-specific binary pin; the doctor reports the resolved home used on the machine.
 
-Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MIWG_ROOT`. Those variables select another complete input for the named command; they do not allow the default gate or CI to omit an input. `BPMN_EXTERNAL_ROOT` applies uniformly to all four setup/check/doctor scopes and to the optional A12 adoption harness.
+Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MIWG_ROOT`. Those variables select another complete input for the named command; they do not allow the default gate or CI to omit an input. `BPMN_EXTERNAL_ROOT` applies uniformly to all four setup/check/doctor scopes and to the optional A12 adoption harness. A cold or contended host may set `BPMN_CIB_MAVEN_TIMEOUT_MS` to a larger positive integer of milliseconds for each release-specific CIB Maven invocation; the normal workstation deadline remains 60000 milliseconds.
 
 ## Coding-agent startup checklist
 

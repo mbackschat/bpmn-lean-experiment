@@ -12,6 +12,24 @@ export type RunCommandResult = Readonly<{
   stderr: string;
 }>;
 
+/** Distinguishes an owned deadline from command failure or parent interruption. */
+export class CommandTimeoutError extends Error {
+  readonly command: string;
+  readonly timeoutMs: number;
+
+  constructor(
+    command: string,
+    timeoutMs: number,
+    stdout: string,
+    stderr: string,
+  ) {
+    super(`${command} exceeded ${timeoutMs}ms\n${stdout}${stderr}`);
+    this.name = "CommandTimeoutError";
+    this.command = command;
+    this.timeoutMs = timeoutMs;
+  }
+}
+
 type TerminationReason = "timeout" | NodeJS.Signals;
 
 function validateDuration(
@@ -93,8 +111,11 @@ export async function runCommand(
     child.once("close", (code, signal) => {
       if (terminationReason === "timeout") {
         reject(
-          new Error(
-            `${command} exceeded ${options.timeoutMs}ms\n${stdout}${stderr}`,
+          new CommandTimeoutError(
+            command,
+            options.timeoutMs,
+            stdout,
+            stderr,
           ),
         );
         return;

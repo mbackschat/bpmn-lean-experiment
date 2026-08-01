@@ -1,5 +1,9 @@
 import { fileURLToPath } from "node:url";
 
+import {
+  resolveCibSevenMavenTimeoutMs,
+  wrapCibSevenMavenFailure,
+} from "./cibseven-maven-budget.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { runCommand } from "./run-command.ts";
 
@@ -18,8 +22,12 @@ const mavenSettings =
       import.meta.url,
     ),
   );
+const mavenTimeoutMs = resolveCibSevenMavenTimeoutMs(process.env);
 
-async function runTests(extraArguments: readonly string[]): Promise<void> {
+async function runTests(
+  release: string,
+  extraArguments: readonly string[],
+): Promise<void> {
   const arguments_ = [
     "-s",
     mavenSettings,
@@ -41,8 +49,10 @@ async function runTests(extraArguments: readonly string[]): Promise<void> {
       ...process.env,
       JAVA_HOME: resolveJavaHome(),
     },
-    timeoutMs: 60_000,
+    timeoutMs: mavenTimeoutMs,
     terminationGraceMs: 2_000,
+  }).catch((error: unknown) => {
+    throw wrapCibSevenMavenFailure(release, error);
   });
   process.stdout.write(result.stdout);
   process.stderr.write(result.stderr);
@@ -57,8 +67,8 @@ const boundaryErrorSemanticMethods = [
   "preservesAndExecutesAnExplicitEmptyErrorCodeVariable",
 ] as const;
 
-await runTests(["-Dtest=*Test,!CibSevenBoundaryErrorPhaseZeroProbeTest"]);
-await runTests([
+await runTests("2.2.0", ["-Dtest=*Test,!CibSevenBoundaryErrorPhaseZeroProbeTest"]);
+await runTests("2.0.0", [
   "-Dcibseven.version=2.0.0",
   `-Dtest=CibSevenBoundaryErrorPhaseZeroProbeTest#${boundaryErrorSemanticMethods.join("+")},CibSevenBoundaryErrorScenarioRunnerTest,CibSevenExclusiveGatewayJuelProbeTest,CibSevenIsolatedJuelRuntimeProbeTest`,
 ]);

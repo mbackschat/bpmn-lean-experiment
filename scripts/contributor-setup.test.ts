@@ -250,6 +250,8 @@ test("external evidence consumers fail closed and honor the shared root", async 
   assert.match(cibGate, /check-external-sources\.sh" verify/u);
   assert.doesNotMatch(cibGate, /runner_a12_model/u);
   assert.match(cibTests, /!CibSevenBoundaryErrorPhaseZeroProbeTest/u);
+  assert.match(cibTests, /resolveCibSevenMavenTimeoutMs/u);
+  assert.match(cibTests, /wrapCibSevenMavenFailure/u);
   assert.doesNotMatch(cibTests, /externalTargetCarriesTheReviewedEmptyAttributeShape/u);
   assert.doesNotMatch(validator, /well-formedness only/u);
 });
