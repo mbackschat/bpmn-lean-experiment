@@ -347,6 +347,8 @@ The bounded process-transfer study in [research/A12-KERNEL-LEAN-PROCESS-RESEARCH
 
 On 2026-07-26 the later read-only worktree at committed base [`a225157`](https://github.com/mbackschat/a12-kernel-lean/tree/a2251579e2205a6b051ccabb0291285abb8406c4) supplied the archived [`SEMANTIC-CORE-IL-PROPOSAL.md`](https://github.com/mbackschat/a12-kernel-lean/blob/a2251579e2205a6b051ccabb0291285abb8406c4/docs/archived/SEMANTIC-CORE-IL-PROPOSAL.md) as negative design evidence. A12 rejected its universal Core IL because material domain semantics preceded the boundary, typed structure was erased, legacy family evaluators remained underneath it, malformed structure was conflated with semantic uncertainty, and preservation obligations were not fixed before implementation. The BPMN project’s bounded [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md) adopts those rejection criteria rather than transferring the rejected architecture. The evolving sibling worktree had unrelated uncommitted changes and remained a read-only research input.
 
+On 2026-08-01 the later clean read-only checkout at [`50fdd19`](https://github.com/mbackschat/a12-kernel-lean/tree/50fdd19f1b349b1a85755e5d105c920a944119ca) supplied only lexical comment-shape and `tokei` measurements for [the Lean comment discipline proposal](LEAN-COMMENT-DISCIPLINE-PROPOSAL.md). That MIT-licensed sibling remains comparative process evidence rather than semantic authority; no source or comments were copied, and this observation does not replace the stable reference revision above.
+
 ## fUML reference implementation
 
 Read-only checkout: [ModelDriven/fUML-Reference-Implementation at `45e5063`](https://github.com/ModelDriven/fUML-Reference-Implementation/tree/45e506336d4cd56965d4ad3b684149245f899f3a)
