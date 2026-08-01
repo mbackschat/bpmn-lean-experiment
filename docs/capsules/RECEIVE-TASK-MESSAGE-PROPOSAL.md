@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved after independent review and required corrections; the source, Lean, semantic-core, profile, retained-CIB, differential, and Temporal closure candidate is implemented. The mandatory external closure review remains pending, so this document has not graduated to `-SPEC`.**
+**Owner-approved after independent review and required corrections; the source, Lean, semantic-core, profile, retained-CIB, differential, and Temporal closure candidate is implemented. The external closure review returned required edits, which are committed at `f5f9caf`; the same reviewer thread must audit that correction target before this document can graduate to `-SPEC`.**
 
 ## Independent cold-review receipt
 
@@ -10,9 +10,9 @@
 |---|---|---|---|---|
 | Proposal | `ed8596d` | `external-fresh-session` | `approve-with-required-edits` | `2f39cc2` |
 | Semantic checkpoint | `7226733` | `fork-turns-none` | `approve-with-required-edits` | `5a74bad` |
-| Closure | `3881a7a` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `3881a7a` | `external-fresh-session` | `approve-with-required-edits` | `f5f9caf` |
 
-The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. Profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal evidence are implemented. Immutable closure target `3881a7a` awaits the mandatory external fresh-session review. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
+The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. The external fresh-session closure review of immutable target `3881a7a` approved the account with required edits. Correction target `f5f9caf` closes the three required findings and awaits audit in that same reviewer thread; the proposal has not graduated. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Exact question
 
@@ -348,7 +348,7 @@ The reusable quantified Lean delivery-soundness theorem permits evaluator-produc
 
 The pre-release gate retains no Event History fixture or Workflow patch. It creates, checks, replays, and discards live histories in one run. The Receive Task witness shares the existing Message server and compiled Workflow bundle, adds no second server or production runtime path, and splits reusable Message test support from the under-600-line focused witness. The 21-case pipeline remains below the unchanged warm budget; CIB remains the dominant batch cost. The result prioritizes packaging the reviewer proto-MVP before another CIB-ordered semantic capsule rather than changing the breadth ranking itself.
 
-The commit-bounded cost measurement uses final approved proposal baseline `2f39cc2`; its closure boundary and comparison with User Task completion data and scoped runtime data are recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md). A separately cold external closure review of the implemented account, CIB fidelity boundary, differential mutation, Temporal witness, and this reflection remains mandatory before graduation.
+The commit-bounded cost measurement uses final approved proposal baseline `2f39cc2`; its closure boundary and comparison with User Task completion data and scoped runtime data are recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md). The same external reviewer thread must audit correction target `f5f9caf` before graduation.
 
 ## Owner decision requested
 
@@ -361,4 +361,4 @@ Approve or reject these product choices together:
 
 The known eventual consumer is the BPMN engine's CIB Seven breadth roadmap. This capsule does not claim that A12 currently contains or requires Receive Task, and it does not add a downstream product adapter.
 
-Implementation began only after independent review corrections and explicit owner approval were recorded. The implementation baseline for cost measurement is final approved proposal commit `2f39cc2`, not this draft's first commit. Graduation remains blocked on the external closure review.
+Implementation began only after independent review corrections and explicit owner approval were recorded. The implementation baseline for cost measurement is final approved proposal commit `2f39cc2`, not this draft's first commit. Graduation remains blocked on the closure correction audit of `f5f9caf`.
