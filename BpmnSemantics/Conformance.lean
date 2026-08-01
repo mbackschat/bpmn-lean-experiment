@@ -4,25 +4,30 @@ import BpmnSemantics.SemanticProcessContract
 
 /-! # BpmnSemantics.Conformance — profile-independent contract locks
 
-These examples lock only distinctions required directly by the architecture handoff.
+These facts lock only distinctions required directly by the architecture handoff.
 They are not evidence of BPMN or CIB Seven compatibility.
 -/
 
 namespace BpmnSemantics
 
-example : CommandOutcome.committed.isCommit = true := rfl
-example : CommandOutcome.rolledBack.isCommit = false := rfl
-example : CommandOutcome.rejected.isCommit = false := rfl
-example : CommandOutcome.semanticFailure.isCommit = false := rfl
-example : CommandOutcome.unsupported.isCommit = false := rfl
+namespace CommandOutcome
 
-example : ScenarioOutcome.semantic .rolledBack ≠ .semantic .rejected := by
+theorem isCommit_iff_committed (outcome : CommandOutcome) :
+    outcome.isCommit = true ↔ outcome = .committed := by
+  cases outcome <;> decide
+
+end CommandOutcome
+
+theorem rollback_and_rejection_outcomes_are_distinct :
+    ScenarioOutcome.semantic .rolledBack ≠ .semantic .rejected := by
   decide
 
-example : ScenarioOutcome.semantic .semanticFailure ≠ .harnessFailure := by
+theorem semantic_and_harness_failures_are_distinct :
+    ScenarioOutcome.semantic .semanticFailure ≠ .harnessFailure := by
   decide
 
-example : ScenarioOutcome.infrastructureFailure ≠ .harnessFailure := by
+theorem infrastructure_and_harness_failures_are_distinct :
+    ScenarioOutcome.infrastructureFailure ≠ .harnessFailure := by
   decide
 
 def contractScenario : Scenario :=
@@ -64,14 +69,16 @@ def contractScenario : Scenario :=
           , "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/TaskAssigneeTest.java#testTaskAssignee"
           , "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId" ] } }
 
-example : contractScenario.stimuli.length = 2 := rfl
+theorem contract_scenario_has_two_stimuli :
+    contractScenario.stimuli.length = 2 := rfl
 
 def emptyRunner : ScenarioRunner :=
   fun _ =>
     { outcome := .semantic .committed
       trace := [] }
 
-example : (emptyRunner contractScenario).trace = [] := rfl
+theorem empty_runner_emits_no_trace :
+    (emptyRunner contractScenario).trace = [] := rfl
 
 #check SemanticProcess.Obligations.evaluator_sound
 #check SemanticProcess.Obligations.lower_preserves_supported_run

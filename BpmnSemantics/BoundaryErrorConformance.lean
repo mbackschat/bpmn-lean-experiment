@@ -223,8 +223,11 @@ def expectedTrace : List CanonicalObservation :=
   , .command ⟨"complete-boundary-user-task"⟩ .committed
   , .state completedObservation ]
 
-example : checkedWellFormed checkedProcess = true := by decide
-example : programWellFormed program = true := by decide
+theorem checked_process_is_well_formed :
+    checkedWellFormed checkedProcess = true := by decide
+
+theorem lowered_program_is_well_formed :
+    programWellFormed program = true := by decide
 
 theorem caught_error_trace_is_exact :
     runScenario program scenario =

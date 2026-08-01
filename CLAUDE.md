@@ -144,6 +144,10 @@ Comments explain information that cannot be recovered reliably from names, types
 - Tests: class-level documentation names the contract and oracle. Test names describe cases. Inline comments are reserved for a discriminating fixture, intentional perturbation, provenance constraint, or otherwise invisible setup fact.
 - Keep comments durable: release-set identifiers, chronology, implementation status, and “currently” claims belong in proposals, gap ledgers, or Git. Stable finding or specification identifiers are welcome when they provide traceable evidence.
 - Delete or shorten a comment when refactoring makes it redundant. A stale or broader-than-evidence comment is a defect.
+- Apply a deletion test to every added or materially changed Lean comment: if deletion loses no contract, invariant, ordering, failure distinction, ownership fact, evidence provenance, resource boundary, or realistic false alternative, improve the name, type, theorem, or module boundary and omit the comment.
+- Never add or retain comments to satisfy a ratio, coverage count, minimum word count, or declaration quota, and never generate comment or docstring stubs. State a shared invariant once at its narrowest owner rather than repeating it across fields, helpers, fixtures, or proofs.
+- In maintained non-experimental files named `Conformance.lean` or ending in `Conformance.lean`, give every durable checked fact a descriptive public `theorem` name. Reserve `private theorem` for supporting lemmas and do not add a docstring when the name and proposition already carry the contract.
+- Keep routine private helpers, decoder plumbing, and tactics uncommented. Necessary comments count normally toward source-size review; split a crowded owner by semantic responsibility instead of compressing code or deleting useful explanation.
 
 ### Code hygiene and module boundaries
 

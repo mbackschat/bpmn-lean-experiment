@@ -132,16 +132,21 @@ def expectedTrace : List CanonicalObservation :=
   , .command fireCommandId .committed
   , .state completedObservation ]
 
-example : checkedWellFormed checkedProcess = true := by decide
-example : programWellFormed program = true := by decide
-example : lowerCheckedProcess checkedProcess = program := by decide
+theorem checked_process_is_well_formed :
+    checkedWellFormed checkedProcess = true := by decide
 
-example :
+theorem lowered_program_is_well_formed :
+    programWellFormed program = true := by decide
+
+theorem checked_process_lowering_is_exact :
+    lowerCheckedProcess checkedProcess = program := by decide
+
+theorem exact_deadline_scenario_trace_is_exact :
     runScenario program scenario =
       { outcome := .semantic .committed, trace := expectedTrace } := by
   decide
 
-example :
+theorem early_timer_firing_is_rejected :
     applyStimulus scenarioClosureLimit program
         (singletonTimerWaitingState timerWait)
         (.fireTimer fireCommandId timerId 999) =
@@ -159,7 +164,7 @@ theorem early_timer_firing_is_not_permitted :
       (.fireTimer fireCommandId timerId 999)).outcome ≠ .committed := by
   decide
 
-example :
+theorem late_timer_firing_is_rejected :
     applyStimulus scenarioClosureLimit program
         (singletonTimerWaitingState timerWait)
         (.fireTimer fireCommandId timerId 1001) =

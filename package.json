@@ -18,7 +18,7 @@
     "check:semantic-types": "tsc -p packages/semantic-core/tsconfig.type-test.json",
     "check:harness-types": "tsc -p tsconfig.harness.json",
     "check:cmof-semantic-process": "node scripts/check-bpmn-semantic-process-metamodel.ts",
-    "check:source-hygiene": "node --test scripts/source-hygiene.test.ts",
+    "check:source-hygiene": "node --test scripts/source-hygiene.test.ts scripts/lean-source-contracts.test.ts",
     "mvp:run": "pnpm build:bpmn-source && pnpm build:temporal-adapter && node packages/temporal-adapter/cli/run-mvp.ts",
     "replace:cib-evidence": "node scripts/replace-cibseven-evidence.ts --replace",
     "research:cib-breadth": "node scripts/cib-bpmn-breadth.ts",

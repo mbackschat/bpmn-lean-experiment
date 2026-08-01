@@ -161,8 +161,11 @@ def expectedTrace : List CanonicalObservation :=
   , .command ⟨"complete-effect-sha256:f596120e7c23b39e80a25da929e64ee8c5a311a0f8281a132833d6afd33f4c88"⟩ .committed
   , .state completedObservation ]
 
-example : checkedWellFormed checkedProcess = true := by decide
-example : programWellFormed program = true := by decide
+theorem checked_process_is_well_formed :
+    checkedWellFormed checkedProcess = true := by decide
+
+theorem lowered_program_is_well_formed :
+    programWellFormed program = true := by decide
 
 theorem literal_input_commits_exact_arguments :
     evaluateInputMappings inputMappings = some arguments := by
@@ -190,7 +193,7 @@ theorem completion_removes_only_the_matching_owned_scope :
           activities := [{ owner := secondEffectId, bindings := arguments }] } := by
   decide
 
-example :
+theorem duplicate_owned_scope_is_rejected :
     completeActivityVariableScope
         { expectedWaitingVariables with
           activities :=
@@ -291,7 +294,7 @@ theorem invalid_patch_is_rejected
   exact effect_result_mapping_failure_is_rejected
     program effectWait commandId result 0 invalid
 
-example :
+theorem missing_patch_is_rejected :
     applyStimulus scenarioClosureLimit program waitingState
         (.completeEffect ⟨"missing-patch"⟩ effectId (.success [])) =
       { outcome := .rejected
@@ -300,7 +303,7 @@ example :
         ambiguousInternalChoice := false } :=
   invalid_patch_is_rejected ⟨"missing-patch"⟩ (.success []) (by decide)
 
-example :
+theorem extra_patch_is_rejected :
     applyStimulus scenarioClosureLimit program waitingState
         (.completeEffect ⟨"extra-patch"⟩ effectId
           (.success
@@ -316,7 +319,7 @@ example :
       , { name := "extra", value := .string "extra" } ])
     (by decide)
 
-example :
+theorem duplicate_patch_is_rejected :
     applyStimulus scenarioClosureLimit program waitingState
         (.completeEffect ⟨"duplicate-patch"⟩ effectId
           (.success

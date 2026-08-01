@@ -113,36 +113,36 @@ def expectedStaleCompletionTrace : List CanonicalObservation :=
     [ .command ⟨"complete-stale-user-task-instance"⟩ .rejected
     , .state completedObservation ]
 
-example :
+theorem successful_scenario_trace_is_exact :
     run successfulScenario =
       { outcome := .semantic .committed
         trace := expectedSuccessfulTrace } := by
   decide
 
-example :
+theorem wrong_activation_scenario_trace_is_exact :
     run wrongActivationScenario =
       { outcome := .semantic .rejected
         trace := expectedWrongActivationTrace } := by
   decide
 
-example :
+theorem stale_completion_is_rejected_without_reactivation :
     run staleCompletionScenario =
       { outcome := .semantic .rejected
         trace := expectedStaleCompletionTrace } := by
   decide
 
-example :
+theorem waiting_projection_is_independent_of_next_command :
     (run successfulScenario).trace[2]? =
       (run wrongActivationScenario).trace[2]? := by
   decide
 
-example :
+theorem zero_closure_limit_is_a_harness_failure :
     runWithClosureLimit 0 successfulScenario =
       { outcome := .harnessFailure
         trace := [.deployment .committed] } := by
   decide
 
-example :
+theorem wrong_activation_application_is_rejected :
     BpmnSemantics.SemanticProcess.applyStimulus
         BpmnSemantics.SemanticProcess.scenarioClosureLimit
         program afterStartState
@@ -157,7 +157,7 @@ example :
         ambiguousInternalChoice := false } :=
   wrong_activation_is_rejected 2 (by decide)
 
-example :
+theorem wrong_process_instance_is_rejected :
     BpmnSemantics.SemanticProcess.applyStimulus
         BpmnSemantics.SemanticProcess.scenarioClosureLimit
         program afterStartState
@@ -175,7 +175,7 @@ example :
       submittedValues 0 afterStartState.variables
       (by simp [exactTaskId, exactWait])
 
-example :
+theorem element_identity_without_activation_is_insufficient :
     let wrongTaskId := { exactTaskId with activation := 2 }
     wrongTaskId.elementId = exactTaskId.elementId ∧
       (BpmnSemantics.SemanticProcess.applyStimulus

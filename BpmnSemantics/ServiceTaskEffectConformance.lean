@@ -129,9 +129,14 @@ def expectedTrace : List CanonicalObservation :=
   , .command ⟨"complete-effect"⟩ .committed
   , .state completedObservation ]
 
-example : checkedWellFormed checkedProcess = true := by decide
-example : programWellFormed program = true := by decide
-example : lowerCheckedProcess checkedProcess = program := by decide
+theorem checked_process_is_well_formed :
+    checkedWellFormed checkedProcess = true := by decide
+
+theorem lowered_program_is_well_formed :
+    programWellFormed program = true := by decide
+
+theorem checked_process_lowering_is_exact :
+    lowerCheckedProcess checkedProcess = program := by decide
 
 theorem successful_effect_trace_is_exact :
     runScenario program scenario =
@@ -146,7 +151,7 @@ theorem start_prefix_projects_one_effect_intent :
       , .state waitingObservation ] := by
   decide
 
-example :
+theorem wrong_effect_activation_is_rejected :
     applyStimulus scenarioClosureLimit program
         (singletonEffectWaitingState effectWait)
         (.completeEffect ⟨"wrong-activation"⟩

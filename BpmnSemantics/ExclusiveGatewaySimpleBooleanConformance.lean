@@ -20,37 +20,38 @@ private def candidate (flowId : String) (condition : SimpleBooleanExpression) :
     output := ⟨"place:" ++ flowId⟩
     origin := { elementId := ⟨flowId⟩ } }
 
-example :
+theorem string_equals_expression_parses_exactly :
     parseSimpleBooleanExpression "stringEquals(route,\"review\")" =
       some (.stringEquals "route" "review") := by
   native_decide
 
-example : parseSimpleBooleanExpression " isPresent(route)" = none := by
+theorem leading_whitespace_is_rejected :
+    parseSimpleBooleanExpression " isPresent(route)" = none := by
   decide
 
-example :
+theorem missing_binding_is_not_present :
     evaluateSimpleBooleanExpression (.isPresent "route") [] =
       some false := by
   decide
 
-example :
+theorem null_binding_is_null :
     evaluateSimpleBooleanExpression (.isNull "route")
       [{ name := "route", value := .null }] = some true := by
   decide
 
-example :
+theorem matching_string_binding_is_equal :
     evaluateSimpleBooleanExpression (.stringEquals "route" "review")
       [{ name := "route", value := .string "review" }] = some true := by
   decide
 
-example :
+theorem first_true_candidate_selects_its_output :
     selectConditionalOutput
       [ candidate "Flow_First" (.literal false)
       , candidate "Flow_Second" (.literal true) ]
       defaultOutput [] = some secondOutput := by
   decide
 
-example :
+theorem all_false_candidates_select_the_default :
     selectConditionalOutput
       [ candidate "Flow_First" (.literal false)
       , candidate "Flow_Second" (.literal false) ]

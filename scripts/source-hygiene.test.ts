@@ -11,6 +11,8 @@ import {
 } from "node:fs";
 import test from "node:test";
 
+import { analyzeLeanSource } from "./lean-source-analysis.ts";
+
 const reviewTarget = 600;
 const hardCeiling = 1_000;
 
@@ -64,45 +66,8 @@ function javaScriptModules(files: ReadonlyArray<string>): string[] {
   return files.filter((path) => /\.(?:c?js|mjs)$/u.test(path));
 }
 
-function uncommentedLeanSource(source: string): string {
-  let result = "";
-  let blockDepth = 0;
-  for (let index = 0; index < source.length; index += 1) {
-    const pair = source.slice(index, index + 2);
-    if (blockDepth > 0) {
-      if (pair === "/-") {
-        blockDepth += 1;
-        index += 1;
-      } else if (pair === "-/") {
-        blockDepth -= 1;
-        index += 1;
-      } else if (source[index] === "\n") {
-        result += "\n";
-      }
-      continue;
-    }
-    if (pair === "/-") {
-      blockDepth = 1;
-      index += 1;
-    } else if (pair === "--") {
-      const newline = source.indexOf("\n", index + 2);
-      if (newline === -1) {
-        break;
-      }
-      result += "\n";
-      index = newline;
-    } else {
-      result += source[index];
-    }
-  }
-  if (blockDepth !== 0) {
-    throw new SyntaxError("unterminated Lean block comment");
-  }
-  return result;
-}
-
 function assessLeanUmbrella(path: string, source: string): string | null {
-  const executableLines = uncommentedLeanSource(source)
+  const executableLines = analyzeLeanSource(source).code
     .split(/\r?\n/u)
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
