@@ -139,9 +139,9 @@ The owner-approved [CreateDocument data and mapping specification](capsules/CREA
 
 **Disposition:** Stage 3b is accepted and frozen. The compositional-admission programme is superseded; later proof stages and its composed profile are not the next work.
 
-## BPMN coverage program after boundary Error
+## BPMN coverage program after the reviewer proto-MVP
 
-The boundary-error capsule is closed. Implementation now changes from target-model-led vertical expansion to reusable BPMN mechanism coverage. A12 remains a prioritization and acceptance input, and CIB remains an on-demand overlay.
+The boundary-error capsule is closed. The reusable BPMN mechanism-coverage programme remains the long-term route to Process Execution Conformance, but its next breadth increment is scheduled after the reviewer proto-MVP below. A12 remains a prioritization and acceptance input, and CIB remains an on-demand overlay.
 
 ### Work unit 1 — establish the coverage denominator and mechanism map
 
@@ -257,12 +257,35 @@ None End
 
 The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) and [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) own their semantic rules, observations, laws, non-laws, witnesses, runtime-information invariants, evidence matrices, assurance boundaries, and exclusions. The [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source contract, current operation families, lowering, well-formedness, exact Lean proof boundary, event-growth policy, maintained obligations, and stop criteria.
 
+## Reviewer proto-MVP milestone
+
+The next product milestone is a reviewer-facing end-to-end demonstration of the architecture over a deliberately small catalog of bounded executable BPMN profiles. It is not a claim that arbitrary combinations of the catalog elements are admitted, and it does not replace the BPMN requirement ledger as the conformance denominator.
+
+The catalog contains the smallest implemented slices that expose each important seam:
+
+| Demonstration model | BPMN mechanism | Architectural seam demonstrated |
+|---|---|---|
+| None Start Event → User Task → None End Event | durable human wait, exact occurrence completion, Process variables including explicit null | XML admission, canonical interaction discovery, client command, Worker replacement, replay, and selected CIB comparison |
+| None Start Event → Message-addressed Receive Task → None End Event | direct Message subscription and exact delivery | checked Message identity, Temporal Signal ingress while the Worker is absent, stale/wrong-channel refusal, canonical subscription projection, replay, and selected CIB comparison |
+| None Start Event → Intermediate Catch Timer Event → None End Event | one literal `PT1S` duration | semantic logical time, durable Temporal timer wakeup, replay, and standards-only differential agreement |
+| None Start Event → bounded Service Task → None End Event | neutral external-effect intent and exact two-attempt host policy | committed effect intent, Activity execution, retry reconciliation, Worker replacement, replay, and selected CIB comparison |
+| bounded Parallel Gateway fork/join | token multiplicity and synchronization | reusable graph execution and cross-target semantic agreement without inventing a host-specific scheduler |
+| embedded Sub-Process with interrupting boundary Error | scope ownership, typed fault propagation, and interruption | nested runtime ownership, exceptional completion, durable hosting, replay, and selected CIB comparison |
+
+The demonstration must show the same boundary in order: exact BPMN XML bytes → checked project-owned graph → Semantic Process IL → Lean reference behavior and laws → independent TypeScript semantic-core result → Temporal durability → differential comparison → retained CIB evidence only where the selected profile claims it. Each catalog entry must state its exact admission profile, public observation, nearest unsupported claim, and whether CIB is an oracle lane or deliberately absent.
+
+The milestone excludes general model composition, general expression languages, loops and multi-instance Activities, event races, Call Activities, Collaborations and Message Flows, payload and correlation, compensation and transactions, assignment and authorization, a task-list UI, migration, and production Event History compatibility. The reviewer path uses the existing artifact catalogs and gates; it adds no second runner, demo-only semantic mode, or hand-maintained expected result.
+
+Success requires the Receive Task closure review to pass, one documented command path to exercise the catalog from source through durable execution and replay, and an evidence map that prevents success in one lane from being presented as BPMN conformance or broad CIB compatibility. Only then does work resume on the next BPMN breadth capsule and the exhaustive denominator programme.
+
 ## Ordered work
 
 1. **Completed — direct-parent Sub-Process Error propagation:** checked source, schemas, generic graph admission, exact lowering, Lean relation/evaluator/laws, independent TypeScript semantics, three answer-free CIB-backed schedules, differential mutations, post-throw Temporal restart/replay, and bypass evidence are closed under the [implemented specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md).
 2. **Completed — reproducible CIB Seven breadth refresh:** `pnpm research:cib-breadth` inventories the pinned 1,144-file corpus with fixture-tested, namespace-insensitive structural classification and records both file and occurrence counts without treating them as conformance evidence.
 3. **Completed — Message-addressed Receive Task semantic review checkpoint:** the project-authored phase-zero fixture passed against packaged CIB Seven `2.2.0` before any Message-channel change, selecting `cibseven-2.2.0-message-addressed-receive-task-draft` and `CIB-AGR-0009`. The atomic closed-channel replacement, exact source admission/lowering, combined declaration-order discriminator, and reused Lean/semantic-core Message behavior are implemented at checkpoint `7226733`; its independent review required checked-source and observation-evidence corrections, then passed correction audit at `5a74bad`.
-4. **Next — Message-addressed Receive Task evidence closure:** add the current profile/scenario/result artifact roundtrip, retained CIB projection, differential registration with a meaningful seeded mutation, and the Receive-Task-specific Temporal refinement/replay witness without admitting addressless legacy signal, operation-addressed invention, payload, correlation, repetition, Collaboration, or adjacent Event loci.
+4. **In progress — Message-addressed Receive Task evidence closure:** the current profile/scenario/result artifact roundtrip and retained CIB projection are implemented. Next add differential registration with a meaningful direct-channel-kind mutation and the Receive-Task-specific Temporal Signal/refinement/replay witness, then complete the mandatory independent closure review without admitting addressless legacy signal, operation-addressed invention, payload, correlation, repetition, Collaboration, or adjacent Event loci.
+5. **Next — package the reviewer proto-MVP:** define one reproducible walkthrough over the six catalog entries above, reuse the existing artifact and pipeline catalogs, and publish an exact claim/evidence matrix that keeps BPMN requirements, selected CIB relationships, Lean properties, TypeScript behavior, and Temporal refinement distinct. Do not add semantic behavior merely to make the demonstration look broader.
+6. **Then — resume reusable BPMN breadth:** continue the requirement-denominator and mechanism-map work before selecting the next capsule. Prefer mechanisms that expand Process Execution coverage across models; use CIB breadth and A12 prevalence only to order equal-value candidates.
 
 Completed commit-bounded capsule measurements live in the [capsule cost ledger](CAPSULE-COST-LEDGER.md); implemented and absent claims live in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). Git and the owning specifications retain completed implementation history.
 
