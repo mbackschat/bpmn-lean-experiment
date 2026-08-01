@@ -91,7 +91,7 @@ type CheckedIntermediateCatchMessageEvent = DeepReadonly<{
 }>;
 ```
 
-This implemented capsule always produces the `operationMessage` arm. The later owner-approved [Receive Task capsule](RECEIVE-TASK-MESSAGE-PROPOSAL.md) atomically widened the one current wire contract with the `directMessage` arm while preserving this capsule's exact meaning. `interfaceOperationId` always denotes the BPMN `Interface.operation` identity. It is not a Semantic Process operation ID, a transport operation, or an effect descriptor operation.
+This implemented capsule always produces the `operationMessage` arm. The [Receive Task specification](RECEIVE-TASK-MESSAGE-SPEC.md) atomically widened the one current wire contract with the `directMessage` arm while preserving this capsule's exact meaning. `interfaceOperationId` always denotes the BPMN `Interface.operation` identity. It is not a Semantic Process operation ID, a transport operation, or an effect descriptor operation.
 
 Source admission validates the payload-free Message and the complete MessageEventDefinition → BPMN Interface Operation → input Message reference chain before constructing this node. The private moddle graph does not cross the `@bpmn-lean/bpmn-source` boundary.
 

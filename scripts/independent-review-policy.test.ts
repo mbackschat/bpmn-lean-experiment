@@ -336,7 +336,7 @@ test("review jurisdiction is independent of documentation directory", async () =
   const governed = await activeReviewDocumentPaths();
   assert.ok(governed.includes("docs/SEMANTIC-PROCESS-IL-SPEC.md"));
   assert.ok(governed.includes("docs/CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md"));
-  assert.ok(governed.includes("docs/capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md"));
+  assert.ok(governed.includes("docs/capsules/RECEIVE-TASK-MESSAGE-SPEC.md"));
 });
 
 test("rejects syntactically valid names that are not review commits", () => {
