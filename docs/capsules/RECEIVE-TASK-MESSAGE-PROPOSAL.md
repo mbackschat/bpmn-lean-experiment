@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved after independent review and required corrections; CIB Seven `2.2.0` phase zero is green under `CIB-AGR-0009`, and the source/Lean/semantic-core checkpoint is implemented. Receive Task profile artifacts, retained CIB evidence, differential registration, and Temporal refinement remain pending, so this document has not graduated to `-SPEC`.**
+**Owner-approved after independent review and required corrections; the source, Lean, semantic-core, profile, retained-CIB, differential, and Temporal closure candidate is implemented. The mandatory external closure review remains pending, so this document has not graduated to `-SPEC`.**
 
 ## Independent cold-review receipt
 
@@ -12,7 +12,7 @@
 | Semantic checkpoint | `7226733` | `fork-turns-none` | `approve-with-required-edits` | `5a74bad` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. Profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal work are now unblocked but remain pending. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
+The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. Profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal evidence are implemented; only the mandatory external closure review remains. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Exact question
 
@@ -268,7 +268,7 @@ The recommendation is to include the CIB lane because CIB Seven `2.2.0` executab
 
 Phase zero ran before relationship registration, profile artifact authoring, semantic implementation, or any Message-channel wire replacement. The project-authored fixture passed against packaged CIB Seven `2.2.0`: Process start exposed exactly one Message event subscription with the expected Receive Task activity ID and Message name plus nonempty execution and Process-instance identities; `messageEventReceived(subscription.eventName, subscription.executionId)` removed the subscription and completed the Process. This green result selects `cibseven-2.2.0-message-addressed-receive-task-draft` and the retained CIB lane under `CIB-AGR-0009`. The profile's required nonempty root Message name exists solely so CIB's public delivery API has an observable event name.
 
-`CIB-AGR-0009` owns the observed agreement that a Message-addressed Receive Task waits and completes after public Message delivery. If retained canonical projection maps CIB's execution/subscription identity to the semantic occurrence, the next available permitted-operational-detail relationship must own that mapping when its verifier evidence lands; no placeholder enters the profile. The owner-preauthorized standards-only fallback was not needed.
+`CIB-AGR-0009` owns the observed agreement that a Message-addressed Receive Task waits and completes after public Message delivery. `CIB-OP-0005` owns the retained adapter mapping from the public CIB subscription to the semantic occurrence and direct channel; it does not promote the generated CIB execution ID or the Message name to semantic identity. The owner-preauthorized standards-only fallback was not needed.
 
 The retained CIB producer may expose raw Process-instance count and the live Message subscription's activity ID, event name, and generated execution ID. Canonical `messageId`, Process-instance identity, and activation remain profile/adapter-derived or adapter-decided unless a public CIB API independently exposes them. A seeded raw-event-name or subscription-removal mutation must reach a classified canonical field or the verifier must reject the evidence directly. No hidden execution tree, transaction microstep, subscription-table row, or Message-ID/name equivalence is claimed.
 
@@ -288,17 +288,17 @@ Pre-activation CIB delivery is excluded. The phase-zero runner starts the Proces
 
 | Rule | BPMN/profile | Lean | TypeScript | CIB option | Temporal | Negative witness and mutation |
 |---|---|---|---|---|---|---|
-| `RECV-ADDRESS-01` | Clause 10 Receive Task plus exact direct-Message source profile | Implemented checked-node lowering equality preserves `directMessage` | Implemented source projection and lowering preserve a changed Message reference | Retained raw subscription observes the event name; `CIB-OP-0005` owns adapter-decided canonical Message ID | Current Signal/ledger consumers encode and validate both channel arms; Receive Task host witness pending | Same `messageId` under `operationMessage` rejects; source replacement changes the lowered arm |
-| `RECV-WAIT-01` | Clauses 10 and 13.3.3 | Implemented exact two-step start closure and direct subscription | Implemented independent start closure and subscription projection | Retained public subscription exists after Process start | Receive Task Query witness pending | Exact wait checks reject auto-completion or a dropped subscription |
-| `RECV-COMPLETE-01` | Clause 13.3.3 plus existing direct-address profile | Implemented `MessageDeliveryStep` specialization, soundness, and exact two-step completion | Implemented independent exact delivery and Process completion | Retained public delivery removes the subscription and completes the Process | Worker-absence, result recovery, terminal receipt, and replay pending | Exact result rejects a retained subscription or incomplete closure |
-| `RECV-REFUSE-01` | Existing direct-address and one-consumption restriction | Implemented wrong-kind, wrong-Message, early, and consumed controls | Implemented independent refusal and state preservation | Not claimed beyond phase-zero ordering | Malformed/conflict and live wrong-kind Receive Task controls pending | Matcher comparing only `messageId` accepts the checked wrong-kind case |
-| `RECV-OBSERVE-01` | Existing eleven-field observation profile | Implemented exact direct subscription/interaction projection | Implemented independent canonical projection | Retained raw-to-canonical direct subscription and interaction projection is implemented and mutation-guarded | Receive Task Query and terminal receipt pending | Schema and semantic guards reject changed, mixed, or erased public channel fields |
+| `RECV-ADDRESS-01` | Clause 10 Receive Task plus exact direct-Message source profile | Implemented checked-node lowering equality preserves `directMessage` | Implemented source projection and lowering preserve a changed Message reference | Retained raw subscription observes the event name; `CIB-OP-0005` owns adapter-decided canonical Message ID | Exact direct channel is present in the live Query, Signal, result ledger, terminal receipt, and replayed history | Same `messageId` under `operationMessage` rejects; source replacement and the seeded differential arm substitution change the public channel |
+| `RECV-WAIT-01` | Clauses 10 and 13.3.3 | Implemented exact two-step start closure and direct subscription | Implemented independent start closure and subscription projection | Retained public subscription exists after Process start | Exact Query exposes one direct subscription before delivery and reconstructs it after Worker replacement | Auto-completion or a dropped subscription disagrees before delivery |
+| `RECV-COMPLETE-01` | Clause 13.3.3 plus existing direct-address profile | Implemented `MessageDeliveryStep` specialization, soundness, and exact two-step completion | Implemented independent exact delivery and Process completion | Retained public delivery removes the subscription and completes the Process | Worker-absence delivery, committed result recovery, terminal receipt, exact Signal history, and replay are implemented | Exact result rejects a retained subscription or incomplete closure; removing a Signal fails the history assertion |
+| `RECV-REFUSE-01` | Existing direct-address and one-consumption restriction | Implemented wrong-kind, wrong-Message, early, and consumed controls | Implemented independent refusal and state preservation | Pre-activation and unmatched delivery remain unclaimed | Malformed direct ingress emits no Signal; a live operation-addressed delivery with the same Message ID rejects and preserves the direct wait | Matcher comparing only `messageId` accepts the checked wrong-kind case; test-only channel erasure exposes an operation-addressed wait and rejects the exact direct delivery |
+| `RECV-OBSERVE-01` | Existing eleven-field observation profile | Implemented exact direct subscription/interaction projection | Implemented independent canonical projection | Retained raw-to-canonical direct subscription and interaction projection is implemented and mutation-guarded | The live Query and completed receipt pin the direct waiting and empty terminal projections; Timer, Activity, Child Workflow, and cancellation history remain absent | Schema, semantic, differential, Query, and history guards reject changed, mixed, removed, or erased public channel facts |
 
 Lean and TypeScript consume the same TypeScript-produced checked source and program artifact. Lean re-lowers the checked graph independently but does not parse BPMN XML. CIB deploys the exact source bytes but does not inspect the checked graph. The paired Message-reference/source-kind mutations and artifact-roundtrip equality are therefore mandatory controls for the shared XML-producer risk; agreement among execution targets alone cannot detect a shared source projection defect.
 
 ## Atomic versioning consequences
 
-The semantic checkpoint completes one pre-release replacement of the current Message-address representation across every existing producer and consumer. It uses no optional compatibility arm, format counter, fallback reader, or Workflow patch branch. The remaining Receive Task lanes add new profile, scenario, evidence, differential, and Temporal consumers on that single current contract; they do not perform another channel migration.
+The semantic checkpoint completed one pre-release replacement of the current Message-address representation across every existing producer and consumer. It uses no optional compatibility arm, format counter, fallback reader, or Workflow patch branch. The closure lanes add profile, scenario, evidence, differential, and Temporal consumers on that single current contract; they perform no second channel migration.
 
 The atomic set includes:
 
@@ -336,22 +336,19 @@ This capsule excludes:
 
 Reopen this contract when a concrete consumer requires any excluded surface, a second direct-Message consumer needs more address information, CIB phase zero disagrees, a payload requires an approved data/mapping proposition, multiple subscriptions require scheduler/correlation semantics, or durable production histories make the channel replacement a migration rather than a pre-release atomic change.
 
-## Planned epistemic closure
+## Epistemic closure
 
-Before graduation, record:
+The implemented claim is exact: one non-instantiating, payload-free Receive Task addressed by one direct root Message creates one passive subscription and completes after one exact occurrence-and-channel delivery through the reused Message transition and Temporal Signal lifecycle. Addressless or operation-addressed Receive Task, Web-service realization, payload, correlation, repetition, and other Message loci remain the nearest unsupported claims.
 
-1. the exact established claim—one non-instantiating direct-Message Receive Task waits and completes through reused Message semantics—and the nearest unsupported claim, addressless or operation-addressed Receive Task;
-2. the shared XML producer risk and the paired source-kind/reference discriminator;
-3. that every canonical observation depends only on admitted definition, runtime state, and explicit stimulus, never future commands, host IDs, or expected output;
-4. the same-Message-ID/wrong-channel-kind non-law as the nearest realistic counterexample;
-5. that pre-wait and post-delivery discriminators are public, while CIB execution IDs and transport microsteps are not semantic facts;
-6. that Lean contributes the reused quantified delivery soundness theorem plus exact specialized laws, without inflating concrete fixtures into general liveness;
-7. distinct BPMN, CIB, Lean, TypeScript, Temporal, projection, and mutation claims;
-8. the pre-release history policy and one meaningful mutation for every new evidence projection;
-9. feedback timing, server/port cleanup, duplicated builds, artifact coupling, documentation placement, and removable process weight;
-10. a commit-bounded code/document delta against User Task completion data (`+651/-94` code, `+84/-63` documentation) as the nearest mechanism-reuse comparator and scoped runtime data (`+540/-73` code, `+134/-11` documentation) as the nearest atomic-representation comparator; the larger Intermediate Catch Message capsule remains a historical ceiling, not the primary cost comparator, and one repeated process weight is removed if this capsule is not materially cheaper than the applicable comparator;
-11. whether the result changes the next CIB-ordered capsule ranking;
-12. the completed proposal review plus a separately cold external closure review of the implemented account, address replacement, CIB fidelity boundary, and Temporal witness before graduation or the next material capsule.
+Lean, the TypeScript core, Temporal, and CIB share the project-authored XML fixture only at declared boundaries. Lean and Temporal consume the TypeScript-produced checked graph/program, so the Message-reference mutation, a genuinely reordered source fixture, cross-profile source rejection, checked node-kind/channel-arm constraints, and Lean re-lowering are the controls against shared source projection error. CIB independently deploys the exact XML but its public API exposes Message name and host execution identity rather than the project Message ID; `CIB-OP-0005` makes that adapter decision explicit instead of pretending the lane is independent at that field.
+
+Every canonical observation is derived from admitted definition data, committed runtime state, and the explicit start/delivery inputs. Future scenario commands, expected results, generated CIB execution IDs, Temporal Workflow/Run IDs, and transport microsteps do not enter semantic state. The nearest counterexample is the same Message ID under `operationMessage`: Lean and TypeScript reject it against the direct wait, the live Temporal control preserves the wait, and the differential mutation replaces the complete arm and is detected at the first closed-union field difference.
+
+The reusable quantified Lean delivery-soundness theorem permits evaluator-produced delivery transitions under exact hypotheses; the Receive Task module adds bounded fixture-specific closure and observation laws without claiming universal liveness. Normative interpretation, CIB compatibility, Lean semantics, independent TypeScript behavior, Temporal refinement, raw-to-canonical projection, and seeded mutation remain distinct lanes.
+
+The pre-release gate retains no Event History fixture or Workflow patch. It creates, checks, replays, and discards live histories in one run. The Receive Task witness shares the existing Message server and compiled Workflow bundle, adds no second server or production runtime path, and splits reusable Message test support from the under-600-line focused witness. The 21-case pipeline remains below the unchanged warm budget; CIB remains the dominant batch cost. The result prioritizes packaging the reviewer proto-MVP before another CIB-ordered semantic capsule rather than changing the breadth ranking itself.
+
+The commit-bounded cost measurement uses final approved proposal baseline `2f39cc2`; its closure boundary and comparison with User Task completion data and scoped runtime data are recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md). A separately cold external closure review of the implemented account, CIB fidelity boundary, differential mutation, Temporal witness, and this reflection remains mandatory before graduation.
 
 ## Owner decision requested
 
@@ -364,4 +361,4 @@ Approve or reject these product choices together:
 
 The known eventual consumer is the BPMN engine's CIB Seven breadth roadmap. This capsule does not claim that A12 currently contains or requires Receive Task, and it does not add a downstream product adapter.
 
-Implementation may begin only after independent review corrections and explicit owner approval are recorded. The implementation baseline for cost measurement is the final approved proposal commit, not this draft's first commit.
+Implementation began only after independent review corrections and explicit owner approval were recorded. The implementation baseline for cost measurement is final approved proposal commit `2f39cc2`, not this draft's first commit. Graduation remains blocked on the external closure review.

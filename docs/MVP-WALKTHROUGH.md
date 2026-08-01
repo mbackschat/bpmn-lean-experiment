@@ -1,14 +1,14 @@
 # End-to-end MVP walkthrough
 
-This walkthrough follows one executable BPMN Process through every assurance boundary in the repository. It is the quickest way to understand why CIB Seven, Lean, the TypeScript semantic core, Temporal, and the differential harness all exist—and why none of them can replace the others.
+This walkthrough follows one representative executable BPMN Process through every assurance boundary, then identifies the six bounded models that form the reviewer proto-MVP. It is the quickest way to understand why CIB Seven, Lean, the TypeScript semantic core, Temporal, and the differential harness all exist—and why none of them can replace the others.
 
-The implemented claim is deliberately narrow:
+The representative path is deliberately narrow:
 
 ```text
 None Start Event → User Task → None End Event
 ```
 
-The MVP covers lifecycle execution plus discovery and exact completion of one User Task occurrence. It also checks wrong-activation and stale-completion counterexamples. The exact implemented and absent surfaces remain owned by the [implementation map](IMPLEMENTATION-MAP.md).
+That path covers lifecycle execution plus discovery and exact completion of one User Task occurrence, including wrong-activation and stale-completion counterexamples. The proto-MVP does not widen this source profile; it demonstrates the same architecture over a catalog of six separately bounded and already implemented mechanisms. The exact implemented and absent surfaces remain owned by the [implementation map](IMPLEMENTATION-MAP.md).
 
 ## The whole path
 
@@ -38,7 +38,7 @@ flowchart LR
 There are two intentionally different routes:
 
 - The production route admits exact BPMN bytes, projects a checked BPMN graph, lowers project-owned Semantic Process data, evaluates that program in the pure semantic core, and lets Temporal host the same transition system durably.
-- The assurance route asks CIB Seven and Lean to derive the same public consequences independently, then compares all four targets at a deliberately small observation boundary.
+- The assurance route asks Lean, the TypeScript core, and Temporal to derive the same public consequences through their declared boundaries, adds CIB Seven only for selected compatibility profiles, and compares the applicable targets at a deliberately small observation boundary.
 
 This separation is the architecture’s main safeguard against one shared implementation mistake looking like agreement.
 
@@ -370,15 +370,32 @@ const injectedDisagreement = compareTargetResults(
 );
 ```
 
-The current batch mutates task activation from `1` to `2`. The comparator must classify the exact first differing path. This tests the sensitivity of the observation boundary rather than merely testing the happy path twice.
+The current batch retains one mutation per registered scenario. The User Task case changes activation from `1` to `2`; the direct-Message Receive Task replaces the complete `directMessage` arm with `operationMessage`; the other cases mutate their own claimed wait, route, effect, data, scope, or Error distinction. The comparator must classify the exact first differing path. This tests the sensitivity of the observation boundary rather than merely testing each happy path twice.
 
-The complete pipeline batches three cases:
+The complete pipeline batches twenty-one cases. Three remain standards-only, while eighteen have content-bound CIB evidence under an explicit relation. Each case runs once in Lean and the pure core, twice under isolated Temporal Workflow identities, and only against the CIB release declared by its profile. Twenty-three resulting live histories replay before teardown.
 
-1. exact task-occurrence completion;
-2. wrong activation rejected without state change;
-3. stale completion rejected without state change.
+## Reviewer proto-MVP catalog
 
-CIB, Lean, and Temporal startup costs are shared across the batch, while every Temporal case is repeated under a distinct Workflow identity to expose accidental host-ID coupling.
+The early reviewer demonstration selects six of those cases because together they expose the complete architectural idea without claiming arbitrary composition:
+
+| Reviewer case | What it demonstrates | Exact boundary |
+|---|---|---|
+| `user-task-discovery-completion` | durable human wait, exact occurrence completion, and string/null Process data | one private None Start → User Task → None End profile with a dummy host actor, not a task-list product |
+| `message-addressed-receive-task` | direct Message identity, live subscription projection, Signal accepted while the Worker is absent, receipt recovery, replay, and selected CIB agreement | one non-instantiating payload-free direct-Message Receive Task, not addressless signaling, Web-service transport, payload, or correlation |
+| `intermediate-catch-timer-pt1s` | logical-time ownership and one durable Temporal timer | one literal `PT1S` Intermediate Catch Timer, not other expressions, races, repetition, or cancellation |
+| `service-task-effect-success` | committed neutral effect intent, Activity execution, bounded retry reconciliation, and replay | one payload-free successful Service Task under the exact two-attempt host policy, not general Java delegates, JUEL, faults, or incidents |
+| `parallel-fork-join-a-then-b` plus its reverse schedule | token multiplicity, independent waits, synchronization, and order-independent public completion | one balanced two-branch fork/join, not arbitrary graph composition or broad CIB parallel compatibility |
+| `subprocess-error-propagation-trigger-first` plus its sibling/stale schedules | nested scope ownership, typed Error propagation, regional interruption, Worker replacement, and replay | one directly enclosing embedded Sub-Process with one exact-code interrupting boundary handler, not handler search, Event Sub-Processes, or general cancellation |
+
+For each row, the reviewer can inspect the same source-to-evidence path: exact XML → checked graph → Semantic Process IL → Lean result/laws → independent TypeScript result → Temporal durable execution/replay → selected CIB observation where claimed → mutation-sensitive differential comparison. Passing all six is a demonstration of the architecture over six bounded profiles, not a claim that their BPMN elements may be combined freely in one model.
+
+The walkthrough command is the existing prepared pipeline, not a demo-only runner:
+
+```sh
+./scripts/pnpm.sh run test:pipeline
+```
+
+Its emitted `BPMN_MVP_PIPELINE_REPORT` names every scenario, profile, source hash, applicable target set, retained-evidence comparison, injected disagreement, replay count, isolated Workflow identity, and phase timing. CIB, Lean, and Temporal startup costs are shared across the batch, while every Temporal case is repeated under a distinct Workflow identity to expose accidental host-ID coupling.
 
 ## Run and inspect it
 
@@ -430,4 +447,4 @@ These slices do not establish general BPMN parsing or execution, OMG conformance
 
 The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) covers a fork with two User Task waits and a parallel join. Its checked graph and Semantic Process lowering are executable; Lean and the independently implemented TypeScript semantic core check token multiplicity, per-incoming-flow synchronization, completion-order independence, deterministic projection, excess-token retention, stale rejection with a live sibling, and the duplicate-left/no-right non-law. Content-bound CIB evidence calibrates both balanced completion orders and the live-sibling stale witness.
 
-The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md) adds one string-only argument/result/output-mapping path with a separate synchronous CIB `2.0.0` final-state relation. The [User Task completion-data spec](capsules/USER-TASK-COMPLETION-DATA-SPEC.md) adds one canonical string/null submitted patch under selected CIB extension `CIB-EXT-0005`. The [ordinary embedded Sub-Process completion spec](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) adds one scope-owned two-child lifecycle with exact quiescent completion, and the [Error-propagation spec](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) adds direct-parent exceptional exit with regional cancellation. The twenty-case pipeline connects the maintained capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
+The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) covers one exact `PT1S` normal-flow timer wait. Lean and the semantic core own occurrence identity, deadline, eligibility, refusal, logical-time advancement, and public observation; controlled-clock CIB evidence and a durable Temporal timer supply distinct compatibility and refinement lanes. The [Intermediate Catch Message spec](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and closure-candidate [direct-Message Receive Task proposal](capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md) reuse one passive Message transition and Signal ledger while preserving separate checked loci and channel arms. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) adds one payload-free structured effect intent hosted by a durable Temporal Activity, with pinned-CIB retry facts kept host-specific. The [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md) adds one string-only argument/result/output-mapping path with a separate synchronous CIB `2.0.0` final-state relation. The [User Task completion-data spec](capsules/USER-TASK-COMPLETION-DATA-SPEC.md) adds one canonical string/null submitted patch under selected CIB extension `CIB-EXT-0005`. The [ordinary embedded Sub-Process completion spec](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) adds one scope-owned two-child lifecycle with exact quiescent completion, and the [Error-propagation spec](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) adds direct-parent exceptional exit with regional cancellation. The twenty-one-case pipeline connects the maintained capsules under their explicit target relations while preserving the [production Temporal lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).

@@ -8,7 +8,7 @@
 
 This specification defines the production lifecycle shared by the admitted semantic capsules. It answers how semantic and host-capability admission is reported before Workflow creation, when the Temporal Workflow closes, how accepted command retries recover their semantic result, and how a distinct command addressed after closure is classified without inventing BPMN behavior.
 
-It does not itself add BPMN semantics, a task inbox, Activities, host cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) composes one passive subscription with durable Signal ingress and result recovery, the [ordinary embedded Sub-Process completion specification](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) keeps the child definition-scope lifecycle inside the same semantic state machine without a Temporal Child Workflow, and the [Sub-Process Error-propagation specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) performs regional semantic cancellation without a Temporal cancellation command. The runnable MVP adds one exact known-Process User Task detail Query whose caller-selected Process-variable projection remains read-only and non-durable.
+It does not itself add BPMN semantics, a task inbox, Activities, host cancellation, Continue-As-New, an external database, or an immutable deployment/history baseline. The [Intermediate Catch Timer specification](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) composes one semantic-core-owned wait with this lifecycle without making physical timer state semantic authority, the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md) and [Message-addressed Receive Task proposal](capsules/RECEIVE-TASK-MESSAGE-PROPOSAL.md) compose their separately checked Message loci with the same passive Signal/result-ledger lifecycle while retaining distinct channel arms, the [ordinary embedded Sub-Process completion specification](capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) keeps the child definition-scope lifecycle inside the same semantic state machine without a Temporal Child Workflow, and the [Sub-Process Error-propagation specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) performs regional semantic cancellation without a Temporal cancellation command. The runnable MVP adds one exact known-Process User Task detail Query whose caller-selected Process-variable projection remains read-only and non-durable.
 
 ## Selected lifecycle
 
@@ -199,6 +199,9 @@ The focused Temporal gate must demonstrate:
 - a conflicting command identity that reaches the Workflow returns `BpmnCommandIdentityConflict` without a Workflow Task failure;
 - malformed Message ingress returns `BpmnMessageIngressInvalid` without emitting a Signal;
 - a wrong-channel Signal is durably accepted by Temporal but returned as semantic rejection with exact state preservation;
+- the admitted direct-Message Receive Task Query exposes the complete direct subscription and delivery interaction, rejects malformed direct ingress before Signal submission, and rejects an operation-addressed channel with the same Message ID while preserving the direct wait;
+- a direct Receive Task Signal accepted while no Worker polls is applied after replacement, recovered as one committed ledger/terminal-receipt result, leaves an exact completed canonical state, contains no Timer, Activity, Child Workflow, or cancellation event, and replays;
+- a test-only definition mutation that replaces the direct arm with `operationMessage` diverges in the pre-delivery Query and rejects the exact direct delivery, while removing one Receive Task Signal makes the exact history assertion fail;
 - exact duplicate Message delivery recovers the original outcome without a second semantic transition, while conflicting well-formed reuse is durably recorded and returned as `BpmnCommandIdentityConflict`;
 - Worker absence after Message Signal acceptance preserves later semantic delivery, receipt recovery, and replay;
 - a distinct post-closure command returns `processClosed`;
@@ -210,7 +213,7 @@ The focused Temporal gate must demonstrate:
 - an outside-core scope bypass that fabricates the outer continuation while a child sibling is still active fails the retained Update/state relation check;
 - the sequential post-terminal schedule and parallel live-sibling stale witness preserve the semantic/adapter evidence split without coercion;
 - the produced histories replay and every Worker/server resource is cleaned up;
-- every pre-existing Workflow path retains zero Signal Events, while the Message path contains the exact ordered delivery Signal payloads and a seeded payload substitution fails the history check;
+- every non-Message Workflow path retains zero Signal Events, while each approved Intermediate Catch Message and Receive Task path contains its own exact ordered delivery Signal payloads and a seeded payload or history substitution fails the history check;
 - a seeded command-ID-only Update-key mutation makes the payload-conflict witness fail.
 
 The complete applicable pipeline must remain green. No production legacy lifecycle, finite scenario-stimulus-count lifetime, or compatibility branch is retained during pre-release.
