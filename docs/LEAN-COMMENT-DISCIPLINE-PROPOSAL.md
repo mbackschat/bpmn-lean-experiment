@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft. Author-side pre-review has corrected the proposal's scope and rationale, but it does not satisfy the independent cold-review gate. No qualifying external verdict is recorded. The proposal is not owner-approved and authorizes no source, instruction, or gate changes.
+Draft. A read-only fresh external review of target `995dfd8` returned **APPROVE WITH REQUIRED EDITS**. This revision addresses those findings and awaits a correction audit in the same reviewer thread; the receipt remains pending and records no approval. The proposal is not owner-approved and authorizes no source, instruction, or gate changes.
 
 ## Decision requested
 
@@ -91,8 +91,8 @@ These rules intentionally prefer stronger names and types over prose. They also 
 
 | Measure | Required contract | Why it is proportionate | Boilerplate guardrail |
 |---|---|---|---|
-| Module contracts | Every maintained Lean source in `BpmnSemantics.lean` or `BpmnSemantics/**/*.lean` has a `/-! ... -/` module document after its import prelude and before its first declaration. | Purpose, semantic scope, and boundary are high-value facts that no individual declaration owns. All 60 files already comply, so the guard preserves an achieved baseline without prompting a backfill. | Check presence and placement only. Do not check words, headings, sentences, or covered declarations. |
-| Identifiable conformance facts | Maintained `*Conformance.lean` modules outside `BpmnSemantics/Experiments/` contain no anonymous `example` declaration. Existing durable examples become descriptively named public `theorem`s. Ninety convert one-for-one without proposition or proof changes; the five constructor-specific `CommandOutcome.isCommit` examples become the one exhaustive law specified below. | Names improve diagnostics, search, review citations, and claim-to-evidence mapping without requiring prose. Public visibility matches the repository's established maintained-conformance convention and makes the assurance facts available for search and citation. | Do not require a docstring or inline comment on the named theorem. Do not ban `example` in frozen experiments or temporary local exploration outside the maintained conformance surface. |
+| Module contracts | Every tracked or non-ignored pending `.lean` source has a `/-! ... -/` module document after its import prelude and before its first declaration. | Purpose, semantic scope, and boundary are high-value facts that no individual declaration owns. All 60 current files already comply, so the guard preserves an achieved baseline without prompting a backfill or silently exempting a future Lean root outside `BpmnSemantics/`. | Check presence and placement only. Do not check words, headings, sentences, or covered declarations. |
+| Identifiable conformance facts | Maintained files whose filename is exactly `Conformance.lean` or ends with `Conformance.lean`, outside `BpmnSemantics/Experiments/`, contain no anonymous `example` declaration. Existing durable examples become descriptively named public `theorem`s. Ninety convert one-for-one without proposition or proof changes; the five constructor-specific `CommandOutcome.isCommit` examples become the one exhaustive law specified below. | Names improve diagnostics, search, review citations, and claim-to-evidence mapping without requiring prose. Public visibility matches the repository's established maintained-conformance convention and makes the assurance facts available for search and citation. | The exact root file `BpmnSemantics/Conformance.lean` is in scope; matching must not require a nonempty prefix before `Conformance.lean`. Do not require a docstring or inline comment on the named theorem, and do not ban `example` in frozen experiments or temporary local exploration outside the maintained conformance surface. |
 | Targeted surplus backfill | Add or strengthen comments only at the selected representation, evaluator, strict-decoding, cross-artifact, and discriminating-conformance boundaries listed below. | These are the locations where material facts are not recoverable locally from names and types. | Every proposed comment must pass the deletion test. A reviewer may reject any individual comment without replacing it. |
 | Ownership-preserving splits | Make room in the two near-target modules by extracting cohesive owners rather than compressing code or adding a line-count exception. | Necessary explanation should not force a file beyond the established hygiene target, and the current files already expose independent responsibilities. | Split by role and independent buildability, never into equal chunks, include chains, a universal helper bag, or a new harness. |
 | Objective self-tests | Keep general source hygiene in `scripts/source-hygiene.test.ts`; put Lean module-document and conformance-naming policy in `scripts/lean-source-contracts.test.ts`, backed by a shared maintained-Lean discovery and literal-aware source-analysis module. Run both test modules through the existing `check:source-hygiene` script. | This preserves one public gate while preventing the current 445-nonblank-line general test owner from absorbing two scanners and their adversarial fixtures. | Include a sparse-but-valid fixture that must pass, making a future density or declaration-coverage rule an explicit test regression. Measure every resulting hand-written TypeScript owner at or below 600 nonblank lines. |
@@ -100,7 +100,7 @@ These rules intentionally prefer stronger names and types over prose. They also 
 
 ## Targeted source corrections
 
-This proposal does not authorize a repository-wide comment pass. If approved, the initial correction is limited to the following source roles.
+This proposal does not authorize a repository-wide comment pass. If approved, the initial correction is limited to the following source roles. Targeted correction includes deleting or shortening an existing comment that fails the same deletion test; “backfill” never means additive-only editing.
 
 ### Maintained conformance modules
 
@@ -122,6 +122,8 @@ This is the only approved proposition strengthening in the correction. It replac
 
 Use a short section comment only where several facts share hidden context that their theorem names and propositions cannot carry. The likely high-value clusters are closure-fuel exhaustion, synthetic stranded states, reverse execution orders, strict JSON lexical counterexamples, and the count-based join false account. Routine `by decide`, equality, and constructor checks receive names but no prose.
 
+The three User Task interaction examples that discharge existing capsule rows receive the exact names `successful_scenario_trace_is_exact`, `waiting_projection_is_independent_of_next_command`, and `stale_completion_is_rejected_without_reactivation`. Facts discharged with `native_decide` remain finite executable evidence locks whose public names support diagnostics and evidence citation; they are not reusable semantic lemmas, and production proofs must not depend on them merely because conversion makes them public.
+
 ### Runtime representation
 
 Strengthen `BpmnSemantics/SemanticProcess/RuntimeState.lean` with one representation-invariant section near `RuntimeState`, not a docstring on every small structure. It should explain occurrence ownership, monotonic activation counters, the ownership relation among scope occurrences, tokens, and waits, and the removal obligations of interruption and scope completion. Public operations need individual documentation only where they establish or preserve one of those non-obvious invariants.
@@ -136,17 +138,19 @@ Document the public `parse` boundary in `BpmnSemantics/StrictJson.lean`: exact d
 
 Document only the public scenario, checked-process, program, definition-input, and cross-artifact validation boundaries currently collected in `BpmnSemantics/SemanticProcessJson.lean`. The useful surplus is strict current-shape admission, required-versus-null behavior, independent structural validation, canonical-lowering equality, and the remaining claim boundary. Private field decoders do not receive repetitive docstrings.
 
-Document the public run/support boundary in `BpmnSemantics/SemanticProcess/Scenario.lean`. `supportsScenario` must state that it admits only the scenario document kind, a structurally and profile-capability-valid program whose profile and source identity match the scenario, and exactly the required observation list. `runScenarioWithClosureLimit` must state that the caller-supplied closure limit is a bounded harness control and that failed support admission returns the unsupported deployment result. `runScenario` must state that it is the public entry point using `scenarioClosureLimit`. The existing `observeStableState` projection docstring remains a positive control; routine projection helpers whose contracts are evident remain undocumented.
+Document the public run/support boundary in `BpmnSemantics/SemanticProcess/Scenario.lean`. `supportsScenario` must state that it admits only the scenario document kind, a structurally and profile-capability-valid program whose profile and source identity match the scenario, and exactly the required observation list. `runScenarioWithClosureLimit` must state that the caller-supplied closure limit is a bounded harness control and that failed support admission returns the unsupported deployment result. `runScenario` must state that it is the public entry point using `scenarioClosureLimit`. Review the existing `observeStableState` docstring under the deletion test rather than treating it as a quality exemplar; retain it only for information not recoverable from the `Option` result and control-flow arms. Routine projection helpers whose contracts are evident remain undocumented. Delete the trailing `Exact bounded definitions and separating witnesses` section header because it owns no content.
 
 ### Near-target module ownership
 
 At the immutable project baseline, `BpmnSemantics/SemanticProcess/Lowering.lean` contains 592 nonblank lines and `BpmnSemantics/SemanticProcessJson.lean` contains 585. Comments continue to count toward the 600-line target.
 
-`Lowering.lean` currently owns canonical lowering and preservation laws, checked-source structural validation, Semantic Process IL program validation, and cross-representation binding validation. Keep canonical lowering and its preservation laws in `Lowering.lean`. Move checked-process structural admission to a checked-source-side sibling such as `CheckedProcessValidation.lean`; that owner reuses the existing `CheckedGraphValidation.lean` topology predicate rather than absorbing or bypassing it. Move `programWellFormed` and its private helpers to an IL-side `ProgramValidation.lean` owner. Move `definitionBindingValid` to a small cross-artifact `DefinitionBindingValidation.lean` owner that imports both independent validators and `Lowering.lean`; its single responsibility is the conjunction of independent admission, profile capability, and exact canonical-lowering equality. Update direct importers atomically and keep every narrow owner independently buildable.
+`Lowering.lean` currently owns canonical lowering and preservation laws, checked-source structural validation, Semantic Process IL program validation, and cross-representation binding validation. Keep canonical lowering and its preservation laws in `Lowering.lean`. Move the three representation-shared identity and canonical-order predicates—nonempty string, lowercase hexadecimal SHA-256, and strictly sorted strings—to `DefinitionArtifactInvariants.lean`; both admission owners import that exact narrow module, which contains no node, operation, profile, or graph rule. Move `checkedWellFormed` and its checked-source-specific helpers to `CheckedProcessAdmission.lean`; it composes identity, ownership, arity, profile capability, and the topology predicate already owned by `CheckedGraphValidation.lean`. Move `programWellFormed` and its IL-specific helpers to `ProgramStructuralValidation.lean`; it composes definition, place, operation, and initiation checks with `programGraphWellFormed`, while `GraphValidation.lean` remains the topology/search owner. Move `definitionBindingValid` to `DefinitionBindingValidation.lean`, which imports both independent admission owners and `Lowering.lean`; its single responsibility is the conjunction of independent admission, program profile capability, and exact canonical-lowering equality. Update direct importers atomically and keep every narrow owner independently buildable.
 
-The separate binding owner is justified despite the predicate's current seven-line body: the predicate consumes both representations and canonical lowering, while neither representation-specific validator should acquire dependencies on the other side. Folding it into `ProgramValidation.lean` would make the IL validator own checked-source admission and lowering; keeping it cross-artifact preserves both dependency direction and a narrow public contract.
+The separate binding owner is justified despite the predicate's current seven-line body: the predicate consumes both representations and canonical lowering, while neither representation-specific validator should acquire dependencies on the other side. Folding it into `ProgramStructuralValidation.lean` would make the IL validator own checked-source admission and lowering; keeping it cross-artifact preserves both dependency direction and a narrow public contract.
 
-Split `SemanticProcessJson.lean` by document role: scenario decoding, checked-process decoding, Semantic Process program decoding, and cross-artifact definition-input admission. Preserve `BpmnSemantics.SemanticProcessJson` as an import-only umbrella if its current import surface has consumers; the umbrella contains no declarations or fixtures and is added to the explicit `leanUmbrellaModules` set so that property remains executable.
+Split `SemanticProcessJson.lean` three ways rather than forcing checked-process and program decoding apart: `SemanticProcessJson/Scenario.lean` owns scenario decoding, `SemanticProcessJson/Definitions.lean` owns both checked-process and Semantic Process program decoding, and `SemanticProcessJson/DefinitionInput.lean` owns cross-artifact input decoding and admission. The combined definition-decoder owner retains `decodeVariableMapping`, `decodeEffectDescriptor`, and `decodeErrorReference`, which are shared semantic-element wire decoders used by both representations; they are neither duplicated nor moved into the wire-primitive `JsonSupport.lean`. Preserve `BpmnSemantics.SemanticProcessJson` as an import-only umbrella over those three owners; the umbrella contains no declarations or fixtures and is added to the explicit `leanUmbrellaModules` set so that property remains executable.
+
+The necessary import-only edit to frozen `Experiments/CheckedSourceRelation.lean` is permitted: it may import the new admission owners alongside `Lowering.lean` so its unchanged definitions and proofs continue to resolve. This mechanical dependency update does not reopen, backfill, or broaden the experiment.
 
 These extractions are not comment-placement tricks. They address already-visible responsibility boundaries and prevent useful documentation from competing with the source-size gate. `RuntimeState.lean` remains cohesive unless the implementation review identifies a separate independently buildable owner; this proposal does not split it speculatively.
 
@@ -154,12 +158,12 @@ These extractions are not comment-placement tricks. They address already-visible
 
 Keep [`scripts/source-hygiene.test.ts`](../scripts/source-hygiene.test.ts) as the owner of file-size, import-only umbrella, JavaScript, build-output, and erasable-syntax policy. It is already 445 nonblank lines and does not absorb the new Lean policy tests.
 
-Add `scripts/lean-source-contracts.test.ts` as the owner of module-document placement and named maintained-conformance facts. Add `scripts/lean-source-analysis.ts` as the shared owner of maintained Lean worktree discovery and lexical analysis. Its discovery function enumerates tracked and non-ignored pending Lean sources; its scanner distinguishes code, line comments, nested block comments, string literals, and character literals, honors escapes, and preserves newline positions so diagnostics remain exact. In particular, `--`, `/-`, and `-/` inside literals are data, never comment delimiters. The general source-hygiene owner retains its generic multi-language worktree enumeration and uses the shared scanner for import-only Lean umbrellas; the Lean-contract owner imports the dedicated Lean discovery function rather than duplicating enumeration.
+Add `scripts/lean-source-contracts.test.ts` as the owner of module-document placement and named maintained-conformance facts. Add `scripts/lean-source-analysis.ts` as the shared owner of maintained Lean worktree discovery and lexical analysis. Its discovery function enumerates tracked and non-ignored pending Lean sources. Its scanner distinguishes code, line comments, nested block comments, string literals, and exact character-literal tokens, honors escapes, and preserves newline positions so diagnostics remain exact. A character literal is entered only after complete lookahead recognizes `'`, one Unicode source character or one valid Lean escape sequence, and its closing `'`; an unmatched apostrophe or identifier prime remains code. Comment state is recognized first and dominates both literal states, so apostrophes and quotes inside comments cannot open a literal. In particular, `--`, `/-`, and `-/` inside literals are data, never comment delimiters. The general source-hygiene owner retains its generic multi-language worktree enumeration and uses the shared scanner for import-only Lean umbrellas; the Lean-contract owner imports the dedicated Lean discovery function rather than duplicating enumeration.
 
 The proposed assessment reports two objective violation classes with file and line information:
 
-- a maintained Lean module whose first module document is absent or occurs after the first declaration;
-- an anonymous top-level `example` in a maintained non-experimental conformance module after comments are removed.
+- a tracked or non-ignored pending Lean module whose first module document is absent or occurs after the first declaration;
+- an anonymous top-level `example` in a maintained non-experimental conformance module after comments and literals are classified.
 
 The assessment does not count total comments, declaration docstrings, words, paragraphs, documentation percentage, or identifiers. It does not attempt to score prose quality. Those properties are either misleading incentives or require semantic review.
 
@@ -169,15 +173,18 @@ The Lean source-contract self-tests must cover:
 - acceptance of imports followed by a module document and declarations;
 - rejection of a module document placed only after the first declaration;
 - acceptance of an import-only umbrella with its module document;
-- rejection of a real anonymous conformance `example` with its exact path and line;
+- rejection of a real anonymous conformance `example` with its exact path and line, including the exact `Conformance.lean` basename;
 - ignoring `example` text inside line comments and nested block comments;
 - acceptance of a descriptively named public `theorem`, including a preceding attribute;
 - exclusion of `BpmnSemantics/Experiments/` from the anonymous-example rule;
 - inclusion of a non-ignored pending Lean file before commit;
-- preservation of `--`, `/-`, and `-/` inside string and character literals, including escaped quotes and backslashes, without false comment stripping or an unterminated-comment failure;
-- acceptance of a deliberately sparse, self-explanatory module with one module document, named declarations, and no declaration docstrings or inline comments.
+- preservation of `--`, `/-`, and `-/` inside string literals, including escaped quotes and backslashes, without false comment stripping or an unterminated-comment failure;
+- acceptance of a primed identifier in code without entering character-literal state;
+- acceptance of `'"'`, `'\''`, and an escaped control character such as `'\x08'` as complete character literals without opening a string or treating the closing apostrophe as an identifier prime;
+- ignoring an apostrophe and a double quote inside both a declaration docstring and a line comment, proving that comment state dominates literal recognition;
+- acceptance of a deliberately ratio-discriminating sparse module with exactly one single-line module document, at least 30 nonblank lines of several named declarations, and no declaration docstrings or inline comments.
 
-The last fixture is an executable anti-boilerplate guardrail. If a later change introduces a density threshold or blanket declaration-documentation requirement, that fixture must fail and force an explicit owner-visible policy change.
+The last fixture is an executable anti-boilerplate guardrail. Its comment-to-code ratio is at most 3.34 per 100, below the immutable project Lean baseline of 4.49, so any minimum ratio at or above that baseline rejects it; its undocumented named declarations separately make a blanket declaration-documentation rule reject it. Either policy change must therefore alter an explicit owner-visible regression test.
 
 No new package-script key is required. Update the existing `check:source-hygiene` command to invoke both `scripts/source-hygiene.test.ts` and `scripts/lean-source-contracts.test.ts`; the complete verification entry point remains unchanged. The implementation acceptance review measures the general test owner, the Lean-contract test owner, and the shared Lean analysis owner independently and rejects any hand-written TypeScript file above the 600-line review target.
 
@@ -192,8 +199,9 @@ Automation cannot decide whether a comment contains semantic surplus. Review eve
 3. Is the retained claim stable, owned here, and no broader than its theorem, specification, or executable evidence?
 4. Does one shared section or module comment already state it?
 5. Would a future maintainer know when the comment has become false?
+6. Does this section or header still own the content it announces?
 
-If question 1 has no concrete answer, delete the comment. If question 2 is yes, improve the source and omit the comment. If questions 3 through 5 cannot be answered, narrow the comment or move the fact to its proper documentation owner.
+If question 1 has no concrete answer, delete the comment. If question 2 is yes, improve the source and omit the comment. If questions 3 through 6 cannot be answered, narrow or delete the comment, or move the fact to its proper documentation owner.
 
 ## Required, optional, and excluded scope
 
@@ -204,7 +212,9 @@ If question 1 has no concrete answer, delete the comment. If question 2 is yes, 
 - Remove anonymous examples from the maintained non-experimental conformance surface.
 - Apply only the targeted semantic-surplus corrections described above.
 - Resolve the two near-target module ownership issues before adding prose that would breach the source-hygiene target.
-- Update [TESTING-SPEC.md](TESTING-SPEC.md), the documentation registry, and the exact implemented boundary when the guard and source correction are implemented.
+- Update the Lean evidence cells for `UTASK-DISCOVER-01` and `UTASK-REFUSE-02` in [USER-TASK-INTERACTION-SPEC.md](capsules/USER-TASK-INTERACTION-SPEC.md): cite the three new checked theorem names specified above rather than `waitingObservation`, `expectedStaleCompletionTrace`, or another fixture definition.
+- Update [TESTING-SPEC.md](TESTING-SPEC.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and [PLAN.md](PLAN.md) when the guard and source correction are implemented; update the [documentation registry](README.md) atomically when the proposal is archived or deleted at closure.
+- Treat the implementation as a bounded enabling increment: record its clean implementation baseline and reviewed closure commit in [CAPSULE-COST-LEDGER.md](CAPSULE-COST-LEDGER.md), and compare its code and documentation churn with the nearest source-hygiene increment.
 
 ### Optional and non-gating
 
@@ -219,7 +229,7 @@ If question 1 has no concrete answer, delete the comment. If question 2 is yes, 
 - Generated comment stubs, copied templates, placeholder prose, or an undocumented-declaration baseline manifest.
 - Comments that narrate routine tactics, pattern matches, field extraction, loops, or private decoder plumbing.
 - Changing BPMN meaning, runtime behavior, wire contracts, evidence claims, or theorem propositions and proof strength beyond the explicitly scoped exhaustive `CommandOutcome.isCommit` law.
-- Reopening or backfilling frozen experiments.
+- Reopening or backfilling frozen experiments; the explicitly permitted import-only update needed to preserve an existing frozen build is not a reopening.
 - Copying A12 comments or source; the sibling remains a comparative research input only.
 - Adding a heuristic stale-citation scanner in this increment. Stable references remain review obligations unless a later repeated defect justifies a separately designed guard.
 
@@ -234,17 +244,18 @@ An approved implementation is complete only when:
 - all 95 existing anonymous conformance claims remain covered by public named theorems: 90 one-for-one facts plus the one exhaustive `CommandOutcome.isCommit` law that entails the five replaced constructor checks, with no other proposition or proof change;
 - each added comment passes the deletion test and no blanket declaration backfill appears;
 - the Lowering and JSON responsibilities are independently buildable at their narrow owners and no hand-written source crosses the 600-line review target through comment deletion or line compression;
+- the two User Task capsule evidence rows cite checked named facts rather than fixture data, and the enabling increment has a reproducible cost-ledger row;
 - `./scripts/pnpm.sh run check:source-hygiene`, `lake test`, the documentation/infrastructure gate, `./scripts/verify.sh`, and `git diff --check` pass;
 - any `tokei` result is reported as diagnostic context only and no threshold exists in source, package scripts, or CI;
 - the implementation changes no semantic output, wire artifact, or public evidence claim, and changes no theorem proposition except for the approved `CommandOutcome.isCommit` consolidation;
-- the proposal is graduated according to [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) only after implementation and the required closure review.
+- after implementation and the required closure review, the stable instruction and gate contracts remain in `CLAUDE.md` and `TESTING-SPEC.md`, and this proposal is archived or deleted with registry and inbound-link updates rather than graduated into a redundant standalone `-SPEC.md`.
 
 ## Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
 | Descriptive theorem names become a different form of boilerplate. | Restrict the rule to durable conformance modules, require names to state the result rather than a sequence number, and require no associated prose. External review should reject meaningless renames such as `example1`. |
-| The lexical guard reports commented or quoted text. | Replace the comment-only stripper with shared literal-aware Lean lexical analysis and lock comment delimiters in strings and characters, nesting, escapes, attributes, exact locations, and sparse valid files with self-tests. |
+| The lexical guard reports commented or quoted text. | Replace the comment-only stripper with shared literal-aware Lean lexical analysis; recognize character literals only by complete token lookahead, keep identifier primes as code, make comment state dominant, and lock the current strict-JSON and apostrophe cases with self-tests. |
 | Added comments push cohesive modules over the size target. | Count comments normally and split the two already near-target multi-role modules by ownership before backfill. Do not add exceptions or compress source. |
 | The new guard makes its own TypeScript owner exceed the source-hygiene target. | Keep general hygiene and Lean contracts in separate test owners, share only focused Lean discovery and lexical analysis, and require every resulting file to remain at or below 600 nonblank lines. |
 | Filename scope lets a durable anonymous fact escape into another module role. | Accept the narrow residual explicitly, require human review to move or name such facts, and extend the guard only after evidence of a repeated role escape. |
@@ -259,11 +270,11 @@ The external reviewer should work read-only against the committed proposal targe
 The review should answer:
 
 1. Does every automated rule test an objective structural fact rather than an unverifiable notion of comment quality?
-2. Does the sparse-valid self-test adequately prevent density and blanket-docstring enforcement from entering accidentally?
+2. Does the ratio-discriminating sparse-valid self-test adequately prevent density and blanket-docstring enforcement from entering accidentally?
 3. Does public `theorem` visibility match the maintained conformance convention, and does the one exhaustive `CommandOutcome.isCommit` law avoid both boilerplate names and unjustified strengthening?
 4. Are the selected comment backfills, including the `Scenario.lean` run/support boundary, limited to information not recoverable from names, types, theorem statements, and control flow?
-5. Do checked-process validation, IL program validation, cross-artifact binding, and the JSON decoder roles have distinct semantic owners rather than line-balanced files, while preserving the existing checked-graph owner?
-6. Is the guard split itself cohesive and below the source-size target, and does literal-aware scanning avoid false findings in strict-JSON Lean sources?
+5. Do the shared artifact predicates, checked-process admission, IL program validation, cross-artifact binding, and combined definition-decoder roles have explicit cohesive owners rather than a helper bag or line-balanced files, while preserving the existing graph-topology owners and dependency direction?
+6. Is the guard split itself cohesive and below the source-size target, and does exact character-token lookahead keep identifier primes and comment-contained apostrophes or quotes from creating false findings in strict-JSON and other Lean sources?
 7. Is the accepted filename-scope residual narrower and safer than a repository-wide anonymous-example ban?
 8. Do any instructions encourage copied, stale, broader-than-evidence, or status-bearing comments?
 9. Is any required measure missing, disproportionate, or better expressed as a human review rule than a machine guard?
