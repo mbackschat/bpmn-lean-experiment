@@ -81,11 +81,12 @@ A status never changes the suffix contract. An owner-approved but unimplemented 
 
 When a proposal is implemented:
 
-1. move the stable implemented contract into the corresponding `-SPEC.md`;
-2. update every current producer, consumer, schema, test, evidence lane, and documentation owner in the same change;
-3. remove implementation sequencing and completed-work narration from the spec;
-4. move the resolved proposal to `docs/archived/` when its rationale or measurement record remains useful, or delete it when it has no durable information beyond Git history;
-5. update the documentation registry and all inbound links atomically.
+1. complete the external closure review and record the approved `Independent cold-review receipt` required by [TESTING-SPEC.md](TESTING-SPEC.md#review-receipt); pre-policy specifications remain explicitly grandfathered by the executable gate rather than receiving invented historical receipts;
+2. move the stable implemented contract into the corresponding `-SPEC.md`;
+3. update every current producer, consumer, schema, test, evidence lane, and documentation owner in the same change;
+4. remove implementation sequencing and completed-work narration from the spec;
+5. move the resolved proposal to `docs/archived/` when its rationale or measurement record remains useful, or delete it when it has no durable information beyond Git history;
+6. update the documentation registry and all inbound links atomically.
 
 Do not leave a `-PROPOSAL.md` describing a shipped current surface. Do not create a `-SPEC.md` merely because a design has been approved.
 

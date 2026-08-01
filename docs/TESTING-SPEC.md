@@ -379,6 +379,64 @@ No agreement vote resolves a source disagreement. Classify mismatches against th
 
 The CIB evidence owner must classify every field of `scenario.schema.json#/$defs/stateObservation` and every nested occurrence, wait, timer, effect, and variable field as `engine-observed`, `adapter-derived`, `adapter-decided`, or not claimed. The classification follows the complete schema rather than a prose field count and explicitly includes activation, multiplicity, lifecycle state, and timer deadline. A raw observation may be added only when the pinned engine exposes the fact. A verifier that reuses producer projection rules remains a raw-to-canonical consistency check and does not become another independent evidence lane.
 
+## Independent cold-review gate
+
+A semantic capsule is material for this gate when it selects or changes BPMN meaning, a semantic profile or CIB relationship, checked-source or Semantic Process IL representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. Routine implementation cleanup, mechanical correction, and infrastructure work that cannot change one of those claims does not create a capsule review cycle, although an architecture checkpoint may still receive an independent review when the milestone reflection identifies a correlated risk.
+
+Each material capsule has two mandatory external reviews and one conditional intermediate review:
+
+| Stage | Review target and timing | Required isolation | Boundary |
+|---|---|---|---|
+| Proposal | One committed proposal after its normative basis, scope, preflight, rules, exclusions, versioning consequences, and owner question are complete | `external-fresh-session` | Before owner approval and implementation |
+| Semantic checkpoint | The first committed green checkpoint after a wire/schema, checked graph/IL, runtime/public-observation, admission/profile, transition/proof, scope, cancellation, or concurrency change | `external-fresh-session` or `fork-turns-none` | Before the next implementation lane |
+| Closure | One committed implementation and documentation closure after focused/full gates, evidence matrices, epistemic closure, cost record, and exact implemented/absent status are complete | `external-fresh-session` | Before `-PROPOSAL` → `-SPEC` graduation or beginning the next material capsule |
+
+Proposal and closure review are performed like the established external handoff workflow: the author mints a prompt, and the user gives it to an external coding agent in a new session that receives no author chat history, author findings, previous review report, or suggested verdict. A new session with the same service or model is acceptable; the isolation requirement concerns inherited context, not vendor diversity. A warm author thread, a full-history sub-agent fork, or an agent that helped implement the target cannot satisfy either mandatory review.
+
+The conditional semantic checkpoint may use the same external workflow or a sub-agent created with no forked turns. Its prompt must still contain only the objective review contract and exact repository targets. The reviewer learns the implementation from the committed repository, not from an author summary. The current Message-addressed Receive Task checkpoint is an example: the closed channel, source/IL, profile admission, and proof-facing changes make the intermediate review mandatory before profile/evidence/Temporal work.
+
+The author must commit the review target and pause writes at the stage boundary. The reviewer works read-only against that immutable commit or exact baseline-to-target range. Parallel agents that could change the reviewed files remain stopped. A correction is committed separately and returned to the same reviewer thread for a correction audit; that audit is intentionally not cold because it must track the original required findings. A correction that changes the selected account, public contract, exclusions, or evidence strategy materially invalidates the review and requires a new fresh-session review of the redesigned stage.
+
+The neutral prompt names the stage, exact target commit and optional baseline, capsule, required owner documents and normative sources, applicable gates, and fixed output contract. It must not disclose the author's diagnosis, preferred verdict, or expected findings. Use this skeleton and specialize only the required-document and claim lists:
+
+```text
+Review stage: <proposal | semantic checkpoint | closure>
+Target commit: <immutable SHA>
+Baseline commit or range: <SHA or not applicable>
+Capsule: <relative link/path>
+
+Work read-only. Read the capsule and every listed owner/source document in full, inspect the exact target diff and implementation, and verify material claims against executable evidence. Do not modify files and do not infer implementation from prose.
+
+Required output:
+VERDICT: APPROVE | APPROVE WITH REQUIRED EDITS | REJECT
+Decisive reason
+Findings, each with classification, exact locus, unsupported or violated claim, evidence, and smallest sufficient correction
+Claims checked without issue
+Common-mode risks and the nearest unsupported claim
+```
+
+`APPROVE WITH REQUIRED EDITS` and `REJECT` block the stage. The correction audit in the same reviewer thread must name the correction target and explicitly close or retain every required finding. Advisory findings do not block unless applying one changes the selected account or reviewed boundary. No repository receipt records approval until required findings are closed.
+
+### Review receipt
+
+The capsule records a concise receipt rather than copying a chat transcript or full review report:
+
+```markdown
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `<commit>` or `not-recorded` | `external-fresh-session` or `not-recorded` | `approve`, `approve-with-required-edits`, `reject`, or `pending` | matching audit state |
+| Semantic checkpoint | `<commit>` or `not-applicable` | `external-fresh-session`, `fork-turns-none`, `not-recorded`, or `not-applicable` | `approve`, `approve-with-required-edits`, `reject`, `pending`, `not-required`, or `not-reached` | matching audit state |
+| Closure | `<commit>` or `not-applicable` | `external-fresh-session`, `not-recorded`, or `not-applicable` | `approve`, `approve-with-required-edits`, `reject`, `pending`, or `not-reached` | matching audit state |
+```
+
+Completed review targets and correction audits use 7–40 lowercase hexadecimal Git commit IDs. `approve` and `reject` use `not-required` for their correction audit; `approve-with-required-edits` names the audited correction commit. A new draft proposal may initially use `not-recorded | not-recorded | pending | not-applicable`, because a commit cannot contain its own Git identity; a docs-only follow-up records the immutable proposal target before the prompt is handed off. Other pending stages name their committed target, use `not-recorded` isolation, and use `not-applicable` for the audit. A semantically unnecessary intermediate review uses `not-applicable` in the other three cells and `not-required` as verdict; otherwise it and closure use `not-reached` until their immutable targets exist. The receipt-update commit is not itself the target unless its substantive content is expressly included in the reviewed range.
+
+[`scripts/independent-review-policy.test.ts`](../scripts/independent-review-policy.test.ts) requires this receipt on every active proposal and every post-policy specification, requires externally approved proposal state before owner-approved status, and requires externally approved proposal and closure states before a post-policy spec can graduate. The current pre-policy specifications are explicitly grandfathered rather than backfilled with unverifiable receipts; every new spec falls outside that closed set. While the Receive Task semantic checkpoint remains pending, the guard also requires its target to remain the plan/map blocker and prevents the downstream profile/scenario artifacts or target-specific differential/Temporal work from appearing.
+
+The executable gate validates repository facts, not the truth of an external UI session. A contributor who records `external-fresh-session` is attesting that the prompt was handed to a context-isolated external agent and that the recorded verdict reflects its report. Branch protection can require the infrastructure gate, but Git cannot cryptographically prove reviewer coldness; review receipts, exact immutable targets, and the no-inherited-context protocol make that remaining trust boundary explicit.
+
 ## Capsule closure review
 
 After the full gate is green, independently review:

@@ -120,6 +120,16 @@ The Temporal preflight is an early feasibility and information-preservation revi
 
 Prefer enum-based pattern matching or switch statements for semantic variants. Keep the Semantic Process program immutable and runtime state separate and serializable; keep effects explicit and perform no I/O in the pure semantic core.
 
+### Independent cold review
+
+Every material semantic capsule requires two read-only reviews through prompts handed to fresh external agent sessions: one over the proposal before owner approval or implementation, and one over the implemented closure before proposal graduation or the next capsule begins. A material capsule is one that selects or changes BPMN meaning, a semantic profile or CIB relationship, checked-source/IL or runtime representation, admission, public observation, proof boundary, or Temporal refinement claim. Routine local refactors and corrections that do not change those claims do not open a capsule review cycle.
+
+Add a conditional semantic checkpoint review after the first green implementation checkpoint when the capsule changes a wire/schema contract, checked graph or IL, runtime/public observation, admission/profile capability, transition family or proof boundary, or scope/cancellation/concurrency behavior. Proposal and closure reviews require `external-fresh-session`; the conditional checkpoint may instead use an isolated sub-agent with no forked turns, recorded as `fork-turns-none`. A warm author thread, a full-history fork, or an earlier review conversation does not count.
+
+The author commits the exact review target, pauses work at the applicable boundary, and mints the neutral handoff prompt defined in [TESTING-SPEC.md](docs/TESTING-SPEC.md#independent-cold-review-gate). The external reviewer remains read-only. Required corrections block the stage; the same reviewer thread audits the correction commit so finding continuity is preserved, while a material redesign starts a new cold review. If a required external review cannot be obtained, stop rather than substituting self-review.
+
+Every material capsule created after the review-policy gate carries the short `Independent cold-review receipt` defined in [TESTING-SPEC.md](docs/TESTING-SPEC.md#review-receipt). The receipt records immutable targets, isolation, verdicts, and correction-audit targets; it does not copy the full review report into the repository. The executable infrastructure guard checks the lifecycle states that repository contents can prove. External-session isolation remains an explicit contributor attestation rather than a fact Git can independently verify.
+
 ### Comments — document semantic surplus
 
 Comments explain information that cannot be recovered reliably from names, types, and control flow. There is no target comment density; comment according to the source's role.
@@ -193,7 +203,7 @@ After the technical gate is green but before marking a milestone or semantic cap
 9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
 10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall;
 11. decide whether the result changes the next best step;
-12. request an independent review before crossing a strategically material semantic, proof, admission, compatibility, or architecture checkpoint when correlated assumptions or claim-strength errors could survive the executable gates. Routine implementation does not require this extra review.
+12. complete the applicable proposal, conditional semantic-checkpoint, and closure reviews under [the independent cold-review rule](#independent-cold-review) before crossing their stage boundaries.
 
 Turn every escaped issue into either a reusable review question or an executable guard. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 

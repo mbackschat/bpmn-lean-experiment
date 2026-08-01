@@ -4,6 +4,16 @@
 
 **Owner-approved after independent review and required corrections; CIB Seven `2.2.0` phase zero is green under `CIB-AGR-0009`, and the source/Lean/semantic-core checkpoint is implemented. Receive Task profile artifacts, retained CIB evidence, differential registration, and Temporal refinement remain pending, so this document has not graduated to `-SPEC`.**
 
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `ed8596d` | `external-fresh-session` | `approve-with-required-edits` | `2f39cc2` |
+| Semantic checkpoint | `7226733` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal review and its correction audit are complete. The semantic checkpoint review is pending at immutable target `7226733` and blocks profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal work. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
+
 ## Exact question
 
 Should the project admit one private executable root Process whose exact checked node-kind multiset is one None Start Event, one Message-addressed Receive Task, and one None End Event, connected by two ordinary Sequence Flows, and execute that Receive Task by reusing the existing payload-free Message subscription, delivery, refusal, observation, Temporal Signal, result-recovery, and replay mechanisms?
@@ -341,7 +351,7 @@ Before graduation, record:
 9. feedback timing, server/port cleanup, duplicated builds, artifact coupling, documentation placement, and removable process weight;
 10. a commit-bounded code/document delta against User Task completion data (`+651/-94` code, `+84/-63` documentation) as the nearest mechanism-reuse comparator and scoped runtime data (`+540/-73` code, `+134/-11` documentation) as the nearest atomic-representation comparator; the larger Intermediate Catch Message capsule remains a historical ceiling, not the primary cost comparator, and one repeated process weight is removed if this capsule is not materially cheaper than the applicable comparator;
 11. whether the result changes the next CIB-ordered capsule ranking;
-12. an independent review of the normative account, address replacement, CIB fidelity boundary, and Temporal witness before owner approval.
+12. the completed proposal review plus a separately cold external closure review of the implemented account, address replacement, CIB fidelity boundary, and Temporal witness before graduation or the next material capsule.
 
 ## Owner decision requested
 
