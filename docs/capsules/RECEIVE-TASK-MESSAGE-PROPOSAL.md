@@ -10,9 +10,9 @@
 |---|---|---|---|---|
 | Proposal | `ed8596d` | `external-fresh-session` | `approve-with-required-edits` | `2f39cc2` |
 | Semantic checkpoint | `7226733` | `fork-turns-none` | `approve-with-required-edits` | `5a74bad` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `3881a7a` | `not-recorded` | `pending` | `not-applicable` |
 
-The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. Profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal evidence are implemented; only the mandatory external closure review remains. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
+The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. Profile/scenario/result artifacts, retained CIB projection, differential registration, and Receive-Task-specific Temporal evidence are implemented. Immutable closure target `3881a7a` awaits the mandatory external fresh-session review. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
 
 ## Exact question
 
