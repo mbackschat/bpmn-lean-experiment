@@ -81,7 +81,7 @@ private def decodeScenarioProvenance (json : Json) :
       cibRevision := ← stringField json "cibRevision"
       cibRefs := ← decodeStringArray (← field json "cibRefs") }
 
-/-- Strict decoder for the exact answer-free scenario document supplied to every target. -/
+/-- Decode only the exact current answer-free scenario shape supplied to every target. Unknown or missing fields, unknown observation names, unsafe occurrence numbers, and malformed explicit string/null values are rejected rather than defaulted. -/
 def decodeScenario (json : Json) : Except String Scenario := do
   requireObjectShape json
     ["bpmn", "id", "kind", "observations", "profile", "provenance",
@@ -103,4 +103,3 @@ def decodeScenarioDocument (contents : String) :
   decodeScenario (← parseWireJson contents)
 
 end BpmnSemantics.SemanticProcessJson
-

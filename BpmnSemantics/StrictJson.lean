@@ -141,6 +141,7 @@ private def document : Parser Json := do
   eof
   return value
 
+/-- Parse exactly one complete JSON value while preserving admission facts erased by `Lean.Json.parse`: duplicate decoded object keys, including escape-equivalent keys, and unpaired Unicode surrogates are rejected, and trailing non-whitespace input cannot remain after `eof`. -/
 def parse (contents : String) : Except String Json :=
   Parser.run document contents
 

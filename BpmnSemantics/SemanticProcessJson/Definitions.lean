@@ -202,6 +202,7 @@ private def decodeSequenceFlowScopeOwnership (json : Json) :
     { sequenceFlowId := ⟨← stringField json "sequenceFlowId"⟩
       scopeId := ⟨← stringField json "scopeId"⟩ }
 
+/-- Decode the exact current checked-process wire shape without admitting it structurally. Required nullable fields such as a User Task name must be present even when their value is `null`. -/
 def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
   requireObjectShape json
     ["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
@@ -484,6 +485,7 @@ private def decodeControlPlaceScopeOwnership (json : Json) :
     { controlPlaceId := ⟨← stringField json "controlPlaceId"⟩
       scopeId := ⟨← stringField json "scopeId"⟩ }
 
+/-- Decode the exact current Semantic Process wire shape without establishing structural validity, profile capability, or equality with checked-process lowering. -/
 def decodeProgram (json : Json) : Except String Program := do
   requireObjectShape json
     ["controlPlaceScopes", "controlPlaces", "definitionScopes", "identity",
@@ -505,4 +507,3 @@ def decodeProgram (json : Json) : Except String Program := do
       operations := ← decodeArray decodeOperation (← field json "operations") }
 
 end BpmnSemantics.SemanticProcessJson
-

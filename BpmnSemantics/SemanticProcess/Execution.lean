@@ -191,6 +191,7 @@ private def closeSupported : Nat → Program → RuntimeState → ClosureResult
           else
             { state, hitBound := false, ambiguousChoice := true }
 
+/-- Separates the semantic command outcome and candidate committed state from closure-bound or ambiguous-choice harness failures. Either flag means the state is not a stable public observation even when external admission committed. -/
 structure StimulusResult where
   outcome : CommandOutcome
   state : RuntimeState
@@ -200,6 +201,7 @@ structure StimulusResult where
 
 def scenarioClosureLimit : Nat := 8
 
+/-- Pure external-command boundary over an already admitted program. Committed admission runs bounded internal closure; rejected and rolled-back admission preserve the exact input state, and no refusal exposes speculative mutation. Closure exhaustion and unresolved multiple-enabledness set harness flags instead of changing the semantic outcome. This function performs no I/O and constructs no command or state observation: callers publish those only after both flags are false. -/
 def applyStimulus (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : StimulusResult :=
   let admission := admitStimulus program state stimulus

@@ -94,6 +94,11 @@ structure ScopeActivation where
   count : Nat
   deriving Repr, DecidableEq
 
+/-! ## Runtime representation invariant
+
+In an admitted reachable state, every token and wait is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. Task, Message, Timer, effect, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting a scope removes the selected occurrence subtree together with every owned token and wait and the Activity-local scopes paired with its effects, while retaining all activation counters and End history. Normal scope completion may remove an occurrence only after its owned tokens, waits, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
+-/
+
 structure RuntimeState where
   control : ProcessControl
   initiationPending : Bool

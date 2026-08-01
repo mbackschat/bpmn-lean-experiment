@@ -166,7 +166,6 @@ private def openEffects (program : Program) (state : RuntimeState) :
           descriptor := wait.descriptor
           arguments := wait.arguments }
 
-/-- Project canonical state projection, defined only for started semantic Process instances. -/
 def observeStableState (program : Program) (state : RuntimeState) :
     Option StateObservation :=
   match state.control with
@@ -266,6 +265,7 @@ private def requiredObservations : List ObservationKind :=
   , .enabledInteractions
   , .logicalTime ]
 
+/-- Admit only the `scenario` document kind for a structurally well-formed, profile-capability-valid program whose profile and source identity match the scenario and whose requested observations are exactly the required observation list. -/
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
@@ -276,6 +276,7 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
         scenario.bpmn.sha256 = program.identity.sourceSha256 &&
         scenario.observations = requiredObservations)
 
+/-- Run an admitted scenario with a caller-supplied bounded-closure harness limit. Failed support admission returns the unsupported deployment result without executing a stimulus. -/
 def runScenarioWithClosureLimit (closureLimit : Nat) (program : Program)
     (scenario : Scenario) : ScenarioResult :=
   if supportsScenario program scenario then
@@ -287,10 +288,9 @@ def runScenarioWithClosureLimit (closureLimit : Nat) (program : Program)
     { outcome := .semantic .unsupported
       trace := [.deployment .unsupported] }
 
+/-- Public scenario entry point using `scenarioClosureLimit`. -/
 def runScenario (program : Program) (scenario : Scenario) : ScenarioResult :=
   runScenarioWithClosureLimit scenarioClosureLimit program scenario
-
-/-! ## Exact bounded definitions and separating witnesses -/
 
 
 end BpmnSemantics.SemanticProcess
