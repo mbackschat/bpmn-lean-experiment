@@ -238,7 +238,7 @@ Unknown or unselected extensions may remain in retained exact bytes, but executa
 
 The durable compatibility claim and interpreter/Worker language boundary are recorded in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution). This document retains the detailed family dispositions, claim discipline, evidence conditions, and reopen boundaries.
 
-The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) implements the exact delegate-expression pair under its bounded success-only semantic account.
+The [archived dual semantic-core proposal](archived/DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected and the single TypeScript interpreter decision remains in force. The [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md) implements the exact delegate-expression pair under its bounded success-only semantic account.
 
 Apart from the completed bounded Service Task work and its phase-zero probe, this document approves only the deferred bounded JUEL architecture and exact candidate dependency set. No Java Worker dependency is adopted. The Java evaluator, executable JUEL wire artifact, script engine, and evidence replacement remain unimplemented and receive no broader authorization here.
 
@@ -257,4 +257,4 @@ The owner approved these eight decisions:
 
 ## Reopen conditions
 
-Reopen this scope before claiming a compatibility level not named here; admitting a new extension family or context; changing the exact Service Task binding pair; adding a Java/Kotlin Worker or compatibility API; admitting a JUEL capability beyond the approved read-only context; selecting scripts, FEEL, or external-task protocols; letting an evaluator or adapter choose BPMN control flow or mutate semantic state; or expanding the Process Engine API non-goal. Reopen the second-interpreter account only for the exact non-Temporal embedded JVM product trigger recorded in the [rejected dual-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md#reopen-trigger).
+Reopen this scope before claiming a compatibility level not named here; admitting a new extension family or context; changing the exact Service Task binding pair; adding a Java/Kotlin Worker or compatibility API; admitting a JUEL capability beyond the approved read-only context; selecting scripts, FEEL, or external-task protocols; letting an evaluator or adapter choose BPMN control flow or mutate semantic state; or expanding the Process Engine API non-goal. Reopen the second-interpreter account only for the exact non-Temporal embedded JVM product trigger owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution); the [archived rejected account](archived/DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md#reopen-trigger) retains its rationale.

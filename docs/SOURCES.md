@@ -78,7 +78,7 @@ The downloaded PDF, digital-first Markdown conversion, figures, and normative CM
 
 ## Architecture handoff
 
-The project-local [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) preserves the supplied content with trailing Markdown whitespace normalized and is the primary requirements source for this experiment.
+The [archived architecture and assurance handoff](archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) preserves the supplied content with trailing Markdown whitespace normalized as provenance. Its adopted durable decisions now live in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), and its release-readiness criteria live in [TESTING-SPEC.md](TESTING-SPEC.md#profile-release-readiness-gate); the archive is no longer a mandatory current requirements source.
 
 The handoff reports an investigation of CIB Seven source revision `5a45b47ea22688d774de97277c3ff7013f54fdd2` (`2.3.0-SNAPSHOT`) while its embedded prototype executed published CIB Seven `2.2.0`, Java 17, and H2 `2.3.232`. This mismatch is architectural evidence only; it must not become one merged semantic profile.
 

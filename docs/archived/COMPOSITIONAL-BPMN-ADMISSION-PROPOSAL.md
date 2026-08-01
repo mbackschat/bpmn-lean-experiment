@@ -6,7 +6,7 @@
 
 ## Current disposition
 
-The owner intentionally replaced this proposal's universal observational-preservation prerequisite with the [targeted preservation gate](PLAN.md#approved-decisions). This is a revision of the approved decision question, required-evidence item 7, and approved decision 6 below; the prerequisite was real and was not introduced only by the experiment record.
+The owner intentionally replaced this proposal's universal observational-preservation prerequisite with the [targeted preservation gate](../PLAN.md#approved-decisions). This is a revision of the approved decision question, required-evidence item 7, and approved decision 6 below; the prerequisite was real and was not introduced only by the experiment record.
 
 The closure-limit and unsupported multiple-enabledness obligations formerly assigned to Stages 3c–3e remain mandatory. They transfer to every affected admission or representation capsule through the targeted gate. The programme's auditable Stages 2c through 3b total 930 new or materially rewritten nonblank Lean lines. Stage 1, Stage 2, and Stage 2b lack committed intermediate baselines, so aggregate consumption against the historical 1,800-line ceiling is not reproducible.
 
@@ -24,7 +24,7 @@ Deleting those matchers without a replacement would be unsound. The strongest di
 
 Arbitrary acyclic admission would also assign unreviewed meaning to uncontrolled Activity fan-in. BPMN21-268 records that multiple uncontrolled incoming Sequence Flows may activate an Activity multiple times; this project has not selected or evidenced that account.
 
-The [frozen checked-source experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md#frozen-experiment-policy) originally required observational lowering preservation to close before admission widened beyond fixture-pinned topologies. This proposal approved that prerequisite independently in its decision question and required evidence. The 2026-07-30 owner decision supersedes it with targeted per-capsule preservation while retaining the closure-limit and multiple-enabledness safeguards.
+The [frozen checked-source experiment](../experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md#frozen-experiment-policy) originally required observational lowering preservation to close before admission widened beyond fixture-pinned topologies. This proposal approved that prerequisite independently in its decision question and required evidence. The 2026-07-30 owner decision supersedes it with targeted per-capsule preservation while retaining the closure-limit and multiple-enabledness safeguards.
 
 ## Required scope
 

@@ -28,7 +28,7 @@ Do not add a separately written Java semantic core and do not run the proposed J
 
 The Java-core account has no forcing consumer, supplies bounded assurance surplus, and would impose lockstep implementation and review cost on every future capsule. The existing TypeScript core remains the single production semantic realization. Java integration belongs at the client façade and Activity Worker boundaries.
 
-This rejection satisfied the interpreter-language decision that previously blocked the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md). The exact packaged-CIB binding and bounded semantic account now live in that specification.
+This rejection satisfied the interpreter-language decision that previously blocked the [Service Task effect spec](../capsules/SERVICE-TASK-EFFECT-SPEC.md). The exact packaged-CIB binding and bounded semantic account now live in that specification.
 
 ## What “derived from Lean” meant
 
@@ -127,7 +127,7 @@ The TypeScript-specific risks remain explicit:
 - the pinned SDK typing workaround remains quarantined to the adapter;
 - safe deterministic collection ordering must never inherit ambient insertion order.
 
-The [Temporal execution research](research/TEMPORAL-EXECUTION-RESEARCH.md) owns the pinned SDK mechanisms and the live replay boundary.
+The [Temporal execution research](../research/TEMPORAL-EXECUTION-RESEARCH.md) owns the pinned SDK mechanisms and the live replay boundary.
 
 ## Answers to the independent-review questions
 
@@ -174,7 +174,7 @@ This wire work is ordinary atomic pre-release evolution. It changes every affect
 
 Migration ease cannot be planned from the universe of CIB features. The project needs a read-only inventory of the actual target solution.
 
-Once the owner supplies or identifies its checkout, record it in [SOURCES.md](SOURCES.md) and inventory:
+Once the owner supplies or identifies its checkout, record it in [SOURCES.md](../SOURCES.md) and inventory:
 
 - BPMN element and event usage;
 - Camunda/CIB extension QNames, contexts, and values;

@@ -6,4 +6,7 @@ Current contracts live in active `-SPEC.md` documents. Current unimplemented int
 
 | Document | Reason retained |
 |---|---|
+| [ARCHITECTURE-AND-ASSURANCE-HANDOFF.md](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) | Supplied architecture brief retained as provenance after its durable decisions, readiness criteria, and pre-coding checklist moved to current owners |
+| [COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md](COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md) | Superseded staged production-admission programme; preserves frozen experimental rationale while production safeguards live in the targeted gate |
+| [DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) | Owner-rejected second-core account retained for its rationale; PROJECT-DESIGN owns the exact reopen trigger |
 | [MILESTONE-0-FAST-PIPELINE-PROPOSAL.md](MILESTONE-0-FAST-PIPELINE-PROPOSAL.md) | Completed first walking-skeleton proposal; preserves its original design, work breakdown, acceptance criteria, and decisions after stable contracts graduated to active owners |

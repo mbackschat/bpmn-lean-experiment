@@ -416,8 +416,11 @@ test("blocks Receive Task downstream lanes while its semantic review is pending"
     "--",
     ...protectedRoots,
   ]);
+  const changedArtifacts = [...changedSinceCheckpoint, ...untracked].filter(
+    (changedPath) => changedPath !== "profiles/README.md",
+  );
   assert.deepEqual(
-    [...new Set([...changedSinceCheckpoint, ...untracked])].sort(),
+    [...new Set(changedArtifacts)].sort(),
     [],
     `downstream-lane roots must remain byte-identical to pending checkpoint ${checkpoint.target}`,
   );

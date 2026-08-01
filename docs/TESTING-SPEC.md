@@ -293,6 +293,43 @@ No Event History fixture is committed. No legacy IR reader, Workflow patch branc
 
 When the owner approves the first immutable deployment/history baseline, retained histories and compatibility paths must be introduced through red replay tests with explicit provenance, version markers, support windows, and removal criteria.
 
+## Profile release-readiness gate
+
+This is the release gate for a declared semantic or compatibility profile, not a substitute for per-capsule closure. A profile is release-ready only when all six blocks below are satisfied or every remaining item is visibly classified as unsupported.
+
+### Profile readiness
+
+- Pin the exact normative or CIB release, source revision, edition, environment, and configuration.
+- State supported and unsupported BPMN features, static and runtime interpretations, observation and nondeterminism policies, known deviations, and configuration dependencies.
+
+### Lean readiness
+
+- Give every supported semantic feature an explicit transition meaning and document all proof assumptions.
+- Machine-check the required runtime invariants and relate the executable interpreter to its declarative semantics.
+- Define the relevant stable-state, divergence, stuck/deadlock, and enabled-input concepts at the exact claimed boundary.
+
+### Semantic-core readiness
+
+- Keep the core free of Temporal and CIB dependencies and deterministic under explicit semantic choices.
+- Preserve the complete command-outcome distinctions and expose the profile-defined observations and enabled interactions.
+- Establish the declared Lean, CIB, and generated-bound correspondence without upgrading finite evidence into a universal claim.
+
+### Temporal readiness
+
+- Establish adapter refinement for the declared public behavior, duplicate-delivery safety, identity retention, and covered timer, Message, retry, cancellation, and continuation paths.
+- Replay histories produced by the disposable pre-release gate; after an immutable baseline is approved, replay the retained histories with their approved provenance and version markers.
+- Keep raw Temporal behavior out of semantic observations unless the profile explicitly declares it.
+
+### Differential readiness
+
+- Pass every maintained scenario or record an approved classified deviation; leave no mismatch unclassified and retain a minimized regression for each fix.
+- State causal-trace dependency policy, calibrate any CIB instrumentation for noninterference, and verify oracle isolation and cleanup.
+
+### Reporting readiness
+
+- Identify every component, profile, environment, and corpus version and report proof, differential, refinement, and replay status separately.
+- Make unsupported features and limitations prominent and keep the published claim no broader than the actual profile and evidence.
+
 ## Complete differential/refinement pipeline
 
 ```sh
@@ -437,7 +474,7 @@ The governed proposal or specification records a concise receipt rather than cop
 
 Completed review targets and correction audits use 7–40 lowercase hexadecimal Git commit IDs that resolve to commit objects and are ancestors of `HEAD`; a plausible hexadecimal token alone is not an immutable receipt. The required CI workflow therefore checks out full Git history rather than a depth-one snapshot, and the infrastructure guard locks that prerequisite. `approve` and `reject` use `not-required` for their correction audit; `approve-with-required-edits` names the audited correction commit. A new draft proposal may initially use `not-recorded | not-recorded | pending | not-applicable`, because a commit cannot contain its own Git identity; a docs-only follow-up records the immutable proposal target before the prompt is handed off. Other pending stages name their committed target, use `not-recorded` isolation, and use `not-applicable` for the audit. A semantically unnecessary intermediate review uses `not-applicable` in the other three cells and `not-required` as verdict; otherwise it and closure use `not-reached` until their immutable targets exist. The receipt-update commit is not itself the target unless its substantive content is expressly included in the reviewed range.
 
-[`scripts/independent-review-policy.test.ts`](../scripts/independent-review-policy.test.ts) recursively governs active `-PROPOSAL.md` and `-SPEC.md` documents under `docs/` regardless of directory, excluding archived and locally ingested reference material. It requires receipts on every governed proposal and every post-policy specification, reads owner approval from the proposal's required `## Status` section, requires externally approved proposal state before owner-approved status, and requires externally approved proposal and closure states before a post-policy spec can graduate. The exact pre-policy grandfather set is selected and fixed by immutable baseline commit `f1ef362`: active specifications plus the three legacy root proposals present there are grandfathered, while the already-receipted Receive Task capsule proposal is not. An agent or contributor may not extend, append, or rebase that selection rule or its expected membership, and every later specification is post-policy. While the Receive Task semantic checkpoint remains pending, the guard requires its target to remain the plan/map blocker and requires the blocked profile, scenario, CIB runner, differential, and Temporal roots to stay byte-identical to that target regardless of file type or path naming. Source/Lean/core corrections remain possible for the same-reviewer audit; no next-lane work does. Recording approval must delete the capsule-specific pending barrier in the same change, so its provisional path inventory cannot become dead enforcement code.
+[`scripts/independent-review-policy.test.ts`](../scripts/independent-review-policy.test.ts) recursively governs active `-PROPOSAL.md` and `-SPEC.md` documents under `docs/` regardless of directory, excluding archived and locally ingested reference material. It requires receipts on every governed proposal and every post-policy specification, reads owner approval from the proposal's required `## Status` section, requires externally approved proposal state before owner-approved status, and requires externally approved proposal and closure states before a post-policy spec can graduate. The exact pre-policy grandfather set is selected and fixed by immutable baseline commit `f1ef362`: active specifications plus the three legacy root proposals present there are grandfathered, while the already-receipted Receive Task capsule proposal is not. An agent or contributor may not extend, append, or rebase that selection rule or its expected membership, and every later specification is post-policy. While the Receive Task semantic checkpoint remains pending, the guard requires its target to remain the plan/map blocker and requires actual profile/scenario artifacts plus the CIB runner, differential, and Temporal roots to stay byte-identical to that target regardless of file type or path naming; the root profile registry is documentation, not a profile artifact. Source/Lean/core corrections remain possible for the same-reviewer audit; no next-lane work does. Recording approval must delete the capsule-specific pending barrier in the same change, so its provisional path inventory cannot become dead enforcement code.
 
 The executable gate validates repository facts, not the truth of an external UI session. A contributor who records `external-fresh-session` is attesting that the prompt was handed to a context-isolated external agent and that the recorded verdict reflects its report. Branch protection can require the infrastructure gate, but Git cannot cryptographically prove reviewer coldness; review receipts, exact immutable targets, and the no-inherited-context protocol make that remaining trust boundary explicit.
 

@@ -7,7 +7,7 @@
 **Purpose:** Define the motivation, boundaries, semantic contracts, component responsibilities, assurance strategy, and acceptance criteria for a BPMN execution system whose observable behavior is compatible with a pinned CIB-seven reference engine
 **Deliberate exclusion:** This document does not prescribe implementation algorithms, code structures, APIs, data structures, libraries, repository layout, deployment topology, or other code-level design choices
 
-**Current-project note:** This handoff is preserved as the supplied architecture contract. [PROJECT-DESIGN.md](PROJECT-DESIGN.md) owns adopted project terminology, implementation-level interpreter and pre-release evolution decisions, and the point at which retained Temporal history becomes mandatory; [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns current evidence. “Reducer” below means the current TypeScript semantic core.
+**Current-project note:** This handoff is preserved as supplied provenance. [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns adopted project terminology, implementation-level interpreter and pre-release evolution decisions; [TESTING-SPEC.md](../TESTING-SPEC.md#profile-release-readiness-gate) owns current readiness gates; and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) owns current evidence. “Reducer” below means the current TypeScript semantic core.
 
 ---
 

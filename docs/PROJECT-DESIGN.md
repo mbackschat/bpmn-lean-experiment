@@ -17,7 +17,7 @@ The project pursues these goals through four assurance and execution components:
 3. an independently implemented pure TypeScript semantic core;
 4. a Temporal durability adapter continuously checked through differential, refinement, and replay testing.
 
-The complete supplied architecture contract is the [architecture and assurance handoff](ARCHITECTURE-AND-ASSURANCE-HANDOFF.md). The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the prominent [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md). This document owns the project-local constitution.
+The original supplied architecture brief is preserved as [archived provenance](archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md); its live decisions and release gates have been transferred to current owners. The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the prominent [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md). This document owns the project-local constitution.
 
 ## Layered product architecture
 
@@ -82,6 +82,26 @@ CIB participates twice:
 
 Raw CIB output never becomes Lean authority automatically, and differential mismatches are never resolved by majority vote.
 
+## Pre-coding decision ownership
+
+The supplied handoff's original pre-coding checklist is discharged through current owners rather than repeated as a second live checklist:
+
+| Decision | Current owner |
+|---|---|
+| Exact CIB release, source revision, and environment | [SOURCES.md](SOURCES.md), each semantic profile, and the [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) |
+| Compatibility level and selected CIB extensions | [CIB Seven compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) and profile-specific capsules |
+| BPMN feature subset | [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), and semantic capsules |
+| Database and scheduler profiles | Selected CIB profiles and [TESTING-SPEC.md](TESTING-SPEC.md) |
+| Expression and variable-type subsets | Profile-selected expression decisions, data capsules, and [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md) |
+| Observation boundary | Shared wire contracts, semantic capsules, and [TESTING-SPEC.md](TESTING-SPEC.md#evidence-lanes) |
+| Listener and history inclusion | [Temporal lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) and the pre-release policy below |
+| Nondeterminism and causal ordering | Semantic capsules, profile admission, and [TESTING-SPEC.md](TESTING-SPEC.md) |
+| External services | Effect capsules and versioned Worker protocols |
+| Profile and artifact evolution | The pre-release evolution policy below and profile registry |
+| Evidence and release gates | [TESTING-SPEC.md](TESTING-SPEC.md#profile-release-readiness-gate) |
+
+No component may silently answer an undecided semantic question. A new decision returns to its named owner, applicable normative or CIB evidence, and independent review gate before implementation crosses that boundary.
+
 ## Component boundaries
 
 | Component | Responsibility | Explicit limit |
@@ -117,6 +137,8 @@ Every capsule must therefore complete a Temporal hosting/refinement preflight af
 A preflight may conclude that Temporal has no native BPMN analogue and still find a sound composition of Workflow state, Update or Signal ingress, Query, timers, Activities, and child operations. It may not turn one of those mechanisms into semantic authority. If a required public outcome cannot yet be preserved, that is an explicit research or profile blocker; it is not deferred silently until adapter implementation.
 
 The preflight is a feasibility review, not a passed evidence lane. Capsule closure still requires executable Temporal refinement and replay evidence.
+
+The intended adapter-correctness relation is observational, weak, and stuttering-aware: Temporal may add hidden durable steps only while preserving semantic-core-visible behavior. Current finite refinement and replay witnesses establish their exact capsule boundaries; they do not yet constitute a general refinement theorem.
 
 ## Why Lean
 
@@ -195,7 +217,7 @@ Supporting Java handlers therefore does not justify rewriting the semantic core 
 
 Workflow and Worker implementations must agree through explicit Activity type, task queue, request/result schema, payload encoding, idempotency identity, timeout, retry, cancellation, and failure contracts. Cross-SDK compatibility is an executable evidence obligation rather than an assumption about default payload converters. A JVM Worker may be implemented in Kotlin behind Java-friendly public interfaces, but neither a Kotlin toolchain nor any Java runtime dependency follows automatically from this architecture.
 
-The [dual semantic-core proposal](DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) is rejected. The TypeScript SDK’s deterministic Workflow sandbox, event-loop fit, structural wire types, existing replay evidence, and language separation from the Java CIB oracle make TypeScript the selected interpreter host. Java remains the preferred language for a future JVM compatibility Worker when the migration inventory supplies that consumer. Reopen the semantic-core language only for a named non-Temporal embedded JVM product mode that must own and advance semantic Process state in-process; a Worker, Java client façade, or Spring preference does not qualify.
+The [archived dual semantic-core proposal](archived/DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) records the rejected alternative. The TypeScript SDK’s deterministic Workflow sandbox, event-loop fit, structural wire types, existing replay evidence, and language separation from the Java CIB oracle make TypeScript the selected interpreter host. Java remains the preferred language for a future JVM compatibility Worker when the migration inventory supplies that consumer. Reopen the semantic-core language only for a named non-Temporal embedded JVM product mode that must own and advance semantic Process state in-process; a Worker, Java client façade, or Spring preference does not qualify.
 
 ## Semantic rule traceability
 
