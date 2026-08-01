@@ -216,6 +216,14 @@ test("Message Signal delivery preserves both admitted channel loci through Worke
         outcome: CommandOutcome.Rejected,
       },
     );
+    await assert.rejects(
+      submitMessageDelivery(
+        environment.client.workflow,
+        receiveStart.instanceId,
+        { ...receiveDelivery, unexpected: true },
+      ),
+      BpmnMessageIngressInvalid,
+    );
     assert.deepEqual(
       await waitForMessageState(
         receiveHandle,
