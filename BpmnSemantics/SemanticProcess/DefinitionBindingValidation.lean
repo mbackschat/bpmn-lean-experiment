@@ -5,7 +5,7 @@ import BpmnSemantics.SemanticProcess.ProfileAdmission
 
 /-! # Cross-artifact definition binding
 
-This module owns the admission boundary that combines independent checked-process and Semantic Process validation with profile capability and exact canonical-lowering equality. Neither representation-specific validator depends on the other representation.
+This module owns the proof-facing predicate used by conformance facts to combine independent checked-process and Semantic Process validation with profile capability and exact canonical-lowering equality. Runtime JSON input admission remains in `SemanticProcessJson.DefinitionInput`, and neither representation-specific validator depends on the other representation.
 -/
 
 namespace BpmnSemantics.SemanticProcess

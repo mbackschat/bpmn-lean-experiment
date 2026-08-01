@@ -201,7 +201,7 @@ structure StimulusResult where
 
 def scenarioClosureLimit : Nat := 8
 
-/-- Pure external-command boundary over an already admitted program. Committed admission runs bounded internal closure; rejected and rolled-back admission preserve the exact input state, and no refusal exposes speculative mutation. Closure exhaustion and unresolved multiple-enabledness set harness flags instead of changing the semantic outcome. This function performs no I/O and constructs no command or state observation: callers publish those only after both flags are false. -/
+/-- Pure external-command boundary over an already admitted program. Committed admission runs bounded internal closure. Every currently reachable refusal preserves the exact input state and exposes no speculative mutation; no current admission path produces `.rolledBack`. Closure exhaustion and unresolved multiple-enabledness set harness flags instead of changing the semantic outcome. This function performs no I/O and constructs no command or state observation: callers publish those only after both flags are false. -/
 def applyStimulus (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : StimulusResult :=
   let admission := admitStimulus program state stimulus

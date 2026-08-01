@@ -13,7 +13,7 @@ import {
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
 
-type SourceViolation = Readonly<{
+export type SourceViolation = Readonly<{
   path: string;
   line: number;
   message: string;
@@ -95,7 +95,7 @@ function anonymousExampleViolations(
   return analyzeLeanSource(source).code
     .split(/\r?\n/u)
     .flatMap((line, lineIndex) =>
-      /^example(?:\s|:|\{|$)/u.test(line)
+      /^\s*(?:@\[[^\]\r\n]*\]\s*)*example(?=\s|:|\{|\(|$)/u.test(line)
         ? [
             {
               path: sourcePath,
@@ -105,6 +105,17 @@ function anonymousExampleViolations(
           ]
         : [],
     );
+}
+
+export function leanSourceViolations(
+  sourcePath: string,
+  source: string,
+): SourceViolation[] {
+  const moduleViolation = moduleContractViolation(sourcePath, source);
+  return [
+    ...(moduleViolation === null ? [] : [moduleViolation]),
+    ...anonymousExampleViolations(sourcePath, source),
+  ];
 }
 
 function formatViolation(violation: SourceViolation): string {
@@ -148,12 +159,25 @@ test("module contracts accept declarations and import-only umbrellas", () => {
 
 test("anonymous conformance examples report exact paths and lines", () => {
   assert.deepEqual(
-    anonymousExampleViolations(
+    leanSourceViolations(
       "BpmnSemantics/Conformance.lean",
-      "/-! Contract. -/\n\nnamespace BpmnSemantics\n\nexample : True := by trivial\n",
+      [
+        "/-! Contract. -/",
+        "",
+        "namespace BpmnSemantics",
+        "",
+        "example : True := by trivial",
+        "  example : True := by trivial",
+        "@[simp] example : True := by trivial",
+        "example(h : True) : True := by exact h",
+        "",
+      ].join("\n"),
     ).map(formatViolation),
     [
       "BpmnSemantics/Conformance.lean:5: anonymous maintained conformance fact; use a descriptive public theorem",
+      "BpmnSemantics/Conformance.lean:6: anonymous maintained conformance fact; use a descriptive public theorem",
+      "BpmnSemantics/Conformance.lean:7: anonymous maintained conformance fact; use a descriptive public theorem",
+      "BpmnSemantics/Conformance.lean:8: anonymous maintained conformance fact; use a descriptive public theorem",
     ],
   );
 });
@@ -218,7 +242,10 @@ test("a ratio-discriminating sparse module remains valid", () => {
     (_, index) => `def value${index + 1} := ${index + 1}`,
   );
   const source = ["/-! Sparse contract. -/", ...declarations, ""].join("\n");
-  assert.equal(moduleContractViolation("Sparse.lean", source), null);
+  assert.deepEqual(
+    leanSourceViolations("BpmnSemantics/SparseConformance.lean", source),
+    [],
+  );
   assert.equal((source.match(/\/-!/gu) ?? []).length, 1);
   assert.equal((source.match(/\/--/gu) ?? []).length, 0);
   assert.equal(source.split("\n").filter((line) => line.length > 0).length, 31);
@@ -227,11 +254,7 @@ test("a ratio-discriminating sparse module remains valid", () => {
 test("maintained Lean sources satisfy structural comment contracts", () => {
   const violations = worktreeLeanSourceFiles().flatMap((sourcePath) => {
     const source = readFileSync(sourcePath, "utf8");
-    const moduleViolation = moduleContractViolation(sourcePath, source);
-    return [
-      ...(moduleViolation === null ? [] : [moduleViolation]),
-      ...anonymousExampleViolations(sourcePath, source),
-    ];
+    return leanSourceViolations(sourcePath, source);
   });
   assert.deepEqual(
     violations.map(formatViolation),

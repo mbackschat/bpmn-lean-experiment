@@ -375,7 +375,7 @@ private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
     elementId := ⟨wait.elementId.value⟩
     activation := wait.activation }
 
-/-- Atomically remove all runtime owners in one scope-occurrence subtree and emit the caught route token in its live parent. Activation counters and End occurrence history are monotonic and deliberately survive interruption. -/
+/-- Atomically remove all runtime owners in one scope-occurrence subtree and emit the caught route token in its live parent. -/
 def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
     (output : ControlPlaceId) : RuntimeState :=
   let interrupted := fun owner =>

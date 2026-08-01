@@ -7,7 +7,7 @@ import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Checked-process structural admission
 
-This module owns representation-specific identity, scope ownership, reference, arity, mapping, Error-handler, profile-capability, and topology admission for the checked BPMN graph. It does not lower or validate Semantic Process programs.
+This module owns checked-process admission by composing representation-specific identity, scope ownership, reference, arity, mapping, Error-handler, and profile-capability rules with the topology predicate from `CheckedGraphValidation`. It does not lower or validate Semantic Process programs.
 -/
 
 namespace BpmnSemantics.SemanticProcess

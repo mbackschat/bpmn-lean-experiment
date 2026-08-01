@@ -288,7 +288,6 @@ def runScenarioWithClosureLimit (closureLimit : Nat) (program : Program)
     { outcome := .semantic .unsupported
       trace := [.deployment .unsupported] }
 
-/-- Public scenario entry point using `scenarioClosureLimit`. -/
 def runScenario (program : Program) (scenario : Scenario) : ScenarioResult :=
   runScenarioWithClosureLimit scenarioClosureLimit program scenario
 

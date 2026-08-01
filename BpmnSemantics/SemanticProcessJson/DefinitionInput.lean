@@ -41,7 +41,6 @@ def validateDefinitionInput (input : DefinitionInput) :
     throw s!"Semantic Process does not equal Lean lowering for {input.scenarioId.value}"
   pure input
 
-/-- Parse one complete JSON line, decode the current definition-input shape, and apply cross-artifact admission. -/
 def decodeAndValidateDefinitionInput (line : String) :
     Except String DefinitionInput := do
   validateDefinitionInput (← decodeDefinitionInput (← parseWireJson line))
