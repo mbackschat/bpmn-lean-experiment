@@ -35,6 +35,9 @@ import {
 import {
   subprocessErrorPipelineCases,
 } from "./subprocess-error-pipeline-cases.ts";
+import {
+  messagePipelineCases,
+} from "./message-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -153,21 +156,6 @@ function mutateOpenTimerDeadline(result: MutableScenarioResult): void {
   running.openTimers[0] = {
     ...openTimer,
     deadlineMs: openTimer.deadlineMs + 1,
-  };
-}
-
-function mutateOpenMessageChannel(result: MutableScenarioResult): void {
-  const running = runningObservation(result);
-  const subscription = running.openMessageSubscriptions?.[0];
-  if (subscription === undefined) {
-    throw new Error("one calibrated open Message subscription is required");
-  }
-  running.openMessageSubscriptions[0] = {
-    ...subscription,
-    channel: {
-      ...subscription.channel,
-      messageId: `${subscription.channel.messageId}-mutated`,
-    },
   };
 }
 
@@ -393,30 +381,6 @@ function timerUserTaskCompositionCase(): PipelineCase {
   });
 }
 
-function intermediateCatchMessageCase(): PipelineCase {
-  return Object.freeze({
-    id: "intermediate-catch-message",
-    scenarioRelativePath:
-      "scenarios/intermediate-catch-message/scenario.json",
-    bpmnRelativePath:
-      "scenarios/intermediate-catch-message/process.bpmn",
-    workflowIdPrefix: "intermediate-catch-message",
-    cib: null,
-    expectedWaitTraceLength: 3,
-    completionDelivery: TemporalCompletionDelivery.Ordered,
-    temporalRelation: TemporalCaseRelation.ExactSemantic,
-    executionSchedule: TemporalExecutionSchedule.Normal,
-    effectSchedules: null,
-    replaySelection: PipelineReplaySelection.Primary,
-    injectMutation: mutateOpenMessageChannel,
-    expectedInjectedDisagreement: observationValueDisagreement(
-      "trace[2].openMessageSubscriptions[0].channel.messageId",
-      "Message_ApprovalRequest",
-      "Message_ApprovalRequest-mutated",
-    ),
-  });
-}
-
 function effectCase(): PipelineCase {
   return Object.freeze({
     id: "service-task-effect-success",
@@ -557,7 +521,7 @@ export const pipelineCases = Object.freeze([
   ...subprocessErrorPipelineCases,
   timerCase(),
   timerUserTaskCompositionCase(),
-  intermediateCatchMessageCase(),
+  ...messagePipelineCases,
   simpleBooleanGatewayCase(),
   effectCase(),
   createDocumentCase(),

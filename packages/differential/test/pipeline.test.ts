@@ -168,6 +168,7 @@ test(
         "intermediate-catch-timer-pt1s",
         "timer-user-task-composition",
         "intermediate-catch-message",
+        "message-addressed-receive-task",
         "exclusive-gateway-simple-boolean-first-true",
         "service-task-effect-success",
         "a12-create-document-data",
