@@ -1,8 +1,8 @@
-# Bounded called-Process Call Activity proposal
+# Bounded called-Process Call Activity specification
 
 ## Status
 
-**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `3e17a05` and semantic-checkpoint correction audit `0148592` passed without a material redesign. Closure review of immutable target `cefb56d` returned APPROVE WITH REQUIRED EDITS. The missing production wrong-ID/exact-retry witness, lifecycle address contract, history count, and corrected cost record are implemented; same-reviewer correction audit is pending.**
+**Implemented and evidence-closed for the exact namespace-qualified in-document called-Process profile. Proposal correction audit `3e17a05`, semantic-checkpoint correction audit `0148592`, and closure correction audit `bb66c8c` passed without a material redesign. Repeated invocation and general Call Activity lifecycle remain unsupported.**
 
 ## Independent cold-review receipt
 
@@ -10,15 +10,13 @@
 |---|---|---|---|---|
 | Proposal | `8f796f4` | `fork-turns-none` | `approve-with-required-edits` | `3e17a05` |
 | Semantic checkpoint | `5cb7b54` | `fork-turns-none` | `approve-with-required-edits` | `0148592` |
-| Closure | `cefb56d` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `cefb56d` | `fork-turns-none` | `approve-with-required-edits` | `bb66c8c` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold sub-agents inherited the root model and effort. The proposal reviewer required command-outcome, QName, graph, identity, evidence, profile-metadata, and extraction-boundary corrections and passed correction audit target `3e17a05` without a material redesign. The checkpoint reviewer required caller-root, full tuple-identity, and owner-document corrections and passed correction audit target `0148592` in the same thread without a material redesign.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold sub-agents inherited the root model and effort. The proposal reviewer required command-outcome, QName, graph, identity, evidence, profile-metadata, and extraction-boundary corrections and passed correction audit target `3e17a05` without a material redesign. The checkpoint reviewer required caller-root, full tuple-identity, and owner-document corrections and passed correction audit target `0148592` in the same thread without a material redesign. The closure reviewer required the production wrong-ID/exact-retry witness and corrected history inventory; the same reviewer passed correction audit target `bb66c8c` without a material redesign.
 
-## Exact question
+## Scope
 
-Should the project admit one Call Activity that resolves an exact in-document global Process, creates a distinct semantic called Process instance, withholds the caller continuation until that instance completes normally, and hosts the whole bounded lifecycle durably without treating a Temporal Child Workflow as BPMN identity?
-
-The recommended answer is yes. The smallest complete account adds one definition forest, a paired Process-invocation and return operation, and one hidden occurrence-owned call record. It reuses None Start/End behavior, User Task waits and completion Updates, scope quiescence, canonical observation, result recovery, and replay. It does not reinterpret an embedded definition scope as a called Process instance.
+The implemented profile admits one Call Activity that resolves an exact in-document global Process, creates a distinct semantic called Process instance, withholds the caller continuation until that instance completes normally, and hosts the whole bounded lifecycle durably without treating a Temporal Child Workflow as BPMN identity. The account adds one definition forest, a paired Process-invocation and return operation, and one hidden occurrence-owned call record. It reuses None Start/End behavior, User Task waits and completion Updates, scope quiescence, canonical observation, result recovery, and replay. It does not reinterpret an embedded definition scope as a called Process instance.
 
 ## Normative and compatibility basis
 
@@ -30,7 +28,7 @@ Clause 10.3.6 also requires the Call Activity and CallableElement data requireme
 
 The registered local issue material contains no mirrored Call-Activity-specific disposition that changes this account. Closure must recheck that local set, adopt no unrecorded disposition, and make no claim about live issue status.
 
-This is a vendor-neutral BPMN profile. Pinned CIB Seven `CallActivityTest#testCallSimpleSubProcess` is a feasibility seed, but CIB resolves `calledElement` through separately deployed definitions, version selection, and optional tenant policy. Those are excluded here, so no new Call-Activity CIB relationship, execution target, or evidence lane is selected. The future semantic profile retains `CIB-AGR-0001` and `CIB-OP-0001` only for the already-implemented User Task interaction surface; those metadata entries do not provide Call Activity evidence. A later project-owned CIB probe may classify only exact public facts it observes; source prevalence and one engine test are not compatibility evidence.
+This is a vendor-neutral BPMN profile. Pinned CIB Seven `CallActivityTest#testCallSimpleSubProcess` is a feasibility seed, but CIB resolves `calledElement` through separately deployed definitions, version selection, and optional tenant policy. Those are excluded here, so no new Call-Activity CIB relationship, execution target, or evidence lane is selected. The registered semantic profile retains `CIB-AGR-0001` and `CIB-OP-0001` only for the already-implemented User Task interaction surface; those metadata entries do not provide Call Activity evidence. A later project-owned CIB probe may classify only exact public facts it observes; source prevalence and one engine test are not compatibility evidence.
 
 ## Exact source profile and QName resolution
 
@@ -163,7 +161,7 @@ Lean requires separate declarative invoke and return relations, evaluator soundn
 
 ## Temporal hosting/refinement preflight
 
-The bounded profile uses one Temporal Workflow addressed by the caller/root identity. The complete immutable definition forest, call record, caller and called semantic identities, both tasks, and all transitions remain core state. No Child Workflow, Activity, Signal, Timer, effect, cancellation command, retry policy, or new public handler is needed. User Task completion reuses the existing content-bound Update and result/receipt ledger. Implementation atomically replaces the production lifecycle's current singular “one Workflow, one semantic Process instance” statement with the exact aggregate-hosting rule above; this proposal does not silently widen that owner contract.
+The bounded profile uses one Temporal Workflow addressed by the caller/root identity. The complete immutable definition forest, call record, caller and called semantic identities, both tasks, and all transitions remain core state. No Child Workflow, Activity, Signal, Timer, effect, cancellation command, retry policy, or new public handler is needed. User Task completion reuses the existing content-bound Update and result/receipt ledger. The production lifecycle uses the exact aggregate-hosting rule above and does not equate one hosting Workflow with one semantic Process instance.
 
 Host admission classifies `invokeProcess` and `returnProcess` exhaustively as internal, non-splitting, non-host-wait operations. A mutation omitting either kind must fail the exhaustive classification guard. No data-dependent multiple-enabled state or host race is introduced.
 
@@ -221,13 +219,13 @@ Excluded are unprefixed or external QNames; imports; Global Tasks; more than two
 
 This pre-release change replaces the current checked graph, definition-scope tree, Semantic Process operations, runtime state, wait identity derivation, decoders, schemas, source admission, lowering, structural/profile/definition binding, scope quiescence/interruption, host admission, client address validation, artifacts, differential catalogs, tests, the production lifecycle specification, and other owner documents atomically. No optional field, legacy reader, format counter, compatibility switch, migration function, Workflow patch, retained history, or fallback target resolver is permitted.
 
-Before extending the near-limit general modules, implementation extracts cohesive owners for Call-specific source/QName projection, call graph/lowering admission, runtime invoke/return mechanics, and Lean Call Activity semantics/laws. Each owner has a narrow typed contract and focused red/green gate; the semantic checkpoint verifies that the existing compiler, lowering, evaluator, and Lean execution modules remain coordinators rather than acquiring this family as another responsibility.
+Implementation extracted cohesive owners for Call-specific source/QName projection, call graph/lowering admission, runtime invoke/return mechanics, and Lean Call Activity semantics/laws. Each owner has a narrow typed contract and focused red/green gate; the existing compiler, lowering, evaluator, and Lean execution modules remain coordinators rather than acquiring this family as another responsibility.
 
 The semantic checkpoint is mandatory before artifact and Temporal work because this capsule changes checked source, the IL, definition topology, runtime identity, public task IDs, quiescence, command addressing, and proof boundaries.
 
 The dominant common-mode risk is collapsing the called Process into an embedded scope or root Workflow identity. The distinct first Query, owner-derived wait class guard, injective encoder theorem, identity-erasure mutation, and separate root/semantic task address explicitly discriminate that error. Lexical QName and namespace resolution remain a source-admission common-mode risk because Lean begins at the checked graph; pinned XSD validation, malformed/foreign-namespace negatives, target/root/entry swaps, and declaration permutation guard it, while independent Lean lowering starts only after `calledProcessId` exists. The third risk is early return around hidden live state; quiescence law, orphan non-resumability, and the caller-resume bypass guard it.
 
-At closure, compare commit-bounded churn with the ordinary embedded Sub-Process completion capsule, the nearest recorded definition/runtime ownership increment. State the measured direction plainly; do not discount a larger result as reuse.
+The recorded commit-bounded cost comparison uses the ordinary embedded Sub-Process completion capsule, the nearest recorded definition/runtime ownership increment, and states the measured direction without discounting a larger result as reuse.
 
 ## Owner decision
 
@@ -240,4 +238,4 @@ The owner approved these choices together after independent proposal review and 
 5. standards-first Lean/TypeScript/Temporal evidence with CIB deliberately absent; and
 6. the exact exclusions, mandatory semantic checkpoint, atomic pre-release replacement, and cost comparator above.
 
-Implementation and its semantic checkpoint satisfied those prerequisites. Cost boundary `dee189c..bd0f0d3` is recorded in the capsule cost ledger. Closure review required production wrong-ID/exact-retry evidence plus one factual history-count correction; both are implemented without changing the selected account, public contract, exclusions, or evidence strategy. The remaining lifecycle work is the same-reviewer correction audit and proposal-to-specification graduation after a passing audit.
+Implementation and its semantic checkpoint satisfied those prerequisites. Cost boundary `dee189c..bd0f0d3` is recorded in the capsule cost ledger. Closure review required production wrong-ID/exact-retry evidence plus one factual history-count correction; correction audit `bb66c8c` closed both without changing the selected account, public contract, exclusions, or evidence strategy.

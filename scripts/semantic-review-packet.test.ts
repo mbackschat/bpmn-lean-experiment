@@ -176,8 +176,8 @@ test("the semantic review packet CLI resolves exact commits, sections, and numst
       "--stage", "closure",
       "--baseline", "HEAD^",
       "--target", "HEAD",
-      "--capsule", "docs/capsules/CALL-ACTIVITY-PROPOSAL.md",
-      "--route", "docs/capsules/CALL-ACTIVITY-PROPOSAL.md::Selected rules",
+      "--capsule", "docs/capsules/CALL-ACTIVITY-SPEC.md",
+      "--route", "docs/capsules/CALL-ACTIVITY-SPEC.md::Selected rules",
       "--gates", gatesPath,
     ];
     const result = spawnSync(
@@ -224,8 +224,8 @@ test("the semantic review packet CLI resolves exact commits, sections, and numst
       process.execPath,
       [
         "scripts/semantic-review-packet.ts",
-        ...arguments_.map((value) => value === "docs/capsules/CALL-ACTIVITY-PROPOSAL.md::Selected rules"
-          ? "docs/capsules/CALL-ACTIVITY-PROPOSAL.md::Missing section"
+        ...arguments_.map((value) => value === "docs/capsules/CALL-ACTIVITY-SPEC.md::Selected rules"
+          ? "docs/capsules/CALL-ACTIVITY-SPEC.md::Missing section"
           : value),
       ],
       { cwd: projectRoot, encoding: "utf8" },
