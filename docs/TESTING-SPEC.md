@@ -108,6 +108,28 @@ An admission, lowering, runtime-representation, or public-observation capsule mu
 
 Semantic program admission and host capability are separate gates. Before Workflow start, the adapter must deterministically accept every reachable wait-set shape or return a typed adapter admission failure. A capsule that makes concurrent waits or a mixed timer/effect/subscription set reachable must either prove the current single-host-wait restriction remains preserved or implement and evidence the required deterministic scheduler. A non-retryable throw from Workflow execution is not an admission result and does not satisfy this gate.
 
+## Delegated implementation protocol
+
+The root integrator decomposes parallel work into disjoint file owners and retains shared integration points, lifecycle and status documentation, commits, and complete verification. Each new lane receives a task-shaped agent name. Reusing an old implementation agent under a misleading name is forbidden; reuse the exact existing agent only when a warm correction audit requires reviewer continuity.
+
+Before work starts, the delegation prompt defines:
+
+1. the owned and excluded paths;
+2. the invariant algorithm as the ordered identity selection, validation, state transition, and rejection rules that decide the result;
+3. an adversarial counterexample and its predicted red observation, including identity-first duplicates when uniqueness is claimed—for example, two definitions with the same owning Gateway where only one is otherwise valid;
+4. a cross-target invariant matrix listing every required fact and the explicit non-requirements, so one target cannot silently strengthen the account beyond another;
+5. the focused gates the agent runs and the repository-wide gates reserved for integration.
+
+Every nontrivial implementation agent sends exactly three concise safe-boundary reports:
+
+1. **Red reproduced** — the named counterexample fails for the predicted missing mechanism;
+2. **Root mechanism implemented** — the class-level correction is present and the invariant matrix is unchanged or its revision is explicit;
+3. **Focused gates green** — the owned lane passes its proportionate gates and lists every changed path.
+
+The root does not poll or interrupt a long build between these boundaries unless the agent misses a promised boundary and may be stalled. Agents do not run the complete verification wrapper. After reviewing all lane diffs and resolving cross-target alignment, the root runs the repository-wide full gate exactly once.
+
+A disposable reviewer worktree uses a worktree-local dependency projection. When installation is needed, run `env CI=true pnpm install --frozen-lockfile` inside that worktree and invoke JavaScript or TypeScript gates with `CI=true`; the content-addressable pnpm store may remain shared, but `node_modules` is not linked to or borrowed from another checkout. This prevents a reviewer from changing the main checkout's dependency layout.
+
 ### CIB BPMN fixture construction
 
 Use the pinned CIB Seven BPMN Model API for ordinary project-authored CIB behavioral probes when its typed model can preserve every fact the witness needs. A capsule-specific helper should make the admitted source shape structurally unavoidable rather than expose an arbitrary XML builder; the Exclusive Gateway helper therefore requires exactly two conditional branches and one conditionless default. Direct project use of the model API is declared as a test dependency even when the engine already resolves it transitively.
@@ -434,7 +456,7 @@ Each material proposal-to-specification lifecycle has two mandatory cold sub-age
 
 For every target except a strict historical ancestor of immutable transition baseline `b361681`, the author spawns the reviewer as a sub-agent with `fork_turns: "none"` and omits both model and reasoning-effort overrides. The reviewer therefore inherits the author agent's same model and reasoning effort but receives no author chat history, findings, previous review report, implementation guidance, or suggested verdict. A warm author thread, a full-history sub-agent fork, a differently configured reviewer, or an agent that helped implement the target cannot satisfy a cold review.
 
-Every cold stage uses the same neutral sub-agent workflow. Its prompt contains only the objective review contract and exact repository targets. The reviewer learns the proposal or implementation from the committed repository, not from an author summary. The Message-addressed Receive Task checkpoint remains a historical example: its closed channel, source/IL, profile admission, and proof-facing changes made the intermediate review mandatory before profile/evidence/Temporal work.
+Every cold stage uses the same neutral sub-agent workflow. Its prompt contains only the objective review contract, exact repository targets, and a concise evidence checklist naming the claims, owner sources, separating negatives, and proportionate gates to verify. It contains no author diagnosis, preferred implementation, expected finding, or suggested verdict. The reviewer learns the proposal or implementation from the committed repository, not from an author summary. The Message-addressed Receive Task checkpoint remains a historical example: its closed channel, source/IL, profile admission, and proof-facing changes made the intermediate review mandatory before profile/evidence/Temporal work.
 
 The author must commit the review target and pause writes at the stage boundary. The reviewer works read-only against that immutable commit or exact baseline-to-target range. Parallel agents that could change the reviewed files remain stopped. A correction is committed separately and sent as a warm follow-up to the exact same reviewer sub-agent for a correction audit; that audit is intentionally not cold because it must track the original required findings. A correction that changes the selected account, public contract, exclusions, or evidence strategy materially invalidates the review and requires a newly spawned `fork-turns-none` reviewer for the redesigned stage.
 

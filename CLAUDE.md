@@ -121,6 +121,16 @@ The Temporal preflight is an early feasibility and information-preservation revi
 
 Prefer enum-based pattern matching or switch statements for semantic variants. Keep the Semantic Process program immutable and runtime state separate and serializable; keep effects explicit and perform no I/O in the pure semantic core.
 
+### Delegated implementation
+
+Give each implementation sub-agent a task-shaped name and one bounded lane. Its prompt names the exact invariant algorithm, one adversarial counterexample that must fail before the correction, the cross-target invariant matrix of required facts and explicit non-requirements, the files it may own, the files it must not touch, and the proportionate focused gates. A desired outcome without the deciding algorithm and realistic wrong case is not a sufficient delegation contract.
+
+Assign disjoint file ownership to concurrent agents. The root integrator owns shared integration points, lifecycle and status documentation, commits, and the repository-wide full gate; do not ask two active agents to edit the same owner or use an implementation agent as its own independent reviewer.
+
+Require three concise safe-boundary reports from every nontrivial implementation lane: **Red reproduced**, **Root mechanism implemented**, and **Focused gates green**. Each report states the observed evidence and any change to the invariant matrix. Do not poll a long-running build merely for activity; request a report only when a promised boundary has not arrived and the agent may be stalled.
+
+Implementation agents run only their focused gates. After reviewing and integrating every lane, the root integrator runs the complete applicable gate once. Use a new task-shaped agent for a new lane; preserve an existing agent thread only when the review protocol requires the same reviewer to audit its corrections.
+
 ### Independent cold review
 
 Every material semantic proposal-to-specification lifecycle requires two read-only cold reviews by repository sub-agents: one over the proposal before owner approval or implementation, and one over the implemented closure before proposal graduation or the next material lifecycle begins. Materiality is content-defined: the rule applies whether the document is a capsule or a cross-cutting root proposal/specification when it selects or changes BPMN meaning, a semantic profile or CIB relationship, checked-source/IL or runtime representation, admission, public observation, proof boundary, or Temporal refinement claim. Routine local refactors and corrections that do not change those claims do not open a review cycle.

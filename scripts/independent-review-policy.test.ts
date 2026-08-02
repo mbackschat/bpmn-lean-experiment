@@ -453,3 +453,24 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
   assert.match(capsuleRegistry, /Independent cold-review receipt/u);
   assert.match(verificationWorkflow, /^\s+fetch-depth: 0$/mu);
 });
+
+test("keeps delegated implementation orchestration in its documentation owners", async () => {
+  const [contributorGuide, testingSpec] = await Promise.all([
+    readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
+    readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8"),
+  ]);
+
+  assert.match(contributorGuide, /^### Delegated implementation$/mu);
+  assert.match(contributorGuide, /task-shaped name/u);
+  assert.match(contributorGuide, /disjoint file ownership/u);
+  assert.match(contributorGuide, /root integrator/u);
+  assert.match(testingSpec, /^## Delegated implementation protocol$/mu);
+  assert.match(testingSpec, /invariant algorithm/u);
+  assert.match(testingSpec, /adversarial counterexample/u);
+  assert.match(testingSpec, /explicit non-requirements/u);
+  assert.match(testingSpec, /Red reproduced/u);
+  assert.match(testingSpec, /Root mechanism implemented/u);
+  assert.match(testingSpec, /Focused gates green/u);
+  assert.match(testingSpec, /repository-wide full gate exactly once/u);
+  assert.match(testingSpec, /worktree-local dependency projection/u);
+});
