@@ -303,6 +303,7 @@ function operationInputs(
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect:
+    case SemanticOperationKind.AwaitEventRace:
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Choose:
     case SemanticOperationKind.SelectMany:
@@ -325,6 +326,8 @@ function operationOutputs(
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.Synchronize:
       return [operation.output];
+    case SemanticOperationKind.AwaitEventRace:
+      return [operation.message.output, operation.timer.output];
     case SemanticOperationKind.EnterScope:
       return [operation.childEntry];
     case SemanticOperationKind.AwaitEffect:

@@ -62,6 +62,7 @@ export function isAdmittedCheckedProcess(
     ) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
     hasSelectedInclusivePairing(semanticProfile, graph) &&
+    hasSelectedEventRaceTopology(semanticProfile, graph) &&
     graph.definitionScopes.every(({ id }) =>
       isAdmittedDefinitionScope(graph, id, nodeScopes, flowScopes)
     );
@@ -281,6 +282,8 @@ function hasSelectedArity(
         case GatewayDirection.Converging:
           return incoming === 3 && outgoing === 1;
       }
+    case CheckedNodeKind.EventBasedGateway:
+      return incoming === 1 && outgoing === 2;
     case CheckedNodeKind.ErrorEndEvent:
     case CheckedNodeKind.NoneEndEvent:
       return incoming === 1 && outgoing === 0;
@@ -336,6 +339,45 @@ function hasSelectedInclusivePairing(
     new Set(branches).size === 3 &&
     joinInputIds.length === 3 &&
     joinInputIds.every((flowId) => branches.includes(flowId));
+}
+
+function hasSelectedEventRaceTopology(
+  semanticProfile: string,
+  graph: CheckedProcessGraph,
+): boolean {
+  if (semanticProfile !== SemanticProfileId.EventBasedGatewayMessageTimer) {
+    return true;
+  }
+  const gateways = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.EventBasedGateway }> =>
+      node.kind === CheckedNodeKind.EventBasedGateway,
+  );
+  const messages = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.IntermediateCatchMessageEvent }> =>
+      node.kind === CheckedNodeKind.IntermediateCatchMessageEvent,
+  );
+  const timers = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.IntermediateCatchTimerEvent }> =>
+      node.kind === CheckedNodeKind.IntermediateCatchTimerEvent,
+  );
+  const gateway = gateways[0];
+  const message = messages[0];
+  const timer = timers[0];
+  if (
+    gateways.length !== 1 ||
+    messages.length !== 1 ||
+    timers.length !== 1 ||
+    gateway === undefined ||
+    message === undefined ||
+    timer === undefined
+  ) {
+    return false;
+  }
+  const configured = graph.flows.filter(({ sourceId }) => sourceId === gateway.id);
+  return configured.length === 2 &&
+    configured.every(({ condition }) => condition === null) &&
+    configured.filter(({ targetId }) => targetId === message.id).length === 1 &&
+    configured.filter(({ targetId }) => targetId === timer.id).length === 1;
 }
 
 function isConnectedAcyclicGraph(

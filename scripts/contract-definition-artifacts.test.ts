@@ -203,6 +203,62 @@ test("binds Inclusive Gateway node directions and operation tuple arities", asyn
   assert.equal(operation({ ...synchronizeSelected, inputs: synchronizeSelected.inputs.slice(0, 2) }), false);
 });
 
+test("binds the Event-Based Gateway node and complete heterogeneous race operation", async () => {
+  const checkedSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/checked-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const semanticSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/semantic-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const ajv = new Ajv2020({ strict: true });
+  const node = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: checkedSchema.$defs,
+    $ref: "#/$defs/node",
+  });
+  const operation = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: semanticSchema.$defs,
+    $ref: "#/$defs/operation",
+  });
+  const race = {
+    id: "operation:Race",
+    kind: "awaitEventRace",
+    origin: { kind: "bpmnElement", elementId: "Race" },
+    input: "place:Flow_Start",
+    message: {
+      configurationOrigin: { kind: "bpmnSequenceFlow", elementId: "Flow_Message_Config" },
+      elementId: "MessageCatch",
+      channel: {
+        kind: "operationMessage",
+        interfaceId: "Interface_1",
+        interfaceOperationId: "Operation_1",
+        messageId: "Message_1",
+      },
+      output: "place:Flow_Message_Task",
+    },
+    timer: {
+      configurationOrigin: { kind: "bpmnSequenceFlow", elementId: "Flow_Timer_Config" },
+      elementId: "TimerCatch",
+      durationMs: 1000,
+      output: "place:Flow_Timer_Task",
+    },
+  };
+
+  assert.equal(node({ kind: "eventBasedGateway", id: "Race", direction: "diverging" }), true);
+  assert.equal(node({ kind: "eventBasedGateway", id: "Race", direction: "converging" }), false);
+  assert.equal(operation(race), true);
+  assert.equal(operation({
+    ...race,
+    message: {
+      ...race.message,
+      channel: { kind: "directMessage", messageId: "Message_1" },
+    },
+  }), false);
+  assert.equal(operation({ ...race, timer: { ...race.timer, durationMs: 2000 } }), false);
+  assert.equal(operation({ ...race, unexpected: true }), false);
+});
+
 test("keeps every checked-process schema definition reachable", async () => {
   const schema = JSON.parse(
     await readFile(

@@ -23,8 +23,10 @@ private structure ShapeCardinalities where
   choices : Nat := 0
   inclusiveSplits : Nat := 0
   inclusiveJoins : Nat := 0
+  eventGateways : Nat := 0
   selectMany : Nat := 0
   synchronizeSelected : Nat := 0
+  eventRaces : Nat := 0
   errorEnds : Nat := 0
   errorThrows : Nat := 0
   ends : Nat := 0
@@ -57,6 +59,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with inclusiveSplits := counts.inclusiveSplits + 1 }
     | .inclusiveGatewayConverging .. =>
         { counts with inclusiveJoins := counts.inclusiveJoins + 1 }
+    | .eventBasedGateway .. =>
+        { counts with eventGateways := counts.eventGateways + 1 }
     | .errorEndEvent .. => { counts with errorEnds := counts.errorEnds + 1 }
     | .noneEndEvent .. => { counts with ends := counts.ends + 1 }
 
@@ -69,6 +73,7 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .awaitUserTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .awaitTimer .. => { counts with timers := counts.timers + 1 }
     | .awaitMessage .. => { counts with messages := counts.messages + 1 }
+    | .awaitEventRace .. => { counts with eventRaces := counts.eventRaces + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
     | .duplicate .. => { counts with duplicates := counts.duplicates + 1 }
     | .synchronize .. =>
@@ -109,6 +114,11 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1,
       { starts := 1, userTasks := 3, inclusiveSplits := 1,
         inclusiveJoins := 1, ends := 1 })
+  else if profile =
+      "bpmn-2.0.2-event-based-gateway-message-timer-draft" then
+    some (1,
+      { starts := 1, userTasks := 2, messages := 1, timers := 1,
+        eventGateways := 1, ends := 2 })
   else if profile = "bpmn-2.0.2-timer-user-task-composition-draft" then
     some (1,
       { starts := 1, userTasks := 1, timers := 1, ends := 1 })
@@ -154,6 +164,10 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 3, selectMany := 1,
         synchronizeSelected := 1, ends := 1 })
+  else if profile =
+      "bpmn-2.0.2-event-based-gateway-message-timer-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 2, eventRaces := 1, ends := 2 })
   else if profile = "bpmn-2.0.2-timer-user-task-composition-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, timers := 1, ends := 1 })

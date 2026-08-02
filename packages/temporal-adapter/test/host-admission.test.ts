@@ -190,7 +190,7 @@ test("guards selectMany token-split classification against Timer and effect wait
   ] as const) {
     assert.deepEqual(
       assessTemporalHostCapability(
-        replaceInclusiveTask(inclusive, hostWaitKind),
+        replaceTaskWithHostWait(inclusive, hostWaitKind),
       ),
       {
         kind: TemporalHostCapabilityResultKind.Rejected,
@@ -203,6 +203,65 @@ test("guards selectMany token-split classification against Timer and effect wait
       },
     );
   }
+});
+
+test("admits one managed Event-Based Gateway race and rejects every extra host-concurrency family", async () => {
+  const eventRace = await compileFixture(
+    "../../bpmn-source/test/fixtures/event-based-gateway-message-timer.bpmn",
+    "event-race-host-admission",
+    "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+  );
+  const race = eventRace.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitEventRace,
+  );
+  assert.ok(race?.kind === SemanticOperationKind.AwaitEventRace);
+  assert.deepEqual(assessTemporalHostCapability(eventRace), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+
+  const expectedRejection = {
+    kind: TemporalHostCapabilityResultKind.Rejected,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.ConcurrentHostDrivenWaits,
+      evidence:
+        "A managed event race cannot coexist with another timer, effect, token split, or race.",
+    },
+  } as const;
+  for (const hostWaitKind of [
+    SemanticOperationKind.AwaitTimer,
+    SemanticOperationKind.AwaitEffect,
+  ] as const) {
+    assert.deepEqual(
+      assessTemporalHostCapability(
+        replaceTaskWithHostWait(eventRace, hostWaitKind),
+      ),
+      expectedRejection,
+    );
+  }
+
+  const parallel = await compileFixture(
+    "../../../scenarios/parallel-fork-join/process.bpmn",
+    "parallel-two-user-tasks-process",
+    "parallel-fork-join-draft",
+  );
+  const duplicate = parallel.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.Duplicate,
+  );
+  assert.ok(duplicate?.kind === SemanticOperationKind.Duplicate);
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...eventRace,
+      operations: [...eventRace.operations, duplicate],
+    }),
+    expectedRejection,
+  );
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...eventRace,
+      operations: [...eventRace.operations, { ...race, id: `${race.id}:second` }],
+    }),
+    expectedRejection,
+  );
 });
 
 test("admits embedded scope waits independently of semantic operation order", async () => {
@@ -250,7 +309,7 @@ test("classifies Sub-Process Error propagation as passive ingress plus internal 
   );
 });
 
-function replaceInclusiveTask(
+function replaceTaskWithHostWait(
   program: SemanticProcessProgram,
   hostWaitKind:
     | SemanticOperationKind.AwaitTimer

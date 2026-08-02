@@ -213,31 +213,34 @@
         }
       }
     },
+    "operationMessageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "interfaceId",
+        "interfaceOperationId",
+        "messageId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "operationMessage"
+        },
+        "interfaceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "interfaceOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "messageChannel": {
       "oneOf": [
         {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "interfaceId",
-            "interfaceOperationId",
-            "messageId"
-          ],
-          "properties": {
-            "kind": {
-              "const": "operationMessage"
-            },
-            "interfaceId": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "interfaceOperationId": {
-              "$ref": "#/$defs/nonemptyString"
-            },
-            "messageId": {
-              "$ref": "#/$defs/nonemptyString"
-            }
-          }
+          "$ref": "#/$defs/operationMessageChannel"
         },
         {
           "type": "object",
@@ -438,6 +441,86 @@
         },
         "message": {
           "$ref": "#/$defs/messageDefinition"
+        }
+      }
+    },
+    "eventRaceMessageArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "configurationOrigin",
+        "elementId",
+        "channel",
+        "output"
+      ],
+      "properties": {
+        "configurationOrigin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "channel": {
+          "$ref": "#/$defs/operationMessageChannel"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "eventRaceTimerArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "configurationOrigin",
+        "elementId",
+        "durationMs",
+        "output"
+      ],
+      "properties": {
+        "configurationOrigin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "durationMs": {
+          "const": 1000
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "awaitEventRace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "message",
+        "timer"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitEventRace"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "message": {
+          "$ref": "#/$defs/eventRaceMessageArm"
+        },
+        "timer": {
+          "$ref": "#/$defs/eventRaceTimerArm"
         }
       }
     },
@@ -1112,6 +1195,9 @@
         },
         {
           "$ref": "#/$defs/awaitMessage"
+        },
+        {
+          "$ref": "#/$defs/awaitEventRace"
         },
         {
           "$ref": "#/$defs/awaitEffect"

@@ -73,6 +73,28 @@ private def operationWellFormed (places : List ControlPlace) :
         decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output
+  | .awaitEventRace id origin input message timer =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty message.configurationOrigin.elementId.value &&
+        nonempty message.elementId.value &&
+        (match message.channel with
+          | .operationMessage .. => message.channel.identifiersNonempty
+          | .directMessage .. => false) &&
+        nonempty timer.configurationOrigin.elementId.value &&
+        nonempty timer.elementId.value &&
+        timer.durationMs = 1000 &&
+        decide (
+          message.configurationOrigin ≠ timer.configurationOrigin ∧
+          message.elementId ≠ timer.elementId ∧
+          message.output ≠ timer.output ∧
+          input ≠ message.output ∧ input ≠ timer.output) &&
+        !(places.any fun place =>
+          decide (place.origin = message.configurationOrigin ∨
+            place.origin = timer.configurationOrigin)) &&
+        placeExists places input &&
+        placeExists places message.output &&
+        placeExists places timer.output
   | .awaitEffect id origin input output effect bpmnErrorRoute =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

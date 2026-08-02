@@ -38,6 +38,7 @@ import {
   projectSimpleBooleanCondition,
 } from "./simple-boolean-exclusive-gateway-source.js";
 import { projectInclusiveGateway } from "./inclusive-gateway-source.js";
+import { projectEventBasedGateway } from "./event-based-gateway-source.js";
 import {
   isAdmittedCheckedProcess,
 } from "./checked-process-admission.js";
@@ -313,6 +314,8 @@ function projectNodes(
         return projectExclusiveGateway(element, id, flows);
       case bpmnTypes.inclusiveGatewayType:
         return projectInclusiveGateway(element, id, flows, elements);
+      case bpmnTypes.eventBasedGatewayType:
+        return projectEventBasedGateway(element, id, flows);
       case bpmnTypes.endEventType:
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneEndEvent, id }
@@ -412,6 +415,7 @@ function isSupportedNodeType(type: unknown): boolean {
     bpmnTypes.parallelGatewayType,
     bpmnTypes.exclusiveGatewayType,
     bpmnTypes.inclusiveGatewayType,
+    bpmnTypes.eventBasedGatewayType,
     bpmnTypes.endEventType,
   ].includes(String(type));
 }

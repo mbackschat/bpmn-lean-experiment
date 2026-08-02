@@ -73,6 +73,7 @@ export function selectRootDefinitions(
   }
   switch (semanticProfile) {
     case SemanticProfileId.IntermediateCatchMessage:
+    case SemanticProfileId.EventBasedGatewayMessageTimer:
       return selectMessageRoots(rootElements, process);
     case SemanticProfileId.MessageAddressedReceiveTask:
       return selectDirectMessageRoots(rootElements, process);

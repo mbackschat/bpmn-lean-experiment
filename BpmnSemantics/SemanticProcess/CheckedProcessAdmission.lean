@@ -147,6 +147,29 @@ private def checkedInclusivePairingValid (source : CheckedProcess) : Bool :=
           | _ => false
     | _ => true
 
+private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool :=
+  source.nodes.all fun
+    | .eventBasedGateway gatewayId =>
+        let outgoing := source.sequenceFlows.filter fun flow =>
+          decide (flow.sourceId = gatewayId)
+        match outgoing with
+        | [first, second] =>
+            first.condition.isNone && second.condition.isNone &&
+              ((source.nodes.any fun
+                  | .intermediateCatchMessageEvent id _ => id = first.targetId
+                  | _ => false) &&
+                (source.nodes.any fun
+                  | .intermediateCatchTimerEvent id _ => id = second.targetId
+                  | _ => false) ||
+              (source.nodes.any fun
+                  | .intermediateCatchTimerEvent id _ => id = first.targetId
+                  | _ => false) &&
+                (source.nodes.any fun
+                  | .intermediateCatchMessageEvent id _ => id = second.targetId
+                  | _ => false))
+        | _ => false
+    | _ => true
+
 private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -204,6 +227,8 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .inclusiveGatewayConverging id pairedGatewayId =>
       nonempty pairedGatewayId.value &&
         incomingCount flows id = 3 && outgoingCount flows id = 1
+  | .eventBasedGateway id =>
+      incomingCount flows id = 1 && outgoingCount flows id = 2
   | .errorEndEvent id error =>
       errorReferenceValid error &&
         incomingCount flows id = 1 && outgoingCount flows id = 0
@@ -241,6 +266,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
+    checkedEventRaceConfigurationValid source &&
     checkedErrorHandlersValid source &&
     checkedProfileCapabilitiesValid source &&
     checkedProcessGraphWellFormed source

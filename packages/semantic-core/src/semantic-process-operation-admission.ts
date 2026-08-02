@@ -22,6 +22,9 @@ import {
   compareCanonicalStrings,
   isWellFormedWireString,
 } from "./wire.js";
+import {
+  isWellFormedAwaitEventRaceOperation,
+} from "./event-race-admission.js";
 
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
@@ -174,6 +177,8 @@ export function isWellFormedSemanticOperation(
       return isWellFormedSelectManyOperation(value, placeIds, placeOrigins);
     case SemanticOperationKind.SynchronizeSelected:
       return isWellFormedSynchronizeSelectedOperation(value, placeIds);
+    case SemanticOperationKind.AwaitEventRace:
+      return isWellFormedAwaitEventRaceOperation(value, placeIds, placeOrigins);
     case SemanticOperationKind.ThrowError:
       return isWellFormedThrowError(
         value,

@@ -83,6 +83,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .exclusiveGateway _ _ _ => none
   | .inclusiveGatewayDiverging _ _ _ => none
   | .inclusiveGatewayConverging _ _ => none
+  | .eventBasedGateway _ => none
   | .parallelGateway id .diverging =>
       let input := firstFlowId (incomingFlowIds source id)
       if hasToken state input then
@@ -147,6 +148,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
       simp [fireNode?] at result
   | inclusiveGatewayConverging id pairedGatewayId =>
+      simp [fireNode?] at result
+  | eventBasedGateway id =>
       simp [fireNode?] at result
   | parallelGateway id direction =>
       cases direction with

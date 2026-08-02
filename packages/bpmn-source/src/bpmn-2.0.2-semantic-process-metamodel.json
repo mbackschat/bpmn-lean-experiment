@@ -11,7 +11,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
@@ -21,7 +21,7 @@
       "TimerEventDefinition timeDuration expression containment",
       "StartEvent.isInterrupting default",
       "Gateway.gatewayDirection type and default",
-      "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, ExclusiveGateway.default, and InclusiveGateway.default",
+      "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, ExclusiveGateway.default, InclusiveGateway.default, and EventBasedGateway instantiate and type",
       "BaseElement.id and Definitions.rootElements identity and containment",
       "BoundaryEvent attachment and interrupting default",
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
@@ -55,6 +55,7 @@
     "parallelGatewayType": "bpmn:ParallelGateway",
     "exclusiveGatewayType": "bpmn:ExclusiveGateway",
     "inclusiveGatewayType": "bpmn:InclusiveGateway",
+    "eventBasedGatewayType": "bpmn:EventBasedGateway",
     "endEventType": "bpmn:EndEvent",
     "sequenceFlowType": "bpmn:SequenceFlow"
   },
@@ -207,6 +208,12 @@
     },
     {
       "name": "InclusiveGateway",
+      "directSuperClasses": [
+        "Gateway"
+      ]
+    },
+    {
+      "name": "EventBasedGateway",
       "directSuperClasses": [
         "Gateway"
       ]
@@ -557,6 +564,23 @@
       "name": "default",
       "type": "SequenceFlow",
       "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "EventBasedGateway",
+      "name": "instantiate",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": false
+    },
+    {
+      "owner": "EventBasedGateway",
+      "name": "eventGatewayType",
+      "type": "EventBasedGatewayType",
+      "lower": 1,
       "upper": 1,
       "containment": false
     },

@@ -44,6 +44,57 @@ private def outgoingPlaces (source : CheckedProcess) (nodeId : NodeId) :
 private def firstPlace (places : List ControlPlaceId) : ControlPlaceId :=
   places.head?.getD ⟨""⟩
 
+def eventRaceConfigurationFlow (source : CheckedProcess)
+    (flow : CheckedSequenceFlow) : Bool :=
+  source.nodes.any fun
+    | .eventBasedGateway gatewayId => decide (flow.sourceId = gatewayId)
+    | _ => false
+
+private def configuredByEventGateway (source : CheckedProcess)
+    (nodeId : NodeId) : Bool :=
+  source.sequenceFlows.any fun flow =>
+    decide (flow.targetId = nodeId) && eventRaceConfigurationFlow source flow
+
+private def eventRaceMessageArm (source : CheckedProcess)
+    (gatewayId : NodeId) : EventRaceMessageArm :=
+  match source.sequenceFlows.findSome? fun flow =>
+      if flow.sourceId = gatewayId then
+        source.nodes.findSome? fun
+          | .intermediateCatchMessageEvent id channel =>
+              if id = flow.targetId then some (flow, id, channel) else none
+          | _ => none
+      else none with
+  | some (flow, elementId, channel) =>
+      { configurationOrigin := { elementId := flow.id }
+        elementId
+        channel
+        output := firstPlace (outgoingPlaces source elementId) }
+  | none =>
+      { configurationOrigin := { elementId := ⟨""⟩ }
+        elementId := ⟨""⟩
+        channel := .operationMessage ⟨""⟩ ⟨""⟩ ⟨""⟩
+        output := ⟨""⟩ }
+
+private def eventRaceTimerArm (source : CheckedProcess)
+    (gatewayId : NodeId) : EventRaceTimerArm :=
+  match source.sequenceFlows.findSome? fun flow =>
+      if flow.sourceId = gatewayId then
+        source.nodes.findSome? fun
+          | .intermediateCatchTimerEvent id duration =>
+              if id = flow.targetId then some (flow, id, duration) else none
+          | _ => none
+      else none with
+  | some (flow, elementId, duration) =>
+      { configurationOrigin := { elementId := flow.id }
+        elementId
+        durationMs := if duration = "PT1S" then 1000 else 0
+        output := firstPlace (outgoingPlaces source elementId) }
+  | none =>
+      { configurationOrigin := { elementId := ⟨""⟩ }
+        elementId := ⟨""⟩
+        durationMs := 0
+        output := ⟨""⟩ }
+
 private def isRootScope (source : CheckedProcess)
     (scopeId : DefinitionScopeId) : Bool :=
   source.definitionScopes.any fun scope =>
@@ -162,22 +213,26 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (outgoingPlaces source id))
         { id := ⟨id.value⟩, name }, scopeId)
   | .intermediateCatchTimerEvent id durationLiteral =>
-      checkedNodeScopeId? source id |>.map fun scopeId =>
-      (.awaitTimer
-        (nodeOperationId id)
-        { elementId := id }
-        (firstPlace (incomingPlaces source id))
-        (firstPlace (outgoingPlaces source id))
-        { elementId := id
-          durationMs := if durationLiteral = "PT1S" then 1000 else 0 }, scopeId)
+      if configuredByEventGateway source id then none
+      else
+        checkedNodeScopeId? source id |>.map fun scopeId =>
+        (.awaitTimer
+          (nodeOperationId id)
+          { elementId := id }
+          (firstPlace (incomingPlaces source id))
+          (firstPlace (outgoingPlaces source id))
+          { elementId := id
+            durationMs := if durationLiteral = "PT1S" then 1000 else 0 }, scopeId)
   | .intermediateCatchMessageEvent id channel =>
-      checkedNodeScopeId? source id |>.map fun scopeId =>
-      (.awaitMessage
-        (nodeOperationId id)
-        { elementId := id }
-        (firstPlace (incomingPlaces source id))
-        (firstPlace (outgoingPlaces source id))
-        { elementId := id, channel }, scopeId)
+      if configuredByEventGateway source id then none
+      else
+        checkedNodeScopeId? source id |>.map fun scopeId =>
+        (.awaitMessage
+          (nodeOperationId id)
+          { elementId := id }
+          (firstPlace (incomingPlaces source id))
+          (firstPlace (outgoingPlaces source id))
+          { elementId := id, channel }, scopeId)
   | .receiveTask id channel =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitMessage
@@ -239,6 +294,14 @@ private def lowerNode (source : CheckedProcess) :
         (canonicalControlPlaceOrder (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
         pairedGatewayId.value, scopeId)
+  | .eventBasedGateway id =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.awaitEventRace
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (eventRaceMessageArm source id)
+        (eventRaceTimerArm source id), scopeId)
   | .errorEndEvent id error =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.throwError
@@ -295,10 +358,19 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
     definitionScopes := source.definitionScopes
     operationScopes := scopedOperations.map fun operation =>
       { operationId := operation.1.id, scopeId := operation.2 }
-    controlPlaceScopes := source.sequenceFlowScopes.map fun ownership =>
-      { controlPlaceId := flowControlPlaceId ownership.sequenceFlowId
-        scopeId := ownership.scopeId }
-    controlPlaces := source.sequenceFlows.map CheckedSequenceFlow.toControlPlace
+    controlPlaceScopes := source.sequenceFlowScopes.filterMap fun ownership =>
+      match source.sequenceFlows.find? fun flow =>
+          decide (flow.id = ownership.sequenceFlowId) with
+      | some flow =>
+          if eventRaceConfigurationFlow source flow then none
+          else some
+            { controlPlaceId := flowControlPlaceId ownership.sequenceFlowId
+              scopeId := ownership.scopeId }
+      | none => none
+    controlPlaces :=
+      (source.sequenceFlows.filter fun flow =>
+        !eventRaceConfigurationFlow source flow).map
+          CheckedSequenceFlow.toControlPlace
     operations := scopedOperations.map (·.1) }
 
 theorem lower_preserves_definition_identity (source : CheckedProcess) :
@@ -313,8 +385,17 @@ theorem lower_preserves_definition_identity (source : CheckedProcess) :
 
 theorem lower_preserves_sequence_flow_origins (source : CheckedProcess) :
     (lowerCheckedProcess source).controlPlaces.map (·.origin.elementId) =
-      source.sequenceFlows.map (·.id) := by
+      (source.sequenceFlows.filter fun flow =>
+        !eventRaceConfigurationFlow source flow).map (·.id) := by
   simp [lowerCheckedProcess, CheckedSequenceFlow.toControlPlace]
+
+def operationConfigurationOrigins : SemanticOperation → List SequenceFlowId
+  | .awaitEventRace _ _ _ message timer =>
+      [message.configurationOrigin.elementId, timer.configurationOrigin.elementId]
+  | _ => []
+
+def programConfigurationOrigins (program : Program) : List SequenceFlowId :=
+  program.operations.flatMap operationConfigurationOrigins
 
 
 end BpmnSemantics.SemanticProcess

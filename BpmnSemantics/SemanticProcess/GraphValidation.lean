@@ -72,6 +72,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitUserTask _ _ input _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
+  | .awaitEventRace _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
   | .choose _ _ input _ _ _
@@ -87,6 +88,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output => [output]
+  | .awaitEventRace _ _ _ message timer => [message.output, timer.output]
   | .synchronizeSelected _ _ _ output _ => [output]
   | .enterScope _ _ _ childEntry _ => [childEntry]
   | .awaitEffect _ _ _ output _ route =>

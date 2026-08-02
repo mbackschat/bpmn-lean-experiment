@@ -85,6 +85,7 @@ test("start closes at one stable User Task wait", async () => {
     timerWaits: [],
     effectWaits: [],
     selectedBranchSets: [],
+    eventRaces: [],
     variables: {
       process: {
         bindings: [
@@ -104,6 +105,7 @@ test("start closes at one stable User Task wait", async () => {
     ],
     messageActivations: [],
     timerActivations: [],
+    eventRaceActivations: [],
     effectActivations: [],
     scopeActivations: [{
       elementId: owner.definitionScopeId,
@@ -170,6 +172,7 @@ test("matching occurrence completion closes the Process", async () => {
     timerWaits: [],
     effectWaits: [],
     selectedBranchSets: [],
+    eventRaces: [],
     variables: {
       process: {
         bindings: [
@@ -194,6 +197,7 @@ test("matching occurrence completion closes the Process", async () => {
     ],
     messageActivations: [],
     timerActivations: [],
+    eventRaceActivations: [],
     effectActivations: [],
     scopeActivations: [{
       elementId: owner.definitionScopeId,

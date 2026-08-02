@@ -120,6 +120,7 @@ inductive CheckedNode where
   | inclusiveGatewayConverging
       (id : NodeId)
       (pairedGatewayId : NodeId)
+  | eventBasedGateway (id : NodeId)
   | errorEndEvent (id : NodeId) (error : ErrorReference)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
@@ -137,6 +138,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .exclusiveGateway id _ _
   | .inclusiveGatewayDiverging id _ _
   | .inclusiveGatewayConverging id _
+  | .eventBasedGateway id
   | .errorEndEvent id _
   | .noneEndEvent id => id
 
@@ -206,6 +208,20 @@ structure TimerDefinition where
 structure MessageDefinition where
   elementId : NodeId
   channel : MessageChannel
+  deriving Repr, DecidableEq
+
+structure EventRaceMessageArm where
+  configurationOrigin : BpmnSequenceFlowOrigin
+  elementId : NodeId
+  channel : MessageChannel
+  output : ControlPlaceId
+  deriving Repr, DecidableEq
+
+structure EventRaceTimerArm where
+  configurationOrigin : BpmnSequenceFlowOrigin
+  elementId : NodeId
+  durationMs : Nat
+  output : ControlPlaceId
   deriving Repr, DecidableEq
 
 structure EffectDefinition where
@@ -289,6 +305,12 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (message : MessageDefinition)
+  | awaitEventRace
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (message : EventRaceMessageArm)
+      (timer : EventRaceTimerArm)
   | awaitEffect
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -349,6 +371,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .awaitUserTask id _ _ _ _
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _
+  | .awaitEventRace id _ _ _ _
   | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _

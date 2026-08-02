@@ -78,6 +78,9 @@ export function throwError(
     selectedBranchSets: state.selectedBranchSets.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
+    eventRaces: state.eventRaces.filter(
+      ({ owner }) => !isInterrupted(owner),
+    ),
     variables: {
       ...state.variables,
       activities: state.variables.activities.filter(

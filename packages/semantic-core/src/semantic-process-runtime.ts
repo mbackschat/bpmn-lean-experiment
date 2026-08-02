@@ -29,6 +29,14 @@ import {
   synchronizeSelected,
 } from "./semantic-process-inclusive-gateway-runtime.js";
 import {
+  armEventRace,
+  eventRaceAssociationsAreValid,
+  isEventRaceMessageDefinition,
+  isEventRaceTimerDefinition,
+  winEventRaceWithMessage,
+  winEventRaceWithTimer,
+} from "./semantic-process-event-race-runtime.js";
+import {
   createMessageWait,
   deliverMessage,
 } from "./semantic-process-message.js";
@@ -74,6 +82,7 @@ export type {
   SemanticTimerWait,
   SemanticUserTaskWait,
   SelectedBranchSet,
+  EventRace,
 } from "./semantic-process-state.js";
 
 type SemanticCommandOutcome =
@@ -185,12 +194,20 @@ function admit(
       };
     }
     case StimulusKind.DeliverMessage: {
-      const next = deliverMessage(program, state, stimulus);
+      const next = isEventRaceMessageDefinition(program, stimulus.subscriptionId)
+        ? winEventRaceWithMessage(program, state, stimulus)
+        : deliverMessage(program, state, stimulus);
       return next === null
         ? { outcome: CommandOutcome.Rejected, state }
         : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.FireTimer: {
+      if (isEventRaceTimerDefinition(program, stimulus.timerId)) {
+        const next = winEventRaceWithTimer(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       const wait = state.timerWaits.find((candidate) =>
         sameOccurrence(candidate.id, stimulus.timerId)
       );
@@ -314,10 +331,11 @@ export function isStableStateResumable(state: RuntimeState): boolean {
     case ControlStateKind.NotStarted:
       return false;
     case ControlStateKind.Running:
-      return state.userTaskWaits.length > 0 ||
+      return eventRaceAssociationsAreValid(state) &&
+        (state.userTaskWaits.length > 0 ||
         state.messageWaits.length > 0 ||
         state.timerWaits.length > 0 ||
-        state.effectWaits.length > 0;
+        state.effectWaits.length > 0);
     case ControlStateKind.Completed:
       return true;
     default:
@@ -385,6 +403,12 @@ export function applyInternalOperation(
       const timerOwner = onlyTokenOwner(state, operation.input);
       return timerOwner !== undefined
         ? createTimerWait(operation, state, timerOwner)
+        : null;
+    }
+    case SemanticOperationKind.AwaitEventRace: {
+      const raceOwner = onlyTokenOwner(state, operation.input);
+      return raceOwner !== undefined
+        ? armEventRace(operation, state, raceOwner)
         : null;
     }
     case SemanticOperationKind.AwaitEffect: {

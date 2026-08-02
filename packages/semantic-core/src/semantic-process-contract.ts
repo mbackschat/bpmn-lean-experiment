@@ -16,6 +16,7 @@ export enum CheckedNodeKind {
   ParallelGateway = "parallelGateway",
   ExclusiveGateway = "exclusiveGateway",
   InclusiveGateway = "inclusiveGateway",
+  EventBasedGateway = "eventBasedGateway",
   ErrorEndEvent = "errorEndEvent",
   NoneEndEvent = "noneEndEvent",
 }
@@ -218,6 +219,11 @@ export type CheckedNode =
       pairedGatewayId: string;
     }>
   | DeepReadonly<{
+      kind: CheckedNodeKind.EventBasedGateway;
+      id: string;
+      direction: GatewayDirection.Diverging;
+    }>
+  | DeepReadonly<{
       kind: CheckedNodeKind.ErrorEndEvent;
       id: string;
       error: ErrorReference;
@@ -281,6 +287,7 @@ export enum SemanticOperationKind {
   Choose = "choose",
   SelectMany = "selectMany",
   SynchronizeSelected = "synchronizeSelected",
+  AwaitEventRace = "awaitEventRace",
   ThrowError = "throwError",
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
@@ -389,6 +396,27 @@ export type SynchronizeSelectedOperation = OperationBase &
     selectionKey: string;
   }>;
 
+export type AwaitEventRaceOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitEventRace;
+    input: string;
+    message: {
+      configurationOrigin: BpmnSequenceFlowOrigin;
+      elementId: string;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
+      output: string;
+    };
+    timer: {
+      configurationOrigin: BpmnSequenceFlowOrigin;
+      elementId: string;
+      durationMs: 1000;
+      output: string;
+    };
+  }>;
+
 export type SemanticOperation =
   | (OperationBase &
       DeepReadonly<{
@@ -467,6 +495,7 @@ export type SemanticOperation =
       }>)
   | SelectManyOperation
   | SynchronizeSelectedOperation
+  | AwaitEventRaceOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.ThrowError;

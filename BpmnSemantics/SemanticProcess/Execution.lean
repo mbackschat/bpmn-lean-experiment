@@ -33,7 +33,14 @@ def completeUserTask (state : RuntimeState) (processInstanceId : SemanticId)
           waits := state.waits.erase wait
           tokens := addToken state.tokens wait.output wait.owner }
 
-def fireTimer (state : RuntimeState) (timerId : TimerOccurrenceId)
+def timerDefinitionMatches (program : Program) (wait : TimerWait) : Bool :=
+  program.operations.any fun
+    | .awaitTimer _ _ _ _ timer =>
+        decide (timer.elementId = wait.elementId)
+    | _ => false
+
+def fireTimer (program : Program) (state : RuntimeState)
+    (timerId : TimerOccurrenceId)
     (logicalTimeMs : Nat) : Option RuntimeState :=
   match state.timerWaits.find? fun wait =>
       decide (
@@ -42,14 +49,17 @@ def fireTimer (state : RuntimeState) (timerId : TimerOccurrenceId)
           wait.activation = timerId.activation) with
   | none => none
   | some wait =>
-      if logicalTimeMs = wait.deadlineMs then
-        some
-          { state with
-            timerWaits := state.timerWaits.erase wait
-            tokens := addToken state.tokens wait.output wait.owner
-            logicalTimeMs := wait.deadlineMs }
-      else
-        none
+      if state.eventRaces.any (eventRaceHasTimer · wait) then
+        eventRaceTimerWinner? state timerId logicalTimeMs
+      else if logicalTimeMs = wait.deadlineMs &&
+          timerDefinitionMatches program wait then
+          some
+            { state with
+              timerWaits := state.timerWaits.erase wait
+              tokens := addToken state.tokens wait.output wait.owner
+              logicalTimeMs := wait.deadlineMs }
+        else
+          none
 
 def runChoices (program : Program) : RuntimeState → List OperationId →
     Option RuntimeState
@@ -112,7 +122,7 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
   | .fireTimer _ timerId logicalTimeMs =>
       match state.control with
       | .running instanceId =>
-          match fireTimer state timerId logicalTimeMs with
+          match fireTimer program state timerId logicalTimeMs with
           | some successor =>
               if timerId.processInstanceId = instanceId then
                 { outcome := .committed, state := successor }
@@ -151,10 +161,11 @@ def stableStateResumable (state : RuntimeState) : Bool :=
   match state.control with
   | .notStarted => false
   | .running _ =>
-      !state.waits.isEmpty ||
-        !state.messageWaits.isEmpty ||
-        !state.timerWaits.isEmpty ||
-        !state.effectWaits.isEmpty
+      eventRaceAssociationsValid state &&
+        (!state.waits.isEmpty ||
+          !state.messageWaits.isEmpty ||
+          !state.timerWaits.isEmpty ||
+          !state.effectWaits.isEmpty)
   | .completed _ => true
 
 private def independentParallelTaskChoices :
@@ -452,7 +463,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
       intro exactMatch
       exact processMismatch exactMatch.1.1.symm
     simp [applyStimulus, admitStimulus, fireTimer,
-      singletonTimerWaitingState, noMatch]
+      singletonTimerWaitingState, initialState, noMatch]
   · rcases remainingMismatch with elementMismatch | remainingMismatch
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTimerId.processInstanceId ∧
@@ -461,7 +472,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
         intro exactMatch
         exact elementMismatch exactMatch.1.2.symm
       simp [applyStimulus, admitStimulus, fireTimer,
-        singletonTimerWaitingState, noMatch]
+        singletonTimerWaitingState, initialState, noMatch]
     · rcases remainingMismatch with activationMismatch | timeMismatch
       · have noMatch : ¬ (
             (wait.processInstanceId = submittedTimerId.processInstanceId ∧
@@ -470,7 +481,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
           intro exactMatch
           exact activationMismatch exactMatch.2.symm
         simp [applyStimulus, admitStimulus, fireTimer,
-          singletonTimerWaitingState, noMatch]
+          singletonTimerWaitingState, initialState, noMatch]
       · by_cases processMatches :
           wait.processInstanceId = submittedTimerId.processInstanceId
         · by_cases elementMatches :
@@ -478,7 +489,8 @@ theorem timer_identity_or_time_mismatch_is_rejected
           · by_cases activationMatches :
               wait.activation = submittedTimerId.activation
             · simp [applyStimulus, admitStimulus, fireTimer,
-                singletonTimerWaitingState, processMatches, elementMatches,
+                singletonTimerWaitingState, initialState,
+                processMatches, elementMatches,
                 activationMatches, timeMismatch]
             · have noMatch : ¬ (
                   (wait.processInstanceId =
@@ -489,7 +501,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
                 intro exactMatch
                 exact activationMatches exactMatch.2
               simp [applyStimulus, admitStimulus, fireTimer,
-                singletonTimerWaitingState, noMatch]
+                singletonTimerWaitingState, initialState, noMatch]
           · have noMatch : ¬ (
                 (wait.processInstanceId =
                     submittedTimerId.processInstanceId ∧
@@ -499,7 +511,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
               intro exactMatch
               exact elementMatches exactMatch.1.2
             simp [applyStimulus, admitStimulus, fireTimer,
-              singletonTimerWaitingState, noMatch]
+              singletonTimerWaitingState, initialState, noMatch]
         · have noMatch : ¬ (
               (wait.processInstanceId =
                   submittedTimerId.processInstanceId ∧
@@ -509,7 +521,7 @@ theorem timer_identity_or_time_mismatch_is_rejected
             intro exactMatch
             exact processMatches exactMatch.1.1
           simp [applyStimulus, admitStimulus, fireTimer,
-            singletonTimerWaitingState, noMatch]
+            singletonTimerWaitingState, initialState, noMatch]
 
 /-- Any mismatch in the full effect-occurrence identity rejects completion with exact state preservation. -/
 theorem effect_identity_mismatch_is_rejected

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EventRace"
+  targetNamespace="https://bpmn-lean.local/tests/event-based-gateway-message-timer">
+  <bpmn:message id="Message_Approval" name="Approval"/>
+  <bpmn:interface id="Interface_ProcessMessages" name="Process messages">
+    <bpmn:operation id="Operation_ReceiveApproval" name="Receive approval">
+      <bpmn:inMessageRef>Message_Approval</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_EventRace" name="Message or timer" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:eventBasedGateway id="Race">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Message_Config</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Timer_Config</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="MessageCatch">
+      <bpmn:incoming>Flow_Message_Config</bpmn:incoming>
+      <bpmn:outgoing>Flow_Message_Task</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDefinition" messageRef="Message_Approval" operationRef="Operation_ReceiveApproval"/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="TimerCatch">
+      <bpmn:incoming>Flow_Timer_Config</bpmn:incoming>
+      <bpmn:outgoing>Flow_Timer_Task</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="MessageTask" name="Message selected">
+      <bpmn:incoming>Flow_Message_Task</bpmn:incoming>
+      <bpmn:outgoing>Flow_Message_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="TimerTask" name="Timer selected">
+      <bpmn:incoming>Flow_Timer_Task</bpmn:incoming>
+      <bpmn:outgoing>Flow_Timer_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="MessageEnd">
+      <bpmn:incoming>Flow_Message_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="TimerEnd">
+      <bpmn:incoming>Flow_Timer_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Race"/>
+    <bpmn:sequenceFlow id="Flow_Message_Config" sourceRef="Race" targetRef="MessageCatch"/>
+    <bpmn:sequenceFlow id="Flow_Timer_Config" sourceRef="Race" targetRef="TimerCatch"/>
+    <bpmn:sequenceFlow id="Flow_Message_Task" sourceRef="MessageCatch" targetRef="MessageTask"/>
+    <bpmn:sequenceFlow id="Flow_Timer_Task" sourceRef="TimerCatch" targetRef="TimerTask"/>
+    <bpmn:sequenceFlow id="Flow_Message_End" sourceRef="MessageTask" targetRef="MessageEnd"/>
+    <bpmn:sequenceFlow id="Flow_Timer_End" sourceRef="TimerTask" targetRef="TimerEnd"/>
+  </bpmn:process>
+</bpmn:definitions>

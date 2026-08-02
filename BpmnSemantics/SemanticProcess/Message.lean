@@ -43,6 +43,14 @@ inductive MessageDeliveryStep :
         { state with
           messageWaits := state.messageWaits.erase wait
           tokens := addToken state.tokens wait.output wait.owner }
+  | raceCommit
+      (program : Program)
+      (state successor : RuntimeState)
+      (subscriptionId : MessageSubscriptionId)
+      (channel : MessageChannel)
+      (transition : EventRaceMessageWinnerStep program state subscriptionId
+        channel successor) :
+      MessageDeliveryStep program state subscriptionId channel successor
 
 def deliverMessage (program : Program) (state : RuntimeState)
     (subscriptionId : MessageSubscriptionId) (channel : MessageChannel) :
@@ -50,13 +58,15 @@ def deliverMessage (program : Program) (state : RuntimeState)
   match state.messageWaits.find? (messageOccurrenceMatches subscriptionId) with
   | none => none
   | some wait =>
-      if wait.channel = channel && messageDefinitionMatches program wait then
-        some
-          { state with
-            messageWaits := state.messageWaits.erase wait
-            tokens := addToken state.tokens wait.output wait.owner }
-      else
-        none
+      if state.eventRaces.any (eventRaceHasMessage · wait) then
+        eventRaceMessageWinner? program state subscriptionId channel
+      else if wait.channel = channel && messageDefinitionMatches program wait then
+          some
+            { state with
+              messageWaits := state.messageWaits.erase wait
+              tokens := addToken state.tokens wait.output wait.owner }
+        else
+          none
 
 /-- Every successful executable Message delivery is permitted by the separately stated delivery relation. -/
 theorem deliverMessage_sound
@@ -72,13 +82,17 @@ theorem deliverMessage_sound
   · contradiction
   · rename_i wait occurrence
     split at success
-    · rename_i accepted
-      cases success
-      have callerChannel : wait.channel = channel := by
-        exact of_decide_eq_true (Bool.and_eq_true_iff.mp accepted).1
-      exact .commit program state subscriptionId channel wait occurrence
-        callerChannel (Bool.and_eq_true_iff.mp accepted).2
-    · contradiction
+    · exact .raceCommit program state successor subscriptionId channel
+        (eventRaceMessageWinnerState_sound program state successor
+          subscriptionId channel success)
+    · split at success
+      · rename_i accepted
+        cases success
+        have callerChannel : wait.channel = channel := by
+          exact of_decide_eq_true (Bool.and_eq_true_iff.mp accepted).1
+        exact .commit program state subscriptionId channel wait occurrence
+          callerChannel (Bool.and_eq_true_iff.mp accepted).2
+      · contradiction
 
 /-- Isolated state used to state direct Message-delivery laws over the complete public subscription identity and channel. -/
 def singletonMessageWaitingState (wait : MessageWait)

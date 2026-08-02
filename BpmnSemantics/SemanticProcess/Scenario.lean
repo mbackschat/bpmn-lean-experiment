@@ -35,11 +35,15 @@ private def taskDefinitions (program : Program) : List UserTaskDefinition :=
 private def timerDefinitions (program : Program) : List TimerDefinition :=
   program.operations.filterMap fun
     | .awaitTimer _ _ _ _ timer => some timer
+    | .awaitEventRace _ _ _ _ timer =>
+        some { elementId := timer.elementId, durationMs := timer.durationMs }
     | _ => none
 
 private def messageDefinitions (program : Program) : List MessageDefinition :=
   program.operations.filterMap fun
     | .awaitMessage _ _ _ _ message => some message
+    | .awaitEventRace _ _ _ message _ =>
+        some { elementId := message.elementId, channel := message.channel }
     | _ => none
 
 private def effectDefinitions (program : Program) : List EffectDefinition :=

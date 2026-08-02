@@ -18,6 +18,11 @@ import type {
 import {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
+import {
+  eventRaceConfigurationFlowIds,
+  isEventRaceCatch,
+  lowerEventRaceOperation,
+} from "./event-based-gateway-lowering.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -34,6 +39,7 @@ export function lowerCheckedProcess(
     lowerScopeCompletion(scope, source)
   );
   const scopedOperations = [...nodeOperations, ...completionOperations];
+  const configurationFlows = eventRaceConfigurationFlowIds(source);
   const program: SemanticProcessProgram = {
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
@@ -48,6 +54,7 @@ export function lowerCheckedProcess(
         compareCanonicalStrings(left.operationId, right.operationId)
       ),
     controlPlaceScopes: source.sequenceFlowScopes
+      .filter(({ sequenceFlowId }) => !configurationFlows.has(sequenceFlowId))
       .map(({ sequenceFlowId, scopeId }) => ({
         controlPlaceId: placeId(sequenceFlowId),
         scopeId,
@@ -55,7 +62,9 @@ export function lowerCheckedProcess(
       .sort((left, right) =>
         compareCanonicalStrings(left.controlPlaceId, right.controlPlaceId)
       ),
-    controlPlaces: source.sequenceFlows.map((flow) => ({
+    controlPlaces: source.sequenceFlows
+      .filter(({ id }) => !configurationFlows.has(id))
+      .map((flow) => ({
       id: placeId(flow.id),
       origin: {
         kind: SemanticOriginKind.BpmnSequenceFlow,
@@ -114,6 +123,9 @@ function lowerNode(
         task: { elementId: node.id, name: node.name },
       });
     case CheckedNodeKind.IntermediateCatchTimerEvent:
+      if (isEventRaceCatch(source, node.id)) {
+        return [];
+      }
       return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitTimer,
@@ -125,6 +137,16 @@ function lowerNode(
         },
       });
     case CheckedNodeKind.IntermediateCatchMessageEvent:
+      if (isEventRaceCatch(source, node.id)) {
+        return [];
+      }
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.AwaitMessage,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        message: { elementId: node.id, channel: node.channel },
+      });
     case CheckedNodeKind.ReceiveTask:
       return scoped({
         ...base,
@@ -223,6 +245,8 @@ function lowerNode(
             selectionKey: node.pairedGatewayId,
           });
       }
+    case CheckedNodeKind.EventBasedGateway:
+      return scoped(lowerEventRaceOperation(node, source));
     case CheckedNodeKind.ErrorEndEvent: {
       const handler = requireDirectErrorHandler(source, node);
       return scoped({

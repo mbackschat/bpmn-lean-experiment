@@ -179,6 +179,10 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
               ⟨← stringField json "id"⟩
               ⟨← stringField json "pairedGatewayId"⟩)
       | _ => throw s!"unsupported gateway direction {direction}"
+  | "eventBasedGateway" =>
+      requireObjectShape json ["direction", "id", "kind"]
+      expectStringField json "direction" "diverging"
+      pure (.eventBasedGateway ⟨← stringField json "id"⟩)
   | "noneEndEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneEndEvent ⟨← stringField json "id"⟩)
@@ -292,6 +296,28 @@ private def decodeMessageDefinition (json : Json) :
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       channel := ← decodeMessageChannel (← field json "channel") }
+
+private def decodeEventRaceMessageArm (json : Json) :
+    Except String EventRaceMessageArm := do
+  requireObjectShape json
+    ["channel", "configurationOrigin", "elementId", "output"]
+  pure
+    { configurationOrigin :=
+        ← decodeSequenceFlowOrigin (← field json "configurationOrigin")
+      elementId := ⟨← stringField json "elementId"⟩
+      channel := ← decodeMessageChannel (← field json "channel")
+      output := ⟨← stringField json "output"⟩ }
+
+private def decodeEventRaceTimerArm (json : Json) :
+    Except String EventRaceTimerArm := do
+  requireObjectShape json
+    ["configurationOrigin", "durationMs", "elementId", "output"]
+  pure
+    { configurationOrigin :=
+        ← decodeSequenceFlowOrigin (← field json "configurationOrigin")
+      elementId := ⟨← stringField json "elementId"⟩
+      durationMs := ← decodeSafeNat (← field json "durationMs")
+      output := ⟨← stringField json "output"⟩ }
 
 private def decodeEffectDefinition (json : Json) :
     Except String EffectDefinition := do
@@ -443,6 +469,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
           (← decodeMessageDefinition (← field json "message")))
+  | "awaitEventRace" =>
+      requireObjectShape json
+        ["id", "input", "kind", "message", "origin", "timer"]
+      pure
+        (.awaitEventRace
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          (← decodeEventRaceMessageArm (← field json "message"))
+          (← decodeEventRaceTimerArm (← field json "timer")))
   | "awaitEffect" =>
       requireObjectShape json
         ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",

@@ -20,6 +20,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .exclusiveGateway id _ _
   | .inclusiveGatewayDiverging id _ _
   | .inclusiveGatewayConverging id _
+  | .eventBasedGateway id
   | .errorEndEvent id _
   | .noneEndEvent id => id
 

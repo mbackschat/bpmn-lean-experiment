@@ -59,6 +59,8 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
             simp [parseFrom, nodeResult] at result
         | inclusiveGatewayConverging _ _ =>
             simp [parseFrom, nodeResult] at result
+        | eventBasedGateway _ =>
+            simp [parseFrom, nodeResult] at result
         | parallelGateway _ direction =>
             cases direction with
             | converging => simp [parseFrom, nodeResult] at result

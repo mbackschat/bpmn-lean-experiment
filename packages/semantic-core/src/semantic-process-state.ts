@@ -87,6 +87,14 @@ export type SelectedBranchSet = DeepReadonly<{
   expectedInputs: [string] | [string, string];
 }>;
 
+/** Hidden ownership link for one atomically armed Event-Based Gateway race. */
+export type EventRace = DeepReadonly<{
+  id: OccurrenceId;
+  owner: ScopeOccurrenceId;
+  messageSubscriptionId: MessageSubscriptionId;
+  timerOccurrenceId: TimerOccurrenceId;
+}>;
+
 /** Process-owned bindings that survive Activity-local cleanup and form the public variable projection. */
 export type ProcessVariableScope = DeepReadonly<{
   bindings: VariableBinding[];
@@ -119,10 +127,12 @@ export type RuntimeState = DeepReadonly<{
   timerWaits: SemanticTimerWait[];
   effectWaits: SemanticEffectWait[];
   selectedBranchSets: SelectedBranchSet[];
+  eventRaces: EventRace[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];
   timerActivations: ActivationCounter[];
+  eventRaceActivations: ActivationCounter[];
   effectActivations: ActivationCounter[];
   scopeActivations: ActivationCounter[];
   endOccurrences: number;
@@ -139,6 +149,7 @@ export const initialState: RuntimeState = {
   timerWaits: [],
   effectWaits: [],
   selectedBranchSets: [],
+  eventRaces: [],
   variables: {
     process: { bindings: [] },
     activities: [],
@@ -146,6 +157,7 @@ export const initialState: RuntimeState = {
   taskActivations: [],
   messageActivations: [],
   timerActivations: [],
+  eventRaceActivations: [],
   effectActivations: [],
   scopeActivations: [],
   endOccurrences: 0,
@@ -267,6 +279,13 @@ export function compareSelectedBranchSets(
   return activationOrder !== 0
     ? activationOrder
     : compareCanonicalStrings(left.selectionKey, right.selectionKey);
+}
+
+export function compareEventRaces(left: EventRace, right: EventRace): number {
+  const idOrder = compareOccurrences(left.id, right.id);
+  return idOrder !== 0
+    ? idOrder
+    : compareScopeOccurrences(left.owner, right.owner);
 }
 
 export function compareUserTaskWaits(

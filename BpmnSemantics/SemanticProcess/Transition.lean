@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
@@ -32,6 +33,11 @@ def awaitMessageState? (state : RuntimeState) (input output : ControlPlaceId)
   let owner ← onlyTokenOwner? state input
   let instanceId ← runningInstance? state
   pure (activateMessage state instanceId owner input output message)
+
+def awaitEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
+    (input : ControlPlaceId) (message : EventRaceMessageArm)
+    (timer : EventRaceTimerArm) : Option RuntimeState :=
+  armEventRaceState? state origin input message timer
 
 def awaitEffectState? (state : RuntimeState) (input output : ControlPlaceId)
     (effect : EffectDefinition) (route : Option BpmnErrorRoute) :
@@ -102,6 +108,10 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
   | awaitMessage (id origin input output message) (before after : RuntimeState)
       (transition : awaitMessageState? before input output message = some after) :
       OperationStep (.awaitMessage id origin input output message) before after
+  | awaitEventRace (id origin input message timer) (before after : RuntimeState)
+      (transition :
+        EventRaceArmingStep before origin input message timer after) :
+      OperationStep (.awaitEventRace id origin input message timer) before after
   | awaitEffect (id origin input output effect route)
       (before after : RuntimeState)
       (transition :
@@ -161,6 +171,8 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
       awaitTimerState? state input output timer
   | .awaitMessage _ _ input output message =>
       awaitMessageState? state input output message
+  | .awaitEventRace _ origin input message timer =>
+      awaitEventRaceState? state origin input message timer
   | .awaitEffect _ _ input output effect route =>
       awaitEffectState? state input output effect route
   | .duplicate _ _ input outputs => duplicateState? state input outputs
@@ -187,6 +199,9 @@ theorem fire_sound (operation : SemanticOperation)
     | exact .awaitUserTask _ _ _ _ _ before after result
     | exact .awaitTimer _ _ _ _ _ before after result
     | exact .awaitMessage _ _ _ _ _ before after result
+    | exact OperationStep.awaitEventRace _ _ _ _ _ before after
+        (armEventRaceState_sound before after _ _ _ _
+          (by simpa [fire?, awaitEventRaceState?] using result))
     | exact .awaitEffect _ _ _ _ _ _ before after result
     | exact .duplicate _ _ _ _ before after result
     | exact .synchronize _ _ _ _ before after result

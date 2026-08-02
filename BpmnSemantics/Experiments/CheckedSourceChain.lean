@@ -180,6 +180,8 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             simp [parseFrom, nodeResult] at result
         | inclusiveGatewayConverging id pairedGatewayId =>
             simp [parseFrom, nodeResult] at result
+        | eventBasedGateway id =>
+            simp [parseFrom, nodeResult] at result
         | parallelGateway gatewayNode direction =>
             cases direction with
             | converging => simp [parseFrom, nodeResult] at result

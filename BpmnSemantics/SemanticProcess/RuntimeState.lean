@@ -94,6 +94,18 @@ structure ScopeActivation where
   count : Nat
   deriving Repr, DecidableEq
 
+structure EventRaceActivation where
+  elementId : NodeId
+  count : Nat
+  deriving Repr, DecidableEq
+
+structure EventRace where
+  id : OccurrenceId
+  owner : ScopeOccurrenceId
+  messageSubscriptionId : MessageSubscriptionId
+  timerOccurrenceId : TimerOccurrenceId
+  deriving Repr, DecidableEq
+
 /-- Hidden inputs selected for one split activation and awaited by its paired join. -/
 structure SelectedBranchSet where
   owner : ScopeOccurrenceId
@@ -103,7 +115,7 @@ structure SelectedBranchSet where
 
 /-! ## Runtime representation invariant
 
-In an admitted reachable state, every token, wait, and selected-branch record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. User Task waits, User Task activation counters, and selected-branch records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting a scope removes the selected occurrence subtree together with every owned token, wait, selected-branch record, and Activity-local scope paired with its effects, while retaining all activation counters and End history. Normal scope completion may remove an occurrence only after its owned tokens, waits, selected-branch records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
+In an admitted reachable state, every token, wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting a scope removes the selected occurrence subtree together with every owned token, wait, selected-branch record, event-race record, and Activity-local scope paired with its effects, while retaining all activation counters and End history. Normal scope completion may remove an occurrence only after its owned tokens, waits, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
 -/
 
 structure RuntimeState where
@@ -116,12 +128,14 @@ structure RuntimeState where
   timerWaits : List TimerWait
   effectWaits : List EffectWait
   selectedBranchSets : List SelectedBranchSet
+  eventRaces : List EventRace := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
   timerActivations : List TimerActivation
   effectActivations : List EffectActivation
   scopeActivations : List ScopeActivation
+  eventRaceActivations : List EventRaceActivation := []
   endOccurrences : Nat
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
@@ -136,12 +150,14 @@ def initialState : RuntimeState :=
     timerWaits := []
     effectWaits := []
     selectedBranchSets := []
+    eventRaces := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []
     timerActivations := []
     effectActivations := []
     scopeActivations := []
+    eventRaceActivations := []
     endOccurrences := 0
     logicalTimeMs := 0 }
 
@@ -428,6 +444,7 @@ def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
     effectWaits := state.effectWaits.filter fun wait => !interrupted wait.owner
     selectedBranchSets :=
       state.selectedBranchSets.filter fun record => !interrupted record.owner
+    eventRaces := state.eventRaces.filter fun race => !interrupted race.owner
     variables :=
       { state.variables with
         activities := state.variables.activities.filter fun activity =>
@@ -475,6 +492,7 @@ def scopeQuiescent (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
     !(state.timerWaits.any fun wait => wait.owner == owner) &&
     !(state.effectWaits.any fun wait => wait.owner == owner) &&
     !(state.selectedBranchSets.any fun record => record.owner == owner) &&
+    !(state.eventRaces.any fun race => race.owner == owner) &&
     !(state.scopeOccurrences.any fun occurrence => occurrence.parent == some owner)
 
 def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)

@@ -631,6 +631,26 @@
           "required": [
             "kind",
             "id",
+            "direction"
+          ],
+          "properties": {
+            "kind": {
+              "const": "eventBasedGateway"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "direction": {
+              "const": "diverging"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "error"
           ],
           "properties": {

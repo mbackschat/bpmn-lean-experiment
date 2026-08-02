@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-02 after the isolated same-effort sub-agent review of `dd80bdc` and same-reviewer correction audit `acff781`; implementation is authorized within this proposal's exact boundary.**
+**Owner-approved on 2026-08-02 after the isolated same-effort sub-agent review of `dd80bdc` and same-reviewer correction audit `acff781`; the first semantic checkpoint is implemented and must pass its mandatory isolated review before scenario, differential, or durable Temporal scheduling work begins.**
 
 ## Independent cold-review receipt
 

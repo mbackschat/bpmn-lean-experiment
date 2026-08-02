@@ -99,6 +99,7 @@ def parseFrom (source : CheckedProcess) :
       | some (.exclusiveGateway ..)
       | some (.inclusiveGatewayDiverging ..)
       | some (.inclusiveGatewayConverging ..)
+      | some (.eventBasedGateway ..)
       | none => none
 
 def coversEveryNode (source : CheckedProcess)
@@ -148,6 +149,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .exclusiveGateway .. => false
   | .inclusiveGatewayDiverging .. => false
   | .inclusiveGatewayConverging .. => false
+  | .eventBasedGateway .. => false
 
 def profileChecks (source : CheckedProcess) : Bool :=
   source.nodes.all composedNodeSurfaceValid &&

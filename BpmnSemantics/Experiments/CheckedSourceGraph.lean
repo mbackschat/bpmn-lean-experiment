@@ -61,6 +61,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .exclusiveGateway _ _ _
   | .inclusiveGatewayDiverging _ _ _
   | .inclusiveGatewayConverging _ _ => false
+  | .eventBasedGateway _ => false
 
 def startIds (source : CheckedProcess) : List NodeId :=
   source.nodes.filterMap fun
