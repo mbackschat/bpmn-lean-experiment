@@ -206,6 +206,7 @@ export function compileCheckedProcess(
   if (
     !isAdmittedCheckedProcess(
       {
+        processId,
         definitionScopes: scoped.definitionScopes,
         nodeScopes,
         sequenceFlowScopes,

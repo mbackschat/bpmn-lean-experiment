@@ -40,24 +40,40 @@ private def flowSourceScopeId? (source : CheckedProcess)
         | _ => none
 
 private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
+  let roots := source.definitionScopes.filter (·.parentScopeId.isNone)
+  let entryRoots := roots.filter fun root =>
+    root.originElementId.value = source.processId.value
+  let nestedValid := source.definitionScopes.all fun scope =>
+    match scope.parentScopeId with
+    | none => true
+    | some parentScopeId =>
+        decide (scope.id ≠ parentScopeId) &&
+          scopeExists source.definitionScopes parentScopeId &&
+          source.nodes.any fun
+            | .embeddedSubProcess id childScopeId =>
+                decide (
+                  childScopeId = scope.id &&
+                  scope.originElementId = id &&
+                  checkedNodeScopeId? source id = some parentScopeId)
+            | _ => false
   strictlySortedStrings (source.definitionScopes.map fun scope => scope.id.value) &&
-    match source.definitionScopes.filter (·.parentScopeId.isNone) with
-    | [root] =>
-        root.originElementId.value = source.processId.value &&
-          source.definitionScopes.all fun scope =>
-            match scope.parentScopeId with
-            | none => scope.id = root.id
-            | some parentScopeId =>
-                decide (scope.id ≠ parentScopeId) &&
-                  scopeExists source.definitionScopes parentScopeId &&
-                  source.nodes.any fun
-                    | .embeddedSubProcess id childScopeId =>
-                        decide (
-                          childScopeId = scope.id &&
-                          scope.originElementId = id &&
-                          checkedNodeScopeId? source id = some parentScopeId)
-                    | _ => false
-    | _ => false
+    nestedValid &&
+    if source.identity.semanticProfile.value =
+        "bpmn-2.0.2-called-process-call-activity-draft" then
+      match entryRoots, source.nodes.filterMap fun
+          | .callActivity id calledProcessId => some (id, calledProcessId)
+          | _ => none with
+      | [entry], [(callId, calledProcessId)] =>
+          roots.length = 2 &&
+            checkedNodeScopeId? source callId = some entry.id &&
+            (roots.filter fun root =>
+              root.originElementId.value = calledProcessId.value).length = 1 &&
+            calledProcessId.value ≠ source.processId.value
+      | _, _ => false
+    else
+      match roots with
+      | [root] => root.originElementId.value = source.processId.value
+      | _ => false
 
 private def checkedOwnershipValid (source : CheckedProcess) : Bool :=
   strictlySortedStrings (source.nodeScopes.map fun ownership =>
@@ -176,6 +192,9 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       incomingCount flows id = 0 && outgoingCount flows id = 1
   | .embeddedSubProcess id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .callActivity id calledProcessId =>
+      nonempty calledProcessId.value &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1
   | .boundaryErrorEvent id _ error outputFlowId =>
       errorReferenceValid error &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&

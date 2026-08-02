@@ -200,6 +200,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | noneStartEvent id => simp [fireNode?, notPending]
   | embeddedSubProcess id scopeId =>
       simp [nodeArityValid] at candidateArity
+  | callActivity id calledElement =>
+      simp [nodeArityValid] at candidateArity
   | boundaryErrorEvent id attachedToRef error outputFlowId =>
       simp [nodeArityValid] at candidateArity
   | errorEndEvent id error =>

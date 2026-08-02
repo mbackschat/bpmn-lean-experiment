@@ -74,6 +74,10 @@ function referencedControlPlaces(
       return [operation.output];
     case "enterScope":
       return [operation.input, operation.childEntry];
+    case "invokeProcess":
+      return [operation.input, operation.calledEntry];
+    case "returnProcess":
+      return [operation.callerOutput];
     case "awaitUserTask":
     case "awaitTimer":
     case "awaitMessage":
@@ -187,6 +191,8 @@ export function verifyCanonicalDefinitionOrder(
         break;
       case "initiate":
       case "enterScope":
+      case "invokeProcess":
+      case "returnProcess":
       case "awaitUserTask":
       case "awaitTimer":
       case "awaitMessage":
@@ -248,6 +254,13 @@ export function verifyDefinitionReferences(
           );
         }
         break;
+      case "callActivity":
+        if (!definitionOriginIds.has(node.calledProcessId)) {
+          throw new Error(
+            `checked Call Activity ${node.id} references unknown called Process ${node.calledProcessId}`,
+          );
+        }
+        break;
       default:
         break;
     }
@@ -298,6 +311,67 @@ export function verifyDefinitionReferences(
         );
       }
     }
+  }
+
+  const checkedCalls = checkedProcess.nodes.filter(
+    (node) => node.kind === "callActivity",
+  );
+  const invokes = semanticProcess.operations.filter(
+    (operation) => operation.kind === "invokeProcess",
+  );
+  const returns = semanticProcess.operations.filter(
+    (operation) => operation.kind === "returnProcess",
+  );
+  for (const checkedCall of checkedCalls) {
+    const matchingInvokes = invokes.filter(
+      ({ origin }) => origin.elementId === checkedCall.id,
+    );
+    const invoke = matchingInvokes[0];
+    const matchingReturns = invoke === undefined
+      ? []
+      : returns.filter(({ id }) => id === invoke.returnOperationId);
+    const returned = matchingReturns[0];
+    const calledRoot = checkedProcess.definitionScopes.find(
+      ({ id, parentScopeId, originElementId }) =>
+        id === invoke?.calledRootScopeId &&
+        parentScopeId === null &&
+        originElementId === checkedCall.calledProcessId,
+    );
+    const callerScopeId = checkedProcess.nodeScopes.find(
+      ({ nodeId }) => nodeId === checkedCall.id,
+    )?.scopeId;
+    const operationOwner = (operationId: string): string | undefined =>
+      semanticProcess.operationScopes.find(({ operationId: candidate }) =>
+        candidate === operationId
+      )?.scopeId;
+    const placeOwner = (controlPlaceId: string): string | undefined =>
+      semanticProcess.controlPlaceScopes.find(({ controlPlaceId: candidate }) =>
+        candidate === controlPlaceId
+      )?.scopeId;
+    if (
+      matchingInvokes.length !== 1 ||
+      invoke === undefined ||
+      matchingReturns.length !== 1 ||
+      returned === undefined ||
+      calledRoot === undefined ||
+      invoke.calledProcessId !== checkedCall.calledProcessId ||
+      returned.origin.elementId !== checkedCall.id ||
+      returned.calledProcessId !== checkedCall.calledProcessId ||
+      returned.calledRootScopeId !== calledRoot.id ||
+      callerScopeId === undefined ||
+      operationOwner(invoke.id) !== callerScopeId ||
+      operationOwner(returned.id) !== calledRoot.id ||
+      placeOwner(invoke.input) !== callerScopeId ||
+      placeOwner(invoke.calledEntry) !== calledRoot.id ||
+      placeOwner(returned.callerOutput) !== callerScopeId
+    ) {
+      throw new Error(
+        `checked Call Activity ${checkedCall.id} has no exact invocation/return binding`,
+      );
+    }
+  }
+  if (invokes.length !== checkedCalls.length || returns.length !== checkedCalls.length) {
+    throw new Error("Call Activity operation cardinality differs from checked source");
   }
 
   const placeIds = requireUniqueIds(

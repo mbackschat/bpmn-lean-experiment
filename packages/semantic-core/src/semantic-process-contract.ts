@@ -7,6 +7,7 @@ export enum CheckedProcessKind {
 export enum CheckedNodeKind {
   NoneStartEvent = "noneStartEvent",
   EmbeddedSubProcess = "embeddedSubProcess",
+  CallActivity = "callActivity",
   BoundaryErrorEvent = "boundaryErrorEvent",
   UserTask = "userTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
@@ -160,6 +161,11 @@ export type CheckedNode =
       childScopeId: string;
     }>
   | DeepReadonly<{
+      kind: CheckedNodeKind.CallActivity;
+      id: string;
+      calledProcessId: string;
+    }>
+  | DeepReadonly<{
       kind: CheckedNodeKind.BoundaryErrorEvent;
       id: string;
       attachedToRef: string;
@@ -278,6 +284,8 @@ export enum SemanticProcessCompilerId {
 export enum SemanticOperationKind {
   Initiate = "initiate",
   EnterScope = "enterScope",
+  InvokeProcess = "invokeProcess",
+  ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
   AwaitMessage = "awaitMessage",
   AwaitTimer = "awaitTimer",
@@ -417,6 +425,24 @@ export type AwaitEventRaceOperation = OperationBase &
     };
   }>;
 
+export type InvokeProcessOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.InvokeProcess;
+    input: string;
+    calledProcessId: string;
+    calledRootScopeId: string;
+    calledEntry: string;
+    returnOperationId: string;
+  }>;
+
+export type ReturnProcessOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.ReturnProcess;
+    calledProcessId: string;
+    calledRootScopeId: string;
+    callerOutput: string;
+  }>;
+
 export type SemanticOperation =
   | (OperationBase &
       DeepReadonly<{
@@ -430,6 +456,8 @@ export type SemanticOperation =
         childEntry: string;
         childScopeId: string;
       }>)
+  | InvokeProcessOperation
+  | ReturnProcessOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.AwaitUserTask;

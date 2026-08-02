@@ -1,4 +1,6 @@
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import BpmnSemantics.SemanticProcess.CallActivityAdmission
+import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation

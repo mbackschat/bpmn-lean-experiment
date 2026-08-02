@@ -7,8 +7,13 @@ import type {
   OperationScopeOwnership,
   SemanticOperation,
 } from "./semantic-process-contract.js";
+import {
+  callCompletionEdges,
+  callOperationsArePaired,
+} from "./call-activity-admission.js";
 
 export type SemanticProcessGraph = Readonly<{
+  processId: string;
   definitionScopes: ReadonlyArray<DefinitionScope>;
   operationScopes: ReadonlyArray<OperationScopeOwnership>;
   controlPlaceScopes: ReadonlyArray<ControlPlaceScopeOwnership>;
@@ -21,8 +26,16 @@ export function isWellFormedSemanticProcessGraph(
   graph: SemanticProcessGraph,
 ): boolean {
   const scopeIds = new Set(graph.definitionScopes.map(({ id }) => id));
-  const root = onlyRootScope(graph.definitionScopes);
-  if (root === undefined || !isWellFormedScopeTree(graph.definitionScopes)) {
+  const entryRoots = graph.definitionScopes.filter(
+    ({ parentScopeId, originElementId }) =>
+      parentScopeId === null && originElementId === graph.processId,
+  );
+  const root = entryRoots[0];
+  if (
+    entryRoots.length !== 1 ||
+    root === undefined ||
+    !isWellFormedScopeForest(graph.definitionScopes)
+  ) {
     return false;
   }
   const operationScope = ownershipMap(
@@ -40,6 +53,15 @@ export function isWellFormedSemanticProcessGraph(
   if (operationScope === undefined || placeScope === undefined) {
     return false;
   }
+  if (!callOperationsArePaired(
+    graph.processId,
+    graph.definitionScopes,
+    graph.operations,
+    operationScope,
+    placeScope,
+  )) {
+    return false;
+  }
 
   const producers = new Map<string, string[]>();
   const consumers = new Map<string, string[]>();
@@ -48,7 +70,13 @@ export function isWellFormedSemanticProcessGraph(
     consumers.set(placeId, []);
   }
   for (const operation of graph.operations) {
-    if (!operationRespectsScopes(operation, graph, operationScope, placeScope)) {
+    if (!operationRespectsScopes(
+      operation,
+      graph,
+      operationScope,
+      placeScope,
+      root.id,
+    )) {
       return false;
     }
     for (const output of operationOutputs(operation)) {
@@ -78,9 +106,10 @@ export function isWellFormedSemanticProcessGraph(
   if (
     starts.length !== 1 ||
     start === undefined ||
+    operationScope.get(start.id) !== root.id ||
     rootCompletions.length !== 1 ||
     end === undefined ||
-    !hasOneCompletionAndEntryPerScope(graph)
+    !hasOneCompletionStrategyPerScope(graph, root.id, operationScope)
   ) {
     return false;
   }
@@ -105,7 +134,11 @@ export function isWellFormedSemanticProcessGraph(
       ? []
       : [{ source: reach.id, target: completion.id }];
   });
-  const edges = [...placeEdges, ...completionEdges];
+  const edges = [
+    ...placeEdges,
+    ...completionEdges,
+    ...callCompletionEdges(graph.operations, operationScope),
+  ];
   const operationIds = graph.operations.map(({ id }) => id);
   const reached = reachableFrom([start.id], edges);
   const canReachEnd = reachableFrom(
@@ -122,6 +155,7 @@ function operationRespectsScopes(
   graph: SemanticProcessGraph,
   operationScope: ReadonlyMap<string, string>,
   placeScope: ReadonlyMap<string, string>,
+  entryRootId: string,
 ): boolean {
   const owner = operationScope.get(operation.id);
   if (owner === undefined) {
@@ -143,6 +177,18 @@ function operationRespectsScopes(
           ({ id, parentScopeId }) =>
             id === operation.childScopeId && parentScopeId === owner,
         );
+    case SemanticOperationKind.InvokeProcess:
+      return referencesOwnedBy([operation.input], owner) &&
+        referencesOwnedBy(
+          [operation.calledEntry],
+          operation.calledRootScopeId,
+        );
+    case SemanticOperationKind.ReturnProcess:
+      return operation.calledRootScopeId === owner &&
+        graph.definitionScopes.some(
+          ({ id, parentScopeId }) => id === owner && parentScopeId === null,
+        ) &&
+        referencesOwnedBy([operation.callerOutput], entryRootId);
     case SemanticOperationKind.ThrowError: {
       const attached = graph.definitionScopes.find(
         ({ id }) => id === operation.handler.attachedScopeId,
@@ -169,23 +215,36 @@ function operationRespectsScopes(
   }
 }
 
-function hasOneCompletionAndEntryPerScope(
+function hasOneCompletionStrategyPerScope(
   graph: SemanticProcessGraph,
+  entryRootId: string,
+  operationScope: ReadonlyMap<string, string>,
 ): boolean {
   const completions = operationsOfKind(
     graph,
     SemanticOperationKind.CompleteScope,
   );
   const entries = operationsOfKind(graph, SemanticOperationKind.EnterScope);
+  const returns = operationsOfKind(graph, SemanticOperationKind.ReturnProcess);
   return graph.definitionScopes.every(({ id, parentScopeId }) =>
-    completions.filter(({ scopeId }) => scopeId === id).length === 1 &&
+    (parentScopeId === null
+      ? id === entryRootId
+        ? completions.filter(({ scopeId }) => scopeId === id).length === 1 &&
+          returns.every(({ id: operationId }) =>
+            operationScope.get(operationId) !== id
+          )
+        : completions.every(({ scopeId }) => scopeId !== id) &&
+          returns.filter(({ id: operationId }) =>
+            operationScope.get(operationId) === id
+          ).length === 1
+      : completions.filter(({ scopeId }) => scopeId === id).length === 1) &&
     (parentScopeId === null
       ? entries.every(({ childScopeId }) => childScopeId !== id)
       : entries.filter(({ childScopeId }) => childScopeId === id).length === 1)
   );
 }
 
-function isWellFormedScopeTree(
+function isWellFormedScopeForest(
   scopes: ReadonlyArray<DefinitionScope>,
 ): boolean {
   const byId = new Map(scopes.map((scope) => [scope.id, scope]));
@@ -208,13 +267,6 @@ function isWellFormedScopeTree(
     }
     return true;
   });
-}
-
-function onlyRootScope(
-  scopes: ReadonlyArray<DefinitionScope>,
-): DefinitionScope | undefined {
-  const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
-  return roots.length === 1 ? roots[0] : undefined;
 }
 
 function ownershipMap<K extends "operationId" | "controlPlaceId">(
@@ -297,8 +349,10 @@ function operationInputs(
   switch (operation.kind) {
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.ReturnProcess:
       return [];
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
@@ -330,6 +384,10 @@ function operationOutputs(
       return [operation.message.output, operation.timer.output];
     case SemanticOperationKind.EnterScope:
       return [operation.childEntry];
+    case SemanticOperationKind.InvokeProcess:
+      return [operation.calledEntry];
+    case SemanticOperationKind.ReturnProcess:
+      return [operation.callerOutput];
     case SemanticOperationKind.AwaitEffect:
       return [
         operation.output,

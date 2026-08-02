@@ -5,6 +5,9 @@ import type {
   SemanticOperation,
 } from "./semantic-process-contract.js";
 import {
+  removeCalledProcessSubtreesForCallers,
+} from "./semantic-process-call-runtime.js";
+import {
   addToken,
   ControlStateKind,
   sameOccurrence,
@@ -53,37 +56,43 @@ export function throwError(
   const interruptedEffects = state.effectWaits
     .filter(({ owner }) => isInterrupted(owner))
     .map(({ id }) => id);
+  const withoutCalledProcesses = removeCalledProcessSubtreesForCallers(
+    state,
+    interrupted.map(({ id }) => id),
+  );
   return {
-    ...state,
+    ...withoutCalledProcesses,
     controlTokens: addToken(
-      state.controlTokens.filter(({ owner }) => !isInterrupted(owner)),
+      withoutCalledProcesses.controlTokens.filter(
+        ({ owner }) => !isInterrupted(owner),
+      ),
       operation.handler.output,
       parent,
     ),
-    scopeOccurrences: state.scopeOccurrences.filter(
+    scopeOccurrences: withoutCalledProcesses.scopeOccurrences.filter(
       ({ id }) => !isInterrupted(id),
     ),
-    userTaskWaits: state.userTaskWaits.filter(
+    userTaskWaits: withoutCalledProcesses.userTaskWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
-    messageWaits: state.messageWaits.filter(
+    messageWaits: withoutCalledProcesses.messageWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
-    timerWaits: state.timerWaits.filter(
+    timerWaits: withoutCalledProcesses.timerWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
-    effectWaits: state.effectWaits.filter(
+    effectWaits: withoutCalledProcesses.effectWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
-    selectedBranchSets: state.selectedBranchSets.filter(
+    selectedBranchSets: withoutCalledProcesses.selectedBranchSets.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
-    eventRaces: state.eventRaces.filter(
+    eventRaces: withoutCalledProcesses.eventRaces.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
     variables: {
-      ...state.variables,
-      activities: state.variables.activities.filter(
+      ...withoutCalledProcesses.variables,
+      activities: withoutCalledProcesses.variables.activities.filter(
         ({ owner }) =>
           !interruptedEffects.some((effectId) => sameOccurrence(owner, effectId)),
       ),

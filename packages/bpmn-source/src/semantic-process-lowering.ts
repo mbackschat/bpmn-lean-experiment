@@ -23,6 +23,10 @@ import {
   isEventRaceCatch,
   lowerEventRaceOperation,
 } from "./event-based-gateway-lowering.js";
+import {
+  lowerCallActivityInvoke,
+  lowerCalledProcessReturn,
+} from "./call-activity-lowering.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -36,7 +40,7 @@ export function lowerCheckedProcess(
     lowerNode(node, source)
   );
   const completionOperations = source.definitionScopes.map((scope) =>
-    lowerScopeCompletion(scope, source)
+    lowerCalledProcessReturn(scope, source) ?? lowerScopeCompletion(scope, source)
   );
   const scopedOperations = [...nodeOperations, ...completionOperations];
   const configurationFlows = eventRaceConfigurationFlowIds(source);
@@ -97,13 +101,15 @@ function lowerNode(
 
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent:
-      return isRootScope(source, scopeId)
+      return isEntryRootScope(source, scopeId)
         ? scoped({
             ...base,
             kind: SemanticOperationKind.Initiate,
             output: requireOnly(outgoing, node.id, "outgoing"),
           })
         : [];
+    case CheckedNodeKind.CallActivity:
+      return [lowerCallActivityInvoke(node, source)];
     case CheckedNodeKind.EmbeddedSubProcess:
       return scoped({
         ...base,
@@ -374,9 +380,12 @@ function requireNodeScope(source: CheckedProcess, nodeId: string): string {
   return owner.scopeId;
 }
 
-function isRootScope(source: CheckedProcess, scopeId: string): boolean {
+function isEntryRootScope(source: CheckedProcess, scopeId: string): boolean {
   return source.definitionScopes.some(
-    (scope) => scope.id === scopeId && scope.parentScopeId === null,
+    (scope) =>
+      scope.id === scopeId &&
+      scope.parentScopeId === null &&
+      scope.originElementId === source.processId,
   );
 }
 

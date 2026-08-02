@@ -50,6 +50,7 @@ def nodeArityValid (source : CheckedProcess) :
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).length = 1
   | .embeddedSubProcess _ _
+  | .callActivity _ _
   | .boundaryErrorEvent ..
   | .errorEndEvent .. => false
   | .parallelGateway id .diverging =>

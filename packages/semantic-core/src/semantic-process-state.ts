@@ -95,6 +95,15 @@ export type EventRace = DeepReadonly<{
   timerOccurrenceId: TimerOccurrenceId;
 }>;
 
+/** Hidden ownership link from one caller occurrence to one distinct called Process root. */
+export type CalledProcessOccurrence = DeepReadonly<{
+  id: OccurrenceId;
+  caller: ScopeOccurrenceId;
+  calledProcessId: string;
+  calledRoot: ScopeOccurrenceId;
+  returnOperationId: string;
+}>;
+
 /** Process-owned bindings that survive Activity-local cleanup and form the public variable projection. */
 export type ProcessVariableScope = DeepReadonly<{
   bindings: VariableBinding[];
@@ -128,11 +137,13 @@ export type RuntimeState = DeepReadonly<{
   effectWaits: SemanticEffectWait[];
   selectedBranchSets: SelectedBranchSet[];
   eventRaces: EventRace[];
+  calledProcessOccurrences: CalledProcessOccurrence[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];
   timerActivations: ActivationCounter[];
   eventRaceActivations: ActivationCounter[];
+  callActivations: ActivationCounter[];
   effectActivations: ActivationCounter[];
   scopeActivations: ActivationCounter[];
   endOccurrences: number;
@@ -150,6 +161,7 @@ export const initialState: RuntimeState = {
   effectWaits: [],
   selectedBranchSets: [],
   eventRaces: [],
+  calledProcessOccurrences: [],
   variables: {
     process: { bindings: [] },
     activities: [],
@@ -158,6 +170,7 @@ export const initialState: RuntimeState = {
   messageActivations: [],
   timerActivations: [],
   eventRaceActivations: [],
+  callActivations: [],
   effectActivations: [],
   scopeActivations: [],
   endOccurrences: 0,
@@ -286,6 +299,16 @@ export function compareEventRaces(left: EventRace, right: EventRace): number {
   return idOrder !== 0
     ? idOrder
     : compareScopeOccurrences(left.owner, right.owner);
+}
+
+export function compareCalledProcessOccurrences(
+  left: CalledProcessOccurrence,
+  right: CalledProcessOccurrence,
+): number {
+  const callerOrder = compareScopeOccurrences(left.caller, right.caller);
+  return callerOrder !== 0
+    ? callerOrder
+    : compareOccurrences(left.id, right.id);
 }
 
 export function compareUserTaskWaits(

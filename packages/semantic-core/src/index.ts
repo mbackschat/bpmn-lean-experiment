@@ -1,4 +1,6 @@
 export * from "./contract.js";
+export * from "./call-activity-admission.js";
+export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.js";
 export * from "./deep-readonly.js";
 export * from "./effect-transport-material.js";
 export * from "./semantic-process-admission.js";

@@ -73,12 +73,17 @@ private structure ExternalAdmission where
   outcome : CommandOutcome
   state : RuntimeState
 
+private def isCallActivityProgram (program : Program) : Bool :=
+  program.identity.semanticProfile.value =
+    "bpmn-2.0.2-called-process-call-activity-draft"
+
 private def admitStimulus (program : Program) (state : RuntimeState) :
     Stimulus → ExternalAdmission
   | .startProcess _ processId instanceId initialVariables =>
       match state.control with
       | .notStarted =>
-          if program.processId.value = processId.value then
+          if program.processId.value = processId.value &&
+              (!isCallActivityProgram program || initialVariables.isEmpty) then
             match runningProgramStartState? program instanceId initialVariables with
             | some started => { outcome := .committed, state := started }
             | none => { outcome := .semanticFailure, state }
@@ -92,7 +97,8 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
           match completeUserTask state taskId.processInstanceId
               ⟨taskId.elementId.value⟩ taskId.activation with
           | some successor =>
-              if taskId.processInstanceId = instanceId then
+              if taskId.processInstanceId = instanceId &&
+                  !isCallActivityProgram program then
                 { outcome := .committed
                   state :=
                     { successor with
@@ -102,6 +108,8 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
                             { bindings := mergeProcessVariableBindings
                                 successor.variables.process.bindings
                                 submittedValues } } } }
+              else if isCallActivityProgram program && submittedValues.isEmpty then
+                { outcome := .committed, state := successor }
               else
                 { outcome := .rejected, state }
           | none => { outcome := .rejected, state }
@@ -162,6 +170,7 @@ def stableStateResumable (state : RuntimeState) : Bool :=
   | .notStarted => false
   | .running _ =>
       eventRaceAssociationsValid state &&
+        calledProcessAssociationsValid state &&
         (!state.waits.isEmpty ||
           !state.messageWaits.isEmpty ||
           !state.timerWaits.isEmpty ||

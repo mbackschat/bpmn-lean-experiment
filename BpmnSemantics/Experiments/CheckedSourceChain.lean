@@ -162,6 +162,7 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             exact .finish entry endNode nodeResult
         | noneStartEvent _ => simp [parseFrom, nodeResult] at result
         | embeddedSubProcess _ _ => simp [parseFrom, nodeResult] at result
+        | callActivity _ _ => simp [parseFrom, nodeResult] at result
         | boundaryErrorEvent _ _ _ _ => simp [parseFrom, nodeResult] at result
         | errorEndEvent _ _ => simp [parseFrom, nodeResult] at result
         | userTask id name =>

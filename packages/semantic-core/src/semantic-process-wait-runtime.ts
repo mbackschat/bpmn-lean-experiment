@@ -43,7 +43,7 @@ export function createUserTaskWait(
       ...state.userTaskWaits,
       {
         id: {
-          processInstanceId: state.control.instanceId,
+          processInstanceId: owner.processInstanceId,
           elementId: operation.task.elementId,
           activation,
         },
@@ -86,7 +86,7 @@ export function createTimerWait(
       ...state.timerWaits,
       {
         id: {
-          processInstanceId: state.control.instanceId,
+          processInstanceId: owner.processInstanceId,
           elementId: operation.timer.elementId,
           activation,
         },
@@ -119,7 +119,7 @@ export function createEffectWait(
       ({ elementId }) => elementId === operation.effect.elementId,
     )?.count ?? 0) + 1;
   const id = {
-    processInstanceId: state.control.instanceId,
+    processInstanceId: owner.processInstanceId,
     elementId: operation.effect.elementId,
     activation,
   };

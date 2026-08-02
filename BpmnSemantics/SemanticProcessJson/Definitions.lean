@@ -96,6 +96,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.embeddedSubProcess
           ⟨← stringField json "id"⟩
           ⟨← stringField json "childScopeId"⟩)
+  | "callActivity" =>
+      requireObjectShape json ["calledProcessId", "id", "kind"]
+      pure
+        (.callActivity
+          ⟨← stringField json "id"⟩
+          ⟨← stringField json "calledProcessId"⟩)
   | "boundaryErrorEvent" =>
       requireObjectShape json
         ["attachedToRef", "error", "id", "kind", "outputFlowId"]
@@ -439,6 +445,26 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "childEntry"⟩
           ⟨← stringField json "childScopeId"⟩)
+  | "invokeProcess" =>
+      requireObjectShape json
+        ["calledEntry", "calledProcessId", "calledRootScopeId", "id",
+          "input", "kind", "origin", "returnOperationId"]
+      pure
+        (.invokeProcess id origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "calledProcessId"⟩
+          ⟨← stringField json "calledRootScopeId"⟩
+          ⟨← stringField json "calledEntry"⟩
+          ⟨← stringField json "returnOperationId"⟩)
+  | "returnProcess" =>
+      requireObjectShape json
+        ["calledProcessId", "calledRootScopeId", "callerOutput", "id",
+          "kind", "origin"]
+      pure
+        (.returnProcess id origin
+          ⟨← stringField json "calledProcessId"⟩
+          ⟨← stringField json "calledRootScopeId"⟩
+          ⟨← stringField json "callerOutput"⟩)
   | "awaitUserTask" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "output", "task"]

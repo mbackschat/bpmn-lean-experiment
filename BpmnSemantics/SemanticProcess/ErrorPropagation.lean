@@ -19,6 +19,7 @@ theorem interruptScope_preserves_runtime_history
       after.timerActivations = state.timerActivations ∧
       after.effectActivations = state.effectActivations ∧
       after.scopeActivations = state.scopeActivations ∧
+      after.callActivations = state.callActivations ∧
       after.endOccurrences = state.endOccurrences := by
   simp [interruptScope]
 
@@ -35,9 +36,11 @@ theorem interruptScope_preserves_unrelated_user_wait
     (state : RuntimeState) (root parent : ScopeOccurrenceId)
     (output : ControlPlaceId) (wait : UserTaskWait)
     (present : wait ∈ state.waits)
-    (unrelated : occurrenceInSubtree state.scopeOccurrences root wait.owner = false) :
+    (unrelated : occurrenceInSubtree state.scopeOccurrences root wait.owner = false)
+    (outsideCalledTree :
+      wait.owner.processInstanceId ∉ calledInstanceClosure state root) :
     wait ∈ (interruptScope state root parent output).waits := by
-  simp [interruptScope, present, unrelated]
+  simp [interruptScope, present, unrelated, outsideCalledTree]
 
 private def instanceId : SemanticId := ⟨"ErrorInstance"⟩
 

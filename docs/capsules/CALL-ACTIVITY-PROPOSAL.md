@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. The mandatory semantic checkpoint still blocks artifact and Temporal lanes.**
+**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. The first green source/contract/Lean/semantic-core checkpoint is ready for its mandatory independent review; artifact, differential, and durable Temporal lanes remain blocked.**
 
 ## Independent cold-review receipt
 

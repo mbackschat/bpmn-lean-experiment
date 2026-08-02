@@ -27,6 +27,16 @@ import {
 import {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
+import {
+  SemanticProfileId,
+  isWellFormedSemanticProcessProgram,
+} from "@bpmn-lean/semantic-core";
+import {
+  compileCallActivityCheckedProcess,
+} from "./call-activity-source.js";
+import {
+  callActivityDefinitionBindingValid,
+} from "./call-activity-lowering.js";
 
 export async function compileBpmnToSemanticProcess(
   request: CompileBpmnToSemanticProcessRequest,
@@ -118,7 +128,13 @@ export async function compileBpmnToSemanticProcess(
   }
 
   const projection =
-    request.semanticProfile === a12BoundaryErrorProfile
+    request.semanticProfile === SemanticProfileId.CalledProcessCallActivity
+      ? compileCallActivityCheckedProcess(
+          imported.rootElement,
+          source(),
+          request.semanticProfile,
+        )
+      : request.semanticProfile === a12BoundaryErrorProfile
       ? compileA12BoundaryError(imported.rootElement, source())
       : request.semanticProfile === a12CreateDocumentProfile
       ? compileA12CreateDocument(imported.rootElement, source())
@@ -131,6 +147,21 @@ export async function compileBpmnToSemanticProcess(
     return reject([projection.diagnostic]);
   }
   const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
+  if (
+    request.semanticProfile === SemanticProfileId.CalledProcessCallActivity &&
+    (!isWellFormedSemanticProcessProgram(semanticProcess) ||
+      !callActivityDefinitionBindingValid(
+        projection.checkedProcess,
+        semanticProcess,
+      ))
+  ) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.UnsupportedModel,
+        "The lowered Call Activity definition forest is not structurally bound to its checked source.",
+      ),
+    ]);
+  }
   return {
     status: BpmnCompilationStatus.Accepted,
     source: source(),

@@ -259,6 +259,56 @@ test("binds the Event-Based Gateway node and complete heterogeneous race operati
   assert.equal(operation({ ...race, unexpected: true }), false);
 });
 
+test("binds the Call Activity node and exact invocation pair", async () => {
+  const checkedSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/checked-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const semanticSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/semantic-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const ajv = new Ajv2020({ strict: true });
+  const node = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: checkedSchema.$defs,
+    $ref: "#/$defs/node",
+  });
+  const operation = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: semanticSchema.$defs,
+    $ref: "#/$defs/operation",
+  });
+  const origin = { kind: "bpmnElement", elementId: "Call_CalledProcess" };
+  const invoke = {
+    id: "operation:Call_CalledProcess",
+    kind: "invokeProcess",
+    origin,
+    input: "place:Flow_Caller_Start_Call",
+    calledProcessId: "CalledProcess",
+    calledRootScopeId: "scope:CalledProcess",
+    calledEntry: "place:Flow_Called_Start_Task",
+    returnOperationId: "operation:return-process:Call_CalledProcess",
+  };
+  const returned = {
+    id: "operation:return-process:Call_CalledProcess",
+    kind: "returnProcess",
+    origin,
+    calledProcessId: "CalledProcess",
+    calledRootScopeId: "scope:CalledProcess",
+    callerOutput: "place:Flow_Caller_Call_Task",
+  };
+
+  assert.equal(node({
+    kind: "callActivity",
+    id: "Call_CalledProcess",
+    calledProcessId: "CalledProcess",
+  }), true);
+  assert.equal(node({ kind: "callActivity", id: "Call_CalledProcess" }), false);
+  assert.equal(operation(invoke), true);
+  assert.equal(operation(returned), true);
+  assert.equal(operation({ ...invoke, calledEntry: undefined }), false);
+  assert.equal(operation({ ...returned, returnOperationId: invoke.returnOperationId }), false);
+});
+
 test("keeps every checked-process schema definition reachable", async () => {
   const schema = JSON.parse(
     await readFile(

@@ -15,6 +15,11 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
+  calledProcessAssociationsAreValid,
+  invokeCalledProcess,
+  returnCalledProcess,
+} from "./semantic-process-call-runtime.js";
+import {
   completeActivityVariableScope,
   mergeProcessVariableBindings,
 } from "./semantic-process-data.js";
@@ -62,6 +67,7 @@ import {
   createTimerWait,
   createUserTaskWait,
 } from "./semantic-process-wait-runtime.js";
+import { SemanticProfileId } from "./semantic-process-profile.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export {
@@ -83,6 +89,7 @@ export type {
   SemanticUserTaskWait,
   SelectedBranchSet,
   EventRace,
+  CalledProcessOccurrence,
 } from "./semantic-process-state.js";
 
 type SemanticCommandOutcome =
@@ -120,15 +127,17 @@ function admit(
 ): CommandAdmission {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess: {
-      const rootScopes = program.definitionScopes.filter(
-        ({ parentScopeId }) => parentScopeId === null,
+      const entryScopes = program.definitionScopes.filter(
+        ({ parentScopeId, originElementId }) =>
+          parentScopeId === null && originElementId === program.processId,
       );
-      const rootScope = rootScopes[0];
+      const rootScope = entryScopes[0];
       if (
         state.control.kind === ControlStateKind.NotStarted &&
         stimulus.processId === program.processId &&
-        rootScopes.length === 1 &&
-        rootScope !== undefined
+        entryScopes.length === 1 &&
+        rootScope !== undefined &&
+        (!isCallActivityProgram(program) || stimulus.initialVariables.length === 0)
       ) {
         const rootOccurrence = {
           processInstanceId: stimulus.instanceId,
@@ -165,7 +174,8 @@ function admit(
       );
       if (
         state.control.kind !== ControlStateKind.Running ||
-        wait === undefined
+        wait === undefined ||
+        (isCallActivityProgram(program) && stimulus.submittedValues.length !== 0)
       ) {
         return { outcome: CommandOutcome.Rejected, state };
       }
@@ -332,6 +342,7 @@ export function isStableStateResumable(state: RuntimeState): boolean {
       return false;
     case ControlStateKind.Running:
       return eventRaceAssociationsAreValid(state) &&
+        calledProcessAssociationsAreValid(state) &&
         (state.userTaskWaits.length > 0 ||
         state.messageWaits.length > 0 ||
         state.timerWaits.length > 0 ||
@@ -387,6 +398,14 @@ export function applyInternalOperation(
         ? null
         : enterScope(operation, state, owner);
     }
+    case SemanticOperationKind.InvokeProcess: {
+      const caller = onlyTokenOwner(state, operation.input);
+      return caller === undefined
+        ? null
+        : invokeCalledProcess(operation, state, caller);
+    }
+    case SemanticOperationKind.ReturnProcess:
+      return returnCalledProcess(operation, state);
     case SemanticOperationKind.AwaitUserTask: {
       const taskOwner = onlyTokenOwner(state, operation.input);
       return taskOwner !== undefined
@@ -586,6 +605,11 @@ export function applyStimulus(
     default:
       return assertNever(admission.outcome);
   }
+}
+
+function isCallActivityProgram(program: SemanticProcessProgram): boolean {
+  return program.identity.semanticProfile ===
+    SemanticProfileId.CalledProcessCallActivity;
 }
 
 function assertNever(value: never): never {

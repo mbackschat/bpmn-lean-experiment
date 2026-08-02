@@ -99,11 +99,25 @@ structure EventRaceActivation where
   count : Nat
   deriving Repr, DecidableEq
 
+structure CallActivation where
+  elementId : NodeId
+  count : Nat
+  deriving Repr, DecidableEq
+
 structure EventRace where
   id : OccurrenceId
   owner : ScopeOccurrenceId
   messageSubscriptionId : MessageSubscriptionId
   timerOccurrenceId : TimerOccurrenceId
+  deriving Repr, DecidableEq
+
+/-- Hidden ownership link from one caller occurrence to one distinct called Process root. -/
+structure CalledProcessOccurrence where
+  id : OccurrenceId
+  caller : ScopeOccurrenceId
+  calledProcessId : ProcessId
+  calledRoot : ScopeOccurrenceId
+  returnOperationId : OperationId
   deriving Repr, DecidableEq
 
 /-- Hidden inputs selected for one split activation and awaited by its paired join. -/
@@ -129,6 +143,7 @@ structure RuntimeState where
   effectWaits : List EffectWait
   selectedBranchSets : List SelectedBranchSet
   eventRaces : List EventRace := []
+  calledProcessOccurrences : List CalledProcessOccurrence := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -136,6 +151,7 @@ structure RuntimeState where
   effectActivations : List EffectActivation
   scopeActivations : List ScopeActivation
   eventRaceActivations : List EventRaceActivation := []
+  callActivations : List CallActivation := []
   endOccurrences : Nat
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
@@ -151,6 +167,7 @@ def initialState : RuntimeState :=
     effectWaits := []
     selectedBranchSets := []
     eventRaces := []
+    calledProcessOccurrences := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []
@@ -158,6 +175,7 @@ def initialState : RuntimeState :=
     effectActivations := []
     scopeActivations := []
     eventRaceActivations := []
+    callActivations := []
     endOccurrences := 0
     logicalTimeMs := 0 }
 
@@ -171,7 +189,9 @@ def runningStartState (instanceId : SemanticId)
         process := { bindings := initialVariables } } }
 
 def rootDefinitionScope? (program : Program) : Option DefinitionScope :=
-  match program.definitionScopes.filter (·.parentScopeId.isNone) with
+  match program.definitionScopes.filter fun scope =>
+      scope.parentScopeId.isNone &&
+        scope.originElementId.value = program.processId.value with
   | [scope] => some scope
   | _ => none
 
@@ -302,6 +322,15 @@ private def scopeActivationCount (state : RuntimeState)
   (state.scopeActivations.find? fun activation =>
     decide (activation.scopeId = scopeId)).map (·.count) |>.getD 0
 
+def callActivationCount (state : RuntimeState) (elementId : NodeId) : Nat :=
+  elementActivationCount (state.callActivations.map fun value =>
+    (value.elementId, value.count)) elementId
+
+def setCallActivationCount (state : RuntimeState) (elementId : NodeId)
+    (count : Nat) : List CallActivation :=
+  { elementId, count } :: state.callActivations.filter fun value =>
+    decide (value.elementId ≠ elementId)
+
 def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
     (task : UserTaskDefinition) : RuntimeState :=
@@ -421,6 +450,28 @@ def occurrenceInSubtree (occurrences : List RuntimeScopeOccurrence)
     (root candidate : ScopeOccurrenceId) : Bool :=
   occurrenceInSubtreeWithin occurrences root candidate (occurrences.length + 1)
 
+private def calledInstanceClosureWithin
+    (records : List CalledProcessOccurrence) (seed : List SemanticId) :
+    Nat → List SemanticId
+  | 0 => seed
+  | fuel + 1 =>
+      let expanded := (seed ++ records.filterMap fun record =>
+        if seed.contains record.caller.processInstanceId then
+          some record.calledRoot.processInstanceId
+        else none).eraseDups
+      if expanded.length = seed.length then expanded
+      else calledInstanceClosureWithin records expanded fuel
+
+/-- Semantic Process-instance IDs transitively owned by calls whose callers lie in one interrupted scope subtree. -/
+def calledInstanceClosure (state : RuntimeState)
+    (root : ScopeOccurrenceId) : List SemanticId :=
+  let direct := state.calledProcessOccurrences.filterMap fun record =>
+    if occurrenceInSubtree state.scopeOccurrences root record.caller then
+      some record.calledRoot.processInstanceId
+    else none
+  calledInstanceClosureWithin state.calledProcessOccurrences direct
+    (state.calledProcessOccurrences.length + 1)
+
 private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.elementId.value⟩
@@ -429,8 +480,10 @@ private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
 /-- Atomically remove all runtime owners in one scope-occurrence subtree and emit the caught route token in its live parent. -/
 def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
     (output : ControlPlaceId) : RuntimeState :=
+  let calledInstances := calledInstanceClosure state root
   let interrupted := fun owner =>
-    occurrenceInSubtree state.scopeOccurrences root owner
+    occurrenceInSubtree state.scopeOccurrences root owner ||
+      calledInstances.contains owner.processInstanceId
   let interruptedEffects := state.effectWaits.filter fun wait =>
     interrupted wait.owner
   { state with
@@ -445,11 +498,15 @@ def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
     selectedBranchSets :=
       state.selectedBranchSets.filter fun record => !interrupted record.owner
     eventRaces := state.eventRaces.filter fun race => !interrupted race.owner
+    calledProcessOccurrences :=
+      state.calledProcessOccurrences.filter fun record =>
+        !interrupted record.caller && !interrupted record.calledRoot
     variables :=
       { state.variables with
         activities := state.variables.activities.filter fun activity =>
-          !(interruptedEffects.any fun wait =>
-            activityScopeMatches (effectOccurrenceId wait) activity) } }
+          !calledInstances.contains activity.owner.processInstanceId &&
+            !(interruptedEffects.any fun wait =>
+              activityScopeMatches (effectOccurrenceId wait) activity) } }
 
 def commonTokenOwner? (state : RuntimeState) (inputs : List ControlPlaceId) :
     Option ScopeOccurrenceId :=
@@ -493,6 +550,7 @@ def scopeQuiescent (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
     !(state.effectWaits.any fun wait => wait.owner == owner) &&
     !(state.selectedBranchSets.any fun record => record.owner == owner) &&
     !(state.eventRaces.any fun race => race.owner == owner) &&
+    !(state.calledProcessOccurrences.any fun record => record.caller == owner) &&
     !(state.scopeOccurrences.any fun occurrence => occurrence.parent == some owner)
 
 def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)

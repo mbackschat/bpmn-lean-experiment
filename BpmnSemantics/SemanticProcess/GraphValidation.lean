@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.CallActivityAdmission
 
 /-! # Fuel-bounded graph validation
 
@@ -67,8 +68,10 @@ def acyclicClosed [DecidableEq α] (edges : List (GraphEdge α))
 
 private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiate ..
+  | .returnProcess ..
   | .completeScope .. => []
   | .enterScope _ _ input _ _
+  | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
@@ -84,6 +87,8 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
 
 private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output
+  | .invokeProcess _ _ _ _ _ output _
+  | .returnProcess _ _ _ _ output
   | .awaitUserTask _ _ _ output _
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _
@@ -143,6 +148,7 @@ private def placesOwnedBy (program : Program) (places : List ControlPlaceId)
   places.all fun place => placeScope? program place == some scopeId
 
 private def operationRespectsScopes (program : Program)
+    (entryRootId : DefinitionScopeId)
     (operation : SemanticOperation) : Bool :=
   match operationScope? program operation.id with
   | none => false
@@ -156,6 +162,13 @@ private def operationRespectsScopes (program : Program)
             placesOwnedBy program [childEntry] childScopeId &&
             (definitionScope? program childScopeId).any fun scope =>
               scope.parentScopeId == some owner
+      | .invokeProcess _ _ input _ calledRoot childEntry _ =>
+          placesOwnedBy program [input] owner &&
+            placesOwnedBy program [childEntry] calledRoot
+      | .returnProcess _ _ _ calledRoot callerOutput =>
+          calledRoot = owner &&
+            (definitionScope? program owner).any (·.parentScopeId.isNone) &&
+            placesOwnedBy program [callerOutput] entryRootId
       | .completeScope _ _ scopeId parentOutput =>
           scopeId = owner &&
             match definitionScope? program scopeId with
@@ -185,26 +198,50 @@ private def scopeEdges (program : Program) :
     scope.parentScopeId.map fun parent =>
       { source := parent, target := scope.id }
 
-private def scopeTreeWellFormed (program : Program) : Bool :=
+private def scopeForestWellFormed (program : Program) : Bool :=
   let ids := program.definitionScopes.map (·.id)
-  match program.definitionScopes.filter (·.parentScopeId.isNone) with
-  | [root] =>
-      let edges := scopeEdges program
-      let fuel := ids.length
-      allReachableWithin ids edges fuel root.id && acyclicClosed edges fuel
-  | _ => false
+  let edges := scopeEdges program
+  !(program.definitionScopes.filter (·.parentScopeId.isNone)).isEmpty &&
+    (program.definitionScopes.all fun scope =>
+      match scope.parentScopeId with
+      | none => true
+      | some parent => scope.id ≠ parent && ids.contains parent) &&
+    acyclicClosed edges ids.length
 
-private def scopedOwnershipComplete (program : Program) : Bool :=
+private def scopedOwnershipComplete (program : Program)
+    (entryRootId : DefinitionScopeId) : Bool :=
   program.operationScopes.map (·.operationId) = program.operations.map (·.id) &&
     program.controlPlaceScopes.map (·.controlPlaceId) =
       program.controlPlaces.map (·.id) &&
-    program.operations.all (operationRespectsScopes program)
+    program.operations.all (operationRespectsScopes program entryRootId)
 
-private def oneCompletionAndEntryPerScope (program : Program) : Bool :=
+private def oneCompletionStrategyPerScope (program : Program)
+    (entryRootId : DefinitionScopeId) : Bool :=
   program.definitionScopes.all fun scope =>
-    (program.operations.filter fun
-      | .completeScope _ _ scopeId _ => scopeId = scope.id
-      | _ => false).length = 1 &&
+    (match scope.parentScopeId with
+    | none =>
+        if scope.id = entryRootId then
+          (program.operations.filter fun
+            | .completeScope _ _ scopeId _ => scopeId = scope.id
+            | _ => false).length = 1 &&
+          (program.operations.filter fun operation =>
+            match operation with
+            | .returnProcess id _ _ _ _ =>
+                operationScope? program id = some scope.id
+            | _ => false).isEmpty
+        else
+          (program.operations.filter fun
+            | .completeScope _ _ scopeId _ => scopeId = scope.id
+            | _ => false).isEmpty &&
+          (program.operations.filter fun operation =>
+            match operation with
+            | .returnProcess id _ _ _ _ =>
+                operationScope? program id = some scope.id
+            | _ => false).length = 1
+    | some _ =>
+        (program.operations.filter fun
+          | .completeScope _ _ scopeId _ => scopeId = scope.id
+          | _ => false).length = 1) &&
     match scope.parentScopeId with
     | none =>
         program.operations.all fun
@@ -231,7 +268,9 @@ private def completionEdges (program : Program) : List (GraphEdge OperationId) :
     | _ => none
 
 private def programEdges (program : Program) : List (GraphEdge OperationId) :=
-  placeEdges program ++ completionEdges program
+  placeEdges program ++ completionEdges program ++
+    (callCompletionPairs program).map fun pair =>
+      { source := pair.1, target := pair.2 }
 
 private def initiateIds (operations : List SemanticOperation) :
     List OperationId :=
@@ -240,7 +279,9 @@ private def initiateIds (operations : List SemanticOperation) :
     | _ => none
 
 private def rootScope? (program : Program) : Option DefinitionScopeId :=
-  match program.definitionScopes.filter (·.parentScopeId.isNone) with
+  match program.definitionScopes.filter fun scope =>
+      scope.parentScopeId.isNone &&
+        scope.originElementId.value = program.processId.value with
   | [scope] => some scope.id
   | _ => none
 
@@ -259,17 +300,21 @@ def programGraphWellFormed (program : Program) : Bool :=
   let ends := rootCompletionIds program
   match starts with
   | [start] =>
-      let edges := programEdges program
-      let fuel := operationIds.length
-      scopeTreeWellFormed program &&
-        scopedOwnershipComplete program &&
-        oneCompletionAndEntryPerScope program &&
-        program.controlPlaces.all (fun place =>
-        (producers program.operations place.id).length = 1 &&
-          (consumers program.operations place.id).length = 1) &&
-        allReachableWithin operationIds edges fuel start &&
-        allCoreachableWithin operationIds edges fuel ends &&
-        acyclicClosed edges fuel
+      match rootScope? program with
+      | some entryRoot =>
+          let edges := programEdges program
+          let fuel := operationIds.length
+          operationScope? program start = some entryRoot &&
+            scopeForestWellFormed program &&
+            scopedOwnershipComplete program entryRoot &&
+            oneCompletionStrategyPerScope program entryRoot &&
+            program.controlPlaces.all (fun place =>
+            (producers program.operations place.id).length = 1 &&
+              (consumers program.operations place.id).length = 1) &&
+            allReachableWithin operationIds edges fuel start &&
+            allCoreachableWithin operationIds edges fuel ends &&
+            acyclicClosed edges fuel
+      | none => false
   | _ => false
 
 end BpmnSemantics.SemanticProcess

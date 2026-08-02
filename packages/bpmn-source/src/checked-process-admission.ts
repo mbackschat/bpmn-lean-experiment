@@ -12,10 +12,14 @@ import type {
   CheckedSequenceFlow,
   SequenceFlowScopeOwnership,
 } from "@bpmn-lean/semantic-core";
+import {
+  hasSelectedCallActivityDefinitions,
+} from "./call-activity-checked-admission.js";
 
 const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
 export type CheckedProcessGraph = Readonly<{
+  processId: string;
   definitionScopes: ReadonlyArray<DefinitionScope>;
   nodeScopes: ReadonlyArray<NodeScopeOwnership>;
   sequenceFlowScopes: ReadonlyArray<SequenceFlowScopeOwnership>;
@@ -52,8 +56,9 @@ export function isAdmittedCheckedProcess(
     ) &&
     nodeScopes !== undefined &&
     flowScopes !== undefined &&
-    isDefinitionScopeTree(graph.definitionScopes) &&
-    embeddedNodesOwnChildScopes(graph, nodeScopes) &&
+    isDefinitionScopeForest(graph.definitionScopes) &&
+    embeddedNodesOwnChildScopes(graph, nodeScopes, semanticProfile) &&
+    hasSelectedCallActivityDefinitions(semanticProfile, graph, nodeScopes) &&
     errorNodesHaveDirectHandlers(graph, nodeScopes) &&
     hasSelectedExpressionLanguage(
       semanticProfile,
@@ -146,6 +151,7 @@ function errorNodesHaveDirectHandlers(
 function embeddedNodesOwnChildScopes(
   graph: CheckedProcessGraph,
   nodeScopes: ReadonlyMap<string, string>,
+  semanticProfile: string,
 ): boolean {
   const embedded = graph.nodes.filter(
     (
@@ -158,7 +164,9 @@ function embeddedNodesOwnChildScopes(
   const roots = graph.definitionScopes.filter(
     ({ parentScopeId }) => parentScopeId === null,
   );
-  return roots.length === 1 &&
+  const expectedRootCount =
+    semanticProfile === SemanticProfileId.CalledProcessCallActivity ? 2 : 1;
+  return roots.length === expectedRootCount &&
     embedded.every((node) =>
       graph.definitionScopes.some(
         ({ id, parentScopeId, originElementId }) =>
@@ -174,7 +182,7 @@ function embeddedNodesOwnChildScopes(
     );
 }
 
-function isDefinitionScopeTree(
+function isDefinitionScopeForest(
   scopes: ReadonlyArray<DefinitionScope>,
 ): boolean {
   const byId = new Map(scopes.map((scope) => [scope.id, scope]));
@@ -258,6 +266,7 @@ function hasSelectedArity(
     case CheckedNodeKind.NoneStartEvent:
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.EmbeddedSubProcess:
+    case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:
     case CheckedNodeKind.IntermediateCatchMessageEvent:

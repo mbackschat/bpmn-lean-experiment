@@ -5,6 +5,8 @@ import {
 
 export const SemanticProfileId = Object.freeze({
   BoundaryError: "cibseven-2.0.0-a12-boundary-error-draft",
+  CalledProcessCallActivity:
+    "bpmn-2.0.2-called-process-call-activity-draft",
   CreateDocument: "cibseven-2.0.0-a12-create-document-draft",
   EmbeddedSubProcessCompletion:
     "cibseven-2.2.0-embedded-subprocess-completion-draft",
@@ -182,6 +184,19 @@ function requiredCheckedProcessShape(
           end,
         ],
       };
+    case SemanticProfileId.CalledProcessCallActivity:
+      return {
+        definitionScopeCount: 2,
+        nodeKinds: [
+          start,
+          CheckedNodeKind.CallActivity,
+          CheckedNodeKind.UserTask,
+          end,
+          start,
+          CheckedNodeKind.UserTask,
+          end,
+        ],
+      };
     default:
       return undefined;
   }
@@ -325,6 +340,20 @@ function requiredProgramShape(
           SemanticOperationKind.ReachNoneEnd,
           SemanticOperationKind.ReachNoneEnd,
           SemanticOperationKind.CompleteScope,
+          SemanticOperationKind.CompleteScope,
+        ],
+      };
+    case SemanticProfileId.CalledProcessCallActivity:
+      return {
+        definitionScopeCount: 2,
+        operationKinds: [
+          SemanticOperationKind.Initiate,
+          SemanticOperationKind.InvokeProcess,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReturnProcess,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.ReachNoneEnd,
           SemanticOperationKind.CompleteScope,
         ],
       };

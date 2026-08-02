@@ -137,8 +137,9 @@ export function isWellFormedSemanticProcessProgram(
     !definitionScopes.every(isWellFormedDefinitionScope) ||
     !isSortedById(definitionScopes) ||
     definitionScopes.filter(
-      ({ parentScopeId }) => parentScopeId === null,
-    )[0]?.originElementId !== value.processId ||
+      ({ parentScopeId, originElementId }) =>
+        parentScopeId === null && originElementId === value.processId,
+    ).length !== 1 ||
     operationScopes === undefined ||
     !operationScopes.every(isWellFormedOperationScopeOwnership) ||
     !isSortedByField(operationScopes, "operationId") ||
@@ -188,6 +189,7 @@ export function isWellFormedSemanticProcessProgram(
   }
   return inclusiveOperationsArePaired(checkedOperations) &&
     isWellFormedSemanticProcessGraph({
+      processId: value.processId,
       definitionScopes,
       operationScopes,
       controlPlaceScopes,

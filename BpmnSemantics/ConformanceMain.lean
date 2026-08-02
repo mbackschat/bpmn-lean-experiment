@@ -1,5 +1,6 @@
 import BpmnSemantics.Conformance
 import BpmnSemantics.BoundaryErrorConformance
+import BpmnSemantics.CallActivityConformance
 import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.EventBasedGatewayConformance
 import BpmnSemantics.SemanticProcessConformance

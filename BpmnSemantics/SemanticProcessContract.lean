@@ -96,6 +96,7 @@ structure ErrorReference where
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | embeddedSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
+  | callActivity (id : NodeId) (calledProcessId : ProcessId)
   | boundaryErrorEvent (id attachedToRef : NodeId)
       (error : ErrorReference) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
@@ -128,6 +129,7 @@ inductive CheckedNode where
 def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .embeddedSubProcess id _
+  | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
@@ -287,6 +289,20 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (input childEntry : ControlPlaceId)
       (childScopeId : DefinitionScopeId)
+  | invokeProcess
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (calledProcessId : ProcessId)
+      (calledRootScopeId : DefinitionScopeId)
+      (calledEntry : ControlPlaceId)
+      (returnOperationId : OperationId)
+  | returnProcess
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (calledProcessId : ProcessId)
+      (calledRootScopeId : DefinitionScopeId)
+      (callerOutput : ControlPlaceId)
   | awaitUserTask
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -368,6 +384,8 @@ inductive SemanticOperation where
 def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
   | .enterScope id _ _ _ _
+  | .invokeProcess id _ _ _ _ _ _
+  | .returnProcess id _ _ _ _
   | .awaitUserTask id _ _ _ _
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _

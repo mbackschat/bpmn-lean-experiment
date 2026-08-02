@@ -102,7 +102,7 @@ export function completeScope(
   if (
     occurrences.length !== 1 ||
     occurrence === undefined ||
-    !isScopeQuiescent(state, occurrence)
+    !isScopeOccurrenceQuiescent(state, occurrence)
   ) {
     return null;
   }
@@ -135,7 +135,7 @@ export function completeScope(
     : null;
 }
 
-function isScopeQuiescent(
+export function isScopeOccurrenceQuiescent(
   state: RuntimeState,
   occurrence: RuntimeScopeOccurrence,
 ): boolean {
@@ -148,6 +148,7 @@ function isScopeQuiescent(
     !state.effectWaits.some(({ owner }) => owned(owner)) &&
     !state.selectedBranchSets.some(({ owner }) => owned(owner)) &&
     !state.eventRaces.some(({ owner }) => owned(owner)) &&
+    !state.calledProcessOccurrences.some(({ caller }) => owned(caller)) &&
     !state.scopeOccurrences.some(({ parent }) =>
       parent !== null && owned(parent)
     );

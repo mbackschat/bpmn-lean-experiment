@@ -310,6 +310,39 @@ test("classifies Sub-Process Error propagation as passive ingress plus internal 
   );
 });
 
+test("classifies Call Activity invocation and return as internal closure", async () => {
+  const program = await compileFixture(
+    "../../bpmn-source/test/fixtures/call-activity-called-process.bpmn",
+    "called-process-call-activity-host-admission",
+    "bpmn-2.0.2-called-process-call-activity-draft",
+  );
+  assert.deepEqual(
+    program.operations
+      .filter(
+        ({ kind }) =>
+          kind === SemanticOperationKind.InvokeProcess ||
+          kind === SemanticOperationKind.ReturnProcess,
+      )
+      .map(({ kind }) => kind)
+      .sort(),
+    [
+      SemanticOperationKind.InvokeProcess,
+      SemanticOperationKind.ReturnProcess,
+    ].sort(),
+  );
+
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [...program.operations].reverse(),
+    }),
+    { kind: TemporalHostCapabilityResultKind.Admitted },
+  );
+});
+
 function replaceTaskWithHostWait(
   program: SemanticProcessProgram,
   hostWaitKind:

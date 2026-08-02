@@ -98,6 +98,8 @@ function classifyHostOperation(
       return HostOperationClass.ManagedEventRace;
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.InvokeProcess:
+    case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.Synchronize:

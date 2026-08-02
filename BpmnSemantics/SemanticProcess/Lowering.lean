@@ -95,10 +95,14 @@ private def eventRaceTimerArm (source : CheckedProcess)
         durationMs := 0
         output := ⟨""⟩ }
 
-private def isRootScope (source : CheckedProcess)
+private def isEntryRootScope (source : CheckedProcess)
     (scopeId : DefinitionScopeId) : Bool :=
   source.definitionScopes.any fun scope =>
-    decide (scope.id = scopeId) && scope.parentScopeId.isNone
+    decide (scope.id = scopeId && scope.parentScopeId.isNone &&
+      scope.originElementId.value = source.processId.value)
+
+def returnProcessOperationId (id : NodeId) : OperationId :=
+  ⟨"operation:return-process:" ++ id.value⟩
 
 private def childEntryPlace (source : CheckedProcess)
     (childScopeId : DefinitionScopeId) : ControlPlaceId :=
@@ -186,7 +190,7 @@ private def lowerNode (source : CheckedProcess) :
   | .noneStartEvent id =>
       match checkedNodeScopeId? source id with
       | some scopeId =>
-          if isRootScope source scopeId then
+          if isEntryRootScope source scopeId then
             some
               (.initiate
                 (nodeOperationId id)
@@ -203,6 +207,20 @@ private def lowerNode (source : CheckedProcess) :
           (firstPlace (incomingPlaces source id))
           (childEntryPlace source childScopeId)
           childScopeId, scopeId)
+  | .callActivity id calledProcessId => do
+      let scopeId ← checkedNodeScopeId? source id
+      let calledRoot ← source.definitionScopes.find? fun scope =>
+        decide (scope.parentScopeId.isNone &&
+          scope.originElementId.value = calledProcessId.value)
+      pure
+        (.invokeProcess
+          (nodeOperationId id)
+          { elementId := id }
+          (firstPlace (incomingPlaces source id))
+          calledProcessId
+          calledRoot.id
+          (childEntryPlace source calledRoot.id)
+          (returnProcessOperationId id), scopeId)
   | .boundaryErrorEvent .. => none
   | .userTask id name =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
@@ -318,14 +336,30 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id)), scopeId)
 
 private def lowerScopeCompletion (source : CheckedProcess)
-    (scope : DefinitionScope) : SemanticOperation × DefinitionScopeId :=
-  let parentOutput := scope.parentScopeId.map fun _ =>
-    firstPlace (outgoingPlaces source scope.originElementId)
-  (.completeScope
-    ⟨"operation:complete-scope:" ++ scope.id.value⟩
-    { elementId := scope.originElementId }
-    scope.id
-    parentOutput, scope.id)
+    (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=
+  if scope.parentScopeId.isNone &&
+      scope.originElementId.value ≠ source.processId.value then
+    match source.nodes.filter fun
+        | .callActivity _ calledProcessId =>
+            calledProcessId.value = scope.originElementId.value
+        | _ => false with
+    | [.callActivity callId calledProcessId] => some
+        (.returnProcess
+          (returnProcessOperationId callId)
+          { elementId := callId }
+          calledProcessId
+          scope.id
+          (firstPlace (outgoingPlaces source callId)), scope.id)
+    | _ => none
+  else
+    let parentOutput := scope.parentScopeId.map fun _ =>
+      firstPlace (outgoingPlaces source scope.originElementId)
+    some
+      (.completeScope
+        ⟨"operation:complete-scope:" ++ scope.id.value⟩
+        { elementId := scope.originElementId }
+        scope.id
+        parentOutput, scope.id)
 
 private def insertScopedOperation
     (operation : SemanticOperation × DefinitionScopeId) :
@@ -348,7 +382,7 @@ private def sortScopedOperations :
 def lowerCheckedProcess (source : CheckedProcess) : Program :=
   let scopedOperations := sortScopedOperations
     (source.nodes.filterMap (lowerNode source) ++
-      source.definitionScopes.map (lowerScopeCompletion source))
+      source.definitionScopes.filterMap (lowerScopeCompletion source))
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := source.identity.semanticProfile

@@ -11,8 +11,11 @@ private structure ShapeCardinalities where
   starts : Nat := 0
   initiates : Nat := 0
   embeddedScopes : Nat := 0
+  callActivities : Nat := 0
   boundaryErrors : Nat := 0
   scopeEntries : Nat := 0
+  processInvokes : Nat := 0
+  processReturns : Nat := 0
   userTasks : Nat := 0
   messages : Nat := 0
   receiveTasks : Nat := 0
@@ -40,6 +43,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .noneStartEvent .. => { counts with starts := counts.starts + 1 }
     | .embeddedSubProcess .. =>
         { counts with embeddedScopes := counts.embeddedScopes + 1 }
+    | .callActivity .. =>
+        { counts with callActivities := counts.callActivities + 1 }
     | .boundaryErrorEvent .. =>
         { counts with boundaryErrors := counts.boundaryErrors + 1 }
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
@@ -70,6 +75,10 @@ private def operationCardinalities (operations : List SemanticOperation) :
     match operation with
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
     | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
+    | .invokeProcess .. =>
+        { counts with processInvokes := counts.processInvokes + 1 }
+    | .returnProcess .. =>
+        { counts with processReturns := counts.processReturns + 1 }
     | .awaitUserTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .awaitTimer .. => { counts with timers := counts.timers + 1 }
     | .awaitMessage .. => { counts with messages := counts.messages + 1 }
@@ -138,6 +147,10 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (2,
       { starts := 2, embeddedScopes := 1, boundaryErrors := 1,
         userTasks := 3, duplicates := 1, errorEnds := 1, ends := 3 })
+  else if profile =
+      "bpmn-2.0.2-called-process-call-activity-draft" then
+    some (2,
+      { starts := 2, callActivities := 1, userTasks := 2, ends := 2 })
   else none
 
 private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
@@ -190,6 +203,11 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
       withScopeCompletions 2
         { initiates := 1, scopeEntries := 1, userTasks := 3,
           duplicates := 1, errorThrows := 1, ends := 3 })
+  else if profile =
+      "bpmn-2.0.2-called-process-call-activity-draft" then
+    some (2, withScopeCompletions 1
+      { initiates := 1, processInvokes := 1, processReturns := 1,
+        userTasks := 2, ends := 2 })
   else none
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/

@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
+import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Semantic Process internal transitions
@@ -19,20 +20,20 @@ private def runningInstance? (state : RuntimeState) : Option SemanticId :=
 def awaitUserTaskState? (state : RuntimeState) (input output : ControlPlaceId)
     (task : UserTaskDefinition) : Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let instanceId ← runningInstance? state
-  pure (activateUserTask state instanceId owner input output task)
+  let _ ← runningInstance? state
+  pure (activateUserTask state owner.processInstanceId owner input output task)
 
 def awaitTimerState? (state : RuntimeState) (input output : ControlPlaceId)
     (timer : TimerDefinition) : Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let instanceId ← runningInstance? state
-  pure (activateTimer state instanceId owner input output timer)
+  let _ ← runningInstance? state
+  pure (activateTimer state owner.processInstanceId owner input output timer)
 
 def awaitMessageState? (state : RuntimeState) (input output : ControlPlaceId)
     (message : MessageDefinition) : Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let instanceId ← runningInstance? state
-  pure (activateMessage state instanceId owner input output message)
+  let _ ← runningInstance? state
+  pure (activateMessage state owner.processInstanceId owner input output message)
 
 def awaitEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (message : EventRaceMessageArm)
@@ -43,8 +44,8 @@ def awaitEffectState? (state : RuntimeState) (input output : ControlPlaceId)
     (effect : EffectDefinition) (route : Option BpmnErrorRoute) :
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let instanceId ← runningInstance? state
-  pure (activateEffect state instanceId owner input output effect route)
+  let _ ← runningInstance? state
+  pure (activateEffect state owner.processInstanceId owner input output effect route)
 
 def duplicateState? (state : RuntimeState) (input : ControlPlaceId)
     (outputs : List ControlPlaceId) : Option RuntimeState := do
@@ -99,6 +100,20 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
         enterScopeState? before input childEntry childScopeId = some after) :
       OperationStep
         (.enterScope id origin input childEntry childScopeId) before after
+  | invokeProcess (id origin input calledProcessId calledRootScopeId calledEntry
+      returnOperationId) (before after : RuntimeState)
+      (transition : InvokeProcessStep before origin input calledProcessId
+        calledRootScopeId calledEntry returnOperationId after) :
+      OperationStep
+        (.invokeProcess id origin input calledProcessId calledRootScopeId
+          calledEntry returnOperationId) before after
+  | returnProcess (id origin calledProcessId calledRootScopeId callerOutput)
+      (before after : RuntimeState)
+      (transition : ReturnProcessStep before id origin calledProcessId
+        calledRootScopeId callerOutput after) :
+      OperationStep
+        (.returnProcess id origin calledProcessId calledRootScopeId callerOutput)
+        before after
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
       OperationStep (.awaitUserTask id origin input output task) before after
@@ -165,6 +180,13 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
   | .initiate _ _ output => initiateState? state output
   | .enterScope _ _ input childEntry childScopeId =>
       enterScopeState? state input childEntry childScopeId
+  | .invokeProcess _ origin input calledProcessId calledRootScopeId calledEntry
+      returnOperationId =>
+      invokeProcessState? state origin input calledProcessId calledRootScopeId
+        calledEntry returnOperationId
+  | .returnProcess id origin calledProcessId calledRootScopeId callerOutput =>
+      returnProcessState? state id origin calledProcessId calledRootScopeId
+        callerOutput
   | .awaitUserTask _ _ input output task =>
       awaitUserTaskState? state input output task
   | .awaitTimer _ _ input output timer =>
@@ -196,6 +218,10 @@ theorem fire_sound (operation : SemanticOperation)
   cases operation <;> first
     | exact .initiate _ _ _ before after result
     | exact .enterScope _ _ _ _ _ before after result
+    | exact .invokeProcess _ _ _ _ _ _ _ before after
+        (invokeProcessState_sound _ _ _ _ _ _ _ _ result)
+    | exact .returnProcess _ _ _ _ _ before after
+        (returnProcessState_sound _ _ _ _ _ _ _ result)
     | exact .awaitUserTask _ _ _ _ _ before after result
     | exact .awaitTimer _ _ _ _ _ before after result
     | exact .awaitMessage _ _ _ _ _ before after result

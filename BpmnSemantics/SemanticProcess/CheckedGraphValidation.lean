@@ -10,6 +10,7 @@ namespace BpmnSemantics.SemanticProcess
 private def checkedNodeId : CheckedNode → NodeId
   | .noneStartEvent id
   | .embeddedSubProcess id _
+  | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _

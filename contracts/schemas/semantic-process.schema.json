@@ -332,6 +332,78 @@
         }
       }
     },
+    "invokeProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "calledProcessId",
+        "calledRootScopeId",
+        "calledEntry",
+        "returnOperationId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "invokeProcess"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "calledProcessId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "calledRootScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "calledEntry": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "returnOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "returnProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "calledProcessId",
+        "calledRootScopeId",
+        "callerOutput"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "returnProcess"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "calledProcessId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "calledRootScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "callerOutput": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "awaitUserTask": {
       "type": "object",
       "additionalProperties": false,
@@ -1186,6 +1258,12 @@
         },
         {
           "$ref": "#/$defs/enterScope"
+        },
+        {
+          "$ref": "#/$defs/invokeProcess"
+        },
+        {
+          "$ref": "#/$defs/returnProcess"
         },
         {
           "$ref": "#/$defs/awaitUserTask"

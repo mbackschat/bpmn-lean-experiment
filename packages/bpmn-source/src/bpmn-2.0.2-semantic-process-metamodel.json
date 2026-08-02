@@ -11,7 +11,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
@@ -23,6 +23,7 @@
       "Gateway.gatewayDirection type and default",
       "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, ExclusiveGateway.default, InclusiveGateway.default, and EventBasedGateway instantiate and type",
       "BaseElement.id and Definitions.rootElements identity and containment",
+      "CallActivity.calledElementRef target and bounds",
       "BoundaryEvent attachment and interrupting default",
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
       "ErrorEventDefinition.errorRef and Error name/code identity"
@@ -37,6 +38,7 @@
   "compilerProjection": {
     "definitionsType": "bpmn:Definitions",
     "processType": "bpmn:Process",
+    "callActivityType": "bpmn:CallActivity",
     "startEventType": "bpmn:StartEvent",
     "intermediateCatchEventType": "bpmn:IntermediateCatchEvent",
     "timerEventDefinitionType": "bpmn:TimerEventDefinition",
@@ -71,6 +73,12 @@
       "directSuperClasses": [
         "FlowElementsContainer",
         "CallableElement"
+      ]
+    },
+    {
+      "name": "CallActivity",
+      "directSuperClasses": [
+        "Activity"
       ]
     },
     {
@@ -411,6 +419,14 @@
       "upper": 1,
       "containment": false,
       "default": false
+    },
+    {
+      "owner": "CallActivity",
+      "name": "calledElementRef",
+      "type": "CallableElement",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
     },
     {
       "owner": "ReceiveTask",

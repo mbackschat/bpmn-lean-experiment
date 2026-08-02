@@ -91,6 +91,7 @@ def parseFrom (source : CheckedProcess) :
           | _ => none
       | some (.noneStartEvent _)
       | some (.embeddedSubProcess ..)
+      | some (.callActivity ..)
       | some (.boundaryErrorEvent ..)
       | some (.errorEndEvent ..)
       | some (.intermediateCatchMessageEvent ..)
@@ -132,6 +133,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .userTask ..
   | .parallelGateway .. => true
   | .embeddedSubProcess ..
+  | .callActivity ..
   | .boundaryErrorEvent ..
   | .errorEndEvent .. => false
   | .intermediateCatchTimerEvent _ durationLiteral =>

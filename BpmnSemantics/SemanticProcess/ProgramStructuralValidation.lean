@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.GraphValidation
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import BpmnSemantics.SemanticProcess.CallActivityAdmission
 
 /-! # Semantic Process program structural validation
 
@@ -37,18 +38,24 @@ private def wellFormedBpmnErrorRoute (places : List ControlPlace)
         nonempty route.origin.sequenceFlowId.value &&
         placeExists places route.output
 
-private def operationWellFormed (places : List ControlPlace) :
+private def operationWellFormed (program : Program) (places : List ControlPlace) :
     SemanticOperation → Bool
   | .initiate id origin output =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
-        placeExists places output
+        placeExists program.controlPlaces output
   | .enterScope id origin input childEntry childScopeId =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
         nonempty childScopeId.value &&
-        placeExists places input &&
-        placeExists places childEntry
+        placeExists program.controlPlaces input &&
+        placeExists program.controlPlaces childEntry
+  | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned =>
+      invokeProcessOperationWellFormed program id origin input calledProcessId
+        calledRoot calledEntry returned
+  | .returnProcess id origin calledProcessId calledRoot callerOutput =>
+      returnProcessOperationWellFormed program id origin calledProcessId calledRoot
+        callerOutput
   | .awaitUserTask id origin input output task =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -244,8 +251,9 @@ def programWellFormed (program : Program) : Bool :=
     strictlySortedStrings (program.operations.map fun operation => operation.id.value) &&
     program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) &&
-    program.operations.all (operationWellFormed program.controlPlaces) &&
+    program.operations.all (operationWellFormed program program.controlPlaces) &&
     inclusiveOperationsPaired program.operations &&
+    callOperationsPaired program &&
     (program.operations.filter isInitiate).length = 1 &&
     programGraphWellFormed program
 

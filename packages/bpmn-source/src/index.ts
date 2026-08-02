@@ -38,5 +38,8 @@ export {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
 export {
+  callActivityDefinitionBindingValid,
+} from "./call-activity-lowering.js";
+export {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:tns="urn:bpmn-lean:test:call-activity" id="Definitions_CallActivity" targetNamespace="urn:bpmn-lean:test:call-activity">
+  <bpmn:process id="CalledProcess" isExecutable="true">
+    <bpmn:sequenceFlow id="Flow_Called_Task_End" sourceRef="CalledTask" targetRef="CalledEnd" />
+    <bpmn:endEvent id="CalledEnd">
+      <bpmn:incoming>Flow_Called_Task_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="CalledTask" name="Called task">
+      <bpmn:outgoing>Flow_Called_Task_End</bpmn:outgoing>
+      <bpmn:incoming>Flow_Called_Start_Task</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Called_Start_Task" sourceRef="CalledStart" targetRef="CalledTask" />
+    <bpmn:startEvent id="CalledStart">
+      <bpmn:outgoing>Flow_Called_Start_Task</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:process id="CallerProcess" isExecutable="true">
+    <bpmn:sequenceFlow id="Flow_Caller_Task_End" sourceRef="CallerTask" targetRef="CallerEnd" />
+    <bpmn:endEvent id="CallerEnd">
+      <bpmn:incoming>Flow_Caller_Task_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="CallerTask" name="Caller task">
+      <bpmn:outgoing>Flow_Caller_Task_End</bpmn:outgoing>
+      <bpmn:incoming>Flow_Caller_Call_Task</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Caller_Call_Task" sourceRef="Call_CalledProcess" targetRef="CallerTask" />
+    <bpmn:callActivity id="Call_CalledProcess" calledElement="tns:CalledProcess">
+      <bpmn:outgoing>Flow_Caller_Call_Task</bpmn:outgoing>
+      <bpmn:incoming>Flow_Caller_Start_Call</bpmn:incoming>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_Caller_Start_Call" sourceRef="CallerStart" targetRef="Call_CalledProcess" />
+    <bpmn:startEvent id="CallerStart">
+      <bpmn:outgoing>Flow_Caller_Start_Call</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+</bpmn:definitions>

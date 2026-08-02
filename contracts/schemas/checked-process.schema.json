@@ -360,6 +360,26 @@
           "required": [
             "kind",
             "id",
+            "calledProcessId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "callActivity"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "calledProcessId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "attachedToRef",
             "error",
             "outputFlowId"

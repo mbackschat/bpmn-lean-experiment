@@ -25,6 +25,10 @@ import {
 import {
   isWellFormedAwaitEventRaceOperation,
 } from "./event-race-admission.js";
+import {
+  isWellFormedInvokeProcessOperation,
+  isWellFormedReturnProcessOperation,
+} from "./call-activity-admission.js";
 
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
@@ -64,6 +68,10 @@ export function isWellFormedSemanticOperation(
         isNonEmptyString(value.childScopeId) &&
         scopeIds.has(value.childScopeId)
       );
+    case SemanticOperationKind.InvokeProcess:
+      return isWellFormedInvokeProcessOperation(value, placeIds, scopeIds);
+    case SemanticOperationKind.ReturnProcess:
+      return isWellFormedReturnProcessOperation(value, placeIds, scopeIds);
     case SemanticOperationKind.AwaitUserTask:
       return (
         hasOnlyKeys(value, [
