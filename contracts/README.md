@@ -43,7 +43,7 @@ Portable assertions are verifier-side claims over canonical results or relations
 ## Schemas
 
 - [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates current draft profiles with exactly one normative or executable-oracle authority.
-- [scenario.schema.json](schemas/scenario.schema.json) validates the twenty-five answer-free User Task, balanced-parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, Receive Task, Service Task effect, CreateDocument data, boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation scenarios.
+- [scenario.schema.json](schemas/scenario.schema.json) validates the twenty-seven answer-free User Task, balanced-parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, Receive Task, Service Task effect, CreateDocument data, boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, Event-Based Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation scenarios.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.
 - [checked-process.schema.json](schemas/checked-process.schema.json) validates the admitted source-facing graph contract.
