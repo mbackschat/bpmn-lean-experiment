@@ -2,13 +2,13 @@
 
 ## Status
 
-**Drafted for independent proposal review. This document is not owner-approved and authorizes no implementation. The selected account, public identity contract, evidence strategy, and exclusions remain blocked until a context-cold same-effort sub-agent review passes and owner approval is recorded here.**
+**Immutable proposal target `8f796f4` is awaiting independent review. This document is not owner-approved and authorizes no implementation. The selected account, public identity contract, evidence strategy, and exclusions remain blocked until a context-cold same-effort sub-agent review passes and owner approval is recorded here.**
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8f796f4` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
