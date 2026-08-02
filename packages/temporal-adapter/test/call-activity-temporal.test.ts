@@ -183,10 +183,9 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
       );
 
       assert.deepEqual(
-        await submitUserTaskCompletionAtWorkflowId(
+        await submitUserTaskCompletion(
           environment.client.workflow,
-          handle.workflowId,
-          calledInstanceId,
+          ordinaryInstanceId,
           calledCompletion,
         ),
         {
@@ -351,7 +350,7 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
         await submitUserTaskCompletionAtWorkflowId(
           environment.client.workflow,
           erasedHandle.workflowId,
-          expectedCalledIdentity,
+          erasedStart.instanceId,
           correctIdentity,
         ),
         {

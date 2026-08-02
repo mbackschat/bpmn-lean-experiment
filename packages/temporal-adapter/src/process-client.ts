@@ -239,19 +239,23 @@ export async function submitUserTaskCompletion(
   );
 }
 
+/**
+ * Sends a semantic task completion to a separately addressed hosting Workflow.
+ * The hosting Process identity owns the Workflow receipt; the task occurrence may
+ * belong to a distinct called Process and is validated by the semantic core.
+ */
 export async function submitUserTaskCompletionAtWorkflowId(
   client: WorkflowClient,
   workflowId: string,
-  processInstanceId: string,
+  hostingProcessInstanceId: string,
   stimulus: CompleteUserTaskInstanceStimulus,
 ): Promise<ProcessCommandResult> {
   if (
     !isWellFormedStimulus(stimulus) ||
-    stimulus.kind !== StimulusKind.CompleteUserTaskInstance ||
-    stimulus.taskId.processInstanceId !== processInstanceId
+    stimulus.kind !== StimulusKind.CompleteUserTaskInstance
   ) {
     throw new TypeError(
-      "Completion command must be well-formed and address the named Process instance",
+      "Completion command must contain one well-formed task occurrence",
     );
   }
   const updateId = contentBoundUpdateId(stimulus);
@@ -296,7 +300,7 @@ export async function submitUserTaskCompletionAtWorkflowId(
         "retained completed Process receipt",
       ),
     );
-    if (receipt.processInstanceId !== processInstanceId) {
+    if (receipt.processInstanceId !== hostingProcessInstanceId) {
       throw new TypeError(
         "Temporal Workflow receipt does not match the addressed Process instance",
       );
@@ -311,7 +315,7 @@ export async function submitUserTaskCompletionAtWorkflowId(
       return {
         kind: ProcessCommandResultKind.ProcessUnknown,
         commandId: stimulus.commandId,
-        processInstanceId,
+        processInstanceId: hostingProcessInstanceId,
       };
     }
     throw error;
