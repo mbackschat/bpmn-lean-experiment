@@ -1,0 +1,79 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-structured-inclusive-gateway-selected-branch-synchronization",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.6.3",
+      "Clause 13.4.3",
+      "Table 10.124",
+      "Table 13.3"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "inclusive-gateway-all-true-divergence",
+      "conditionless-default-sequence-flow",
+      "formal-expression",
+      "simple-boolean-expression-v1",
+      "structured-selected-branch-synchronization",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-inclusive-gateway-compatibility-claim",
+    "cib-juel-compatibility-claim",
+    "general-inclusive-gateway-reachability",
+    "unstructured-inclusive-gateway",
+    "nested-inclusive-gateway",
+    "mixed-inclusive-gateway",
+    "repeated-inclusive-gateway",
+    "unpaired-inclusive-merge",
+    "more-or-fewer-than-two-conditional-candidates",
+    "missing-default-sequence-flow",
+    "conditional-default-sequence-flow",
+    "expression-languages-other-than-simple-boolean-v1",
+    "data-writes",
+    "loops",
+    "multi-instance",
+    "scopes",
+    "boundary-events",
+    "compensation",
+    "cancellation",
+    "message-timer-effect-races",
+    "a12-adoption-coverage",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

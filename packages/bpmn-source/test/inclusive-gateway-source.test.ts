@@ -13,7 +13,10 @@ import {
 const profile = "bpmn-2.0.2-inclusive-gateway-selected-branches-draft";
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 const source = await readFile(
-  new URL("./fixtures/inclusive-gateway-selected-branches.bpmn", import.meta.url),
+  new URL(
+    "../../../scenarios/inclusive-gateway-selected-branches/process.bpmn",
+    import.meta.url,
+  ),
   "utf8",
 );
 const permutedSource = await readFile(

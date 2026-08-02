@@ -1,0 +1,53 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-gateway-default",
+  "profile": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+  "bpmn": {
+    "id": "inclusive-gateway-test",
+    "relativePath": "scenarios/inclusive-gateway-selected-branches/process.bpmn",
+    "sha256": "9a662129585d4bf89973c8f1eb2851023345a43bba31a9d51683d918ca4de9f1"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-inclusive-default",
+      "processId": "Process_Inclusive",
+      "instanceId": "InclusiveInstance_Default",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-inclusive-default",
+      "taskId": {
+        "processInstanceId": "InclusiveInstance_Default",
+        "elementId": "Task_Default",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.3",
+      "BPMN 2.0.2 Clause 13.4.3",
+      "BPMN 2.0.2 Table 13.3 WCP-7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/gateway/InclusiveGatewayTest.java"
+    ]
+  }
+}

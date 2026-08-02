@@ -126,6 +126,22 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/intermediate-catch-message/scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/inclusive-gateway-selected-branches/one-true.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/inclusive-gateway-selected-branches/both-true-a-then-b.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/inclusive-gateway-selected-branches/both-true-b-then-a.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/inclusive-gateway-selected-branches/default.scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{
