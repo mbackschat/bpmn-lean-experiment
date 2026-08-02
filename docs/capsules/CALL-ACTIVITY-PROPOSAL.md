@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. Review of first green semantic checkpoint `5cb7b54` returned APPROVE WITH REQUIRED EDITS; correction target `0148592` is awaiting audit by that same reviewer. Artifact, differential, and durable Temporal lanes remain blocked.**
+**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. Review of first green semantic checkpoint `5cb7b54` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `0148592` without a material redesign. Artifact, differential, and durable Temporal lanes are now unblocked.**
 
 ## Independent cold-review receipt
 
@@ -12,7 +12,7 @@
 | Semantic checkpoint | `5cb7b54` | `fork-turns-none` | `approve-with-required-edits` | `0148592` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold sub-agents inherited the root model and effort. The proposal reviewer required command-outcome, QName, graph, identity, evidence, profile-metadata, and extraction-boundary corrections and passed correction audit target `3e17a05` without a material redesign. The checkpoint reviewer required caller-root, full tuple-identity, and owner-document corrections at `0148592`; its same-thread audit remains pending.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold sub-agents inherited the root model and effort. The proposal reviewer required command-outcome, QName, graph, identity, evidence, profile-metadata, and extraction-boundary corrections and passed correction audit target `3e17a05` without a material redesign. The checkpoint reviewer required caller-root, full tuple-identity, and owner-document corrections and passed correction audit target `0148592` in the same thread without a material redesign.
 
 ## Exact question
 
