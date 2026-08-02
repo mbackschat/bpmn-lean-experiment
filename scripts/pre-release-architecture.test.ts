@@ -19,6 +19,8 @@ const activeSourceRoots = [
   "runners/cibseven/src",
 ];
 
+const retiredOperationName = ["term", "inate"].join("");
+
 const prohibitedSourceFragments = [
   ["schema", "Version"].join(""),
   ["traceSchema", "Version"].join(""),
@@ -34,7 +36,41 @@ const prohibitedSourceFragments = [
   ["hasEffect", "ExecutionSurface"].join(""),
   ["hasBoundaryError", "ExecutionSurface"].join(""),
   ["hasBalancedParallel", "ExecutionSurface"].join(""),
+  retiredOperationName,
 ];
+
+const permittedRetiredSourceLines = new Map<string, ReadonlySet<string>>([
+  [
+    "packages/temporal-adapter/src/runner.ts",
+    new Set([
+      'handle.terminate("conformance scenario input exhausted"),',
+    ]),
+  ],
+  [
+    "packages/temporal-adapter/src/bypass-mutation.ts",
+    new Set([
+      "handle.terminate(`retained ${configuration.description}`),",
+    ]),
+  ],
+  [
+    "packages/temporal-adapter/test/call-activity-temporal.test.ts",
+    new Set([
+      'await earlyHandle.terminate("Call early-return mutation observed");',
+      'await erasedHandle.terminate("Call identity-erasure mutation observed");',
+    ]),
+  ],
+]);
+
+const permittedRetiredDocumentationContexts = new Map([
+  [
+    "docs/IMPLEMENTATION-MAP.md",
+    "replace `terminate` with `reachNoneEnd` plus quiescent `completeScope`",
+  ],
+  [
+    "docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md",
+    "replaced `terminate` with `reachNoneEnd` plus synthetic `completeScope`",
+  ],
+]);
 
 async function sourceFiles(
   relativeRoot: string,
@@ -55,17 +91,64 @@ async function sourceFiles(
   return nested.flat();
 }
 
-test("keeps active code on one replace-in-place pre-release contract", async () => {
+function retiredSourceFindings(
+  relativePath: string,
+  source: string,
+): string[] {
+  const permittedLines = permittedRetiredSourceLines.get(relativePath) ??
+    new Set<string>();
+  return source.split("\n").flatMap((line, index) => {
+    if (!new RegExp(`\\b${retiredOperationName}\\b`, "iu").test(line)) {
+      return [];
+    }
+    return permittedLines.has(line.trim())
+      ? []
+      : [`${relativePath}:${index + 1}: ${retiredOperationName}`];
+  });
+}
+
+function retiredDocumentationFindings(
+  relativePath: string,
+  source: string,
+): string[] {
+  const marker = `\`${retiredOperationName}\``;
+  const permittedContext =
+    permittedRetiredDocumentationContexts.get(relativePath);
+  return source.split("\n").flatMap((line, index) => {
+    const occurrences = line.split(marker).length - 1;
+    if (occurrences === 0) {
+      return [];
+    }
+    return occurrences === 1 && permittedContext !== undefined &&
+        line.includes(permittedContext)
+      ? []
+      : [`${relativePath}:${index + 1}: ${marker}`];
+  });
+}
+
+test("keeps active code and maintained documentation on one replace-in-place pre-release contract", async () => {
   const files = (await Promise.all(activeSourceRoots.map(sourceFiles))).flat();
   const findings: string[] = [];
 
   for (const relativePath of files) {
     const source = await readFile(path.join(projectRoot, relativePath), "utf8");
     for (const fragment of prohibitedSourceFragments) {
-      if (source.includes(fragment)) {
+      if (fragment === retiredOperationName) {
+        findings.push(...retiredSourceFindings(relativePath, source));
+      } else if (source.includes(fragment)) {
         findings.push(`${relativePath}: ${fragment}`);
       }
     }
+  }
+
+  const documentationFiles = (await sourceFiles("docs")).filter(
+    (relativePath) =>
+      relativePath.endsWith(".md") &&
+      !relativePath.startsWith(path.join("docs", "archived") + path.sep),
+  );
+  for (const relativePath of documentationFiles) {
+    const source = await readFile(path.join(projectRoot, relativePath), "utf8");
+    findings.push(...retiredDocumentationFindings(relativePath, source));
   }
 
   assert.deepEqual(findings, []);

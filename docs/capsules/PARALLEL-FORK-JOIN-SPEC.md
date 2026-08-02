@@ -117,7 +117,7 @@ Reconsider this decision if a material rule cannot be stated or proved without p
 
 ## Source and Semantic Process IL boundary
 
-The bounded source compiler admits exactly the reviewed fork/join topology with two distinct User Tasks and resolved Sequence Flows. The [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source graph, `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, and `terminate` operations, lowering rules, well-formedness, and growth constraints.
+The bounded source compiler admits exactly the reviewed fork/join topology with two distinct User Tasks and resolved Sequence Flows. The [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) owns the checked source graph, `initiate`, `awaitUserTask`, `duplicate`, `synchronize`, `reachNoneEnd`, and `completeScope` operations, lowering rules, well-formedness, and growth constraints.
 
 No topology-specific executable representation or evaluator path remains. The independent TypeScript semantic core admits exactly the sequential graph or the balanced two-task parallel graph and executes every supported operation without delegating to topology-specific logic. This does not authorize a general BPMN compiler, universal semantic language, general scope algebra, or arbitrary graph execution.
 

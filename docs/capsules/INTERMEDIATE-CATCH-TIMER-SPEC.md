@@ -90,7 +90,7 @@ type AwaitTimerOperation = Readonly<{
 }>;
 ```
 
-The admitted program contains `initiate`, `awaitTimer`, and `terminate`, with one control place for each Sequence Flow. This operation is reusable only as the mechanism “wait for a relative semantic deadline.” It does not encode catching/throwing, boundary attachment, interruption, repetition, scope propagation, or calendar behavior as dormant flags.
+The admitted program contains `initiate`, `awaitTimer`, `reachNoneEnd`, and root `completeScope`, with one control place for each Sequence Flow. The timer operation is reusable only as the mechanism “wait for a relative semantic deadline.” It does not encode catching/throwing, boundary attachment, interruption, repetition, scope propagation, or calendar behavior as dormant flags.
 
 The [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md) owns the checked node, operation, lowering rule, well-formedness obligations, runtime wait, and exact proof boundary. The frozen checked-source experiment is not extended by this capsule.
 

@@ -421,10 +421,11 @@ The 15-second prepared-pipeline warm budget remains a hard assertion on both CI 
 - embedded schema/trace format counters;
 - milestone-era scenario identifiers and paths;
 - version-suffixed compiler routing;
+- retired semantic-operation vocabulary in active code and maintained documentation, except exact allowlisted removal-history contexts;
 - committed Temporal history JSON fixtures;
 - Temporal Workflow patch branches.
 
-This guard intentionally applies to current source and executable tests, not preserved architecture handoffs or research discussing future production compatibility.
+The general representation checks apply to current source and executable tests. The retired-operation check additionally scans maintained Markdown under `docs/`, excludes `docs/archived/`, and permits only the exact current removal-history contexts owned by the implementation map and profile-parameterized admission specification.
 
 ## Evidence lanes
 
