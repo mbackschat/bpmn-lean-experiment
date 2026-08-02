@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `acff781` and semantic-checkpoint correction audit `b7c52ca` passed without a material redesign; the registered profile, two answer-free scenarios, Lean/core/Temporal differential relations, managed durable scheduler, activation-batching witness, hostile mutations, and replay evidence are complete. Independent cold closure review is pending.**
+**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `acff781` and semantic-checkpoint correction audit `b7c52ca` passed without a material redesign; the registered profile, two answer-free scenarios, Lean/core/Temporal differential relations, managed durable scheduler, activation-batching witness, hostile mutations, replay evidence, and cost record are complete. Immutable closure target `bee4cfb` is pending context-cold same-effort sub-agent review; repository writes are paused until its verdict.**
 
 ## Independent cold-review receipt
 
@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | Proposal | `dd80bdc` | `fork-turns-none` | `approve-with-required-edits` | `acff781` |
 | Semantic checkpoint | `e595b1c` | `fork-turns-none` | `approve-with-required-edits` | `b7c52ca` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `bee4cfb` | `not-recorded` | `pending` | `not-applicable` |
 
 This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold same-effort sub-agent review of `dd80bdc` required the Temporal activation-barrier and wrong-ingress corrections in `acff781`; the same reviewer passed that correction audit without a material redesign. The isolated semantic-checkpoint review of `e595b1c` required fail-closed Temporal admission, exact immutable-definition binding for both winners, and a quantified singleton-membership theorem; correction audit `b7c52ca` closed all three without changing the selected account. The later evidence integration received a warm non-governing review, and a separate read-only closure-doc audit found the SDK single-batch-premise and fixed-priority/core-bypass witness gaps that are closed by the direct-VM activation evidence at `273e747`; neither warm review substitutes for the pending context-cold closure review.
 
