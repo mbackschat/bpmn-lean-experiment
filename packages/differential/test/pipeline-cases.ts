@@ -44,6 +44,9 @@ import {
 import {
   eventBasedGatewayPipelineCases,
 } from "./event-based-gateway-pipeline-cases.ts";
+import {
+  callActivityPipelineCases,
+} from "./call-activity-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -531,6 +534,7 @@ export const pipelineCases = Object.freeze([
   simpleBooleanGatewayCase(),
   ...inclusiveGatewayPipelineCases,
   ...eventBasedGatewayPipelineCases,
+  ...callActivityPipelineCases,
   effectCase(),
   createDocumentCase(),
   boundaryErrorCase(),

@@ -1,0 +1,78 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-called-process-call-activity-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-bounded-called-process-call-activity",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.3.6",
+      "Clause 13.3.4",
+      "Table 10.23"
+    ]
+  },
+  "bpmn": {
+    "process": "two-private-executable-processes",
+    "features": [
+      "none-start-event",
+      "call-activity",
+      "namespace-qualified-called-process",
+      "distinct-called-process-instance",
+      "normal-called-process-return",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-call-activity-compatibility-claim",
+    "unprefixed-and-external-called-element-qnames",
+    "imports",
+    "global-tasks",
+    "more-than-two-processes",
+    "more-than-one-call-activity",
+    "multiple-and-nonempty-start-events",
+    "data-and-io-mappings",
+    "process-instance-data",
+    "resource-overrides",
+    "deployment-version-and-tenant-selection",
+    "recursion-and-longer-call-graphs",
+    "repeated-and-concurrent-invocation",
+    "loops",
+    "multi-instance",
+    "boundary-events",
+    "errors-and-escalations",
+    "cancellation-termination-and-compensation",
+    "collaborations",
+    "called-process-scopes",
+    "temporal-child-workflows",
+    "a12-adoption-coverage",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

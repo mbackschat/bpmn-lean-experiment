@@ -176,6 +176,7 @@ test(
         "inclusive-gateway-default",
         "event-based-gateway-message-wins",
         "event-based-gateway-timer-wins",
+        "called-process-call-activity",
         "service-task-effect-success",
         "a12-create-document-data",
         "a12-boundary-error-caught",

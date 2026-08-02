@@ -21,6 +21,9 @@ import {
   eventBasedGatewayPipelineCases,
 } from "./event-based-gateway-pipeline-cases.ts";
 import {
+  callActivityPipelineCases,
+} from "./call-activity-pipeline-cases.ts";
+import {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import {
@@ -60,6 +63,57 @@ test("registers every Event race artifact once with exact Temporal refinement", 
         temporalRelation: TemporalCaseRelation.ExactSemantic,
       },
     ],
+  );
+});
+
+test("registers the bounded Call Activity artifact once with exact Temporal refinement", () => {
+  assert.doesNotThrow(() =>
+    verifyPipelineRegistration(
+      artifactCases,
+      normativeArtifactCases,
+      pipelineCases,
+    )
+  );
+  assert.deepEqual(
+    callActivityPipelineCases.map((pipelineCase) => ({
+      id: pipelineCase.id,
+      cib: pipelineCase.cib,
+      temporalRelation: pipelineCase.temporalRelation,
+    })),
+    [
+      {
+        id: "called-process-call-activity",
+        cib: null,
+        temporalRelation: TemporalCaseRelation.ExactSemantic,
+      },
+    ],
+  );
+});
+
+test("rejects an omitted or identity-unprotected Call Activity catalog entry", () => {
+  const [callCase] = callActivityPipelineCases;
+  assert.ok(callCase !== undefined);
+  assert.throws(
+    () =>
+      verifyPipelineRegistration(
+        artifactCases,
+        normativeArtifactCases,
+        pipelineCases.filter(({ id }) => id !== callCase.id),
+      ),
+    /registered scenario missing from pipeline.*called-process-call-activity/u,
+  );
+  assert.throws(
+    () =>
+      verifyPipelineRegistration(
+        artifactCases,
+        normativeArtifactCases,
+        pipelineCases.map((pipelineCase) =>
+          pipelineCase === callCase
+            ? { ...pipelineCase, injectMutation: undefined }
+            : pipelineCase
+        ),
+      ),
+    /pipeline case has no seeded mutation.*called-process-call-activity/u,
   );
 });
 

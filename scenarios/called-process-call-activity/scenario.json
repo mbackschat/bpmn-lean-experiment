@@ -1,0 +1,62 @@
+{
+  "kind": "scenario",
+  "id": "called-process-call-activity",
+  "profile": "bpmn-2.0.2-called-process-call-activity-draft",
+  "bpmn": {
+    "id": "called-process-call-activity",
+    "relativePath": "scenarios/called-process-call-activity/process.bpmn",
+    "sha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-call-activity",
+      "processId": "CallerProcess",
+      "instanceId": "CallActivityInstance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-called-task",
+      "taskId": {
+        "processInstanceId": "call:22:CallActivityInstance_1:18:Call_CalledProcess:1",
+        "elementId": "CalledTask",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-caller-task",
+      "taskId": {
+        "processInstanceId": "CallActivityInstance_1",
+        "elementId": "CallerTask",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Table 10.23"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/callactivity/CallActivityTest.java"
+    ]
+  }
+}

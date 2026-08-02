@@ -150,6 +150,10 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/event-based-gateway-message-timer/timer-wins.scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/called-process-call-activity/scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{
