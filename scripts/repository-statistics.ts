@@ -14,14 +14,14 @@ export type LeanDeclarationStatistics = Readonly<{
 }>;
 
 export type LanguageStatistics = Readonly<{
-  language: "Java" | "Kotlin" | "TypeScript" | "Lean";
+  language: "Java" | "TypeScript" | "Lean";
   files: number;
   code: number;
   comments: number;
   blanks: number;
 }>;
 
-const selectedLanguages = ["Java", "Kotlin", "TypeScript", "Lean"] as const;
+const selectedLanguages = ["Java", "TypeScript", "Lean"] as const;
 const declarationCommands = new Set([
   "theorem",
   "lemma",

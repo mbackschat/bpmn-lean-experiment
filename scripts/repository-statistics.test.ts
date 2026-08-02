@@ -52,23 +52,16 @@ test("normalizes the selected Tokei languages and fills an absent language with 
           { name: "B.lean", stats: {} },
         ],
       },
-      TypeScript: {
-        blanks: 8,
-        code: 60,
-        comments: 7,
-        reports: [{ name: "example.ts", stats: {} }],
-      },
       Total: {},
     }),
     [
       { language: "Java", files: 1, code: 20, comments: 3, blanks: 4 },
-      { language: "Kotlin", files: 0, code: 0, comments: 0, blanks: 0 },
       {
         language: "TypeScript",
-        files: 1,
-        code: 60,
-        comments: 7,
-        blanks: 8,
+        files: 0,
+        code: 0,
+        comments: 0,
+        blanks: 0,
       },
       { language: "Lean", files: 2, code: 40, comments: 5, blanks: 6 },
     ],
@@ -84,7 +77,6 @@ test("renders deterministic Lean and Tokei statistics without a timestamp", () =
     },
     [
       { language: "Java", files: 49, code: 6_079, comments: 178, blanks: 657 },
-      { language: "Kotlin", files: 0, code: 0, comments: 0, blanks: 0 },
       {
         language: "TypeScript",
         files: 252,
