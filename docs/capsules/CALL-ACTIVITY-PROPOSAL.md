@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | Proposal | `8f796f4` | `fork-turns-none` | `approve-with-required-edits` | `3e17a05` |
 | Semantic checkpoint | `5cb7b54` | `fork-turns-none` | `approve-with-required-edits` | `0148592` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `cefb56d` | `not-recorded` | `pending` | `not-applicable` |
 
 This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold sub-agents inherited the root model and effort. The proposal reviewer required command-outcome, QName, graph, identity, evidence, profile-metadata, and extraction-boundary corrections and passed correction audit target `3e17a05` without a material redesign. The checkpoint reviewer required caller-root, full tuple-identity, and owner-document corrections and passed correction audit target `0148592` in the same thread without a material redesign.
 
