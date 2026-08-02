@@ -460,6 +460,18 @@ Every cold stage uses the same neutral sub-agent workflow. Its prompt contains o
 
 The author must commit the review target and pause writes at the stage boundary. The reviewer works read-only against that immutable commit or exact baseline-to-target range. Parallel agents that could change the reviewed files remain stopped. A correction is committed separately and sent as a warm follow-up to the exact same reviewer sub-agent for a correction audit; that audit is intentionally not cold because it must track the original required findings. A correction that changes the selected account, public contract, exclusions, or evidence strategy materially invalidates the review and requires a newly spawned `fork-turns-none` reviewer for the redesigned stage.
 
+### When a warm review is valid
+
+Warm review is valid in three bounded cases:
+
+1. the exact same cold reviewer audits a correction commit against its original required findings;
+2. an optional preflight reviews draft or uncommitted work before the immutable governed target exists, with no receipt or claim of independence;
+3. an agent that did not implement the reviewed files checks a routine non-material refactor or integration change that does not select or change a governed semantic claim.
+
+A warm reviewer may retain the prior review thread or the limited author context needed for those purposes, which saves rediscovery time. It cannot satisfy the governed cold stage, review its own implementation, or carry approval across a material redesign. A redesign of the selected account, public contract, exclusions, or evidence strategy always starts a new context-cold reviewer.
+
+Every cold or warm reviewer uses the same root model and reasoning effort. Spawn without a model or effort downgrade; on orchestration systems with named worker classes, do not substitute a generic or general worker whose effective model or effort differs from the root. Cold reviewers still use `fork_turns: "none"`; a mandated correction audit continues in the exact same reviewer thread.
+
 The neutral prompt names the stage, exact target commit and optional baseline, capsule, required owner documents and normative sources, applicable gates, and fixed output contract. It must not disclose the author's diagnosis, preferred verdict, or expected findings. Use this skeleton and specialize only the required-document and claim lists:
 
 ```text

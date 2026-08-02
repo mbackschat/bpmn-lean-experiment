@@ -439,13 +439,18 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
   assert.match(contributorGuide, /^### Independent cold review$/mu);
   assert.match(contributorGuide, /may not approve, append, rebase, or replace/u);
   assert.match(contributorGuide, /without a model or reasoning override/u);
+  assert.match(contributorGuide, /Cold or warm, every reviewer/u);
+  assert.match(contributorGuide, /generic or general worker tier/u);
   assert.match(testingSpec, /^## Independent cold-review gate$/mu);
+  assert.match(testingSpec, /^### When a warm review is valid$/mu);
   assert.match(testingSpec, /external-fresh-session/u);
   assert.match(testingSpec, /fork-turns-none/u);
   assert.match(testingSpec, /`fork_turns: "none"`/u);
   assert.match(testingSpec, new RegExp(reviewPolicyBaseline, "u"));
   assert.match(testingSpec, new RegExp(subagentReviewPolicyBaseline, "u"));
   assert.match(testingSpec, /same model and reasoning effort/u);
+  assert.match(testingSpec, /same root model and reasoning effort/u);
+  assert.match(testingSpec, /cannot satisfy the governed cold stage/u);
   assert.match(testingSpec, /omits both model and reasoning-effort overrides/u);
   assert.match(testingSpec, /byte-identical/u);
   assert.match(testingSpec, /must delete the capsule-specific pending barrier/u);
