@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `3e17a05` and semantic-checkpoint correction audit `0148592` passed without a material redesign. The exact profile, answer-free scenario, Lean/core/Temporal differential agreement, durable root-Workflow refinement, identity and early-return mutations, history assertions, and replay evidence are complete. Governed closure review is pending.**
+**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `3e17a05` and semantic-checkpoint correction audit `0148592` passed without a material redesign. The exact profile, answer-free scenario, Lean/core/Temporal differential agreement, durable root-Workflow refinement, identity and early-return mutations, history assertions, replay evidence, complete correctness gate, and cost record are complete. Governed closure review is pending.**
 
 ## Independent cold-review receipt
 
@@ -240,4 +240,4 @@ The owner approved these choices together after independent proposal review and 
 5. standards-first Lean/TypeScript/Temporal evidence with CIB deliberately absent; and
 6. the exact exclusions, mandatory semantic checkpoint, atomic pre-release replacement, and cost comparator above.
 
-Implementation and its semantic checkpoint satisfied those prerequisites. The remaining lifecycle work is the reproducible cost record, governed closure review with the approved checkpoint continuity rule when eligible, any same-reviewer correction audit, and proposal-to-specification graduation after a passing verdict.
+Implementation and its semantic checkpoint satisfied those prerequisites. Cost boundary `dee189c..4eaa0eb` is recorded in the capsule cost ledger. The remaining lifecycle work is governed closure review with the approved checkpoint continuity rule when eligible, any same-reviewer correction audit, and proposal-to-specification graduation after a passing verdict.
