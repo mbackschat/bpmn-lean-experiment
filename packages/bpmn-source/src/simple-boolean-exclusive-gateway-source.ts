@@ -26,6 +26,7 @@ import type {
 import {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
+import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -48,11 +49,11 @@ export function projectExclusiveGateway(
   ) {
     return undefined;
   }
-  const declared = element.gatewayDirection;
   if (
-    declared !== undefined &&
-    (typeof declared !== "string" ||
-      !["diverging", "unspecified"].includes(declared.toLowerCase()))
+    !declaredGatewayDirectionMatches(
+      element.gatewayDirection,
+      GatewayDirection.Diverging,
+    )
   ) {
     return undefined;
   }

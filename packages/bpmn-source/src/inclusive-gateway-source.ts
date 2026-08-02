@@ -18,6 +18,7 @@ import {
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
+import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -37,7 +38,10 @@ export function projectInclusiveGateway(
     : incoming.length === 3 && outgoing.length === 1
       ? GatewayDirection.Converging
       : undefined;
-  if (direction === undefined || !declaredDirectionMatches(element.gatewayDirection, direction)) {
+  if (
+    direction === undefined ||
+    !declaredGatewayDirectionMatches(element.gatewayDirection, direction)
+  ) {
     return undefined;
   }
   if (direction === GatewayDirection.Diverging) {
@@ -117,9 +121,4 @@ function derivePairedGatewayId(
       split?.$type === bpmnTypes.inclusiveGatewayType
     ? splitId
     : undefined;
-}
-
-function declaredDirectionMatches(value: unknown, direction: GatewayDirection): boolean {
-  return value === undefined ||
-    (typeof value === "string" && [direction, "unspecified"].includes(value.toLowerCase()));
 }

@@ -100,7 +100,7 @@ test("admits the structured Inclusive Gateway region and derives branch-local jo
   );
 });
 
-test("derives direction from arity and rejects opposite or mixed declarations", async () => {
+test("derives direction from arity and admits only exact XSD direction literals", async () => {
   const accepted = [
     source,
     source
@@ -119,6 +119,8 @@ test("derives direction from arity and rejects opposite or mixed declarations", 
     source.replace('<bpmn:inclusiveGateway id="Join"', '<bpmn:inclusiveGateway id="Join" gatewayDirection="Diverging"'),
     source.replace('<bpmn:inclusiveGateway id="Split"', '<bpmn:inclusiveGateway id="Split" gatewayDirection="Mixed"'),
     source.replace('<bpmn:inclusiveGateway id="Join"', '<bpmn:inclusiveGateway id="Join" gatewayDirection="Mixed"'),
+    source.replace('<bpmn:inclusiveGateway id="Split"', '<bpmn:inclusiveGateway id="Split" gatewayDirection="diverging"'),
+    source.replace('<bpmn:inclusiveGateway id="Join"', '<bpmn:inclusiveGateway id="Join" gatewayDirection="cOnVeRgInG"'),
   ];
   for (const candidate of rejected) {
     assert.equal((await compile(candidate)).status, BpmnCompilationStatus.Rejected);

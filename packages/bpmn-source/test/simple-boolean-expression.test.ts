@@ -238,3 +238,12 @@ test("rejects implicit XPath, per-expression override, and invalid default condi
     assert.equal(result.status, BpmnCompilationStatus.Rejected);
   }
 });
+
+test("rejects non-XSD Exclusive Gateway direction literals", async () => {
+  for (const direction of ["diverging", "DiVeRgInG"]) {
+    const result = await compile(
+      validSource.replace('gatewayDirection="Diverging"', `gatewayDirection="${direction}"`),
+    );
+    assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  }
+});

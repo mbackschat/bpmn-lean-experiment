@@ -32,6 +32,7 @@ import {
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
 import {
   projectExclusiveGateway,
   projectSimpleBooleanCondition,
@@ -355,13 +356,7 @@ function classifyGateway(
   if (direction === undefined) {
     return undefined;
   }
-  const declared = element.gatewayDirection;
-  if (
-    declared === undefined ||
-    (typeof declared === "string" &&
-      (declared.toLowerCase() === direction ||
-        declared.toLowerCase() === "unspecified"))
-  ) {
+  if (declaredGatewayDirectionMatches(element.gatewayDirection, direction)) {
     return direction;
   }
   return undefined;

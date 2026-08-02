@@ -529,7 +529,7 @@ test("rejects every incomplete or altered Service Task binding", async () => {
   }
 });
 
-test("rejects a gateway direction that contradicts its checked arity", async () => {
+test("rejects Parallel Gateway directions that contradict arity or XSD lexical form", async () => {
   const bytes = await readFile(
     new URL(
       "../../../scenarios/parallel-fork-join/process.bpmn",
@@ -537,22 +537,24 @@ test("rejects a gateway direction that contradicts its checked arity", async () 
     ),
   );
   const xml = new TextDecoder().decode(bytes);
-  const result = await compileBpmnToSemanticProcess({
-    bytes: new TextEncoder().encode(
-      xml.replace(
-        'id="Gateway_Fork" gatewayDirection="Diverging"',
-        'id="Gateway_Fork" gatewayDirection="Converging"',
+  for (const direction of ["Converging", "diverging", "DiVeRgInG"]) {
+    const result = await compileBpmnToSemanticProcess({
+      bytes: new TextEncoder().encode(
+        xml.replace(
+          'id="Gateway_Fork" gatewayDirection="Diverging"',
+          `id="Gateway_Fork" gatewayDirection="${direction}"`,
+        ),
       ),
-    ),
-    sourceId: "invalid-parallel-direction",
-    expectedSha256: undefined,
-    semanticProfile: "parallel-fork-join-draft",
-    limits,
-  });
+      sourceId: "invalid-parallel-direction",
+      expectedSha256: undefined,
+      semanticProfile: "parallel-fork-join-draft",
+      limits,
+    });
 
-  assert.equal(result.status, BpmnCompilationStatus.Rejected);
-  assert.equal(result.checkedProcess, undefined);
-  assert.equal(result.semanticProcess, undefined);
+    assert.equal(result.status, BpmnCompilationStatus.Rejected);
+    assert.equal(result.checkedProcess, undefined);
+    assert.equal(result.semanticProcess, undefined);
+  }
 });
 
 test("rejects timer forms outside the exact PT1S literal profile", async () => {
