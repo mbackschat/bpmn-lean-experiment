@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `3e17a05` and semantic-checkpoint correction audit `0148592` passed without a material redesign. The exact profile, answer-free scenario, Lean/core/Temporal differential agreement, durable root-Workflow refinement, identity and early-return mutations, history assertions, replay evidence, complete correctness gate, and cost record are complete. Governed closure review is pending.**
+**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `3e17a05` and semantic-checkpoint correction audit `0148592` passed without a material redesign. Closure review of immutable target `cefb56d` returned APPROVE WITH REQUIRED EDITS. The missing production wrong-ID/exact-retry witness, lifecycle address contract, history count, and corrected cost record are implemented; same-reviewer correction audit is pending.**
 
 ## Independent cold-review receipt
 
@@ -240,4 +240,4 @@ The owner approved these choices together after independent proposal review and 
 5. standards-first Lean/TypeScript/Temporal evidence with CIB deliberately absent; and
 6. the exact exclusions, mandatory semantic checkpoint, atomic pre-release replacement, and cost comparator above.
 
-Implementation and its semantic checkpoint satisfied those prerequisites. Cost boundary `dee189c..4eaa0eb` is recorded in the capsule cost ledger. The remaining lifecycle work is governed closure review with the approved checkpoint continuity rule when eligible, any same-reviewer correction audit, and proposal-to-specification graduation after a passing verdict.
+Implementation and its semantic checkpoint satisfied those prerequisites. Cost boundary `dee189c..bd0f0d3` is recorded in the capsule cost ledger. Closure review required production wrong-ID/exact-retry evidence plus one factual history-count correction; both are implemented without changing the selected account, public contract, exclusions, or evidence strategy. The remaining lifecycle work is the same-reviewer correction audit and proposal-to-specification graduation after a passing audit.
