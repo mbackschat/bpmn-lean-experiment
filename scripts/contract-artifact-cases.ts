@@ -142,6 +142,14 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/inclusive-gateway-selected-branches/default.scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/event-based-gateway-message-timer/timer-wins.scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

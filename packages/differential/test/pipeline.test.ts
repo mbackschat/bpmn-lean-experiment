@@ -174,6 +174,8 @@ test(
         "inclusive-gateway-both-true-a-then-b",
         "inclusive-gateway-both-true-b-then-a",
         "inclusive-gateway-default",
+        "event-based-gateway-message-wins",
+        "event-based-gateway-timer-wins",
         "service-task-effect-success",
         "a12-create-document-data",
         "a12-boundary-error-caught",

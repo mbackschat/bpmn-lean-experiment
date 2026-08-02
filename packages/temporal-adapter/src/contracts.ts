@@ -30,6 +30,8 @@ export const bpmnCompleteUserTaskUpdateName = "bpmn-complete-user-task";
 export const bpmnDeliverMessageSignalName = "bpmn-deliver-message";
 export const bpmnMessageDeliveryResultQueryName =
   "bpmn-message-delivery-result";
+export const bpmnEventRaceOrderingUnavailableFailureType =
+  "BpmnEventRaceOrderingUnavailable";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
 export enum TemporalHostCapabilityResultKind {

@@ -1,0 +1,82 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-event-based-gateway-operation-message-versus-pt1s-timer",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.5.4",
+      "Clause 10.6.6",
+      "Clause 13.4.4",
+      "Table 10.127",
+      "Table 13.4 WCP-16"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "exclusive-event-based-gateway",
+      "operation-addressed-intermediate-catch-message-event",
+      "payload-free-message",
+      "interface-operation-input-message",
+      "intermediate-catch-timer-event",
+      "literal-time-duration-pt1s",
+      "first-configured-trigger-wins",
+      "losing-configured-event-withdrawal",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-event-based-gateway-compatibility-claim",
+    "process-start-instantiation",
+    "parallel-event-gateway",
+    "receive-task-configuration",
+    "signal-conditional-and-multiple-triggers",
+    "more-than-two-configured-events",
+    "additional-incoming-configured-event-flow",
+    "conditions-and-default-flow",
+    "message-payload-and-correlation",
+    "collaboration-and-message-flow",
+    "timer-date-cycle-and-other-durations",
+    "repeated-and-nested-races",
+    "loops",
+    "multi-instance",
+    "boundary-events",
+    "event-subprocesses",
+    "portable-physical-simultaneity-order",
+    "coalesced-message-and-timer-readiness",
+    "general-cancellation",
+    "a12-adoption-coverage",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

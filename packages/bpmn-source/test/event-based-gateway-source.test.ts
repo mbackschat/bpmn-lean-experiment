@@ -16,7 +16,10 @@ import {
 const profile = "bpmn-2.0.2-event-based-gateway-message-timer-draft";
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 const source = await readFile(
-  new URL("./fixtures/event-based-gateway-message-timer.bpmn", import.meta.url),
+  new URL(
+    "../../../scenarios/event-based-gateway-message-timer/process.bpmn",
+    import.meta.url,
+  ),
   "utf8",
 );
 const permutedSource = await readFile(

@@ -74,6 +74,10 @@ import {
   effectTransportKey,
 } from "./effect-transport.js";
 import {
+  EventRaceActivationDrain,
+  createEventRaceReadinessScheduler,
+} from "./event-race-readiness-scheduler.js";
+import {
   timerFiringStimulus,
 } from "./timer-command.js";
 import {
@@ -112,6 +116,8 @@ export async function runBpmnProcessWithHostEffects(
   executeEffect: (
     request: EffectRequest,
   ) => Promise<EffectExecutionResult>,
+  eventRaceActivationDrain: EventRaceActivationDrain =
+    EventRaceActivationDrain.Required,
 ): Promise<CompletedProcessReceipt> {
   const deployment = deployProcess(start, semanticProcess);
   if (deployment.outcome !== CommandOutcome.Committed) {
@@ -127,6 +133,10 @@ export async function runBpmnProcessWithHostEffects(
   const commandResults: CommandResultLedgerEntry[] = [];
   const messageDeliveryResolutions: MessageDeliveryResolution[] = [];
   let state: RuntimeState = initialState;
+  const eventRaceScheduler = createEventRaceReadinessScheduler(
+    waitForTimer,
+    eventRaceActivationDrain,
+  );
 
   // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
   enqueueStimulus(acceptedStimuli, pendingStimuli, start);
@@ -159,9 +169,16 @@ export async function runBpmnProcessWithHostEffects(
       stimulus,
       accepted,
     );
+    const scheduledByEventRace = eventRaceScheduler.recordMessageCallback(
+      state,
+      stimulus,
+      acceptance.enqueue,
+    );
     if (acceptance.enqueue) {
       acceptedStimuli.push(stimulus);
-      pendingStimuli.push(stimulus);
+      if (!scheduledByEventRace) {
+        pendingStimuli.push(stimulus);
+      }
     }
   });
   setHandler(
@@ -194,6 +211,23 @@ export async function runBpmnProcessWithHostEffects(
     ) {
       const timers = projectOpenTimers(state);
       const effects = projectOpenEffects(state);
+      if (state.eventRaces.length > 0) {
+        if (effects.length > 0) {
+          throw ApplicationFailure.nonRetryable(
+            "Pre-start host admission allowed an effect beside a managed event race",
+            "BpmnHostCapabilityInvariantViolation",
+          );
+        }
+        const readyStimuli = await eventRaceScheduler.waitForReadiness(state);
+        for (const stimulus of readyStimuli) {
+          if (stimulus.kind === StimulusKind.DeliverMessage) {
+            pendingStimuli.push(stimulus);
+          } else {
+            enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+          }
+        }
+        continue;
+      }
       if (timers.length > 0 && effects.length > 0) {
         throw ApplicationFailure.nonRetryable(
           "Pre-start host admission failed to exclude concurrent timer and effect waits",
@@ -325,6 +359,7 @@ export async function runBpmnProcessWithHostEffects(
         case ScenarioStepKind.Committed:
         case ScenarioStepKind.Terminal:
           state = step.state;
+          eventRaceScheduler.reconcileCommittedState(state);
           break;
         case ScenarioStepKind.HarnessFailure:
           throw ApplicationFailure.nonRetryable(

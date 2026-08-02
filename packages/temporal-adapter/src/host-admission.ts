@@ -1,4 +1,5 @@
 import {
+  MessageChannelKind,
   SemanticOperationKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -19,9 +20,9 @@ import type {
  * User Task and Message waits are passive ingress and may coexist. A token
  * split combined with a timer or effect can create more than one host-driven
  * branch, which requires a scheduler that this adapter does not implement.
- * Event-Based Gateway operations retain their own exhaustive class so the
- * future readiness scheduler cannot be admitted by falling through as passive.
- * Until that scheduler exists, every managed race is rejected before start.
+ * Event-Based Gateway operations retain their own exhaustive class. The host
+ * admits one exact Message/PT1S managed race and rejects every composition that
+ * would require a second host-driven branch or managed scheduler instance.
  */
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
@@ -33,18 +34,29 @@ export function assessTemporalHostCapability(
     ({ kind }) =>
       classifyHostOperation(kind) === HostOperationClass.HostDrivenWait,
   );
-  const managedEventRaceCount = program.operations.filter(
+  const managedEventRaces = program.operations.filter(
     ({ kind }) =>
       classifyHostOperation(kind) === HostOperationClass.ManagedEventRace,
-  ).length;
-  if (managedEventRaceCount > 0) {
+  );
+  if (managedEventRaces.length > 0) {
+    const [race] = managedEventRaces;
+    if (
+      managedEventRaces.length === 1 &&
+      race?.kind === SemanticOperationKind.AwaitEventRace &&
+      race.message.channel.kind === MessageChannelKind.OperationMessage &&
+      race.timer.durationMs === 1_000 &&
+      !canSplitTokens &&
+      !hasHostDrivenWait
+    ) {
+      return { kind: TemporalHostCapabilityResultKind.Admitted };
+    }
     return {
       kind: TemporalHostCapabilityResultKind.Rejected,
       failure: {
         code:
           TemporalHostAdmissionFailureCode.EventRaceSchedulerUnavailable,
         evidence:
-          "The Temporal host does not yet implement the Event-Based Gateway readiness scheduler.",
+          "The Temporal host admits only one isolated operation-addressed Message/PT1S managed race.",
       },
     };
   }
