@@ -25,6 +25,7 @@ import {
 import {
   isWellFormedSemanticOperation,
 } from "./semantic-process-operation-admission.js";
+import { inclusiveOperationsArePaired } from "./inclusive-gateway-admission.js";
 import {
   profileAllowsProgramShape,
 } from "./semantic-process-profile.js";
@@ -185,13 +186,14 @@ export function isWellFormedSemanticProcessProgram(
     }
     checkedOperations.push(operation);
   }
-  return isWellFormedSemanticProcessGraph({
-    definitionScopes,
-    operationScopes,
-    controlPlaceScopes,
-    controlPlaceIds: [...placeIds],
-    operations: checkedOperations,
-  });
+  return inclusiveOperationsArePaired(checkedOperations) &&
+    isWellFormedSemanticProcessGraph({
+      definitionScopes,
+      operationScopes,
+      controlPlaceScopes,
+      controlPlaceIds: [...placeIds],
+      operations: checkedOperations,
+    });
 }
 
 function isWellFormedDefinitionScope(

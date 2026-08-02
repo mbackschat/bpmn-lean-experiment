@@ -94,9 +94,16 @@ structure ScopeActivation where
   count : Nat
   deriving Repr, DecidableEq
 
+/-- Hidden inputs selected for one split activation and awaited by its paired join. -/
+structure SelectedBranchSet where
+  owner : ScopeOccurrenceId
+  selectionKey : String
+  expectedInputs : List ControlPlaceId
+  deriving Repr, DecidableEq
+
 /-! ## Runtime representation invariant
 
-In an admitted reachable state, every token and wait is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. Task, Message, Timer, effect, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting a scope removes the selected occurrence subtree together with every owned token and wait and the Activity-local scopes paired with its effects, while retaining all activation counters and End history. Normal scope completion may remove an occurrence only after its owned tokens, waits, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
+In an admitted reachable state, every token, wait, and selected-branch record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. User Task waits, User Task activation counters, and selected-branch records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting a scope removes the selected occurrence subtree together with every owned token, wait, selected-branch record, and Activity-local scope paired with its effects, while retaining all activation counters and End history. Normal scope completion may remove an occurrence only after its owned tokens, waits, selected-branch records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
 -/
 
 structure RuntimeState where
@@ -108,6 +115,7 @@ structure RuntimeState where
   messageWaits : List MessageWait
   timerWaits : List TimerWait
   effectWaits : List EffectWait
+  selectedBranchSets : List SelectedBranchSet
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -127,6 +135,7 @@ def initialState : RuntimeState :=
     messageWaits := []
     timerWaits := []
     effectWaits := []
+    selectedBranchSets := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []
@@ -219,10 +228,38 @@ private def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
   (state.activations.find? fun activation =>
     decide (activation.taskId = taskId)).map (·.count) |>.getD 0
 
+private def insertTaskActivation (activation : TaskActivation) :
+    List TaskActivation → List TaskActivation
+  | [] => [activation]
+  | current :: rest =>
+      if activation.taskId.value < current.taskId.value then
+        activation :: current :: rest
+      else current :: insertTaskActivation activation rest
+
 private def setActivationCount (activations : List TaskActivation)
     (taskId : TaskDefinitionId) (count : Nat) : List TaskActivation :=
-  { taskId, count } ::
-    activations.filter fun activation => decide (activation.taskId ≠ taskId)
+  insertTaskActivation { taskId, count }
+    (activations.filter fun activation => decide (activation.taskId ≠ taskId))
+
+private def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
+  if left.processInstanceId.value ≠ right.processInstanceId.value then
+    left.processInstanceId.value < right.processInstanceId.value
+  else if left.owner.definitionScopeId.value ≠
+      right.owner.definitionScopeId.value then
+    left.owner.definitionScopeId.value < right.owner.definitionScopeId.value
+  else if left.owner.activation ≠ right.owner.activation then
+    left.owner.activation < right.owner.activation
+  else if left.task.id.value ≠ right.task.id.value then
+    left.task.id.value < right.task.id.value
+  else left.activation < right.activation
+
+private def insertUserTaskWait (wait : UserTaskWait) :
+    List UserTaskWait → List UserTaskWait
+  | [] => [wait]
+  | current :: rest =>
+      if userTaskWaitBefore wait current then
+        wait :: current :: rest
+      else current :: insertUserTaskWait wait rest
 
 private def elementActivationCount (activations : List (NodeId × Nat))
     (elementId : NodeId) : Nat :=
@@ -255,15 +292,13 @@ def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
   let activation := activationCount state task.id + 1
   { state with
     tokens := removeToken state.tokens input owner
-    waits :=
+    waits := insertUserTaskWait
       { processInstanceId := instanceId
         owner
         task
         activation
-        output } :: state.waits
-    activations :=
-      { taskId := task.id, count := activation } ::
-        state.activations.filter fun value => decide (value.taskId ≠ task.id) }
+        output } state.waits
+    activations := setActivationCount state.activations task.id activation }
 
 def activateTimer (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
@@ -391,6 +426,8 @@ def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
     messageWaits := state.messageWaits.filter fun wait => !interrupted wait.owner
     timerWaits := state.timerWaits.filter fun wait => !interrupted wait.owner
     effectWaits := state.effectWaits.filter fun wait => !interrupted wait.owner
+    selectedBranchSets :=
+      state.selectedBranchSets.filter fun record => !interrupted record.owner
     variables :=
       { state.variables with
         activities := state.variables.activities.filter fun activity =>
@@ -437,6 +474,7 @@ def scopeQuiescent (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
     !(state.messageWaits.any fun wait => wait.owner == owner) &&
     !(state.timerWaits.any fun wait => wait.owner == owner) &&
     !(state.effectWaits.any fun wait => wait.owner == owner) &&
+    !(state.selectedBranchSets.any fun record => record.owner == owner) &&
     !(state.scopeOccurrences.any fun occurrence => occurrence.parent == some owner)
 
 def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)

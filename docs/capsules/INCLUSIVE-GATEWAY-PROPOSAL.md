@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. Implementation is authorized within the exact proposal boundary.**
+**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. The first semantic checkpoint candidate implements the checked-source, IL, Lean, TypeScript core, schema, and host-admission boundary; mandatory checkpoint review remains pending, and registered artifacts, differential cases, and Temporal refinement/replay remain blocked.**
 
 ## Independent cold-review receipt
 

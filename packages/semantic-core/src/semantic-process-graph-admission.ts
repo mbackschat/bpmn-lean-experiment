@@ -305,10 +305,12 @@ function operationInputs(
     case SemanticOperationKind.AwaitEffect:
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Choose:
+    case SemanticOperationKind.SelectMany:
     case SemanticOperationKind.ThrowError:
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
     case SemanticOperationKind.Synchronize:
+    case SemanticOperationKind.SynchronizeSelected:
       return operation.inputs;
   }
 }
@@ -339,6 +341,13 @@ function operationOutputs(
         ...operation.candidates.map(({ output }) => output),
         operation.defaultOutput,
       ];
+    case SemanticOperationKind.SelectMany:
+      return [
+        ...operation.candidates.map(({ output }) => output),
+        operation.defaultBranch.output,
+      ];
+    case SemanticOperationKind.SynchronizeSelected:
+      return [operation.output];
     case SemanticOperationKind.ThrowError:
       return [operation.handler.output];
     case SemanticOperationKind.ReachNoneEnd:

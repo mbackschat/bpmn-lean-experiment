@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Semantic Process internal transitions
@@ -121,6 +121,19 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
       OperationStep
         (.choose id origin input candidates defaultOutput defaultOrigin)
         before after
+  | selectMany (id origin input candidates defaultBranch selectionKey)
+      (before after : RuntimeState)
+      (transition :
+        SelectManyStep before input candidates defaultBranch selectionKey after) :
+      OperationStep
+        (.selectMany id origin input candidates defaultBranch selectionKey)
+        before after
+  | synchronizeSelected (id origin inputs output selectionKey)
+      (before after : RuntimeState)
+      (transition :
+        SynchronizeSelectedStep before output selectionKey after) :
+      OperationStep
+        (.synchronizeSelected id origin inputs output selectionKey) before after
   | throwError (id origin input error handler) (before after : RuntimeState)
       (transition :
         throwErrorState? before input error handler = some after) :
@@ -154,6 +167,10 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
   | .synchronize _ _ inputs output => synchronizeState? state inputs output
   | .choose _ _ input candidates defaultOutput _ =>
       chooseState? state input candidates defaultOutput
+  | .selectMany _ _ input candidates defaultBranch selectionKey =>
+      selectManyState? state input candidates defaultBranch selectionKey
+  | .synchronizeSelected _ _ _ output selectionKey =>
+      synchronizeSelectedState? state output selectionKey
   | .throwError _ _ input error handler =>
       throwErrorState? state input error handler
   | .reachNoneEnd _ _ input => reachNoneEndState? state input
@@ -174,6 +191,10 @@ theorem fire_sound (operation : SemanticOperation)
     | exact .duplicate _ _ _ _ before after result
     | exact .synchronize _ _ _ _ before after result
     | exact .choose _ _ _ _ _ _ before after result
+    | exact .selectMany _ _ _ _ _ _ before after
+        (selectManyState_sound _ _ _ _ _ _ result)
+    | exact .synchronizeSelected _ _ _ _ _ before after
+        (synchronizeSelectedState_sound _ _ _ _ result)
     | exact .throwError _ _ _ _ _ before after result
     | exact .reachNoneEnd _ _ _ before after result
     | exact .completeScope _ _ _ _ before after result

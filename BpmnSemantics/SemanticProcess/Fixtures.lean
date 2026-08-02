@@ -319,7 +319,7 @@ theorem parallel_start_creates_exact_branch_waits :
 theorem parallel_task_activation_order_has_same_observation :
     observeStableState parallelProgram parallelWaitingState =
       observeStableState parallelProgram parallelWaitingStateBThenA := by
-  decide
+  native_decide
 
 theorem parallel_supported_closure_reaches_exact_waiting_state :
     (applyStimulus scenarioClosureLimit parallelProgram initialState

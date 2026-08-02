@@ -12,6 +12,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.2.0-subprocess-error-propagation-draft",
   ExclusiveGatewaySimpleBoolean:
     "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+  InclusiveGatewaySelectedBranches:
+    "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
   IntermediateCatchTimer:
     "cibseven-2.2.0-intermediate-catch-timer-draft",
   IntermediateCatchMessage:
@@ -114,6 +116,16 @@ function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
         end,
+        end,
+      ]);
+    case SemanticProfileId.InclusiveGatewaySelectedBranches:
+      return rootChecked([
+        start,
+        CheckedNodeKind.InclusiveGateway,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.InclusiveGateway,
         end,
       ]);
     case SemanticProfileId.TimerUserTaskComposition:
@@ -236,6 +248,17 @@ function requiredProgramShape(
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case SemanticProfileId.InclusiveGatewaySelectedBranches:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.SelectMany,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.SynchronizeSelected,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);

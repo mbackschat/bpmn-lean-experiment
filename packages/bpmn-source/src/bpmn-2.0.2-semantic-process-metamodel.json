@@ -11,7 +11,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EndEvent, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
@@ -21,7 +21,7 @@
       "TimerEventDefinition timeDuration expression containment",
       "StartEvent.isInterrupting default",
       "Gateway.gatewayDirection type and default",
-      "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, and ExclusiveGateway.default",
+      "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, ExclusiveGateway.default, and InclusiveGateway.default",
       "BaseElement.id and Definitions.rootElements identity and containment",
       "BoundaryEvent attachment and interrupting default",
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
@@ -54,6 +54,7 @@
     "subProcessType": "bpmn:SubProcess",
     "parallelGatewayType": "bpmn:ParallelGateway",
     "exclusiveGatewayType": "bpmn:ExclusiveGateway",
+    "inclusiveGatewayType": "bpmn:InclusiveGateway",
     "endEventType": "bpmn:EndEvent",
     "sequenceFlowType": "bpmn:SequenceFlow"
   },
@@ -200,6 +201,12 @@
     },
     {
       "name": "ExclusiveGateway",
+      "directSuperClasses": [
+        "Gateway"
+      ]
+    },
+    {
+      "name": "InclusiveGateway",
       "directSuperClasses": [
         "Gateway"
       ]
@@ -539,6 +546,14 @@
     },
     {
       "owner": "ExclusiveGateway",
+      "name": "default",
+      "type": "SequenceFlow",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "InclusiveGateway",
       "name": "default",
       "type": "SequenceFlow",
       "lower": 0,

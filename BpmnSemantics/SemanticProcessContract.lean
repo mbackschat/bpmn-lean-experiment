@@ -113,6 +113,13 @@ inductive CheckedNode where
       (id : NodeId)
       (candidateFlowIds : List SequenceFlowId)
       (defaultFlowId : SequenceFlowId)
+  | inclusiveGatewayDiverging
+      (id : NodeId)
+      (candidateFlowIds : List SequenceFlowId)
+      (defaultFlowId : SequenceFlowId)
+  | inclusiveGatewayConverging
+      (id : NodeId)
+      (pairedGatewayId : NodeId)
   | errorEndEvent (id : NodeId) (error : ErrorReference)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
@@ -128,6 +135,8 @@ def CheckedNode.id : CheckedNode → NodeId
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveGateway id _ _
+  | .inclusiveGatewayDiverging id _ _
+  | .inclusiveGatewayConverging id _
   | .errorEndEvent id _
   | .noneEndEvent id => id
 
@@ -239,6 +248,19 @@ structure ConditionalCandidate where
   origin : BpmnSequenceFlowOrigin
   deriving Repr, DecidableEq
 
+structure InclusiveCandidate where
+  condition : SimpleBooleanExpression
+  output : ControlPlaceId
+  expectedJoinInput : ControlPlaceId
+  origin : BpmnSequenceFlowOrigin
+  deriving Repr, DecidableEq
+
+structure InclusiveDefaultBranch where
+  output : ControlPlaceId
+  expectedJoinInput : ControlPlaceId
+  origin : BpmnSequenceFlowOrigin
+  deriving Repr, DecidableEq
+
 inductive SemanticOperation where
   | initiate
       (id : OperationId)
@@ -291,6 +313,19 @@ inductive SemanticOperation where
       (candidates : List ConditionalCandidate)
       (defaultOutput : ControlPlaceId)
       (defaultOrigin : BpmnSequenceFlowOrigin)
+  | selectMany
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (candidates : List InclusiveCandidate)
+      (defaultBranch : InclusiveDefaultBranch)
+      (selectionKey : String)
+  | synchronizeSelected
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (inputs : List ControlPlaceId)
+      (output : ControlPlaceId)
+      (selectionKey : String)
   | throwError
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -318,6 +353,8 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .duplicate id _ _ _
   | .synchronize id _ _ _
   | .choose id _ _ _ _ _
+  | .selectMany id _ _ _ _ _
+  | .synchronizeSelected id _ _ _ _
   | .throwError id _ _ _ _
   | .reachNoneEnd id _ _
   | .completeScope id _ _ _ => id

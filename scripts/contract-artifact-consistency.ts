@@ -89,6 +89,18 @@ function referencedControlPlaces(
         ...operation.candidates.map(({ output }) => output),
         operation.defaultOutput,
       ];
+    case "selectMany":
+      return [
+        operation.input,
+        ...operation.candidates.flatMap(({ output, expectedJoinInput }) => [
+          output,
+          expectedJoinInput,
+        ]),
+        operation.defaultBranch.output,
+        operation.defaultBranch.expectedJoinInput,
+      ];
+    case "synchronizeSelected":
+      return [...operation.inputs, operation.output];
     case "throwError":
       return [operation.input, operation.handler.output];
     case "reachNoneEnd":
@@ -161,6 +173,18 @@ export function verifyCanonicalDefinitionOrder(
         break;
       case "choose":
         break;
+      case "selectMany":
+        requireSortedStrings(
+          `operation ${operation.id} candidate origins`,
+          operation.candidates.map(({ origin }) => origin.elementId),
+        );
+        break;
+      case "synchronizeSelected":
+        requireSortedStrings(
+          `operation ${operation.id} inputs`,
+          operation.inputs,
+        );
+        break;
       case "initiate":
       case "enterScope":
       case "awaitUserTask":
@@ -207,16 +231,70 @@ export function verifyDefinitionReferences(
     }
   }
   for (const node of checkedProcess.nodes) {
-    if (node.kind !== "exclusiveGateway") {
-      continue;
+    switch (node.kind) {
+      case "exclusiveGateway":
+      case "inclusiveGateway":
+        if (node.direction === "diverging") {
+          for (const flowId of [...node.candidateFlowIds, node.defaultFlowId]) {
+            if (!flowIds.has(flowId)) {
+              throw new Error(
+                `checked ${node.kind} ${node.id} references unknown Sequence Flow ${flowId}`,
+              );
+            }
+          }
+        } else if (!nodeIds.has(node.pairedGatewayId)) {
+          throw new Error(
+            `checked Inclusive Gateway ${node.id} references unknown paired Gateway ${node.pairedGatewayId}`,
+          );
+        }
+        break;
+      default:
+        break;
     }
-    for (const flowId of [
-      ...node.candidateFlowIds,
-      node.defaultFlowId,
-    ]) {
-      if (!flowIds.has(flowId)) {
+  }
+
+  const inclusiveSelections = semanticProcess.operations.filter(
+    (operation) => operation.kind === "selectMany",
+  );
+  const inclusiveJoins = semanticProcess.operations.filter(
+    (operation) => operation.kind === "synchronizeSelected",
+  );
+  for (const selection of inclusiveSelections) {
+    const split = checkedProcess.nodes.find(({ id }) => id === selection.origin.elementId);
+    const joins = inclusiveJoins.filter(({ selectionKey }) => selectionKey === selection.selectionKey);
+    const join = joins[0];
+    const checkedJoin = join === undefined
+      ? undefined
+      : checkedProcess.nodes.find(({ id }) => id === join.origin.elementId);
+    if (
+      split?.kind !== "inclusiveGateway" ||
+      split.direction !== "diverging" ||
+      selection.selectionKey !== split.id ||
+      joins.length !== 1 ||
+      join === undefined ||
+      checkedJoin?.kind !== "inclusiveGateway" ||
+      checkedJoin.direction !== "converging" ||
+      checkedJoin.pairedGatewayId !== split.id
+    ) {
+      throw new Error(`operation ${selection.id} has no exact paired Inclusive Gateway join`);
+    }
+    const branches = [...selection.candidates, selection.defaultBranch];
+    for (const branch of branches) {
+      const splitFlow = checkedProcess.sequenceFlows.find(({ id }) => id === branch.origin.elementId);
+      const expectedPlace = semanticProcess.controlPlaces.find(({ id }) => id === branch.expectedJoinInput);
+      const joinFlow = splitFlow === undefined
+        ? undefined
+        : checkedProcess.sequenceFlows.find(
+            ({ sourceId, targetId }) =>
+              sourceId === splitFlow.targetId && targetId === checkedJoin.id,
+          );
+      if (
+        splitFlow?.sourceId !== split.id ||
+        joinFlow === undefined ||
+        expectedPlace?.origin.elementId !== joinFlow.id
+      ) {
         throw new Error(
-          `checked Exclusive Gateway ${node.id} references unknown Sequence Flow ${flowId}`,
+          `operation ${selection.id} branch ${branch.origin.elementId} differs from its paired join input`,
         );
       }
     }
@@ -316,6 +394,20 @@ export function verifyDefinitionReferences(
         const place = semanticProcess.controlPlaces.find(
           ({ id }) => id === output,
         );
+        if (place?.origin.elementId !== origin.elementId) {
+          throw new Error(
+            `operation ${operation.id} branch origin differs from its control place`,
+          );
+        }
+      }
+    }
+    if (operation.kind === "selectMany") {
+      const origins = [
+        ...operation.candidates.map(({ output, origin }) => ({ output, origin })),
+        { output: operation.defaultBranch.output, origin: operation.defaultBranch.origin },
+      ];
+      for (const { output, origin } of origins) {
+        const place = semanticProcess.controlPlaces.find(({ id }) => id === output);
         if (place?.origin.elementId !== origin.elementId) {
           throw new Error(
             `operation ${operation.id} branch origin differs from its control place`,

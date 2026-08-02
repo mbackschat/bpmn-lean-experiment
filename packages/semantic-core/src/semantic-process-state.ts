@@ -80,6 +80,13 @@ export type SemanticEffectWait = DeepReadonly<{
   output: string;
 }>;
 
+/** Hidden occurrence-owned selected join inputs for one structured Inclusive split. */
+export type SelectedBranchSet = DeepReadonly<{
+  owner: ScopeOccurrenceId;
+  selectionKey: string;
+  expectedInputs: [string] | [string, string];
+}>;
+
 /** Process-owned bindings that survive Activity-local cleanup and form the public variable projection. */
 export type ProcessVariableScope = DeepReadonly<{
   bindings: VariableBinding[];
@@ -111,6 +118,7 @@ export type RuntimeState = DeepReadonly<{
   messageWaits: SemanticMessageWait[];
   timerWaits: SemanticTimerWait[];
   effectWaits: SemanticEffectWait[];
+  selectedBranchSets: SelectedBranchSet[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];
@@ -130,6 +138,7 @@ export const initialState: RuntimeState = {
   messageWaits: [],
   timerWaits: [],
   effectWaits: [],
+  selectedBranchSets: [],
   variables: {
     process: { bindings: [] },
     activities: [],
@@ -234,6 +243,30 @@ export function sameScopeOccurrence(
   return left.processInstanceId === right.processInstanceId &&
     left.definitionScopeId === right.definitionScopeId &&
     left.activation === right.activation;
+}
+
+export function compareSelectedBranchSets(
+  left: SelectedBranchSet,
+  right: SelectedBranchSet,
+): number {
+  const instanceOrder = compareCanonicalStrings(
+    left.owner.processInstanceId,
+    right.owner.processInstanceId,
+  );
+  if (instanceOrder !== 0) {
+    return instanceOrder;
+  }
+  const scopeOrder = compareCanonicalStrings(
+    left.owner.definitionScopeId,
+    right.owner.definitionScopeId,
+  );
+  if (scopeOrder !== 0) {
+    return scopeOrder;
+  }
+  const activationOrder = left.owner.activation - right.owner.activation;
+  return activationOrder !== 0
+    ? activationOrder
+    : compareCanonicalStrings(left.selectionKey, right.selectionKey);
 }
 
 export function compareUserTaskWaits(

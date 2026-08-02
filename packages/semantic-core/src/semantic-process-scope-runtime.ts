@@ -146,6 +146,7 @@ function isScopeQuiescent(
     !state.messageWaits.some(({ owner }) => owned(owner)) &&
     !state.timerWaits.some(({ owner }) => owned(owner)) &&
     !state.effectWaits.some(({ owner }) => owned(owner)) &&
+    !state.selectedBranchSets.some(({ owner }) => owned(owner)) &&
     !state.scopeOccurrences.some(({ parent }) =>
       parent !== null && owned(parent)
     );

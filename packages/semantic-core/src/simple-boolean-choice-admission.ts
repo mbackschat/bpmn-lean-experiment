@@ -76,7 +76,7 @@ function isWellFormedConditionalCandidate(
   );
 }
 
-function isWellFormedSimpleBooleanExpression(value: unknown): boolean {
+export function isWellFormedSimpleBooleanExpression(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
   }
@@ -111,7 +111,7 @@ function isSimpleBooleanVariableName(value: unknown): value is string {
   );
 }
 
-function isSequenceFlowOrigin(
+export function isSequenceFlowOrigin(
   value: unknown,
 ): value is Readonly<{ elementId: string }> {
   return (

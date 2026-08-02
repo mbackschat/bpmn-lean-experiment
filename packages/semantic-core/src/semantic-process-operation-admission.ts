@@ -12,6 +12,10 @@ import {
   isWellFormedChooseOperation,
 } from "./simple-boolean-choice-admission.js";
 import {
+  isWellFormedSelectManyOperation,
+  isWellFormedSynchronizeSelectedOperation,
+} from "./inclusive-gateway-admission.js";
+import {
   isMessageChannel,
 } from "./message-channel.js";
 import {
@@ -166,6 +170,10 @@ export function isWellFormedSemanticOperation(
         placeIds,
         placeOrigins,
       );
+    case SemanticOperationKind.SelectMany:
+      return isWellFormedSelectManyOperation(value, placeIds, placeOrigins);
+    case SemanticOperationKind.SynchronizeSelected:
+      return isWellFormedSynchronizeSelectedOperation(value, placeIds);
     case SemanticOperationKind.ThrowError:
       return isWellFormedThrowError(
         value,

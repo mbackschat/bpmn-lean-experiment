@@ -885,6 +885,129 @@
         }
       }
     },
+    "inclusiveCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "condition",
+        "output",
+        "expectedJoinInput",
+        "origin"
+      ],
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/simpleBooleanExpression"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "expectedJoinInput": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        }
+      }
+    },
+    "inclusiveDefaultBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output",
+        "expectedJoinInput",
+        "origin"
+      ],
+      "properties": {
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "expectedJoinInput": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        }
+      }
+    },
+    "selectMany": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "candidates",
+        "defaultBranch",
+        "selectionKey"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "selectMany"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/inclusiveCandidate"
+          }
+        },
+        "defaultBranch": {
+          "$ref": "#/$defs/inclusiveDefaultBranch"
+        },
+        "selectionKey": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "synchronizeSelected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "inputs",
+        "output",
+        "selectionKey"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "synchronizeSelected"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonemptyString"
+          }
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "selectionKey": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "throwError": {
       "type": "object",
       "additionalProperties": false,
@@ -1001,6 +1124,12 @@
         },
         {
           "$ref": "#/$defs/choose"
+        },
+        {
+          "$ref": "#/$defs/selectMany"
+        },
+        {
+          "$ref": "#/$defs/synchronizeSelected"
         },
         {
           "$ref": "#/$defs/throwError"

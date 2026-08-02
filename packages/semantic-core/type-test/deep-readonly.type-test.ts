@@ -63,5 +63,16 @@ errorOperation.handler.attachedScopeId = "scope:changed";
 // @ts-expect-error nested Error origin fields are deeply immutable
 errorOperation.handler.origin.sequenceFlowId = "Flow_Changed";
 
+declare const selectMany: Extract<
+  SemanticOperation,
+  { kind: SemanticOperationKind.SelectMany }
+>;
+// @ts-expect-error Inclusive candidate tuples are immutable
+selectMany.candidates[0] = selectMany.candidates[1];
+// @ts-expect-error Inclusive branch-to-join pairing is deeply immutable
+selectMany.candidates[0].expectedJoinInput = "place:changed";
+// @ts-expect-error hidden selected-branch records are deeply immutable
+runtime.selectedBranchSets[0].expectedInputs[0] = "place:changed";
+
 void callbackResult;
 void tuple;

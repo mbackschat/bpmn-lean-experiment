@@ -61,6 +61,7 @@ export function isAdmittedCheckedProcess(
       hasExplicitExpressionLanguage,
     ) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
+    hasSelectedInclusivePairing(semanticProfile, graph) &&
     graph.definitionScopes.every(({ id }) =>
       isAdmittedDefinitionScope(graph, id, nodeScopes, flowScopes)
     );
@@ -224,6 +225,7 @@ function hasSelectedExpressionLanguage(
 ): boolean {
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
+    case SemanticProfileId.InclusiveGatewaySelectedBranches:
       return hasExplicitExpressionLanguage &&
         expressionLanguage === SimpleBooleanExpressionLanguage;
     default:
@@ -238,6 +240,7 @@ function hasSelectedConditions(
 ): boolean {
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
+    case SemanticProfileId.InclusiveGatewaySelectedBranches:
       return flows.filter(({ condition }) => condition !== null).length === 2;
     default:
       return flows.every(({ condition }) => condition === null);
@@ -271,10 +274,68 @@ function hasSelectedArity(
       }
     case CheckedNodeKind.ExclusiveGateway:
       return incoming === 1 && outgoing === 3;
+    case CheckedNodeKind.InclusiveGateway:
+      switch (node.direction) {
+        case GatewayDirection.Diverging:
+          return incoming === 1 && outgoing === 3;
+        case GatewayDirection.Converging:
+          return incoming === 3 && outgoing === 1;
+      }
     case CheckedNodeKind.ErrorEndEvent:
     case CheckedNodeKind.NoneEndEvent:
       return incoming === 1 && outgoing === 0;
   }
+}
+
+function hasSelectedInclusivePairing(
+  semanticProfile: string,
+  graph: CheckedProcessGraph,
+): boolean {
+  if (semanticProfile !== SemanticProfileId.InclusiveGatewaySelectedBranches) {
+    return true;
+  }
+  const inclusive = graph.nodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.InclusiveGateway }> =>
+      node.kind === CheckedNodeKind.InclusiveGateway,
+  );
+  const split = inclusive.find(
+    (node): node is Extract<CheckedNode, {
+      kind: CheckedNodeKind.InclusiveGateway;
+      direction: GatewayDirection.Diverging;
+    }> => node.direction === GatewayDirection.Diverging,
+  );
+  const join = inclusive.find(
+    (node): node is Extract<CheckedNode, {
+      kind: CheckedNodeKind.InclusiveGateway;
+      direction: GatewayDirection.Converging;
+    }> => node.direction === GatewayDirection.Converging,
+  );
+  if (split === undefined || join === undefined || join.pairedGatewayId !== split.id) {
+    return false;
+  }
+  const splitFlowIds = [split.defaultFlowId, ...split.candidateFlowIds];
+  const branches = splitFlowIds.map((flowId) => {
+    const splitFlow = graph.flows.find(({ id }) => id === flowId);
+    const task = splitFlow === undefined
+      ? undefined
+      : graph.nodes.find(({ id }) => id === splitFlow.targetId);
+    const taskOutputs = task === undefined
+      ? []
+      : graph.flows.filter(({ sourceId }) => sourceId === task.id);
+    return task?.kind === CheckedNodeKind.UserTask &&
+        splitFlow?.sourceId === split.id &&
+        taskOutputs.length === 1 &&
+        taskOutputs[0]?.targetId === join.id
+      ? taskOutputs[0]?.id
+      : undefined;
+  });
+  const joinInputIds = graph.flows
+    .filter(({ targetId }) => targetId === join.id)
+    .map(({ id }) => id);
+  return branches.every((flowId) => flowId !== undefined) &&
+    new Set(branches).size === 3 &&
+    joinInputIds.length === 3 &&
+    joinInputIds.every((flowId) => branches.includes(flowId));
 }
 
 function isConnectedAcyclicGraph(

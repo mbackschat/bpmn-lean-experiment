@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free Service Task effect, CreateDocument data, interrupting boundary-error, Simple Boolean Exclusive Gateway, ordinary embedded Sub-Process completion, and direct-parent Sub-Process Error-propagation capsules.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free Service Task effect, CreateDocument data, interrupting boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, ordinary embedded Sub-Process completion, and direct-parent Sub-Process Error-propagation capsules.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one level of embedded Sub-Process scope, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -203,6 +203,19 @@ type CheckedNode = DeepReadonly<
       defaultFlowId: string;
     }
   | {
+      kind: "inclusiveGateway";
+      id: string;
+      direction: "diverging";
+      candidateFlowIds: [string, string];
+      defaultFlowId: string;
+    }
+  | {
+      kind: "inclusiveGateway";
+      id: string;
+      direction: "converging";
+      pairedGatewayId: string;
+    }
+  | {
       kind: "errorEndEvent";
       id: string;
       error: ErrorReference;
@@ -325,6 +338,13 @@ type InterruptingErrorHandler = DeepReadonly<{
   };
 }>;
 
+type InclusiveCandidate = DeepReadonly<{
+  condition: SimpleBooleanExpression;
+  output: string;
+  expectedJoinInput: string;
+  origin: BpmnSequenceFlowOrigin;
+}>;
+
 type SemanticOperation = DeepReadonly<
   | (OperationBase & {
       kind: "initiate";
@@ -396,6 +416,23 @@ type SemanticOperation = DeepReadonly<
       };
     })
   | (OperationBase & {
+      kind: "selectMany";
+      input: string;
+      candidates: [InclusiveCandidate, InclusiveCandidate];
+      defaultBranch: {
+        output: string;
+        expectedJoinInput: string;
+        origin: BpmnSequenceFlowOrigin;
+      };
+      selectionKey: string;
+    })
+  | (OperationBase & {
+      kind: "synchronizeSelected";
+      inputs: [string, string, string];
+      output: string;
+      selectionKey: string;
+    })
+  | (OperationBase & {
       kind: "throwError";
       input: string;
       error: ErrorReference;
@@ -419,7 +456,7 @@ Semantic operation payloads carry their own element identifier when runtime occu
 
 Definition scopes form one rooted ownership tree. Every checked node, Sequence Flow, operation, and control place has exactly one definition-scope owner. Scope ownership is definition data rather than runtime state, and child-scope entry and completion are explicit operations rather than implicit traversal of BPMN containment.
 
-Definition arrays and unordered references are canonically sorted by identifier. `choose.candidates` is the deliberate exception: its tuple order is semantic evaluation order derived from process-level XML Sequence Flow declaration order. Gateway `<outgoing>` reference order does not determine that tuple.
+Definition arrays and unordered references are canonically sorted by identifier. `choose.candidates` is the deliberate exception: its tuple order is semantic evaluation order derived from process-level XML Sequence Flow declaration order. `selectMany.candidates` is canonically sorted by Sequence Flow origin because Inclusive evaluation order is non-semantic; `synchronizeSelected.inputs` is likewise sorted by Sequence Flow identity. Gateway `<outgoing>` reference order determines neither tuple.
 
 ### Runtime state
 
@@ -428,6 +465,8 @@ Runtime state is not part of `SemanticProcessProgram`. It includes definition-sc
 Each runtime definition-scope occurrence has the complete identity `(processInstanceId, definitionScopeId, activation)` and either one parent occurrence or no parent for the root. Every token and wait carries exactly one occurrence owner. This prevents tokens or waits in one child activation from satisfying or blocking another scope and lets quiescence be checked against the complete owned region.
 
 The implemented runtime contains one `ScopedVariables` value. Its `process.bindings` survive Activity completion and alone project to canonical `variables`. Each entry in `activities` contains `owner` plus `bindings`, where `owner` is the complete semantic effect occurrence `(processInstanceId, elementId, activation)`. Effect activation creates exactly one owned local scope from evaluated inputs. Matching completion requires exactly one matching owner, evaluates the validated patch and output mappings against that scope, updates Process bindings, and removes only that scope atomically. Missing or duplicate owners reject completion with exact state preservation. The complete replacement contract and discriminators belong to the [scoped runtime data specification](capsules/SCOPED-DATA-SPEC.md).
+
+Structured Inclusive Gateway execution adds a hidden `selectedBranchSets` collection. Each record carries one scope-occurrence owner, the paired split identity as `selectionKey`, and a canonical nonempty one- or two-element tuple of expected join-input control places. The collection is canonically ordered by Process instance, definition scope, activation, and selection key. It is created only by `selectMany`, removed by the matching `synchronizeSelected` or owner-scope interruption, blocks owner-scope quiescence while live, and never enters canonical public observation. The complete bounded account belongs to the [Inclusive Gateway proposal](capsules/INCLUSIVE-GATEWAY-PROPOSAL.md) until graduation.
 
 Lean and TypeScript may use different internal runtime representations. They must implement the same reviewed transition account and canonical observation contract; sharing an IL does not require sharing evaluator algorithms or runtime data structures.
 
@@ -454,10 +493,14 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | diverging Parallel Gateway | `duplicate` |
 | converging Parallel Gateway | `synchronize` |
 | exact divergent Exclusive Gateway under Simple Boolean v1 | `choose` with two declaration-ordered candidates and one default |
+| exact structured divergent Inclusive Gateway under Simple Boolean v1 | `selectMany` with two canonical candidates, one default, branch-local expected join inputs, and the split identity as selection key |
+| paired converging Inclusive Gateway | `synchronizeSelected` with the three canonical model inputs and the paired split identity |
 | none End Event | `reachNoneEnd` |
 | every definition scope | one synthetic `completeScope`; child completion emits the Sub-Process outgoing token and root completion marks the Process complete |
 
 Operation identifiers are deterministically derived from the source element identity without erasing the `origin`. Control-place identifiers are deterministically derived from Sequence Flow identity. The compiler identity, profile identity, exact source identity, and exact source digest are copied into the program identity.
+
+For the structured Inclusive region, lowering follows each split Sequence Flow through its sole direct User Task to the exact input Sequence Flow of the paired join. That branch-local input becomes `expectedJoinInput`; the split BPMN element ID becomes `selectionKey`. Checked-definition binding requires each mapping and key to equal this structural derivation, so merely permuting the three expected-input values while retaining the same set is a standalone-program-valid shape but not a valid checked-definition binding.
 
 Lowering must not resolve token races, choose an execution order, create runtime task occurrences, inspect future scenario commands, or encode expected observations.
 
@@ -522,19 +565,25 @@ Excess multiplicity on any input remains available for later firings. Multiple t
 
 Simple Boolean v1 is total after admission. The operation therefore has no semantic evaluation-error arm. The language URI, five exact source forms, bounds, and truth table belong to the [Simple Boolean expression decision](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md); the source topology and routing laws belong to the [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md).
 
+### Inclusive multi-selection and selected synchronization
+
+`selectMany` is enabled by one owner-matching input token. It evaluates both canonical candidates against the same complete committed Process bindings, consumes exactly one input token, and adds one token to every true candidate output. When neither candidate is true it adds one token only to the conditionless default output. The firing atomically creates one owner- and split-keyed record containing exactly the selected branches' corresponding join inputs; an empty record and a second live record with the same owner and key are impossible.
+
+`synchronizeSelected` is enabled only when exactly one matching live record exists and every input named by that record has one token with the same owner. It consumes exactly one token from each recorded input, consumes no unselected model input, removes the record, and adds exactly one owner-matching output token. A missing record, one selected arrival missing from a two-input record, or tokens owned by another scope occurrence disable the operation. This is the bounded WCP-7 interpretation for the approved closed acyclic region, not a general Inclusive Gateway reachability algorithm.
+
 ### Definition-scope entry and completion
 
 `enterScope` is enabled by one token owned by its parent occurrence. Firing consumes that token, creates one fresh child occurrence under that parent, and adds one child-owned token to the child entry place. The child None Start Event is source structure used to derive that entry; it does not lower to a second `initiate`.
 
 `reachNoneEnd` is enabled by one token owned by the operation's scope occurrence. Firing consumes exactly that token and records the corresponding end occurrence. It emits no parent token and does not complete the scope by itself.
 
-`completeScope` is enabled only when exactly one occurrence of its definition scope exists and that complete owned region is quiescent: it owns no token or task, Message, Timer, or effect wait and has no live child occurrence. Child completion removes the child occurrence and emits exactly one token to the parent-owned Sub-Process output. Root completion requires no initiation work and marks the Process complete. Nonquiescent, missing, or duplicate occurrences refuse the internal step without state change.
+`completeScope` is enabled only when exactly one occurrence of its definition scope exists and that complete owned region is quiescent: it owns no token, task, Message, Timer, or effect wait, no selected-branch record, and no live child occurrence. Child completion removes the child occurrence and emits exactly one token to the parent-owned Sub-Process output. Root completion requires no initiation work and marks the Process complete. Nonquiescent, missing, or duplicate occurrences refuse the internal step without state change.
 
 The process instance is complete only through root-scope completion. Reaching one none End Event does not by itself discard unrelated work in the same scope, and completing one child branch does not complete its containing scope while a sibling wait remains live.
 
 ### Error throw and direct-parent interruption
 
-`throwError` is enabled by one token on the Error End Event input in the operation's child scope occurrence. Firing consumes that token, selects the already checked exact-code handler attached to the directly enclosing embedded Sub-Process, removes every token, task, Message subscription, Timer, effect wait, Activity-local scope, and descendant occurrence owned by that interrupted child occurrence, removes the child occurrence itself, and emits exactly one parent-owned token on the boundary route.
+`throwError` is enabled by one token on the Error End Event input in the operation's child scope occurrence. Firing consumes that token, selects the already checked exact-code handler attached to the directly enclosing embedded Sub-Process, removes every token, task, Message subscription, Timer, effect wait, selected-branch record, Activity-local scope, and descendant occurrence owned by that interrupted child occurrence, removes the child occurrence itself, and emits exactly one parent-owned token on the boundary route.
 
 Task, Message, Timer, effect, scope, and End activation counters are monotonic historical state and survive regional interruption. Root-owned runtime work survives. The transition is one internal closure step: no pending Error or half-canceled scope is stable or public, and the structurally retained normal Sub-Process output cannot be emitted after the occurrence is removed.
 
@@ -553,6 +602,8 @@ The relation may permit more than one internal operation. Any semantically mater
 - every `duplicate` has at least two distinct outputs;
 - every `synchronize` has at least two distinct inputs;
 - every `choose` has exactly two distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement;
+- every `selectMany` has exactly two canonical distinct candidate outputs, one distinct default output, three distinct existing branch-local expected join inputs, valid Simple Boolean expressions, exact Sequence Flow origin/output agreement, and one nonempty selection key;
+- every `synchronizeSelected` has exactly three canonical distinct inputs, one existing output, and the same nonempty selection key as exactly one `selectMany`; its input set equals that selection's three candidate/default expected inputs;
 - every operation payload element identifier matches its BPMN origin;
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
 - every admitted `awaitMessage` has a Message-wait element matching its BPMN origin and exactly one closed channel arm: `operationMessage` requires nonempty Interface, Interface Operation, and Message identities, while `directMessage` requires only a nonempty Message identity and forbids Interface fields;
@@ -566,6 +617,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - the current bounded graph is acyclic;
 - the exact multiset of operation kinds is permitted by the named semantic profile;
 - the Simple Boolean Exclusive Gateway profile has exactly one initiation, one choice, three User Task waits, three end-reaching operations, one root completion, seven control places, and the exact producer/consumer chain that makes an independent simultaneous internal operation unreachable.
+- the structured Inclusive Gateway profile has exactly one initiation, one multi-selection, three User Task waits, one selected synchronization, one end-reaching operation, one root completion, eight control places, one branch-local split-to-task-to-join pairing for each output, and no alternate entry or exit;
 
 Lean's standalone `programWellFormed` independently checks the scope tree and ownership maps, exact one-producer/one-consumer control-place shape, one entry and completion per scope, reachability of every operation from the single initiation operation, co-reachability of every operation to root completion, and absence of a cycle within the finite operation-vertex fuel. Exact lowering equality remains an additional artifact requirement. Production admission then applies the separate exact profile mechanism/cardinality capability. The checked-source validator performs the corresponding scope-local reachability, co-reachability, and acyclicity checks before lowering. The implemented split and composed profiles are owned by the [profile-parameterized admission specification](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md).
 
@@ -647,15 +699,16 @@ The maintained implementation supports exactly:
 - one exact A12-shaped Service Task with the same bounded mapping mechanism and one attached exact-code interrupting Error route;
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;
 - one divergent Exclusive Gateway with exactly two Simple Boolean v1 conditions and one conditionless default under process-level Sequence Flow declaration order;
+- one structured Inclusive Gateway region with one two-condition-plus-default split, three direct User Task branches, one paired selected-input join, and one None End Event under Simple Boolean v1;
 - one ordinary one-level embedded Sub-Process with two independent child User Tasks and two child None End Events, followed by one outer User Task and root None End Event;
 - one one-level embedded Sub-Process with two independent child User Tasks, one child Error End Event, one child None End Event, one exact matching interrupting boundary Error in the parent, one outer recovery User Task, and a structurally present but unreachable normal continuation;
 - none End Events permitted by the capsules;
-- `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, `throwError`, `reachNoneEnd`, and `completeScope`;
+- `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope`;
 - definition-scope ownership and occurrence identity plus token multiplicity per Sequence Flow and scope occurrence;
-- semantic task, Message-subscription, timer, and effect occurrence identity, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
+- semantic task, Message-subscription, timer, and effect occurrence identity, hidden occurrence-owned Inclusive selected-branch records, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
 - the canonical observation boundary including `openMessageSubscriptions`, `openTimers`, effect arguments in `openEffects`, and Process `variables`.
 
-The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
@@ -665,8 +718,8 @@ The following remain unsupported:
 - event subtypes beyond the admitted none Start, exact normal-flow `PT1S` Intermediate Catch Timer, exact normal-flow payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
 - other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, boundary Events beyond the exact Task-attached and Sub-Process-attached Error slices, catch-all or unmatched Errors, handler search beyond one direct parent, Error payloads, Intermediate Throw Errors, signals as BPMN semantics, escalation, cancellation Events, compensation, and terminate semantics;
 - arbitrary Sub-Process nesting, call activities, transactions, event Sub-Processes, and exceptional scope cancellation or event propagation beyond the exact direct-parent Error slice;
-- converging or mixed Exclusive Gateways, missing-default or non-binary conditional routing, inclusive, complex, and event-based gateways;
-- loops, multi-instance activities, condition consumers beyond the admitted Exclusive Gateway, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond the two exact pairs;
+- converging or mixed Exclusive Gateways, missing-default or non-binary Exclusive routing, Inclusive Gateways outside the exact paired structured region, general Inclusive reachability, complex gateways, and event-based gateways;
+- loops, multi-instance activities, condition consumers beyond the admitted Exclusive and Inclusive Gateway profiles, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond the two exact pairs;
 - XPath, JUEL, FEEL, script parsing or evaluation, conditional-evaluation receipts, and every expression runtime beyond Simple Boolean v1;
 - host-side external-effect execution and effect mechanisms beyond the approved success and typed boundary-error capsules;
 - generated TypeScript as semantic authority;
@@ -678,14 +731,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation exact-source fixtures lower deterministically;
+- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, CreateDocument data/mapping, boundary-error, Simple Boolean conditional-choice, ordinary child-scope quiescence/completion, and direct-parent Error interruption separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, CreateDocument data/mapping, boundary-error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, ordinary child-scope quiescence/completion, and direct-parent Error interruption separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

@@ -159,6 +159,26 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ((← decodeStringArray (← field json "candidateFlowIds")).map
             SequenceFlowId.mk)
           ⟨← stringField json "defaultFlowId"⟩)
+  | "inclusiveGateway" =>
+      let direction ← stringField json "direction"
+      match direction with
+      | "diverging" =>
+          requireObjectShape json
+            ["candidateFlowIds", "defaultFlowId", "direction", "id", "kind"]
+          pure
+            (.inclusiveGatewayDiverging
+              ⟨← stringField json "id"⟩
+              ((← decodeStringArray (← field json "candidateFlowIds")).map
+                SequenceFlowId.mk)
+              ⟨← stringField json "defaultFlowId"⟩)
+      | "converging" =>
+          requireObjectShape json
+            ["direction", "id", "kind", "pairedGatewayId"]
+          pure
+            (.inclusiveGatewayConverging
+              ⟨← stringField json "id"⟩
+              ⟨← stringField json "pairedGatewayId"⟩)
+      | _ => throw s!"unsupported gateway direction {direction}"
   | "noneEndEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneEndEvent ⟨← stringField json "id"⟩)
@@ -358,6 +378,24 @@ private def decodeConditionalCandidate (json : Json) :
       output := ⟨← stringField json "output"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
+private def decodeInclusiveCandidate (json : Json) :
+    Except String InclusiveCandidate := do
+  requireObjectShape json
+    ["condition", "expectedJoinInput", "origin", "output"]
+  pure
+    { condition := ← decodeSimpleBooleanExpression (← field json "condition")
+      output := ⟨← stringField json "output"⟩
+      expectedJoinInput := ⟨← stringField json "expectedJoinInput"⟩
+      origin := ← decodeSequenceFlowOrigin (← field json "origin") }
+
+private def decodeInclusiveDefaultBranch (json : Json) :
+    Except String InclusiveDefaultBranch := do
+  requireObjectShape json ["expectedJoinInput", "origin", "output"]
+  pure
+    { output := ⟨← stringField json "output"⟩
+      expectedJoinInput := ⟨← stringField json "expectedJoinInput"⟩
+      origin := ← decodeSequenceFlowOrigin (← field json "origin") }
+
 private def decodeOperation (json : Json) :
     Except String SemanticOperation := do
   let kind ← stringField json "kind"
@@ -448,6 +486,24 @@ private def decodeOperation (json : Json) :
             (← field json "candidates"))
           ⟨← stringField json "defaultOutput"⟩
           (← decodeSequenceFlowOrigin (← field json "defaultOrigin")))
+  | "selectMany" =>
+      requireObjectShape json
+        ["candidates", "defaultBranch", "id", "input", "kind", "origin",
+          "selectionKey"]
+      pure
+        (.selectMany id origin
+          ⟨← stringField json "input"⟩
+          (← decodeArray decodeInclusiveCandidate (← field json "candidates"))
+          (← decodeInclusiveDefaultBranch (← field json "defaultBranch"))
+          (← stringField json "selectionKey"))
+  | "synchronizeSelected" =>
+      requireObjectShape json
+        ["id", "inputs", "kind", "origin", "output", "selectionKey"]
+      pure
+        (.synchronizeSelected id origin
+          (← decodePlaceIdArray (← field json "inputs"))
+          ⟨← stringField json "output"⟩
+          (← stringField json "selectionKey"))
   | "throwError" =>
       requireObjectShape json
         ["error", "handler", "id", "input", "kind", "origin"]

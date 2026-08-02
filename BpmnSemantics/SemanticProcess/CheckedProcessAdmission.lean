@@ -109,6 +109,44 @@ private def checkedExclusiveGatewayValid (flows : List CheckedSequenceFlow)
     | some flow => flow.sourceId = id && flow.condition.isNone
     | none => false
 
+private def checkedInclusiveGatewayValid (flows : List CheckedSequenceFlow)
+    (id : NodeId) (candidateFlowIds : List SequenceFlowId)
+    (defaultFlowId : SequenceFlowId) : Bool :=
+  checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId
+
+private def inclusiveBranchReachesJoin (source : CheckedProcess)
+    (splitId joinId : NodeId) (flowId : SequenceFlowId) : Bool :=
+  match source.sequenceFlows.find? fun flow => decide (flow.id = flowId) with
+  | none => false
+  | some branch =>
+      branch.sourceId = splitId &&
+        source.nodes.any fun
+          | .userTask taskId _ =>
+              taskId = branch.targetId &&
+                match source.sequenceFlows.filter fun flow =>
+                    decide (flow.sourceId = taskId && flow.targetId = joinId) with
+                | [_] => true
+                | _ => false
+          | _ => false
+
+private def checkedInclusivePairingValid (source : CheckedProcess) : Bool :=
+  source.nodes.all fun
+    | .inclusiveGatewayDiverging splitId candidates defaultFlow =>
+        match source.nodes.filter fun
+            | .inclusiveGatewayConverging _ paired => paired = splitId
+            | _ => false with
+        | [.inclusiveGatewayConverging joinId _] =>
+            (candidates ++ [defaultFlow]).all
+              (inclusiveBranchReachesJoin source splitId joinId)
+        | _ => false
+    | .inclusiveGatewayConverging joinId paired =>
+        source.nodes.any fun
+          | .inclusiveGatewayDiverging splitId _ _ =>
+              splitId = paired &&
+                incomingCount source.sequenceFlows joinId = 3
+          | _ => false
+    | _ => true
+
 private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -159,6 +197,13 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       incomingCount flows id = 1 &&
         outgoingCount flows id = 3 &&
         checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId
+  | .inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
+      incomingCount flows id = 1 &&
+        outgoingCount flows id = 3 &&
+        checkedInclusiveGatewayValid flows id candidateFlowIds defaultFlowId
+  | .inclusiveGatewayConverging id pairedGatewayId =>
+      nonempty pairedGatewayId.value &&
+        incomingCount flows id = 3 && outgoingCount flows id = 1
   | .errorEndEvent id error =>
       errorReferenceValid error &&
         incomingCount flows id = 1 && outgoingCount flows id = 0
@@ -191,8 +236,11 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
               source.nodes.any fun
                 | .exclusiveGateway _ candidateFlowIds _ =>
                     candidateFlowIds.contains flow.id
+                | .inclusiveGatewayDiverging _ candidateFlowIds _ =>
+                    candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
+    checkedInclusivePairingValid source &&
     checkedErrorHandlersValid source &&
     checkedProfileCapabilitiesValid source &&
     checkedProcessGraphWellFormed source

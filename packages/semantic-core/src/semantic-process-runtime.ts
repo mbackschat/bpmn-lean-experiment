@@ -25,6 +25,10 @@ import {
   throwError,
 } from "./semantic-process-error-runtime.js";
 import {
+  selectMany,
+  synchronizeSelected,
+} from "./semantic-process-inclusive-gateway-runtime.js";
+import {
   createMessageWait,
   deliverMessage,
 } from "./semantic-process-message.js";
@@ -69,6 +73,7 @@ export type {
   SemanticMessageWait,
   SemanticTimerWait,
   SemanticUserTaskWait,
+  SelectedBranchSet,
 } from "./semantic-process-state.js";
 
 type SemanticCommandOutcome =
@@ -406,6 +411,14 @@ export function applyInternalOperation(
         ? choose(operation, state, choiceOwner)
         : null;
     }
+    case SemanticOperationKind.SelectMany: {
+      const selectionOwner = onlyTokenOwner(state, operation.input);
+      return selectionOwner !== undefined
+        ? selectMany(operation, state, selectionOwner)
+        : null;
+    }
+    case SemanticOperationKind.SynchronizeSelected:
+      return synchronizeSelected(operation, state);
     case SemanticOperationKind.ThrowError: {
       const throwingOwner = onlyTokenOwner(state, operation.input);
       return throwingOwner !== undefined

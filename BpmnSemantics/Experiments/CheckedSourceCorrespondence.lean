@@ -51,6 +51,19 @@ private def lowerActivation
   { taskId := ⟨activation.taskNodeId.value⟩
     count := activation.count }
 
+private def insertActivation (activation : TaskActivation) :
+    List TaskActivation → List TaskActivation
+  | [] => [activation]
+  | current :: rest =>
+      if activation.taskId.value < current.taskId.value then
+        activation :: current :: rest
+      else current :: insertActivation activation rest
+
+private def sortActivations : List TaskActivation → List TaskActivation
+  | [] => []
+  | activation :: rest =>
+      insertActivation activation (sortActivations rest)
+
 private def lowerState
     (source : CheckedProcess)
     (state : CheckedSourceSemantics.SourceRuntimeState) : RuntimeState :=
@@ -73,8 +86,9 @@ private def lowerState
     messageWaits := []
     timerWaits := []
     effectWaits := []
+    selectedBranchSets := []
     variables := emptyScopedVariables
-    activations := state.activations.map lowerActivation
+    activations := sortActivations (state.activations.map lowerActivation)
     messageActivations := []
     timerActivations := []
     effectActivations := []
@@ -170,7 +184,7 @@ theorem twoSegmentEnabledTransitionsCorrespondence :
       enabledTransitionsCorrespondAt twoSegmentSource beforeTaskA = true ∧
       enabledTransitionsCorrespondAt twoSegmentSource beforeTaskB = true ∧
       enabledTransitionsCorrespondAt twoSegmentSource beforeEnd = true := by
-  decide
+  native_decide
 
 def twoSegmentEnabledTransitionsCorrespond : Bool :=
   enabledTransitionsCorrespondAt twoSegmentSource beforeStart &&

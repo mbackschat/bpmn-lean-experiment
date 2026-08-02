@@ -21,6 +21,10 @@ private structure ShapeCardinalities where
   duplicates : Nat := 0
   synchronizes : Nat := 0
   choices : Nat := 0
+  inclusiveSplits : Nat := 0
+  inclusiveJoins : Nat := 0
+  selectMany : Nat := 0
+  synchronizeSelected : Nat := 0
   errorEnds : Nat := 0
   errorThrows : Nat := 0
   ends : Nat := 0
@@ -49,6 +53,10 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .parallelGateway _ .converging =>
         { counts with synchronizes := counts.synchronizes + 1 }
     | .exclusiveGateway .. => { counts with choices := counts.choices + 1 }
+    | .inclusiveGatewayDiverging .. =>
+        { counts with inclusiveSplits := counts.inclusiveSplits + 1 }
+    | .inclusiveGatewayConverging .. =>
+        { counts with inclusiveJoins := counts.inclusiveJoins + 1 }
     | .errorEndEvent .. => { counts with errorEnds := counts.errorEnds + 1 }
     | .noneEndEvent .. => { counts with ends := counts.ends + 1 }
 
@@ -66,6 +74,9 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .synchronize .. =>
         { counts with synchronizes := counts.synchronizes + 1 }
     | .choose .. => { counts with choices := counts.choices + 1 }
+    | .selectMany .. => { counts with selectMany := counts.selectMany + 1 }
+    | .synchronizeSelected .. =>
+        { counts with synchronizeSelected := counts.synchronizeSelected + 1 }
     | .throwError .. => { counts with errorThrows := counts.errorThrows + 1 }
     | .reachNoneEnd .. => { counts with ends := counts.ends + 1 }
     | .completeScope .. =>
@@ -93,6 +104,11 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" then
     some (1,
       { starts := 1, userTasks := 3, choices := 1, ends := 3 })
+  else if profile =
+      "bpmn-2.0.2-inclusive-gateway-selected-branches-draft" then
+    some (1,
+      { starts := 1, userTasks := 3, inclusiveSplits := 1,
+        inclusiveJoins := 1, ends := 1 })
   else if profile = "bpmn-2.0.2-timer-user-task-composition-draft" then
     some (1,
       { starts := 1, userTasks := 1, timers := 1, ends := 1 })
@@ -133,6 +149,11 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 3, choices := 1, ends := 3 })
+  else if profile =
+      "bpmn-2.0.2-inclusive-gateway-selected-branches-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 3, selectMany := 1,
+        synchronizeSelected := 1, ends := 1 })
   else if profile = "bpmn-2.0.2-timer-user-task-composition-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, timers := 1, ends := 1 })

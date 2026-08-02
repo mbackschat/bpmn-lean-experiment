@@ -84,6 +84,7 @@ test("start closes at one stable User Task wait", async () => {
     messageWaits: [],
     timerWaits: [],
     effectWaits: [],
+    selectedBranchSets: [],
     variables: {
       process: {
         bindings: [
@@ -168,6 +169,7 @@ test("matching occurrence completion closes the Process", async () => {
     messageWaits: [],
     timerWaits: [],
     effectWaits: [],
+    selectedBranchSets: [],
     variables: {
       process: {
         bindings: [

@@ -573,6 +573,64 @@
           "required": [
             "kind",
             "id",
+            "direction",
+            "candidateFlowIds",
+            "defaultFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "inclusiveGateway"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "direction": {
+              "const": "diverging"
+            },
+            "candidateFlowIds": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/nonemptyString"
+              }
+            },
+            "defaultFlowId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "direction",
+            "pairedGatewayId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "inclusiveGateway"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "direction": {
+              "const": "converging"
+            },
+            "pairedGatewayId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "error"
           ],
           "properties": {

@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.ErrorDefinition
+import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Canonical checked-process lowering
@@ -81,6 +82,53 @@ private def lowerConditionalCandidate (source : CheckedProcess)
       { condition := .literal false
         output := flowControlPlaceId flowId
         origin := { elementId := flowId } }
+
+private def pairedInclusiveJoinId? (source : CheckedProcess)
+    (splitId : NodeId) : Option NodeId :=
+  source.nodes.findSome? fun
+    | .inclusiveGatewayConverging joinId pairedGatewayId =>
+        if pairedGatewayId = splitId then some joinId else none
+    | _ => none
+
+private def expectedJoinInput (source : CheckedProcess) (splitId : NodeId)
+    (flowId : SequenceFlowId) : ControlPlaceId :=
+  let branchTarget := (source.sequenceFlows.find? fun flow =>
+    decide (flow.id = flowId && flow.sourceId = splitId)).map (·.targetId)
+  let joinId := pairedInclusiveJoinId? source splitId
+  match branchTarget, joinId with
+  | some taskId, some joinId =>
+      let inputs := source.sequenceFlows.filter fun flow =>
+        decide (flow.sourceId = taskId && flow.targetId = joinId)
+      flowControlPlaceId (inputs.head?.map (·.id) |>.getD ⟨""⟩)
+  | _, _ => ⟨""⟩
+
+private def lowerInclusiveCandidate (source : CheckedProcess)
+    (splitId : NodeId) (flowId : SequenceFlowId) : InclusiveCandidate :=
+  let candidate := lowerConditionalCandidate source flowId
+  { condition := candidate.condition
+    output := candidate.output
+    expectedJoinInput := expectedJoinInput source splitId flowId
+    origin := candidate.origin }
+
+private def lowerInclusiveDefaultBranch (source : CheckedProcess)
+    (splitId : NodeId) (flowId : SequenceFlowId) : InclusiveDefaultBranch :=
+  { output := flowControlPlaceId flowId
+    expectedJoinInput := expectedJoinInput source splitId flowId
+    origin := { elementId := flowId } }
+
+private def insertInclusiveCandidate (candidate : InclusiveCandidate) :
+    List InclusiveCandidate → List InclusiveCandidate
+  | [] => [candidate]
+  | current :: rest =>
+      if candidate.origin.elementId.value < current.origin.elementId.value then
+        candidate :: current :: rest
+      else current :: insertInclusiveCandidate candidate rest
+
+private def sortInclusiveCandidates :
+    List InclusiveCandidate → List InclusiveCandidate
+  | [] => []
+  | candidate :: rest =>
+      insertInclusiveCandidate candidate (sortInclusiveCandidates rest)
 
 private def lowerNode (source : CheckedProcess) :
     CheckedNode → Option (SemanticOperation × DefinitionScopeId)
@@ -173,6 +221,24 @@ private def lowerNode (source : CheckedProcess) :
         (candidateFlowIds.map (lowerConditionalCandidate source))
         (flowControlPlaceId defaultFlowId)
         { elementId := defaultFlowId }, scopeId)
+  | .inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.selectMany
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (sortInclusiveCandidates
+          (candidateFlowIds.map (lowerInclusiveCandidate source id)))
+        (lowerInclusiveDefaultBranch source id defaultFlowId)
+        id.value, scopeId)
+  | .inclusiveGatewayConverging id pairedGatewayId =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.synchronizeSelected
+        (nodeOperationId id)
+        { elementId := id }
+        (canonicalControlPlaceOrder (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        pairedGatewayId.value, scopeId)
   | .errorEndEvent id error =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.throwError

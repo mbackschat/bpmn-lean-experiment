@@ -193,6 +193,36 @@ function lowerNode(
           elementId: node.defaultFlowId,
         },
       });
+    case CheckedNodeKind.InclusiveGateway:
+      switch (node.direction) {
+        case GatewayDirection.Diverging: {
+          const [firstCandidateFlowId, secondCandidateFlowId] =
+            node.candidateFlowIds;
+          return scoped({
+            ...base,
+            kind: SemanticOperationKind.SelectMany,
+            input: requireOnly(incoming, node.id, "incoming"),
+            candidates: [
+              lowerInclusiveCandidate(source, node.id, firstCandidateFlowId),
+              lowerInclusiveCandidate(source, node.id, secondCandidateFlowId),
+            ],
+            defaultBranch: lowerInclusiveDefaultBranch(
+              source,
+              node.id,
+              node.defaultFlowId,
+            ),
+            selectionKey: node.id,
+          });
+        }
+        case GatewayDirection.Converging:
+          return scoped({
+            ...base,
+            kind: SemanticOperationKind.SynchronizeSelected,
+            inputs: requireExactThree(incoming, node.id, "incoming"),
+            output: requireOnly(outgoing, node.id, "outgoing"),
+            selectionKey: node.pairedGatewayId,
+          });
+      }
     case CheckedNodeKind.ErrorEndEvent: {
       const handler = requireDirectErrorHandler(source, node);
       return scoped({
@@ -367,6 +397,65 @@ function lowerConditionalCandidate(
   } as const;
 }
 
+function lowerInclusiveCandidate(
+  source: CheckedProcess,
+  splitId: string,
+  flowId: string,
+) {
+  return {
+    ...lowerConditionalCandidate(source.sequenceFlows, flowId),
+    expectedJoinInput: expectedJoinInputForBranch(source, splitId, flowId),
+  } as const;
+}
+
+function lowerInclusiveDefaultBranch(
+  source: CheckedProcess,
+  splitId: string,
+  flowId: string,
+) {
+  const flow = source.sequenceFlows.find(({ id }) => id === flowId);
+  if (flow === undefined || flow.condition !== null || flow.sourceId !== splitId) {
+    throw new TypeError(`Checked Inclusive default Sequence Flow ${flowId} is invalid`);
+  }
+  return {
+    output: placeId(flow.id),
+    expectedJoinInput: expectedJoinInputForBranch(source, splitId, flowId),
+    origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: flow.id },
+  } as const;
+}
+
+function expectedJoinInputForBranch(
+  source: CheckedProcess,
+  splitId: string,
+  flowId: string,
+): string {
+  const branch = source.sequenceFlows.find(
+    (flow) => flow.id === flowId && flow.sourceId === splitId,
+  );
+  const task = branch === undefined
+    ? undefined
+    : source.nodes.find(({ id }) => id === branch.targetId);
+  const join = source.nodes.find(
+    (node): node is Extract<CheckedNode, {
+      kind: CheckedNodeKind.InclusiveGateway;
+      direction: GatewayDirection.Converging;
+    }> =>
+      node.kind === CheckedNodeKind.InclusiveGateway &&
+      node.direction === GatewayDirection.Converging &&
+      node.pairedGatewayId === splitId,
+  );
+  const joinInputs = task === undefined || join === undefined
+    ? []
+    : source.sequenceFlows.filter(
+        ({ sourceId, targetId }) => sourceId === task.id && targetId === join.id,
+      );
+  const joinInput = joinInputs[0];
+  if (task?.kind !== CheckedNodeKind.UserTask || joinInputs.length !== 1 || joinInput === undefined) {
+    throw new TypeError(`Checked Inclusive branch ${flowId} has no unique paired join input`);
+  }
+  return placeId(joinInput.id);
+}
+
 function normalizeTimerDuration(durationLiteral: "PT1S"): 1000 {
   switch (durationLiteral) {
     case "PT1S":
@@ -399,6 +488,18 @@ function requireMany(
     );
   }
   return values;
+}
+
+function requireExactThree(
+  values: ReadonlyArray<string>,
+  nodeId: string,
+  direction: string,
+): [string, string, string] {
+  const [first, second, third] = values;
+  if (values.length !== 3 || first === undefined || second === undefined || third === undefined) {
+    throw new TypeError(`Checked node ${nodeId} requires exactly three ${direction} flows`);
+  }
+  return [first, second, third];
 }
 
 function placeId(flowId: string): string {

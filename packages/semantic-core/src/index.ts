@@ -2,6 +2,8 @@ export * from "./contract.js";
 export * from "./deep-readonly.js";
 export * from "./effect-transport-material.js";
 export * from "./semantic-process-admission.js";
+export * from "./inclusive-gateway-admission.js";
+export * from "./semantic-process-inclusive-gateway-runtime.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
 export * from "./semantic-process-graph-admission.js";

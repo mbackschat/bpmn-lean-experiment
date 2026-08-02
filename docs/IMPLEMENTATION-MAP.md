@@ -36,7 +36,7 @@ The production semantic realization remains one pure TypeScript core hosted by t
 
 The dependency-free [Simple Boolean expression language](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) and [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) implement the standards-first conditional-routing slice. The explicit URI selects five total Boolean forms over complete Process-scope string/null bindings; omitted language remains BPMN's XPath default and is rejected. The checked graph retains exact bodies and declaration-ordered conditional/default Flow identities; Lean and TypeScript parse and evaluate independently; the generic `choose` transition consumes one token and produces exactly one selected route inside pure bounded closure. Temporal hosts, completes, and replays the selected User Task without an evaluator Activity, while a separately bundled route-substitution mutation exposes the wrong branch. The standards profile declares normative authority and no CIB result; its registered pipeline case compares Lean, the core, and Temporal. The [JUEL architecture](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), exact CIB probes, and audited 38-artifact dependency graph remain a deferred CIB compatibility candidate; no JUEL dependency or Java evaluator module is adopted. The existing `MappingExpression.localVariable` arm remains only as a direct lookup for two exact admitted mapping tokens and must not grow into either expression language.
 
-The owner-approved [Inclusive Gateway proposal](capsules/INCLUSIVE-GATEWAY-PROPOSAL.md) passed independent proposal review after correction audit `0b52d15`, but its implementation has not reached a semantic checkpoint and it changes no implemented surface yet. No checked Inclusive Gateway node, `selectMany` or `synchronizeSelected` operation, runtime selected-branch record, source profile, Lean relation or law, TypeScript behavior, Temporal refinement, differential case, or CIB relationship exists. The current `choose` remains first-true/single-output and `synchronize` remains all-input; neither is an Inclusive Gateway implementation.
+The owner-approved [Inclusive Gateway proposal](capsules/INCLUSIVE-GATEWAY-PROPOSAL.md) passed independent proposal review after correction audit `0b52d15`. Its first semantic checkpoint candidate implements the exact structured checked split/join, branch-local lowering to `selectMany` and `synchronizeSelected`, the hidden owner-scoped selected-branch record, standalone and checked-definition admission, Lean relation/evaluator witnesses, independent TypeScript behavior, selection-aware quiescence/interruption, and exhaustive Temporal host-capability classification. The existing `choose` remains first-true/single-output and `synchronize` remains all-input. Mandatory checkpoint review remains pending, so no registered profile/scenario artifact, differential case, Temporal refinement/replay case, retained evidence, or CIB relationship has been added.
 
 This is not a general BPMN engine, an OMG conformance result, or an immutable production CIB deployment/history compatibility baseline. Individual evidence-bound calibration profile artifacts may already be immutable under the narrower [profile-registry definition](../profiles/README.md).
 
@@ -119,6 +119,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - a guarded catalog of answer-free target scenarios with CIB evidence required only by declared CIB target sets
 - produced checked-process and Semantic Process artifacts
 - nullable checked conditions, one typed Simple Boolean expression union, and declaration-ordered `choose` candidates
+- exact divergent/convergent Inclusive Gateway checked-node arms, canonically ordered `selectMany` candidates, and fixed-cardinality `synchronizeSelected` inputs
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one definition-scope tree with exact node/Sequence-Flow and operation/control-place ownership, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, and effects
 - closed string-or-null variable bindings, Process-variable observation, immutable effect arguments, and closed successful/business-error patches
@@ -196,6 +197,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - exact child completion only after the owned region has no token, wait, or child occurrence
 - child removal plus one parent-owned continuation and separate root completion
 - direct-parent exact-code Error interruption that removes the child occurrence subtree, preserves monotonic counters and root-owned work, and emits one parent-owned boundary continuation
+- owner-scoped selected-branch records that block quiescence until exact selected-input synchronization and are removed by owner interruption
 - missing, duplicate, cross-owner, premature-completion, and stranded-child guards
 
 #### Explicitly absent
@@ -209,8 +211,9 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 #### Implemented
 
 - Implemented draft spec for a checked source-facing graph
-- current JSON Schemas and boundary validators for typed `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, `throwError`, `reachNoneEnd`, and `completeScope` operations
+- current JSON Schemas and boundary validators for typed `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, `synchronize`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope` operations
 - `choose` carries exactly two declaration-ordered typed Simple Boolean candidates and one distinct default
+- `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
 - `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across empty, CreateDocument, and boundary-error contracts
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
 - independent sequential, bounded-parallel, exact-timer, Timer/User Task composition, operation-addressed Intermediate Catch Message and direct-Message Receive Task subscriptions, payload-free effect, CreateDocument data, boundary-error, Simple Boolean conditional evaluation, ordinary embedded Sub-Process completion, and direct-parent Sub-Process Error propagation
@@ -230,7 +233,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - UTF-8/security preflight
 - private `bpmn-moddle@10.0.0` import
 - warning/reference-loss rejection
-- bounded compilers for the sequential User Task, balanced parallel, exact `PT1S` timer, profile-parameterized finite acyclic Timer/User Task composition, operation-addressed payload-free Intermediate Catch Message in both Message/User Task orders, one direct-Message payload-free Receive Task, payload-free Service Task, exact A12 CreateDocument shape, exact A12-shaped boundary Error, exact two-condition-plus-default Simple Boolean Exclusive Gateway, one-level ordinary embedded Sub-Process completion, and one direct exact-code Sub-Process Error-propagation shape
+- bounded compilers for the sequential User Task, balanced parallel, exact `PT1S` timer, profile-parameterized finite acyclic Timer/User Task composition, operation-addressed payload-free Intermediate Catch Message in both Message/User Task orders, one direct-Message payload-free Receive Task, payload-free Service Task, exact A12 CreateDocument shape, exact A12-shaped boundary Error, exact two-condition-plus-default Simple Boolean Exclusive Gateway, one structured two-condition-plus-default Inclusive Gateway split/direct-User-Task/join region, one-level ordinary embedded Sub-Process completion, and one direct exact-code Sub-Process Error-propagation shape
 - reusable checked-source scope ownership, reference, arity, scope-local reachability, co-reachability, and acyclicity validation separated from profile mechanism/cardinality capability
 - explicit expression-language admission, strict five-form parsing, exact checked-body retention, and process-level Sequence Flow declaration order independent of gateway reference order
 - exact source/profile admission preserves raw CIB bindings as evidence and maps them to registered neutral effect identities while checked graphs retain generic conditions, mappings, route/reference metadata, resolved Message channels, and names
@@ -271,6 +274,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - exact CreateDocument literal arguments, successful mapping trace, output-only Process target theorem, quantified invalid-patch refusal, missing/extra/duplicate examples, and direct-local-patch-to-Process-scope non-law
 - boundary-error exact lowering/trace, declarative business-error soundness, exact null mapping, message noninterference, quantified identity/code/patch refusal, and normal-success non-law
 - independent Simple Boolean parser/evaluator, checked-body-to-typed-expression lowering, declaration-ordered `choose` relation/evaluator soundness, second-true and all-false/default witnesses, `first_true_ignores_tail`, and `selected_output_owned`
+- exact structured Inclusive Gateway checked admission and branch-local lowering; declarative/executable `selectMany` and `synchronizeSelected` soundness; one-true, both-true, and default witnesses; bound-three exhaustion; data-dependent independent activation-order equality; both completion orders; selected-subset readiness/consumption; missing-record and quiescence non-laws; and owner-interruption cleanup
 - ordinary embedded Sub-Process exact lowering, entry/two-child-wait prefix, both completion orders, sibling survival, quiescent child completion, outer continuation, root completion, generic nonquiescent-completion refusal, and stranded-child non-resumability
 - direct-parent Error exact lowering, declarative/executable `throwError` soundness, both child-command orders, regional subtree cancellation, monotonic counter preservation, unreachable normal output, stale-sibling refusal, root-work preservation, and global-cancellation non-law
 - generic catalog-driven result emitter that consumes and echoes the same admitted scenario documents
@@ -298,8 +302,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - Dependency-free Semantic Process contracts
 - shared safe-string admission and Unicode scalar-value comparator
 - profile-registered opaque effect protocol/operation identities with no Camunda namespace, A12 bean, or target-model discriminator
-- topology-independent scoped structural program validation plus exact profile definition-scope/operation-kind cardinality for the sequential, balanced two-branch, exact timer, Timer/User Task composition, operation-addressed Message catch, direct-Message Receive Task, payload-free effect, CreateDocument, boundary-error, Simple Boolean conditional-choice, and ordinary embedded Sub-Process surfaces
-- pure enum-based execution of `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, per-incoming-flow `synchronize`, declaration-ordered `choose`, `reachNoneEnd`, and `completeScope`
+- topology-independent scoped structural program validation plus exact profile definition-scope/operation-kind cardinality for the sequential, balanced two-branch, exact timer, Timer/User Task composition, operation-addressed Message catch, direct-Message Receive Task, payload-free effect, CreateDocument, boundary-error, Simple Boolean conditional-choice, structured Inclusive Gateway, and ordinary embedded Sub-Process surfaces
+- pure enum-based execution of `initiate`, `enterScope`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `duplicate`, per-incoming-flow `synchronize`, declaration-ordered `choose`, all-true/default `selectMany`, selected-subset `synchronizeSelected`, `reachNoneEnd`, and `completeScope`
 - operation-ID-stable internal closure independent of program collection order
 - explicit scope occurrence ownership on flow-identified token multiplicity and sorted semantic task/Message-subscription/timer/effect occurrences
 - active waits sorted by the contract’s semantic kind rank and then element ID, guarded against cross-kind identifier order
@@ -310,6 +314,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - closed string/null mapping evaluator, exact success/error local-patch validation, Process output mapping, canonical variables, and direct-patch ownership discriminator
 - exact-code business-error route with atomic patch → mapping → cleanup → boundary behavior, normal-route abandonment, message noninterference, and state-preserving refusal
 - independent five-form Simple Boolean parser/evaluator with present/null/absent discrimination, first-true tail irrelevance, second-true/default routing, exact three-step closure, and condition-origin/cardinality rejection
+- independent Inclusive Gateway evaluation with same-binding all-candidate selection, branch-local selected-input tracking, one/both/default traces, exact four-step closure and bound-three exhaustion, both activation and completion orders, hidden-state non-projection, first-arrival/missing-record refusal, quiescence blocking, and interruption cleanup
 - ordinary embedded Sub-Process entry, independent child waits, both completion orders, exact owned quiescence, one outer continuation, root completion, premature-completion refusal, and stranded-child non-resumability
 - exact `throwError` validation and evaluation with direct-parent handler agreement, child-subtree cancellation across every runtime owner kind, monotonic counter and root-work preservation, both child-command orders, unreachable normal output, stale-sibling refusal, and stable-prefix resumability
 - pure effect-transport material projection from admitted definition fields plus one committed `openEffects` entry without hashing or host identity
@@ -322,7 +327,7 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 
 #### Explicitly absent
 
-- an ambiguity refusal matching Lean's `ambiguousInternalChoice`: the closure selector advances the lowest canonical operation ID without signalling an unresolved semantic choice, so agreement with Lean at the one admitted multiple-enabled state rests on the `isSortedById(operations)` admission requirement and on per-profile unreachability of every other such state
+- an ambiguity refusal matching Lean's `ambiguousInternalChoice`: the closure selector advances the lowest canonical operation ID without signalling an unresolved semantic choice, so agreement with Lean at the admitted independent two-User-Task states rests on canonical operation order, explicit activation-order equality for both the static parallel and data-dependent Inclusive cases, and per-profile rejection or unreachability of every other multiple-enabled shape
 - I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, value kinds beyond string/null, general mapping expressions or scope nesting, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
 
 ### CIB oracle

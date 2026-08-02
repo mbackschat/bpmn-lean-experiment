@@ -36,6 +36,7 @@ import {
   projectExclusiveGateway,
   projectSimpleBooleanCondition,
 } from "./simple-boolean-exclusive-gateway-source.js";
+import { projectInclusiveGateway } from "./inclusive-gateway-source.js";
 import {
   isAdmittedCheckedProcess,
 } from "./checked-process-admission.js";
@@ -150,7 +151,7 @@ export function compileCheckedProcess(
   );
   if (sourceNodes.length + sourceFlows.length !== scoped.elements.length) {
     return unsupported(
-      "The bounded compiler supports only ordinary embedded SubProcesses, selected boundary Error Events, None Start Events, exact PT1S Intermediate Catch Timer Events, selected Message Receive Tasks, User Tasks, selected Service Tasks, Parallel or selected Exclusive Gateways, selected Error or None End Events, and Sequence Flows.",
+      "The bounded compiler supports only ordinary embedded SubProcesses, selected boundary Error Events, None Start Events, exact PT1S Intermediate Catch Timer Events, selected Message Receive Tasks, User Tasks, selected Service Tasks, Parallel or selected Exclusive or Inclusive Gateways, selected Error or None End Events, and Sequence Flows.",
     );
   }
 
@@ -309,6 +310,8 @@ function projectNodes(
       }
       case bpmnTypes.exclusiveGatewayType:
         return projectExclusiveGateway(element, id, flows);
+      case bpmnTypes.inclusiveGatewayType:
+        return projectInclusiveGateway(element, id, flows, elements);
       case bpmnTypes.endEventType:
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneEndEvent, id }
@@ -413,6 +416,7 @@ function isSupportedNodeType(type: unknown): boolean {
     bpmnTypes.serviceTaskType,
     bpmnTypes.parallelGatewayType,
     bpmnTypes.exclusiveGatewayType,
+    bpmnTypes.inclusiveGatewayType,
     bpmnTypes.endEventType,
   ].includes(String(type));
 }

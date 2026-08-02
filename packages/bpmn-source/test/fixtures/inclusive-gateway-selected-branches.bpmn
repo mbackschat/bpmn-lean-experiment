@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Inclusive" targetNamespace="urn:bpmn-lean:test" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="Process_Inclusive" isExecutable="true">
+    <bpmn:startEvent id="Start"><bpmn:outgoing>Flow_Start</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:inclusiveGateway id="Split" default="Flow_Default">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_B</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Default</bpmn:outgoing>
+      <bpmn:outgoing>Flow_A</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:userTask id="Task_A" name="A"><bpmn:incoming>Flow_A</bpmn:incoming><bpmn:outgoing>Flow_A_Join</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="Task_B" name="B"><bpmn:incoming>Flow_B</bpmn:incoming><bpmn:outgoing>Flow_B_Join</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="Task_Default" name="Default"><bpmn:incoming>Flow_Default</bpmn:incoming><bpmn:outgoing>Flow_Default_Join</bpmn:outgoing></bpmn:userTask>
+    <bpmn:inclusiveGateway id="Join">
+      <bpmn:incoming>Flow_Default_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_B_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_A_Join</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:endEvent id="End"><bpmn:incoming>Flow_End</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Split" />
+    <bpmn:sequenceFlow id="Flow_A" sourceRef="Split" targetRef="Task_A"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">isPresent(takeA)</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_B" sourceRef="Split" targetRef="Task_B"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">isPresent(takeB)</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Default" sourceRef="Split" targetRef="Task_Default" />
+    <bpmn:sequenceFlow id="Flow_A_Join" sourceRef="Task_A" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_B_Join" sourceRef="Task_B" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_Default_Join" sourceRef="Task_Default" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Join" targetRef="End" />
+  </bpmn:process>
+</bpmn:definitions>

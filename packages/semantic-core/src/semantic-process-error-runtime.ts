@@ -75,6 +75,9 @@ export function throwError(
     effectWaits: state.effectWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
+    selectedBranchSets: state.selectedBranchSets.filter(
+      ({ owner }) => !isInterrupted(owner),
+    ),
     variables: {
       ...state.variables,
       activities: state.variables.activities.filter(

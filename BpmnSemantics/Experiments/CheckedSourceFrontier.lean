@@ -210,6 +210,10 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | serviceTask id descriptor inputs outputs route => rfl
   | exclusiveGateway id candidateFlowIds defaultFlowId =>
       simp [nodeArityValid] at candidateArity
+  | inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
+      simp [nodeArityValid] at candidateArity
+  | inclusiveGatewayConverging id pairedGatewayId =>
+      simp [nodeArityValid] at candidateArity
   | userTask id name =>
       simp only [nodeArityValid, Bool.and_eq_true, decide_eq_true_eq] at candidateArity
       have disabled := firstIncomingDisabled source state id noToken candidateArity.1

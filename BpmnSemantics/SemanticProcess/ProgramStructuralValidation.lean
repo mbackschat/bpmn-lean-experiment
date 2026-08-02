@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Semantic Process program structural validation
@@ -126,6 +127,33 @@ private def operationWellFormed (places : List ControlPlace) :
           simpleBooleanExpressionValid candidate.condition &&
             placeHasOrigin places candidate.output candidate.origin &&
         placeHasOrigin places defaultOutput defaultOrigin
+  | .selectMany id origin input candidates defaultBranch selectionKey =>
+      let outputs := candidates.map (·.output) ++ [defaultBranch.output]
+      let expected :=
+        candidates.map (·.expectedJoinInput) ++ [defaultBranch.expectedJoinInput]
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty selectionKey &&
+        placeExists places input &&
+        candidates.length = 2 &&
+        outputs.eraseDups.length = 3 &&
+        expected.eraseDups.length = 3 &&
+        strictlySortedStrings
+          (candidates.map fun candidate => candidate.origin.elementId.value) &&
+        candidates.all fun candidate =>
+          simpleBooleanExpressionValid candidate.condition &&
+            placeHasOrigin places candidate.output candidate.origin &&
+            placeExists places candidate.expectedJoinInput &&
+        placeHasOrigin places defaultBranch.output defaultBranch.origin &&
+        placeExists places defaultBranch.expectedJoinInput
+  | .synchronizeSelected id origin inputs output selectionKey =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty selectionKey &&
+        inputs.length = 3 &&
+        sortedDistinctPlaceIds inputs &&
+        inputs.all (placeExists places) &&
+        placeExists places output
   | .throwError id origin input error handler =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -156,6 +184,28 @@ private def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
   | _ => false
 
+private def inclusiveOperationsPaired (operations : List SemanticOperation) : Bool :=
+  let selections := operations.filterMap fun
+    | .selectMany _ _ _ candidates defaultBranch selectionKey =>
+        some (selectionKey,
+          canonicalControlPlaceOrder
+            (candidates.map (·.expectedJoinInput) ++
+              [defaultBranch.expectedJoinInput]))
+    | _ => none
+  let joins := operations.filterMap fun
+    | .synchronizeSelected _ _ inputs _ selectionKey =>
+        some (selectionKey, inputs)
+    | _ => none
+  if selections.isEmpty && joins.isEmpty then true
+  else
+    selections.length = joins.length &&
+      selections.all fun selection =>
+        (joins.filter fun join => decide (join.1 = selection.1 &&
+          join.2 = selection.2)).length = 1 &&
+      joins.all fun join =>
+        (selections.filter fun selection => decide (selection.1 = join.1 &&
+          selection.2 = join.2)).length = 1
+
 /-- Structural validation for a decoded Semantic Process program, independent of checked-source equality. -/
 def programWellFormed (program : Program) : Bool :=
   nonempty program.identity.semanticProfile.value &&
@@ -173,6 +223,7 @@ def programWellFormed (program : Program) : Bool :=
     program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) &&
     program.operations.all (operationWellFormed program.controlPlaces) &&
+    inclusiveOperationsPaired program.operations &&
     (program.operations.filter isInitiate).length = 1 &&
     programGraphWellFormed program
 

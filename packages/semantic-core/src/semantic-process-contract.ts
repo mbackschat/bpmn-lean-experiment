@@ -15,6 +15,7 @@ export enum CheckedNodeKind {
   ServiceTask = "serviceTask",
   ParallelGateway = "parallelGateway",
   ExclusiveGateway = "exclusiveGateway",
+  InclusiveGateway = "inclusiveGateway",
   ErrorEndEvent = "errorEndEvent",
   NoneEndEvent = "noneEndEvent",
 }
@@ -204,6 +205,19 @@ export type CheckedNode =
       defaultFlowId: string;
     }>
   | DeepReadonly<{
+      kind: CheckedNodeKind.InclusiveGateway;
+      id: string;
+      direction: GatewayDirection.Diverging;
+      candidateFlowIds: [string, string];
+      defaultFlowId: string;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.InclusiveGateway;
+      id: string;
+      direction: GatewayDirection.Converging;
+      pairedGatewayId: string;
+    }>
+  | DeepReadonly<{
       kind: CheckedNodeKind.ErrorEndEvent;
       id: string;
       error: ErrorReference;
@@ -265,6 +279,8 @@ export enum SemanticOperationKind {
   Duplicate = "duplicate",
   Synchronize = "synchronize",
   Choose = "choose",
+  SelectMany = "selectMany",
+  SynchronizeSelected = "synchronizeSelected",
   ThrowError = "throwError",
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
@@ -338,10 +354,40 @@ export type ConditionalCandidate = DeepReadonly<{
   origin: BpmnSequenceFlowOrigin;
 }>;
 
+export type InclusiveCandidate = DeepReadonly<{
+  condition: SimpleBooleanExpression;
+  output: string;
+  expectedJoinInput: string;
+  origin: BpmnSequenceFlowOrigin;
+}>;
+
+export type InclusiveDefaultBranch = DeepReadonly<{
+  output: string;
+  expectedJoinInput: string;
+  origin: BpmnSequenceFlowOrigin;
+}>;
+
 type OperationBase = DeepReadonly<{
   id: string;
   origin: BpmnElementOrigin;
 }>;
+
+export type SelectManyOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.SelectMany;
+    input: string;
+    candidates: [InclusiveCandidate, InclusiveCandidate];
+    defaultBranch: InclusiveDefaultBranch;
+    selectionKey: string;
+  }>;
+
+export type SynchronizeSelectedOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.SynchronizeSelected;
+    inputs: [string, string, string];
+    output: string;
+    selectionKey: string;
+  }>;
 
 export type SemanticOperation =
   | (OperationBase &
@@ -419,6 +465,8 @@ export type SemanticOperation =
         defaultOutput: string;
         defaultOrigin: BpmnSequenceFlowOrigin;
       }>)
+  | SelectManyOperation
+  | SynchronizeSelectedOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.ThrowError;

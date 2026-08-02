@@ -97,6 +97,8 @@ def parseFrom (source : CheckedProcess) :
       | some (.receiveTask ..)
       | some (.parallelGateway _ .converging)
       | some (.exclusiveGateway ..)
+      | some (.inclusiveGatewayDiverging ..)
+      | some (.inclusiveGatewayConverging ..)
       | none => none
 
 def coversEveryNode (source : CheckedProcess)
@@ -144,6 +146,8 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .intermediateCatchMessageEvent .. => false
   | .receiveTask .. => false
   | .exclusiveGateway .. => false
+  | .inclusiveGatewayDiverging .. => false
+  | .inclusiveGatewayConverging .. => false
 
 def profileChecks (source : CheckedProcess) : Bool :=
   source.nodes.all composedNodeSurfaceValid &&

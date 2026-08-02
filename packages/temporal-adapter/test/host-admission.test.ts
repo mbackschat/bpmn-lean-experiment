@@ -7,10 +7,13 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  EffectOperation,
+  EffectProtocol,
   SemanticOperationKind,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type {
+  SemanticOperation,
   SemanticProcessProgram,
   StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
@@ -174,6 +177,34 @@ test("keeps passive parallel User Tasks separate from host-driven waits", async 
   });
 });
 
+test("guards selectMany token-split classification against Timer and effect waits", async () => {
+  const inclusive = await compileFixture(
+    "../../bpmn-source/test/fixtures/inclusive-gateway-selected-branches.bpmn",
+    "inclusive-gateway-test",
+    "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+  );
+
+  for (const hostWaitKind of [
+    SemanticOperationKind.AwaitTimer,
+    SemanticOperationKind.AwaitEffect,
+  ] as const) {
+    assert.deepEqual(
+      assessTemporalHostCapability(
+        replaceInclusiveTask(inclusive, hostWaitKind),
+      ),
+      {
+        kind: TemporalHostCapabilityResultKind.Rejected,
+        failure: {
+          code:
+            TemporalHostAdmissionFailureCode.ConcurrentHostDrivenWaits,
+          evidence:
+            "A token split can make a timer or effect wait concurrent with another semantic branch.",
+        },
+      },
+    );
+  }
+});
+
 test("admits embedded scope waits independently of semantic operation order", async () => {
   const program = await compileFixture(
     "../../../scenarios/embedded-subprocess-completion/process.bpmn",
@@ -218,3 +249,54 @@ test("classifies Sub-Process Error propagation as passive ingress plus internal 
     { kind: TemporalHostCapabilityResultKind.Admitted },
   );
 });
+
+function replaceInclusiveTask(
+  program: SemanticProcessProgram,
+  hostWaitKind:
+    | SemanticOperationKind.AwaitTimer
+    | SemanticOperationKind.AwaitEffect,
+): SemanticProcessProgram {
+  const task = program.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitUserTask,
+  );
+  assert.ok(task?.kind === SemanticOperationKind.AwaitUserTask);
+  const hostWait = hostWaitKind === SemanticOperationKind.AwaitTimer
+    ? ({
+        id: task.id,
+        kind: SemanticOperationKind.AwaitTimer,
+        origin: task.origin,
+        input: task.input,
+        output: task.output,
+        timer: {
+          elementId: task.task.elementId,
+          durationMs: 1000 as const,
+        },
+      } as const satisfies SemanticOperation)
+    : ({
+        id: task.id,
+        kind: SemanticOperationKind.AwaitEffect,
+        origin: task.origin,
+        input: task.input,
+        output: task.output,
+        effect: {
+          elementId: task.task.elementId,
+          descriptor: {
+            protocol: EffectProtocol.Activity,
+            operation: EffectOperation.Probe,
+          },
+          inputMappings: [],
+          outputMappings: [],
+        },
+        bpmnErrorRoute: null,
+      } as const satisfies SemanticOperation);
+
+  return {
+    ...program,
+    operations: program.operations.map((operation) => {
+      if (operation === task) {
+        return hostWait;
+      }
+      return operation;
+    }),
+  };
+}

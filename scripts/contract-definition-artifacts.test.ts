@@ -133,6 +133,76 @@ test("binds checked Message node kinds to their exact channel arms", async () =>
   }), false);
 });
 
+test("binds Inclusive Gateway node directions and operation tuple arities", async () => {
+  const checkedSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/checked-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const semanticSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/semantic-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const ajv = new Ajv2020({ strict: true });
+  const node = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: checkedSchema.$defs,
+    $ref: "#/$defs/node",
+  });
+  const operation = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: semanticSchema.$defs,
+    $ref: "#/$defs/operation",
+  });
+  const split = {
+    kind: "inclusiveGateway",
+    id: "Split",
+    direction: "diverging",
+    candidateFlowIds: ["Flow_A", "Flow_B"],
+    defaultFlowId: "Flow_Default",
+  };
+  const join = {
+    kind: "inclusiveGateway",
+    id: "Join",
+    direction: "converging",
+    pairedGatewayId: "Split",
+  };
+  assert.equal(node(split), true);
+  assert.equal(node(join), true);
+  assert.equal(node({ ...split, direction: "converging" }), false);
+  assert.equal(node({ ...join, direction: "diverging" }), false);
+
+  const origin = { kind: "bpmnElement", elementId: "Split" };
+  const flowOrigin = (elementId: string) => ({ kind: "bpmnSequenceFlow", elementId });
+  const selectMany = {
+    id: "operation:Split",
+    kind: "selectMany",
+    origin,
+    input: "place:Flow_Start",
+    candidates: ["A", "B"].map((suffix) => ({
+      condition: { kind: "isPresent", variable: `take${suffix}` },
+      output: `place:Flow_${suffix}`,
+      expectedJoinInput: `place:Flow_${suffix}_Join`,
+      origin: flowOrigin(`Flow_${suffix}`),
+    })),
+    defaultBranch: {
+      output: "place:Flow_Default",
+      expectedJoinInput: "place:Flow_Default_Join",
+      origin: flowOrigin("Flow_Default"),
+    },
+    selectionKey: "Split",
+  };
+  const synchronizeSelected = {
+    id: "operation:Join",
+    kind: "synchronizeSelected",
+    origin: { kind: "bpmnElement", elementId: "Join" },
+    inputs: ["place:Flow_A_Join", "place:Flow_B_Join", "place:Flow_Default_Join"],
+    output: "place:Flow_End",
+    selectionKey: "Split",
+  };
+  assert.equal(operation(selectMany), true);
+  assert.equal(operation(synchronizeSelected), true);
+  assert.equal(operation({ ...selectMany, candidates: selectMany.candidates.slice(0, 1) }), false);
+  assert.equal(operation({ ...synchronizeSelected, inputs: synchronizeSelected.inputs.slice(0, 2) }), false);
+});
+
 test("keeps every checked-process schema definition reachable", async () => {
   const schema = JSON.parse(
     await readFile(

@@ -75,9 +75,11 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
   | .choose _ _ input _ _ _
+  | .selectMany _ _ input _ _ _
   | .throwError _ _ input _ _
   | .reachNoneEnd _ _ input => [input]
-  | .synchronize _ _ inputs _ => inputs
+  | .synchronize _ _ inputs _
+  | .synchronizeSelected _ _ inputs _ _ => inputs
 
 private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output
@@ -85,12 +87,15 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output => [output]
+  | .synchronizeSelected _ _ _ output _ => [output]
   | .enterScope _ _ _ childEntry _ => [childEntry]
   | .awaitEffect _ _ _ output _ route =>
       output :: route.toList.map (·.output)
   | .duplicate _ _ _ outputs => outputs
   | .choose _ _ _ candidates defaultOutput _ =>
       candidates.map (·.output) ++ [defaultOutput]
+  | .selectMany _ _ _ candidates defaultBranch _ =>
+      candidates.map (·.output) ++ [defaultBranch.output]
   | .throwError _ _ _ _ handler => [handler.output]
   | .reachNoneEnd .. => []
   | .completeScope _ _ _ parentOutput => parentOutput.toList

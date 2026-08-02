@@ -18,6 +18,8 @@ private def checkedNodeId : CheckedNode → NodeId
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveGateway id _ _
+  | .inclusiveGatewayDiverging id _ _
+  | .inclusiveGatewayConverging id _
   | .errorEndEvent id _
   | .noneEndEvent id => id
 
