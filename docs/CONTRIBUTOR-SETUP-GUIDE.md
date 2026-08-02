@@ -13,16 +13,15 @@ nvm install
 nvm use
 ./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
-./scripts/install-git-hooks.sh
 ./scripts/doctor.sh verify
 ./scripts/verify.sh
 ```
 
 `setup-external-sources.sh` provisions the external sibling root at `../oss` by default. Set `BPMN_EXTERNAL_ROOT` to an absolute directory when repositories on a machine use another shared location. Setup, diagnosis, schema/metamodel checks, the explicit A12 source-adoption check, MIWG calibration, CIB breadth inventory, and the complete default gate honor that override.
 
-The setup script is intentionally narrower than a machine package installer. Install the prerequisites listed in the top-level [README](../README.md) with the operating system's normal package manager, then let the script provision only content whose exact identity this repository owns. `install-git-hooks.sh` sets only this checkout's `core.hooksPath` to the tracked `.githooks` directory and refuses to overwrite another configured hook path.
+The setup script is intentionally narrower than a machine package installer. Install the prerequisites listed in the top-level [README](../README.md) with the operating system's normal package manager, then let the script provision only content whose exact identity this repository owns.
 
-The pre-push hook regenerates the marked source-statistics block in the top-level README from comment-aware Lean declaration analysis and `tokei`. If the block was stale, that push stops after updating `README.md` so the generated change can be reviewed and committed; the next push proceeds. Run `./scripts/pnpm.sh run stats:update` directly to refresh it earlier or `./scripts/pnpm.sh run stats:check` for a read-only check.
+Tokei-backed README statistics are a maintainer-only publication aid. Tokei is available only on the maintainer's machine and is not required by contributor setup, hooks, normal builds, tests, or CI.
 
 ## Provisioning scopes
 

@@ -98,11 +98,11 @@ Lean does not automatically prove the parser, CIB, TypeScript, Temporal, databas
 
 ## Repository statistics
 
-<!-- repository-statistics:start -->
-These worktree statistics are mechanically generated without a timestamp. Run `./scripts/pnpm.sh run stats:update` to refresh them; the tracked pre-push hook checks the same source and stops after regenerating a stale block so the result can be committed.
+These publication statistics are refreshed only by the maintainer with `./scripts/pnpm.sh run publication-stats:update`. Tokei is available only on the maintainer's machine; it is not a contributor prerequisite or part of normal builds, tests, hooks, or CI.
 
 ### Lean declarations
 
+<!-- publication-statistics:lean-declarations:start -->
 | Metric | Count |
 |---|---:|
 | Public theorem declarations | 327 |
@@ -111,15 +111,21 @@ These worktree statistics are mechanically generated without a timestamp. Run `.
 | Proof declarations / all declaration commands | 24.5% |
 
 Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.
+<!-- publication-statistics:lean-declarations:end -->
 
-### Language footprint (`tokei 14.0.0`)
+### Language footprint
 
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
+<!-- publication-statistics:java:start -->
 | Java | 49 | 6,079 | 178 | 657 |
-| TypeScript | 254 | 50,558 | 788 | 3,093 |
+<!-- publication-statistics:java:end -->
+<!-- publication-statistics:typescript:start -->
+| TypeScript | 253 | 50,334 | 787 | 3,075 |
+<!-- publication-statistics:typescript:end -->
+<!-- publication-statistics:lean:start -->
 | Lean | 75 | 13,972 | 571 | 1,702 |
-<!-- repository-statistics:end -->
+<!-- publication-statistics:lean:end -->
 
 ## Quick start
 
@@ -130,7 +136,6 @@ Prerequisites:
 - Lean through `elan`, honoring [lean-toolchain](lean-toolchain);
 - Node `24.18.0`, selected through [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew fallback;
 - pnpm `11.18.0`;
-- `tokei` for the generated source statistics and tracked pre-push hook (`brew install tokei` on macOS);
 - Java 21, optionally selected with `BPMN_JAVA_HOME`;
 - permission for the first Temporal test to download pinned CLI `v1.8.1` into ignored `.cache/temporal-cli/` and run a local server.
 
@@ -139,7 +144,6 @@ nvm install
 nvm use
 ./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
-./scripts/install-git-hooks.sh
 ./scripts/doctor.sh verify
 ./scripts/verify.sh
 ```
