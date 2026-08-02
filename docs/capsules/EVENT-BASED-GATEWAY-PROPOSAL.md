@@ -219,4 +219,4 @@ Closure requires the epistemic review and commit-bounded cost record defined by 
 
 ## Closure state
 
-The approved semantic account, exact source/profile/IL/runtime contract, Lean and independent TypeScript behavior, registered artifact/differential cases, managed Temporal scheduling, hostile mutation set, and disposable replay evidence are implemented. The remaining lifecycle work is the commit-bounded cost record, immutable context-cold same-effort sub-agent closure review, same-reviewer correction audit if required, and proposal-to-specification graduation after a passing verdict.
+The approved semantic account, exact source/profile/IL/runtime contract, Lean and independent TypeScript behavior, registered artifact/differential cases, managed Temporal scheduling, hostile mutation set, disposable replay evidence, and commit-bounded cost record are complete. The remaining lifecycle work is the immutable context-cold same-effort sub-agent closure review, same-reviewer correction audit if required, and proposal-to-specification graduation after a passing verdict.
