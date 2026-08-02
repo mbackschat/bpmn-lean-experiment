@@ -1,57 +1,14 @@
+import BpmnSemantics.SemanticProcess.CallActivityIdentity
 import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Called-Process Call Activity runtime semantics
 
-This module owns called-instance identity, the hidden caller/called association, exact invocation and normal-return transitions, and their declarative soundness boundary. It does not own source QName resolution, public observation, or Temporal hosting.
+This module owns the hidden caller/called association, exact invocation and normal-return transitions, and their declarative soundness boundary. Called-instance identity is owned by `CallActivityIdentity`; source QName resolution, public observation, and Temporal hosting remain outside this module.
 -/
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-private def calledProcessIdentityPrefix (callerId : SemanticId)
-    (callActivityId : NodeId) : String :=
-  "call:" ++ toString callerId.value.utf8ByteSize ++ ":" ++ callerId.value ++
-    ":" ++ toString callActivityId.value.utf8ByteSize ++ ":" ++
-    callActivityId.value ++ ":"
-
-/-- Encode the caller, Call Activity, and activation with decimal UTF-8 byte lengths. -/
-def deriveCalledProcessInstanceId (callerId : SemanticId)
-    (callActivityId : NodeId) (activation : Nat) : SemanticId :=
-  ⟨calledProcessIdentityPrefix callerId callActivityId ++ toString activation⟩
-
-private theorem natToString_injective : Function.Injective (toString : Nat → String) := by
-  intro left right equal
-  have digits : Nat.toDigits 10 left = Nat.toDigits 10 right := by
-    have lists := congrArg String.toList equal
-    simpa [Nat.toString_eq_ofList_toDigits] using lists
-  have decoded := congrArg (fun value => Nat.ofDigitChars 10 value 0) digits
-  simpa [Nat.ofDigitChars_ten_toDigits] using decoded
-
-/-- Repeated activation of one exact Call identity cannot reuse a called Process-instance ID. -/
-theorem calledProcessActivationIdentity_injective
-    (callerId : SemanticId) (callActivityId : NodeId) :
-    Function.Injective (deriveCalledProcessInstanceId callerId callActivityId) := by
-  intro left right equal
-  have strings := congrArg SemanticId.value equal
-  simp only [deriveCalledProcessInstanceId] at strings
-  have lists := congrArg String.toList strings
-  simp only [String.toList_append] at lists
-  exact natToString_injective
-    (String.toList_injective (List.append_cancel_left lists))
-
-/-- Every derived called identity is distinct from the caller identity it qualifies. -/
-theorem calledProcessIdentity_differs_from_caller
-    (callerId : SemanticId) (callActivityId : NodeId) (activation : Nat) :
-    deriveCalledProcessInstanceId callerId callActivityId activation ≠ callerId := by
-  intro equal
-  have sizes := congrArg (fun value : SemanticId => value.value.utf8ByteSize) equal
-  simp [deriveCalledProcessInstanceId, calledProcessIdentityPrefix,
-    String.utf8ByteSize_append] at sizes
-  have callTagSize : "call:".utf8ByteSize = 5 := by decide
-  have separatorSize : ":".utf8ByteSize = 1 := by decide
-  rw [callTagSize, separatorSize] at sizes
-  omega
 
 private def occurrenceBefore (left right : ScopeOccurrenceId) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then
@@ -100,28 +57,36 @@ private def sameCallIdentity (record : CalledProcessOccurrence)
 
 /-- The hidden call collection and parentless called roots form a one-to-one identity association. -/
 def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
-  (state.calledProcessOccurrences.all fun record =>
-      record.id.processInstanceId = record.caller.processInstanceId &&
-      record.id.activation > 0 &&
-      record.calledRoot.processInstanceId =
-        deriveCalledProcessInstanceId record.caller.processInstanceId
-          ⟨record.id.elementId.value⟩ record.id.activation &&
-      some record.caller.processInstanceId = rootInstanceId? state &&
-      some record.calledRoot.processInstanceId ≠ rootInstanceId? state &&
-      record.calledRoot.definitionScopeId ≠ record.caller.definitionScopeId &&
-      record.calledRoot.activation = 1 &&
-      (state.calledProcessOccurrences.filter fun candidate =>
-        sameCallIdentity candidate record.caller ⟨record.id.elementId.value⟩).length = 1 &&
-      (state.scopeOccurrences.filter fun occurrence =>
-        decide (occurrence.id = record.caller && occurrence.parent.isNone)).length = 1 &&
-      (state.scopeOccurrences.filter fun occurrence =>
-        decide (occurrence.id = record.calledRoot && occurrence.parent.isNone)).length = 1) &&
-    (state.scopeOccurrences.all fun occurrence =>
-      if occurrence.parent.isNone &&
-          some occurrence.id.processInstanceId ≠ rootInstanceId? state then
-        (state.calledProcessOccurrences.filter fun record =>
-          decide (record.calledRoot = occurrence.id)).length = 1
-      else true)
+  match rootInstanceId? state with
+  | none => false
+  | some hostingInstanceId =>
+      match state.scopeOccurrences.filter fun occurrence =>
+          decide (occurrence.parent.isNone &&
+            occurrence.id.processInstanceId = hostingInstanceId) with
+      | [hostingRoot] =>
+          (state.calledProcessOccurrences.all fun record =>
+              record.id.processInstanceId = record.caller.processInstanceId &&
+              record.id.activation > 0 &&
+              record.caller = hostingRoot.id &&
+              record.calledRoot.processInstanceId =
+                deriveCalledProcessInstanceId record.caller.processInstanceId
+                  ⟨record.id.elementId.value⟩ record.id.activation &&
+              record.calledRoot.processInstanceId ≠ hostingInstanceId &&
+              record.calledRoot.definitionScopeId ≠ record.caller.definitionScopeId &&
+              record.calledRoot.activation = 1 &&
+              (state.calledProcessOccurrences.filter fun candidate =>
+                sameCallIdentity candidate record.caller
+                  ⟨record.id.elementId.value⟩).length = 1 &&
+              (state.scopeOccurrences.filter fun occurrence =>
+                decide (occurrence.id = record.calledRoot &&
+                  occurrence.parent.isNone)).length = 1) &&
+            (state.scopeOccurrences.all fun occurrence =>
+              if occurrence.parent.isNone &&
+                  occurrence.id.processInstanceId ≠ hostingInstanceId then
+                (state.calledProcessOccurrences.filter fun record =>
+                  decide (record.calledRoot = occurrence.id)).length = 1
+              else true)
+      | _ => false
 
 private def processInstanceClosureWithin
     (records : List CalledProcessOccurrence) (seed : List SemanticId) :

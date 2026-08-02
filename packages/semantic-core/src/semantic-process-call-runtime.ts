@@ -188,15 +188,25 @@ export function returnCalledProcess(
 
 export function calledProcessAssociationsAreValid(state: RuntimeState): boolean {
   const hostingInstanceId = rootInstanceId(state);
+  if (hostingInstanceId === null) {
+    return false;
+  }
+  const hostingRoots = state.scopeOccurrences.filter(
+    ({ parent, id }) =>
+      parent === null && id.processInstanceId === hostingInstanceId,
+  );
+  const hostingRoot = hostingRoots[0];
+  if (hostingRoots.length !== 1 || hostingRoot === undefined) {
+    return false;
+  }
   const rootRecords = state.scopeOccurrences.filter(
     ({ parent, id }) =>
       parent === null && id.processInstanceId !== hostingInstanceId,
   );
-  return hostingInstanceId !== null &&
-    state.calledProcessOccurrences.every((record, index, records) =>
+  return state.calledProcessOccurrences.every((record, index, records) =>
     record.id.processInstanceId === record.caller.processInstanceId &&
     record.id.activation > 0 &&
-    record.caller.processInstanceId === hostingInstanceId &&
+    sameScopeOccurrence(record.caller, hostingRoot.id) &&
     record.calledRoot.processInstanceId === deriveCalledProcessInstanceId(
       record.caller.processInstanceId,
       record.id.elementId,
@@ -211,9 +221,6 @@ export function calledProcessAssociationsAreValid(state: RuntimeState): boolean 
         candidate.id.elementId === record.id.elementId,
     ) ===
       index &&
-    state.scopeOccurrences.filter(({ id }) =>
-      sameScopeOccurrence(id, record.caller)
-    ).length === 1 &&
     state.scopeOccurrences.filter(({ id, parent }) =>
       parent === null && sameScopeOccurrence(id, record.calledRoot)
     ).length === 1

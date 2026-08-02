@@ -272,6 +272,37 @@ theorem called_scope_alias_is_nonresumable_and_has_no_return :
     calledProcessAssociationsValid aliasedCalledScopeState = false ∧
       fire? returnOperation aliasedCalledScopeState = none := by decide
 
+private def alternateHostingRootId : ScopeOccurrenceId :=
+  { processInstanceId := callerInstanceId
+    definitionScopeId := ⟨"scope:AlternateHostingRoot"⟩
+    activation := 1 }
+
+private def childCallerState : RuntimeState :=
+  match calledWaiting.state.calledProcessOccurrences with
+  | [record] =>
+      { calledWaiting.state with
+        scopeOccurrences :=
+          { id := alternateHostingRootId, parent := none } ::
+            calledWaiting.state.scopeOccurrences.map fun occurrence =>
+              if occurrence.id = record.caller then
+                { occurrence with parent := some alternateHostingRootId }
+              else occurrence }
+  | _ => calledWaiting.state
+
+theorem child_caller_with_one_hosting_root_is_nonresumable :
+    calledProcessAssociationsValid childCallerState = false ∧
+      fire? returnOperation childCallerState = none := by decide
+
+private def duplicateHostingRootState : RuntimeState :=
+  { calledWaiting.state with
+    scopeOccurrences :=
+      { id := alternateHostingRootId, parent := none } ::
+        calledWaiting.state.scopeOccurrences }
+
+theorem duplicate_hosting_root_with_one_valid_original_is_nonresumable :
+    calledProcessAssociationsValid duplicateHostingRootState = false ∧
+      fire? returnOperation duplicateHostingRootState = none := by decide
+
 private def duplicateInvokeProgram : Program :=
   match program.operations.find? fun
       | .invokeProcess .. => true

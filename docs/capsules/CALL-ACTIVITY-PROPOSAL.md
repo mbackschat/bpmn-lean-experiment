@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. The first green source/contract/Lean/semantic-core checkpoint is committed at `5cb7b54` and awaiting its mandatory independent review; artifact, differential, and durable Temporal lanes remain blocked.**
+**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. Review of first green semantic checkpoint `5cb7b54` returned APPROVE WITH REQUIRED EDITS; the caller-root invariant, full identity theorem, and owner-document corrections are in progress. Artifact, differential, and durable Temporal lanes remain blocked.**
 
 ## Independent cold-review receipt
 
