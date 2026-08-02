@@ -555,7 +555,7 @@ The complete prepared pipeline requires:
 - a rejected Lean scenario document with an injected extra answer field, plus exact equality between the admitted scenario and Lean's decoded echo;
 - exact Lean definition identity and lowering equality, plus rejection of a schema-valid operation-origin mutation;
 - rejection of erased parallel control-place Sequence-Flow provenance; detection of raw Process-status, logical-time, and Process-variable drift; binding of semantic instance identity to the start stimulus; detection of an omitted parallel open task, a dropped live sibling after stale A, a one-millisecond timer-deadline mutation, a substituted Simple Boolean route, a mutated Service Task operation, a mutated CreateDocument final variable, and null-to-string boundary mapping drift;
-- twenty-nine fetched live histories replayed before server shutdown;
+- thirty fetched live histories replayed before server shutdown;
 - clean CIB and Temporal teardown.
 
 The complete pipeline remains subject to the 15-second warm and 45-second cold budgets. Exact latest measurements and commands belong in [PLAN.md](PLAN.md), not in this inventory.

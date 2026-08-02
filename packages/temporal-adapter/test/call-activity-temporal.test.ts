@@ -148,6 +148,11 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
     );
     const calledCompletion = scenarioCompletion(scenario, 1);
     const callerCompletion = scenarioCompletion(scenario, 2);
+    const wrongCalledCompletion = completion(
+      ordinaryInstanceId,
+      calledTaskElementId,
+      "reject-caller-owned-called-task",
+    );
     assert.equal(calledCompletion.taskId.processInstanceId, calledInstanceId);
     assert.equal(callerCompletion.taskId.processInstanceId, ordinaryInstanceId);
 
@@ -186,6 +191,31 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
         await submitUserTaskCompletion(
           environment.client.workflow,
           ordinaryInstanceId,
+          wrongCalledCompletion,
+        ),
+        {
+          kind: ProcessCommandResultKind.Semantic,
+          commandId: wrongCalledCompletion.commandId,
+          outcome: CommandOutcome.Rejected,
+        },
+      );
+      assert.deepEqual(
+        await waitForOpenUserTaskIds(handle, [calledTaskElementId]),
+        [{
+          id: {
+            processInstanceId: calledInstanceId,
+            elementId: calledTaskElementId,
+            activation: 1,
+          },
+          name: "Called task",
+          state: "active",
+        }],
+      );
+
+      assert.deepEqual(
+        await submitUserTaskCompletion(
+          environment.client.workflow,
+          ordinaryInstanceId,
           calledCompletion,
         ),
         {
@@ -205,6 +235,18 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
         environment,
         ordinaryBundle,
         ordinaryWorkerIdentity,
+      );
+      assert.deepEqual(
+        await submitUserTaskCompletion(
+          environment.client.workflow,
+          ordinaryInstanceId,
+          calledCompletion,
+        ),
+        {
+          kind: ProcessCommandResultKind.Semantic,
+          commandId: calledCompletion.commandId,
+          outcome: CommandOutcome.Committed,
+        },
       );
       assert.equal(
         await handle.getUpdateHandle(
@@ -257,9 +299,13 @@ describe("bounded Call Activity Temporal refinement", { concurrency: false }, ()
       );
       assert.deepEqual(
         acceptedCompletionOrder(history as TemporalHistory),
-        [calledCompletion.commandId, callerCompletion.commandId],
+        [
+          wrongCalledCompletion.commandId,
+          calledCompletion.commandId,
+          callerCompletion.commandId,
+        ],
       );
-      assertUpdatesCompleteBeforeWorkflow(history as TemporalHistory, 2);
+      assertUpdatesCompleteBeforeWorkflow(history as TemporalHistory, 3);
       assertNoNonUpdateBpmnHostEvents(
         history as TemporalHistory,
         "Call Activity",

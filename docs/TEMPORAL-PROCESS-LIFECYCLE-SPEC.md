@@ -144,7 +144,7 @@ Accepted-handler draining does not reserve acceptance for a future request and d
 
 ## Command-ingress resolution
 
-For one well-formed command and known semantic Process address:
+For one well-formed command and known hosting Process address:
 
 1. derive the content-bound Update ID;
 2. execute the completion Update and return `semantic` if it completes;
@@ -156,6 +156,8 @@ For one well-formed command and known semantic Process address:
 8. propagate every other host or transport failure as infrastructure failure.
 
 Looking up the Update result before classifying closure closes the race where Temporal accepted the command but the caller lost its response as the Workflow completed.
+
+The hosting/root Process-instance ID selects the Workflow and validates its retained receipt. The completion stimulus independently retains the semantic task occurrence ID, which may belong to a distinct called Process hosted inside that Workflow. Client admission validates both shapes but does not require those identities to match; the semantic core accepts only the exact live task occurrence and rejects an unrelated occurrence without routing to another Workflow.
 
 ## Message Signal ingress resolution
 
@@ -194,6 +196,7 @@ The focused Temporal gate must demonstrate:
 - a normal exact completion closes the Workflow with a validated completed receipt;
 - every accepted racing Update completes before Workflow completion;
 - an exact retry after closure returns the original semantic result;
+- a bounded Call Activity keeps the root Workflow address distinct from the called task occurrence, rejects a caller-owned substitute while preserving the called wait, recovers an exact committed retry after Worker replacement without another accepted Update, then completes the caller and replays;
 - complete User Task Update identity includes the complete canonical submitted string/null patch;
 - a different task identity or submitted patch under the same semantic command ID cannot alias that result;
 - a conflicting command identity that reaches the Workflow returns `BpmnCommandIdentityConflict` without a Workflow Task failure;
