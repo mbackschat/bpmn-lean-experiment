@@ -36,6 +36,7 @@ import {
 } from "./temporal-test-support.ts";
 import {
   acceptedCompletionOrder,
+  assertNoNonUpdateBpmnHostEvents,
   assertUpdatesCompleteBeforeWorkflow,
   historyEvents,
 } from "./temporal-history-facts.ts";
@@ -187,7 +188,10 @@ test("committed Error cancellation survives an immediate Worker replacement", as
       [trigger.commandId, stale.commandId, recover.commandId],
     );
     assertUpdatesCompleteBeforeWorkflow(history as TemporalHistory, 3);
-    assertPassiveErrorHistory(history as TemporalHistory);
+    assertNoNonUpdateBpmnHostEvents(
+      history as TemporalHistory,
+      "Sub-Process Error",
+    );
 
     await stopBpmnTestWorker(worker);
     worker = undefined;
@@ -256,7 +260,10 @@ test("Error-bypass Workflow matches recovery then diverges on stale sibling", as
       ).length,
       2,
     );
-    assertPassiveErrorHistory(execution.history);
+    assertNoNonUpdateBpmnHostEvents(
+      execution.history,
+      "Sub-Process Error",
+    );
   } finally {
     await runner.shutdown();
   }
@@ -290,24 +297,4 @@ function staleSiblingCompletion(
     },
     submittedValues: [],
   };
-}
-
-function assertPassiveErrorHistory(history: TemporalHistory): void {
-  for (const attributesName of [
-    "workflowExecutionSignaledEventAttributes",
-    "timerStartedEventAttributes",
-    "activityTaskScheduledEventAttributes",
-    "startChildWorkflowExecutionInitiatedEventAttributes",
-    "workflowExecutionCancelRequestedEventAttributes",
-    "workflowExecutionCanceledEventAttributes",
-    "requestCancelExternalWorkflowExecutionInitiatedEventAttributes",
-    "externalWorkflowExecutionCancelRequestedEventAttributes",
-    "childWorkflowExecutionCanceledEventAttributes",
-  ]) {
-    assert.equal(
-      historyEvents(history, attributesName).length,
-      0,
-      `Sub-Process Error history unexpectedly contains ${attributesName}`,
-    );
-  }
 }

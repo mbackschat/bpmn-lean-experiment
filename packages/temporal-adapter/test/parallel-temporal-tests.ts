@@ -17,7 +17,7 @@ import {
 import type { TemporalScenarioRunner } from "@bpmn-lean/temporal-adapter";
 import {
   compileExecutionInput,
-  completionCommandOrder,
+  commandOrderAfterStart,
   loadExecutionInput,
   parallelBpmnUrl,
   parallelScenario,
@@ -174,7 +174,7 @@ export function registerParallelTemporalTests(
     );
     assert.deepEqual(
       acceptedCompletionOrder(execution.history),
-      completionCommandOrder(execution.result),
+      commandOrderAfterStart(execution.result),
     );
     assertUpdatesCompleteBeforeWorkflow(execution.history, 2);
     assert.equal(isCompletedProcessReceipt(execution.receipt), true);

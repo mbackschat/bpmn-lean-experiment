@@ -39,6 +39,7 @@ import {
 } from "./temporal-test-support.ts";
 import {
   acceptedCompletionOrder,
+  assertNoNonUpdateBpmnHostEvents,
   assertUpdatesCompleteBeforeWorkflow,
   historyEvents,
 } from "./temporal-history-facts.ts";
@@ -180,7 +181,10 @@ test("embedded Sub-Process survives Worker replacement after its first child com
       [first.commandId, second.commandId, afterScope.commandId],
     );
     assertUpdatesCompleteBeforeWorkflow(history as TemporalHistory, 3);
-    assertPassiveUserTaskHistory(history as TemporalHistory);
+    assertNoNonUpdateBpmnHostEvents(
+      history as TemporalHistory,
+      "embedded Sub-Process",
+    );
 
     await stopBpmnTestWorker(worker);
     worker = undefined;
@@ -246,7 +250,10 @@ test("scope-bypass Workflow fabricates premature exit outside the semantic core"
       ).length,
       1,
     );
-    assertPassiveUserTaskHistory(execution.history);
+    assertNoNonUpdateBpmnHostEvents(
+      execution.history,
+      "embedded Sub-Process",
+    );
   } finally {
     await runner.shutdown();
   }
@@ -262,26 +269,6 @@ function completionAt(
     throw new TypeError(`scenario stimulus ${index} is not a User Task completion`);
   }
   return stimulus;
-}
-
-function assertPassiveUserTaskHistory(history: TemporalHistory): void {
-  for (const attributesName of [
-    "workflowExecutionSignaledEventAttributes",
-    "timerStartedEventAttributes",
-    "activityTaskScheduledEventAttributes",
-    "startChildWorkflowExecutionInitiatedEventAttributes",
-    "workflowExecutionCancelRequestedEventAttributes",
-    "workflowExecutionCanceledEventAttributes",
-    "requestCancelExternalWorkflowExecutionInitiatedEventAttributes",
-    "externalWorkflowExecutionCancelRequestedEventAttributes",
-    "childWorkflowExecutionCanceledEventAttributes",
-  ]) {
-    assert.equal(
-      historyEvents(history, attributesName).length,
-      0,
-      `embedded Sub-Process history unexpectedly contains ${attributesName}`,
-    );
-  }
 }
 
 function stateAt(

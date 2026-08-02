@@ -78,6 +78,9 @@ import {
 import {
   registerExclusiveGatewayTemporalTests,
 } from "./exclusive-gateway-temporal-tests.ts";
+import {
+  registerInclusiveGatewayTemporalTests,
+} from "./inclusive-gateway-temporal-tests.ts";
 
 let runner: TemporalScenarioRunner | undefined;
 
@@ -380,3 +383,4 @@ registerServiceTaskEffectTemporalTests(activeRunner);
 registerCreateDocumentDataTemporalTests(activeRunner);
 registerBoundaryErrorTemporalTests(activeRunner);
 registerExclusiveGatewayTemporalTests(activeRunner);
+registerInclusiveGatewayTemporalTests(activeRunner);

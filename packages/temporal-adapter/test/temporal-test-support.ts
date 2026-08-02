@@ -312,13 +312,15 @@ export function semanticPrefixThroughCompletion(
   };
 }
 
-export function completionCommandOrder(
+/** Command observations after the required first Process-start command. */
+export function commandOrderAfterStart(
   result: ScenarioResult,
 ): ReadonlyArray<string> {
-  return result.trace.flatMap((observation) =>
-    observation.kind === CanonicalObservationKind.Command &&
-    observation.commandId !== "start-process"
+  const commandIds = result.trace.flatMap((observation) =>
+    observation.kind === CanonicalObservationKind.Command
       ? [observation.commandId]
       : [],
   );
+  assert.ok(commandIds.length > 0, "canonical trace has no start command");
+  return commandIds.slice(1);
 }

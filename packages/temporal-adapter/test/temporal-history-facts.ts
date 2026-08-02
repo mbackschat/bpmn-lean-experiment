@@ -107,6 +107,33 @@ export function historyEvents(
     });
 }
 
+/**
+ * Guards an Update-only hosted semantic path against accidental hosting through a
+ * Signal, Timer, Activity, Child Workflow, or cancellation event family.
+ */
+export function assertNoNonUpdateBpmnHostEvents(
+  history: TemporalHistory,
+  label: string,
+): void {
+  for (const attributesName of [
+    "workflowExecutionSignaledEventAttributes",
+    "timerStartedEventAttributes",
+    "activityTaskScheduledEventAttributes",
+    "startChildWorkflowExecutionInitiatedEventAttributes",
+    "workflowExecutionCancelRequestedEventAttributes",
+    "workflowExecutionCanceledEventAttributes",
+    "requestCancelExternalWorkflowExecutionInitiatedEventAttributes",
+    "externalWorkflowExecutionCancelRequestedEventAttributes",
+    "childWorkflowExecutionCanceledEventAttributes",
+  ]) {
+    assert.equal(
+      historyEvents(history, attributesName).length,
+      0,
+      `${label} history unexpectedly contains ${attributesName}`,
+    );
+  }
+}
+
 /** Decodes one payload, which the codec delivers as base64 text or as bytes. */
 export function decodeJsonPayload(payload: unknown): unknown {
   const data = historyRecord(payload, "payload")["data"];

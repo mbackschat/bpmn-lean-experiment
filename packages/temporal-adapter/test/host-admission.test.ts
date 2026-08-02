@@ -179,7 +179,7 @@ test("keeps passive parallel User Tasks separate from host-driven waits", async 
 
 test("guards selectMany token-split classification against Timer and effect waits", async () => {
   const inclusive = await compileFixture(
-    "../../bpmn-source/test/fixtures/inclusive-gateway-selected-branches.bpmn",
+    "../../../scenarios/inclusive-gateway-selected-branches/process.bpmn",
     "inclusive-gateway-test",
     "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
   );
