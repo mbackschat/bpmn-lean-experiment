@@ -2,17 +2,17 @@
 
 ## Status
 
-**Owner-approved on 2026-08-02 after the isolated same-effort sub-agent review of `dd80bdc` and same-reviewer correction audit `acff781`; semantic checkpoint target `e595b1c` received APPROVE WITH REQUIRED EDITS, and its local corrections must pass the same reviewer's audit before scenario, differential, or durable Temporal scheduling work begins.**
+**Owner-approved on 2026-08-02 after the isolated same-effort sub-agent review of `dd80bdc` and same-reviewer correction audit `acff781`; semantic checkpoint target `e595b1c` received APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit `b7c52ca` without a material redesign. Profile, scenario, differential, and durable Temporal scheduling work may now proceed.**
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `dd80bdc` | `fork-turns-none` | `approve-with-required-edits` | `acff781` |
-| Semantic checkpoint | `e595b1c` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `e595b1c` | `fork-turns-none` | `approve-with-required-edits` | `b7c52ca` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold same-effort sub-agent review of `dd80bdc` required the Temporal activation-barrier and wrong-ingress corrections in `acff781`; the same reviewer passed that correction audit without a material redesign.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold same-effort sub-agent review of `dd80bdc` required the Temporal activation-barrier and wrong-ingress corrections in `acff781`; the same reviewer passed that correction audit without a material redesign. The isolated semantic-checkpoint review of `e595b1c` required fail-closed Temporal admission, exact immutable-definition binding for both winners, and a quantified singleton-membership theorem; correction audit `b7c52ca` closed all three without changing the selected account.
 
 ## Exact question
 
