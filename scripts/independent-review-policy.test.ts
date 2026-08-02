@@ -1,16 +1,28 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+
+import {
+  assertIndependentlyApproved,
+  assertReceiptRow,
+  assertReviewContinuity,
+  gitLines,
+  isOwnerApproved,
+  isReviewCommitTarget,
+  parseReceipt,
+  receiptRow,
+  ReviewStage,
+  subagentReviewPolicyBaseline,
+  type ReviewReceipt,
+} from "./independent-review-receipt.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const documentationRoot = path.join(projectRoot, "docs");
 const capsuleRoot = path.join(projectRoot, "docs/capsules");
 
 const reviewPolicyBaseline = "f1ef362";
-const subagentReviewPolicyBaseline = "b361681";
 const expectedGrandfatheredReviewDocuments = [
   "docs/CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md",
   "docs/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md",
@@ -37,94 +49,6 @@ const expectedGrandfatheredReviewDocuments = [
 const grandfatheredReviewDocuments: ReadonlySet<string> = new Set(
   expectedGrandfatheredReviewDocuments,
 );
-
-const ReviewStage = {
-  Proposal: "Proposal",
-  SemanticCheckpoint: "Semantic checkpoint",
-  Closure: "Closure",
-} as const;
-
-type ReviewStage = (typeof ReviewStage)[keyof typeof ReviewStage];
-
-type ReviewReceipt = Readonly<{
-  stage: ReviewStage;
-  target: string;
-  isolation: string;
-  verdict: string;
-  correctionAudit: string;
-}>;
-
-const receiptHeading = "## Independent cold-review receipt";
-const commitPattern = /^[0-9a-f]{7,40}$/u;
-const approvedVerdicts = new Set(["approve", "approve-with-required-edits"]);
-
-function isOwnerApproved(document: string): boolean {
-  const statusHeading = /^## Status\s*$/mu.exec(document);
-  assert.ok(statusHeading, "active capsule proposal needs a Status section");
-  const statusStart = statusHeading.index + statusHeading[0].length;
-  const followingHeading = /^##\s+/gmu;
-  followingHeading.lastIndex = statusStart;
-  const next = followingHeading.exec(document);
-  const statusSection = document.slice(statusStart, next?.index ?? document.length);
-  return /\bOwner-approved\b/u.test(statusSection);
-}
-
-function isReviewCommitTarget(value: string): boolean {
-  if (!commitPattern.test(value)) {
-    return false;
-  }
-  const exists = spawnSync("git", ["cat-file", "-e", `${value}^{commit}`], {
-    cwd: projectRoot,
-    stdio: "ignore",
-  });
-  if (exists.status !== 0) {
-    return false;
-  }
-  const isAncestor = spawnSync(
-    "git",
-    ["merge-base", "--is-ancestor", value, "HEAD"],
-    { cwd: projectRoot, stdio: "ignore" },
-  );
-  return isAncestor.status === 0;
-}
-
-function isCommitAncestor(ancestor: string, descendant: string): boolean {
-  const result = spawnSync(
-    "git",
-    ["merge-base", "--is-ancestor", ancestor, descendant],
-    { cwd: projectRoot, stdio: "ignore" },
-  );
-  assert.ok(
-    result.status === 0 || result.status === 1,
-    `cannot compare commits ${ancestor} and ${descendant}`,
-  );
-  return result.status === 0;
-}
-
-function usesSubagentReviewPolicy(value: string): boolean {
-  assert.equal(
-    isReviewCommitTarget(subagentReviewPolicyBaseline),
-    true,
-    "the immutable sub-agent review-policy baseline must remain an ancestor of HEAD",
-  );
-  const isStrictHistoricalAncestor =
-    isCommitAncestor(value, subagentReviewPolicyBaseline) &&
-    !isCommitAncestor(subagentReviewPolicyBaseline, value);
-  return !isStrictHistoricalAncestor;
-}
-
-function gitLines(arguments_: ReadonlyArray<string>): ReadonlyArray<string> {
-  const result = spawnSync("git", arguments_, {
-    cwd: projectRoot,
-    encoding: "utf8",
-  });
-  assert.equal(
-    result.status,
-    0,
-    `git ${arguments_.join(" ")} failed: ${result.stderr}`,
-  );
-  return result.stdout.split("\n").filter(Boolean);
-}
 
 function baselineGrandfatheredReviewDocuments(): ReadonlyArray<string> {
   assert.equal(
@@ -158,180 +82,6 @@ async function activeReviewDocumentPaths(): Promise<ReadonlyArray<string>> {
     .filter((file) => file.endsWith("-PROPOSAL.md") || file.endsWith("-SPEC.md"))
     .map((file) => `docs/${file}`)
     .sort();
-}
-
-function parseReviewStage(value: string): ReviewStage {
-  switch (value) {
-    case ReviewStage.Proposal:
-    case ReviewStage.SemanticCheckpoint:
-    case ReviewStage.Closure:
-      return value;
-    default:
-      return assert.fail(`unknown review stage: ${value}`);
-  }
-}
-
-function parseReceipt(
-  document: string,
-  relativePath: string,
-): Map<ReviewStage, ReviewReceipt> {
-  const headingIndex = document.indexOf(receiptHeading);
-  assert.notEqual(
-    headingIndex,
-    -1,
-    `${relativePath} must contain ${receiptHeading}`,
-  );
-
-  const followingHeadingIndex = document.indexOf("\n## ", headingIndex + receiptHeading.length);
-  const section = document.slice(
-    headingIndex,
-    followingHeadingIndex === -1 ? document.length : followingHeadingIndex,
-  );
-  const rows = new Map<ReviewStage, ReviewReceipt>();
-  const rowPattern = /^\|\s*(Proposal|Semantic checkpoint|Closure)\s*\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|$/gmu;
-
-  for (const match of section.matchAll(rowPattern)) {
-    const [, stage, target, isolation, verdict, correctionAudit] = match;
-    assert.ok(stage && target && isolation && verdict && correctionAudit);
-    const typedStage = parseReviewStage(stage);
-    assert.equal(rows.has(typedStage), false, `${relativePath} repeats ${stage}`);
-    rows.set(typedStage, {
-      stage: typedStage,
-      target,
-      isolation,
-      verdict,
-      correctionAudit,
-    });
-  }
-
-  assert.deepEqual(
-    [...rows.keys()],
-    [ReviewStage.Proposal, ReviewStage.SemanticCheckpoint, ReviewStage.Closure],
-    `${relativePath} must record the three review stages in lifecycle order`,
-  );
-  for (const row of rows.values()) {
-    assertReceiptRow(row, relativePath);
-  }
-  assertReviewContinuity(rows, relativePath);
-  return rows;
-}
-
-function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
-  const context = `${relativePath} ${row.stage}`;
-
-  if (approvedVerdicts.has(row.verdict) || row.verdict === "reject") {
-    assert.equal(
-      isReviewCommitTarget(row.target),
-      true,
-      `${context} needs an immutable review target`,
-    );
-    if (usesSubagentReviewPolicy(row.target)) {
-      const warmCheckpointClosure =
-        row.stage === ReviewStage.Closure &&
-        row.isolation === "checkpoint-reviewer-warm";
-      assert.ok(
-        warmCheckpointClosure || row.isolation === "fork-turns-none",
-        `${context} requires an isolated same-effort sub-agent`,
-      );
-    } else if (row.stage === ReviewStage.SemanticCheckpoint) {
-      assert.ok(
-        row.isolation === "external-fresh-session" || row.isolation === "fork-turns-none",
-        `${context} must be context-isolated`,
-      );
-    } else {
-      assert.equal(
-        row.isolation,
-        "external-fresh-session",
-        `${context} requires a fresh external session`,
-      );
-    }
-    if (row.verdict === "approve-with-required-edits") {
-      assert.equal(
-        isReviewCommitTarget(row.correctionAudit),
-        true,
-        `${context} required edits need a correction-audit target`,
-      );
-    } else {
-      assert.equal(row.correctionAudit, "not-required");
-    }
-    return;
-  }
-
-  if (row.verdict === "pending") {
-    if (row.stage === ReviewStage.Proposal && row.target === "not-recorded") {
-      assert.equal(row.isolation, "not-recorded");
-      assert.equal(row.correctionAudit, "not-applicable");
-      return;
-    }
-    assert.equal(
-      isReviewCommitTarget(row.target),
-      true,
-      `${context} needs the pending review target`,
-    );
-    assert.equal(row.isolation, "not-recorded");
-    assert.equal(row.correctionAudit, "not-applicable");
-    return;
-  }
-
-  if (row.verdict === "not-required") {
-    assert.equal(row.stage, ReviewStage.SemanticCheckpoint);
-    assert.equal(row.target, "not-applicable");
-    assert.equal(row.isolation, "not-applicable");
-    assert.equal(row.correctionAudit, "not-applicable");
-    return;
-  }
-
-  assert.equal(row.verdict, "not-reached", `${context} has an unknown verdict`);
-  assert.ok(
-    row.stage === ReviewStage.SemanticCheckpoint || row.stage === ReviewStage.Closure,
-    `${context} cannot use not-reached`,
-  );
-  assert.equal(row.target, "not-applicable");
-  assert.equal(row.isolation, "not-applicable");
-  assert.equal(row.correctionAudit, "not-applicable");
-}
-
-function assertReviewContinuity(
-  receipt: ReadonlyMap<ReviewStage, ReviewReceipt>,
-  relativePath: string,
-): void {
-  const closure = receipt.get(ReviewStage.Closure);
-  if (closure?.isolation !== "checkpoint-reviewer-warm") {
-    return;
-  }
-  const checkpoint = receipt.get(ReviewStage.SemanticCheckpoint);
-  assert.ok(checkpoint, `${relativePath} warm closure needs a semantic checkpoint`);
-  assert.ok(
-    approvedVerdicts.has(checkpoint.verdict),
-    `${relativePath} warm closure needs an approved semantic checkpoint`,
-  );
-  assert.notEqual(
-    checkpoint.target,
-    closure.target,
-    `${relativePath} warm closure must follow its semantic checkpoint`,
-  );
-  assert.equal(
-    isCommitAncestor(checkpoint.target, closure.target),
-    true,
-    `${relativePath} warm closure target must descend from its semantic checkpoint`,
-  );
-}
-
-function assertIndependentlyApproved(row: ReviewReceipt, relativePath: string): void {
-  assert.ok(
-    approvedVerdicts.has(row.verdict),
-    `${relativePath} cannot cross ${row.stage} with verdict ${row.verdict}`,
-  );
-}
-
-function receiptRow(
-  receipt: ReadonlyMap<ReviewStage, ReviewReceipt>,
-  stage: ReviewStage,
-  relativePath: string,
-): ReviewReceipt {
-  const row = receipt.get(stage);
-  assert.ok(row, `${relativePath} is missing ${stage}`);
-  return row;
 }
 
 test("requires review receipts for active proposals and post-policy specifications", async () => {
@@ -517,6 +267,98 @@ test("permits warm closure only as checkpoint-reviewer continuity", () => {
   );
 });
 
+test("permits one cold review for an atomic checkpoint and closure", () => {
+  const head = gitLines(["rev-parse", "HEAD"])[0];
+  assert.ok(head);
+  const combinedReceipt = new Map<ReviewStage, ReviewReceipt>([
+    [ReviewStage.Proposal, {
+      stage: ReviewStage.Proposal,
+      target: subagentReviewPolicyBaseline,
+      isolation: "fork-turns-none",
+      verdict: "approve",
+      correctionAudit: "not-required",
+    }],
+    [ReviewStage.SemanticCheckpoint, {
+      stage: ReviewStage.SemanticCheckpoint,
+      target: head,
+      isolation: "fork-turns-none-combined",
+      verdict: "approve",
+      correctionAudit: "not-required",
+    }],
+    [ReviewStage.Closure, {
+      stage: ReviewStage.Closure,
+      target: head,
+      isolation: "fork-turns-none-combined",
+      verdict: "approve",
+      correctionAudit: "not-required",
+    }],
+  ]);
+
+  for (const row of combinedReceipt.values()) {
+    assertReceiptRow(row, "combined-review");
+  }
+  assert.doesNotThrow(() => assertReviewContinuity(combinedReceipt, "combined-review"));
+
+  const mismatchedTarget = new Map(combinedReceipt);
+  mismatchedTarget.set(ReviewStage.SemanticCheckpoint, {
+    ...receiptRow(
+      combinedReceipt,
+      ReviewStage.SemanticCheckpoint,
+      "combined-review",
+    ),
+    target: subagentReviewPolicyBaseline,
+  });
+  assert.throws(
+    () => assertReviewContinuity(mismatchedTarget, "combined-review"),
+    /must use one immutable target/u,
+  );
+
+  const oneSidedCombined = new Map(combinedReceipt);
+  oneSidedCombined.set(ReviewStage.Closure, {
+    ...receiptRow(combinedReceipt, ReviewStage.Closure, "combined-review"),
+    isolation: "fork-turns-none",
+  });
+  assert.throws(
+    () => assertReviewContinuity(oneSidedCombined, "combined-review"),
+    /must mark both receipt rows/u,
+  );
+
+  const mismatchedVerdict = new Map(combinedReceipt);
+  mismatchedVerdict.set(ReviewStage.Closure, {
+    ...receiptRow(combinedReceipt, ReviewStage.Closure, "combined-review"),
+    verdict: "reject",
+  });
+  assert.throws(
+    () => assertReviewContinuity(mismatchedVerdict, "combined-review"),
+    /must record one verdict/u,
+  );
+
+  const unmarkedEqualTarget = new Map(combinedReceipt);
+  unmarkedEqualTarget.set(ReviewStage.SemanticCheckpoint, {
+    ...receiptRow(combinedReceipt, ReviewStage.SemanticCheckpoint, "combined-review"),
+    isolation: "fork-turns-none",
+  });
+  unmarkedEqualTarget.set(ReviewStage.Closure, {
+    ...receiptRow(combinedReceipt, ReviewStage.Closure, "combined-review"),
+    isolation: "fork-turns-none",
+  });
+  assert.throws(
+    () => assertReviewContinuity(unmarkedEqualTarget, "combined-review"),
+    /equal checkpoint and closure targets must attest combined review/u,
+  );
+
+  assert.throws(
+    () => assertReceiptRow({
+      stage: ReviewStage.Proposal,
+      target: head,
+      isolation: "fork-turns-none-combined",
+      verdict: "approve",
+      correctionAudit: "not-required",
+    }, "combined-proposal"),
+    /requires an isolated same-effort sub-agent/u,
+  );
+});
+
 test("keeps the cold-review lifecycle in its documentation owners", async () => {
   const [
     contributorGuide,
@@ -553,7 +395,16 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
   assert.match(testingSpec, /checkpoint-reviewer-warm/u);
   assert.match(testingSpec, /semantic-review-manifest\.ts/u);
   assert.match(testingSpec, /issue-first/u);
+  assert.match(testingSpec, /fork-turns-none-combined/u);
+  assert.match(testingSpec, /static claim scan/u);
+  assert.match(testingSpec, /defer routine focused gates/u);
+  assert.match(testingSpec, /stage-specific focus/u);
+  assert.match(testingSpec, /semantic-review-packet\.ts/u);
+  assert.match(testingSpec, /outputSha256/u);
+  assert.match(testingSpec, /routing evidence, not independent proof/u);
   assert.match(contributorGuide, /warm closure continuity/u);
+  assert.match(contributorGuide, /single-lane atomic closure/u);
+  assert.match(contributorGuide, /semantic review packet/u);
   assert.match(documentationDiscipline, /Independent cold-review receipt/u);
   assert.match(capsuleRegistry, /Independent cold-review receipt/u);
   assert.match(verificationWorkflow, /^\s+fetch-depth: 0$/mu);
