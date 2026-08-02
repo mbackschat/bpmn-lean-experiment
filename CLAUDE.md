@@ -270,6 +270,8 @@ Use one owner for each fact and link to it elsewhere:
 
 Before adding, renaming, moving, graduating, archiving, or deleting a document, follow [DOC-DISCIPLINE.md](docs/DOC-DISCIPLINE.md). `-SPEC` is reserved for an implemented current contract; approved but unimplemented intent remains `-PROPOSAL`. Write one Markdown paragraph per line without hard wrapping. Use regular relative Markdown links for other project documents. Update the owner and every index or inbound link in the same change, and avoid copying live inventories.
 
+Never activate the `linear-walkthrough` skill and never invoke `showboat` directly or indirectly. Author maintained Markdown directly and verify it only through the repository-owned documentation, infrastructure, and applicable complete gates.
+
 Keep the top-level `README.md` as a durable project front door. Do not put live status, evidence counts, current support inventories, or next-work narration there; link to [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) and [PLAN.md](docs/PLAN.md) instead.
 
 The rationale and transfer limits for the semantic-capsule workflow are recorded in [the `a12-kernel-lean` process-transfer study](docs/research/A12-KERNEL-LEAN-PROCESS-RESEARCH.md).
