@@ -1,8 +1,8 @@
-# Inclusive Gateway selected-branch synchronization proposal
+# Inclusive Gateway selected-branch synchronization specification
 
 ## Status
 
-**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. Semantic checkpoint target `5e0dc3b` passed its isolated sub-agent review after the exact gateway-direction lexical correction audited at `ea8b019`. Closure target `ee21fce` returned APPROVE WITH REQUIRED EDITS with no semantic implementation defect; the claim-surface corrections are applied and await the same reviewer's warm audit. The registered profile, four answer-free scenarios, differential cases, independent Lean and TypeScript semantics, Temporal refinement/replay, epistemic reflection, and commit-bounded cost remain green.**
+**Implemented and evidence-closed for the exact structured selected-branch profile. Proposal correction audit `0b52d15`, semantic-checkpoint correction audit `ea8b019`, and closure correction audit `15ebadc` passed without a material redesign. General Inclusive Gateway reachability remains unsupported.**
 
 ## Independent cold-review receipt
 
@@ -10,15 +10,15 @@
 |---|---|---|---|---|
 | Proposal | `16904dd` | `external-fresh-session` | `approve-with-required-edits` | `0b52d15` |
 | Semantic checkpoint | `5e0dc3b` | `fork-turns-none` | `approve-with-required-edits` | `ea8b019` |
-| Closure | `ee21fce` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `ee21fce` | `fork-turns-none` | `approve-with-required-edits` | `15ebadc` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its external fresh-session review remains valid; the same reviewer passed correction audit `0b52d15` without a material redesign. Every later review target uses the same-model/same-effort `fork-turns-none` rule.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its external fresh-session review remains valid. The semantic checkpoint and closure used isolated same-model/same-effort sub-agents, and each required-edits verdict passed a warm correction audit without a material redesign.
 
-## Exact question
+## Scope
 
-Should the project admit one structured acyclic Inclusive Gateway split/join region that evaluates exactly two Simple Boolean conditions, activates every true conditional branch or one default branch when neither is true, and synchronizes all and only the branches selected for that split occurrence?
+The implemented profile admits one structured acyclic Inclusive Gateway split/join region that evaluates exactly two Simple Boolean conditions, activates every true conditional branch or one default branch when neither is true, and synchronizes all and only the branches selected for that split occurrence.
 
-The recommended answer is yes. The slice adds a reusable multi-selection transition and selected-set synchronization state. It does not reinterpret the existing single-output `choose` or all-input `synchronize` operations, and it does not claim general Inclusive Gateway topology.
+The slice adds a reusable multi-selection transition and selected-set synchronization state. It does not reinterpret the existing single-output `choose` or all-input `synchronize` operations, and it does not claim general Inclusive Gateway topology.
 
 ## Required proposition
 
@@ -26,7 +26,7 @@ BPMN 2.0.2 Clause 10.6.3 requires a diverging Inclusive Gateway to evaluate ever
 
 Clause 13.4.3 and Table 13.3 define the converging Gateway by the tokens that have arrived and the paths on which another token can still reach the join. Table 13.3 identifies Structured Synchronizing Merge (WCP-7) as a supported pattern. The first profile selects an interpretation for exactly that closed acyclic pattern: an active User Task consumes its branch control token and retains branch liveness as an Activity wait, so a literal control-place-only transcription of Table 13.3 would release too early. The occurrence-owned selected set preserves that otherwise-erased liveness and is exactly the set of join inputs that can still contribute in this topology. This is a bounded runtime interpretation of the normative rule, not a claim to implement its general nonlocal reachability predicate.
 
-The mandated OMG issue audit consulted the registered BPMN 2.0.2 issue view and [BPMN21-450](https://issues.omg.org/issues/BPMN21-450) on 2026-08-02. The issue remains open, is marked `Implementation work Blocked`, and has no approved disposition; it reports that the synchronization description and cross-reference are insufficient. No resolved issue therefore supersedes Table 13.3 or selects a general algorithm. This proposal answers only the WCP-7 structured case above and requires the issue disposition to be rechecked before closure.
+The mandated OMG issue audit consulted the registered BPMN 2.0.2 issue view and [BPMN21-450](https://issues.omg.org/issues/BPMN21-450) on 2026-08-02. The issue was open, marked `Implementation work Blocked`, and had no approved disposition; it reported that the synchronization description and cross-reference were insufficient. The closure review adopted no issue disposition that supersedes Table 13.3 or selects a general algorithm. This specification therefore answers only the WCP-7 structured case above.
 
 This is a vendor-neutral BPMN account. It reuses the implemented [Simple Boolean expression language](../SIMPLE-BOOLEAN-EXPRESSION-DECISION.md). No new or Inclusive-Gateway-specific CIB Seven relationship, CIB expression meaning, CIB execution target, or CIB evidence lane is selected. The profile metadata retains `CIB-AGR-0001` and `CIB-OP-0001` only for the already-implemented User Task interaction boundary. The pinned CIB Inclusive Gateway tests remain probe seeds in [breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#proto-mvp-ordering-after-receive-task), not compatibility evidence.
 
@@ -186,19 +186,17 @@ All six rules belong to the vendor-neutral BPMN/profile layer. CIB fixture preva
 
 Required are the exact source profile and direction controls; branch-local split/join derivation and binding; canonical contract and runtime ordering; the two new generic operations; one hidden selected-set collection that blocks quiescence and is removed on owner interruption; unchanged canonical observation; the closure-limit and both-order witnesses; exhaustive token-split host admission; Lean soundness and useful laws; independent TypeScript behavior; Temporal replacement/replay; the complete artifact-registry and differential-catalog roundtrip; and meaningful subset/join mutations.
 
-Optional after this capsule is closed is a separately registered CIB Seven agreement probe over an exact project-owned fixture. It may claim only public branch/wait/completion facts that the probe observes and must not make CIB JUEL truth or its internal graph algorithm evidence for Simple Boolean semantics.
+Optional future work is a separately registered CIB Seven agreement probe over an exact project-owned fixture. It may claim only public branch/wait/completion facts that the probe observes and must not make CIB JUEL truth or its internal graph algorithm evidence for Simple Boolean semantics.
 
 Excluded are general Table 13.3 graph analysis; arbitrary, unstructured, nested, mixed, or repeated Inclusive Gateways; Inclusive merge without its paired admitted split; more or fewer candidates; no-default exception; conditional default; expression languages beyond Simple Boolean v1; data writes; loops and Multi-Instance; scopes, boundary Events, compensation, or cancellation; Message/Timer/effect races; CIB compatibility; A12 adoption; BPMN conformance; and production history compatibility.
 
 ## Versioning and assurance boundary
 
-This is a pre-release additive contract change but still replaces the one current checked-node, Semantic Process operation, runtime-state, decoder, schema, semantic and host admission, exhaustive-switch, artifact-registry, and differential-catalog representations atomically. The profile, answer-free scenarios, evidence routes, and seeded mutations join the complete registry/catalog roundtrip in the same change. No optional mode bag, legacy reader, format counter, compatibility branch, Workflow patch, migration function, or retained Event History is permitted. Histories created by the gate are replayed and discarded in that gate.
+The pre-release additive contract replaced the one current checked-node, Semantic Process operation, runtime-state, decoder, schema, semantic and host admission, exhaustive-switch, artifact-registry, and differential-catalog representations atomically. The profile, answer-free scenarios, evidence routes, and seeded mutations participate in the complete registry/catalog roundtrip. No optional mode bag, legacy reader, format counter, compatibility branch, Workflow patch, migration function, or retained Event History is permitted. Histories created by the gate are replayed and discarded in that gate.
 
-The implemented closure-candidate claim is limited to all-true/default branching and occurrence-specific synchronization in the admitted one-region topology. The nearest unsupported claim is the general Inclusive Gateway reachability rule when tokens can approach a join through unstructured, nested, repeated, or externally entered paths.
+The implemented claim is limited to all-true/default branching and occurrence-specific synchronization in the admitted one-region topology. The nearest unsupported claim is the general Inclusive Gateway reachability rule when tokens can approach a join through unstructured, nested, repeated, or externally entered paths.
 
 The main common-mode risk is shared source/lowering structure: Lean, TypeScript, and Temporal can all agree on a wrongly paired split/join mapping. The branch-local structural pairing rule, a same-set wrong-pairing definition-binding negative, independent Lean lowering, declaration-order permutation, exact checked-to-program equality, the one-true versus both-true versus default discriminator, and selected-set erasure mutations are therefore mandatory. Closed-enumeration erosion is the second risk: exhaustive host split classification and selection-aware scope quiescence must fail if the new construct is omitted. Temporal remains a refinement of the TypeScript core, not another semantic authority.
-
-Closure requires the epistemic review and commit-bounded cost record defined by the [capsule policy](README.md#required-capsule-structure). The Exclusive Gateway has no clean measured baseline and the Parallel Gateway has no cost-ledger row, so neither may be compared by impression. Compare the measured increment with the recorded Embedded Sub-Process Error propagation increment, the nearest recorded capsule that added a checked node and transition family across source, Lean, the semantic core, Temporal, differential evidence, and closure review.
 
 ## Epistemic closure
 
@@ -208,20 +206,8 @@ The main common-mode risk is a shared wrong branch-to-join mapping across source
 
 Every public observation is derived from the admitted immutable program, committed runtime state, and explicit start or User Task completion input. The hidden selected-branch collection, operation ordering, Workflow IDs, Event History ordering, and future scenario commands do not enter canonical observation. The nearest realistic counterexamples are first-true selection, all-model-input synchronization, and first-arrival release; they differ at the approved wait/task or completion boundary and are executable negatives rather than hidden-microstep distinctions.
 
-Lean contributes premise-bearing selection, readiness, exact-consumption, soundness, and preservation laws plus explicitly finite fixtures; it does not claim arbitrary-graph completeness, liveness, or cross-implementation equivalence. TypeScript is a separately written realization, Temporal is a durability refinement, and the four standards-only pipeline cases compare exactly those three targets. CIB Seven remains deliberately absent because no Inclusive Gateway relationship, expression profile, or public probe was selected.
+Lean contributes premise-bearing selection, readiness, exact-consumption, soundness, and preservation laws plus explicitly finite fixtures; it does not claim arbitrary-graph completeness, liveness, or cross-implementation equivalence. TypeScript is a separately written realization, Temporal is a durability refinement, and the four standards-only pipeline cases compare exactly those three targets. A CIB Inclusive Gateway target remains deliberately absent because no Inclusive-specific relationship, expression profile, or public probe was selected; the profile metadata retains only the reused User Task relationships.
 
 The Temporal gate derives selection inside pure Workflow state, commits only the existing content-bound User Task Updates, survives Worker replacement after the first completion, recovers the accepted result, replays all four disposable histories, and observes no Timer, Signal, Activity, Child Workflow, effect, or cancellation mechanism. The complete 25-case catalog replays 27 live histories and remains within the unchanged pipeline budgets; all histories are discarded under the pre-release policy.
 
-The same-day closure audit retains the conservative issue conclusion recorded above: no approved local disposition supersedes Table 13.3, so the selected WCP-7 interpretation remains bounded rather than generalized. The implementation removes no evidence lane and adds no retained oracle answer. The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) records boundary `263433e..24d726b`; independent closure review remains the final guard before this proposal can graduate.
-
-## Owner decision requested
-
-After independent proposal review, approve or reject these choices together:
-
-1. the exact structured two-condition-plus-default split, three User Task branches, paired join, and None End source profile;
-2. the six `IGW-*` rules and selected-set specialization of the general Inclusive Gateway join requirement;
-3. additive generic `selectMany` and `synchronizeSelected` operations plus one hidden owner-scoped selected-branch collection, with branch-local structural pairing, canonical ordering, selection-aware scope quiescence, exhaustive token-split host classification, and no change to `choose`, `synchronize`, or public observation;
-4. a standards-first Lean/TypeScript/Temporal target set with no new or Inclusive-Gateway-specific CIB relationship, execution target, or evidence lane, while profile metadata retains the reused User Task relationships; and
-5. the exact exclusions and atomic pre-release replacement policy above.
-
-Implementation may proceed within the exact approved boundary. Its semantic-checkpoint and closure reviews use context-cold same-effort sub-agents under the current policy.
+The recorded issue audit remains conservative: no adopted disposition supersedes Table 13.3, so the selected WCP-7 interpretation remains bounded rather than generalized. The implementation removes no evidence lane and adds no retained oracle answer. The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) records boundary `263433e..24d726b`.
