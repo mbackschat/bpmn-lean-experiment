@@ -2,17 +2,17 @@
 
 ## Status
 
-**Draft proposal. Not owner-approved; no implementation is authorized. The isolated same-effort sub-agent proposal review returned APPROVE WITH REQUIRED EDITS; correction audit is pending.**
+**Draft proposal. Not owner-approved; no implementation is authorized. The isolated same-effort sub-agent proposal review and same-reviewer correction audit passed; explicit owner approval is required before implementation.**
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `dd80bdc` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `dd80bdc` | `fork-turns-none` | `approve-with-required-edits` | `acff781` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `dd80bdc` is awaiting its context-cold same-effort sub-agent review.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold same-effort sub-agent review of `dd80bdc` required the Temporal activation-barrier and wrong-ingress corrections in `acff781`; the same reviewer passed that correction audit without a material redesign.
 
 ## Exact question
 
