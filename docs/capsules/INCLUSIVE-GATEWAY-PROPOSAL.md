@@ -212,7 +212,7 @@ Lean contributes premise-bearing selection, readiness, exact-consumption, soundn
 
 The Temporal gate derives selection inside pure Workflow state, commits only the existing content-bound User Task Updates, survives Worker replacement after the first completion, recovers the accepted result, replays all four disposable histories, and observes no Timer, Signal, Activity, Child Workflow, effect, or cancellation mechanism. The complete 25-case catalog replays 27 live histories and remains within the unchanged pipeline budgets; all histories are discarded under the pre-release policy.
 
-The same-day closure audit retains the conservative issue conclusion recorded above: no approved local disposition supersedes Table 13.3, so the selected WCP-7 interpretation remains bounded rather than generalized. The implementation removes no evidence lane and adds no retained oracle answer. Commit-bounded cost will be recorded separately in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md) before the closure target is minted, and independent closure review remains the final guard before this proposal can graduate.
+The same-day closure audit retains the conservative issue conclusion recorded above: no approved local disposition supersedes Table 13.3, so the selected WCP-7 interpretation remains bounded rather than generalized. The implementation removes no evidence lane and adds no retained oracle answer. The [capsule cost ledger](../CAPSULE-COST-LEDGER.md) records boundary `263433e..24d726b`; independent closure review remains the final guard before this proposal can graduate.
 
 ## Owner decision requested
 
