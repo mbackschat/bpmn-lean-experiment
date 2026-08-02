@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. Review of first green semantic checkpoint `5cb7b54` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `0148592` without a material redesign. Artifact, differential, and durable Temporal lanes are now unblocked.**
+**Owner-approved and implemented as a closure candidate on 2026-08-02. Proposal correction audit `3e17a05` and semantic-checkpoint correction audit `0148592` passed without a material redesign. The exact profile, answer-free scenario, Lean/core/Temporal differential agreement, durable root-Workflow refinement, identity and early-return mutations, history assertions, and replay evidence are complete. Governed closure review is pending.**
 
 ## Independent cold-review receipt
 
@@ -187,6 +187,28 @@ Lean and TypeScript must agree on exactly these facts after source admission: tw
 
 They explicitly need not establish a CIB result, Temporal Child Workflow identity, imports, Global Tasks, mappings, Process-instance data, version/tenant selection, Errors or Escalations, cancellation, recursion, repetition, concurrency, arbitrary definition graphs, fairness, liveness, or a new public stimulus, wait, interaction, or outcome kind. Neither implementation may add an extra topology, counter, or scope premise not present in this matrix.
 
+## Implemented closure evidence
+
+The registered draft profile selects the exact two private executable Processes and retains `CIB-AGR-0001` plus `CIB-OP-0001` only for the reused User Task interaction surface. Its one answer-free scenario is bound to the admitted BPMN bytes, starts `CallerProcess`, completes `CalledTask` under `call:22:CallActivityInstance_1:18:Call_CalledProcess:1`, completes `CallerTask` under `CallActivityInstance_1`, and contains no expected result. The guarded catalogs assign the case to Lean, the independent TypeScript core, and Temporal with CIB deliberately absent.
+
+The differential mutation changes only `trace[2].openUserTasks[0].id.processInstanceId` from the derived called identity to the caller identity. It leaves the top-level observation's caller identity unchanged and produces the exact public value disagreement, so agreement cannot pass merely by collapsing all semantic identities to the Workflow address.
+
+The durable witness starts one Workflow under the caller/root address, queries the called-owned task, and submits the called completion through the existing API that takes the Workflow address and semantic task-instance address separately. It stops the Worker after that completion, then requires a replacement Worker to recover the committed Update result and the identical caller-only Query. Caller completion returns the ordinary terminal receipt. The history contains exactly two accepted/completed Updates, no Signal, Timer, Activity, Child Workflow, effect, or cancellation event, and replays in the same disposable gate.
+
+Two separately runnable mutation Workflows guard the nearest adapter errors. The early-return mutation fabricates the caller wait while the called wait remains live, so Query exposes both semantic instances. The identity-erasure mutation relabels the called wait with the caller identity; the first Query changes, the correct derived-identity completion rejects, and the erased caller-identity completion commits. Neither mutation adds a production handler, result kind, wait kind, or host mechanism.
+
+## Epistemic closure
+
+The exact closure-candidate claim is one namespace-qualified in-document Process call with a distinct deterministic called semantic instance, no caller continuation before normal called quiescence, one exactly-once return, unchanged canonical observation shape, and one-Workflow durability through the existing passive User Task Update lifecycle. The closest unsupported claim is a second or repeated invocation of the same called Process; imports, Global Tasks, data mappings, recursion, exceptional completion, cancellation, version/tenant selection, and Temporal Child Workflow identity remain further outside.
+
+The dominant common-mode risk is identity collapse. The TypeScript source compiler supplies the checked graph and program to every execution target, so agreement alone cannot catch a shared decision to treat the called Process as an embedded scope or reuse the root Workflow identity. Exact QName/source mutation tests, independent Lean lowering equality, the full-tuple injectivity theorem, owner-derived wait identity, the registered public identity-erasure mutation, and the live address-inversion Workflow guard that class. The second risk is early caller return around hidden called work; quiescence and exactly-once laws, orphan/duplicate non-resumability, and the two-task early-return Query expose it.
+
+Every canonical observation depends only on the admitted definition forest, committed runtime state, and the explicit command already applied. The derived called identity is definition/runtime data. Workflow ID, Run ID, future scenario commands, expected output, hidden call records, and mutation bookkeeping do not enter `StateObservation`. The identity mutation differs at the approved first public User Task observation, while the early-return mutation differs in the public task set rather than only in a hidden transition order.
+
+Lean's invoke/return soundness, exact ownership, quiescence, uniqueness, and identity theorems establish reusable facts under their stated binding hypotheses. Finite `by decide` witnesses establish only the admitted 3/3/2 traces, smaller-bound exhaustion, concrete refusals, and malformed-state counterexamples; they do not establish arbitrary call-graph liveness, recursion, data propagation, or cross-language equivalence. The TypeScript core is separately authored but transcribes the reviewed account; Temporal establishes durability/refinement rather than BPMN meaning; CIB is deliberately absent rather than counted as another semantic lane.
+
+Pre-release histories are produced, replayed, and discarded in one gate. No retained history, Workflow patch, compatibility reader, migration path, or production baseline is introduced. Implementation agents owned disjoint artifact and Temporal files, reported red/root/green boundaries, and ran proportionate focused gates; root retained catalogs, lifecycle documentation, commits, and the single complete verification run. The two independent mutation cases are separately runnable, and all new hand-written source files remain below the 600-nonblank-line target without a comment-density proxy.
+
 ## Required, optional, and excluded surface
 
 Required are the exact two-Process source profile and QName algorithm; checked definition forest and generic virtual completion edge; one closed Call Activity node; paired invoke/return operations; one hidden call record and activation counter; injective called semantic identity; owner-derived wait identity; empty-data guard; caller-root top-level public identity; unchanged observation shape; exact 3/3/2 and smaller-bound witnesses; Lean relations and useful laws; independent TypeScript semantics; root-Workflow/child-task address separation; one-Workflow Worker replacement, result recovery, bypass mutation, history assertion, and replay; inherited profile metadata `CIB-AGR-0001` and `CIB-OP-0001` for the existing User Task surface only; and same-change artifact/differential registration after the semantic checkpoint passes. Those reused relationship IDs provide no Call Activity CIB claim or evidence lane.
@@ -207,9 +229,9 @@ The dominant common-mode risk is collapsing the called Process into an embedded 
 
 At closure, compare commit-bounded churn with the ordinary embedded Sub-Process completion capsule, the nearest recorded definition/runtime ownership increment. State the measured direction plainly; do not discount a larger result as reuse.
 
-## Owner decision requested
+## Owner decision
 
-After independent proposal review, approve or reject these choices together:
+The owner approved these choices together after independent proposal review and correction audit:
 
 1. the exact two-Process, one-Call, two-User-Task, empty-data source profile and namespace-qualified QName algorithm;
 2. rules `CALL-RESOLVE-01` through `CALL-OBSERVE-01` and the distinct called semantic Process-instance identity;
@@ -218,4 +240,4 @@ After independent proposal review, approve or reject these choices together:
 5. standards-first Lean/TypeScript/Temporal evidence with CIB deliberately absent; and
 6. the exact exclusions, mandatory semantic checkpoint, atomic pre-release replacement, and cost comparator above.
 
-Implementation may begin only after the context-cold same-effort proposal review is approved, every required correction passes the same-reviewer audit without material redesign, and owner approval is recorded in this Status section.
+Implementation and its semantic checkpoint satisfied those prerequisites. The remaining lifecycle work is the reproducible cost record, governed closure review with the approved checkpoint continuity rule when eligible, any same-reviewer correction audit, and proposal-to-specification graduation after a passing verdict.
