@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. Semantic checkpoint target `5e0dc3b` implements the checked-source, IL, Lean, TypeScript core, schema, and host-admission boundary; mandatory checkpoint review is pending, and registered artifacts, differential cases, and Temporal refinement/replay remain blocked.**
+**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. Semantic checkpoint target `5e0dc3b` passed its isolated sub-agent review after the exact gateway-direction lexical correction audited at `ea8b019`; registered artifacts, differential cases, and Temporal refinement/replay are now the active closure lanes.**
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `16904dd` | `external-fresh-session` | `approve-with-required-edits` | `0b52d15` |
-| Semantic checkpoint | `5e0dc3b` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `5e0dc3b` | `fork-turns-none` | `approve-with-required-edits` | `ea8b019` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its external fresh-session review remains valid; the same reviewer passed correction audit `0b52d15` without a material redesign. Every later review target uses the same-model/same-effort `fork-turns-none` rule.
