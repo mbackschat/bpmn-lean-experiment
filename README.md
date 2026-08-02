@@ -96,6 +96,32 @@ A representative theorem states that any mismatch in Process instance, BPMN elem
 
 Lean does not automatically prove the parser, CIB, TypeScript, Temporal, database, or network. Those remain distinct evidence lanes. The pipeline gives Lean the actual checked BPMN graph and Semantic Process program for every retained scenario; Lean strictly decodes both, independently recomputes lowering, rejects inequality, and only then evaluates the received program. This closes definition drift without proving parser correctness or full source-to-run preservation.
 
+## Repository statistics
+
+<!-- repository-statistics:start -->
+These worktree statistics are mechanically generated without a timestamp. Run `./scripts/pnpm.sh run stats:update` to refresh them; the tracked pre-push hook checks the same source and stops after regenerating a stale block so the result can be committed.
+
+### Lean declarations
+
+| Metric | Count |
+|---|---:|
+| Public theorem declarations | 327 |
+| Supporting lemma declarations | 26 |
+| All declaration commands | 1,440 |
+| Proof declarations / all declaration commands | 24.5% |
+
+Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.
+
+### Language footprint (`tokei 14.0.0`)
+
+| Language | Files | Code | Comments | Blanks |
+|---|---:|---:|---:|---:|
+| Java | 49 | 6,079 | 178 | 657 |
+| Kotlin | 0 | 0 | 0 | 0 |
+| TypeScript | 254 | 50,566 | 788 | 3,093 |
+| Lean | 75 | 13,972 | 571 | 1,702 |
+<!-- repository-statistics:end -->
+
 ## Quick start
 
 Prerequisites:
@@ -105,6 +131,7 @@ Prerequisites:
 - Lean through `elan`, honoring [lean-toolchain](lean-toolchain);
 - Node `24.18.0`, selected through [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew fallback;
 - pnpm `11.18.0`;
+- `tokei` for the generated source statistics and tracked pre-push hook (`brew install tokei` on macOS);
 - Java 21, optionally selected with `BPMN_JAVA_HOME`;
 - permission for the first Temporal test to download pinned CLI `v1.8.1` into ignored `.cache/temporal-cli/` and run a local server.
 
@@ -113,6 +140,7 @@ nvm install
 nvm use
 ./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
+./scripts/install-git-hooks.sh
 ./scripts/doctor.sh verify
 ./scripts/verify.sh
 ```

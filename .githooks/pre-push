@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -eu
+
+hook_dir=${0%/*}
+project_root=$(CDPATH= cd "$hook_dir/.." && pwd)
+cd "$project_root"
+
+exec node scripts/repository-statistics.ts --pre-push
