@@ -8,11 +8,11 @@
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `dd80bdc` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). A docs-only follow-up will record the immutable proposal target before the context-cold sub-agent handoff.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `dd80bdc` is awaiting its context-cold same-effort sub-agent review.
 
 ## Exact question
 
