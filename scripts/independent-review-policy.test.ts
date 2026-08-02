@@ -212,6 +212,7 @@ function parseReceipt(
   for (const row of rows.values()) {
     assertReceiptRow(row, relativePath);
   }
+  assertReviewContinuity(rows, relativePath);
   return rows;
 }
 
@@ -225,9 +226,11 @@ function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
       `${context} needs an immutable review target`,
     );
     if (usesSubagentReviewPolicy(row.target)) {
-      assert.equal(
-        row.isolation,
-        "fork-turns-none",
+      const warmCheckpointClosure =
+        row.stage === ReviewStage.Closure &&
+        row.isolation === "checkpoint-reviewer-warm";
+      assert.ok(
+        warmCheckpointClosure || row.isolation === "fork-turns-none",
         `${context} requires an isolated same-effort sub-agent`,
       );
     } else if (row.stage === ReviewStage.SemanticCheckpoint) {
@@ -286,6 +289,32 @@ function assertReceiptRow(row: ReviewReceipt, relativePath: string): void {
   assert.equal(row.target, "not-applicable");
   assert.equal(row.isolation, "not-applicable");
   assert.equal(row.correctionAudit, "not-applicable");
+}
+
+function assertReviewContinuity(
+  receipt: ReadonlyMap<ReviewStage, ReviewReceipt>,
+  relativePath: string,
+): void {
+  const closure = receipt.get(ReviewStage.Closure);
+  if (closure?.isolation !== "checkpoint-reviewer-warm") {
+    return;
+  }
+  const checkpoint = receipt.get(ReviewStage.SemanticCheckpoint);
+  assert.ok(checkpoint, `${relativePath} warm closure needs a semantic checkpoint`);
+  assert.ok(
+    approvedVerdicts.has(checkpoint.verdict),
+    `${relativePath} warm closure needs an approved semantic checkpoint`,
+  );
+  assert.notEqual(
+    checkpoint.target,
+    closure.target,
+    `${relativePath} warm closure must follow its semantic checkpoint`,
+  );
+  assert.equal(
+    isCommitAncestor(checkpoint.target, closure.target),
+    true,
+    `${relativePath} warm closure target must descend from its semantic checkpoint`,
+  );
 }
 
 function assertIndependentlyApproved(row: ReviewReceipt, relativePath: string): void {
@@ -421,6 +450,73 @@ test("requires prospective cold reviews to use an isolated sub-agent", () => {
   }
 });
 
+test("permits warm closure only as checkpoint-reviewer continuity", () => {
+  assert.throws(
+    () =>
+      assertReceiptRow(
+        {
+          stage: ReviewStage.Proposal,
+          target: subagentReviewPolicyBaseline,
+          isolation: "checkpoint-reviewer-warm",
+          verdict: "approve",
+          correctionAudit: "not-required",
+        },
+        "warm-proposal",
+      ),
+    /requires an isolated same-effort sub-agent/u,
+  );
+  assert.doesNotThrow(() =>
+    assertReceiptRow(
+      {
+        stage: ReviewStage.Closure,
+        target: subagentReviewPolicyBaseline,
+        isolation: "checkpoint-reviewer-warm",
+        verdict: "approve",
+        correctionAudit: "not-required",
+      },
+      "warm-closure",
+    ),
+  );
+
+  const head = gitLines(["rev-parse", "HEAD"])[0];
+  assert.ok(head);
+  const receipt = new Map<ReviewStage, ReviewReceipt>([
+    [ReviewStage.Proposal, {
+      stage: ReviewStage.Proposal,
+      target: subagentReviewPolicyBaseline,
+      isolation: "fork-turns-none",
+      verdict: "approve",
+      correctionAudit: "not-required",
+    }],
+    [ReviewStage.SemanticCheckpoint, {
+      stage: ReviewStage.SemanticCheckpoint,
+      target: subagentReviewPolicyBaseline,
+      isolation: "fork-turns-none",
+      verdict: "approve",
+      correctionAudit: "not-required",
+    }],
+    [ReviewStage.Closure, {
+      stage: ReviewStage.Closure,
+      target: head,
+      isolation: "checkpoint-reviewer-warm",
+      verdict: "approve",
+      correctionAudit: "not-required",
+    }],
+  ]);
+  assert.doesNotThrow(() => assertReviewContinuity(receipt, "warm-spec"));
+  receipt.set(ReviewStage.SemanticCheckpoint, {
+    stage: ReviewStage.SemanticCheckpoint,
+    target: "not-applicable",
+    isolation: "not-applicable",
+    verdict: "not-required",
+    correctionAudit: "not-applicable",
+  });
+  assert.throws(
+    () => assertReviewContinuity(receipt, "warm-without-checkpoint"),
+    /needs an approved semantic checkpoint/u,
+  );
+});
+
 test("keeps the cold-review lifecycle in its documentation owners", async () => {
   const [
     contributorGuide,
@@ -450,10 +546,14 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
   assert.match(testingSpec, new RegExp(subagentReviewPolicyBaseline, "u"));
   assert.match(testingSpec, /same model and reasoning effort/u);
   assert.match(testingSpec, /same root model and reasoning effort/u);
-  assert.match(testingSpec, /cannot satisfy the governed cold stage/u);
+  assert.match(testingSpec, /requires a new `fork-turns-none` closure reviewer/u);
   assert.match(testingSpec, /omits both model and reasoning-effort overrides/u);
   assert.match(testingSpec, /byte-identical/u);
   assert.match(testingSpec, /must delete the capsule-specific pending barrier/u);
+  assert.match(testingSpec, /checkpoint-reviewer-warm/u);
+  assert.match(testingSpec, /semantic-review-manifest\.ts/u);
+  assert.match(testingSpec, /issue-first/u);
+  assert.match(contributorGuide, /warm closure continuity/u);
   assert.match(documentationDiscipline, /Independent cold-review receipt/u);
   assert.match(capsuleRegistry, /Independent cold-review receipt/u);
   assert.match(verificationWorkflow, /^\s+fetch-depth: 0$/mu);
