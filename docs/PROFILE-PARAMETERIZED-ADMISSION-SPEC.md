@@ -16,7 +16,7 @@ For every currently selected profile, source and program admission require:
 
 1. a project-owned checked graph or Semantic Process program whose references, operation payloads, arities, origins, and identities are valid;
 2. one profile capability whose exact multiset of operation kinds matches the candidate;
-3. one topology-independent graph check establishing one rooted definition-scope tree, exact node/flow or operation/place ownership, a unique root initiation, one completion per scope, scope-local reachability and co-reachability, global initiation-to-root-completion reachability, acyclicity, and the current producer/consumer discipline;
+3. topology-independent graph checks establishing a canonical acyclic definition-scope forest and exact node/flow or operation/place ownership: checked source has exactly one entry root plus, only for the bounded Call profile, one distinct parentless called root, and validates reachability and co-reachability independently inside every scope; the Semantic Process program has one `initiate` owned by the entry root, one completion strategy per scope, and global operation reachability from that initiation and co-reachability to entry-root completion, including the virtual called-End-to-`returnProcess` edge, under the current producer/consumer discipline;
 4. exact checked-source-to-program lowering equality before Lean evaluation;
 5. capsule-local closure, enabledness, and stable-state resumability evidence for each newly reachable structure.
 
@@ -28,17 +28,23 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 
 | Profile | Definition scopes | Exact operation multiset |
 |---|---:|---|
-| CIB Seven User Task | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
-| CIB Seven Intermediate Catch Timer | 1 | one `initiate`, one `awaitTimer`, one `reachNoneEnd`, one `completeScope` |
-| CIB Seven Service Task effect | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
-| CIB Seven A12 CreateDocument | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
-| CIB Seven A12 boundary error | 1 | one `initiate`, one `awaitEffect`, one `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
-| Normative parallel fork/join | 1 | one `initiate`, one `duplicate`, two `awaitUserTask`, one `synchronize`, one `reachNoneEnd`, one `completeScope` |
-| BPMN Simple Boolean Exclusive Gateway | 1 | one `initiate`, one `choose`, three `awaitUserTask`, three `reachNoneEnd`, one `completeScope` |
-| BPMN Timer/User Task composition | 1 | one `initiate`, one `awaitTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
-| BPMN Intermediate Catch Message | 1 | one `initiate`, one `awaitMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
-| CIB Seven ordinary embedded Sub-Process completion | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
-| CIB Seven embedded Sub-Process Error propagation | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `throwError`, three `reachNoneEnd`, two `completeScope` |
+| CIB Seven User Task (`cibseven-2.2.0-user-task-process-data-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven Intermediate Catch Timer (`cibseven-2.2.0-intermediate-catch-timer-draft`) | 1 | one `initiate`, one `awaitTimer`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven Service Task effect (`cibseven-2.2.0-service-task-effect-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven A12 CreateDocument (`cibseven-2.0.0-a12-create-document-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven A12 boundary error (`cibseven-2.0.0-a12-boundary-error-draft`) | 1 | one `initiate`, one `awaitEffect`, one `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
+| Normative parallel fork/join (`parallel-fork-join-draft`) | 1 | one `initiate`, one `duplicate`, two `awaitUserTask`, one `synchronize`, one `reachNoneEnd`, one `completeScope` |
+| BPMN Simple Boolean Exclusive Gateway (`bpmn-2.0.2-simple-boolean-exclusive-gateway-draft`) | 1 | one `initiate`, one `choose`, three `awaitUserTask`, three `reachNoneEnd`, one `completeScope` |
+| BPMN structured Inclusive Gateway (`bpmn-2.0.2-inclusive-gateway-selected-branches-draft`) | 1 | one `initiate`, one `selectMany`, three `awaitUserTask`, one `synchronizeSelected`, one `reachNoneEnd`, one `completeScope` |
+| BPMN Event-Based Gateway Message/Timer race (`bpmn-2.0.2-event-based-gateway-message-timer-draft`) | 1 | one `initiate`, one `awaitEventRace`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
+| BPMN Timer/User Task composition (`bpmn-2.0.2-timer-user-task-composition-draft`) | 1 | one `initiate`, one `awaitTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
+| BPMN Intermediate Catch Message (`bpmn-2.0.2-intermediate-catch-message-draft`) | 1 | one `initiate`, one `awaitMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven Message-addressed Receive Task (`cibseven-2.2.0-message-addressed-receive-task-draft`) | 1 | one `initiate`, one `awaitMessage`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven ordinary embedded Sub-Process completion (`cibseven-2.2.0-embedded-subprocess-completion-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
+| CIB Seven embedded Sub-Process Error propagation (`cibseven-2.2.0-subprocess-error-propagation-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `throwError`, three `reachNoneEnd`, two `completeScope` |
+| BPMN called Process Call Activity (`bpmn-2.0.2-called-process-call-activity-draft`) | 2 | one `initiate`, one `invokeProcess`, two `awaitUserTask`, two `reachNoneEnd`, one `returnProcess`, one `completeScope` |
+
+The typed capability table in `packages/semantic-core/src/semantic-process-profile.ts` remains the executable authority. The documentation-reviewability guard derives the registered identifiers from that source and requires this summary to contain exactly one row for every identifier.
 
 Profile capability does not replace operation-payload validation. Exact Timer duration, effect descriptor and mapping, boundary route, gateway condition, source-language, origin, and arity restrictions remain checked by their existing owners.
 
@@ -46,9 +52,9 @@ An unknown profile or a known profile with the wrong operation multiset is rejec
 
 ## Structural validators
 
-The checked-source validator operates on project-owned BPMN nodes and Sequence Flows after XML parsing and source-shape projection. It requires distinct resolved identities, one rooted acyclic definition-scope tree, exact node and Sequence Flow ownership, profile-permitted node arities and conditions, one None Start Event and at least one admitted exit Event in every scope, scope-local reference closure, reachability of every node from that scope's Start Event, co-reachability of every node to one of that scope's exits, and an acyclic finite graph. An admitted exit is a None End Event or Error End Event. A boundary Error remains a parent-scope node and receives one checked-graph-only exceptional reachability edge from its attached Sub-Process; that edge is never a Sequence Flow and never crosses definition scopes. Every non-root definition scope corresponds to exactly one ordinary embedded Sub-Process in its parent; Event Sub-Processes are rejected.
+The checked-source validator operates on project-owned BPMN nodes and Sequence Flows after XML parsing and source-shape projection. It requires distinct resolved identities, a canonical acyclic definition-scope forest, exact node and Sequence Flow ownership, profile-permitted node arities and conditions, one None Start Event and at least one admitted exit Event in every scope, scope-local reference closure, reachability of every node from that scope's Start Event, co-reachability of every node to one of that scope's exits, and an acyclic finite graph inside every scope. Every profile except the bounded Call profile has exactly one parentless entry root whose origin identifies `processId`; the Call profile has that same unique entry root plus one distinct parentless called root whose origin identifies the Call Activity's resolved `calledProcessId`. An admitted exit is a None End Event or Error End Event. A boundary Error remains a parent-scope node and receives one checked-graph-only exceptional reachability edge from its attached Sub-Process; that edge is never a Sequence Flow and never crosses definition scopes. Every non-root definition scope corresponds to exactly one ordinary embedded Sub-Process in its parent; Event Sub-Processes are rejected.
 
-The Semantic Process validator operates independently on control places and typed operations. It requires the same scope tree, exact operation and control-place ownership, exact one-producer/one-consumer control-place shape, a unique root initiation, one completion per scope, one entry per non-root scope, reachability, co-reachability to root completion, and finite acyclicity. TypeScript and Lean each implement this check; neither calls the other.
+The Semantic Process validator operates independently on control places and typed operations. It requires the same canonical forest and unique entry root, exact operation and control-place ownership, exact one-producer/one-consumer control-place shape, and exactly one `initiate` owned by that entry root. Every nested scope has one `enterScope` and one `completeScope`; the entry root has one root `completeScope`; and each parentless non-entry called root has no `enterScope` or `completeScope` and instead has one paired `returnProcess`. The global operation graph includes the virtual edge from the called root's unique `reachNoneEnd` to its return, then requires every operation to be reachable from the unique initiation and co-reachable to the entry-root completion under finite acyclicity. TypeScript and Lean each implement this check; neither calls the other.
 
 The old exact execution-surface predicates are forbidden by the pre-release architecture guard. Adding a profile must extend the typed capability table and its separating tests, not add another whole-program disjunct.
 
@@ -58,7 +64,7 @@ The Timer/User Task composition establishes the following executable facts indep
 
 - start closure requires exactly one internal initiation step before the Timer wait, and a zero-step limit reports closure-bound exhaustion;
 - after Timer firing, exactly one internal Timer continuation exposes the User Task wait, and a zero-step limit reports closure-bound exhaustion;
-- after User Task completion, exactly one internal termination step reaches completed state, and a zero-step limit reports closure-bound exhaustion;
+- after User Task completion, `reachNoneEnd` followed by quiescent root `completeScope` reaches completed state, and a zero-step limit reports closure-bound exhaustion;
 - no stable state in the admitted witness contains more than one enabled internal operation;
 - the stable Timer wait and User Task wait are resumable through explicit public semantic input;
 - the completed state is terminal;
@@ -113,12 +119,12 @@ The production start API returns a typed `started | rejected` adapter result so 
 
 ## Exclusions and re-open conditions
 
-This specification does not add repeated host-driven mechanisms, multiple Timers, multiple effects, multiple live Message subscriptions, mixed concurrent host-driven waits, a general serial grammar, arbitrary scope nesting, exceptional scope cancellation or propagation beyond the exact direct-parent Error slice, key-based/global Message correlation, arbitrary graph liveness, CIB admission equivalence, or A12 adoption coverage.
+This specification does not add repeated host-driven mechanisms, multiple Timers, multiple effects, multiple live Message subscriptions, mixed concurrent host-driven waits beyond the exact bounded Message/Timer Event-Based Gateway race, a general serial grammar, arbitrary scope nesting, exceptional scope cancellation or propagation beyond the exact direct-parent Error slice, key-based/global Message correlation, arbitrary graph liveness, CIB admission equivalence, or A12 adoption coverage.
 
 Reopen this contract when:
 
 - a profile needs a mechanism or cardinality not expressible by the current capability table;
 - a newly admitted graph can reach more than one internal operation without an approved independence or semantic-choice account;
 - a newly admitted graph can reach a stable running state without an explicit resumption surface;
-- a Temporal consumer needs concurrent Timer, effect, or subscription scheduling;
+- a Temporal consumer needs concurrent Timer, effect, or subscription scheduling beyond the exact bounded Message/Timer Event-Based Gateway race;
 - a second capsule needs the same source-to-result preservation proposition and the targeted proof would duplicate a general theorem.
