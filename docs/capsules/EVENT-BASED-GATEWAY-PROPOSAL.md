@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft proposal. Not owner-approved; no implementation is authorized. The isolated same-effort sub-agent proposal review and same-reviewer correction audit passed; explicit owner approval is required before implementation.**
+**Owner-approved on 2026-08-02 after the isolated same-effort sub-agent review of `dd80bdc` and same-reviewer correction audit `acff781`; implementation is authorized within this proposal's exact boundary.**
 
 ## Independent cold-review receipt
 
