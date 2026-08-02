@@ -2,17 +2,17 @@
 
 ## Status
 
-**Independent review of immutable proposal target `8f796f4` returned APPROVE WITH REQUIRED EDITS. This correction narrows command refusal, completes source/graph/identity/evidence invariants, and awaits the same reviewer's warm audit. This document is not owner-approved and authorizes no implementation.**
+**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. The mandatory semantic checkpoint still blocks artifact and Temporal lanes.**
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `8f796f4` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8f796f4` | `fork-turns-none` | `approve-with-required-edits` | `3e17a05` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Every review target created after transition baseline `b361681` uses a context-cold sub-agent that inherits the root model and effort.
+This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold sub-agent inherited the root model and effort. It required command-outcome, QName, graph, identity, evidence, profile-metadata, and extraction-boundary corrections; the same reviewer passed correction audit target `3e17a05` without a material redesign.
 
 ## Exact question
 
