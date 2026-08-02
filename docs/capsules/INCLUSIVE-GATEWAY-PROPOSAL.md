@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. Semantic checkpoint target `5e0dc3b` passed its isolated sub-agent review after the exact gateway-direction lexical correction audited at `ea8b019`. The registered profile, four answer-free scenarios, differential cases, independent Lean and TypeScript semantics, Temporal refinement/replay, epistemic reflection, and commit-bounded cost are green. Closure target `ee21fce` is pending isolated sub-agent review; repository writes are paused until its verdict.**
+**Owner-approved on 2026-08-02 after the independent proposal review passed required edits and correction audit `0b52d15`. Semantic checkpoint target `5e0dc3b` passed its isolated sub-agent review after the exact gateway-direction lexical correction audited at `ea8b019`. Closure target `ee21fce` returned APPROVE WITH REQUIRED EDITS with no semantic implementation defect; the claim-surface corrections are applied and await the same reviewer's warm audit. The registered profile, four answer-free scenarios, differential cases, independent Lean and TypeScript semantics, Temporal refinement/replay, epistemic reflection, and commit-bounded cost remain green.**
 
 ## Independent cold-review receipt
 
@@ -28,7 +28,7 @@ Clause 13.4.3 and Table 13.3 define the converging Gateway by the tokens that ha
 
 The mandated OMG issue audit consulted the registered BPMN 2.0.2 issue view and [BPMN21-450](https://issues.omg.org/issues/BPMN21-450) on 2026-08-02. The issue remains open, is marked `Implementation work Blocked`, and has no approved disposition; it reports that the synchronization description and cross-reference are insufficient. No resolved issue therefore supersedes Table 13.3 or selects a general algorithm. This proposal answers only the WCP-7 structured case above and requires the issue disposition to be rechecked before closure.
 
-This is a vendor-neutral BPMN account. It reuses the implemented [Simple Boolean expression language](../SIMPLE-BOOLEAN-EXPRESSION-DECISION.md). No CIB Seven relationship, CIB expression meaning, or CIB evaluator algorithm is selected. The pinned CIB Inclusive Gateway tests remain probe seeds in [breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#proto-mvp-ordering-after-receive-task), not compatibility evidence.
+This is a vendor-neutral BPMN account. It reuses the implemented [Simple Boolean expression language](../SIMPLE-BOOLEAN-EXPRESSION-DECISION.md). No new or Inclusive-Gateway-specific CIB Seven relationship, CIB expression meaning, CIB execution target, or CIB evidence lane is selected. The profile metadata retains `CIB-AGR-0001` and `CIB-OP-0001` only for the already-implemented User Task interaction boundary. The pinned CIB Inclusive Gateway tests remain probe seeds in [breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#proto-mvp-ordering-after-receive-task), not compatibility evidence.
 
 ## Exact source profile
 
@@ -221,7 +221,7 @@ After independent proposal review, approve or reject these choices together:
 1. the exact structured two-condition-plus-default split, three User Task branches, paired join, and None End source profile;
 2. the six `IGW-*` rules and selected-set specialization of the general Inclusive Gateway join requirement;
 3. additive generic `selectMany` and `synchronizeSelected` operations plus one hidden owner-scoped selected-branch collection, with branch-local structural pairing, canonical ordering, selection-aware scope quiescence, exhaustive token-split host classification, and no change to `choose`, `synchronize`, or public observation;
-4. a standards-first Lean/TypeScript/Temporal target set with no CIB relationship or evidence lane in the first capsule; and
+4. a standards-first Lean/TypeScript/Temporal target set with no new or Inclusive-Gateway-specific CIB relationship, execution target, or evidence lane, while profile metadata retains the reused User Task relationships; and
 5. the exact exclusions and atomic pre-release replacement policy above.
 
 Implementation may proceed within the exact approved boundary. Its semantic-checkpoint and closure reviews use context-cold same-effort sub-agents under the current policy.

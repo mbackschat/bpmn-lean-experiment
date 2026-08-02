@@ -304,6 +304,11 @@ type SimpleBooleanExpression = DeepReadonly<
   | { kind: "stringEquals"; variable: string; value: string }
 >;
 
+type BpmnSequenceFlowOrigin = DeepReadonly<{
+  kind: "bpmnSequenceFlow";
+  elementId: string;
+}>;
+
 type ConditionalCandidate = DeepReadonly<{
   condition: SimpleBooleanExpression;
   output: string;
