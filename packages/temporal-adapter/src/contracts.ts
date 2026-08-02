@@ -39,6 +39,7 @@ export enum TemporalHostCapabilityResultKind {
 
 export enum TemporalHostAdmissionFailureCode {
   ConcurrentHostDrivenWaits = "concurrentHostDrivenWaits",
+  EventRaceSchedulerUnavailable = "eventRaceSchedulerUnavailable",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{

@@ -50,7 +50,7 @@ def fireTimer (program : Program) (state : RuntimeState)
   | none => none
   | some wait =>
       if state.eventRaces.any (eventRaceHasTimer · wait) then
-        eventRaceTimerWinner? state timerId logicalTimeMs
+        eventRaceTimerWinner? program state timerId logicalTimeMs
       else if logicalTimeMs = wait.deadlineMs &&
           timerDefinitionMatches program wait then
           some

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
+import { WorkflowClient } from "@temporalio/client";
+
 import {
   BpmnCompilationStatus,
   compileBpmnToSemanticProcess,
@@ -20,11 +22,13 @@ import type {
 import {
   BpmnProcessAdmissionFailureCode,
   BpmnProcessAdmissionResultKind,
+  BpmnProcessStartResultKind,
   TemporalHostAdmissionFailureCode,
   TemporalHostCapabilityResultKind,
   assessBpmnProcessAdmission,
   assessTemporalHostCapability,
   requireScenarioAdmission,
+  startBpmnProcess,
 } from "@bpmn-lean/temporal-adapter";
 
 const limits = Object.freeze({
@@ -205,7 +209,7 @@ test("guards selectMany token-split classification against Timer and effect wait
   }
 });
 
-test("admits one managed Event-Based Gateway race and rejects every extra host-concurrency family", async () => {
+test("rejects the unavailable Event-Based Gateway scheduler before contacting Temporal", async () => {
   const eventRace = await compileFixture(
     "../../bpmn-source/test/fixtures/event-based-gateway-message-timer.bpmn",
     "event-race-host-admission",
@@ -215,18 +219,42 @@ test("admits one managed Event-Based Gateway race and rejects every extra host-c
     ({ kind }) => kind === SemanticOperationKind.AwaitEventRace,
   );
   assert.ok(race?.kind === SemanticOperationKind.AwaitEventRace);
-  assert.deepEqual(assessTemporalHostCapability(eventRace), {
-    kind: TemporalHostCapabilityResultKind.Admitted,
-  });
 
   const expectedRejection = {
     kind: TemporalHostCapabilityResultKind.Rejected,
     failure: {
-      code: TemporalHostAdmissionFailureCode.ConcurrentHostDrivenWaits,
+      code: TemporalHostAdmissionFailureCode.EventRaceSchedulerUnavailable,
       evidence:
-        "A managed event race cannot coexist with another timer, effect, token split, or race.",
+        "The Temporal host does not yet implement the Event-Based Gateway readiness scheduler.",
     },
   } as const;
+  assert.deepEqual(assessTemporalHostCapability(eventRace), expectedRejection);
+
+  const start: StartProcessStimulus = {
+    kind: StimulusKind.StartProcess,
+    commandId: "start-event-race-host-admission",
+    processId: eventRace.processId,
+    instanceId: "EventRaceHostAdmission_1",
+    initialVariables: [],
+  };
+  let temporalStartAccessed = false;
+  const client = new Proxy(new WorkflowClient(), {
+    get(target, property, receiver) {
+      if (property === "start") {
+        temporalStartAccessed = true;
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  assert.deepEqual(
+    await startBpmnProcess(client, start, eventRace, { taskQueue: "unused" }),
+    {
+      kind: BpmnProcessStartResultKind.Rejected,
+      failure: expectedRejection.failure,
+    },
+  );
+  assert.equal(temporalStartAccessed, false);
+
   for (const hostWaitKind of [
     SemanticOperationKind.AwaitTimer,
     SemanticOperationKind.AwaitEffect,

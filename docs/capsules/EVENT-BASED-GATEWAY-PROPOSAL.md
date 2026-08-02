@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-02 after the isolated same-effort sub-agent review of `dd80bdc` and same-reviewer correction audit `acff781`; semantic checkpoint target `e595b1c` is green and must pass its mandatory isolated review before scenario, differential, or durable Temporal scheduling work begins.**
+**Owner-approved on 2026-08-02 after the isolated same-effort sub-agent review of `dd80bdc` and same-reviewer correction audit `acff781`; semantic checkpoint target `e595b1c` received APPROVE WITH REQUIRED EDITS, and its local corrections must pass the same reviewer's audit before scenario, differential, or durable Temporal scheduling work begins.**
 
 ## Independent cold-review receipt
 

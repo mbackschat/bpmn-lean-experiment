@@ -257,6 +257,71 @@ test("blocks scope quiescence around a hidden race and rejects malformed operati
   }
 });
 
+test("binds each winner to one exact race definition and its paired live members", () => {
+  const armed = applyStimulus(eventRaceProgram, initialState, eventRaceStart).state;
+  const race = eventRaceProgram.operations.find(
+    (operation) => operation.kind === SemanticOperationKind.AwaitEventRace,
+  );
+  const messageWait = armed.messageWaits[0];
+  const timerWait = armed.timerWaits[0];
+  const eventRace = armed.eventRaces[0];
+  assert.ok(
+    race?.kind === SemanticOperationKind.AwaitEventRace &&
+      messageWait !== undefined &&
+      timerWait !== undefined &&
+      eventRace !== undefined,
+  );
+
+  const swappedLiveOutputs = {
+    ...armed,
+    messageWaits: [{ ...messageWait, output: timerWait.output }],
+    timerWaits: [{ ...timerWait, output: messageWait.output }],
+  };
+  const swappedDefinition = {
+    ...eventRaceProgram,
+    operations: eventRaceProgram.operations.map((operation) =>
+      operation === race
+        ? {
+            ...race,
+            message: { ...race.message, output: race.timer.output },
+            timer: { ...race.timer, output: race.message.output },
+          }
+        : operation
+    ),
+  };
+  const duplicateDefinition = {
+    ...eventRaceProgram,
+    operations: [
+      ...eventRaceProgram.operations,
+      {
+        ...race,
+        id: `${race.id}:duplicate`,
+        message: { ...race.message, output: race.timer.output },
+      },
+    ],
+  };
+  const wrongRaceOccurrence = {
+    ...armed,
+    eventRaces: [{
+      ...eventRace,
+      id: { ...eventRace.id, processInstanceId: "other-instance" },
+    }],
+  };
+
+  for (const [program, state] of [
+    [eventRaceProgram, swappedLiveOutputs],
+    [swappedDefinition, armed],
+    [duplicateDefinition, armed],
+    [eventRaceProgram, wrongRaceOccurrence],
+  ] as const) {
+    for (const stimulus of [messageDelivery(), timerFiring()]) {
+      const result = applyStimulus(program, state, stimulus);
+      assert.equal(result.outcome, CommandOutcome.Rejected);
+      assert.deepEqual(result.state, state);
+    }
+  }
+});
+
 test("owner interruption removes the race and both members while retaining counters", () => {
   const armed = applyStimulus(eventRaceProgram, initialState, eventRaceStart).state;
   const root = armed.scopeOccurrences[0];

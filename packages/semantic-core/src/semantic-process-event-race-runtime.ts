@@ -136,7 +136,7 @@ export function winEventRaceWithMessage(
   if (race === undefined) {
     return null;
   }
-  const members = completeMembers(program, state, race);
+  const members = exactEventRaceBinding(program, state, race);
   if (
     members === undefined ||
     !sameMessageChannel(members.message.channel, stimulus.channel)
@@ -146,7 +146,7 @@ export function winEventRaceWithMessage(
   return commitWinner(
     state,
     race,
-    members.message.output,
+    members.definition.message.output,
     members.message.owner,
     state.logicalTimeMs,
   );
@@ -169,7 +169,7 @@ export function winEventRaceWithTimer(
   if (race === undefined) {
     return null;
   }
-  const members = completeMembers(program, state, race);
+  const members = exactEventRaceBinding(program, state, race);
   if (
     members === undefined ||
     stimulus.logicalTimeMs !== members.timer.deadlineMs
@@ -179,7 +179,7 @@ export function winEventRaceWithTimer(
   return commitWinner(
     state,
     race,
-    members.timer.output,
+    members.definition.timer.output,
     members.timer.owner,
     members.timer.deadlineMs,
   );
@@ -222,28 +222,47 @@ export function eventRaceAssociationsAreValid(state: RuntimeState): boolean {
   );
 }
 
-function completeMembers(
+type ExactEventRaceBinding = Readonly<{
+  definition: AwaitEventRaceOperation;
+  message: RuntimeState["messageWaits"][number];
+  timer: RuntimeState["timerWaits"][number];
+}>;
+
+/** Binds one race occurrence to one definition and both exact live wait records. */
+function exactEventRaceBinding(
   program: SemanticProcessProgram,
   state: RuntimeState,
   race: EventRace,
-) {
-  const operation = program.operations.find(
+): ExactEventRaceBinding | undefined {
+  if (state.control.kind !== ControlStateKind.Running) {
+    return undefined;
+  }
+  const definition = only(program.operations.filter(
     (candidate): candidate is AwaitEventRaceOperation =>
       candidate.kind === SemanticOperationKind.AwaitEventRace &&
       candidate.origin.elementId === race.id.elementId,
-  );
-  const message = state.messageWaits.find((wait) => raceOwnsMessage(race, wait));
-  const timer = state.timerWaits.find((wait) => raceOwnsTimer(race, wait));
-  return operation !== undefined &&
-      message !== undefined &&
-      timer !== undefined &&
-      operation.message.elementId === message.id.elementId &&
-      operation.timer.elementId === timer.id.elementId &&
-      sameMessageChannel(operation.message.channel, message.channel) &&
-      sameScopeOccurrence(message.owner, race.owner) &&
-      sameScopeOccurrence(timer.owner, race.owner)
-    ? { message, timer }
-    : undefined;
+  ));
+  const message = only(state.messageWaits.filter((wait) =>
+    raceOwnsMessage(race, wait)
+  ));
+  const timer = only(state.timerWaits.filter((wait) => raceOwnsTimer(race, wait)));
+  if (
+    definition === undefined ||
+    message === undefined ||
+    timer === undefined ||
+    race.id.processInstanceId !== state.control.instanceId ||
+    race.owner.processInstanceId !== state.control.instanceId ||
+    race.messageSubscriptionId.processInstanceId !== state.control.instanceId ||
+    race.timerOccurrenceId.processInstanceId !== state.control.instanceId ||
+    definition.message.elementId !== race.messageSubscriptionId.elementId ||
+    definition.timer.elementId !== race.timerOccurrenceId.elementId ||
+    message.output !== definition.message.output ||
+    timer.output !== definition.timer.output ||
+    !sameMessageChannel(definition.message.channel, message.channel)
+  ) {
+    return undefined;
+  }
+  return { definition, message, timer };
 }
 
 function commitWinner(

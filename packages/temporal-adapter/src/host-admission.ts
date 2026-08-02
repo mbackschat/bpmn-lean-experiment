@@ -19,9 +19,9 @@ import type {
  * User Task and Message waits are passive ingress and may coexist. A token
  * split combined with a timer or effect can create more than one host-driven
  * branch, which requires a scheduler that this adapter does not implement.
- * One Event-Based Gateway operation is a closed managed Message/Timer race;
- * another host-driven wait, token split, or managed race would escape that
- * scheduler's single-race ownership boundary and is rejected before start.
+ * Event-Based Gateway operations retain their own exhaustive class so the
+ * future readiness scheduler cannot be admitted by falling through as passive.
+ * Until that scheduler exists, every managed race is rejected before start.
  */
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
@@ -37,17 +37,14 @@ export function assessTemporalHostCapability(
     ({ kind }) =>
       classifyHostOperation(kind) === HostOperationClass.ManagedEventRace,
   ).length;
-  if (
-    managedEventRaceCount > 1 ||
-    (managedEventRaceCount === 1 && (canSplitTokens || hasHostDrivenWait))
-  ) {
+  if (managedEventRaceCount > 0) {
     return {
       kind: TemporalHostCapabilityResultKind.Rejected,
       failure: {
         code:
-          TemporalHostAdmissionFailureCode.ConcurrentHostDrivenWaits,
+          TemporalHostAdmissionFailureCode.EventRaceSchedulerUnavailable,
         evidence:
-          "A managed event race cannot coexist with another timer, effect, token split, or race.",
+          "The Temporal host does not yet implement the Event-Based Gateway readiness scheduler.",
       },
     };
   }

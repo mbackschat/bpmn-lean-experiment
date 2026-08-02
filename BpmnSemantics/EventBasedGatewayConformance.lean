@@ -241,9 +241,76 @@ private def swapConfigurationOrigins : SemanticOperation → SemanticOperation
 def swappedConfigurationProgram : Program :=
   { program with operations := program.operations.map swapConfigurationOrigins }
 
+private def swapEventRaceOutputs : SemanticOperation → SemanticOperation
+  | .awaitEventRace id origin input message timer =>
+      .awaitEventRace id origin input
+        { message with output := timer.output }
+        { timer with output := message.output }
+  | operation => operation
+
+def swappedOutputProgram : Program :=
+  { program with operations := program.operations.map swapEventRaceOutputs }
+
+private def replaceEventRaceOrigin : SemanticOperation → SemanticOperation
+  | .awaitEventRace id _ input message timer =>
+      .awaitEventRace id { elementId := ⟨"WrongEventGateway"⟩ } input message timer
+  | operation => operation
+
+def wrongRaceDefinitionProgram : Program :=
+  { program with operations := program.operations.map replaceEventRaceOrigin }
+
+def duplicateRaceDefinitionProgram : Program :=
+  match program.operations.find? fun
+      | .awaitEventRace .. => true
+      | _ => false with
+  | some (.awaitEventRace _ origin input message timer) =>
+      { program with
+        operations := .awaitEventRace ⟨"operation:DuplicateEventGateway"⟩
+          origin input message timer :: program.operations }
+  | _ => program
+
+def mixedDuplicateOriginProgram : Program :=
+  match program.operations.find? fun
+      | .awaitEventRace .. => true
+      | _ => false with
+  | some (.awaitEventRace _ origin input message timer) =>
+      { program with
+        operations := .awaitEventRace ⟨"operation:MalformedEventGateway"⟩
+          origin input { message with output := timer.output } timer ::
+            program.operations }
+  | _ => program
+
 theorem swapped_configuration_origins_fail_checked_binding :
     programWellFormed swappedConfigurationProgram = true ∧
       definitionBindingValid checkedProcess swappedConfigurationProgram = false := by
+  native_decide
+
+theorem both_winner_directions_reject_swapped_outputs :
+    (applyStimulus scenarioClosureLimit swappedOutputProgram armed.state
+        messageStimulus).outcome = .rejected ∧
+      (applyStimulus scenarioClosureLimit swappedOutputProgram armed.state
+        timerStimulus).outcome = .rejected := by
+  native_decide
+
+theorem both_winner_directions_reject_the_wrong_race_definition :
+    (applyStimulus scenarioClosureLimit wrongRaceDefinitionProgram armed.state
+        messageStimulus).outcome = .rejected ∧
+      (applyStimulus scenarioClosureLimit wrongRaceDefinitionProgram armed.state
+        timerStimulus).outcome = .rejected := by
+  native_decide
+
+theorem both_winner_directions_require_one_unique_race_definition :
+    (applyStimulus scenarioClosureLimit duplicateRaceDefinitionProgram
+        armed.state messageStimulus).outcome = .rejected ∧
+      (applyStimulus scenarioClosureLimit duplicateRaceDefinitionProgram
+        armed.state timerStimulus).outcome = .rejected := by
+  native_decide
+
+theorem both_winner_directions_reject_a_malformed_same_origin_definition :
+    (applyStimulus scenarioClosureLimit mixedDuplicateOriginProgram armed.state
+        messageStimulus).outcome = .rejected ∧
+      (applyStimulus scenarioClosureLimit mixedDuplicateOriginProgram armed.state
+        timerStimulus).outcome = .rejected := by
   native_decide
 
 theorem start_closure_arms_atomically_in_two_steps :

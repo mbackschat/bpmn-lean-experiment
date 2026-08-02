@@ -53,13 +53,6 @@ private def insertEventRaceCanonical (race : EventRace) :
       if eventRaceBefore race current then race :: current :: rest
       else current :: insertEventRaceCanonical race rest
 
-def eventRaceMessageDefinitionMatches (program : Program)
-    (wait : MessageWait) : Bool :=
-  program.operations.any fun
-    | .awaitEventRace _ _ _ message _ =>
-        decide (message.elementId = wait.elementId && message.channel = wait.channel)
-    | _ => false
-
 def eventRaceOccurrenceMatches (id : OccurrenceId) (race : EventRace) : Bool :=
   decide (race.id = id)
 
@@ -76,6 +69,37 @@ def eventRaceHasTimer (race : EventRace) (wait : TimerWait) : Bool :=
       race.timerOccurrenceId.elementId.value = wait.elementId.value &&
       race.timerOccurrenceId.activation = wait.activation &&
       race.owner = wait.owner)
+
+def eventRaceOperationMatchesIdentity (race : EventRace) :
+    SemanticOperation → Bool
+  | .awaitEventRace _ origin _ _ _ =>
+      decide (origin.elementId.value = race.id.elementId.value)
+  | _ => false
+
+def eventRaceOperationMatchesLiveMembers (race : EventRace)
+    (messageWait : MessageWait) (timerWait : TimerWait) :
+    SemanticOperation → Bool
+  | .awaitEventRace _ origin _ message timer =>
+      eventRaceHasMessage race messageWait &&
+        eventRaceHasTimer race timerWait &&
+        decide (
+          origin.elementId.value = race.id.elementId.value ∧
+            race.id.processInstanceId = messageWait.processInstanceId ∧
+            race.id.processInstanceId = timerWait.processInstanceId ∧
+            message.elementId = messageWait.elementId ∧
+            message.channel = messageWait.channel ∧
+            message.output = messageWait.output ∧
+            timer.elementId = timerWait.elementId ∧
+            timer.output = timerWait.output)
+  | _ => false
+
+/-- Exactly one admitted race operation must account for both complete live members. -/
+def eventRaceOperationToLiveMembersValid (program : Program) (race : EventRace)
+    (messageWait : MessageWait) (timerWait : TimerWait) : Bool :=
+  match program.operations.filter (eventRaceOperationMatchesIdentity race) with
+  | [operation] =>
+      eventRaceOperationMatchesLiveMembers race messageWait timerWait operation
+  | _ => false
 
 def armEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (message : EventRaceMessageArm)
@@ -290,14 +314,15 @@ def eventRaceMessageWinner? (program : Program) (state : RuntimeState)
               | none => none
               | some timerWait =>
                   if messageWait.channel = channel &&
-                      eventRaceMessageDefinitionMatches program messageWait then
+                      eventRaceOperationToLiveMembersValid program race
+                        messageWait timerWait then
                     some (commitEventRaceMessageWinner state race messageWait
                       timerWait)
                   else none
   else none
 
-def eventRaceTimerWinner? (state : RuntimeState) (timerId : TimerOccurrenceId)
-    (logicalTimeMs : Nat) : Option RuntimeState :=
+def eventRaceTimerWinner? (program : Program) (state : RuntimeState)
+    (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) : Option RuntimeState :=
   if eventRaceAssociationsValid state then
     match state.timerWaits.find? (eventRaceTimerOccurrenceMatches timerId) with
       | none => none
@@ -308,7 +333,9 @@ def eventRaceTimerWinner? (state : RuntimeState) (timerId : TimerOccurrenceId)
               match state.messageWaits.find? (eventRaceHasMessage race) with
               | none => none
               | some messageWait =>
-                  if logicalTimeMs = timerWait.deadlineMs then
+                  if logicalTimeMs = timerWait.deadlineMs &&
+                      eventRaceOperationToLiveMembersValid program race
+                        messageWait timerWait then
                     some (commitEventRaceTimerWinner state race messageWait
                       timerWait)
                   else none
@@ -325,8 +352,10 @@ inductive EventRaceMessageWinnerStep : Program → RuntimeState →
       (association : eventRaceForMessage? before messageWait = some race)
       (sibling : before.timerWaits.find? (eventRaceHasTimer race) =
         some timerWait)
+      (associations : eventRaceAssociationsValid before = true)
       (callerChannel : messageWait.channel = channel)
-      (definition : eventRaceMessageDefinitionMatches program messageWait = true) :
+      (definition : eventRaceOperationToLiveMembersValid program race
+        messageWait timerWait = true) :
       EventRaceMessageWinnerStep program before subscriptionId channel
         { before with
           messageWaits := before.messageWaits.erase messageWait
@@ -335,9 +364,10 @@ inductive EventRaceMessageWinnerStep : Program → RuntimeState →
           tokens := addToken before.tokens messageWait.output messageWait.owner }
 
 /-- Declarative Timer-winner relation with exact occurrence, unique race, sibling, deadline, and state-update premises. -/
-inductive EventRaceTimerWinnerStep : RuntimeState → TimerOccurrenceId → Nat →
-    RuntimeState → Prop where
-  | commit (before : RuntimeState) (timerId : TimerOccurrenceId)
+inductive EventRaceTimerWinnerStep : Program → RuntimeState →
+    TimerOccurrenceId → Nat → RuntimeState → Prop where
+  | commit (program : Program) (before : RuntimeState)
+      (timerId : TimerOccurrenceId)
       (logicalTimeMs : Nat) (timerWait : TimerWait) (race : EventRace)
       (messageWait : MessageWait)
       (occurrence : before.timerWaits.find?
@@ -345,8 +375,11 @@ inductive EventRaceTimerWinnerStep : RuntimeState → TimerOccurrenceId → Nat 
       (association : eventRaceForTimer? before timerWait = some race)
       (sibling : before.messageWaits.find? (eventRaceHasMessage race) =
         some messageWait)
-      (deadline : logicalTimeMs = timerWait.deadlineMs) :
-      EventRaceTimerWinnerStep before timerId logicalTimeMs
+      (associations : eventRaceAssociationsValid before = true)
+      (deadline : logicalTimeMs = timerWait.deadlineMs)
+      (definition : eventRaceOperationToLiveMembersValid program race
+        messageWait timerWait = true) :
+      EventRaceTimerWinnerStep program before timerId logicalTimeMs
         { before with
           messageWaits := before.messageWaits.erase messageWait
           timerWaits := before.timerWaits.erase timerWait
@@ -367,7 +400,8 @@ inductive EventRaceWinnerStep : Program → RuntimeState → Stimulus →
   | timer (program : Program) (before after : RuntimeState)
       (commandId : SemanticId) (timerId : TimerOccurrenceId)
       (logicalTimeMs : Nat)
-      (transition : EventRaceTimerWinnerStep before timerId logicalTimeMs after) :
+      (transition : EventRaceTimerWinnerStep program before timerId logicalTimeMs
+        after) :
       EventRaceWinnerStep program before
         (.fireTimer commandId timerId logicalTimeMs) after
 
@@ -395,15 +429,18 @@ theorem eventRaceMessageWinnerState_sound (program : Program)
             have callerChannel : messageWait.channel = channel := by
               exact of_decide_eq_true (Bool.and_eq_true_iff.mp accepted).1
             exact .commit program before subscriptionId channel messageWait race
-              timerWait occurrenceEq associationEq siblingEq callerChannel
+              timerWait occurrenceEq associationEq siblingEq associationsValid
+              callerChannel
               (Bool.and_eq_true_iff.mp accepted).2
           · contradiction
   · contradiction
 
-theorem eventRaceTimerWinnerState_sound (before after : RuntimeState)
+theorem eventRaceTimerWinnerState_sound (program : Program)
+    (before after : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
-    (success : eventRaceTimerWinner? before timerId logicalTimeMs = some after) :
-    EventRaceTimerWinnerStep before timerId logicalTimeMs after := by
+    (success : eventRaceTimerWinner? program before timerId logicalTimeMs =
+      some after) :
+    EventRaceTimerWinnerStep program before timerId logicalTimeMs after := by
   unfold eventRaceTimerWinner? at success
   split at success
   · rename_i associationsValid
@@ -417,10 +454,12 @@ theorem eventRaceTimerWinnerState_sound (before after : RuntimeState)
         · contradiction
         · rename_i messageWait siblingEq
           split at success
-          · rename_i deadline
+          · rename_i accepted
             cases success
-            exact .commit before timerId logicalTimeMs timerWait race messageWait
-              occurrenceEq associationEq siblingEq deadline
+            exact .commit program before timerId logicalTimeMs timerWait race
+              messageWait occurrenceEq associationEq siblingEq associationsValid
+              (of_decide_eq_true (Bool.and_eq_true_iff.mp accepted).1)
+              (Bool.and_eq_true_iff.mp accepted).2
           · contradiction
   · contradiction
 
@@ -439,11 +478,13 @@ theorem eventRaceMessageWinner_sound (program : Program)
 theorem eventRaceTimerWinner_sound (program : Program)
     (before after : RuntimeState) (commandId : SemanticId)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
-    (success : eventRaceTimerWinner? before timerId logicalTimeMs = some after) :
+    (success : eventRaceTimerWinner? program before timerId logicalTimeMs =
+      some after) :
     EventRaceWinnerStep program before
       (.fireTimer commandId timerId logicalTimeMs) after :=
   .timer program before after commandId timerId logicalTimeMs
-    (eventRaceTimerWinnerState_sound before after timerId logicalTimeMs success)
+    (eventRaceTimerWinnerState_sound program before after timerId logicalTimeMs
+      success)
 
 /-- A record is resumable only when both complete member identities still name owner-matching waits. -/
 def eventRaceMembersValid (state : RuntimeState) (race : EventRace) : Bool :=
@@ -453,19 +494,59 @@ def eventRaceMembersValid (state : RuntimeState) (race : EventRace) : Bool :=
 theorem eventRace_exact_membership_and_ownership
     (state : RuntimeState) (race : EventRace)
     (present : race ∈ state.eventRaces)
-    (valid : eventRaceMembersValid state race = true) :
-    race ∈ state.eventRaces ∧
-      (∃ messageWait ∈ state.messageWaits,
-        eventRaceHasMessage race messageWait) ∧
-      ∃ timerWait ∈ state.timerWaits,
-        eventRaceHasTimer race timerWait := by
-  have members := Bool.and_eq_true_iff.mp valid
-  exact ⟨present, List.any_eq_true.mp members.1,
-    List.any_eq_true.mp members.2⟩
+    (valid : eventRaceAssociationsValid state = true) :
+    ∃ messageWait timerWait,
+      state.messageWaits.filter (eventRaceHasMessage race) = [messageWait] ∧
+        state.timerWaits.filter (eventRaceHasTimer race) = [timerWait] ∧
+        messageWait ∈ state.messageWaits ∧
+        eventRaceHasMessage race messageWait = true ∧
+        timerWait ∈ state.timerWaits ∧
+        eventRaceHasTimer race timerWait = true := by
+  have raceValid := List.all_eq_true.mp valid race present
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at raceValid
+  have messageLength :
+      (state.messageWaits.filter (eventRaceHasMessage race)).length = 1 :=
+    raceValid.1.1.1.1
+  have timerLength :
+      (state.timerWaits.filter (eventRaceHasTimer race)).length = 1 :=
+    raceValid.1.1.1.2
+  obtain ⟨messageWait, messageSingleton⟩ :
+      ∃ messageWait,
+        state.messageWaits.filter (eventRaceHasMessage race) = [messageWait] := by
+    generalize filteredEq : state.messageWaits.filter
+      (eventRaceHasMessage race) = filtered at messageLength
+    cases filtered with
+    | nil => simp at messageLength
+    | cons messageWait rest =>
+        cases rest with
+        | nil => exact ⟨messageWait, rfl⟩
+        | cons next remaining => simp at messageLength
+  obtain ⟨timerWait, timerSingleton⟩ :
+      ∃ timerWait,
+        state.timerWaits.filter (eventRaceHasTimer race) = [timerWait] := by
+    generalize filteredEq : state.timerWaits.filter
+      (eventRaceHasTimer race) = filtered at timerLength
+    cases filtered with
+    | nil => simp at timerLength
+    | cons timerWait rest =>
+        cases rest with
+        | nil => exact ⟨timerWait, rfl⟩
+        | cons next remaining => simp at timerLength
+  have messageFiltered : messageWait ∈
+      state.messageWaits.filter (eventRaceHasMessage race) := by
+    rw [messageSingleton]
+    simp
+  have timerFiltered : timerWait ∈
+      state.timerWaits.filter (eventRaceHasTimer race) := by
+    rw [timerSingleton]
+    simp
+  simp only [List.mem_filter] at messageFiltered timerFiltered
+  exact ⟨messageWait, timerWait, messageSingleton, timerSingleton,
+    messageFiltered.1, messageFiltered.2, timerFiltered.1, timerFiltered.2⟩
 
 /-- On the exact admitted member inventory, Message commitment removes both waits and makes Timer selection ineligible. -/
 theorem committed_message_winner_is_exclusive
-    (state : RuntimeState) (race : EventRace)
+    (program : Program) (state : RuntimeState) (race : EventRace)
     (messageWait : MessageWait) (timerWait : TimerWait)
     (messages : state.messageWaits = [messageWait])
     (timers : state.timerWaits = [timerWait])
@@ -473,8 +554,8 @@ theorem committed_message_winner_is_exclusive
     let after := commitEventRaceMessageWinner state race messageWait timerWait
     after.messageWaits = [] ∧ after.timerWaits = [] ∧
       after.eventRaces = [] ∧
-      eventRaceTimerWinner? after race.timerOccurrenceId timerWait.deadlineMs =
-        none := by
+      eventRaceTimerWinner? program after race.timerOccurrenceId
+        timerWait.deadlineMs = none := by
   simp [commitEventRaceMessageWinner, messages, timers, races,
     eventRaceTimerWinner?]
 
