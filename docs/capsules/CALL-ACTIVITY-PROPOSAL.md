@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. The first green source/contract/Lean/semantic-core checkpoint is ready for its mandatory independent review; artifact, differential, and durable Temporal lanes remain blocked.**
+**Owner-approved for implementation in the exact bounded profile below. Independent review of immutable target `8f796f4` returned APPROVE WITH REQUIRED EDITS, and the same reviewer passed correction audit target `3e17a05` without a material redesign. The first green source/contract/Lean/semantic-core checkpoint is committed at `5cb7b54` and awaiting its mandatory independent review; artifact, differential, and durable Temporal lanes remain blocked.**
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `8f796f4` | `fork-turns-none` | `approve-with-required-edits` | `3e17a05` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `5cb7b54` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). The context-cold sub-agent inherited the root model and effort. It required command-outcome, QName, graph, identity, evidence, profile-metadata, and extraction-boundary corrections; the same reviewer passed correction audit target `3e17a05` without a material redesign.
