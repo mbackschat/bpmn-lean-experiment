@@ -24,8 +24,11 @@ import {
   mergeProcessVariableBindings,
 } from "./semantic-process-data.js";
 import {
-  evaluateSimpleBooleanExpression,
-} from "./simple-boolean-expression.js";
+  choose,
+  duplicate,
+  reachNoneEnd,
+  synchronize,
+} from "./semantic-process-control-flow-runtime.js";
 import {
   throwError,
 } from "./semantic-process-error-runtime.js";
@@ -479,80 +482,6 @@ export function applyInternalOperation(
     default:
       return assertNever(operation);
   }
-}
-
-function reachNoneEnd(
-  operation: Extract<
-    SemanticOperation,
-    { kind: SemanticOperationKind.ReachNoneEnd }
-  >,
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-): RuntimeState {
-  return {
-    ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
-    endOccurrences: state.endOccurrences + 1,
-  };
-}
-
-function duplicate(
-  operation: Extract<
-    SemanticOperation,
-    { kind: SemanticOperationKind.Duplicate }
-  >,
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-): RuntimeState {
-  return {
-    ...state,
-    controlTokens: operation.outputs.reduce(
-      (tokens, output) => addToken(tokens, output, owner),
-      removeToken(state.controlTokens, operation.input, owner),
-    ),
-  };
-}
-
-function synchronize(
-  operation: Extract<
-    SemanticOperation,
-    { kind: SemanticOperationKind.Synchronize }
-  >,
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-): RuntimeState {
-  const remaining = operation.inputs.reduce(
-    (tokens, input) => removeToken(tokens, input, owner),
-    state.controlTokens,
-  );
-  return {
-    ...state,
-    controlTokens: addToken(remaining, operation.output, owner),
-  };
-}
-
-function choose(
-  operation: Extract<
-    SemanticOperation,
-    { kind: SemanticOperationKind.Choose }
-  >,
-  state: RuntimeState,
-  owner: ScopeOccurrenceId,
-): RuntimeState {
-  const selected = operation.candidates.find(({ condition }) =>
-    evaluateSimpleBooleanExpression(
-      condition,
-      state.variables.process.bindings,
-    )
-  );
-  return {
-    ...state,
-    controlTokens: addToken(
-      removeToken(state.controlTokens, operation.input, owner),
-      selected?.output ?? operation.defaultOutput,
-      owner,
-    ),
-  };
 }
 
 function closeInternal(
