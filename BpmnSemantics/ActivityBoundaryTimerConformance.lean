@@ -260,14 +260,16 @@ theorem bounded_task_completion_after_the_deadline_victory_is_rejected :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by decide
 
-/-- A refused pre-due firing leaves the deadline armed rather than consuming it, so the exact firing at `1000` still wins normally afterwards. Without this the pre-due refusal could be satisfied by silently withdrawing the arm. -/
+/-- A refused pre-due firing leaves the deadline armed rather than consuming it, so the exact firing at `1000` still commits afterwards and reaches the same victory state. Stating this as equality between the two firings would prove nothing: it would hold under a mutation that made both reject, so the committed outcome and the exact resulting state are pinned here instead. -/
 theorem exact_firing_still_wins_after_a_refused_pre_due_firing :
     applyStimulus scenarioClosureLimit program
         (applyStimulus scenarioClosureLimit program armedState
           (.fireTimer ⟨"fire-deadline-early"⟩ deadlineId 999)).state
         (.fireTimer ⟨"fire-deadline"⟩ deadlineId 1000) =
-      applyStimulus scenarioClosureLimit program armedState
-        (.fireTimer ⟨"fire-deadline"⟩ deadlineId 1000) := by decide
+      { outcome := .committed
+        state := afterDeadlineVictory
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by decide
 
 /-- The timing profile admits no completion patch, so a submitted variable is refused rather than ignored: silently dropping it would add a data claim to a timing capsule. -/
 theorem submitted_values_are_rejected_rather_than_ignored :

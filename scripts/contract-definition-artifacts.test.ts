@@ -314,12 +314,17 @@ test("binds the Call Activity node and exact invocation pair", async () => {
   assert.equal(operation({ ...returned, returnOperationId: invoke.returnOperationId }), false);
 });
 
-test("keeps every checked-process schema definition reachable", async () => {
+/**
+ * Covers both closed definition schemas, not only the checked graph.
+ *
+ * This is a second, uncorrelated detector for an unreferenced `$defs` entry: writing a variant
+ * definition and forgetting the one-line wiring into its union is the shape that actually landed
+ * once, and it landed in the Semantic Process schema.
+ */
+test("keeps every definition schema's entries reachable", async () => {
+  for (const file of ["checked-process.schema.json", "semantic-process.schema.json"]) {
   const schema = JSON.parse(
-    await readFile(
-      `${projectRoot}/contracts/schemas/checked-process.schema.json`,
-      "utf8",
-    ),
+    await readFile(`${projectRoot}/contracts/schemas/${file}`, "utf8"),
   ) as Readonly<Record<string, unknown>>;
   const definitions = schema.$defs;
   assert.ok(isRecord(definitions));
@@ -345,7 +350,9 @@ test("keeps every checked-process schema definition reachable", async () => {
     [...reachable].sort(compareCanonicalStrings),
     Object.keys(definitions).sort(compareCanonicalStrings),
   );
+}
 });
+
 
 test("accepts the canonical checked-process and Semantic Process contract shapes", async () => {
   for (const artifacts of [
