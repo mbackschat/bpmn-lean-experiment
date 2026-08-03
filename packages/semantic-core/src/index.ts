@@ -3,6 +3,7 @@ export * from "./call-activity-admission.js";
 export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.js";
 export * from "./deep-readonly.js";
 export * from "./effect-transport-material.js";
+export { isMessageChannel, sameMessageChannel } from "./message-channel.js";
 export * from "./semantic-process-admission.js";
 export * from "./inclusive-gateway-admission.js";
 export * from "./event-race-admission.js";
