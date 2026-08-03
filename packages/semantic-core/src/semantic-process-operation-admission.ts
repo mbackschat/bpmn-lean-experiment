@@ -26,6 +26,9 @@ import {
   isWellFormedAwaitEventRaceOperation,
 } from "./event-race-admission.js";
 import {
+  isWellFormedAwaitBoundedUserTaskOperation,
+} from "./bounded-task-admission.js";
+import {
   isWellFormedInvokeProcessOperation,
   isWellFormedReturnProcessOperation,
 } from "./call-activity-admission.js";
@@ -187,6 +190,12 @@ export function isWellFormedSemanticOperation(
       return isWellFormedSynchronizeSelectedOperation(value, placeIds);
     case SemanticOperationKind.AwaitEventRace:
       return isWellFormedAwaitEventRaceOperation(value, placeIds, placeOrigins);
+    case SemanticOperationKind.AwaitBoundedUserTask:
+      return isWellFormedAwaitBoundedUserTaskOperation(
+        value,
+        placeIds,
+        placeOrigins,
+      );
     case SemanticOperationKind.ThrowError:
       return isWellFormedThrowError(
         value,

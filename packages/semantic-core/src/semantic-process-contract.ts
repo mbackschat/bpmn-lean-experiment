@@ -9,6 +9,7 @@ export enum CheckedNodeKind {
   EmbeddedSubProcess = "embeddedSubProcess",
   CallActivity = "callActivity",
   BoundaryErrorEvent = "boundaryErrorEvent",
+  TimerBoundaryEvent = "timerBoundaryEvent",
   UserTask = "userTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
@@ -170,6 +171,21 @@ export type CheckedNode =
       id: string;
       attachedToRef: string;
       error: ErrorReference;
+      outputFlowId: string;
+    }>
+  /**
+   * An interrupting Timer Boundary Event.
+   *
+   * `durationLiteral` retains the exact source lexeme so Lean normalizes it to milliseconds
+   * independently instead of trusting the TypeScript compiler's arithmetic. `cancelActivity` is absent
+   * because only the interrupting form is admitted: the XSD and CMOF default it to `true`, so an
+   * omitted attribute is interrupting and a lexical `false` is rejected at admission.
+   */
+  | DeepReadonly<{
+      kind: CheckedNodeKind.TimerBoundaryEvent;
+      id: string;
+      attachedToRef: string;
+      durationLiteral: "PT1S";
       outputFlowId: string;
     }>
   | DeepReadonly<{

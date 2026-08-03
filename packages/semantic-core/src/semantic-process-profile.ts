@@ -4,6 +4,8 @@ import {
 } from "./semantic-process-contract.js";
 
 export const SemanticProfileId = Object.freeze({
+  ActivityBoundaryTimer:
+    "bpmn-2.0.2-activity-boundary-timer-draft",
   BoundaryError: "cibseven-2.0.0-a12-boundary-error-draft",
   CalledProcessCallActivity:
     "bpmn-2.0.2-called-process-call-activity-draft",
@@ -130,6 +132,16 @@ function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         CheckedNodeKind.UserTask,
         CheckedNodeKind.InclusiveGateway,
+        end,
+      ]);
+    case SemanticProfileId.ActivityBoundaryTimer:
+      return rootChecked([
+        start,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.TimerBoundaryEvent,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        end,
         end,
       ]);
     case SemanticProfileId.EventBasedGatewayMessageTimer:
@@ -287,6 +299,16 @@ function requiredProgramShape(
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.SynchronizeSelected,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case SemanticProfileId.ActivityBoundaryTimer:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitBoundedUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);

@@ -120,7 +120,37 @@ function lowerNode(
       });
     case CheckedNodeKind.BoundaryErrorEvent:
       return [];
-    case CheckedNodeKind.UserTask:
+    // The deadline has no operation of its own: it is owned by the Activity it is attached to, so
+    // nothing in the program can express the two waits as unrelated siblings.
+    case CheckedNodeKind.TimerBoundaryEvent:
+      return [];
+    case CheckedNodeKind.UserTask: {
+      const boundaryTimer = timerBoundaryFor(source, node.id);
+      if (boundaryTimer !== undefined) {
+        return scoped({
+          ...base,
+          kind: SemanticOperationKind.AwaitBoundedUserTask,
+          input: requireOnly(incoming, node.id, "incoming"),
+          task: {
+            elementId: node.id,
+            name: node.name,
+            output: requireOnly(outgoing, node.id, "outgoing"),
+          },
+          boundaryTimer: {
+            elementId: boundaryTimer.id,
+            durationMs: normalizeTimerDuration(boundaryTimer.durationLiteral),
+            output: requireOnly(
+              flowPlaces(source.sequenceFlows, boundaryTimer.id, "outgoing"),
+              boundaryTimer.id,
+              "outgoing",
+            ),
+            origin: {
+              kind: SemanticOriginKind.BpmnSequenceFlow,
+              elementId: boundaryTimer.outputFlowId,
+            },
+          },
+        });
+      }
       return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitUserTask,
@@ -128,6 +158,7 @@ function lowerNode(
         output: requireOnly(outgoing, node.id, "outgoing"),
         task: { elementId: node.id, name: node.name },
       });
+    }
     case CheckedNodeKind.IntermediateCatchTimerEvent:
       if (isEventRaceCatch(source, node.id)) {
         return [];
@@ -487,6 +518,21 @@ function expectedJoinInputForBranch(
     throw new TypeError(`Checked Inclusive branch ${flowId} has no unique paired join input`);
   }
   return placeId(joinInput.id);
+}
+
+/** The interrupting Timer Boundary Event attached to this Activity, when the profile admitted one. */
+function timerBoundaryFor(
+  source: CheckedProcess,
+  activityId: string,
+): Extract<CheckedNode, { kind: CheckedNodeKind.TimerBoundaryEvent }> | undefined {
+  return source.nodes.find(
+    (candidate): candidate is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.TimerBoundaryEvent }
+    > =>
+      candidate.kind === CheckedNodeKind.TimerBoundaryEvent &&
+      candidate.attachedToRef === activityId,
+  );
 }
 
 function normalizeTimerDuration(durationLiteral: "PT1S"): 1000 {

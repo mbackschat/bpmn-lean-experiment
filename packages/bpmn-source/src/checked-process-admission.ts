@@ -274,6 +274,7 @@ function hasSelectedArity(
     case CheckedNodeKind.ServiceTask:
       return incoming === 1 && outgoing === 1;
     case CheckedNodeKind.BoundaryErrorEvent:
+    case CheckedNodeKind.TimerBoundaryEvent:
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
@@ -424,17 +425,36 @@ function isConnectedAcyclicGraph(
 
 type NodeEdge = Readonly<{ source: string; target: string }>;
 
+/**
+ * Reachability edges no Sequence Flow expresses.
+ *
+ * A Boundary Event has no incoming Flow, so ordinary Flow traversal never reaches it; it becomes
+ * reachable through the Activity it is attached to. That is a property of being attached, not of the
+ * trigger, so every boundary kind contributes an edge. Matching a single kind here silently strands
+ * the next one as unreachable, which reads as a profile-capability rejection rather than a missing edge.
+ */
 function exceptionalEdgesWithinScope(
   nodes: ReadonlyArray<CheckedNode>,
   nodeScopes: ReadonlyMap<string, string>,
   scopeId: string,
 ): ReadonlyArray<NodeEdge> {
-  return nodes.flatMap((node) =>
-    node.kind === CheckedNodeKind.BoundaryErrorEvent &&
-      nodeScopes.get(node.attachedToRef) === scopeId
-      ? [{ source: node.attachedToRef, target: node.id }]
-      : []
-  );
+  return nodes.flatMap((node) => {
+    const host = attachedBoundaryHost(node);
+    return host !== undefined && nodeScopes.get(host) === scopeId
+      ? [{ source: host, target: node.id }]
+      : [];
+  });
+}
+
+/** The Activity a boundary Event is attached to, or `undefined` for any other node. */
+function attachedBoundaryHost(node: CheckedNode): string | undefined {
+  switch (node.kind) {
+    case CheckedNodeKind.BoundaryErrorEvent:
+    case CheckedNodeKind.TimerBoundaryEvent:
+      return node.attachedToRef;
+    default:
+      return undefined;
+  }
 }
 
 function reachableFrom(

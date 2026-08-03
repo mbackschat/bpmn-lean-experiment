@@ -39,6 +39,7 @@ import {
 } from "./simple-boolean-exclusive-gateway-source.js";
 import { projectInclusiveGateway } from "./inclusive-gateway-source.js";
 import { projectEventBasedGateway } from "./event-based-gateway-source.js";
+import { projectTimerBoundaryEvent } from "./timer-boundary-event-source.js";
 import {
   isAdmittedCheckedProcess,
 } from "./checked-process-admission.js";
@@ -269,7 +270,13 @@ function projectNodes(
           childScopeId: definitionScopeId(id),
         };
       case bpmnTypes.boundaryEventType:
-        return projectBoundaryErrorEvent(
+        return projectTimerBoundaryEvent(
+          element,
+          id,
+          flows,
+          bpmnTypes.timerEventDefinitionType,
+        ) ??
+          projectBoundaryErrorEvent(
           element,
           id,
           rootSelection.errorArtifact,
