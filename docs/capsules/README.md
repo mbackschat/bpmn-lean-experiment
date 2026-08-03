@@ -24,7 +24,7 @@ Every new capsule records:
 12. exact unsupported claims, common-mode risks, and versioning consequences;
 13. for any admission widening, the newly reachable stable-state resumption account and the separate adapter host-capability obligation for every reachable wait-set shape.
 14. a Temporal hosting/refinement preflight before a new transition family is implemented, including durable ingress, waits, effects, cancellation, ordering, deduplication, replay, and the smallest executable refinement witness;
-15. atomic versioning consequences across every producer and consumer, including the executable guards and test oracles the implementation must change and not only runtime code, plus an explicit statement of the applicable pre-release or durable-history policy;
+15. atomic versioning consequences across every producer and consumer, including the executable guards and test oracles the implementation must change and not only runtime code, each named as a Markdown link to its path so ordinary link resolution proves the referent exists, plus an explicit statement of the applicable pre-release or durable-history policy;
 16. an epistemic closure review naming the exact established and nearest unsupported claims, common-mode risks, the nearest realistic counterexample, meaningful mutations, and the next-step consequence;
 17. a commit-bounded closure measurement in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the nearest increment that changed the same layers.
 18. an `Independent cold-review receipt` with the proposal, conditional semantic-checkpoint, and closure states defined by [the testing specification](../TESTING-SPEC.md#review-receipt).
