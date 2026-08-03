@@ -42,6 +42,13 @@ export enum TemporalHostCapabilityResultKind {
 export enum TemporalHostAdmissionFailureCode {
   ConcurrentHostDrivenWaits = "concurrentHostDrivenWaits",
   EventRaceSchedulerUnavailable = "eventRaceSchedulerUnavailable",
+  /**
+   * Deliberately distinct from `EventRaceSchedulerUnavailable`.
+   *
+   * The bounded-Activity scheduler and the Event-Based Gateway race share a barrier but not the fact
+   * that licenses it, so one code per host class keeps the two separately falsifiable.
+   */
+  BoundedActivitySchedulerUnavailable = "boundedActivitySchedulerUnavailable",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{

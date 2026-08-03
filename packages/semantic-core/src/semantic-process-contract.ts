@@ -287,6 +287,7 @@ export enum SemanticOperationKind {
   InvokeProcess = "invokeProcess",
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
+  AwaitBoundedUserTask = "awaitBoundedUserTask",
   AwaitMessage = "awaitMessage",
   AwaitTimer = "awaitTimer",
   AwaitEffect = "awaitEffect",
@@ -425,6 +426,32 @@ export type AwaitEventRaceOperation = OperationBase &
     };
   }>;
 
+/**
+ * One User Task occurrence that owns an interrupting boundary Timer deadline.
+ *
+ * The arms are named rather than listed so candidate order is unrepresentable, and they are
+ * deliberately asymmetric: only the Timer arm interrupts. `boundaryTimer.elementId` is the Boundary
+ * Event and is the element published as the timer occurrence, while `origin` carries the boundary
+ * Sequence Flow's BPMN provenance because control places and BPMN elements are separate namespaces.
+ * A boundary-attached Timer is never represented as a standalone `awaitTimer`.
+ */
+export type AwaitBoundedUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitBoundedUserTask;
+    input: string;
+    task: {
+      elementId: string;
+      name: string | null;
+      output: string;
+    };
+    boundaryTimer: {
+      elementId: string;
+      durationMs: 1000;
+      output: string;
+      origin: BpmnSequenceFlowOrigin;
+    };
+  }>;
+
 export type InvokeProcessOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.InvokeProcess;
@@ -478,6 +505,7 @@ export type SemanticOperation =
           durationMs: 1000;
         };
       }>)
+  | AwaitBoundedUserTaskOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.AwaitMessage;

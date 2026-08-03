@@ -30,6 +30,13 @@ import {
   synchronize,
 } from "./semantic-process-control-flow-runtime.js";
 import {
+  armBoundedUserTask,
+  completeBoundedUserTask,
+  interruptBoundedUserTask,
+  isBoundaryTimerDefinition,
+  isBoundedTaskDefinition,
+} from "./semantic-process-bounded-task-runtime.js";
+import {
   throwError,
 } from "./semantic-process-error-runtime.js";
 import {
@@ -172,6 +179,12 @@ function admit(
       return { outcome: CommandOutcome.Rejected, state };
     }
     case StimulusKind.CompleteUserTaskInstance: {
+      if (isBoundedTaskDefinition(program, stimulus.taskId)) {
+        const next = completeBoundedUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       const wait = state.userTaskWaits.find((candidate) =>
         sameOccurrence(candidate.id, stimulus.taskId)
       );
@@ -217,6 +230,12 @@ function admit(
     case StimulusKind.FireTimer: {
       if (isEventRaceTimerDefinition(program, stimulus.timerId)) {
         const next = winEventRaceWithTimer(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      if (isBoundaryTimerDefinition(program, stimulus.timerId)) {
+        const next = interruptBoundedUserTask(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
@@ -431,6 +450,12 @@ export function applyInternalOperation(
       const raceOwner = onlyTokenOwner(state, operation.input);
       return raceOwner !== undefined
         ? armEventRace(operation, state, raceOwner)
+        : null;
+    }
+    case SemanticOperationKind.AwaitBoundedUserTask: {
+      const boundedOwner = onlyTokenOwner(state, operation.input);
+      return boundedOwner !== undefined
+        ? armBoundedUserTask(operation, state, boundedOwner)
         : null;
     }
     case SemanticOperationKind.AwaitEffect: {
