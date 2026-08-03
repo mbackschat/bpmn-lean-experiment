@@ -38,6 +38,72 @@ const fixture = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmn:process>
 </bpmn:definitions>`;
 
+// `Boundary_Orphan` deliberately references a missing target, and
+// `Boundary_None` deliberately carries no Event Definition, because both shapes
+// occur in the pinned corpus and must not silently join a decision-relevant
+// bucket. `Boundary_Timer` is the only non-interrupting event here, so a
+// classifier that ignored `cancelActivity` would still match the total.
+const boundaryFixture = `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <process id="Process_1">
+    <serviceTask id="Service_1" />
+    <userTask id="User_1" />
+    <subProcess id="Sub_1" />
+    <callActivity id="Call_1" calledElement="Process_2" />
+    <boundaryEvent id="Boundary_Error" attachedToRef="Service_1">
+      <errorEventDefinition errorRef="Error_1" />
+    </boundaryEvent>
+    <boundaryEvent id="Boundary_Timer" attachedToRef="User_1"
+      cancelActivity="false">
+      <timerEventDefinition><timeDuration>PT1S</timeDuration></timerEventDefinition>
+    </boundaryEvent>
+    <boundaryEvent id="Boundary_Message" attachedToRef="Sub_1">
+      <messageEventDefinition messageRef="Message_1" />
+    </boundaryEvent>
+    <boundaryEvent id="Boundary_Compensation" attachedToRef="Call_1">
+      <compensateEventDefinition />
+    </boundaryEvent>
+    <boundaryEvent id="Boundary_None" attachedToRef="Service_1" />
+    <boundaryEvent id="Boundary_Orphan" attachedToRef="Absent_1">
+      <signalEventDefinition signalRef="Signal_1" />
+    </boundaryEvent>
+  </process>
+</definitions>`;
+
+test("separates boundary Event triggers, interruption, and attachment hosts", () => {
+  const classification = classifyBpmnXml(boundaryFixture);
+
+  assert.deepEqual(classification.candidates.boundaryEvent, {
+    occurrences: 6,
+    interrupting: 5,
+    nonInterrupting: 1,
+    triggers: {
+      compensation: 1,
+      error: 1,
+      message: 1,
+      none: 1,
+      signal: 1,
+      timer: 1,
+    },
+    attachments: {
+      callActivity: 1,
+      serviceTask: 2,
+      subProcess: 1,
+      unresolved: 1,
+      userTask: 1,
+    },
+  });
+  // Exactly one attachment per Boundary Event, unlike triggers, which a
+  // multiple-Event-Definition event contributes to more than once.
+  assert.equal(
+    Object.values(classification.candidates.boundaryEvent.attachments).reduce(
+      (total, count) => total + count,
+      0,
+    ),
+    classification.candidates.boundaryEvent.occurrences,
+  );
+});
+
 test("classifies reusable breadth mechanisms without depending on namespace prefixes", () => {
   assert.deepEqual(classifyBpmnXml(fixture), {
     structurallyMalformed: false,
@@ -51,6 +117,13 @@ test("classifies reusable breadth mechanisms without depending on namespace pref
       subProcess: 2,
     },
     candidates: {
+      boundaryEvent: {
+        occurrences: 0,
+        interrupting: 0,
+        nonInterrupting: 0,
+        triggers: {},
+        attachments: {},
+      },
       callActivity: {
         occurrences: 1,
         withCalledElement: 1,
@@ -99,6 +172,13 @@ test("labels malformed negative fixtures while retaining their lexical signal", 
       structurallyMalformed: true,
       broad: { receiveTask: 1 },
       candidates: {
+        boundaryEvent: {
+          occurrences: 0,
+          interrupting: 0,
+          nonInterrupting: 0,
+          triggers: {},
+          attachments: {},
+        },
         callActivity: {
           occurrences: 0,
           withCalledElement: 0,

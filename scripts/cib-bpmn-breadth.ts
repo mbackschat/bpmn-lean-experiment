@@ -2,13 +2,22 @@ import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-type XmlElement = {
-  name: string;
-  attributes: Readonly<Record<string, string>>;
-  children: XmlElement[];
-};
+import {
+  flattenElements,
+  hasDirectChild,
+  localNamesById,
+  parseXmlElements,
+  type XmlElement,
+} from "./minimal-xml-tree.ts";
 
 type CandidateCounts = {
+  boundaryEvent: {
+    occurrences: number;
+    interrupting: number;
+    nonInterrupting: number;
+    triggers: Record<string, number>;
+    attachments: Record<string, number>;
+  };
   callActivity: {
     occurrences: number;
     withCalledElement: number;
@@ -108,7 +117,36 @@ const eventDefinitionTriggers = new Map<string, string>([
   ["timerEventDefinition", "timer"],
 ]);
 
+/**
+ * Closed set of Boundary Event hosts that carry a distinct scheduling
+ * consequence: an already-implemented Activity, a scope-owning Activity, or an
+ * unresolvable reference. Every other resolved host is `otherElement`, so the
+ * buckets always sum to the Boundary Event occurrences.
+ */
+const boundaryAttachmentHosts = [
+  "callActivity",
+  "receiveTask",
+  "serviceTask",
+  "subProcess",
+  "transaction",
+  "userTask",
+] as const;
+const otherAttachmentHost = "otherElement";
+const unresolvedAttachmentHost = "unresolved";
+
 const candidateMetricNames = [
+  "boundaryEvent.interrupting",
+  "boundaryEvent.nonInterrupting",
+  "boundaryEvent.total",
+  ...[...new Set(eventDefinitionTriggers.values())].map(
+    (trigger) => `boundaryEvent.trigger.${trigger}`,
+  ),
+  "boundaryEvent.trigger.none",
+  ...[
+    ...boundaryAttachmentHosts,
+    otherAttachmentHost,
+    unresolvedAttachmentHost,
+  ].map((host) => `boundaryEvent.attachedTo.${host}`),
   "callActivity.total",
   "callActivity.withCalledElement",
   "callActivity.withoutCalledElement",
@@ -176,11 +214,32 @@ export function classifyBpmnXml(xml: string): BpmnBreadthClassification {
   const throwEvents = elements.filter(
     (element) => element.name === "intermediateThrowEvent",
   );
+  const boundaryEvents = elements.filter(
+    (element) => element.name === "boundaryEvent",
+  );
 
   return {
     structurallyMalformed: parsed.structurallyMalformed,
     broad,
     candidates: {
+      boundaryEvent: {
+        occurrences: boundaryEvents.length,
+        // BPMN defaults `cancelActivity` to true, so only an explicit "false"
+        // makes a Boundary Event non-interrupting.
+        interrupting: countWhere(
+          boundaryEvents,
+          (element) => element.attributes.cancelActivity !== "false",
+        ),
+        nonInterrupting: countWhere(
+          boundaryEvents,
+          (element) => element.attributes.cancelActivity === "false",
+        ),
+        triggers: countEventTriggers(boundaryEvents),
+        attachments: countBoundaryAttachments(
+          boundaryEvents,
+          localNamesById(elements),
+        ),
+      },
       callActivity: {
         occurrences: callActivities.length,
         withCalledElement: countWhere(
@@ -288,144 +347,6 @@ export async function inventoryCibBpmnCorpus(
   };
 }
 
-function parseXmlElements(xml: string): {
-  roots: XmlElement[];
-  structurallyMalformed: boolean;
-} {
-  const roots: XmlElement[] = [];
-  const stack: XmlElement[] = [];
-  let structurallyMalformed = false;
-  let cursor = 0;
-
-  while (cursor < xml.length) {
-    const start = xml.indexOf("<", cursor);
-    if (start < 0) {
-      break;
-    }
-    if (xml.startsWith("<!--", start)) {
-      cursor = afterTerminator(xml, start + 4, "-->", "XML comment");
-      continue;
-    }
-    if (xml.startsWith("<![CDATA[", start)) {
-      cursor = afterTerminator(xml, start + 9, "]]>", "CDATA section");
-      continue;
-    }
-    if (xml.startsWith("<?", start)) {
-      cursor = afterTerminator(
-        xml,
-        start + 2,
-        "?>",
-        "processing instruction",
-      );
-      continue;
-    }
-
-    const end = findMarkupEnd(xml, start + 1);
-    const markup = xml.slice(start + 1, end).trim();
-    cursor = end + 1;
-    if (markup.length === 0 || markup.startsWith("!")) {
-      continue;
-    }
-    if (markup.startsWith("/")) {
-      const closingName = localName(markup.slice(1).trim());
-      const matchingIndex = stack.findLastIndex(
-        (element) => element.name === closingName,
-      );
-      if (matchingIndex < 0) {
-        structurallyMalformed = true;
-      } else {
-        if (matchingIndex !== stack.length - 1) {
-          structurallyMalformed = true;
-        }
-        stack.length = matchingIndex;
-      }
-      continue;
-    }
-
-    const selfClosing = markup.endsWith("/");
-    const body = selfClosing ? markup.slice(0, -1).trim() : markup;
-    const nameEnd = body.search(/\s/u);
-    const qualifiedName = nameEnd < 0 ? body : body.slice(0, nameEnd);
-    const attributeText = nameEnd < 0 ? "" : body.slice(nameEnd + 1);
-    const element: XmlElement = {
-      name: localName(qualifiedName),
-      attributes: parseAttributes(attributeText),
-      children: [],
-    };
-    const parent = stack.at(-1);
-    if (parent === undefined) {
-      roots.push(element);
-    } else {
-      parent.children.push(element);
-    }
-    if (!selfClosing) {
-      stack.push(element);
-    }
-  }
-
-  if (stack.length > 0) {
-    structurallyMalformed = true;
-  }
-  return { roots, structurallyMalformed };
-}
-
-function parseAttributes(source: string): Readonly<Record<string, string>> {
-  const attributes: Record<string, string> = {};
-  const pattern = /([^\s=]+)\s*=\s*(["'])(.*?)\2/gsu;
-  for (const match of source.matchAll(pattern)) {
-    const name = match[1];
-    const value = match[3];
-    if (name !== undefined && value !== undefined) {
-      attributes[name] = value;
-    }
-  }
-  return attributes;
-}
-
-function findMarkupEnd(xml: string, start: number): number {
-  let quote: '"' | "'" | undefined;
-  for (let index = start; index < xml.length; index += 1) {
-    const character = xml[index];
-    if (character === '"' || character === "'") {
-      quote = quote === undefined ? character : quote === character ? undefined : quote;
-    } else if (character === ">" && quote === undefined) {
-      return index;
-    }
-  }
-  throw new TypeError("unterminated XML markup");
-}
-
-function afterTerminator(
-  xml: string,
-  start: number,
-  terminator: string,
-  description: string,
-): number {
-  const end = xml.indexOf(terminator, start);
-  if (end < 0) {
-    throw new TypeError(`unterminated ${description}`);
-  }
-  return end + terminator.length;
-}
-
-function localName(qualifiedName: string): string {
-  const separator = qualifiedName.lastIndexOf(":");
-  return separator < 0 ? qualifiedName : qualifiedName.slice(separator + 1);
-}
-
-function flattenElements(roots: readonly XmlElement[]): XmlElement[] {
-  const flattened: XmlElement[] = [];
-  const pending = [...roots];
-  while (pending.length > 0) {
-    const element = pending.shift();
-    if (element !== undefined) {
-      flattened.push(element);
-      pending.unshift(...element.children);
-    }
-  }
-  return flattened;
-}
-
 function countWhere(
   elements: readonly XmlElement[],
   predicate: (element: XmlElement) => boolean,
@@ -433,8 +354,28 @@ function countWhere(
   return elements.filter(predicate).length;
 }
 
-function hasDirectChild(element: XmlElement, name: string): boolean {
-  return element.children.some((child) => child.name === name);
+function countBoundaryAttachments(
+  boundaryEvents: readonly XmlElement[],
+  localNames: ReadonlyMap<string, string>,
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const boundaryEvent of boundaryEvents) {
+    const attachedToRef = boundaryEvent.attributes.attachedToRef;
+    const host = attachedToRef === undefined
+      ? undefined
+      : localNames.get(attachedToRef);
+    increment(counts, boundaryAttachmentHost(host), 1);
+  }
+  return sortRecord(counts);
+}
+
+function boundaryAttachmentHost(host: string | undefined): string {
+  if (host === undefined) {
+    return unresolvedAttachmentHost;
+  }
+  return boundaryAttachmentHosts.some((known) => known === host)
+    ? host
+    : otherAttachmentHost;
 }
 
 function countEventSubProcessTriggers(
@@ -508,6 +449,9 @@ async function discoverBpmnFiles(directory: string): Promise<string[]> {
 
 function flattenCandidateCounts(candidates: CandidateCounts): Record<string, number> {
   const flattened: Record<string, number> = {
+    "boundaryEvent.interrupting": candidates.boundaryEvent.interrupting,
+    "boundaryEvent.nonInterrupting": candidates.boundaryEvent.nonInterrupting,
+    "boundaryEvent.total": candidates.boundaryEvent.occurrences,
     "callActivity.total": candidates.callActivity.occurrences,
     "callActivity.withCalledElement": candidates.callActivity.withCalledElement,
     "callActivity.withoutCalledElement":
@@ -531,6 +475,12 @@ function flattenCandidateCounts(candidates: CandidateCounts): Record<string, num
     "receiveTask.withOperationRef": candidates.receiveTask.withOperationRef,
     "receiveTask.withoutMessageRef": candidates.receiveTask.withoutMessageRef,
   };
+  for (const [trigger, count] of Object.entries(candidates.boundaryEvent.triggers)) {
+    flattened[`boundaryEvent.trigger.${trigger}`] = count;
+  }
+  for (const [host, count] of Object.entries(candidates.boundaryEvent.attachments)) {
+    flattened[`boundaryEvent.attachedTo.${host}`] = count;
+  }
   for (const [trigger, count] of Object.entries(candidates.eventSubProcess.triggers)) {
     flattened[`eventSubProcess.trigger.${trigger}`] = count;
   }

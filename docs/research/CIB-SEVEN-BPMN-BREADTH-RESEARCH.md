@@ -14,7 +14,7 @@ The denominator is the 1,144 `*.bpmn` and `*.bpmn20.xml` files below `engine/src
 
 ## Inventory method and reproducibility boundary
 
-Run `pnpm research:cib-breadth [resource-root]` to reproduce the inventory. The dependency-free classifier walks a namespace-insensitive XML element tree, excludes comments, CDATA, and processing instructions, records file counts and occurrence counts separately, and classifies the candidate attributes and direct child EventDefinitions used below. Its fixture test locks prefix independence, nested Sub-Process classification, Message-addressed Receive Tasks, sequential/parallel Multi-Instance classification, Event Sub-Process interruption, and Intermediate Throw Event triggers.
+Run `pnpm research:cib-breadth [resource-root]` to reproduce the inventory. The dependency-free classifier walks a namespace-insensitive XML element tree, excludes comments, CDATA, and processing instructions, records file counts and occurrence counts separately, and classifies the candidate attributes and direct child EventDefinitions used below. Its fixture test locks prefix independence, nested Sub-Process classification, Message-addressed Receive Tasks, sequential/parallel Multi-Instance classification, Event Sub-Process interruption, Intermediate Throw Event triggers, and Boundary Event trigger/interruption/attachment classification. The lexical scanner itself is a separate owner from BPMN classification, because it is a tolerant research reader rather than the parser-backed admission boundary.
 
 The scanner deliberately retains lexical construct signal from malformed negative-deployment fixtures and labels those files rather than treating them as executable examples. At the pinned revision it labels exactly one of 1,144 files structurally malformed under this limited tag-balance check. This is not general BPMN XML validation; source admission remains the parser-backed checked-graph boundary.
 
@@ -80,6 +80,50 @@ The executable refresh separates the largest remaining families into materially 
 | Intermediate Throw Message | 9 | 10 | Requires modeled outbound delivery rather than the existing inbound catch mechanism |
 | Intermediate Throw None | 4 | 4 | Small but adds little CIB breadth or mechanism leverage |
 
+## Boundary Event candidate split
+
+Boundary Event is the largest structural family with no closed reviewed slice of its own, and its 298 files decompose along three independent dimensions. The classifier reports each dimension separately rather than as an 88-cell matrix.
+
+| Dimension | Slice | Files | Occurrences |
+|---|---|---:|---:|
+| Interruption | interrupting | 248 | 337 |
+| Interruption | non-interrupting | 53 | 57 |
+| Trigger | Error | 79 | 97 |
+| Trigger | Timer | 72 | 77 |
+| Trigger | Compensation | 66 | 105 |
+| Trigger | Escalation | 33 | 38 |
+| Trigger | Message | 27 | 35 |
+| Trigger | Conditional | 15 | 17 |
+| Trigger | Cancel | 13 | 16 |
+| Trigger | Signal | 9 | 9 |
+| Attachment host | Sub-Process | 103 | 116 |
+| Attachment host | User Task | 93 | 108 |
+| Attachment host | Service Task | 70 | 115 |
+| Attachment host | Call Activity | 30 | 31 |
+| Attachment host | Transaction | 12 | 15 |
+| Attachment host | Receive Task | 4 | 4 |
+| Attachment host | other element | 5 | 5 |
+
+Three invariants hold over the pinned corpus and each is an independent check on the classifier: the interruption slices, the trigger slices, and the attachment slices each sum to exactly 394 occurrences. The trigger sum matching the total additionally establishes that no inspected Boundary Event carries more than one Event Definition and that none carries zero, so triggers are partitioning here even though the counter permits multiplicity. No `attachedToRef` fails to resolve, and no Link or Terminate trigger appears in a boundary position.
+
+Occurrence counts exceed file counts most sharply for Service Task hosts, at 115 occurrences across 70 files, which reflects repeated attachment fixtures rather than 115 distinct propositions.
+
+The committed split deliberately does not cross trigger with host, because the per-trigger host question arises once per capsule and a stored matrix would mostly hold zeros. The one-off query behind the decision below reports 25 files and 29 occurrences of an interrupting Timer attached to a User Task, 19 files and 19 occurrences attached to a Sub-Process, 5 files attached to a Call Activity, and 10 files and 11 occurrences of a non-interrupting Timer attached to a User Task. For comparison, the largest single combination is an interrupting Compensation boundary on a Service Task at 39 files and 71 occurrences.
+
+## Priority decision after the full-profile product surface
+
+An **interrupting Boundary Timer Event attached to an Activity** is selected next. It is not selected because Boundary Event is the largest tag family; it is selected because it is the largest boundary combination that requires no new host mechanism.
+
+Every prerequisite is closed: the exact `PT1S` timer wait and its durable Temporal hosting come from the [Intermediate Catch Timer specification](../capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md), Activity activation and completion from the [User Task specification](../capsules/USER-TASK-INTERACTION-SPEC.md), interrupting boundary-route lowering and Activity abandonment from the [boundary-error specification](../capsules/BOUNDARY-ERROR-SPEC.md), and regional cancellation of live runtime state from the [Sub-Process Error propagation specification](../capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md). The distinct new proposition is narrow and reviewable: a timer scoped to an Activity occurrence rather than to normal flow, armed on activation, withdrawn when the Activity completes first, and racing the Activity's own completion in both directions.
+
+Interruption is also the dominant corpus shape at 337 of 394 occurrences, so the interrupting arm is the honest first slice rather than a convenient one.
+
+The alternatives are deliberately deferred. Compensation carries the largest single combination but requires completed-work registration, context snapshots, and reverse-order invocation, which is the heaviest uncovered family in the map. Error boundaries are already closed on both Service Task and Sub-Process hosts, so their remaining 18-file Call Activity host adds a resolution question rather than a semantic mechanism. Escalation and Conditional each open a new trigger family. A non-interrupting boundary Timer requires concurrent token creation beside a still-active Activity, which is a separate proposition from interruption and should not be bundled into the first slice. Event Sub-Process remains deferred for the reasons recorded below.
+
+No new CIB relationship is selected by this refresh. The pinned corpus supplies candidate probe seeds only; a boundary-timer capsule may register a CIB relationship only together with a project-owned phase-zero probe and verifier coverage.
+
+## Receive Task address evidence
+
 No inspected Receive Task carries `operationRef` or `instantiate="true"`. This matters because the already implemented Intermediate Catch Message profile deliberately requires a complete Interface → Operation → input Message chain, whereas the CIB Receive Task corpus supplies only a direct `messageRef` when it supplies an address at all.
 
 The exact compact CIB precedent is `ReceiveTaskTest.singleReceiveTask.bpmn20.xml`: None Start → Receive Task with `messageRef="newInvoice"` → None End, plus one root Message. `ReceiveTaskTest` observes one public Message subscription, consumes it with `messageEventReceived(subscription.name, executionId)`, removes the subscription, and completes the Process. The same Java test also exercises the addressless legacy `signal(executionId)` path; that path is deliberately not evidence for the selected BPMN Message account.
@@ -121,7 +165,9 @@ Implementing the error-only proposal first would install scope entry with delibe
 
 The implemented [ordinary embedded Sub-Process specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) closed first, followed by the [Error-propagation specification](../capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md) on the same definition/runtime scope foundation. Its bounded CIB Seven `2.2.0` public-lifecycle evidence agrees in both child-command orders under `CIB-AGR-0008` without making CIB the source of BPMN meaning. The executable refresh above re-ranks the remaining constructs against the mechanisms these two capsules established.
 
-The refresh above completed the Receive Task re-ranking. After that slice closed, the proto-MVP order applies reusable-mechanism leverage again: Inclusive Gateway deepens typed conditional branching and synchronization, Event-Based Gateway composes existing wait families under a new race owner, and Call Activity then opens cross-definition instance lifecycle. Raw prevalence does not override those dependencies.
+The refresh above completed the Receive Task re-ranking. After that slice closed, the proto-MVP order applied reusable-mechanism leverage again: Inclusive Gateway deepened typed conditional branching and synchronization, Event-Based Gateway composed existing wait families under a new race owner, and Call Activity then opened cross-definition instance lifecycle. Raw prevalence did not override those dependencies.
+
+All three proto-MVP slices and the full-profile product surface are now closed, which is why the current refresh added the Boundary Event decomposition above: with those mechanisms implemented, the cheapest remaining proposition changed, exactly the re-open condition this document records below.
 
 ## Limits and re-open conditions
 
