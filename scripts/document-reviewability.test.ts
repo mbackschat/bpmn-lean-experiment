@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -115,6 +115,42 @@ function citedRequirementIds(cell: string): ReadonlyArray<string> {
 
 function withoutBackticks(cell: string): string {
   return cell.replaceAll("`", "");
+}
+
+/** Heading owning the atomic-change inventory required of every capsule proposal. */
+const bindingInventoryHeading = "## Versioning consequences";
+/** Extensions the module-size boundaries apply to, so a named owner is a real change site. */
+const sourceOwnerExtensions = new Set([".cjs", ".java", ".js", ".lean", ".mjs", ".ts"]);
+
+function headingSection(markdown: string, heading: string): string | null {
+  const start = markdown.indexOf(`${heading}\n`);
+  if (start === -1) {
+    return null;
+  }
+  const end = markdown.indexOf("\n## ", start + heading.length);
+  return end === -1 ? markdown.slice(start) : markdown.slice(start, end);
+}
+
+/** Repository-relative targets of every inline Markdown link, without any heading anchor. */
+function linkedPaths(
+  section: string,
+  documentDirectory: string,
+): ReadonlyArray<string> {
+  return [...section.matchAll(/\]\(([^)\s]+)\)/gu)]
+    .flatMap(([, target]) => (target === undefined ? [] : [target]))
+    .filter((target) => !/^[a-z]+:/u.test(target) && !target.startsWith("#"))
+    .map((target) =>
+      path.normalize(path.join(documentDirectory, target.split("#")[0] ?? target))
+    );
+}
+
+async function exists(repositoryPath: string): Promise<boolean> {
+  try {
+    await access(path.join(projectRoot, repositoryPath));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 test("keeps implementation surfaces reviewable outside dense table cells", async () => {
@@ -285,6 +321,57 @@ test("links every tree document from its own directory README", async () => {
   }
 
   assert.deepEqual(unlinked.sort(), []);
+});
+
+// Contract: a capsule whose implementation is still ahead must name the constraints that already
+// bound it — the executable oracles its planned artifacts must satisfy, and the source owners it will
+// grow — as links that resolve. The oracle is the filesystem, so a renamed guard or owner fails here.
+//
+// The obligation is pre-implementation, which is why it binds proposals and not specifications: once a
+// capsule graduates, the constraints have already been met and re-asserting them is churn. Enforcing
+// that the owners are *named* composes with the size gate, which then reports their headroom without
+// the capsule having to keep a figure current. `node scripts/what-binds.ts <path>...` derives both
+// lists mechanically; nothing here trusts recall.
+test("every capsule proposal names the guards and owners that already bind it", async () => {
+  const capsuleRoot = path.join(projectRoot, "docs/capsules");
+  const proposals = (await readdir(capsuleRoot))
+    .filter((entry) => entry.endsWith("-PROPOSAL.md"));
+  const findings: string[] = [];
+  for (const proposal of proposals) {
+    const markdown = await readFile(path.join(capsuleRoot, proposal), "utf8");
+    const section = headingSection(markdown, bindingInventoryHeading);
+    if (section === null) {
+      findings.push(`${proposal}: no ${bindingInventoryHeading} section`);
+      continue;
+    }
+    const linked = linkedPaths(section, "docs/capsules");
+    const unresolved: string[] = [];
+    for (const target of linked) {
+      if (!await exists(target)) {
+        unresolved.push(target);
+      }
+    }
+    const resolved = linked.filter((target) => !unresolved.includes(target));
+    if (unresolved.length > 0) {
+      findings.push(`${proposal}: unresolved ${unresolved.sort().join(", ")}`);
+    }
+    if (!resolved.some((target) => target.endsWith(".test.ts"))) {
+      findings.push(`${proposal}: names no executable guard or test oracle`);
+    }
+    if (
+      !resolved.some((target) =>
+        !target.endsWith(".test.ts") &&
+        sourceOwnerExtensions.has(path.extname(target))
+      )
+    ) {
+      findings.push(`${proposal}: names no source owner it will grow`);
+    }
+  }
+
+  assert.deepEqual(
+    { proposalCount: proposals.length > 0, findings },
+    { proposalCount: true, findings: [] },
+  );
 });
 
 // Same reachability contract one level down: a scenario family README must link each of its own

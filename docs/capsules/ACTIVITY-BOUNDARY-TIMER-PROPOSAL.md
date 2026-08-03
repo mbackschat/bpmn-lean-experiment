@@ -277,6 +277,38 @@ Both plans must still answer their follow-on task, so neither example ends in an
 
 Pre-release policy applies: the new operation kind is added atomically across the checked-graph compiler, Semantic Process contract, JSON Schemas, Lean decoder and lowering, semantic core, the adapter's typed contract module and host-capability classifier, differential catalog, and every fixture, with no compatibility reader, format counter, or migration branch. No retained Event History is kept beyond the disposable gate.
 
+### Owners this implementation grows
+
+Nonblank headroom measured at proposal time by `node scripts/what-binds.ts <path>...`; [the size gate](../../scripts/source-hygiene.test.ts) reports the current figure as `SOURCE_HEADROOM` on every run, so no number below has to be kept current here.
+
+| Owner | Headroom at proposal time | Consequence for sequencing |
+|---|---:|---|
+| [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 5 | Full. A behavior-preserving extraction lands as its own commit before any new semantics. |
+| [adapter runner](../../packages/temporal-adapter/src/runner.ts) | 8 | Full. The scenario-execution path for this family needs its own owner rather than another branch here. |
+| [Lean definition decoder](../../BpmnSemantics/SemanticProcessJson/Definitions.lean) | 12 | Effectively full. The new operation's decoder clauses do not fit; extract before adding them. |
+| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 70 | Room for one operation's lowering, not for a second family afterwards. |
+| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 94 | Sufficient for the new operation kind and its program predicate. |
+| [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 184 | Sufficient. |
+| [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 368 | Sufficient. |
+| [host capability classifier](../../packages/temporal-adapter/src/host-admission.ts) | 485 | Sufficient; also gains the bounded-wait exclusion recorded below. |
+
+Three owners are already at or near the review target, so this capsule crosses three extraction boundaries rather than one. Each extraction is a separate behavior-preserving commit, never work done under a size squeeze inside a semantic change.
+
+### Guards and oracles this implementation must change or satisfy
+
+These oracles already constrain the planned artifacts; none of them is new work invented by this capsule. Enumerate them again with `node scripts/what-binds.ts` before the first edit rather than from recall.
+
+| Guard | Requirement it already places on this capsule |
+|---|---|
+| [product example configs](../../packages/temporal-adapter/test/product-example-configs.test.ts) | Every registered profile has a live example and every example names a registered profile. Two examples over one definition are admissible; a profile with none is not. |
+| [document reviewability](../../scripts/document-reviewability.test.ts) | A new scenario family directory must be linked from its registry README, each scenario document from its family README, and this section must keep naming resolvable guards and owners. |
+| [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts) | Every added profile, scenario, and retained-evidence artifact must be registered in the same change, with no unreferenced profile and no unregistered artifact. |
+| [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | Every registered scenario needs exactly one pipeline case carrying a meaningful seeded semantic mutation. |
+| [host admission](../../packages/temporal-adapter/test/host-admission.test.ts) | The bounded Activity wait must be classified against concurrent host-driven waits, including the race-plus-bounded shape that must stay rejected. |
+| [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) | The new fixture must validate against the pinned normative schema, with `cancelActivity` omitted rather than asserted. |
+| [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) | The new operation must project into the shared wire contracts and their JSON Schemas atomically. |
+| [source hygiene](../../scripts/source-hygiene.test.ts) | No owner above the hard ceiling and none above the review target without a recorded narrow justification. |
+
 ## Stop conditions
 
 Stop for owner direction if:
