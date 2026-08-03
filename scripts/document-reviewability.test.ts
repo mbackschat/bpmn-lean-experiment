@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -24,6 +24,8 @@ const decidedDispositions: ReadonlySet<string> = new Set([
   "supported",
   "rejected",
 ]);
+/** Artifact trees whose registry README must reach every one of their directories. */
+const artifactRegistries = ["profiles", "scenarios"] as const;
 
 function surfaceSection(markdown: string): string {
   const start = markdown.indexOf(surfaceSectionStart);
@@ -229,4 +231,30 @@ test("keeps every closed reviewed slice consistent with its requirement disposit
       undecidedClosedSlices: [],
     },
   );
+});
+
+// Contract: every artifact directory under a registered tree is linked from that tree's registry
+// README. The oracle is the directory listing, so a newly registered profile or scenario family
+// fails here instead of leaving a reader-facing index that silently understates the artifact set.
+//
+// Only reachability is checked. Registry prose deliberately describes families in its own words,
+// and asserting that wording would turn a navigational index into a second inventory.
+test("links every artifact directory from its registry README", async () => {
+  const unlinked: string[] = [];
+  for (const registry of artifactRegistries) {
+    const readme = await readFile(
+      path.join(projectRoot, registry, "README.md"),
+      "utf8",
+    );
+    const entries = await readdir(path.join(projectRoot, registry), {
+      withFileTypes: true,
+    });
+    for (const entry of entries.filter((candidate) => candidate.isDirectory())) {
+      if (!readme.includes(`(${entry.name}/`)) {
+        unlinked.push(`${registry}/${entry.name}`);
+      }
+    }
+  }
+
+  assert.deepEqual(unlinked.sort(), []);
 });
