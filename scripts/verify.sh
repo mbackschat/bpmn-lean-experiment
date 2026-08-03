@@ -24,7 +24,7 @@ lake build emitSemanticProcessResults
 ./scripts/pnpm.sh run test:bpmn-source
 ./scripts/test-cibseven-oracle.sh
 ./scripts/pnpm.sh run test:differential
-./scripts/pnpm.sh run test:infrastructure
+./scripts/pnpm.sh run test:infrastructure:runtime
 ./scripts/pnpm.sh run test:temporal
 env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
 git diff --check

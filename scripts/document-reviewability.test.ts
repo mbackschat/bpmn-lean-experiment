@@ -45,7 +45,13 @@ function registeredSemanticProfileIds(source: string): ReadonlyArray<string> {
   assert.notEqual(end, -1);
   const section = source.slice(start, end);
   const profileIds = [...section.matchAll(/:\s*"([^"]+)"/gu)].map(
-    (match) => match[1],
+    (match) => {
+      const profileId = match[1];
+      if (profileId === undefined) {
+        throw new Error("Semantic profile registry entry has no string value.");
+      }
+      return profileId;
+    },
   );
   assert.equal(new Set(profileIds).size, profileIds.length);
   return profileIds;
