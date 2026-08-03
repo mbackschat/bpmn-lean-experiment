@@ -31,13 +31,19 @@ Fixture prevalence is a scheduling signal only. It is not evidence that this pro
 BPMN 2.0.2 is the sole semantic authority for this capsule.
 
 - Clause 10.5 Table 10.91 owns the Boundary Event attributes, and Table 10.92 owns the legal `cancelActivity` values per trigger. The same two tables are already cited by the [boundary-error specification](BOUNDARY-ERROR-SPEC.md), which is why this capsule cites tables rather than a `10.5.x` sub-clause number.
+- Clause 10.5.6 fixes what interrupting means: “An interrupting boundary Event is defined by a *true* value of its cancelActivity attribute.”
+- The machine-readable artifacts fix the default. `Semantic.xsd` declares `<xsd:attribute name="cancelActivity" type="xsd:boolean" default="true"/>`, and `BPMN20.cmof` declares `BoundaryEvent-cancelActivity` with `default="true"`.
 - Clause 13.5.3, *Intermediate Boundary Events*, owns the behavior and fixes an exact three-step order: handling first consumes the Event occurrence, then cancels the attached Activity when `cancelActivity` is set, and then follows the Sequence Flow connected to the Boundary Event.
-- Clause 10.5.5 and Tables 10.101 and 10.122 own `TimerEventDefinition.timeDuration`, already admitted at exactly `PT1S` by the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md).
+- Clause 10.5.5 and Table 10.101 own `TimerEventDefinition.timeDuration`, with Table 10.122 as its XML Schema, already admitted at exactly `PT1S` by the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md).
 - Clause 13.3.2 owns the Activity lifecycle whose active state the deadline observes.
 
-Table 10.92 lists `true`/`false` as legal `cancelActivity` values for a Timer trigger, so excluding non-interrupting behavior below is a deliberate scope decision about a legal BPMN shape, not the rejection of an invalid one. Table 10.91 names the association `attachedTo` in prose while the CMOF and XSD name is `attachedToRef`; the profile admits the machine-readable name, which the boundary-error capsule already consumes.
+The omitted `cancelActivity` form is admitted **because it resolves to `true`** under the machine-readable default, not as a tolerated variant. This distinction is load-bearing and must not be inherited from the boundary-error precedent: Table 10.92 makes `true` the only legal value for an Error trigger, so that capsule's admission of an omitted attribute needs no default, whereas Table 10.92 lists `true`/`false` for a Timer and the default is the only fact that settles omission.
 
-The ledger requirement is new: `BPMN-BOUNDARY-TIMER-01`. It must be added to [the requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) together with this capsule, and `BPMN-MECH-EVENT-01` must cite it as a closed reviewed slice only at graduation, because the [closed-slice guard](../TESTING-SPEC.md#default-verification) then requires a decided disposition.
+Clause 13.5.3's phrase “if the attribute is not set, the Activity continues execution (only possible for Message, Signal, Timer, and Conditional Events)” must therefore be read as *not set to `true`*. Read literally as *absent*, it would make an omitted attribute non-interrupting for a Timer and would contradict both the schema default and Clause 10.5.6. The capsule records that reading explicitly rather than relying on it silently.
+
+Table 10.92 listing `true`/`false` for a Timer also means excluding non-interrupting behavior below is a deliberate scope decision about a legal BPMN shape, not the rejection of an invalid one. Table 10.91 names the association `attachedTo` in prose while the CMOF and XSD name is `attachedToRef`; the profile admits the machine-readable name, which the boundary-error capsule already consumes.
+
+The ledger requirement is new: `BPMN-BOUNDARY-TIMER-01`. It is deliberately **not** added by this proposal; it is added to [the requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) together with the implementation, and `BPMN-MECH-EVENT-01` cites it as a closed reviewed slice only at graduation, because the [closed-slice guard](../TESTING-SPEC.md#default-verification) then requires a decided disposition. That guard is one-directional, so nothing currently fails from the identifier's absence.
 
 ## Selected account and the competing accounts it rejects
 
@@ -50,30 +56,28 @@ The distinct new proposition is a **wait whose lifetime is bound to an Activity 
 The selected contract mirrors the Event-Based Gateway's named-arm discipline so candidate order stays unrepresentable, while keeping the asymmetry explicit:
 
 ```ts
-type AwaitBoundedUserTaskOperation = DeepReadonly<
-  OperationBase & {
-    kind: "awaitBoundedUserTask";
-    input: string;
-    task: {
-      elementId: string;
-      name: string | null;
-      output: string;
-    };
-    boundaryTimer: {
-      elementId: string;
-      durationMs: 1000;
-      output: string;
-      origin: {
-        kind: "bpmnElement";
-        boundaryEventId: string;
-        sequenceFlowId: string;
-      };
-    };
-  }
->;
+type AwaitBoundedUserTaskOperation = OperationBase & DeepReadonly<{
+  kind: SemanticOperationKind.AwaitBoundedUserTask;
+  input: string;
+  task: {
+    elementId: string;
+    name: string | null;
+    output: string;
+  };
+  boundaryTimer: {
+    elementId: string;
+    durationMs: 1000;
+    output: string;
+    origin: BpmnSequenceFlowOrigin;
+  };
+}>;
 ```
 
-`input` is the Activity's incoming Flow. `task.output` is the Activity's normal outgoing Flow and `boundaryTimer.output` is the boundary Sequence Flow; the two must be distinct. The asymmetry is in the field names, not in a mode flag: this operation is not symmetric between its arms, because only the Timer arm interrupts.
+`input` is the Activity's incoming control place. `task.output` is the control place for the Activity's normal outgoing Sequence Flow and `boundaryTimer.output` is the control place for the boundary Sequence Flow; the two must be distinct. `boundaryTimer.origin` records that boundary Flow's BPMN provenance in the same shape `awaitEventRace` uses, because control-place identity and BPMN element identity are separate namespaces.
+
+`boundaryTimer.elementId` **is** the Boundary Event identity, and it is the element published as the timer occurrence's `elementId` in `openTimers`. The arm carries no second `boundaryEventId`: two fields that both denote the Boundary Event would make a disagreeing pair representable, and no existing operation does that — `BpmnErrorRoute` carries only `origin.boundaryEventId`, while `awaitEventRace`'s `timer.elementId` and `configurationOrigin` deliberately denote *different* elements. Because this identity is publicly observable, it is a profile decision rather than an internal choice.
+
+The asymmetry is in the field names, not in a mode flag: this operation is not symmetric between its arms, because only the Timer arm interrupts.
 
 `awaitUserTask` and `awaitTimer` remain unchanged and must not acquire boundary behavior. A boundary-attached Timer is never represented as a standalone `awaitTimer`.
 
@@ -90,6 +94,9 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
 ```
 
 - one private executable Process with `isExecutable="true"`;
+- exactly one None Start Event with no Event Definition and exactly one outgoing Sequence Flow;
+- exactly five Sequence Flows and no Flow Node other than the six named here;
+- no parser warning of any kind, which remains admission-blocking;
 - one bounded User Task with exactly one incoming and one outgoing Sequence Flow;
 - one Boundary Event whose `attachedToRef` resolves to that bounded User Task;
 - `cancelActivity` omitted or lexically `true`; lexical `false` is **rejected** as the retained hostile control, because non-interrupting behavior is a separate proposition;
@@ -103,7 +110,7 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
 
 The resulting program inventory is one `initiate`, one `awaitBoundedUserTask`, two `awaitUserTask`, two `reachNoneEnd`, and one root `completeScope`. No standalone `awaitTimer` appears, because the boundary Timer is owned by the bounded operation.
 
-Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, `cancelActivity="false"`, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, and a missing follow-on task on either route.
+Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, `cancelActivity="false"`, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, a missing follow-on task on either route, any additional Flow Node such as a third User Task or Gateway, any Sequence Flow count other than five, and any parser warning.
 
 A shared End Event is also outside this exact profile and is rejected, but for exactness rather than for semantic reasons: it would not weaken the separating witness, which the follow-on tasks now carry. That rejection must not be defended in evidence as a discrimination requirement.
 
@@ -121,9 +128,11 @@ Lean independently lowers the checked graph and requires exact equality with the
 
 No new runtime collection is proposed. The existing task and timer wait families already carry complete occurrence identity, and the operation supplies the ownership relation that the Event-Based Gateway needed a hidden record for.
 
-This is a deliberate difference from `EventRace`, and it rests on one falsifiable claim: a boundary Timer occurrence and its host task occurrence are recoverable from the committed program plus the two waits, because the profile admits exactly one Activity with exactly one boundary Timer, so `boundaryEventId` plus the owning scope determines the pair. An admitted state in which two live waits are ambiguous about ownership refutes the claim and forces an explicit occurrence record. The nearest such state is a repeated or Multi-Instance Activity, which this profile excludes; a later capsule that admits repetition must revisit this.
+This is a deliberate difference from `EventRace`, and it rests on one falsifiable claim: a boundary Timer occurrence and its host task occurrence are recoverable from the committed program plus the two waits, because the profile admits exactly one Activity with exactly one boundary Timer, so the Boundary Event identity plus the owning scope determines the pair. Atomic arming and atomic removal additionally keep the two occurrences' `activation` counters equal, so the recovery key is the complete occurrence pair rather than an element identity alone. An admitted state in which two live waits are ambiguous about ownership refutes the claim and forces an explicit occurrence record. The nearest such state is a repeated or Multi-Instance Activity, which this profile excludes; a later capsule that admits repetition must revisit this.
 
 Both waits belong to one live scope occurrence, and either arm's victory removes both. Monotonic activation counters are preserved on interruption, exactly as the Sub-Process Error propagation capsule established.
+
+Omitting the record has an adapter consequence that this capsule owns rather than inherits. The existing event-race scheduler keys on `state.eventRaces` to recognize a managed wait and to derive its durable timer identity, so with no record the adapter must instead join the committed `awaitBoundedUserTask` operation to the two live waits to know that a timer wait is a boundary deadline rather than an ordinary `awaitTimer`. That join is new derivation work, not detector reuse, and the implementation must not describe it as reuse.
 
 ## Proposed semantic rules
 
@@ -135,9 +144,13 @@ Reaching the operation atomically activates the User Task occurrence and creates
 
 Completing the exact active task occurrence removes both the task occurrence and the boundary Timer occurrence, produces one token on `task.output`, and never produces a boundary token.
 
+The bounded task is completed by the ordinary completion command, whose stimulus carries `submittedValues`. This profile requires that list to be **empty** and admits no completion patch: variable submission is the separately reviewed [User Task completion-data specification](USER-TASK-COMPLETION-DATA-SPEC.md), and admitting it here would add a data proposition to a timing capsule. Both victory arms therefore leave the Process-variable surface empty, which is what the witness table asserts. A non-empty submission is rejected rather than silently ignored.
+
 ### `ABTIMER-INTERRUPT-01` — deadline victory abandons the Activity
 
 Firing the exact boundary Timer occurrence at its exact deadline follows Clause 13.5.3's order: consume the Timer occurrence, cancel the attached Activity occurrence and its live runtime state while preserving monotonic activation counters, then produce one token on `boundaryTimer.output`. It produces no token on `task.output`.
+
+Cancelling the Activity's live runtime state means removing the task occurrence and any Activity-local scope keyed to it. Under this profile a User Task owns no Activity-local scope, so the disposal obligation is stated for completeness and has no observable effect here; a later capsule that gives a bounded Activity local scope inherits the obligation rather than discovering it.
 
 The three steps are one atomic transition with no observable intermediate state, as in the boundary-error capsule. The normative order is recorded because it is the reviewable claim, not because the implementation may expose it.
 
@@ -166,6 +179,9 @@ Two schedules over one definition:
 |---|---|---|---|
 | Activity wins | exact bounded-task completion before deadline `1000` | only the normal follow-on User Task is published; no bounded task and no Timer remain; logical time `0` | stale exact Timer firing rejects and preserves that state |
 | Deadline wins | exact Timer firing at deadline `1000` | only the boundary follow-on User Task is published; no bounded task and no Timer remain; logical time `1000` | stale exact bounded-task completion rejects and preserves that state |
+| Pre-due firing | exact bounded Timer occurrence fired at `logicalTimeMs` `999` | rejected with exact state preservation; the armed state keeps both the bounded task and the Timer, and the deadline does not drift | the subsequent exact firing at `1000` still wins normally |
+
+The pre-due row is not optional bookkeeping. Without it no registered schedule submits a pre-due firing, so an implementation mutated to accept an early firing would produce identical public observations on both victory schedules and its seeded mutation could never disagree. It is also the only witness that discriminates the *arming instant*, which is this capsule's largest common-mode exposure, and it cannot be inherited from the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md): that capsule's identically shaped `999` witness arms its timer when a token reaches a catch Event, whereas this one arms on Activity activation.
 
 The published follow-on task identity is the discriminator, and it differs at the approved observation boundary rather than in hidden order. Both schedules then complete their published follow-on task and reach the same empty wait, task, subscription, Timer, effect, variable, and interaction surfaces, differing only in logical time. A declaration-order-permuted source must preserve each schedule's complete trace.
 
@@ -181,17 +197,51 @@ This preflight is a feasibility and information-preservation review, not evidenc
 
 **The state relation.** The immutable admitted program plus complete core state pairs with one Workflow-local durable Timer handle derived only from the committed boundary Timer occurrence, plus the existing accepted-stimulus and result ledgers. Only the core decides whether a ready stimulus wins, rejects, or leaves state unchanged. Canonical Query projects only the core observation.
 
-**The load-bearing risk, named exactly.** The Event-Based Gateway capsule established that pinned Temporal Core sorts Signal **and Update** activation jobs before ordinary jobs such as Timer firing. A User Task completion Update and this boundary Timer's firing are therefore exactly the same coalescing hazard, with Update in place of Signal: if both become ready in one activation, raw job order is not a safe proxy for first physical occurrence, and this profile defines no portable winner. The proposal reuses the existing two-phase activation-tag and job-drain-barrier detector and fails closed with a typed adapter `ApplicationFailure` before calling the core with either callback. **It must not reuse the `BpmnEventRaceOrderingUnavailable` failure identity**, because that identity names the Event-Based Gateway race; a distinct typed identity keeps the two host classes separately falsifiable.
+**The load-bearing risk, named exactly.** Pinned Temporal Core sorts Signal and Update activation jobs before ordinary jobs such as Timer firing, so a User Task completion Update and this boundary Timer's firing form the same coalescing *hazard* the Event-Based Gateway capsule addressed: if both become ready in one activation, raw job order is not a safe proxy for first physical occurrence, and this profile defines no portable winner. The proposal reuses that capsule's two-phase activation-tag and job-drain-barrier detector and fails closed with a typed adapter `ApplicationFailure` before calling the core with either callback. **It must not reuse the `BpmnEventRaceOrderingUnavailable` failure identity**, because that identity names the Event-Based Gateway race; a distinct typed identity keeps the two host classes separately falsifiable, and the adapter's typed failure-code contract must gain that member rather than overload an existing one.
 
-That detector reuse is the single largest reuse claim in this proposal and the weakest link in it. The detector was written for a Signal arm; the Update arm additionally carries a *reply* to a waiting caller, so an Update that loses the race must resolve to a semantic rejection rather than an infrastructure failure, and the fail-closed path must not leave an Update handler unresolved. If that cannot be preserved, the correct outcome is to route it back to profile review rather than to let the adapter invent a winner.
+**The premise differs, and inheriting it would be unsound.** The hazard transfers; the fact that licenses the barrier does not. The Event-Based Gateway capsule's premise is SDK flag `ProcessWorkflowActivationJobsAsSingleBatch`, backed by a direct-VM witness and a source lock. That flag is not the licensing fact for an Update arm. The installed pinned Worker computes single-batch processing as `hasSignals === false || activator.hasFlag(ProcessWorkflowActivationJobsAsSingleBatch)`, and `hasSignals` counts only `signalWorkflow` jobs. An Update arrives as a `doUpdate` job, so for an Update-plus-Timer activation `hasSignals` is `false` and single-batch processing holds **unconditionally, independent of the flag**.
+
+That is a stronger premise than the Event-Based Gateway's, but it is a *different* one, and it is the specific thing this capsule may not assume. A fourth focused witness is therefore required: a direct-VM activation seeding one `doUpdate` job and one timer-fire job into one non-replay activation of the production Workflow, proving both callbacks accumulate before any core advancement, together with a source lock over the `hasSignals` predicate itself so a pinned-SDK change that begins counting `doUpdate` fails the lock rather than silently invalidating the barrier.
+
+The distinct typed failure identity separates the two capsules' *failures*; only this witness separates their *premises*. Without it, a defect in the shared barrier would be invisible in both capsules at once, which is this capsule's real common-mode exposure.
+
+**Two distinct Update obligations.** The Update arm additionally carries a reply to a waiting caller, and the coalescing design splits that into two obligations that must not share one name:
+
+1. a **sequential** losing Update, delivered in its own activation after the Timer already won, must resolve as a semantic rejection rather than an infrastructure failure;
+2. the **coalesced** fail-closed path adjudicates neither arm, so no Update loses there; its obligation is that the in-flight Update is durably resolved rather than left stranded while the Workflow fails.
+
+Conflating them would make it undecidable whether the coalesced history is evidence of correct behavior or of a stop condition firing, so each obligation is attached to its own history below. If obligation 2 cannot be met, the correct outcome is to route it back to profile review rather than to let the adapter invent a winner.
 
 **Host capability.** `awaitBoundedUserTask` is neither passive, an ordinary token split, nor an uncoordinated host-driven wait. The exhaustive operation-kind classifier in [`host-admission.ts`](../../packages/temporal-adapter/src/host-admission.ts) adds one class, admits exactly one such operation with no token split, no other host-driven wait, and no managed event race, and continues rejecting every other composition before Workflow start. A mutation omitting the new operation from the classifier must fail that guard, and the classifier's `never` check must force the new kind to be handled.
 
-**Smallest executable refinement witness.** Three disposable histories, all replayed in the same gate: a completion history where the task Update commits before the deadline and the durable Timer is *canceled* with no firing; an interruption history where the Worker is stopped across the deadline, a replacement Worker commits Timer victory, and a later completion Update is durably resolved as rejected; and a coalesced history where the Worker is stopped until both callbacks are ready and replacement processing fails closed before semantic advancement. The completion history must contain Timer started plus canceled and no Timer fired; the interruption history must contain Timer started plus fired and no cancellation. No history may contain Activity, Child Workflow, effect, or Workflow-cancellation events.
+**Smallest executable refinement witness.** One direct-VM activation premise witness plus three disposable histories, all replayed in the same gate:
+
+| Witness | Establishes | Required negative content |
+|---|---|---|
+| Direct-VM `doUpdate` + timer-fire activation | both callbacks accumulate before core advancement under the `hasSignals === false` premise; the `hasSignals` source lock holds | no core advancement from either callback alone |
+| Completion history | the task Update commits before the deadline and the durable Timer is canceled | Timer started plus canceled, and no Timer fired |
+| Interruption history | the Worker is stopped across the deadline, a replacement Worker commits Timer victory, and the later sequential completion Update resolves as a **semantic rejection** (obligation 1) | Timer started plus fired, and no cancellation |
+| Coalesced history | the Worker is stopped until both callbacks are ready, replacement processing fails closed before semantic advancement, and the in-flight Update is **durably resolved rather than stranded** (obligation 2) | the typed failure is retained, and neither arm is adjudicated |
+
+No history may contain Activity, Child Workflow, effect, or Workflow-cancellation events.
+
+## Planned rule-to-evidence matrix
+
+These are planned lanes, not results: no lane exists until implementation. Two lanes count as two only when their failure modes are uncorrelated, which is why the shared refusal predicate is marked once.
+
+| Rule | BPMN/profile | Lean | Independent TypeScript | Temporal refinement | Negative witness or mutation |
+|---|---|---|---|---|---|
+| `ABTIMER-ARM-01` | Clause 10.5.6 plus the exact profile; `cancelActivity` resolving to `true` | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
+| `ABTIMER-COMPLETE-01` | Clause 13.5.3 normal continuation | quantified exclusivity law | victory removes both waits | completion history: Timer canceled, never fired | mutation that leaves the Timer wait live |
+| `ABTIMER-INTERRUPT-01` | Clause 13.5.3 three-step order | quantified interruption law with counter preservation | boundary token only, no normal token | interruption history: Timer fired, no cancellation | mutation routing interruption to `task.output`, detected by the wrong published follow-on task |
+| `ABTIMER-REFUSE-01` | exact-occurrence and exact-time refusal | state-preservation laws for wrong and stale identities | shared refusal predicate — **one lane, not two**, because Lean and the core call the same reused check | pre-due firing rejected with no deadline drift | pre-due firing at `999`; stale sibling after either victory |
+| `ABTIMER-OBSERVE-01` | four-kind canonical ordering | projection agreement | published follow-on task identity distinguishes the route | canonical Query projects core state only | boundary-Flow identity erasure collapsing both routes to one output |
+
+CIB Seven is deliberately absent from every row; see the CIB relationship section.
 
 ## Required, optional, and excluded
 
-**Required.** The source profile, checked graph and lowering, the one new operation, the five rules, the Lean relation/evaluator/soundness/laws/non-law, the independent TypeScript core, the new host capability class, one registered answer-free scenario per schedule with seeded mutations, and the three Temporal histories.
+**Required.** The source profile, checked graph and lowering, the one new operation, the five rules with their evidence rows, the Lean relation/evaluator/soundness/laws/non-law, the independent TypeScript core, the new host capability class with its own typed adapter failure code, one registered answer-free scenario per schedule including the pre-due-firing case with seeded mutations, and the direct-VM premise witness plus the three Temporal histories.
 
 **Optional.** Time-skipping calibration, as for the Intermediate Catch Timer; the full local-server witness remains the mandatory refinement gate.
 
@@ -219,11 +269,19 @@ Both plans must still answer their follow-on task, so neither example ends in an
 
 ## Versioning consequences
 
-Pre-release policy applies: the new operation kind is added atomically across the checked-graph compiler, Semantic Process contract, JSON Schemas, Lean decoder and lowering, semantic core, adapter classifier, differential catalog, and every fixture, with no compatibility reader, format counter, or migration branch. No retained Event History is kept beyond the disposable gate.
+Pre-release policy applies: the new operation kind is added atomically across the checked-graph compiler, Semantic Process contract, JSON Schemas, Lean decoder and lowering, semantic core, the adapter's typed contract module and host-capability classifier, differential catalog, and every fixture, with no compatibility reader, format counter, or migration branch. No retained Event History is kept beyond the disposable gate.
 
 ## Stop conditions
 
-Stop for owner direction if the profile would need a wait-set shape the host capability predicate rejects; if the Update-arm coalescing behavior cannot preserve a semantic rejection for a losing Update; if ownership of the two waits turns out to be ambiguous in an admitted state; if a new CMOF fact or CIB observation is required; or if `cancelActivity="false"` would have to be admitted to obtain a corpus fixture.
+Stop for owner direction if:
+
+- the profile would need a wait-set shape the host capability predicate rejects;
+- a **sequential** losing Update cannot resolve as a semantic rejection (obligation 1);
+- the **coalesced** fail-closed path cannot durably resolve its in-flight Update and would strand the caller (obligation 2);
+- the `hasSignals === false` premise does not hold for a `doUpdate`-plus-timer activation in the pinned SDK;
+- ownership of the two waits turns out to be ambiguous in an admitted state;
+- a new CMOF fact or CIB observation is required;
+- `cancelActivity="false"` would have to be admitted to obtain a corpus fixture.
 
 ## Owner decisions required
 
