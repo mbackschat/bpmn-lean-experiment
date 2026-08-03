@@ -4,7 +4,7 @@
 
 **Implemented current pre-release product contract on 2026-07-31; not an immutable release or production-history baseline.**
 
-This specification describes only what the product command runs today: one profile, one User Task interaction. The proposed extension to every implemented profile is not part of this contract and lives in the [runnable MVP surface proposal](RUNNABLE-TEMPORAL-MVP-SURFACE-PROPOSAL.md), which graduates into this document when implemented rather than replacing it.
+**The implemented product surface has moved ahead of this document.** The owner-approved [runnable MVP surface proposal](RUNNABLE-TEMPORAL-MVP-SURFACE-PROPOSAL.md) is implemented in code: `dummyUserTask` no longer exists, configuration carries `interactions` and `effectHandlers`, the production Worker registers the effect Activity, and fifteen per-profile examples replace the single accepted example. That proposal remains the accurate contract record until its closure review passes and it graduates into this document; the dummy-actor sections below describe the superseded single-task shape and must not be read as the current contract.
 
 ## Product question
 
@@ -93,12 +93,12 @@ Install the repository dependencies, then make an ordinary Temporal service avai
 temporal server start-dev --headless
 ```
 
-If the service uses another address, Namespace, or Task Queue, copy and edit the explicit `temporal` object in [`examples/temporal-mvp/accepted.json`](../examples/temporal-mvp/accepted.json). `process.instanceId` is semantic identity and must be new for each execution retained by that Temporal Namespace because Workflow ID reuse is deliberately rejected.
+If the service uses another address, Namespace, or Task Queue, copy and edit the explicit `temporal` object in [`examples/temporal-mvp/user-task-discovery-completion.json`](../examples/temporal-mvp/user-task-discovery-completion.json). `process.instanceId` is semantic identity and must be new for each execution retained by that Temporal Namespace because Workflow ID reuse is deliberately rejected.
 
 Run the accepted model in another terminal:
 
 ```sh
-./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/accepted.json
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
 ```
 
 The command compiles the BPMN file before connecting, emits typed JSON records for source admission, Process identity, the stable task wait and Process variables, selected form input, the configured 3000-millisecond delay, the semantic completion result, and the completed receipt. Temporal SDK Worker logs may appear between these product records. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means actor or semantic completion refusal, and `64` means malformed command configuration.

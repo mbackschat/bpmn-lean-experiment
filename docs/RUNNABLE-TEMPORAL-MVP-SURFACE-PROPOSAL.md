@@ -137,6 +137,16 @@ The owner approved this proposal on 2026-08-03 with the four answers below.
 3. **Confirmed:** a profile requiring a wait-set shape the current host rejects is a stop condition. Stopping routes to an explicit owner capability decision — implement and evidence a multi-wait scheduler, or preserve the existing bound — never to driver logic that works around the rejection.
 4. **Declined:** no synthetic program is added for a host-capability negative control. Both rejection codes already have direct negative coverage in `packages/temporal-adapter/test/host-admission.test.ts`, and a synthetic BPMN artifact in the product examples would duplicate that fact while being the only non-scenario model there.
 
+## Amendments recorded during implementation
+
+These five changes were made after owner approval. None changes the selected account, the config contract's shape, or the exclusion set, but each contradicts or extends a detail written above and is therefore closure-review material rather than a silent correction.
+
+1. **Wait precedence corrected.** The approved rule waited only while a host wait was open *and no interaction was enabled*. That refuses a legitimate Process: an armed Event-Based Gateway publishes a Message interaction that a timer winner is expected to cancel, so a plan intending the timer to win carries no matching response. The implemented precedence is match, then wait while any timer or effect wait is open, then refuse an unanswered enabled interaction, then refuse a stalled Process. A driver test pins the timer-wins case.
+2. **The product-side withdrawal guard was dropped.** A "task changed during the delay" check would duplicate the semantic core's own exact-occurrence validation. A withdrawn occurrence now yields a typed non-committed command result reported as `interactionNotCommitted`, keeping one owner for that rule and one state read per iteration.
+3. **Two semantic-core functions became public.** `sameMessageChannel` and `isMessageChannel` were internal. Matching a configured channel against a published one is a semantic question, so the alternative was reimplementing channel equality in the product layer. The change is additive and touches no wire or observation contract.
+4. **An undeclared effect descriptor throws an ordinary error.** The proposal implied a non-retryable adapter failure, which would need `@temporalio/common`, an undeclared dependency requiring owner approval. The handler instead throws, exactly as the harness probe signals an unmatched registration, and the Service Task capsule's approved retry-and-exhaustion policy classifies it. This module states no retry policy of its own.
+5. **The single `accepted.json` example was removed.** Fifteen per-profile examples supersede it, and keeping both would leave two configurations for one profile. The external-runtime acceptance test now loads the per-profile file.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
