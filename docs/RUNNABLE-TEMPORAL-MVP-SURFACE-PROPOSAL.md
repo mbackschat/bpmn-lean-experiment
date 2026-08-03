@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-03 after independent review; implemented and awaiting closure review before graduation.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner; read that specification for the product surface that runs today, and this document for the intended extension that does not.
+**Owner-approved on 2026-08-03 after independent review; implemented and awaiting closure review before graduation.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner. Until that graduation, this document is the accurate record of the implemented product contract, and the specification body describes the superseded single-task shape.
 
 ## Product question
 
