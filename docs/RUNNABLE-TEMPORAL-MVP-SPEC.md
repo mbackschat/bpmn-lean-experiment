@@ -4,6 +4,8 @@
 
 **Implemented current pre-release product contract on 2026-07-31; not an immutable release or production-history baseline.**
 
+This specification describes only what the product command runs today: one profile, one User Task interaction. The proposed extension to every implemented profile is not part of this contract and lives in the [runnable MVP surface proposal](RUNNABLE-TEMPORAL-MVP-SURFACE-PROPOSAL.md), which graduates into this document when implemented rather than replacing it.
+
 ## Product question
 
 What is the smallest end-to-end product that lets a user run an admitted BPMN model durably on an ordinary Temporal server while honestly documenting its bounded feature set and avoiding a premature task UI, form renderer, identity system, or global task inbox?

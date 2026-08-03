@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft on 2026-08-03; not owner-approved and not implemented.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner; that specification remains the product floor until the contract below is implemented.
+**Draft on 2026-08-03; not owner-approved and not implemented.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner; read that specification for the product surface that runs today, and this document for the intended extension that does not.
 
 ## Product question
 
