@@ -258,6 +258,21 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 
+/-- Every interrupting boundary Timer attaches to exactly one same-scope User Task, and no two claim the same host. Without this the node admits and then lowers to no operation, because the deadline belongs to the Activity's operation rather than to itself, so a misattached boundary node yields a silently deadline-free program that nothing downstream rejects. -/
+def checkedBoundaryTimerAttachmentValid (source : CheckedProcess) : Bool :=
+  let hosts := source.nodes.filterMap fun
+    | .timerBoundaryEvent _ attachedToRef _ _ => some attachedToRef
+    | _ => none
+  source.nodes.all fun
+    | .timerBoundaryEvent id attachedToRef _ _ =>
+        source.nodes.any (fun
+          | .userTask hostId _ => decide (hostId = attachedToRef)
+          | _ => false) &&
+          checkedNodeScopeId? source id ==
+            checkedNodeScopeId? source attachedToRef &&
+          (hosts.filter (· = attachedToRef)).length = 1
+    | _ => true
+
 /-- Independent static admission for the exact currently implemented checked-graph profiles. -/
 def checkedWellFormed (source : CheckedProcess) : Bool :=
   nonempty source.identity.semanticProfile.value &&
@@ -291,6 +306,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&
     checkedErrorHandlersValid source &&
+    checkedBoundaryTimerAttachmentValid source &&
     checkedProfileCapabilitiesValid source &&
     checkedProcessGraphWellFormed source
 

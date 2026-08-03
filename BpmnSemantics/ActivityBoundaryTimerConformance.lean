@@ -75,6 +75,18 @@ theorem boundary_timer_is_not_lowered_as_a_standalone_timer :
 theorem exactly_one_activity_owns_a_boundary_deadline :
     (boundedTaskOperations program).length = 1 := by decide
 
+/-- Redirects only the deadline's attachment, keeping every other byte of the admitted source. -/
+private def misattachedDeadline : CheckedProcess :=
+  { checkedProcess with
+    nodes := checkedProcess.nodes.map fun
+      | .timerBoundaryEvent id _ durationLiteral outputFlowId =>
+          .timerBoundaryEvent id ⟨"NormalEnd"⟩ durationLiteral outputFlowId
+      | node => node }
+
+/-- A deadline whose attachment does not resolve to a User Task is refused at admission rather than dropped. It lowers to no operation of its own, so without this rule the program would simply have no deadline and nothing downstream would object. -/
+theorem misattached_deadline_is_refused_at_admission :
+    checkedWellFormed misattachedDeadline = false := by decide
+
 def instanceId : SemanticId := ⟨"Instance_1"⟩
 
 def taskId : UserTaskInstanceId :=

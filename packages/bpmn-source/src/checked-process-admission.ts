@@ -60,6 +60,7 @@ export function isAdmittedCheckedProcess(
     embeddedNodesOwnChildScopes(graph, nodeScopes, semanticProfile) &&
     hasSelectedCallActivityDefinitions(semanticProfile, graph, nodeScopes) &&
     errorNodesHaveDirectHandlers(graph, nodeScopes) &&
+    boundaryTimersAttachToUserTasks(graph, nodeScopes) &&
     hasSelectedExpressionLanguage(
       semanticProfile,
       expressionLanguage,
@@ -93,6 +94,39 @@ function isAdmittedDefinitionScope(
         nodeIds.has(sourceId) && nodeIds.has(targetId),
     ) &&
     isConnectedAcyclicGraph(nodes, flows, exceptionalEdges);
+}
+
+/**
+ * Every interrupting boundary Timer must attach to exactly one User Task in its own scope, and no
+ * two may claim the same host.
+ *
+ * Without this the node still admits and then lowers to no operation, because the deadline belongs
+ * to the Activity's operation rather than to itself. The result is a silently deadline-free program:
+ * a misattached boundary node contributes nothing and nothing downstream requires it to have been
+ * consumed. The attachment reference is the only place this can be caught, so the check is stated
+ * here rather than left to program support.
+ */
+function boundaryTimersAttachToUserTasks(
+  graph: CheckedProcessGraph,
+  nodeScopes: ReadonlyMap<string, string>,
+): boolean {
+  const deadlines = graph.nodes.filter(
+    (node): node is Extract<
+      CheckedNode,
+      { kind: CheckedNodeKind.TimerBoundaryEvent }
+    > => node.kind === CheckedNodeKind.TimerBoundaryEvent,
+  );
+  const hosts = deadlines.map((deadline) => deadline.attachedToRef);
+  return deadlines.every((deadline) => {
+    const host = graph.nodes.find(
+      (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.UserTask }> =>
+        node.id === deadline.attachedToRef &&
+        node.kind === CheckedNodeKind.UserTask,
+    );
+    return host !== undefined &&
+      nodeScopes.get(deadline.id) === nodeScopes.get(host.id) &&
+      hosts.filter((candidate) => candidate === host.id).length === 1;
+  });
 }
 
 function errorNodesHaveDirectHandlers(

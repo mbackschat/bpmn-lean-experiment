@@ -129,3 +129,16 @@ test("refuses a lexical non-interrupting deadline and admits the defaulted form"
     omitted.semanticProcess.operations,
   );
 });
+
+/**
+ * A boundary node whose `attachedToRef` does not resolve to a User Task in its own scope must be
+ * refused at admission. Before this was checked, such a source compiled `Accepted` with the deadline
+ * dropped entirely: the boundary node lowers to no operation, so nothing downstream noticed that no
+ * bounded operation had consumed it, and the deadline vanished silently.
+ */
+test("refuses a deadline attached to a node that is not a User Task", async () => {
+  const misattached = await compile(
+    source.replace('attachedToRef="BoundedTask"', 'attachedToRef="NormalEnd"'),
+  );
+  assert.notEqual(misattached.status, BpmnCompilationStatus.Accepted);
+});
