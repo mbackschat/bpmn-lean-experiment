@@ -286,3 +286,28 @@ test("links every tree document from its own directory README", async () => {
 
   assert.deepEqual(unlinked.sort(), []);
 });
+
+// Same reachability contract one level down: a scenario family README must link each of its own
+// scenario documents. Adding a scenario then forces the README edit, which is the drift trigger.
+//
+// This reaches a prose-inventory class that a lexical rule cannot: it needs no count word and no
+// family naming convention, only the filesystem. It deliberately does not reach a cross-cutting
+// enumeration such as a registry listing every family in prose, whose names are not derivable —
+// those are kept out of maintained prose instead of guarded.
+test("links every scenario document from its own family README", async () => {
+  const unlinked: string[] = [];
+  const families = await readdir(path.join(projectRoot, "scenarios"), {
+    withFileTypes: true,
+  });
+  for (const family of families.filter((entry) => entry.isDirectory())) {
+    const familyRoot = path.join(projectRoot, "scenarios", family.name);
+    const readme = await readFile(path.join(familyRoot, "README.md"), "utf8");
+    for (const entry of await readdir(familyRoot)) {
+      if (entry.endsWith("scenario.json") && !readme.includes(`(${entry})`)) {
+        unlinked.push(`scenarios/${family.name}/${entry}`);
+      }
+    }
+  }
+
+  assert.deepEqual(unlinked.sort(), []);
+});
