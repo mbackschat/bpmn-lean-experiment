@@ -1,0 +1,32 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/exclusive-gateway-simple-boolean/process.bpmn",
+    "sourceId": "simple-boolean-exclusive-gateway-process",
+    "semanticProfile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_exclusive_gateway_simple_boolean_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Task_First",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}

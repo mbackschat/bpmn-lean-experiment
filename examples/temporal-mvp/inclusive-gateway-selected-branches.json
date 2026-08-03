@@ -1,0 +1,60 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/inclusive-gateway-selected-branches/process.bpmn",
+    "sourceId": "inclusive-gateway-test",
+    "semanticProfile": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_inclusive_gateway_selected_branches_1",
+    "initialVariables": [
+      {
+        "name": "takeA",
+        "value": {
+          "kind": "string",
+          "value": "selected"
+        }
+      },
+      {
+        "name": "takeB",
+        "value": {
+          "kind": "string",
+          "value": "selected"
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Task_A",
+      "delayMs": 250,
+      "inputVariableNames": [
+        "takeA",
+        "takeB"
+      ],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Task_B",
+      "delayMs": 250,
+      "inputVariableNames": [
+        "takeA",
+        "takeB"
+      ],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}

@@ -1,0 +1,39 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/called-process-call-activity/process.bpmn",
+    "sourceId": "called-process-call-activity",
+    "semanticProfile": "bpmn-2.0.2-called-process-call-activity-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_called_process_call_activity_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "CalledTask",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "CallerTask",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}

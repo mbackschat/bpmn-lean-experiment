@@ -1,0 +1,41 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/create-document-data/process.bpmn",
+    "sourceId": "a12-create-document-data",
+    "semanticProfile": "cibseven-2.0.0-a12-create-document-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_create_document_data_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "urn:bpmn-lean:effect-operation:mapped-success-v1",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "newDocRef",
+            "value": {
+              "kind": "string",
+              "value": "Document:42"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -47,7 +47,7 @@ test("rejects an empty server address before attempting a connection", async () 
 
 test("connects to the supplied server and runs on the supplied Task Queue", async () => {
   const exampleConfig = await loadRunnableMvpConfig(fileURLToPath(
-    new URL("../../../examples/temporal-mvp/accepted.json", import.meta.url),
+    new URL("../../../examples/temporal-mvp/user-task-discovery-completion.json", import.meta.url),
   ));
   const environment = await withDeadline(
     createCachedLocalEnvironment({

@@ -1,0 +1,33 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/message-addressed-receive-task/process.bpmn",
+    "sourceId": "message-addressed-receive-task-process",
+    "semanticProfile": "cibseven-2.2.0-message-addressed-receive-task-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_message_addressed_receive_task_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "deliverMessage",
+      "channel": {
+        "kind": "directMessage",
+        "messageId": "Message_NewInvoice"
+      },
+      "delayMs": 250
+    }
+  ],
+  "effectHandlers": []
+}

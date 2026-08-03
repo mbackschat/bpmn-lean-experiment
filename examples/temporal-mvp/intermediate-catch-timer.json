@@ -1,0 +1,24 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/intermediate-catch-timer/process.bpmn",
+    "sourceId": "intermediate-catch-timer-pt1s-process",
+    "semanticProfile": "cibseven-2.2.0-intermediate-catch-timer-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_intermediate_catch_timer_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [],
+  "effectHandlers": []
+}

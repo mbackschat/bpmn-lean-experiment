@@ -1,0 +1,46 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/embedded-subprocess-completion/process.bpmn",
+    "sourceId": "embedded-subprocess-completion-process",
+    "semanticProfile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_embedded_subprocess_completion_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ChildA",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ChildB",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_AfterScope",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}

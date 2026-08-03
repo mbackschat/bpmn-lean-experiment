@@ -10,7 +10,7 @@
     }
   },
   "process": {
-    "instanceId": "MvpDemo_1",
+    "instanceId": "MvpExample_user_task_discovery_completion_1",
     "initialVariables": [
       {
         "name": "requestTitle",
@@ -31,7 +31,7 @@
     {
       "kind": "completeUserTaskInstance",
       "elementId": "UserTask_Approve",
-      "delayMs": 3000,
+      "delayMs": 250,
       "inputVariableNames": [
         "requestTitle"
       ],

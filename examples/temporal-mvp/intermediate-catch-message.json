@@ -1,0 +1,42 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/intermediate-catch-message/process.bpmn",
+    "sourceId": "intermediate-catch-message-process",
+    "semanticProfile": "bpmn-2.0.2-intermediate-catch-message-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_intermediate_catch_message_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "deliverMessage",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_ProcessMessages",
+        "interfaceOperationId": "Operation_ReceiveApprovalRequest",
+        "messageId": "Message_ApprovalRequest"
+      },
+      "delayMs": 250
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Approve",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}
