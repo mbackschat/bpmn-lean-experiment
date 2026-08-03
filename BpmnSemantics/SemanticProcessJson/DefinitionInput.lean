@@ -1,7 +1,8 @@
 import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcessJson.Definitions
+import BpmnSemantics.SemanticProcessJson.CheckedProcess
+import BpmnSemantics.SemanticProcessJson.Program
 
 /-! # Cross-artifact definition-input admission
 

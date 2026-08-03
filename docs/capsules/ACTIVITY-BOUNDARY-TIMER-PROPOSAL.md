@@ -279,20 +279,22 @@ Pre-release policy applies: the new operation kind is added atomically across th
 
 ### Owners this implementation grows
 
-Nonblank headroom measured at proposal time by `node scripts/what-binds.ts <path>...`; [the size gate](../../scripts/source-hygiene.test.ts) reports the current figure as `SOURCE_HEADROOM` on every run, so no number below has to be kept current here.
+Nonblank headroom from `node scripts/what-binds.ts <path>...`; [the size gate](../../scripts/source-hygiene.test.ts) reports every crowded owner as `SOURCE_HEADROOM` on each run, so a figure here that drifts is a defect rather than a historical note.
 
-| Owner | Headroom at proposal time | Consequence for sequencing |
+| Owner | Headroom | Consequence for sequencing |
 |---|---:|---|
-| [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 5 | Full. A behavior-preserving extraction lands as its own commit before any new semantics. |
-| [adapter runner](../../packages/temporal-adapter/src/runner.ts) | 8 | Full. The scenario-execution path for this family needs its own owner rather than another branch here. |
-| [Lean definition decoder](../../BpmnSemantics/SemanticProcessJson/Definitions.lean) | 12 | Effectively full. The new operation's decoder clauses do not fit; extract before adding them. |
+| [adapter runner](../../packages/temporal-adapter/src/runner.ts) | 8 | Full. The scenario-execution path for this family needs its own owner rather than another branch here; the extraction is still outstanding. |
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 70 | Room for one operation's lowering, not for a second family afterwards. |
+| [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 72 | Cleared from 5 by extracting [control-flow token transitions](../../packages/semantic-core/src/semantic-process-control-flow-runtime.ts) into their own owner. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 94 | Sufficient for the new operation kind and its program predicate. |
 | [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 184 | Sufficient. |
+| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 240 | Cleared from 12 by splitting the former combined definition decoder into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and this program owner. |
 | [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 368 | Sufficient. |
 | [host capability classifier](../../packages/temporal-adapter/src/host-admission.ts) | 485 | Sufficient; also gains the bounded-wait exclusion recorded below. |
 
-Three owners are already at or near the review target, so this capsule crosses three extraction boundaries rather than one. Each extraction is a separate behavior-preserving commit, never work done under a size squeeze inside a semantic change.
+Three owners were at or near the review target when this inventory was first derived, so this capsule crosses three extraction boundaries rather than one. Each extraction is a separate behavior-preserving commit, never work done under a size squeeze inside a semantic change; two have landed and the adapter runner remains.
+
+The Lean split supersedes the boundary recorded in [the archived Lean comment-discipline proposal](../archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md), which deliberately kept checked-process and program decoding in one owner and retained the shared element decoders there. That choice was sound at its size, and its substantive constraint is preserved: the shared decoders are still neither duplicated nor pushed into the wire-primitive support module. What changed is that the combined owner reached the review target while every future operation needs a clause in its program half, and the file already exposed exactly two public entry points, so the representation boundary was the split the code was already asking for.
 
 ### Guards and oracles this implementation must change or satisfy
 
