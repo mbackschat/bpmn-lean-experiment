@@ -9,7 +9,7 @@
 The repository command builds the source/compiler and adapter packages, validates one exact JSON config, compiles the named BPMN file before any network connection, and then runs the production Worker/Query/Update path against an already running Temporal service:
 
 ```sh
-./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/accepted.json
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
 ```
 
 The accepted config exposes initial `requestTitle` data at the active `UserTask_Approve`, keeps that exact occurrence active across a 3000-millisecond foreground delay, submits deterministic `decision` and explicit-null `reviewNote` form values, and reports the completed receipt. Copy the config before changing its Temporal address or fresh semantic `process.instanceId`; paths inside it resolve relative to the config file.

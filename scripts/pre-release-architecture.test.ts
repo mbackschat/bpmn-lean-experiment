@@ -19,7 +19,35 @@ const activeSourceRoots = [
   "runners/cibseven/src",
 ];
 
+const maintainedReadmes = [
+  "README.md",
+  "packages/bpmn-source/README.md",
+  "packages/differential/README.md",
+  "packages/semantic-core/README.md",
+  "packages/temporal-adapter/README.md",
+  "runners/cibseven/README.md",
+  "contracts/README.md",
+];
+
 const retiredOperationName = ["term", "inate"].join("");
+
+/**
+ * Vocabulary a replace-in-place change retired from the product surface.
+ *
+ * Unlike `prohibitedSourceFragments`, these are checked in maintained documentation as well as
+ * active source, because the recurring escape is prose that keeps describing a removed identifier
+ * or a deleted example file long after the code changed. Fragments are split so this guard does not
+ * match its own list.
+ */
+const retiredProductVocabulary = [
+  ["dummy", "UserTask"].join(""),
+  ["DummyUserTask", "Response"].join(""),
+  ["DummyUserTask", "Actor"].join(""),
+  ["DummyUserTask", "RefusalCode"].join(""),
+  ["Actor", "Refused"].join(""),
+  ["CompletionNot", "Committed"].join(""),
+  ["temporal-mvp/accep", "ted.json"].join(""),
+];
 
 const prohibitedSourceFragments = [
   ["schema", "Version"].join(""),
@@ -149,6 +177,22 @@ test("keeps active code and maintained documentation on one replace-in-place pre
   for (const relativePath of documentationFiles) {
     const source = await readFile(path.join(projectRoot, relativePath), "utf8");
     findings.push(...retiredDocumentationFindings(relativePath, source));
+  }
+
+  // Retired product vocabulary is a documentation defect as much as a source defect: a reader
+  // following a deleted example filename or a removed configuration field is misled either way.
+  const vocabularyFiles = [
+    ...files,
+    ...documentationFiles,
+    ...maintainedReadmes,
+  ];
+  for (const relativePath of vocabularyFiles) {
+    const source = await readFile(path.join(projectRoot, relativePath), "utf8");
+    for (const fragment of retiredProductVocabulary) {
+      if (source.includes(fragment)) {
+        findings.push(`${relativePath}: ${fragment}`);
+      }
+    }
   }
 
   assert.deepEqual(findings, []);

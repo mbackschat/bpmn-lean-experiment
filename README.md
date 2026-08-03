@@ -164,7 +164,7 @@ Start or select an existing Temporal service separately; the BPMN runtime never 
 
 ```sh
 temporal server start-dev --headless
-./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/accepted.json
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
 ```
 
 Run those commands in separate terminals. Edit the explicit `temporal` fields or `process.instanceId` in a copied config when needed. The [MVP specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md#running-the-maintained-demonstration) documents the supported BPMN/data subset, event records, exit codes, and the unsupported-model demonstration.
