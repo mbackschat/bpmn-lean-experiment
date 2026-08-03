@@ -18,7 +18,6 @@ The semantic checkpoint is `not-reached` rather than `not-required`: this capsul
 
 The review returned ten required findings. Corrections ran in two same-reviewer rounds: `109c212` closed all ten and introduced four new defects, and `e37c018` closed those four. The audit column names `e37c018` as the final audited correction. One mechanical follow-up the second audit raised is applied here — the `ABTIMER-ARM-01` evidence row no longer attributes boundary registration to a handling-only clause, and the arming instant is recorded as a project interpretation because Clause 13.5.2 starts waiting when an Intermediate Event is reached and a Boundary Event never is.
 
-
 ## Question
 
 What is the smallest bounded slice that gives an Activity occurrence a deadline: one interrupting Timer Boundary Event attached to one User Task, where the Timer firing abandons the Activity and follows the boundary route, and the Activity's own completion withdraws the Timer?
@@ -98,7 +97,7 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
                     └──boundary──→ Boundary User Task → None End B
 ```
 
-**The profile pins a shape class, not this one diagram.** Admission compares an exact checked-node multiset, an exact operation multiset, and generic graph reachability, and none of those can pin an attachment *reference*. A source that attaches the deadline to the follow-on User Task instead of the diagrammed one therefore satisfies every admission gate and yields a well-formed bounded process in which that task is the bounded one. This is an exactness limit of multiset-plus-graph admission rather than an unsound program, and it is recorded here instead of claimed away; constraining the attachment structurally is excluded from this capsule.
+**The profile pins a shape class, not this one diagram.** Admission compares an exact checked-node multiset, an exact operation multiset, generic graph reachability, and — since the attachment rule landed — that every deadline resolves to a unique same-scope User Task host. Together those reject a deadline on the Start Event, either None End Event, or the boundary follow-on task, leaving exactly one residual freedom: a source that attaches the deadline to the *normal* follow-on User Task instead of the diagrammed one satisfies every admission gate and yields a well-formed bounded process in which that task is the bounded one. This is an exactness limit of multiset-plus-graph admission rather than an unsound program, and it is recorded here instead of claimed away; constraining the attachment structurally is excluded from this capsule.
 
 - one private executable Process with `isExecutable="true"`;
 - exactly one None Start Event with no Event Definition and exactly one outgoing Sequence Flow;

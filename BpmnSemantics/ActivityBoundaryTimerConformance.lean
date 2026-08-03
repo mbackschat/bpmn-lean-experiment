@@ -232,13 +232,42 @@ theorem pre_due_deadline_firing_is_rejected :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by decide
 
-/-- After the Activity wins, its deadline no longer exists, so the losing arm cannot fire late. -/
+/-- State reached when the Activity arm wins. -/
+def afterActivityVictory : RuntimeState :=
+  (applyStimulus scenarioClosureLimit program armedState
+    (.completeUserTaskInstance ⟨"complete-bounded-task"⟩ taskId [])).state
+
+/-- State reached when the deadline arm wins. -/
+def afterDeadlineVictory : RuntimeState :=
+  (applyStimulus scenarioClosureLimit program armedState
+    (.fireTimer ⟨"fire-deadline"⟩ deadlineId 1000)).state
+
+/-- After the Activity wins, its deadline no longer exists, so the losing arm cannot fire late. The refusal preserves the winning state exactly rather than only reporting a rejected outcome. -/
 theorem deadline_firing_after_the_activity_victory_is_rejected :
-    (applyStimulus scenarioClosureLimit program
-      (applyStimulus scenarioClosureLimit program armedState
-        (.completeUserTaskInstance ⟨"complete-bounded-task"⟩ taskId [])).state
-      (.fireTimer ⟨"fire-deadline-late"⟩ deadlineId 1000)).outcome =
-      .rejected := by decide
+    applyStimulus scenarioClosureLimit program afterActivityVictory
+        (.fireTimer ⟨"fire-deadline-late"⟩ deadlineId 1000) =
+      { outcome := .rejected
+        state := afterActivityVictory
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by decide
+
+/-- Symmetrically, after the deadline wins the Activity occurrence is gone, so its completion is refused with the winning state preserved exactly. This is the losing arm in the other direction. -/
+theorem bounded_task_completion_after_the_deadline_victory_is_rejected :
+    applyStimulus scenarioClosureLimit program afterDeadlineVictory
+        (.completeUserTaskInstance ⟨"complete-stale-bounded-task"⟩ taskId []) =
+      { outcome := .rejected
+        state := afterDeadlineVictory
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by decide
+
+/-- A refused pre-due firing leaves the deadline armed rather than consuming it, so the exact firing at `1000` still wins normally afterwards. Without this the pre-due refusal could be satisfied by silently withdrawing the arm. -/
+theorem exact_firing_still_wins_after_a_refused_pre_due_firing :
+    applyStimulus scenarioClosureLimit program
+        (applyStimulus scenarioClosureLimit program armedState
+          (.fireTimer ⟨"fire-deadline-early"⟩ deadlineId 999)).state
+        (.fireTimer ⟨"fire-deadline"⟩ deadlineId 1000) =
+      applyStimulus scenarioClosureLimit program armedState
+        (.fireTimer ⟨"fire-deadline"⟩ deadlineId 1000) := by decide
 
 /-- The timing profile admits no completion patch, so a submitted variable is refused rather than ignored: silently dropping it would add a data claim to a timing capsule. -/
 theorem submitted_values_are_rejected_rather_than_ignored :

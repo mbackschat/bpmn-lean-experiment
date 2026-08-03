@@ -33,6 +33,11 @@ import type {
   MutableDefinitionArtifacts,
 } from "./contract-artifact-test-fixtures.ts";
 
+import {
+  isRecord,
+  localDefinitionReferences,
+} from "./schema-structure.ts";
+
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 test("keeps executable and scenario MessageChannel schemas on the same closed union", async () => {
@@ -492,125 +497,4 @@ test("rejects non-canonical definition and unordered-reference order", async () 
     verifyDefinitionArtifacts(projectRoot, referenceOrderMutation),
     /operation operation:Gateway_Fork outputs must be sorted/,
   );
-});
-
-function localDefinitionReferences(value: unknown): Set<string> {
-  const references = new Set<string>();
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      for (const reference of localDefinitionReferences(item)) {
-        references.add(reference);
-      }
-    }
-    return references;
-  }
-  if (!isRecord(value)) {
-    return references;
-  }
-  for (const [key, child] of Object.entries(value)) {
-    if (key === "$ref" && typeof child === "string") {
-      const match = /^#\/\$defs\/(.+)$/u.exec(child);
-      if (match?.[1] !== undefined) {
-        references.add(match[1]);
-      }
-      continue;
-    }
-    for (const reference of localDefinitionReferences(child)) {
-      references.add(reference);
-    }
-  }
-  return references;
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
- * Reads an enum's declared string values straight from the semantic-core source.
- *
- * The contracts gate deliberately does not build the packages, so resolving the enum through
- * `dist/` would make this guard report on stale output. Source text has no such dependency; the
- * caller asserts a plausible member count so a declaration-shape change fails loudly instead of
- * silently yielding an empty set.
- */
-function declaredEnumValues(source: string, enumName: string): ReadonlyArray<string> {
-  const start = source.indexOf(`export enum ${enumName} {`);
-  assert.notEqual(start, -1, `${enumName} is not declared as an enum`);
-  const end = source.indexOf("\n}", start);
-  assert.notEqual(end, -1, `${enumName} has no closing brace`);
-  return [
-    ...source.slice(start, end).matchAll(/^\s+[A-Za-z0-9_]+ = "([a-zA-Z0-9_]+)",$/gmu),
-  ].map((match) => {
-    const value = match[1];
-    assert.ok(value !== undefined);
-    return value;
-  });
-}
-
-/**
- * Collects every `kind` discriminator the schema's closed unions accept, whether the variants are
- * separate `$defs` entries or inline `oneOf` branches.
- */
-function schemaDiscriminators(node: unknown, found: Set<string>): Set<string> {
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      schemaDiscriminators(item, found);
-    }
-    return found;
-  }
-  if (!isRecord(node)) {
-    return found;
-  }
-  const properties = node.properties;
-  if (isRecord(properties)) {
-    const kind = properties.kind;
-    if (isRecord(kind) && typeof kind.const === "string") {
-      found.add(kind.const);
-    }
-  }
-  for (const value of Object.values(node)) {
-    schemaDiscriminators(value, found);
-  }
-  return found;
-}
-
-/**
- * The projection guard is one-directional: it validates the artifacts that exist, so a semantic
- * variant with no registered artifact can be added to the code enums while both closed wire schemas
- * silently reject it. This closes that direction — every enum member must have a schema branch —
- * and is the reason the interrupting boundary Timer's operation and node kinds were absent from both
- * schemas while every other gate passed.
- */
-test("gives every semantic operation and checked node kind a wire-schema branch", async () => {
-  const contract = await readFile(
-    `${projectRoot}/packages/semantic-core/src/semantic-process-contract.ts`,
-    "utf8",
-  );
-  const cases = [
-    {
-      schema: "semantic-process.schema.json",
-      kinds: declaredEnumValues(contract, "SemanticOperationKind"),
-      anchor: "awaitBoundedUserTask",
-    },
-    {
-      schema: "checked-process.schema.json",
-      kinds: declaredEnumValues(contract, "CheckedNodeKind"),
-      anchor: "timerBoundaryEvent",
-    },
-  ];
-  for (const { schema, kinds, anchor } of cases) {
-    // Anti-vacuity: an earlier version of this guard read an enum that was in scope only as a type,
-    // so it compared an empty list and passed while both schemas were in fact missing a branch.
-    assert.ok(kinds.length > 10, `${schema}: enum extraction returned ${kinds.length} members`);
-    assert.ok(kinds.includes(anchor), `${schema}: enum extraction lost ${anchor}`);
-    const document: unknown = JSON.parse(
-      await readFile(`${projectRoot}/contracts/schemas/${schema}`, "utf8"),
-    );
-    const discriminators = schemaDiscriminators(document, new Set<string>());
-    const absent = kinds
-      .filter((kind) => !discriminators.has(kind))
-      .sort(compareCanonicalStrings);
-    assert.deepEqual(absent, [], `${schema} has no branch for these kinds`);
-  }
 });
