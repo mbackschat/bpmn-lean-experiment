@@ -26,6 +26,13 @@ const decidedDispositions: ReadonlySet<string> = new Set([
 ]);
 /** Artifact trees whose registry README must reach every one of their directories. */
 const artifactRegistries = ["profiles", "scenarios"] as const;
+/** Document trees whose own README must reach every sibling Markdown document. */
+const documentRegistries = [
+  "docs/archived",
+  "docs/capsules",
+  "docs/experiments",
+  "docs/research",
+] as const;
 
 function surfaceSection(markdown: string): string {
   const start = markdown.indexOf(surfaceSectionStart);
@@ -252,6 +259,27 @@ test("links every artifact directory from its registry README", async () => {
     for (const entry of entries.filter((candidate) => candidate.isDirectory())) {
       if (!readme.includes(`(${entry.name}/`)) {
         unlinked.push(`${registry}/${entry.name}`);
+      }
+    }
+  }
+
+  assert.deepEqual(unlinked.sort(), []);
+});
+
+// Same reachability contract for document trees: a capsule, research record, experiment, or
+// archived document must be linked from its own directory README, not only from the top-level
+// documentation registry. Currently satisfied everywhere, so this locks it before it drifts.
+test("links every tree document from its own directory README", async () => {
+  const unlinked: string[] = [];
+  for (const registry of documentRegistries) {
+    const readme = await readFile(
+      path.join(projectRoot, registry, "README.md"),
+      "utf8",
+    );
+    const entries = await readdir(path.join(projectRoot, registry));
+    for (const entry of entries) {
+      if (entry.endsWith(".md") && entry !== "README.md" && !readme.includes(entry)) {
+        unlinked.push(`${registry}/${entry}`);
       }
     }
   }
