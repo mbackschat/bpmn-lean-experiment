@@ -122,6 +122,60 @@ const bindingInventoryHeading = "## Versioning consequences";
 /** Extensions the module-size boundaries apply to, so a named owner is a real change site. */
 const sourceOwnerExtensions = new Set([".cjs", ".java", ".js", ".lean", ".mjs", ".ts"]);
 
+/** Closed disposition set of the process-assessment ledger, with the dispositions prose may use once. */
+const processDispositions = ["executable guard", "review question", "accepted risk"] as const;
+type ProcessDisposition = typeof processDispositions[number];
+const executableDisposition: ProcessDisposition = "executable guard";
+
+type ProcessFinding = Readonly<{
+  finding: string;
+  instances: string;
+  disposition: string;
+  evidence: string;
+}>;
+
+function isExecutableLink(target: string): boolean {
+  return target.endsWith(".test.ts") ||
+    (target.startsWith("../scripts/") && target.endsWith(".ts"));
+}
+
+/**
+ * Rejects a ledger row whose disposition cannot hold the weight its instance count places on it.
+ *
+ * The escalation rule is the whole mechanism: a finding seen twice has already refuted the prose that
+ * was supposed to prevent it, so the second instance must be answered by a gate. Checking that here
+ * keeps the rule from being the next piece of prose nobody enforces.
+ */
+function assessProcessFindings(
+  rows: ReadonlyArray<ProcessFinding>,
+): ReadonlyArray<string> {
+  return rows.flatMap((row) => {
+    const label = row.finding.slice(0, 48);
+    const instances = Number(row.instances);
+    const disposition = withoutBackticks(row.disposition);
+    const links = [...row.evidence.matchAll(/\]\(([^)\s]+)\)/gu)]
+      .flatMap(([, target]) => (target === undefined ? [] : [target]));
+    if (!Number.isInteger(instances) || instances < 1) {
+      return [`${label}: instance count ${JSON.stringify(row.instances)} is not a positive integer`];
+    }
+    if (!processDispositions.includes(disposition as ProcessDisposition)) {
+      return [`${label}: disposition ${JSON.stringify(disposition)} is outside the closed set`];
+    }
+    if (links.length === 0) {
+      return [`${label}: disposition cites no evidence link`];
+    }
+    if (instances >= 2 && disposition !== executableDisposition) {
+      return [
+        `${label}: ${instances} instances refute a ${JSON.stringify(disposition)} disposition and require an executable guard`,
+      ];
+    }
+    if (disposition === executableDisposition && !links.some(isExecutableLink)) {
+      return [`${label}: claims an executable guard but links no guard or script`];
+    }
+    return [];
+  });
+}
+
 function headingSection(markdown: string, heading: string): string | null {
   const start = markdown.indexOf(`${heading}\n`);
   if (start === -1) {
@@ -321,6 +375,85 @@ test("links every tree document from its own directory README", async () => {
   }
 
   assert.deepEqual(unlinked.sort(), []);
+});
+
+// Contract: the escalation rule of the process-assessment ledger is executable, so a repeated finding
+// cannot be answered with another reminder. The oracle is the closed disposition set plus the row's own
+// instance count; the correctness of a disposition is a review judgment this cannot make.
+test("the process-assessment escalation rule rejects every weak disposition", () => {
+  assert.deepEqual(
+    assessProcessFindings([
+      {
+        finding: "guarded recurrence",
+        instances: "3",
+        disposition: "`executable guard`",
+        evidence: "[guard](../scripts/what-binds.test.ts)",
+      },
+      {
+        finding: "single occurrence answered by a question",
+        instances: "1",
+        disposition: "`review question`",
+        evidence: "[question](#self-assessment-questions)",
+      },
+      {
+        finding: "repeated but still only a question",
+        instances: "2",
+        disposition: "`review question`",
+        evidence: "[question](#self-assessment-questions)",
+      },
+      {
+        finding: "claims a guard without one",
+        instances: "2",
+        disposition: "`executable guard`",
+        evidence: "[prose](PLAN.md)",
+      },
+      {
+        finding: "invented disposition",
+        instances: "1",
+        disposition: "`will be careful`",
+        evidence: "[prose](PLAN.md)",
+      },
+      {
+        finding: "no evidence at all",
+        instances: "1",
+        disposition: "`accepted risk`",
+        evidence: "none",
+      },
+      {
+        finding: "unusable instance count",
+        instances: "several",
+        disposition: "`review question`",
+        evidence: "[question](#self-assessment-questions)",
+      },
+    ]),
+    [
+      'repeated but still only a question: 2 instances refute a "review question" disposition and require an executable guard',
+      "claims a guard without one: claims an executable guard but links no guard or script",
+      'invented disposition: disposition "will be careful" is outside the closed set',
+      "no evidence at all: disposition cites no evidence link",
+      'unusable instance count: instance count "several" is not a positive integer',
+    ],
+  );
+});
+
+test("the maintained process-assessment ledger satisfies its own escalation rule", async () => {
+  const ledger = await readFile(
+    path.join(projectRoot, "docs/PROCESS-ASSESSMENT-LEDGER.md"),
+    "utf8",
+  );
+  const rows = markdownTableRows(ledger, "## Findings", "## Update rule", 5).map(
+    (cells) => ({
+      finding: cells[0] ?? "",
+      instances: cells[2] ?? "",
+      disposition: cells[3] ?? "",
+      evidence: cells[4] ?? "",
+    }),
+  );
+
+  assert.deepEqual(
+    { rowCount: rows.length > 0, findings: assessProcessFindings(rows) },
+    { rowCount: true, findings: [] },
+  );
 });
 
 // Contract: a capsule whose implementation is still ahead must name the constraints that already

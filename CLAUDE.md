@@ -227,10 +227,13 @@ After the technical gate is green but before marking a milestone or semantic cap
 8. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
 10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall;
-11. decide whether the result changes the next best step;
-12. complete the applicable proposal, conditional semantic-checkpoint, and closure reviews under [the independent cold-review rule](#independent-cold-review) before crossing their stage boundaries.
+11. answer the fixed self-assessment questions in [PROCESS-ASSESSMENT-LEDGER.md](docs/PROCESS-ASSESSMENT-LEDGER.md) and either add a row or record that none applied; this assesses how the work was carried out and is separate from the claim review above;
+12. decide whether the result changes the next best step;
+13. complete the applicable proposal, conditional semantic-checkpoint, and closure reviews under [the independent cold-review rule](#independent-cold-review) before crossing their stage boundaries.
 
-Turn every escaped issue into either a reusable review question or an executable guard. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
+Answer the same self-assessment questions at each session handoff, not only at a capsule boundary. A finding that already has a row gets its instance count incremented rather than a second near-duplicate row, because that count is what the escalation rule reads: a mechanism seen twice has already refuted the prose meant to prevent it and requires an executable guard. Assume your own fresh prose does not bind you.
+
+Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](docs/PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 
 ### Architecture experiments
 
@@ -266,6 +269,7 @@ Use one owner for each fact and link to it elsewhere:
 | Exact current implementation, proof, test, and absence status | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
 | Commit-bounded completed capsule and enabling-increment cost | [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) |
+| Self-assessment questions, retained process findings, and their dispositions | [PROCESS-ASSESSMENT-LEDGER.md](docs/PROCESS-ASSESSMENT-LEDGER.md) |
 | CIB behavior relative to BPMN: agreements, operational details, interpretations, extensions, configuration, limitations, and deviations | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Bounded project-owned semantic meaning, laws, witnesses, and exclusions | [docs/capsules](docs/capsules/README.md) |
 | External-system and semantic-background findings | [docs/research](docs/research/README.md) |

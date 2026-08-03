@@ -124,6 +124,7 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 | Exact implementation and assurance status | `IMPLEMENTATION-MAP.md` |
 | Immediate work order | `PLAN.md` |
 | Reproducible completed capsule cost and comparison | `CAPSULE-COST-LEDGER.md` |
+| Retained process findings, their instance counts, and dispositions | `PROCESS-ASSESSMENT-LEDGER.md` |
 | Test method and gates | `TESTING-SPEC.md` |
 | External revisions and licenses | `SOURCES.md` |
 
