@@ -2,7 +2,9 @@
 
 ## Status
 
-**Proposed; not owner-approved and not implemented.** No implementation may begin before the owner records approval in this section and the independent cold proposal review below is approved. Nothing in this document is a coverage, conformance, or CIB compatibility claim.
+**Owner-approved on 2026-08-03; not yet implemented.** The owner approved all four decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and both correction rounds passed the same reviewer's audit. Nothing in this document is a coverage, conformance, or CIB compatibility claim, and approval authorizes exactly the scope recorded here.
+
+Implementation must pause for the conditional semantic-checkpoint review at its first green Lean and semantic-core checkpoint, because this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission. This document remains a `-PROPOSAL` until the implemented contract graduates.
 
 ## Independent cold-review receipt
 
