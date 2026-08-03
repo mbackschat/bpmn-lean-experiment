@@ -4,6 +4,8 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { headroom, nonblankLines } from "./source-measure.ts";
+
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const surfaceSectionStart = "## Implemented and absent surfaces";
 const surfaceSectionEnd = "## Current evidence";
@@ -119,6 +121,8 @@ function withoutBackticks(cell: string): string {
 
 /** Heading owning the atomic-change inventory required of every capsule proposal. */
 const bindingInventoryHeading = "## Versioning consequences";
+/** Subsection whose rows pair one source owner with its measured remaining headroom. */
+const ownerInventoryHeading = "### Owners this implementation grows";
 /** Extensions the module-size boundaries apply to, so a named owner is a real change site. */
 const sourceOwnerExtensions = new Set([".cjs", ".java", ".js", ".lean", ".mjs", ".ts"]);
 
@@ -181,8 +185,49 @@ function headingSection(markdown: string, heading: string): string | null {
   if (start === -1) {
     return null;
   }
-  const end = markdown.indexOf("\n## ", start + heading.length);
+  const boundary = `\n${"#".repeat(heading.indexOf(" "))} `;
+  const end = markdown.indexOf(boundary, start + heading.length);
   return end === -1 ? markdown.slice(start) : markdown.slice(start, end);
+}
+
+/**
+ * Recomputes every headroom figure a capsule states about a source owner it plans to grow.
+ *
+ * This is the whole point of the check rather than a tidiness rule. A structural claim such as "this
+ * owner is full, so extract before adding semantics" is true only under a measurement, and recording
+ * the conclusion without re-deriving the measurement is what lets it outlive its own premise. Because
+ * the figure is recomputed on every run, changing an owner's size forces the capsule to be revisited
+ * instead of leaving a stale requirement that reads as permanent.
+ *
+ * It cannot decide whether the capsule really needs to grow a named owner. That stays a review
+ * question, because no measurement distinguishes a demonstrated change site from a predicted one.
+ */
+async function staleOwnerHeadroom(
+  section: string,
+  documentDirectory: string,
+  measure: (repositoryPath: string) => Promise<number | null>,
+): Promise<ReadonlyArray<string>> {
+  const findings: string[] = [];
+  for (const line of section.split("\n")) {
+    if (!line.startsWith("| [") || line.startsWith("| Owner ")) {
+      continue;
+    }
+    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    const [ownerCell, statedCell] = cells;
+    const target = linkedPaths(ownerCell ?? "", documentDirectory)[0];
+    const stated = Number(statedCell);
+    if (target === undefined || !Number.isInteger(stated)) {
+      findings.push(`${line.slice(0, 60)}: needs one owner link and an integer headroom`);
+      continue;
+    }
+    const measured = await measure(target);
+    if (measured === null) {
+      findings.push(`${target}: not a measurable source owner`);
+    } else if (measured !== stated) {
+      findings.push(`${target}: states ${stated} lines of headroom, measures ${measured}`);
+    }
+  }
+  return findings;
 }
 
 /** Repository-relative targets of every inline Markdown link, without any heading anchor. */
@@ -499,6 +544,21 @@ test("every capsule proposal names the guards and owners that already bind it", 
     ) {
       findings.push(`${proposal}: names no source owner it will grow`);
     }
+    const owners = headingSection(section, ownerInventoryHeading);
+    if (owners === null) {
+      findings.push(`${proposal}: no ${ownerInventoryHeading} subsection`);
+      continue;
+    }
+    findings.push(
+      ...(await staleOwnerHeadroom(owners, "docs/capsules", async (target) => {
+        if (!sourceOwnerExtensions.has(path.extname(target)) || !await exists(target)) {
+          return null;
+        }
+        return headroom(
+          nonblankLines(await readFile(path.join(projectRoot, target), "utf8")),
+        );
+      })).map((finding) => `${proposal}: ${finding}`),
+    );
   }
 
   assert.deepEqual(
