@@ -234,6 +234,45 @@ test("waits for a host-resolved timer while a losing Message stays enabled", asy
   assert.deepEqual(deliveries, []);
 });
 
+test("refuses a host wait that never resolves at the exact observation bound", async () => {
+  // The scripted port repeats its last state, so an open timer with no answerable interaction
+  // exercises the keep-waiting branch until the bound rather than reaching any earlier refusal.
+  const stuck = state({
+    openTimers: [
+      {
+        id: {
+          processInstanceId: instanceId,
+          elementId: "Timer_Never",
+          activation: 1,
+        },
+        deadlineMs: 1_000,
+      },
+    ],
+  });
+  const { port } = scriptedPort([stuck]);
+  let reads = 0;
+  const countingPort: HostInteractionPort = {
+    ...port,
+    readState: async () => {
+      reads += 1;
+      return port.readState();
+    },
+  };
+
+  const result = await driveHostInteractions([], countingPort, noWait);
+
+  assert.equal(result.kind, HostInteractionResultKind.Refused);
+  if (result.kind !== HostInteractionResultKind.Refused) {
+    return;
+  }
+  assert.equal(
+    result.code,
+    HostInteractionRefusalCode.ObservationLimitExceeded,
+  );
+  // Asserting the exact count discriminates the bound itself, not merely that some refusal arrives.
+  assert.equal(reads, 600);
+});
+
 test("delivers a Message through the published subscription identity", async () => {
   const { port, deliveries } = scriptedPort([
     state({
