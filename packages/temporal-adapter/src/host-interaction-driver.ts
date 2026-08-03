@@ -332,8 +332,10 @@ async function answerInteraction(
 /**
  * Builds the command from the published occurrence identity only.
  *
- * The command identifier is content-bound to that occurrence so a resubmitted answer deduplicates
- * against the same accepted command instead of creating a second one.
+ * The command identifier is occurrence-bound, so a resubmitted answer for the same occurrence
+ * deduplicates against the same accepted command instead of creating a second one. It deliberately
+ * excludes the submitted values; no reachable path submits differing content for one occurrence
+ * because each configured response is consumed at most once.
  */
 async function submitAnswer(
   interaction: EnabledInteraction,

@@ -323,6 +323,99 @@ test("refuses a terminal Process that left responses unconsumed", async () => {
   );
 });
 
+test("reports an uncommitted interaction with its typed result unchanged", async () => {
+  const rejected: ProcessCommandResult = {
+    kind: ProcessCommandResultKind.Semantic,
+    commandId: "driver-test-command",
+    outcome: CommandOutcome.Rejected,
+  };
+  const states = [
+    state({
+      openUserTasks: [openTask("UserTask_A")],
+      enabledInteractions: [taskInteraction("UserTask_A")],
+    }),
+  ];
+  let index = 0;
+  const port: HostInteractionPort = {
+    readState: async () => {
+      const next = states[Math.min(index, states.length - 1)];
+      index += 1;
+      if (next === undefined) {
+        throw new TypeError("scripted state sequence is empty");
+      }
+      return next;
+    },
+    readUserTaskDetail: async (request) => ({
+      task: openTask(request.taskId.elementId, request.taskId.activation),
+      inputVariables: [],
+    }),
+    submitCompletion: async () => rejected,
+    submitMessage: async () => rejected,
+  };
+
+  const result = await driveHostInteractions(
+    [completeResponse("UserTask_A")],
+    port,
+    noWait,
+  );
+
+  assert.equal(result.kind, HostInteractionResultKind.Refused);
+  if (result.kind !== HostInteractionResultKind.Refused) {
+    return;
+  }
+  assert.equal(
+    result.code,
+    HostInteractionRefusalCode.InteractionNotCommitted,
+  );
+  assert.deepEqual(result.result, rejected);
+});
+
+test("refuses when the published task has no readable detail", async () => {
+  const { port } = scriptedPort([
+    state({
+      openUserTasks: [openTask("UserTask_A")],
+      enabledInteractions: [taskInteraction("UserTask_A")],
+    }),
+  ]);
+  const withoutDetail: HostInteractionPort = {
+    ...port,
+    readUserTaskDetail: async () => null,
+  };
+
+  const result = await driveHostInteractions(
+    [completeResponse("UserTask_A")],
+    withoutDetail,
+    noWait,
+  );
+
+  assert.equal(
+    result.kind === HostInteractionResultKind.Refused ? result.code : null,
+    HostInteractionRefusalCode.TaskDetailUnavailable,
+  );
+});
+
+test("refuses a stale repeat instead of answering one interaction twice", async () => {
+  // The task stays enabled after its single response is consumed, so a driver that re-answered
+  // would submit a second command for the same occurrence.
+  const stillOpen = state({
+    openUserTasks: [openTask("UserTask_A")],
+    enabledInteractions: [taskInteraction("UserTask_A")],
+  });
+  const { port, completions } = scriptedPort([stillOpen, stillOpen]);
+
+  const result = await driveHostInteractions(
+    [completeResponse("UserTask_A")],
+    port,
+    noWait,
+  );
+
+  assert.equal(
+    result.kind === HostInteractionResultKind.Refused ? result.code : null,
+    HostInteractionRefusalCode.UnmatchedEnabledInteraction,
+  );
+  assert.equal(completions.length, 1);
+});
+
 test("refuses a running Process with neither an enabled interaction nor a host wait", async () => {
   const { port } = scriptedPort([state({})]);
 

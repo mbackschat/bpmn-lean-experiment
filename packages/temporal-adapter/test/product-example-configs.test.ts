@@ -39,13 +39,11 @@ const registeredProfiles = Object.values(SemanticProfileId);
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
-const legacyAcceptedExample = "accepted.json";
 
 async function exampleConfigPaths(): Promise<ReadonlyArray<string>> {
   return (await readdir(exampleRoot))
     .filter((file) => file.endsWith(".json"))
     .filter((file) => file !== admissionRejectionExample)
-    .filter((file) => file !== legacyAcceptedExample)
     .sort()
     .map((file) => path.join(exampleRoot, file));
 }

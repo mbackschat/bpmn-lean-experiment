@@ -101,7 +101,7 @@ Run the accepted model in another terminal:
 ./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
 ```
 
-The command compiles the BPMN file before connecting, emits typed JSON records for source admission, Process identity, the stable task wait and Process variables, selected form input, the configured 3000-millisecond delay, the semantic completion result, and the completed receipt. Temporal SDK Worker logs may appear between these product records. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means actor or semantic completion refusal, and `64` means malformed command configuration.
+The command compiles the BPMN file before connecting, emits typed JSON records for source admission, Process identity, the stable task wait and Process variables, selected form input, the configured 250-millisecond delay, the semantic completion result, and the completed receipt. Temporal SDK Worker logs may appear between these product records. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means interaction refusal, and `64` means malformed command configuration.
 
 The unsupported example needs no Temporal service and proves pre-connect rejection:
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-03 after independent review; not implemented.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner; read that specification for the product surface that runs today, and this document for the intended extension that does not.
+**Owner-approved on 2026-08-03 after independent review; implemented and awaiting closure review before graduation.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner; read that specification for the product surface that runs today, and this document for the intended extension that does not.
 
 ## Product question
 
@@ -139,13 +139,14 @@ The owner approved this proposal on 2026-08-03 with the four answers below.
 
 ## Amendments recorded during implementation
 
-These five changes were made after owner approval. None changes the selected account, the config contract's shape, or the exclusion set, but each contradicts or extends a detail written above and is therefore closure-review material rather than a silent correction.
+These six changes were made after owner approval. None changes the selected account, the config contract's shape, or the exclusion set, but each contradicts or extends a detail written above and is therefore closure-review material rather than a silent correction.
 
 1. **Wait precedence corrected.** The approved rule waited only while a host wait was open *and no interaction was enabled*. That refuses a legitimate Process: an armed Event-Based Gateway publishes a Message interaction that a timer winner is expected to cancel, so a plan intending the timer to win carries no matching response. The implemented precedence is match, then wait while any timer or effect wait is open, then refuse an unanswered enabled interaction, then refuse a stalled Process. A driver test pins the timer-wins case.
 2. **The product-side withdrawal guard was dropped.** A "task changed during the delay" check would duplicate the semantic core's own exact-occurrence validation. A withdrawn occurrence now yields a typed non-committed command result reported as `interactionNotCommitted`, keeping one owner for that rule and one state read per iteration.
 3. **Two semantic-core functions became public.** `sameMessageChannel` and `isMessageChannel` were internal. Matching a configured channel against a published one is a semantic question, so the alternative was reimplementing channel equality in the product layer. The change is additive and touches no wire or observation contract.
 4. **An undeclared effect descriptor throws an ordinary error.** The proposal implied a non-retryable adapter failure, which would need `@temporalio/common`, an undeclared dependency requiring owner approval. The handler instead throws, exactly as the harness probe signals an unmatched registration, and the Service Task capsule's approved retry-and-exhaustion policy classifies it. This module states no retry policy of its own.
-5. **The single `accepted.json` example was removed.** Fifteen per-profile examples supersede it, and keeping both would leave two configurations for one profile. The external-runtime acceptance test now loads the per-profile file.
+5. **A bounded observation loop and three further refusal codes were added.** The approved account said the driver "keeps waiting durably" and named four refusal categories. The implementation adds a hard bound of 600 committed-state reads at a 250-millisecond polling cadence, plus the `observationLimitExceeded`, `unconsumedResponses`, and `taskDetailUnavailable` codes, which extend the product's public refusal surface. The bound is a harness safety boundary so a host wait that never resolves cannot poll forever; exceeding it is a product refusal and never a BPMN outcome. One consequence of amendment 1 belongs here: with a host wait open, omitting a response now reads as "let the host-resolved wait win", so a genuinely forgotten response in a model that also has an open timer degrades from a prompt `unmatchedEnabledInteraction` to a slow `observationLimitExceeded`.
+6. **The single `accepted.json` example was removed.** Fifteen per-profile examples supersede it, and keeping both would leave two configurations for one profile. The external-runtime acceptance test now loads the per-profile file.
 
 ## Independent cold-review receipt
 
