@@ -15,6 +15,7 @@ import {
   ExternalTemporalRuntime,
   ProcessCommandResultKind,
   createCachedLocalEnvironment,
+  createHostEffectActivities,
 } from "@bpmn-lean/temporal-adapter";
 
 import { loadRunnableMvpConfig } from "../cli/runnable-mvp-config.ts";
@@ -39,7 +40,7 @@ test("rejects an empty server address before attempting a connection", async () 
       namespace: "default",
       taskQueue,
       identity: "bpmn-mvp-worker",
-    }),
+    }, createHostEffectActivities([])),
     TypeError,
   );
 });

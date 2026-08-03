@@ -1,8 +1,9 @@
 /**
  * Owns one production BPMN Worker's connection to a caller-managed Temporal service.
  *
- * This boundary never creates a Temporal server or binds a server port. It currently registers no
- * Activities, so its advertised product surface is limited to admitted processes without effects.
+ * This boundary never creates a Temporal server or binds a server port. The caller supplies the
+ * effect Activity implementation, so a Process with effect waits runs only when its product
+ * configuration declared the matching handlers.
  */
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -22,6 +23,7 @@ import {
   normalizeError,
   withDeadline,
 } from "./async-boundary.js";
+import type { EffectActivities } from "./effect-probe.js";
 
 const workflowsPath = fileURLToPath(new URL("./workflows.js", import.meta.url));
 const connectionDeadlineMs = 10_000;
@@ -54,6 +56,7 @@ export class ExternalTemporalRuntime {
   /** Connects to a caller-managed server and starts polling the selected Task Queue. */
   static async connect(
     options: ExternalTemporalRuntimeOptions,
+    activities: EffectActivities,
   ): Promise<ExternalTemporalRuntime> {
     requireOptions(options);
     const connection = await withDeadline(
@@ -74,6 +77,7 @@ export class ExternalTemporalRuntime {
           namespace: options.namespace,
           taskQueue: options.taskQueue,
           workflowsPath,
+          activities,
         }),
         workerStartupDeadlineMs,
         `BPMN Worker startup on ${options.taskQueue}`,

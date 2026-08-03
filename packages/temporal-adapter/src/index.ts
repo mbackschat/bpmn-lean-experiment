@@ -7,6 +7,7 @@ export * from "./ephemeral-server.js";
 export * from "./effect-transport.js";
 export * from "./external-temporal-runtime.js";
 export * from "./harness-evidence.js";
+export * from "./host-effect-activities.js";
 export * from "./host-interaction-driver.js";
 export * from "./host-interaction-plan.js";
 export * from "./host-admission.js";

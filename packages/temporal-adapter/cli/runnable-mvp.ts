@@ -27,6 +27,7 @@ import {
   HostInteractionEventKind,
   HostInteractionResultKind,
   assessBpmnProcessAdmission,
+  createHostEffectActivities,
   driveHostInteractions,
   isCompletedProcessReceipt,
   processWorkflowId,
@@ -147,7 +148,8 @@ export type RunnableMvpDependencies = Readonly<{
 }>;
 
 const productionDependencies: RunnableMvpDependencies = {
-  connect: (options) => ExternalTemporalRuntime.connect(options),
+  connect: (options, activities) =>
+    ExternalTemporalRuntime.connect(options, activities),
 };
 
 export async function runRunnableTemporalMvp(
@@ -208,7 +210,10 @@ export async function runRunnableTemporalMvp(
       return assertNever(admission);
   }
 
-  const runtime = await dependencies.connect(config.temporal);
+  const runtime = await dependencies.connect(
+    config.temporal,
+    createHostEffectActivities(config.effectHandlers),
+  );
   try {
     runtime.assertHealthy();
     const started = await startBpmnProcess(
