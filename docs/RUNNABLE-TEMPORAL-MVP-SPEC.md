@@ -2,106 +2,105 @@
 
 ## Status
 
-**Implemented current pre-release product contract on 2026-07-31; not an immutable release or production-history baseline.**
-
-**The implemented product surface has moved ahead of this document.** The owner-approved [runnable MVP surface proposal](RUNNABLE-TEMPORAL-MVP-SURFACE-PROPOSAL.md) is implemented in code: `dummyUserTask` no longer exists, configuration carries `interactions` and `effectHandlers`, the production Worker registers the effect Activity, and fifteen per-profile examples replace the single accepted example. That proposal remains the accurate contract record until its closure review passes and it graduates into this document; the dummy-actor sections below describe the superseded single-task shape and must not be read as the current contract.
+**Implemented current pre-release product contract; not an immutable release or production-history baseline.** The product surface spans every registered semantic profile through one driver keyed to published enabled interactions. Exact implemented and absent evidence belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
 ## Product question
 
-What is the smallest end-to-end product that lets a user run an admitted BPMN model durably on an ordinary Temporal server while honestly documenting its bounded feature set and avoiding a premature task UI, form renderer, identity system, or global task inbox?
+What is the smallest end-to-end product that lets a user run any admitted BPMN model durably on an ordinary Temporal server while honestly documenting its bounded feature set and avoiding a premature task UI, form renderer, identity system, or global task inbox?
 
 ## Implemented MVP
 
-The repository ships one command-line-driven runtime that connects to a caller-supplied Temporal address, starts a Worker for the generic BPMN Process Workflow, admits exact BPMN XML before Workflow creation, starts one semantic Process instance, exposes its current canonical state by known Process-instance identity, and waits until the Process completes or fails infrastructurally.
+The repository ships one command-line-driven runtime that connects to a caller-supplied Temporal address, starts a Worker for the generic BPMN Process Workflow, admits exact BPMN XML before Workflow creation, starts one semantic Process instance, answers the external interactions that instance publishes, and waits until the Process completes or fails infrastructurally.
 
-The first product acceptance model is the existing private executable `None Start Event → User Task → None End Event` shape plus the implemented initial-data and completion-data extensions in the [Process-start data specification](capsules/PROCESS-START-DATA-SPEC.md) and [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md). The runtime must use the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update command boundary, and Temporal replay-safe code as the maintained evidence path. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
+Product acceptance covers every registered semantic profile. One example configuration exists per profile, reusing the registered scenario BPMN source unchanged, and the runtime uses the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update and Signal command boundaries, and Temporal replay-safe code as the maintained evidence path. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
 
-The supported subset is explicit. A document outside the named profile returns typed pre-start admission rejection; the runtime never silently ignores an unsupported BPMN construct or Camunda/CIB extension.
+The supported subset is explicit. A document outside its named profile returns typed pre-start admission rejection; the runtime never silently ignores an unsupported BPMN construct or Camunda/CIB extension.
 
 ## Public operating contract
 
 One documented non-test command accepts:
 
-- a BPMN XML file path;
-- a selected semantic-profile identity;
-- a semantic Process-instance identity;
-- a Temporal address, Namespace, and Task Queue;
-- initial closed string/null Process variables;
-- the optional dummy User Task actor configuration below.
-
-The command connects to an already running Temporal service. It does not start an embedded or ephemeral Temporal server, choose frontend ports, or bind a server port. A connection failure reports the supplied address and remains infrastructure failure. Local demonstrations may run Temporal separately, but port allocation and server lifecycle remain outside the BPMN Worker.
-
-The command reports at least:
-
-- source/profile admission rejection before Workflow creation;
-- the stable semantic Process address after start;
-- each committed stable canonical state needed to see the active User Task and its Process variables;
-- the exact semantic completion result produced by the User Task Update;
-- the final completed Process state;
-- infrastructure failure separately from semantic outcomes.
-
-The initial command may run one Worker and one Process instance in one foreground process. Multi-process deployment, packaging, daemon supervision, authentication, TLS provisioning, Temporal Cloud administration, production retention, and horizontal scaling are not required for this MVP.
-
-## Dummy User Task actor
-
-The dummy actor is an explicit MVP host profile, not BPMN User Task meaning and not CIB human-resource compatibility. It simulates a person entering values into a form and submitting that form through the real User Task completion command.
-
-The actor and its exact known-Process detail Query are implemented. The Query accepts the complete active task occurrence and canonical caller-selected Process-variable names; the actor checks the same sole occurrence again after the host delay before it submits.
+- a BPMN XML file path, a source identity, a selected semantic-profile identity, and exact byte and parser-deadline limits;
+- a semantic Process-instance identity and initial closed string/null Process variables;
+- a Temporal address, Namespace, Task Queue, and identity;
+- a declared interaction plan;
+- declared deterministic effect handlers.
 
 ```ts
-type DummyVariableValue =
-  | Readonly<{ kind: "string"; value: string }>
-  | Readonly<{ kind: "null" }>;
+type MvpInteractionResponse =
+  | Readonly<{
+      kind: StimulusKind.CompleteUserTaskInstance;
+      elementId: string;
+      delayMs: number;
+      inputVariableNames: readonly string[];
+      submittedValues: readonly VariableBinding[];
+    }>
+  | Readonly<{
+      kind: StimulusKind.DeliverMessage;
+      channel: MessageChannel;
+      delayMs: number;
+    }>;
 
-type DummyUserTaskResponse = Readonly<{
-  elementId: string;
-  delayMs: number;
-  inputVariableNames: readonly string[];
-  submittedValues: readonly Readonly<{
-    name: string;
-    value: DummyVariableValue;
-  }>[];
+type MvpEffectHandler = Readonly<{
+  protocol: string;
+  operation: string;
+  result: EffectExecutionResult;
 }>;
 ```
 
-`elementId` selects the admitted User Task definition. `delayMs` is a positive JavaScript-safe integer and represents simulated thinking time; the documented demo uses 3000 milliseconds. `inputVariableNames` selects Process variables returned to the simulated form. `submittedValues` is the simulated user input returned by form submission. Names are nonempty and unique, and arrays use the project’s canonical Unicode-scalar ordering.
+Both discriminators are canonical `StimulusKind` values rather than product-local aliases, so matching a response against a published interaction needs no translation table. An empty interaction plan is legal and is exactly what a model whose only waits are host-resolved requires; an empty handler list is legal for any model without effect waits. `EffectExecutionResult` is reused whole, so a declared handler can express the typed business-error arm an interrupting boundary Error route requires as well as ordinary success, and configuration cannot invent a result the semantic core would reject.
 
-When the selected User Task becomes active, the MVP:
+The command connects to an already running Temporal service. It does not start an embedded or ephemeral Temporal server, choose frontend ports, or bind a server port. A connection failure reports the supplied address and remains infrastructure failure. Local demonstrations may run Temporal separately, but port allocation and server lifecycle remain outside the BPMN Worker.
 
-1. expose the exact open-task occurrence and the selected committed Process-variable inputs;
-2. keep the User Task semantically active throughout the configured delay;
-3. keep the semantic User Task durably active on Temporal while the foreground dummy actor waits through a nonblocking host timer;
-4. submit the configured values through the same content-bound User Task completion Update available to a real client;
-5. let the semantic core validate the exact task occurrence and atomically apply the approved completion-data patch before outgoing closure;
-6. report the Update’s typed semantic result and resulting canonical state.
+The command reports at least source and profile admission rejection before Workflow creation, the stable semantic Process address after start, each committed canonical state it observed, every interaction it submitted with the typed semantic result, each host wait it observed, the final Process state, and infrastructure failure separately from semantic outcomes.
 
-The dummy actor drives only one active User Task at a time in the MVP. It refuses a second simultaneous task, an unconfigured or mismatched task, malformed configuration, and a task that changes during the delay rather than guessing or auto-completing.
+The initial command may run one Worker and one Process instance in one foreground process. Multi-process deployment, packaging, daemon supervision, authentication, TLS provisioning, Temporal Cloud administration, production retention, and horizontal scaling are not required for this MVP.
 
-The response values are deterministic configuration. The MVP introduces no random person behavior, wall-clock-derived data, hidden default fields, or generated business values.
+## Interaction driver
 
-## Required semantic boundary
+The driver is blind to BPMN topology, profiles, and element roles. It reads the canonical `enabledInteractions` set and the open host waits of each committed state, matches them against the declared plan, and submits ordinary production commands.
 
-The dummy actor does not mutate semantic state directly. Initial form input and completion data are separately reviewed CIB-profile extensions owned by the [Process-start data specification](capsules/PROCESS-START-DATA-SPEC.md) and [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md). Their pinned CIB Seven `2.2.0` observations and atomic wire/Lean/core/Temporal replacements are complete, so the MVP may read initial input and submit simulated form values only through those exact semantic commands.
+Precedence per committed state is load-bearing and not interchangeable:
 
-The host delay is not a BPMN Timer Event, does not produce a Temporal timer in the Process Workflow, and is absent from canonical BPMN state. It is explicit foreground-actor behavior that produces one ordinary external completion command. If the actor process exits during the delay, the Process and User Task remain durably waiting on Temporal; restarting or replacing the actor may submit the same content-bound command safely.
+1. answer the first unconsumed response whose interaction is currently enabled;
+2. otherwise keep waiting while any timer or effect wait is open, because a host-resolved wait may still withdraw the enabled interactions — an armed Event-Based Gateway publishes a Message interaction that a timer winner is expected to cancel, so refusing here would reject a legitimate Process;
+3. otherwise refuse, distinguishing an enabled interaction nobody answers from a Process that can no longer progress at all.
+
+Declared response order — never observation order — decides between two simultaneously enabled interactions, so host iteration order can never present itself as BPMN behavior. Each response is consumed at most once, so a stale repeat is a refusal rather than a second command.
+
+Occurrence identity is taken, never constructed. A response selects which published interaction to answer; the driver then submits the complete occurrence identity that interaction carried, including its activation. No product code assembles a task, subscription, or activation identity, derives an activation ordinal, or substitutes a caller-owned address. When one response matches more than one currently enabled occurrence of the same element or channel, the driver refuses that ambiguity rather than choosing.
+
+A bounded observation loop reads at most 600 committed states at a 250-millisecond polling cadence. That bound is a harness safety boundary so a host wait that never resolves cannot poll forever; exceeding it is a product refusal and never a BPMN outcome. One consequence is deliberate: with a host wait open, omitting a response reads as "let the host-resolved wait win", so a forgotten response in a model that also has an open timer degrades from a prompt unmatched-interaction refusal to a slow observation-limit refusal.
+
+## Simulated actor and effect boundary
+
+Configured responses and effect handlers are explicit host simulations, not BPMN meaning and not CIB human-resource or integration compatibility. A completion response simulates a person reading committed Process variables and submitting form values; an effect handler simulates an external service returning a fixed result. Neither performs I/O, reads a clock, derives values from wall time, or generates business values.
+
+Neither mutates semantic state directly. Initial input and completion data remain the separately reviewed extensions owned by the [Process-start data specification](capsules/PROCESS-START-DATA-SPEC.md) and [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md), and every answer travels through the same content-bound command a real client would use. The configured delay is not a BPMN Timer Event, produces no Temporal timer in the Process Workflow, and is absent from canonical state. If the command process exits during a delay, the Process and its waits remain durably waiting on Temporal, and a replacement may submit the same content-bound command safely.
+
+The production Worker registers one `executeBpmnEffect` Activity implementation resolving declared handlers by neutral protocol and operation. An undeclared descriptor throws rather than fabricating a success the semantic core would commit; the approved Activity retry policy owned by the [Service Task effect specification](capsules/SERVICE-TASK-EFFECT-SPEC.md) then exhausts and surfaces one typed adapter failure. The harness effect probe remains harness-only and is never promoted into the product path.
+
+## Pre-start admission
+
+Two distinct gates run before any Workflow exists and neither may widen. Source and profile admission runs first, inside compilation, and rejects a document outside its selected profile before any connection. Host capability runs second and rejects a program shape this adapter cannot serve; every registered profile passes it today, so that gate guards future widening rather than a live restriction. A profile that needs a rejected wait-set shape is a stop condition routed to an owner capability decision, never something the driver works around.
 
 ## Running the maintained demonstration
 
-Install the repository dependencies, then make an ordinary Temporal service available. The BPMN command never starts a server or binds a server port. For a local demonstration, start Temporal separately in one terminal; the default accepted config addresses `localhost:7233`:
+Install the repository dependencies, then make an ordinary Temporal service available. The BPMN command never starts a server or binds a server port. For a local demonstration, start Temporal separately in one terminal; the example configurations address `localhost:7233`:
 
 ```sh
 temporal server start-dev --headless
 ```
 
-If the service uses another address, Namespace, or Task Queue, copy and edit the explicit `temporal` object in [`examples/temporal-mvp/user-task-discovery-completion.json`](../examples/temporal-mvp/user-task-discovery-completion.json). `process.instanceId` is semantic identity and must be new for each execution retained by that Temporal Namespace because Workflow ID reuse is deliberately rejected.
+If the service uses another address, Namespace, or Task Queue, copy and edit the explicit `temporal` object in the chosen example. `process.instanceId` is semantic identity and must be new for each execution retained by that Temporal Namespace because Workflow ID reuse is deliberately rejected.
 
-Run the accepted model in another terminal:
+Run any per-profile example in another terminal:
 
 ```sh
 ./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
 ```
 
-The command compiles the BPMN file before connecting, emits typed JSON records for source admission, Process identity, the stable task wait and Process variables, selected form input, the configured 250-millisecond delay, the semantic completion result, and the completed receipt. Temporal SDK Worker logs may appear between these product records. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means interaction refusal, and `64` means malformed command configuration.
+The command compiles the BPMN file before connecting, then emits typed JSON records for source admission, Process identity, each observed state, the selected form input, the configured delay, the semantic result of each interaction, and the completed receipt. Temporal SDK Worker logs may appear between these product records. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means interaction refusal, and `64` means malformed command configuration.
 
 The unsupported example needs no Temporal service and proves pre-connect rejection:
 
@@ -113,41 +112,40 @@ It emits `sourceAdmissionRejected` with the source diagnostics and exits `2`; th
 
 ## Acceptance evidence
 
-The maintained command and gates establish that one fresh checkout can:
+Product evidence separates two claims and must not be reported as one.
 
-1. start or connect to a local Temporal service without the BPMN runtime binding any server port;
-2. run the foreground BPMN Worker against that service;
-3. submit the exact acceptance BPMN file and initial variables;
-4. observe the active User Task and selected form inputs;
-5. observe a real configured delay while the task remains active;
-6. observe the configured simulated user values committed through the real completion Update;
-7. observe Process completion and final Process variables;
-8. rerun the same semantic fixture through the existing differential and same-gate replay evidence without a separate execution account.
+Admission and configuration are checked for every registered profile without a Temporal service: each example loads under strict validation, compiles from exact source, satisfies host capability and semantic start admission, and declares a handler for every effect its program awaits. The oracle is the registered profile set, so a profile without a product example fails that check rather than silently shrinking the advertised surface.
 
-The acceptance documentation must list the exact supported BPMN and variable subset and show an unsupported model receiving typed admission rejection.
+Live durable execution is checked once per distinct host interaction mechanism: the completion Update, two concurrent published tasks answered in declared plan order, a host-resolved durable timer with an empty plan, Message delivery through the published subscription identity, and the effect Activity's declared success and business-error arms. Models that only reuse an evidenced mechanism are deliberately not re-run live.
+
+Both halves compose the already-evidenced compiler, program, semantic core, Workflow, and client. Neither is an independent semantic evidence lane, and neither supports a BPMN conformance or broad CIB compatibility claim.
 
 ## Explicit exclusions
 
 - browser or desktop UI, form rendering, schema-driven widgets, validation messages, attachments, and comments;
 - users, groups, assignees, candidates, claims, delegation, authorization, authentication, and audit identity;
 - global task discovery, Search Attributes, task-list persistence, and an external task read model;
-- multiple simultaneous dummy tasks, random actor behavior, and human escalation or reminder policy;
+- random actor behavior, human escalation or reminder policy, and any response carrying an explicit activation to resolve an ambiguous match;
+- real external integration, and any interpretation of an effect result beyond returning the declared one;
 - BPMN data associations, form metadata, Camunda form extensions, and general variable types beyond the approved string/null patch;
 - production release packaging, retained production Event Histories, Workflow versioning support windows, migration, rollback, or availability claims;
+- multiple concurrent Process instances in one command, multi-process deployment, and daemon supervision;
 - Collaboration, Participants, Message Flow, Human Performer and Resource Role coverage by implication.
 
 ## Ordering consequence
 
-This runnable vertical product increment is complete. Uncovered BPMN mechanisms are now scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). The bounded embedded Sub-Process Error-propagation follow-on is now implemented under its separate [specification](capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md).
-
-## Closure review
-
-The reproducible command-and-product boundary is `9b58437..32df044`: hand-written TypeScript changed by `+950/-132` nonblank lines and documentation changed by `+58/-22`; elapsed time is unknown. The exact established claim is that the maintained one-User-Task config runs the admitted source through the production compiler, semantic core, generic Workflow, external Worker connection, exact detail Query, real completion Update, and completed receipt while the repository process owns no Temporal server port. The closest unsupported claim is production deployment, a second simultaneous task, any other BPMN profile, general form or human-resource support, retained-history compatibility, or unattended recovery of the foreground actor.
-
-The product path intentionally shares the already evidenced compiler, program, semantic core, Workflow, and Process-variable account; it is composition evidence rather than another independent semantic lane. Product records depend only on exact source/config input, admitted definition and runtime state, explicit actor configuration, and separated Temporal host identity. The maintained parallel source, widened or malformed config, multiple/changing task, and noncommitted completion paths are the nearest public counterexamples. This increment adds no Lean proposition because it introduces no semantic transition; the Process-start and completion-data capsules own the reused Lean laws and CIB relationships. The pre-release gate retains no production history, and the existing outside-core completion mutation remains the material refinement discriminator.
-
-This product increment is not materially smaller in code than the preceding completion-data capsule because it adds the first strict operating config, product event/result union, command/exit boundary, and external orchestration owner. Before returning to semantic breadth, the live acceptance test was made to load the real accepted config and call the command orchestration, replacing its duplicate manual compile/start/actor path rather than preserving a second product account.
+Uncovered BPMN mechanisms are scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Widening the product surface further is not a semantic increment: a new profile reaches the product through its example configuration and the existing driver, not through new product code.
 
 ## Reopen conditions
 
-Reopen this specification before adding a UI or inbox, identity or authorization, multiple simultaneous dummy tasks, another variable type, BPMN or CIB form metadata, task assignment extensions, an embedded Temporal server, production history compatibility, or any completion path that bypasses the semantic command boundary.
+Reopen this specification before adding a UI or task inbox, identity or authorization, another variable type, BPMN or CIB form metadata, task assignment extensions, an embedded Temporal server, concurrent Process instances in one command, production history compatibility, a real external effect integration, a response that carries its own occurrence identity, or any command path that bypasses the semantic command boundary.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `df44937` | `fork-turns-none` | `approve-with-required-edits` | `482bbd6` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
+| Closure | `1e6f88f` | `fork-turns-none` | `approve-with-required-edits` | `9e66b5e` |
+
+This receipt is carried voluntarily. This specification belongs to the closed pre-policy grandfather set and the executable guard therefore requires no receipt from it, but the graduating change deleted the proposal that recorded these reviews, so the evidence would otherwise be lost. The closure stage was corrected across two same-reviewer audits: `7b0c46b` closed the eight original findings and `9e66b5e` closed the two follow-on documentation-consistency findings the first correction introduced. The semantic-checkpoint stage was classified as not required because the graduated contract changes no wire or schema shape, no checked graph or Semantic Process IL, no runtime or public observation, no admission or profile capability, no transition family or proof boundary, and no scope, cancellation, or concurrency semantics; the closure reviewer affirmed that classification against the implemented range.
