@@ -286,9 +286,9 @@ Each row therefore states the condition under which its consequence stops applyi
 | Owner | Headroom | Consequence, and when it expires |
 |---|---:|---|
 | [adapter runner](../../packages/temporal-adapter/src/runner.ts) | 8 | Extract before adding any line here **while headroom stays under 40**. Not yet a confirmed change site: the generic `runRegisteredScenario` path already handles completion and timer stimuli, so this row expires unrequired if the adapter lane never grows this file. |
-| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 70 | Room for one operation's lowering. Expires once headroom drops under 40, which a second family would cause. |
+| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 25 | **Expired.** The bounded-task lowering landed here and dropped headroom under 40, so the next family extracts this owner first. |
 | [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Cleared from 5 by extracting [control-flow token transitions](../../packages/semantic-core/src/semantic-process-control-flow-runtime.ts) into their own owner. Re-expires under 40. |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 67 | Sufficient; already carries the new operation kind and checked node variant. |
+| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 51 | Sufficient; already carries the new operation kind and checked node variant. Expires under 40. |
 | [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 179 | Sufficient. |
 | [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 240 | Cleared from 12 by splitting the former combined definition decoder into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and this program owner. |
 | [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 361 | Sufficient. |

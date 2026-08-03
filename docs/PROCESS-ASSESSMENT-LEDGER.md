@@ -24,7 +24,7 @@ Answer these after a capsule or milestone closes, and again at each session hand
 
 ## Escalation rule
 
-A finding recorded a second time refutes its own prose disposition: the rule existed and did not bind. The second occurrence therefore requires an **executable guard**, not a better-worded reminder. [The executable check](../scripts/document-reviewability.test.ts) enforces this — a row at two or more instances whose disposition is not `executable guard` fails the infrastructure gate.
+A finding recorded a second time refutes its own prose disposition: the rule existed and did not bind. The second occurrence therefore requires an **executable guard**, not a better-worded reminder — unless no repository fact can observe the class at all, which is what `unguardable` records. That exception exists because the rule as first written assumed every recurring finding is guardable, and a finding about how results are *reported* is not: the repository cannot see a claim made in prose about itself. [The executable check](../scripts/document-reviewability.test.ts) enforces this — a row at two or more instances whose disposition is not `executable guard` fails the infrastructure gate.
 
 Dispositions are a closed set:
 
@@ -33,6 +33,7 @@ Dispositions are a closed set:
 | `executable guard` | A gate now rejects the class, not only the reported instance | at least one executable guard or script |
 | `review question` | Added to the questions above or to a reviewer prompt; admissible only at a single instance | the document recording it |
 | `accepted risk` | Understood, not worth a guard, and explicitly tolerated; admissible only at a single instance | the document recording the acceptance |
+| `unguardable` | No repository fact can detect the class, so no gate can enforce it; admissible at any instance count but must state why | the reusable question standing in for the guard |
 
 ## Findings
 
@@ -43,6 +44,7 @@ Dispositions are a closed set:
 | A gate outcome was read from a task notification rather than the run's own exit line | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 1 | `review question` | [question 5](#self-assessment-questions) |
 | A structural requirement was asserted from a proxy measurement rather than a demonstrated need, so an extraction was recorded as required for a file the work never grows | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 1 | `review question` | [question 1](#self-assessment-questions) |
 | A recorded conclusion outlived the measurement that made it true, because the premise was not stored beside it | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 2 | `executable guard` | [recomputed owner headroom](../scripts/document-reviewability.test.ts) |
+| A verification claim was stated more broadly than the gates actually run: once against stale built output, once by calling the tree green while an unrun focused gate was red | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 2 | `unguardable` | [question 5](#self-assessment-questions) |
 | A wall-time figure was measured while a review sub-agent competed for the same cores, making it non-comparable | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 1 | `review question` | [contended-measurement rule](TESTING-SPEC.md#default-verification) |
 
 ## Update rule

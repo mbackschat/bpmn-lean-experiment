@@ -127,7 +127,12 @@ const ownerInventoryHeading = "### Owners this implementation grows";
 const sourceOwnerExtensions = new Set([".cjs", ".java", ".js", ".lean", ".mjs", ".ts"]);
 
 /** Closed disposition set of the process-assessment ledger, with the dispositions prose may use once. */
-const processDispositions = ["executable guard", "review question", "accepted risk"] as const;
+const processDispositions = [
+  "executable guard",
+  "review question",
+  "accepted risk",
+  "unguardable",
+] as const;
 type ProcessDisposition = typeof processDispositions[number];
 const executableDisposition: ProcessDisposition = "executable guard";
 
@@ -168,7 +173,14 @@ function assessProcessFindings(
     if (links.length === 0) {
       return [`${label}: disposition cites no evidence link`];
     }
-    if (instances >= 2 && disposition !== executableDisposition) {
+    // `unguardable` is the escape hatch the escalation rule needs: some findings are about the
+    // agent's own reporting, which no repository fact can observe. Forcing those to name a guard would
+    // buy a fabricated link instead of enforcement.
+    if (
+      instances >= 2 &&
+      disposition !== executableDisposition &&
+      disposition !== "unguardable"
+    ) {
       return [
         `${label}: ${instances} instances refute a ${JSON.stringify(disposition)} disposition and require an executable guard`,
       ];
