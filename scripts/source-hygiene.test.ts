@@ -399,6 +399,35 @@ test("direct TypeScript harnesses use only erasable syntax", () => {
   );
 });
 
+/** Files this close to the review target are effectively full for planning purposes. */
+const headroomWarningLines = 40;
+
+/**
+ * Reports which owners are nearly full instead of only failing once one overflows.
+ *
+ * A passing size gate says nothing about remaining capacity, so an implementation plan can name a
+ * module as a change site while that module has no room left, and the constraint surfaces only after
+ * editing begins. Printing headroom makes the ceiling visible while the work is still being planned.
+ * This reports and never fails: being near the target is not a defect.
+ */
+function reportModuleSizeHeadroom(
+  measurements: ReadonlyArray<{ readonly path: string; readonly lines: number }>,
+  report: (line: string) => void = (line) => process.stdout.write(`${line}\n`),
+): void {
+  const crowded = measurements
+    .filter(({ lines }) =>
+      lines <= reviewTarget && reviewTarget - lines <= headroomWarningLines
+    )
+    .sort((left, right) => left.lines - right.lines);
+  for (const { path, lines } of crowded) {
+    report(
+      `SOURCE_HEADROOM ${path} ${lines}/${reviewTarget} nonblank, ${
+        reviewTarget - lines
+      } lines before the review target`,
+    );
+  }
+}
+
 test("hand-written source respects reviewed module-size boundaries", () => {
   const sourceFiles = worktreeSourceFiles();
   const measurements = sourceFiles.map((path) => ({
@@ -425,6 +454,7 @@ test("hand-written source respects reviewed module-size boundaries", () => {
     [],
     "reviewed-large-file entries must be current, necessary, and below the hard ceiling",
   );
+  reportModuleSizeHeadroom(measurements);
   const umbrellaViolations = leanUmbrellaModules.flatMap((path) => {
     assert.equal(
       sourceFiles.includes(path),
