@@ -139,7 +139,7 @@ The existing MVP specification's reopen conditions explicitly require reopening 
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `df44937` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `df44937` | `fork-turns-none` | `approve-with-required-edits` | `482bbd6` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
