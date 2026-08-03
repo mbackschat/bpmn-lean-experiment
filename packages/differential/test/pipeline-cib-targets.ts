@@ -7,6 +7,10 @@ import { performance } from "node:perf_hooks";
 
 import type { Scenario } from "@bpmn-lean/semantic-core";
 import { EffectExecutionSchedule } from "@bpmn-lean/temporal-adapter";
+import {
+  reportCibSevenMavenElapsed,
+  resolveCibSevenMavenTimeoutMs,
+} from "../../../scripts/cibseven-maven-budget.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 
 import {
@@ -35,6 +39,7 @@ export async function runCibTargets(
     `${scenarios.map((scenario) => JSON.stringify(scenario)).join("\n")}\n`,
     "utf8",
   );
+  const mavenStartedMs = Date.now();
   await runProcess(
     "runners/cibseven/mvnw",
     [
@@ -52,8 +57,9 @@ export async function runCibTargets(
       `-Dbpmn.pipeline.effectSchedule=${effectSchedule}`,
       "test",
     ],
-    30_000,
+    resolveCibSevenMavenTimeoutMs(process.env),
   );
+  reportCibSevenMavenElapsed(engineVersion, Date.now() - mavenStartedMs);
   const records = (await readFile(outputPath, "utf8"))
     .split("\n")
     .filter((line) => line.length > 0)

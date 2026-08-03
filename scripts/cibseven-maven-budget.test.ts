@@ -2,15 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  cibSevenMavenSoftTargetMs,
   defaultCibSevenMavenTimeoutMs,
+  reportCibSevenMavenElapsed,
   resolveCibSevenMavenTimeoutMs,
   wrapCibSevenMavenFailure,
 } from "./cibseven-maven-budget.ts";
 import { CommandTimeoutError } from "./run-command.ts";
 
 test("uses the workstation CIB Maven deadline unless explicitly overridden", () => {
-  assert.equal(defaultCibSevenMavenTimeoutMs, 60_000);
-  assert.equal(resolveCibSevenMavenTimeoutMs({}), 60_000);
+  assert.equal(defaultCibSevenMavenTimeoutMs, 120_000);
+  assert.equal(resolveCibSevenMavenTimeoutMs({}), 120_000);
+  assert.ok(cibSevenMavenSoftTargetMs < defaultCibSevenMavenTimeoutMs);
   assert.equal(
     resolveCibSevenMavenTimeoutMs({ BPMN_CIB_MAVEN_TIMEOUT_MS: "120000" }),
     120_000,
@@ -45,4 +48,16 @@ test("classifies a CIB Maven timeout without hiding other failures", () => {
     wrapCibSevenMavenFailure("2.2.0", ordinaryFailure),
     ordinaryFailure,
   );
+});
+
+test("reports only a successful invocation past the workstation soft target", () => {
+  const lines: string[] = [];
+
+  reportCibSevenMavenElapsed("2.2.0", cibSevenMavenSoftTargetMs - 1, (line) => lines.push(line));
+  // assert.deepEqual against a literal would narrow `lines` to never[] and poison the next push.
+  assert.equal(lines.length, 0);
+
+  reportCibSevenMavenElapsed("2.2.0", cibSevenMavenSoftTargetMs, (line) => lines.push(line));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0] ?? "", /CIB_MAVEN_SOFT_TARGET exceeded release=2\.2\.0/u);
 });

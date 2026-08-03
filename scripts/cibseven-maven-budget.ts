@@ -1,6 +1,18 @@
 import { CommandTimeoutError } from "./run-command.ts";
 
-export const defaultCibSevenMavenTimeoutMs = 60_000;
+/**
+ * Two tiers for every CIB Seven Maven invocation, for the same reason the warm pipeline has them.
+ *
+ * A deadline that kills a process cannot fail soft, so the tiers are asymmetric: the ceiling is the
+ * kill deadline and is deliberately generous, while the soft target is the workstation expectation
+ * and is reported after a successful invocation. Unrelated host CPU load therefore cannot fail a
+ * correctness gate, and a genuine slowdown still appears in gate output.
+ *
+ * The ceiling is shared by every CIB Maven call site. A second hardcoded deadline inside one lane
+ * was how a contended host produced an unoverridable failure.
+ */
+export const cibSevenMavenSoftTargetMs = 30_000;
+export const defaultCibSevenMavenTimeoutMs = 120_000;
 
 export function resolveCibSevenMavenTimeoutMs(
   environment: NodeJS.ProcessEnv,
@@ -16,6 +28,20 @@ export function resolveCibSevenMavenTimeoutMs(
     );
   }
   return timeoutMs;
+}
+
+/** Reports a successful invocation that ran past the workstation soft target. */
+export function reportCibSevenMavenElapsed(
+  release: string,
+  elapsedMs: number,
+  log: (line: string) => void = (line) => console.log(line),
+): void {
+  if (elapsedMs < cibSevenMavenSoftTargetMs) {
+    return;
+  }
+  log(
+    `CIB_MAVEN_SOFT_TARGET exceeded release=${release} elapsedMs=${elapsedMs.toFixed(0)} softTargetMs=${cibSevenMavenSoftTargetMs}. Compare with the last uncontended measurement before treating it as a regression.`,
+  );
 }
 
 export function wrapCibSevenMavenFailure(
