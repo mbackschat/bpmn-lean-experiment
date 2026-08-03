@@ -8,11 +8,11 @@
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `661b0ce` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `d63be53` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The semantic checkpoint is `not-reached` rather than `not-required`: this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission, so the conditional checkpoint is mandatory once a first green implementation exists. The immutable proposal target is `661b0ce`, which contains the complete proposed contract including the normative citations verified against the local OMG corpus. The earlier `f241234` is deliberately **not** the target: it carried two wrong clause numbers that the corrected commit replaces, so reviewing it would review superseded content. This receipt-recording commit adds no substantive content and is therefore outside the reviewed range.
+The semantic checkpoint is `not-reached` rather than `not-required`: this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission, so the conditional checkpoint is mandatory once a first green implementation exists. The immutable proposal target is `d63be53`, which contains the complete proposed contract. Two earlier commits are deliberately **not** the target: `f241234` carried two wrong normative clause numbers, and `661b0ce` still claimed two distinct End Events as the separating witness even though the canonical observation exposes no terminal element. Both were corrected before review rather than after it. This receipt-recording commit adds no substantive content and is therefore outside the reviewed range.
 
 ## Question
 
