@@ -196,6 +196,9 @@ scripts/             Maintained verification and infrastructure guards
 | Review the active semantic meaning and admission | [Capsule registry](docs/capsules/README.md), [Profile-parameterized admission spec](docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [Exclusive Gateway condition spec](docs/capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md), and [Semantic Process IL spec](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
 | Understand CIB relative to BPMN | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Navigate all maintained documentation | [Documentation registry](docs/README.md) |
+| Read an independent assessment of the architecture, assurance, and feasibility | [bpmn-lean-experiment-assessment](https://github.com/mbackschat/bpmn-lean-experiment-assessment) |
+
+The assessment repository is a separate, explanatory and evaluative record maintained against a named commit of this tree. It is not authoritative: the documents above own every claim, and any disagreement is a defect in that record rather than in this one.
 
 ## Contributing
 
