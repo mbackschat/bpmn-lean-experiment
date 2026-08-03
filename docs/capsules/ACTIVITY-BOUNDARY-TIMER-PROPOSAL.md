@@ -8,11 +8,15 @@
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `fcdd7fb` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `fcdd7fb` | `fork-turns-none` | `approve-with-required-edits` | `e37c018` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The semantic checkpoint is `not-reached` rather than `not-required`: this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission, so the conditional checkpoint is mandatory once a first green implementation exists. The immutable proposal target is `fcdd7fb`, which contains the complete proposed contract. Three earlier commits are deliberately **not** the target: `f241234` carried two wrong normative clause numbers; `661b0ce` still claimed two distinct End Events as the separating witness even though the canonical observation exposes no terminal element; and `d63be53` still stated the non-law in terms of a victory order this capsule does not define for host simultaneity. All three were corrected before review rather than after it. This receipt-recording commit adds no substantive content and is therefore outside the reviewed range.
+The semantic checkpoint is `not-reached` rather than `not-required`: this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission, so the conditional checkpoint is mandatory once a first green implementation exists. The immutable proposal target is `fcdd7fb`. Three earlier commits are deliberately **not** the target: `f241234` carried two wrong normative clause numbers; `661b0ce` still claimed two distinct End Events as the separating witness even though the canonical observation exposes no terminal element; and `d63be53` still stated the non-law in terms of a victory order this capsule does not define for host simultaneity. All three were corrected before review rather than after it.
+
+The review returned ten required findings. Corrections ran in two same-reviewer rounds: `109c212` closed all ten and introduced four new defects, and `e37c018` closed those four. The audit column names `e37c018` as the final audited correction. One mechanical follow-up the second audit raised is applied here — the `ABTIMER-ARM-01` evidence row no longer attributes boundary registration to a handling-only clause, and the arming instant is recorded as a project interpretation because Clause 13.5.2 starts waiting when an Intermediate Event is reached and a Boundary Event never is.
+
+**Owner approval is still outstanding.** An approved proposal review does not authorize implementation; the four decisions below do.
 
 ## Question
 
@@ -231,7 +235,7 @@ These are planned lanes, not results: no lane exists until implementation. Two l
 
 | Rule | BPMN/profile | Lean | Independent TypeScript | Temporal refinement | Negative witness or mutation |
 |---|---|---|---|---|---|
-| `ABTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active, with Clause 13.5.3 for boundary registration | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
+| `ABTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active; the arming instant itself is a project interpretation, since no clause fixes when a boundary Event's waiting begins (13.5.2's “reached” cannot apply to a Boundary Event) | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
 | `ABTIMER-COMPLETE-01` | Clause 13.5.3 normal continuation | quantified exclusivity law | victory removes both waits | completion history: Timer canceled, never fired | mutation that leaves the Timer wait live |
 | `ABTIMER-INTERRUPT-01` | Clause 13.5.3 three-step order | quantified interruption law with counter preservation | boundary token only, no normal token | interruption history: Timer fired, no cancellation | mutation routing interruption to `task.output`, detected by the wrong published follow-on task |
 | `ABTIMER-REFUSE-01` | exact-occurrence and exact-time refusal | state-preservation laws for wrong and stale identities | shared refusal predicate — **one lane, not two**, because Lean and the core call the same reused check | pre-due firing rejected with no deadline drift | pre-due firing at `999`; stale sibling after either victory |
@@ -263,7 +267,7 @@ Both plans must still answer their follow-on task, so neither example ends in an
 
 ## Common-mode risks
 
-- **One assumption shared by all four targets.** Every target derives the deadline from the same committed `durationMs: 1000` and the same arming instant. If the arming instant is wrong, all four agree and are all wrong. The mitigation is the existing pre-due firing refusal plus a seeded deadline mutation, both of which discriminate the arming instant rather than the arithmetic.
+- **One assumption shared by all four targets.** Every target derives the deadline from the same committed `durationMs: 1000` and the same arming instant. If the arming instant is wrong, all four agree and are all wrong. This exposure is sharper than it first appears, because BPMN 2.0.2 does not fix the arming instant for a boundary Event at all: Clause 13.5.2 starts waiting when an Intermediate Event is *reached*, and a Boundary Event is never reached by a token, so arming on Activity activation is a project interpretation rather than a transcribed clause. The mitigation is therefore the capsule's own pre-due firing witness plus a seeded deadline mutation, which discriminate the arming instant rather than the arithmetic; no normative citation can substitute for them.
 - **Reused refusal rules.** `ABTIMER-REFUSE-01` reuses the existing full-identity refusal implementation. Two lanes that share that implementation are one lane, not two, so the capsule may not count Lean and TypeScript refusal as uncorrelated evidence where both call the same reused predicate.
 - **The detector reuse.** If the coalescing detector is reused unchanged, a defect in it fails both capsules together; the distinct typed failure identity above is the minimum separation.
 
