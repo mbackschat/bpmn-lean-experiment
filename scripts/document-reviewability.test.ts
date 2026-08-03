@@ -344,7 +344,7 @@ test("every capsule proposal names the guards and owners that already bind it", 
       findings.push(`${proposal}: no ${bindingInventoryHeading} section`);
       continue;
     }
-    const linked = linkedPaths(section, "docs/capsules");
+    const linked = [...new Set(linkedPaths(section, "docs/capsules"))];
     const unresolved: string[] = [];
     for (const target of linked) {
       if (!await exists(target)) {
