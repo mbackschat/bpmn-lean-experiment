@@ -88,7 +88,7 @@ The asymmetry is in the field names, not in a mode flag: this operation is not s
 
 ## Exact source profile
 
-One new immutable standards-only profile, registered identity `bpmn-2.0.2-activity-boundary-timer-draft`. It admits exactly:
+One new immutable standards-only profile, registered identity `bpmn-2.0.2-activity-boundary-timer-draft`. It admits the following shape:
 
 ```text
 None Start → Bounded User Task ──normal──→ Normal User Task → None End A
@@ -97,6 +97,8 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
                     │
                     └──boundary──→ Boundary User Task → None End B
 ```
+
+**The profile pins a shape class, not this one diagram.** Admission compares an exact checked-node multiset, an exact operation multiset, and generic graph reachability, and none of those can pin an attachment *reference*. A source that attaches the deadline to the follow-on User Task instead of the diagrammed one therefore satisfies every admission gate and yields a well-formed bounded process in which that task is the bounded one. This is an exactness limit of multiset-plus-graph admission rather than an unsound program, and it is recorded here instead of claimed away; constraining the attachment structurally is excluded from this capsule.
 
 - one private executable Process with `isExecutable="true"`;
 - exactly one None Start Event with no Event Definition and exactly one outgoing Sequence Flow;
