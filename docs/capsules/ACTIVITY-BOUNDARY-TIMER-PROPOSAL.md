@@ -82,23 +82,26 @@ type AwaitBoundedUserTaskOperation = DeepReadonly<
 One new immutable standards-only profile, proposed identity `standards-activity-boundary-timer-draft`. It admits exactly:
 
 ```text
-None Start → User Task ──normal──→ None End A
-                 │
-        (boundary Timer PT1S, interrupting)
-                 │
-                 └──boundary──→ None End B
+None Start → Bounded User Task ──normal──→ Normal User Task → None End A
+                    │
+           (boundary Timer PT1S, interrupting)
+                    │
+                    └──boundary──→ Boundary User Task → None End B
 ```
 
 - one private executable Process with `isExecutable="true"`;
-- one User Task with exactly one incoming and one outgoing Sequence Flow;
-- one Boundary Event whose `attachedToRef` resolves to that User Task;
+- one bounded User Task with exactly one incoming and one outgoing Sequence Flow;
+- one Boundary Event whose `attachedToRef` resolves to that bounded User Task;
 - `cancelActivity` omitted or lexically `true`; lexical `false` is **rejected** as the retained hostile control, because non-interrupting behavior is a separate proposition;
 - exactly one Timer Event Definition containing exactly one `timeDuration` whose exact lexical value is `PT1S`;
 - exactly one outgoing boundary Sequence Flow and no incoming boundary Flow;
-- two distinct None End Events, so the two routes are distinguishable at the public observation boundary;
+- two distinct follow-on User Tasks, one on each route, each with exactly one incoming and one outgoing Sequence Flow;
+- two distinct None End Events;
 - no other executable extension content.
 
-Two distinct End Events are load-bearing. A shared End Event would make the interrupting and completing traces agree on every public observation, and the capsule would then have no separating witness at its approved boundary.
+**The distinct follow-on User Tasks are load-bearing, and the distinct End Events are not.** `StateObservation` exposes status, the four wait families, Process variables, enabled interactions, and logical time; it exposes no terminal element identity. Two routes that differ only in which None End Event they reach therefore produce the same public terminal observation, and an implementation that wrongly routed interruption to the Activity's normal output would still complete at logical time `1000` and be publicly indistinguishable. Publishing a distinct User Task on each route is what makes the route choice observable at the approved boundary, which is the same reason the [Event-Based Gateway profile](EVENT-BASED-GATEWAY-SPEC.md#exact-source-profile) gives each of its arms a distinct User Task. The two End Events are retained only for structural symmetry and are deliberately not claimed as a discriminator.
+
+The resulting program inventory is one `initiate`, one `awaitBoundedUserTask`, two `awaitUserTask`, two `reachNoneEnd`, and one root `completeScope`. No standalone `awaitTimer` appears, because the boundary Timer is owned by the bounded operation.
 
 Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, `cancelActivity="false"`, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, and a shared End Event.
 
@@ -142,7 +145,7 @@ After either victory, the sibling stimulus is ineligible and rejected with exact
 
 ### `ABTIMER-OBSERVE-01` — project only the existing wait surfaces
 
-The armed state publishes exactly one open User Task and one open Timer through the existing four-kind canonical ordering and exactly one enabled completion interaction. The capsule adds no observation field, no wait kind, and no stimulus kind.
+The armed state publishes exactly one open User Task and one open Timer through the existing four-kind canonical ordering, and exactly one enabled completion interaction for the bounded task. After either victory the published follow-on task identity distinguishes the route. The capsule adds no observation field, no wait kind, and no stimulus kind.
 
 ## Laws, non-laws, and separating witnesses
 
@@ -157,14 +160,16 @@ Required Lean content, all with exact hypotheses:
 
 Two schedules over one definition:
 
-| Case | Stimulus | Required outcome | Required loser check |
+| Case | Stimulus | Required stable state after victory | Required loser check |
 |---|---|---|---|
-| Activity wins | exact task completion before deadline `1000` | token reaches End A; logical time `0`; no timer remains | stale exact Timer firing rejects and preserves that state |
-| Deadline wins | exact Timer firing at deadline `1000` | token reaches End B; logical time `1000`; no task remains | stale exact task completion rejects and preserves that state |
+| Activity wins | exact bounded-task completion before deadline `1000` | only the normal follow-on User Task is published; no bounded task and no Timer remain; logical time `0` | stale exact Timer firing rejects and preserves that state |
+| Deadline wins | exact Timer firing at deadline `1000` | only the boundary follow-on User Task is published; no bounded task and no Timer remain; logical time `1000` | stale exact bounded-task completion rejects and preserves that state |
 
-Both schedules must terminate at distinct End Events, so the traces differ at the approved public observation boundary rather than only in hidden order.
+The published follow-on task identity is the discriminator, and it differs at the approved observation boundary rather than in hidden order. Both schedules then complete their published follow-on task and reach the same empty wait, task, subscription, Timer, effect, variable, and interaction surfaces, differing only in logical time. A declaration-order-permuted source must preserve each schedule's complete trace.
 
-Required mutations, each of which must be detected: an implementation that leaves the loser wait; one that produces both tokens; one that routes interruption to `task.output`; one that fires before the deadline; and one that erases the boundary Sequence Flow identity so both routes lower to the same output.
+Start closure is exactly two internal steps, `initiate` and `awaitBoundedUserTask`. The armed state has no internal transition and is resumable through its published task interaction, so it is stable and not stranded. Each victory enables exactly one follow-on `awaitUserTask`, and completing it closes through one `reachNoneEnd` and root `completeScope`. No newly reachable multiple-enabled internal state exists, and the capsule must executable-check that every newly reachable closure stays inside `semanticProcessClosureLimit`.
+
+Required mutations, each of which must be detected at the public boundary: an implementation that leaves the loser wait; one that produces both tokens; one that routes interruption to `task.output`, which now publishes the wrong follow-on task; one that fires before the deadline; and one that erases the boundary Sequence Flow identity so both routes lower to the same output.
 
 ## Temporal hosting and refinement preflight
 
@@ -200,7 +205,9 @@ If implementation discovers a public observation this profile cannot produce wit
 
 This capsule reaches the product command through one example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires.
 
-It also closes a recorded product-evidence gap rather than only adding a profile. The driver's precedence rule keeps waiting while a timer wait is open precisely so a host-resolved wait can withdraw an enabled interaction, but no current example declines an enabled interaction to let a timer win, so that arm is not product-reachable today. This profile makes both arms reachable from declared configuration alone: a plan with a completion response exercises Activity victory, and an empty plan exercises deadline victory. Two example configurations over one definition therefore close the gap.
+It also closes a recorded product-evidence gap rather than only adding a profile. The driver's precedence rule keeps waiting while a timer wait is open precisely so a host-resolved wait can withdraw an enabled interaction, but no current example declines an enabled interaction to let a timer win, so that arm is not product-reachable today. This profile makes both arms reachable from declared configuration alone: a plan answering the bounded task exercises Activity victory, and a plan that answers only the boundary follow-on task exercises deadline victory. Two example configurations over one definition therefore close the gap.
+
+Both plans must still answer their follow-on task, so neither example ends in an observation-limit refusal.
 
 ## Common-mode risks
 
