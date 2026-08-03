@@ -98,6 +98,7 @@ The Temporal gates start a local server. In a managed sandbox, request host port
 
 For every new semantic mechanism:
 
+0. enumerate the bounds that already exist with `node scripts/what-binds.ts <path>...` for every path the change will add or grow. It reports the executable guards whose assertions constrain those paths, the registries carrying a same-change obligation, and each owner's remaining nonblank headroom. Guards here constrain artifact shape by tree as often as by file, so a plan derived from recall can name a change site whose oracle it never read; an owner already at the review target means the behavior-preserving extraction is a separate prior commit, not work done under a size squeeze.
 1. identify the normative clause, reviewed profile choice, or explicit competing interpretation;
 2. add the smallest positive or negative witness that separates the intended account from a realistic wrong one;
 3. record the Temporal hosting/refinement preflight before production Lean or semantic-core implementation;

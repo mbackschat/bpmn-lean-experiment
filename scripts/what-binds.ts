@@ -16,7 +16,7 @@
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import {
@@ -144,14 +144,14 @@ export function ownerMeasurement(
     : { path: target, lines: nonblankLines(source) };
 }
 
-function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+function counted(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 export function reportLines(
   result: ChangeBindings,
 ): ReadonlyArray<string> {
-  const counted = (kind: BindingKind): number =>
+  const ofKind = (kind: BindingKind): number =>
     result.bindings.filter((binding) => binding.kind === kind).length;
   return [
     `TARGET ${result.target}`,
@@ -161,11 +161,8 @@ export function reportLines(
     ...result.bindings.map(({ kind, path: bindingPath, matchedTerm }) =>
       `${kind} ${bindingPath} (matched ${JSON.stringify(matchedTerm)})`
     ),
-    `BINDINGS ${plural(counted(BindingKind.Guard), "guard")}, ${
-      plural(counted(BindingKind.Registry), "registry").replace(
-        "registrys",
-        "registries",
-      )
+    `BINDINGS ${counted(ofKind(BindingKind.Guard), "guard", "guards")}, ${
+      counted(ofKind(BindingKind.Registry), "registry", "registries")
     }`,
   ];
 }
@@ -213,6 +210,7 @@ async function main(targets: ReadonlyArray<string>): Promise<void> {
   }
 }
 
-if (process.argv[1] !== undefined && import.meta.url.endsWith(path.basename(process.argv[1]))) {
+const invokedPath = process.argv[1];
+if (invokedPath !== undefined && import.meta.url === pathToFileURL(invokedPath).href) {
   await main(process.argv.slice(2));
 }

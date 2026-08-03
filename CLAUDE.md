@@ -105,8 +105,9 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 Use red/green TDD:
 
-1. identify the normative requirement, CIB probe, or explicit open interpretation;
-2. add the smallest separating executable example;
+1. run `node scripts/what-binds.ts <path>...` on every path the change will add or grow, and treat its guard, registry, and `OWNER` headroom lines as constraints on the plan rather than as output to skim;
+2. identify the normative requirement, CIB probe, or explicit open interpretation;
+3. add the smallest separating executable example;
 3. complete the capsule's Temporal hosting/refinement preflight before production Lean or semantic-core implementation;
 4. confirm failure for the intended missing mechanism;
 5. implement the semantic root rather than a case-specific patch;
@@ -123,7 +124,7 @@ Prefer enum-based pattern matching or switch statements for semantic variants. K
 
 ### Delegated implementation
 
-Give each implementation sub-agent a task-shaped name and one bounded lane. Its prompt names the exact invariant algorithm, one adversarial counterexample that must fail before the correction, the cross-target invariant matrix of required facts and explicit non-requirements, the files it may own, the files it must not touch, and the proportionate focused gates. A desired outcome without the deciding algorithm and realistic wrong case is not a sufficient delegation contract.
+Give each implementation sub-agent a task-shaped name and one bounded lane. Its prompt names the exact invariant algorithm, one adversarial counterexample that must fail before the correction, the cross-target invariant matrix of required facts and explicit non-requirements, the files it may own, the files it must not touch, the proportionate focused gates, and the `node scripts/what-binds.ts` output for the files it may own so the lane inherits the guard, registry, and headroom bounds instead of rediscovering them mid-edit. A desired outcome without the deciding algorithm and realistic wrong case is not a sufficient delegation contract.
 
 Assign disjoint file ownership to concurrent agents. The root integrator owns shared integration points, lifecycle and status documentation, commits, and the repository-wide full gate; do not ask two active agents to edit the same owner or use an implementation agent as its own independent reviewer.
 
