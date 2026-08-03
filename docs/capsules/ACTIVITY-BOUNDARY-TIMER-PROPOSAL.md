@@ -95,7 +95,7 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
 
 - one private executable Process with `isExecutable="true"`;
 - exactly one None Start Event with no Event Definition and exactly one outgoing Sequence Flow;
-- exactly five Sequence Flows and no Flow Node other than the six named here;
+- exactly five Sequence Flows and exactly seven Flow Nodes: the None Start Event, the bounded User Task, the Boundary Event, the two follow-on User Tasks, and the two None End Events. The Boundary Event is counted because CMOF derives `BoundaryEvent` from `CatchEvent` and `Event`, whose superclasses include `FlowNode`;
 - no parser warning of any kind, which remains admission-blocking;
 - one bounded User Task with exactly one incoming and one outgoing Sequence Flow;
 - one Boundary Event whose `attachedToRef` resolves to that bounded User Task;
@@ -173,9 +173,9 @@ Required Lean content, all with exact hypotheses:
 - exact state-preservation laws for wrong and stale identities;
 - the nearest **checked non-law**: it is *not* a law that reaching logical time `1000` produces the boundary token, because an earlier committed completion stimulus has already withdrawn the Timer. Stimulus order is an explicit semantic input, so this is a statement about the core's sequential inputs and not about host simultaneity, which the preflight handles separately by failing closed. The finite witness must exhibit that state rather than assert the non-law in prose.
 
-Two schedules over one definition:
+Three schedules over one definition:
 
-| Case | Stimulus | Required stable state after victory | Required loser check |
+| Case | Stimulus | Required stable state after the stimulus | Required follow-up check |
 |---|---|---|---|
 | Activity wins | exact bounded-task completion before deadline `1000` | only the normal follow-on User Task is published; no bounded task and no Timer remain; logical time `0` | stale exact Timer firing rejects and preserves that state |
 | Deadline wins | exact Timer firing at deadline `1000` | only the boundary follow-on User Task is published; no bounded task and no Timer remain; logical time `1000` | stale exact bounded-task completion rejects and preserves that state |
@@ -231,7 +231,7 @@ These are planned lanes, not results: no lane exists until implementation. Two l
 
 | Rule | BPMN/profile | Lean | Independent TypeScript | Temporal refinement | Negative witness or mutation |
 |---|---|---|---|---|---|
-| `ABTIMER-ARM-01` | Clause 10.5.6 plus the exact profile; `cancelActivity` resolving to `true` | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
+| `ABTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active, with Clause 13.5.3 for boundary registration | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
 | `ABTIMER-COMPLETE-01` | Clause 13.5.3 normal continuation | quantified exclusivity law | victory removes both waits | completion history: Timer canceled, never fired | mutation that leaves the Timer wait live |
 | `ABTIMER-INTERRUPT-01` | Clause 13.5.3 three-step order | quantified interruption law with counter preservation | boundary token only, no normal token | interruption history: Timer fired, no cancellation | mutation routing interruption to `task.output`, detected by the wrong published follow-on task |
 | `ABTIMER-REFUSE-01` | exact-occurrence and exact-time refusal | state-preservation laws for wrong and stale identities | shared refusal predicate — **one lane, not two**, because Lean and the core call the same reused check | pre-due firing rejected with no deadline drift | pre-due firing at `999`; stale sibling after either victory |
