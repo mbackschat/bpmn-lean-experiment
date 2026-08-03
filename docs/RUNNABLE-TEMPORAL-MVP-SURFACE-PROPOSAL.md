@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft on 2026-08-03; not owner-approved and not implemented.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner; read that specification for the product surface that runs today, and this document for the intended extension that does not.
+**Owner-approved on 2026-08-03 after independent review; not implemented.** This proposal graduates into the existing [runnable Temporal MVP specification](RUNNABLE-TEMPORAL-MVP-SPEC.md) rather than creating a second product-contract owner; read that specification for the product surface that runs today, and this document for the intended extension that does not.
 
 ## Product question
 
@@ -128,12 +128,14 @@ Under the pre-release policy this is one atomic replacement: `dummyUserTask` is 
 
 The existing MVP specification's reopen conditions explicitly require reopening before multiple simultaneous dummy tasks, which this proposal does; that is the intended trigger, not an exception to it.
 
-## Owner questions
+## Owner decisions
 
-1. Approve the enabled-interaction driver, the deterministic product effect handler, and the atomic removal of `dummyUserTask` as the product contract?
-2. Confirm that graduation replaces the bounded contract inside [RUNNABLE-TEMPORAL-MVP-SPEC.md](RUNNABLE-TEMPORAL-MVP-SPEC.md) and keeps that filename, with the review receipt carried into it voluntarily?
-3. Confirm that a profile requiring a wait-set shape the current host rejects is a stop condition rather than in-scope work?
-4. Should a synthetic program be added purely to give the host-capability rejection a product-path negative control, given that no registered profile can trigger it?
+The owner approved this proposal on 2026-08-03 with the four answers below.
+
+1. **Approved:** the enabled-interaction driver, the deterministic product effect handler, and the atomic removal of `dummyUserTask` are the product contract. The handler reuses the complete `EffectExecutionResult` union, whose `bpmnError` arm the boundary-Error profile requires, so a success-only handler shape is rejected.
+2. **Confirmed:** graduation replaces the bounded contract inside [RUNNABLE-TEMPORAL-MVP-SPEC.md](RUNNABLE-TEMPORAL-MVP-SPEC.md) and keeps that filename, and the review receipt is carried into it voluntarily because that specification belongs to the closed pre-policy grandfather set and would otherwise retain no review evidence once this proposal is deleted.
+3. **Confirmed:** a profile requiring a wait-set shape the current host rejects is a stop condition. Stopping routes to an explicit owner capability decision — implement and evidence a multi-wait scheduler, or preserve the existing bound — never to driver logic that works around the rejection.
+4. **Declined:** no synthetic program is added for a host-capability negative control. Both rejection codes already have direct negative coverage in `packages/temporal-adapter/test/host-admission.test.ts`, and a synthetic BPMN artifact in the product examples would duplicate that fact while being the only non-scenario model there.
 
 ## Independent cold-review receipt
 
