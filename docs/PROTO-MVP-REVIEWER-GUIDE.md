@@ -2,14 +2,14 @@
 
 ## Status
 
-**Maintained navigational review aid. Only the sections retained below were verified, at repository revision `dfd2ac3`; the explanatory and evaluative material this guide previously carried was moved or removed on 2026-08-03 and is not re-verified here.**
+**Maintained navigational review aid.**
 
 > [!IMPORTANT]
 > This file routes a reviewer to owners. It is not an implementation map, semantic specification, test catalog, or roadmap. For current truth, start with [PLAN.md](PLAN.md), [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and [TESTING-SPEC.md](TESTING-SPEC.md).
 
-## Scope of this guide, and where the rest went
+## Scope and sources
 
-This guide deliberately contains **no inventory, no counts, and no architecture narrative**. Each of those has exactly one owner, and a second copy here drifted from its owner within a day of being written.
+This guide routes reviewers to the current owners and executable gates. It contains no independent inventory, counts, or architecture narrative.
 
 | What you want | Where it lives |
 |---|---|
@@ -20,17 +20,7 @@ This guide deliberately contains **no inventory, no counts, and no architecture 
 | The governed review protocol, verdict contract, and receipts | [TESTING-SPEC.md](TESTING-SPEC.md#independent-cold-review-gate) |
 | Architecture explanation, feasibility assessment, and an informal reviewer checklist | the separate [assessment record](https://github.com/mbackschat/bpmn-lean-experiment-assessment) |
 
-The moved material has specific destinations in that assessment record:
-
-| Moved from this guide | New location |
-|---|---|
-| Ten things to know before evaluating; the A–H evaluation framework; red flags that merit a required finding | [17 — How to review this project](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/17-how-to-review.md) |
-| Motivation, product direction, and layering background | [00 — Background for newcomers](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/00-background.md) |
-| Core design decisions, the IL, and the independent core | [05](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/05-semantic-core-and-il.md) and [06](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/06-typescript-core-correctness.md) |
-| The bytes-to-replayed-evidence walkthrough | [10 — Case study](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/10-case-study.md) and [07 — the Temporal adapter](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/07-temporal-adapter.md) |
-| Risks, challenges, and what the evidence establishes | [02](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/02-evidence-and-lanes.md), [04](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/04-feasibility.md), and [11](https://github.com/mbackschat/bpmn-lean-experiment-assessment/blob/main/11-open-questions.md) |
-
-That record is explanatory and evaluative, maintained against a named commit of this tree, and **not authoritative**: the documents above own every claim.
+The assessment record is explanatory and evaluative, maintained against a named commit of this tree, and **not authoritative**: the project documents above own every claim.
 
 ## Who this guide is for
 

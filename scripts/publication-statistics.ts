@@ -157,6 +157,16 @@ function languageRow(language: (typeof languages)[number], value: TokeiLanguage)
   return `| ${language} | ${formatInteger(value.reports.length)} | ${formatInteger(value.code)} | ${formatInteger(value.comments)} | ${formatInteger(value.blanks)} |`;
 }
 
+function languageFootprintTable(
+  statistics: Record<(typeof languages)[number], TokeiLanguage>,
+): string {
+  return [
+    "| Language | Files | Code | Comments | Blanks |",
+    "|---|---:|---:|---:|---:|",
+    ...languages.map((language) => languageRow(language, statistics[language])),
+  ].join("\n");
+}
+
 function expectedReadme(current: string): string {
   const lean = leanStatistics();
   const proofDeclarations = lean.publicTheorems + lean.supportingLemmas;
@@ -176,10 +186,10 @@ function expectedReadme(current: string): string {
     "Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.",
   ].join("\n");
 
-  return languages.reduce(
-    (readme, language) =>
-      replaceBlock(readme, language.toLowerCase(), languageRow(language, tokei[language])),
+  return replaceBlock(
     replaceBlock(current, "lean-declarations", leanBlock),
+    "language-footprint",
+    languageFootprintTable(tokei),
   );
 }
 
