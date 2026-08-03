@@ -77,8 +77,7 @@ export async function runRunnableMvpCommand(
       case RunnableMvpResultKind.SourceAdmissionRejected:
       case RunnableMvpResultKind.ProcessAdmissionRejected:
         return RunnableMvpExitCode.AdmissionRejected;
-      case RunnableMvpResultKind.ActorRefused:
-      case RunnableMvpResultKind.CompletionNotCommitted:
+      case RunnableMvpResultKind.InteractionRefused:
         return RunnableMvpExitCode.ExecutionRefused;
     }
     return assertNever(result);

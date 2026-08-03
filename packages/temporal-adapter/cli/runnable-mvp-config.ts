@@ -12,11 +12,13 @@ import type {
   VariableBinding,
 } from "@bpmn-lean/semantic-core";
 import {
-  validateDummyUserTaskResponse,
+  validateHostEffectHandlers,
+  validateHostInteractionPlan,
 } from "@bpmn-lean/temporal-adapter";
 import type {
-  DummyUserTaskResponse,
   ExternalTemporalRuntimeOptions,
+  HostEffectHandler,
+  HostInteractionResponse,
 } from "@bpmn-lean/temporal-adapter";
 
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
@@ -37,7 +39,8 @@ export type RunnableMvpConfig = DeepReadonly<{
     initialVariables: VariableBinding[];
   };
   temporal: ExternalTemporalRuntimeOptions;
-  dummyUserTask: DummyUserTaskResponse;
+  interactions: HostInteractionResponse[];
+  effectHandlers: HostEffectHandler[];
 }>;
 
 export async function loadRunnableMvpConfig(
@@ -66,7 +69,7 @@ export function validateRunnableMvpConfig(
 ): asserts value is RunnableMvpConfig {
   const root = requireExactObject(
     value,
-    ["kind", "bpmn", "process", "temporal", "dummyUserTask"],
+    ["kind", "bpmn", "process", "temporal", "interactions", "effectHandlers"],
     "MVP config",
   );
   if (root.kind !== "runnableTemporalMvp") {
@@ -120,7 +123,8 @@ export function validateRunnableMvpConfig(
   requireNonemptyString(temporal.taskQueue, "MVP Temporal taskQueue");
   requireNonemptyString(temporal.identity, "MVP Temporal identity");
 
-  validateDummyUserTaskResponse(root.dummyUserTask);
+  validateHostInteractionPlan(root.interactions);
+  validateHostEffectHandlers(root.effectHandlers);
 }
 
 function requireExactObject(

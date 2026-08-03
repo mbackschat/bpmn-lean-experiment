@@ -9,6 +9,7 @@ import test from "node:test";
 
 import {
   CommandOutcome,
+  StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import {
   ExternalTemporalRuntime,
@@ -64,10 +65,10 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
           ...exampleConfig.process,
           instanceId: "MvpExternalTest_1",
         },
-        dummyUserTask: {
-          ...exampleConfig.dummyUserTask,
+        interactions: exampleConfig.interactions.map((response) => ({
+          ...response,
           delayMs: 25,
-        },
+        })),
         temporal: {
           ...exampleConfig.temporal,
           address: environment.address,
@@ -83,18 +84,18 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
         break;
       case RunnableMvpResultKind.SourceAdmissionRejected:
       case RunnableMvpResultKind.ProcessAdmissionRejected:
-      case RunnableMvpResultKind.ActorRefused:
-      case RunnableMvpResultKind.CompletionNotCommitted:
+      case RunnableMvpResultKind.InteractionRefused:
         throw new Error(`MVP did not complete: ${result.kind}`);
     }
     assert.deepEqual(events.map(({ kind }) => kind), [
       RunnableMvpEventKind.SourceAdmissionAccepted,
       RunnableMvpEventKind.ProcessStarted,
       RunnableMvpEventKind.ProcessState,
-      RunnableMvpEventKind.TaskReady,
+      RunnableMvpEventKind.InteractionReady,
       RunnableMvpEventKind.DelayStarted,
       RunnableMvpEventKind.DelayFinished,
-      RunnableMvpEventKind.CompletionResolved,
+      RunnableMvpEventKind.InteractionResolved,
+      RunnableMvpEventKind.ProcessState,
       RunnableMvpEventKind.ProcessCompleted,
     ]);
     const waiting = events.find(
@@ -106,25 +107,28 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
     );
     assert.equal(waiting?.state.openUserTasks[0]?.id.elementId, "UserTask_Approve");
     const ready = events.find(
-      (event) => event.kind === RunnableMvpEventKind.TaskReady,
+      (event) => event.kind === RunnableMvpEventKind.InteractionReady,
     );
     assert.deepEqual(
-      ready?.detail.inputVariables,
+      ready?.detail?.inputVariables,
       exampleConfig.process.initialVariables,
     );
     const completion = events.find(
-      (event) => event.kind === RunnableMvpEventKind.CompletionResolved,
+      (event) => event.kind === RunnableMvpEventKind.InteractionResolved,
     );
     assert.deepEqual(completion?.result, {
       kind: ProcessCommandResultKind.Semantic,
-      commandId: "dummy-form-submit:UserTask_Approve:1",
+      commandId: "mvp-complete-task:UserTask_Approve:1",
       outcome: CommandOutcome.Committed,
     });
     assert.equal(result.receipt.processInstanceId, "MvpExternalTest_1");
+    const submitted = exampleConfig.interactions.find(
+      (response) => response.kind === StimulusKind.CompleteUserTaskInstance,
+    );
     assert.deepEqual(result.receipt.finalState.variables, [
-      exampleConfig.dummyUserTask.submittedValues[0],
+      submitted?.submittedValues[0],
       exampleConfig.process.initialVariables[0],
-      exampleConfig.dummyUserTask.submittedValues[1],
+      submitted?.submittedValues[1],
     ]);
   } finally {
     await withDeadline(

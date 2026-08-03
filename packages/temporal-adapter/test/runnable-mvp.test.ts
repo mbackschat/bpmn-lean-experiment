@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import {
+  StimulusKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 
@@ -64,20 +65,24 @@ const config = {
     taskQueue: "bpmn-mvp",
     identity: "bpmn-mvp-command",
   },
-  dummyUserTask: {
-    elementId: "UserTask_Approve",
-    delayMs: 3_000,
-    inputVariableNames: ["requestTitle"],
-    submittedValues: [
-      {
-        name: "decision",
-        value: {
-          kind: VariableValueKind.String,
-          value: "approved",
+  interactions: [
+    {
+      kind: StimulusKind.CompleteUserTaskInstance,
+      elementId: "UserTask_Approve",
+      delayMs: 3_000,
+      inputVariableNames: ["requestTitle"],
+      submittedValues: [
+        {
+          name: "decision",
+          value: {
+            kind: VariableValueKind.String,
+            value: "approved",
+          },
         },
-      },
-    ],
-  },
+      ],
+    },
+  ],
+  effectHandlers: [],
 } as const;
 
 test("loads an exact config and resolves its BPMN path from the config file", async () => {

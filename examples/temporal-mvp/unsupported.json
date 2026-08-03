@@ -19,10 +19,14 @@
     "taskQueue": "bpmn-mvp",
     "identity": "bpmn-mvp-command"
   },
-  "dummyUserTask": {
-    "elementId": "UserTask_A",
-    "delayMs": 3000,
-    "inputVariableNames": [],
-    "submittedValues": []
-  }
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_A",
+      "delayMs": 3000,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
 }

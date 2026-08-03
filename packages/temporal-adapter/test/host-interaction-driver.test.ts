@@ -39,6 +39,7 @@ const instanceId = "Driver_Test_1";
 
 const committed: ProcessCommandResult = {
   kind: ProcessCommandResultKind.Semantic,
+  commandId: "driver-test-command",
   outcome: CommandOutcome.Committed,
 };
 
@@ -50,10 +51,10 @@ function openTask(elementId: string, activation = 1) {
   } as const;
 }
 
-function directChannel(messageName: string) {
+function directChannel(messageId: string) {
   return {
     kind: MessageChannelKind.DirectMessage,
-    messageName,
+    messageId,
   } as const;
 }
 
@@ -83,15 +84,15 @@ function taskInteraction(elementId: string, activation = 1) {
   } as const;
 }
 
-function messageInteraction(messageName: string, activation = 1) {
+function messageInteraction(messageId: string, activation = 1) {
   return {
     kind: StimulusKind.DeliverMessage,
     subscriptionId: {
       processInstanceId: instanceId,
-      elementId: `Catch_${messageName}`,
+      elementId: `Catch_${messageId}`,
       activation,
     },
-    channel: directChannel(messageName),
+    channel: directChannel(messageId),
   } as const;
 }
 
@@ -112,10 +113,10 @@ function completeResponse(
   };
 }
 
-function deliverResponse(messageName: string): HostInteractionResponse {
+function deliverResponse(messageId: string): HostInteractionResponse {
   return {
     kind: StimulusKind.DeliverMessage,
-    channel: directChannel(messageName),
+    channel: directChannel(messageId),
     delayMs: 1,
   };
 }

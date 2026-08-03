@@ -33,9 +33,7 @@ import type {
   DeepReadonly,
   DeliverMessageStimulus,
   EnabledInteraction,
-  MessageChannel,
   StateObservation,
-  UserTaskCompletionBinding,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -46,22 +44,7 @@ import type {
   UserTaskDetail,
   UserTaskDetailRequest,
 } from "./contracts.js";
-
-/** One declared answer to a published interaction, discriminated by the canonical stimulus kind. */
-export type HostInteractionResponse = DeepReadonly<
-  | {
-      kind: StimulusKind.CompleteUserTaskInstance;
-      elementId: string;
-      delayMs: number;
-      inputVariableNames: string[];
-      submittedValues: UserTaskCompletionBinding[];
-    }
-  | {
-      kind: StimulusKind.DeliverMessage;
-      channel: MessageChannel;
-      delayMs: number;
-    }
->;
+import type { HostInteractionResponse } from "./host-interaction-plan.js";
 
 export type HostInteractionPort = Readonly<{
   readState: () => Promise<StateObservation>;
@@ -77,6 +60,7 @@ export type HostInteractionPort = Readonly<{
 }>;
 
 export const HostInteractionEventKind = {
+  StateObserved: "stateObserved",
   InteractionReady: "interactionReady",
   DelayStarted: "delayStarted",
   DelayFinished: "delayFinished",
@@ -85,6 +69,10 @@ export const HostInteractionEventKind = {
 } as const;
 
 export type HostInteractionEvent = DeepReadonly<
+  | {
+      kind: typeof HostInteractionEventKind.StateObserved;
+      state: StateObservation;
+    }
   | {
       kind: typeof HostInteractionEventKind.InteractionReady;
       interaction: EnabledInteraction;
@@ -168,6 +156,7 @@ export async function driveHostInteractions(
 
   for (let step = 0; step < observationLimit; step += 1) {
     const state = await port.readState();
+    observe({ kind: HostInteractionEventKind.StateObserved, state });
     if (state.status === ProcessStatus.Completed) {
       const unconsumed = pending.filter(({ consumed }) => !consumed).length;
       if (unconsumed > 0) {

@@ -23,27 +23,25 @@ import type {
 import {
   BpmnProcessAdmissionResultKind,
   BpmnProcessStartResultKind,
-  DummyUserTaskActorEventKind,
-  DummyUserTaskActorResultKind,
   ExternalTemporalRuntime,
-  ProcessCommandResultKind,
+  HostInteractionEventKind,
+  HostInteractionResultKind,
   assessBpmnProcessAdmission,
+  driveHostInteractions,
   isCompletedProcessReceipt,
-  listOpenUserTasks,
   processWorkflowId,
   readBpmnProcessTrace,
   readUserTaskDetail,
-  runDummyUserTaskActor,
   startBpmnProcess,
+  submitMessageDelivery,
   submitUserTaskCompletion,
 } from "@bpmn-lean/temporal-adapter";
 import type {
   BpmnProcessAdmissionFailure,
   CompletedProcessReceipt,
-  DummyUserTaskActorEvent,
-  DummyUserTaskActorResult,
   ExternalTemporalRuntimeOptions,
-  ProcessCommandResult,
+  HostInteractionEvent,
+  HostInteractionResult,
 } from "@bpmn-lean/temporal-adapter";
 
 import {
@@ -57,12 +55,12 @@ export const RunnableMvpEventKind = {
   ProcessAdmissionRejected: "processAdmissionRejected",
   ProcessStarted: "processStarted",
   ProcessState: "processState",
-  TaskReady: DummyUserTaskActorEventKind.TaskReady,
-  DelayStarted: DummyUserTaskActorEventKind.DelayStarted,
-  DelayFinished: DummyUserTaskActorEventKind.DelayFinished,
-  CompletionResolved: DummyUserTaskActorEventKind.CompletionResolved,
-  ActorRefused: "actorRefused",
-  CompletionNotCommitted: "completionNotCommitted",
+  InteractionReady: HostInteractionEventKind.InteractionReady,
+  DelayStarted: HostInteractionEventKind.DelayStarted,
+  DelayFinished: HostInteractionEventKind.DelayFinished,
+  InteractionResolved: HostInteractionEventKind.InteractionResolved,
+  HostWaitObserved: HostInteractionEventKind.HostWaitObserved,
+  InteractionRefused: "interactionRefused",
   ProcessCompleted: "processCompleted",
 } as const;
 
@@ -96,17 +94,16 @@ export type RunnableMvpEvent = DeepReadonly<
       kind: typeof RunnableMvpEventKind.ProcessState;
       state: StateObservation;
     }
-  | DummyUserTaskActorEvent
+  | Exclude<
+      HostInteractionEvent,
+      { kind: typeof HostInteractionEventKind.StateObserved }
+    >
   | {
-      kind: typeof RunnableMvpEventKind.ActorRefused;
+      kind: typeof RunnableMvpEventKind.InteractionRefused;
       refusal: Extract<
-        DummyUserTaskActorResult,
-        { kind: "refused" }
+        HostInteractionResult,
+        { kind: typeof HostInteractionResultKind.Refused }
       >;
-    }
-  | {
-      kind: typeof RunnableMvpEventKind.CompletionNotCommitted;
-      result: ProcessCommandResult;
     }
   | {
       kind: typeof RunnableMvpEventKind.ProcessCompleted;
@@ -118,8 +115,7 @@ export const RunnableMvpResultKind = {
   Completed: "completed",
   SourceAdmissionRejected: "sourceAdmissionRejected",
   ProcessAdmissionRejected: "processAdmissionRejected",
-  ActorRefused: "actorRefused",
-  CompletionNotCommitted: "completionNotCommitted",
+  InteractionRefused: "interactionRefused",
 } as const;
 
 export type RunnableMvpResult = DeepReadonly<
@@ -136,12 +132,11 @@ export type RunnableMvpResult = DeepReadonly<
       failure: BpmnProcessAdmissionFailure;
     }
   | {
-      kind: typeof RunnableMvpResultKind.ActorRefused;
-      refusal: Extract<DummyUserTaskActorResult, { kind: "refused" }>;
-    }
-  | {
-      kind: typeof RunnableMvpResultKind.CompletionNotCommitted;
-      result: ProcessCommandResult;
+      kind: typeof RunnableMvpResultKind.InteractionRefused;
+      refusal: Extract<
+        HostInteractionResult,
+        { kind: typeof HostInteractionResultKind.Refused }
+      >;
     }
 >;
 
@@ -248,16 +243,10 @@ export async function runRunnableTemporalMvp(
       },
     });
 
-    const waitingState = requireRunningState(
-      await readBpmnProcessTrace(runtime.workflowClient, start.instanceId),
-      start.instanceId,
-    );
-    observe({ kind: RunnableMvpEventKind.ProcessState, state: waitingState });
-
-    const actorResult = await runDummyUserTaskActor(
-      config.dummyUserTask,
+    const driven = await driveHostInteractions(
+      config.interactions,
       {
-        listOpenUserTasks: () => listOpenUserTasks(
+        readState: () => readLatestState(
           runtime.workflowClient,
           start.instanceId,
         ),
@@ -271,34 +260,29 @@ export async function runRunnableTemporalMvp(
           start.instanceId,
           stimulus,
         ),
+        submitMessage: (stimulus) => submitMessageDelivery(
+          runtime.workflowClient,
+          start.instanceId,
+          stimulus,
+        ),
       },
       undefined,
-      (event) => observeActorEvent(event, observe),
+      (event) => observeDriverEvent(event, observe),
     );
-    switch (actorResult.kind) {
-      case DummyUserTaskActorResultKind.Refused:
+    switch (driven.kind) {
+      case HostInteractionResultKind.Refused:
         observe({
-          kind: RunnableMvpEventKind.ActorRefused,
-          refusal: actorResult,
+          kind: RunnableMvpEventKind.InteractionRefused,
+          refusal: driven,
         });
         return {
-          kind: RunnableMvpResultKind.ActorRefused,
-          refusal: actorResult,
+          kind: RunnableMvpResultKind.InteractionRefused,
+          refusal: driven,
         };
-      case DummyUserTaskActorResultKind.Submitted:
+      case HostInteractionResultKind.Driven:
         break;
       default:
-        return assertNever(actorResult);
-    }
-    if (!isCommittedCompletion(actorResult.completion)) {
-      observe({
-        kind: RunnableMvpEventKind.CompletionNotCommitted,
-        result: actorResult.completion,
-      });
-      return {
-        kind: RunnableMvpResultKind.CompletionNotCommitted,
-        result: actorResult.completion,
-      };
+        return assertNever(driven);
     }
 
     const receipt: unknown = await started.handle.result();
@@ -328,45 +312,52 @@ function createStartStimulus(
   };
 }
 
-function requireRunningState(
-  trace: ReadonlyArray<
-    import("@bpmn-lean/semantic-core").CanonicalObservation
-  >,
+/**
+ * Reads the newest committed canonical state of one addressed Process.
+ *
+ * The Query returns the retained observation trace, whose last state is the current one. A trace
+ * without any state observation means the Workflow never published one, which is an infrastructure
+ * failure rather than a semantic outcome.
+ */
+async function readLatestState(
+  client: Parameters<typeof readBpmnProcessTrace>[0],
   processInstanceId: string,
-): StateObservation & { status: ProcessStatus.Running } {
+): Promise<StateObservation> {
+  const trace = await readBpmnProcessTrace(client, processInstanceId);
   const state = trace.findLast(
-    (
-      observation,
-    ): observation is StateObservation & { status: ProcessStatus.Running } =>
-      observation.kind === CanonicalObservationKind.State &&
-      observation.status === ProcessStatus.Running,
+    (observation): observation is StateObservation =>
+      observation.kind === CanonicalObservationKind.State,
   );
   if (state === undefined || state.instanceId !== processInstanceId) {
     throw new TypeError(
-      "Started Process did not expose its expected stable running state",
+      "Addressed Process did not expose a committed canonical state",
     );
   }
   return state;
 }
 
-function observeActorEvent(
-  event: DummyUserTaskActorEvent,
+/** Republishes driver events as product records, mapping observed state to the product's own kind. */
+function observeDriverEvent(
+  event: HostInteractionEvent,
   observe: (event: RunnableMvpEvent) => void,
 ): void {
   switch (event.kind) {
-    case DummyUserTaskActorEventKind.TaskReady:
-    case DummyUserTaskActorEventKind.DelayStarted:
-    case DummyUserTaskActorEventKind.DelayFinished:
-    case DummyUserTaskActorEventKind.CompletionResolved:
+    case HostInteractionEventKind.StateObserved:
+      observe({
+        kind: RunnableMvpEventKind.ProcessState,
+        state: event.state,
+      });
+      return;
+    case HostInteractionEventKind.InteractionReady:
+    case HostInteractionEventKind.DelayStarted:
+    case HostInteractionEventKind.DelayFinished:
+    case HostInteractionEventKind.InteractionResolved:
+    case HostInteractionEventKind.HostWaitObserved:
       observe(event);
       return;
+    default:
+      assertNever(event);
   }
-  assertNever(event);
-}
-
-function isCommittedCompletion(result: ProcessCommandResult): boolean {
-  return result.kind === ProcessCommandResultKind.Semantic &&
-    result.outcome === CommandOutcome.Committed;
 }
 
 function assertNever(value: never): never {
