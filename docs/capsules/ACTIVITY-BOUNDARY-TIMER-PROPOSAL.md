@@ -103,7 +103,9 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
 
 The resulting program inventory is one `initiate`, one `awaitBoundedUserTask`, two `awaitUserTask`, two `reachNoneEnd`, and one root `completeScope`. No standalone `awaitTimer` appears, because the boundary Timer is owned by the bounded operation.
 
-Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, `cancelActivity="false"`, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, and a shared End Event.
+Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, `cancelActivity="false"`, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, and a missing follow-on task on either route.
+
+A shared End Event is also outside this exact profile and is rejected, but for exactness rather than for semantic reasons: it would not weaken the separating witness, which the follow-on tasks now carry. That rejection must not be defended in evidence as a discrimination requirement.
 
 The source compiler manifest needs **no new CMOF fact**. `BoundaryEvent`, `attachedToRef`, and `cancelActivity` are already present from the [boundary-error specification](BOUNDARY-ERROR-SPEC.md), and `TimerEventDefinition` with `timeDuration` from the Intermediate Catch Timer specification; all five were confirmed present in `bpmn-2.0.2-semantic-process-metamodel.json` before this proposal was written. A fact that nevertheless turns out to be missing is a finding to record, not a silent manifest addition.
 
@@ -119,7 +121,7 @@ Lean independently lowers the checked graph and requires exact equality with the
 
 No new runtime collection is proposed. The existing task and timer wait families already carry complete occurrence identity, and the operation supplies the ownership relation that the Event-Based Gateway needed a hidden record for.
 
-This is a deliberate difference from `EventRace` and the reviewer must test it. The claim is that a boundary Timer occurrence and its host task occurrence are recoverable from the committed program plus the two waits, because the profile admits exactly one Activity with exactly one boundary Timer, so `boundaryEventId` plus the owning scope determines the pair. **If the reviewer can construct an admitted state where two live waits are ambiguous about ownership, that refutes this decision and the capsule must add an explicit occurrence record.** The nearest such state is a repeated or Multi-Instance Activity, which this profile excludes; a later capsule that admits repetition must revisit this.
+This is a deliberate difference from `EventRace`, and it rests on one falsifiable claim: a boundary Timer occurrence and its host task occurrence are recoverable from the committed program plus the two waits, because the profile admits exactly one Activity with exactly one boundary Timer, so `boundaryEventId` plus the owning scope determines the pair. An admitted state in which two live waits are ambiguous about ownership refutes the claim and forces an explicit occurrence record. The nearest such state is a repeated or Multi-Instance Activity, which this profile excludes; a later capsule that admits repetition must revisit this.
 
 Both waits belong to one live scope occurrence, and either arm's victory removes both. Monotonic activation counters are preserved on interruption, exactly as the Sub-Process Error propagation capsule established.
 
@@ -156,7 +158,7 @@ Required Lean content, all with exact hypotheses:
 - a quantified exclusivity law: one victory removes both waits and makes the sibling stimulus ineligible;
 - a quantified interruption law: the interrupting arm produces the boundary token and no normal token;
 - exact state-preservation laws for wrong and stale identities;
-- the nearest **checked non-law**: it is *not* a law that the boundary token is produced whenever the deadline is reached, because task completion committed at the same logical instant removes the Timer first under the capsule's explicit victory order. The finite witness must exhibit that state rather than assert the non-law in prose.
+- the nearest **checked non-law**: it is *not* a law that reaching logical time `1000` produces the boundary token, because an earlier committed completion stimulus has already withdrawn the Timer. Stimulus order is an explicit semantic input, so this is a statement about the core's sequential inputs and not about host simultaneity, which the preflight handles separately by failing closed. The finite witness must exhibit that state rather than assert the non-law in prose.
 
 Two schedules over one definition:
 
@@ -181,7 +183,7 @@ This preflight is a feasibility and information-preservation review, not evidenc
 
 **The load-bearing risk, named exactly.** The Event-Based Gateway capsule established that pinned Temporal Core sorts Signal **and Update** activation jobs before ordinary jobs such as Timer firing. A User Task completion Update and this boundary Timer's firing are therefore exactly the same coalescing hazard, with Update in place of Signal: if both become ready in one activation, raw job order is not a safe proxy for first physical occurrence, and this profile defines no portable winner. The proposal reuses the existing two-phase activation-tag and job-drain-barrier detector and fails closed with a typed adapter `ApplicationFailure` before calling the core with either callback. **It must not reuse the `BpmnEventRaceOrderingUnavailable` failure identity**, because that identity names the Event-Based Gateway race; a distinct typed identity keeps the two host classes separately falsifiable.
 
-Reusing that detector is the single largest reuse claim in this proposal and the reviewer should attack it directly. The detector was written for a Signal arm; the Update arm additionally carries a *reply* to a waiting caller, so an Update that loses the race must resolve to a semantic rejection rather than an infrastructure failure, and the fail-closed path must not leave an Update handler unresolved. If that cannot be preserved, the correct outcome is to route it back to profile review rather than to let the adapter invent a winner.
+That detector reuse is the single largest reuse claim in this proposal and the weakest link in it. The detector was written for a Signal arm; the Update arm additionally carries a *reply* to a waiting caller, so an Update that loses the race must resolve to a semantic rejection rather than an infrastructure failure, and the fail-closed path must not leave an Update handler unresolved. If that cannot be preserved, the correct outcome is to route it back to profile review rather than to let the adapter invent a winner.
 
 **Host capability.** `awaitBoundedUserTask` is neither passive, an ordinary token split, nor an uncoordinated host-driven wait. The exhaustive operation-kind classifier in [`host-admission.ts`](../../packages/temporal-adapter/src/host-admission.ts) adds one class, admits exactly one such operation with no token split, no other host-driven wait, and no managed event race, and continues rejecting every other composition before Workflow start. A mutation omitting the new operation from the classifier must fail that guard, and the classifier's `never` check must force the new kind to be handled.
 
@@ -203,7 +205,7 @@ If implementation discovers a public observation this profile cannot produce wit
 
 ## Product-surface consequence
 
-This capsule reaches the product command through one example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires.
+This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires.
 
 It also closes a recorded product-evidence gap rather than only adding a profile. The driver's precedence rule keeps waiting while a timer wait is open precisely so a host-resolved wait can withdraw an enabled interaction, but no current example declines an enabled interaction to let a timer win, so that arm is not product-reachable today. This profile makes both arms reachable from declared configuration alone: a plan answering the bounded task exercises Activity victory, and a plan that answers only the boundary follow-on task exercises deadline victory. Two example configurations over one definition therefore close the gap.
 
