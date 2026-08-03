@@ -8,11 +8,11 @@
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `f241234` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The semantic checkpoint is `not-reached` rather than `not-required`: this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission, so the conditional checkpoint is mandatory once a first green implementation exists. The proposal target is `not-recorded` only because a commit cannot contain its own identity; a docs-only follow-up records it before the review prompt is handed off.
+The semantic checkpoint is `not-reached` rather than `not-required`: this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission, so the conditional checkpoint is mandatory once a first green implementation exists. The immutable proposal target is `f241234`, which contains the complete proposed contract. This receipt-recording commit adds no substantive content and is therefore outside the reviewed range.
 
 ## Question
 
