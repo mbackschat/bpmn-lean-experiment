@@ -9,6 +9,10 @@ export * from "./inclusive-gateway-admission.js";
 export * from "./event-race-admission.js";
 export * from "./semantic-process-inclusive-gateway-runtime.js";
 export * from "./semantic-process-event-race-runtime.js";
+export {
+  isBoundaryTimerDefinition,
+  isBoundedTaskDefinition,
+} from "./semantic-process-bounded-task-runtime.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
 export * from "./semantic-process-graph-admission.js";

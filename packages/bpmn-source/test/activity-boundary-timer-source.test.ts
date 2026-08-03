@@ -98,3 +98,34 @@ test("keeps both routes distinguishable through distinct follow-on tasks", async
     ],
   );
 });
+
+/**
+ * The capsule designates a lexical `cancelActivity="false"` as its retained hostile control: the
+ * XSD and CMOF default the attribute to `true`, so an omitted attribute is already the interrupting
+ * form and only an explicit `false` selects the non-interrupting proposition this profile excludes.
+ * Omission and explicit `true` must therefore admit identically, and `false` must be refused.
+ */
+test("refuses a lexical non-interrupting deadline and admits the defaulted form", async () => {
+  const attached = 'attachedToRef="BoundedTask"';
+  const nonInterrupting = await compile(
+    source.replace(attached, `${attached} cancelActivity="false"`),
+  );
+  assert.notEqual(nonInterrupting.status, BpmnCompilationStatus.Accepted);
+
+  const explicitlyInterrupting = await compile(
+    source.replace(attached, `${attached} cancelActivity="true"`),
+  );
+  const omitted = await compile(source);
+  assert.equal(explicitlyInterrupting.status, BpmnCompilationStatus.Accepted);
+  assert.equal(omitted.status, BpmnCompilationStatus.Accepted);
+  if (
+    explicitlyInterrupting.status !== BpmnCompilationStatus.Accepted ||
+    omitted.status !== BpmnCompilationStatus.Accepted
+  ) {
+    return;
+  }
+  assert.deepEqual(
+    explicitlyInterrupting.semanticProcess.operations,
+    omitted.semanticProcess.operations,
+  );
+});

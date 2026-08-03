@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-03; not yet implemented.** The owner approved all four decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and both correction rounds passed the same reviewer's audit. Nothing in this document is a coverage, conformance, or CIB compatibility claim, and approval authorizes exactly the scope recorded here.
+**Owner-approved on 2026-08-03; partially implemented.** The implemented and absent scope is recorded in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md#current-claim); no Temporal lane exists. The owner approved all four decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and both correction rounds passed the same reviewer's audit. Nothing in this document is a coverage, conformance, or CIB compatibility claim, and approval authorizes exactly the scope recorded here.
 
 Implementation must pause for the conditional semantic-checkpoint review at its first green Lean and semantic-core checkpoint, because this capsule changes a wire contract, the checked graph and Semantic Process IL, a transition family, and adapter host-capability admission. This document remains a `-PROPOSAL` until the implemented contract graduates.
 
@@ -18,7 +18,6 @@ The semantic checkpoint is `not-reached` rather than `not-required`: this capsul
 
 The review returned ten required findings. Corrections ran in two same-reviewer rounds: `109c212` closed all ten and introduced four new defects, and `e37c018` closed those four. The audit column names `e37c018` as the final audited correction. One mechanical follow-up the second audit raised is applied here — the `ABTIMER-ARM-01` evidence row no longer attributes boundary registration to a handling-only clause, and the arming instant is recorded as a project interpretation because Clause 13.5.2 starts waiting when an Intermediate Event is reached and a Boundary Event never is.
 
-**Owner approval is still outstanding.** An approved proposal review does not authorize implementation; the four decisions below do.
 
 ## Question
 
@@ -89,7 +88,7 @@ The asymmetry is in the field names, not in a mode flag: this operation is not s
 
 ## Exact source profile
 
-One new immutable standards-only profile, proposed identity `standards-activity-boundary-timer-draft`. It admits exactly:
+One new immutable standards-only profile, registered identity `bpmn-2.0.2-activity-boundary-timer-draft`. It admits exactly:
 
 ```text
 None Start → Bounded User Task ──normal──→ Normal User Task → None End A
@@ -291,7 +290,7 @@ Each row therefore states the condition under which its consequence stops applyi
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 51 | Sufficient; already carries the new operation kind and checked node variant. Expires under 40. |
 | [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 179 | Sufficient. |
 | [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 215 | Cleared from 12 by splitting the former combined definition decoder into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and this program owner. |
-| [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 361 | Sufficient. |
+| [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 354 | Sufficient. |
 | [host capability classifier](../../packages/temporal-adapter/src/host-admission.ts) | 448 | Sufficient; already carries the bounded-wait class and its shared single-managed-operation check. |
 
 Three owners were at or near the review target when this inventory was first derived, so this capsule crosses three extraction boundaries rather than one. Each extraction is a separate behavior-preserving commit, never work done under a size squeeze inside a semantic change; two have landed and the adapter runner remains.

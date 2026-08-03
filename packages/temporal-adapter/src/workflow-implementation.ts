@@ -9,6 +9,7 @@ import {
   advanceScenario,
   deployProcess,
   initialState,
+  isBoundaryTimerDefinition,
   isWellFormedStimulus,
   isWellFormedEffectExecutionResult,
   projectEffectTransportMaterial,
@@ -43,6 +44,7 @@ import {
 } from "@temporalio/workflow";
 
 import {
+  bpmnBoundedActivitySchedulerUnavailableFailureType,
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
   bpmnMessageDeliveryResultQueryName,
@@ -241,6 +243,17 @@ export async function runBpmnProcessWithHostEffects(
             state.control.kind === ControlStateKind.Completed,
         );
       } else if (timers.length > 0) {
+        // A boundary deadline races the completion Update, so the generic path below is unsound for
+        // it: that path arms a bare durable timer and, on an activation carrying both callbacks,
+        // would let raw job order pick the winner. The barrier-backed scheduler this family needs
+        // does not exist yet, so fail closed under its own identity before either callback reaches
+        // the core rather than letting the host select BPMN meaning.
+        if (timers.some((timer) => isBoundaryTimerDefinition(semanticProcess, timer.id))) {
+          throw ApplicationFailure.nonRetryable(
+            "The Temporal host cannot yet schedule an interrupting Activity boundary deadline against its completion Update",
+            bpmnBoundedActivitySchedulerUnavailableFailureType,
+          );
+        }
         if (timers.length !== 1) {
           throw ApplicationFailure.nonRetryable(
             "Pre-start host admission failed to exclude multiple committed timer waits",

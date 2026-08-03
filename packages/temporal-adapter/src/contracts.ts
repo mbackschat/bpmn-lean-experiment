@@ -32,6 +32,13 @@ export const bpmnMessageDeliveryResultQueryName =
   "bpmn-message-delivery-result";
 export const bpmnEventRaceOrderingUnavailableFailureType =
   "BpmnEventRaceOrderingUnavailable";
+/**
+ * Distinct from the Event race identity on purpose: it names a different host class whose
+ * coalescing premise is licensed by a different SDK fact, so overloading one identity would make a
+ * defect in either class invisible in both.
+ */
+export const bpmnBoundedActivitySchedulerUnavailableFailureType =
+  "BpmnBoundedActivitySchedulerUnavailable";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
 export enum TemporalHostCapabilityResultKind {
