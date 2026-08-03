@@ -30,10 +30,12 @@ Fixture prevalence is a scheduling signal only. It is not evidence that this pro
 
 BPMN 2.0.2 is the sole semantic authority for this capsule.
 
-- Clause 10.5.6 and Table 10.91 own `BoundaryEvent`, its `attachedToRef`, and `cancelActivity`, whose metamodel default is `true`.
-- Clause 13.5.4 owns catching intermediate Boundary Event behavior: while the Activity is active the Event may occur, an interrupting Event ends the Activity, and the flow continues from the Boundary Event.
+- Clause 10.5 Table 10.91 owns the Boundary Event attributes, and Table 10.92 owns the legal `cancelActivity` values per trigger. The same two tables are already cited by the [boundary-error specification](BOUNDARY-ERROR-SPEC.md), which is why this capsule cites tables rather than a `10.5.x` sub-clause number.
+- Clause 13.5.3, *Intermediate Boundary Events*, owns the behavior and fixes an exact three-step order: handling first consumes the Event occurrence, then cancels the attached Activity when `cancelActivity` is set, and then follows the Sequence Flow connected to the Boundary Event.
 - Clause 10.5.5 and Tables 10.101 and 10.122 own `TimerEventDefinition.timeDuration`, already admitted at exactly `PT1S` by the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md).
 - Clause 13.3.2 owns the Activity lifecycle whose active state the deadline observes.
+
+Table 10.92 lists `true`/`false` as legal `cancelActivity` values for a Timer trigger, so excluding non-interrupting behavior below is a deliberate scope decision about a legal BPMN shape, not the rejection of an invalid one. Table 10.91 names the association `attachedTo` in prose while the CMOF and XSD name is `attachedToRef`; the profile admits the machine-readable name, which the boundary-error capsule already consumes.
 
 The ledger requirement is new: `BPMN-BOUNDARY-TIMER-01`. It must be added to [the requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) together with this capsule, and `BPMN-MECH-EVENT-01` must cite it as a closed reviewed slice only at graduation, because the [closed-slice guard](../TESTING-SPEC.md#default-verification) then requires a decided disposition.
 
@@ -100,7 +102,7 @@ Two distinct End Events are load-bearing. A shared End Event would make the inte
 
 Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, `cancelActivity="false"`, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, and a shared End Event.
 
-The source compiler manifest adds only the CMOF facts this profile consumes. `BoundaryEvent.attachedToRef`, `BoundaryEvent.cancelActivity`, and the `BoundaryEvent` class are already admitted by the [boundary-error specification](BOUNDARY-ERROR-SPEC.md); `TimerEventDefinition.timeDuration` is already admitted by the Intermediate Catch Timer specification. The proposal expects **no new CMOF fact**, and a discovered new fact is a finding to record rather than a silent manifest addition.
+The source compiler manifest needs **no new CMOF fact**. `BoundaryEvent`, `attachedToRef`, and `cancelActivity` are already present from the [boundary-error specification](BOUNDARY-ERROR-SPEC.md), and `TimerEventDefinition` with `timeDuration` from the Intermediate Catch Timer specification; all five were confirmed present in `bpmn-2.0.2-semantic-process-metamodel.json` before this proposal was written. A fact that nevertheless turns out to be missing is a finding to record, not a silent manifest addition.
 
 ## Checked graph and lowering
 
@@ -130,7 +132,9 @@ Completing the exact active task occurrence removes both the task occurrence and
 
 ### `ABTIMER-INTERRUPT-01` — deadline victory abandons the Activity
 
-Firing the exact boundary Timer occurrence at its exact deadline removes both the task occurrence and the Timer occurrence, produces one token on `boundaryTimer.output`, produces no token on `task.output`, and cancels the Activity's live runtime state while preserving monotonic activation counters.
+Firing the exact boundary Timer occurrence at its exact deadline follows Clause 13.5.3's order: consume the Timer occurrence, cancel the attached Activity occurrence and its live runtime state while preserving monotonic activation counters, then produce one token on `boundaryTimer.output`. It produces no token on `task.output`.
+
+The three steps are one atomic transition with no observable intermediate state, as in the boundary-error capsule. The normative order is recorded because it is the reviewable claim, not because the implementation may expose it.
 
 ### `ABTIMER-REFUSE-01` — losers and wrong identities preserve state exactly
 
@@ -191,6 +195,12 @@ Reusing that detector is the single largest reuse claim in this proposal and the
 **None selected.** BPMN 2.0.2 resolves this account without ambiguity, no admitted source needs a `camunda:*` extension, the Temporal mapping needs no engine observation, and no downstream blocker remains after the standard mechanism exists. Under the [CIB on-demand gate](../PLAN.md#cib-on-demand-gate) all five questions answer no, so this capsule adds no CIB profile surface and registers no relationship. The pinned corpus supplied only the scheduling signal above.
 
 If implementation discovers a public observation this profile cannot produce without an engine-specific choice, that is a stop condition and a phase-zero probe obligation, not a silent overlay.
+
+## Product-surface consequence
+
+This capsule reaches the product command through one example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires.
+
+It also closes a recorded product-evidence gap rather than only adding a profile. The driver's precedence rule keeps waiting while a timer wait is open precisely so a host-resolved wait can withdraw an enabled interaction, but no current example declines an enabled interaction to let a timer win, so that arm is not product-reachable today. This profile makes both arms reachable from declared configuration alone: a plan with a completion response exercises Activity victory, and an empty plan exercises deadline victory. Two example configurations over one definition therefore close the gap.
 
 ## Common-mode risks
 
