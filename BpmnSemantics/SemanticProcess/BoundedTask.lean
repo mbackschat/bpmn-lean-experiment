@@ -160,7 +160,7 @@ theorem interruptBoundedUserTask_none_of_no_task_wait (program : Program)
         wait.processInstanceId = timerId.processInstanceId &&
           wait.elementId.value = timerId.elementId.value &&
           wait.activation = timerId.activation) with
-  | none => simp [found]
-  | some timer => simp [found, noTasks]
+  | none => simp
+  | some _ => simp [noTasks]
 
 end BpmnSemantics.SemanticProcess

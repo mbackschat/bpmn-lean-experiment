@@ -80,6 +80,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .embeddedSubProcess _ _ => none
   | .callActivity _ _ => none
   | .boundaryErrorEvent .. => none
+  | .timerBoundaryEvent .. => none
   | .errorEndEvent .. => none
   | .exclusiveGateway _ _ _ => none
   | .inclusiveGatewayDiverging _ _ _ => none
@@ -143,6 +144,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | callActivity id calledElement =>
       simp [fireNode?] at result
   | boundaryErrorEvent id attachedToRef error outputFlowId =>
+      simp [fireNode?] at result
+  | timerBoundaryEvent id attachedToRef durationLiteral outputFlowId =>
       simp [fireNode?] at result
   | errorEndEvent id error =>
       simp [fireNode?] at result

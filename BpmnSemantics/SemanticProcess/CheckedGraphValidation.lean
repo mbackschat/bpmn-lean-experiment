@@ -68,7 +68,12 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .boundaryErrorEvent id attachedToRef _ _
   | .timerBoundaryEvent id attachedToRef _ _ =>
       some { source := attachedToRef, target := id }
-  | _ => none
+  | .noneStartEvent .. | .embeddedSubProcess .. | .callActivity ..
+  | .userTask .. | .intermediateCatchTimerEvent ..
+  | .intermediateCatchMessageEvent .. | .receiveTask .. | .serviceTask ..
+  | .parallelGateway .. | .exclusiveGateway ..
+  | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
+  | .eventBasedGateway .. | .errorEndEvent .. | .noneEndEvent .. => none
 
 private def exceptionalEdges (nodes : List CheckedNode) : List (GraphEdge NodeId) :=
   nodes.filterMap attachedBoundaryHost?

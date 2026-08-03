@@ -290,7 +290,7 @@ Each row therefore states the condition under which its consequence stops applyi
 | [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Cleared from 5 by extracting [control-flow token transitions](../../packages/semantic-core/src/semantic-process-control-flow-runtime.ts) into their own owner. Re-expires under 40. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 51 | Sufficient; already carries the new operation kind and checked node variant. Expires under 40. |
 | [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 179 | Sufficient. |
-| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 240 | Cleared from 12 by splitting the former combined definition decoder into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and this program owner. |
+| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 215 | Cleared from 12 by splitting the former combined definition decoder into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and this program owner. |
 | [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 361 | Sufficient. |
 | [host capability classifier](../../packages/temporal-adapter/src/host-admission.ts) | 448 | Sufficient; already carries the bounded-wait class and its shared single-managed-operation check. |
 

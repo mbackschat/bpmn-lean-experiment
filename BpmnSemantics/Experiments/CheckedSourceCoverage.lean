@@ -42,6 +42,7 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
         | embeddedSubProcess _ _ => simp [parseFrom, nodeResult] at result
         | callActivity _ _ => simp [parseFrom, nodeResult] at result
         | boundaryErrorEvent _ _ _ _ => simp [parseFrom, nodeResult] at result
+        | timerBoundaryEvent _ _ _ _ => simp [parseFrom, nodeResult] at result
         | errorEndEvent _ _ => simp [parseFrom, nodeResult] at result
         | userTask _ _
         | intermediateCatchTimerEvent _ _

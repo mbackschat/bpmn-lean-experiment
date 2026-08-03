@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   analyzeLeanSource,
@@ -261,4 +262,60 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
     [],
     "Lean module contracts and maintained conformance facts must remain locally identifiable",
   );
+});
+
+/**
+ * Declarations whose result is a *collection contribution* over a semantic variant, where a
+ * wildcard arm silently returns "contributes nothing" for a variant nobody considered.
+ *
+ * Every entry here decides either a public observation or a graph edge set, so an unnoticed
+ * absence is wrong rather than conservative. Three separate families were made invisible this
+ * way before these matches were required to be exhaustive: a boundary Event unreachable because
+ * its Activity edge was keyed on trigger kind, and a composite family's task and timer waits
+ * missing from every projection. The compiler is the guard; this test keeps the wildcard from
+ * coming back.
+ */
+const exhaustiveVariantInventories = Object.freeze([
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/Scenario.lean",
+    declaration: "ownedWaitDefinitions",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean",
+    declaration: "attachedBoundaryHost?",
+  }),
+]);
+
+function declarationBody(source: string, declaration: string): string {
+  const lines = source.split(/\r?\n/u);
+  const start = lines.findIndex((line) =>
+    new RegExp(
+      `^(?:private\\s+)?def\\s+${declaration.replace(/[?]/gu, "\\?")}(?=\\s|:|$)`,
+      "u",
+    ).test(line)
+  );
+  if (start < 0) {
+    throw new Error(`${declaration} is absent; the guard must be retargeted`);
+  }
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) =>
+    /^(?:@\[|\/-|private\s+)?(?:def|theorem|structure|inductive|abbrev|end)\b/u
+      .test(line)
+  );
+  return [lines[start], ...(end < 0 ? rest : rest.slice(0, end))].join("\n");
+}
+
+test("public-projection and graph-edge inventories match every variant explicitly", () => {
+  for (const { path: relativePath, declaration } of exhaustiveVariantInventories) {
+    const source = readFileSync(
+      fileURLToPath(new URL(`../${relativePath}`, import.meta.url)),
+      "utf8",
+    );
+    const body = declarationBody(source, declaration);
+    assert.equal(
+      /^\s*\|\s*_\s*(?:,\s*_\s*)*=>/mu.test(body),
+      false,
+      `${relativePath}:${declaration} must not use a wildcard arm: a new semantic variant would silently contribute nothing to a public observation or a reachability edge`,
+    );
+  }
 });

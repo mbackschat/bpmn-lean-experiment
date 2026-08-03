@@ -204,6 +204,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
       simp [nodeArityValid] at candidateArity
   | boundaryErrorEvent id attachedToRef error outputFlowId =>
       simp [nodeArityValid] at candidateArity
+  | timerBoundaryEvent id attachedToRef durationLiteral outputFlowId =>
+      simp [nodeArityValid] at candidateArity
   | errorEndEvent id error =>
       simp [nodeArityValid] at candidateArity
   | intermediateCatchTimerEvent id duration => rfl
