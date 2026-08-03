@@ -59,6 +59,13 @@ const liveMechanisms = [
     example: "boundary-error",
     mechanism: "product effect Activity returning its declared bpmnError arm",
   },
+  {
+    // Distinct from the timer entry above: there the plan is empty, so nothing competes. Here an
+    // enabled Message interaction is deliberately declined so the host-resolved timer wins and
+    // withdraws it, which is the driver's documented keep-waiting precedence branch.
+    example: "event-based-gateway-timer-wins",
+    mechanism: "host timer winning against an enabled interaction the plan declines",
+  },
 ] as const;
 
 test("runs every distinct host interaction mechanism live", async () => {

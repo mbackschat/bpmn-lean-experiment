@@ -58,13 +58,39 @@ async function compileExample(config: RunnableMvpConfig) {
   });
 }
 
-test("covers every registered semantic profile exactly once", async () => {
+// Both directions are load-bearing, and neither is the former exact-multiset equality.
+//
+// A profile with no example would silently shrink the advertised product surface, and an example
+// naming an unregistered profile would advertise a surface the engine does not have. Exactly-one
+// equality also forbade a second example per profile, which only ever bought duplicate detection
+// while blocking the deliberate variant a profile needs when one configuration cannot reach both
+// arms of a race: the Event-Based Gateway profile has two registered scenarios, and one example
+// can answer the Message or decline it, never both.
+test("gives every registered semantic profile at least one example and no example an unregistered profile", async () => {
   const configs = await Promise.all(
     (await exampleConfigPaths()).map((file) => loadRunnableMvpConfig(file)),
   );
-  const covered = configs.map((config) => config.bpmn.semanticProfile).sort();
+  const exampleCounts = new Map(
+    registeredProfiles.map((profileId) => [
+      profileId,
+      configs.filter((config) => config.bpmn.semanticProfile === profileId)
+        .length,
+    ]),
+  );
 
-  assert.deepEqual(covered, [...registeredProfiles].sort());
+  assert.deepEqual(
+    {
+      profilesWithoutExample: registeredProfiles.filter(
+        (profileId) => (exampleCounts.get(profileId) ?? 0) === 0,
+      ),
+      unregisteredProfiles: configs
+        .map((config) => config.bpmn.semanticProfile)
+        .filter((profileId) =>
+          !registeredProfiles.some((registered) => registered === profileId)
+        ),
+    },
+    { profilesWithoutExample: [], unregisteredProfiles: [] },
+  );
 });
 
 test("admits every example through both pre-start gates without connecting", async () => {

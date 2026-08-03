@@ -12,7 +12,9 @@ What is the smallest end-to-end product that lets a user run any admitted BPMN m
 
 The repository ships one command-line-driven runtime that connects to a caller-supplied Temporal address, starts a Worker for the generic BPMN Process Workflow, admits exact BPMN XML before Workflow creation, starts one semantic Process instance, answers the external interactions that instance publishes, and waits until the Process completes or fails infrastructurally.
 
-Product acceptance covers every registered semantic profile. One example configuration exists per profile, reusing the registered scenario BPMN source unchanged, and the runtime uses the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update and Signal command boundaries, and Temporal replay-safe code as the maintained evidence path. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
+Product acceptance covers every registered semantic profile. At least one example configuration exists per profile, reusing the registered scenario BPMN source unchanged, and the runtime uses the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update and Signal command boundaries, and Temporal replay-safe code as the maintained evidence path.
+
+A profile may carry more than one example when one declared plan cannot reach both arms of a race. The Event-Based Gateway profile is the first such case: a plan either answers the published Message or declines it so the timer wins, never both, so its two examples mirror the two registered scenarios rather than duplicating one. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
 
 The supported subset is explicit. A document outside its named profile returns typed pre-start admission rejection; the runtime never silently ignores an unsupported BPMN construct or Camunda/CIB extension.
 
@@ -114,9 +116,9 @@ It emits `sourceAdmissionRejected` with the source diagnostics and exits `2`; th
 
 Product evidence separates two claims and must not be reported as one.
 
-Admission and configuration are checked for every registered profile without a Temporal service: each example loads under strict validation, compiles from exact source, satisfies host capability and semantic start admission, and declares a handler for every effect its program awaits. The oracle is the registered profile set, so a profile without a product example fails that check rather than silently shrinking the advertised surface.
+Admission and configuration are checked for every registered profile without a Temporal service: each example loads under strict validation, compiles from exact source, satisfies host capability and semantic start admission, and declares a handler for every effect its program awaits. The oracle is the registered profile set and it binds in both directions: a profile without any product example fails rather than silently shrinking the advertised surface, and an example naming an unregistered profile fails rather than advertising a surface the engine does not have.
 
-Live durable execution is checked once per distinct host interaction mechanism: the completion Update, two concurrent published tasks answered in declared plan order, a host-resolved durable timer with an empty plan, Message delivery through the published subscription identity, and the effect Activity's declared success and business-error arms. Models that only reuse an evidenced mechanism are deliberately not re-run live.
+Live durable execution is checked once per distinct host interaction mechanism: the completion Update, two concurrent published tasks answered in declared plan order, a host-resolved durable timer with an empty plan, Message delivery through the published subscription identity, the effect Activity's declared success and business-error arms, and a host timer winning against an enabled interaction the plan declines. That last mechanism is distinct from the empty-plan timer because an interaction is enabled and must be withdrawn by the timer's victory, which exercises the driver's keep-waiting precedence branch. Models that only reuse an evidenced mechanism are deliberately not re-run live.
 
 Both halves compose the already-evidenced compiler, program, semantic core, Workflow, and client. Neither is an independent semantic evidence lane, and neither supports a BPMN conformance or broad CIB compatibility claim.
 
