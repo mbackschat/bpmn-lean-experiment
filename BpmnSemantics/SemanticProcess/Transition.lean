@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.CallActivity
@@ -127,6 +128,12 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
       (transition :
         EventRaceArmingStep before origin input message timer after) :
       OperationStep (.awaitEventRace id origin input message timer) before after
+  | awaitBoundedUserTask (id origin input task boundaryTimer)
+      (before after : RuntimeState)
+      (transition :
+        BoundedTaskArmingStep before input task boundaryTimer after) :
+      OperationStep
+        (.awaitBoundedUserTask id origin input task boundaryTimer) before after
   | awaitEffect (id origin input output effect route)
       (before after : RuntimeState)
       (transition :
@@ -195,6 +202,8 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
       awaitMessageState? state input output message
   | .awaitEventRace _ origin input message timer =>
       awaitEventRaceState? state origin input message timer
+  | .awaitBoundedUserTask _ _ input task boundaryTimer =>
+      armBoundedUserTaskState? state input task boundaryTimer
   | .awaitEffect _ _ input output effect route =>
       awaitEffectState? state input output effect route
   | .duplicate _ _ input outputs => duplicateState? state input outputs
@@ -228,6 +237,9 @@ theorem fire_sound (operation : SemanticOperation)
     | exact OperationStep.awaitEventRace _ _ _ _ _ before after
         (armEventRaceState_sound before after _ _ _ _
           (by simpa [fire?, awaitEventRaceState?] using result))
+    | exact OperationStep.awaitBoundedUserTask _ _ _ _ _ before after
+        (armBoundedUserTaskState_sound before after _ _ _
+          (by simpa [fire?] using result))
     | exact .awaitEffect _ _ _ _ _ _ before after result
     | exact .duplicate _ _ _ _ before after result
     | exact .synchronize _ _ _ _ before after result

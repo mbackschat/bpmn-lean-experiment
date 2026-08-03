@@ -99,6 +99,9 @@ inductive CheckedNode where
   | callActivity (id : NodeId) (calledProcessId : ProcessId)
   | boundaryErrorEvent (id attachedToRef : NodeId)
       (error : ErrorReference) (outputFlowId : SequenceFlowId)
+  /-- `cancelActivity` is absent because only the interrupting form is admitted: the XSD and CMOF default it to `true`, so an omitted attribute already means interrupting and a lexical `false` is refused at source admission. `durationLiteral` keeps the exact source lexeme so this side normalizes it to milliseconds independently. -/
+  | timerBoundaryEvent (id attachedToRef : NodeId)
+      (durationLiteral : String) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
@@ -131,6 +134,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .embeddedSubProcess id _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
+  | .timerBoundaryEvent id _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
@@ -224,6 +228,20 @@ structure EventRaceTimerArm where
   elementId : NodeId
   durationMs : Nat
   output : ControlPlaceId
+  deriving Repr, DecidableEq
+
+structure BoundedTaskArm where
+  id : TaskDefinitionId
+  name : Option String
+  output : ControlPlaceId
+  deriving Repr, DecidableEq
+
+/-- `origin` carries the boundary Sequence Flow's provenance, not the Timer Event's: control places and BPMN elements are separate namespaces, and `elementId` already publishes the Event. A boundary-attached Timer is never lowered as a standalone `awaitTimer`. -/
+structure BoundaryTimerArm where
+  elementId : NodeId
+  durationMs : Nat
+  output : ControlPlaceId
+  origin : BpmnSequenceFlowOrigin
   deriving Repr, DecidableEq
 
 structure EffectDefinition where
@@ -327,6 +345,12 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (message : EventRaceMessageArm)
       (timer : EventRaceTimerArm)
+  | awaitBoundedUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (task : BoundedTaskArm)
+      (boundaryTimer : BoundaryTimerArm)
   | awaitEffect
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -390,6 +414,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _
   | .awaitEventRace id _ _ _ _
+  | .awaitBoundedUserTask id _ _ _ _
   | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _

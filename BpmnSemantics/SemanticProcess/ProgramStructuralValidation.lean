@@ -102,6 +102,25 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         placeExists places input &&
         placeExists places message.output &&
         placeExists places timer.output
+  | .awaitBoundedUserTask id origin input task boundaryTimer =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty task.id.value &&
+        nonempty boundaryTimer.elementId.value &&
+        nonempty boundaryTimer.origin.elementId.value &&
+        decide (origin.elementId.value = task.id.value) &&
+        boundaryTimer.durationMs = 1000 &&
+        decide (
+          task.id.value ≠ boundaryTimer.elementId.value ∧
+          task.output ≠ boundaryTimer.output ∧
+          input ≠ task.output ∧ input ≠ boundaryTimer.output) &&
+        -- The boundary Sequence Flow carries a token, unlike an Event-Based Gateway's configuration
+        -- Flows, so this requires the opposite: the deadline output must be exactly that Flow's place.
+        places.any (fun place =>
+          decide (place.id = boundaryTimer.output ∧
+            place.origin = boundaryTimer.origin)) &&
+        placeExists places input &&
+        placeExists places task.output
   | .awaitEffect id origin input output effect bpmnErrorRoute =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

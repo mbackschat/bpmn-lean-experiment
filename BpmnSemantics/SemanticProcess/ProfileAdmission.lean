@@ -13,6 +13,7 @@ private structure ShapeCardinalities where
   embeddedScopes : Nat := 0
   callActivities : Nat := 0
   boundaryErrors : Nat := 0
+  boundaryTimers : Nat := 0
   scopeEntries : Nat := 0
   processInvokes : Nat := 0
   processReturns : Nat := 0
@@ -30,6 +31,7 @@ private structure ShapeCardinalities where
   selectMany : Nat := 0
   synchronizeSelected : Nat := 0
   eventRaces : Nat := 0
+  boundedUserTasks : Nat := 0
   errorEnds : Nat := 0
   errorThrows : Nat := 0
   ends : Nat := 0
@@ -47,6 +49,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with callActivities := counts.callActivities + 1 }
     | .boundaryErrorEvent .. =>
         { counts with boundaryErrors := counts.boundaryErrors + 1 }
+    | .timerBoundaryEvent .. =>
+        { counts with boundaryTimers := counts.boundaryTimers + 1 }
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .intermediateCatchTimerEvent .. =>
         { counts with timers := counts.timers + 1 }
@@ -83,6 +87,8 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .awaitTimer .. => { counts with timers := counts.timers + 1 }
     | .awaitMessage .. => { counts with messages := counts.messages + 1 }
     | .awaitEventRace .. => { counts with eventRaces := counts.eventRaces + 1 }
+    | .awaitBoundedUserTask .. =>
+        { counts with boundedUserTasks := counts.boundedUserTasks + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
     | .duplicate .. => { counts with duplicates := counts.duplicates + 1 }
     | .synchronize .. =>

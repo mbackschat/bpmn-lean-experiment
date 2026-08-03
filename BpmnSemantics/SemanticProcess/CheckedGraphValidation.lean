@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.GraphValidation
 
 /-! # Checked BPMN graph validation
 
-This module owns topology-independent reachability, co-reachability, and cycle rejection for the production checked graph. `normalizedFlowSource` remains scoped to the inline Service Task boundary route, where the boundary event is source metadata rather than a checked runtime node. Explicit boundary Error nodes contribute a separate parent-local exceptional edge from their attached Sub-Process.
+This module owns topology-independent reachability, co-reachability, and cycle rejection for the production checked graph. `normalizedFlowSource` remains scoped to the inline Service Task boundary route, where the boundary event is source metadata rather than a checked runtime node. Explicit boundary nodes contribute a separate parent-local exceptional edge from the Activity they attach to, keyed on attachment rather than on trigger kind.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -12,6 +12,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .embeddedSubProcess id _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
+  | .timerBoundaryEvent id _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
@@ -62,11 +63,15 @@ private def checkedEdges (source : CheckedProcess)
     { source := normalizedFlowSource source.nodes flow.sourceId
       target := flow.targetId }
 
+/-- Keyed on attachment, not on trigger kind: every boundary Event is reachable only through the Activity it is attached to, so a family added here without its edge would leave its own node unreachable. -/
+private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
+  | .boundaryErrorEvent id attachedToRef _ _
+  | .timerBoundaryEvent id attachedToRef _ _ =>
+      some { source := attachedToRef, target := id }
+  | _ => none
+
 private def exceptionalEdges (nodes : List CheckedNode) : List (GraphEdge NodeId) :=
-  nodes.filterMap fun
-    | .boundaryErrorEvent id attachedToRef _ _ =>
-        some { source := attachedToRef, target := id }
-    | _ => none
+  nodes.filterMap attachedBoundaryHost?
 
 private def checkedStartIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun

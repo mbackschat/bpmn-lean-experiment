@@ -185,6 +185,19 @@ private def sortInclusiveCandidates :
   | candidate :: rest =>
       insertInclusiveCandidate candidate (sortInclusiveCandidates rest)
 
+/-- The interrupting Timer Boundary Event attached to this Activity, when the profile admitted one. -/
+private def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
+    Option (NodeId × String × SequenceFlowId) :=
+  source.nodes.findSome? fun
+    | .timerBoundaryEvent id attachedToRef durationLiteral outputFlowId =>
+        if attachedToRef = activityId then
+          some (id, durationLiteral, outputFlowId)
+        else none
+    | _ => none
+
+private def normalizeTimerDuration (durationLiteral : String) : Nat :=
+  if durationLiteral = "PT1S" then 1000 else 0
+
 private def lowerNode (source : CheckedProcess) :
     CheckedNode → Option (SemanticOperation × DefinitionScopeId)
   | .noneStartEvent id =>
@@ -222,14 +235,32 @@ private def lowerNode (source : CheckedProcess) :
           (childEntryPlace source calledRoot.id)
           (returnProcessOperationId id), scopeId)
   | .boundaryErrorEvent .. => none
+  -- The deadline has no operation of its own: it belongs to the Activity it is attached to, so no
+  -- program can express the two waits as unrelated siblings.
+  | .timerBoundaryEvent .. => none
   | .userTask id name =>
-      checkedNodeScopeId? source id |>.map fun scopeId =>
-      (.awaitUserTask
-        (nodeOperationId id)
-        { elementId := id }
-        (firstPlace (incomingPlaces source id))
-        (firstPlace (outgoingPlaces source id))
-        { id := ⟨id.value⟩, name }, scopeId)
+      match timerBoundaryFor source id with
+      | some (timerId, durationLiteral, outputFlowId) =>
+          checkedNodeScopeId? source id |>.map fun scopeId =>
+          (.awaitBoundedUserTask
+            (nodeOperationId id)
+            { elementId := id }
+            (firstPlace (incomingPlaces source id))
+            { id := ⟨id.value⟩
+              name
+              output := firstPlace (outgoingPlaces source id) }
+            { elementId := timerId
+              durationMs := normalizeTimerDuration durationLiteral
+              output := firstPlace (outgoingPlaces source timerId)
+              origin := { elementId := outputFlowId } }, scopeId)
+      | none =>
+          checkedNodeScopeId? source id |>.map fun scopeId =>
+          (.awaitUserTask
+            (nodeOperationId id)
+            { elementId := id }
+            (firstPlace (incomingPlaces source id))
+            (firstPlace (outgoingPlaces source id))
+            { id := ⟨id.value⟩, name }, scopeId)
   | .intermediateCatchTimerEvent id durationLiteral =>
       if configuredByEventGateway source id then none
       else

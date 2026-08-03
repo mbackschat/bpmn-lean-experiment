@@ -199,6 +199,10 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       errorReferenceValid error &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
+  | .timerBoundaryEvent id _ durationLiteral outputFlowId =>
+      durationLiteral = "PT1S" &&
+        incomingCount flows id = 0 && outgoingCount flows id = 1 &&
+        flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
   | .userTask id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .intermediateCatchTimerEvent id durationLiteral =>
