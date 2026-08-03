@@ -1278,6 +1278,9 @@
           "$ref": "#/$defs/awaitEventRace"
         },
         {
+          "$ref": "#/$defs/awaitBoundedUserTask"
+        },
+        {
           "$ref": "#/$defs/awaitEffect"
         },
         {
@@ -1305,6 +1308,89 @@
           "$ref": "#/$defs/completeScope"
         }
       ]
+    },
+    "boundedTaskArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "name",
+        "output"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "name": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "boundaryTimerArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "durationMs",
+        "output",
+        "origin"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "durationMs": {
+          "const": 1000
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        }
+      }
+    },
+    "awaitBoundedUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "task",
+        "boundaryTimer"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitBoundedUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/boundedTaskArm"
+        },
+        "boundaryTimer": {
+          "$ref": "#/$defs/boundaryTimerArm"
+        }
+      }
     }
   }
 }

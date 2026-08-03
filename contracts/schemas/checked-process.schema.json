@@ -408,6 +408,34 @@
           "required": [
             "kind",
             "id",
+            "attachedToRef",
+            "durationLiteral",
+            "outputFlowId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "timerBoundaryEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "attachedToRef": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "durationLiteral": {
+              "const": "PT1S"
+            },
+            "outputFlowId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "name"
           ],
           "properties": {
