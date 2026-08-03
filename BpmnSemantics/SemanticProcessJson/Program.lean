@@ -84,6 +84,23 @@ private def decodeEventRaceTimerArm (json : Json) :
       durationMs := ← decodeSafeNat (← field json "durationMs")
       output := ⟨← stringField json "output"⟩ }
 
+private def decodeBoundedTaskArm (json : Json) :
+    Except String BoundedTaskArm := do
+  requireObjectShape json ["elementId", "name", "output"]
+  pure
+    { id := ⟨← stringField json "elementId"⟩
+      name := ← decodeOptionalString (← field json "name")
+      output := ⟨← stringField json "output"⟩ }
+
+private def decodeBoundaryTimerArm (json : Json) :
+    Except String BoundaryTimerArm := do
+  requireObjectShape json ["durationMs", "elementId", "origin", "output"]
+  pure
+    { elementId := ⟨← stringField json "elementId"⟩
+      durationMs := ← decodeSafeNat (← field json "durationMs")
+      output := ⟨← stringField json "output"⟩
+      origin := ← decodeSequenceFlowOrigin (← field json "origin") }
+
 private def decodeEffectDefinition (json : Json) :
     Except String EffectDefinition := do
   requireObjectShape json
@@ -264,6 +281,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           (← decodeEventRaceMessageArm (← field json "message"))
           (← decodeEventRaceTimerArm (← field json "timer")))
+  | "awaitBoundedUserTask" =>
+      requireObjectShape json
+        ["boundaryTimer", "id", "input", "kind", "origin", "task"]
+      pure
+        (.awaitBoundedUserTask
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          (← decodeBoundedTaskArm (← field json "task"))
+          (← decodeBoundaryTimerArm (← field json "boundaryTimer")))
   | "awaitEffect" =>
       requireObjectShape json
         ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",

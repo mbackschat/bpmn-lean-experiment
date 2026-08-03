@@ -1,3 +1,4 @@
+import BpmnSemantics.ActivityBoundaryTimerConformance
 import BpmnSemantics.Conformance
 import BpmnSemantics.BoundaryErrorConformance
 import BpmnSemantics.CallActivityConformance

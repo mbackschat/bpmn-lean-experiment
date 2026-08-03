@@ -78,6 +78,15 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "attachedToRef"⟩
           (← decodeErrorReference (← field json "error"))
           ⟨← stringField json "outputFlowId"⟩)
+  | "timerBoundaryEvent" =>
+      requireObjectShape json
+        ["attachedToRef", "durationLiteral", "id", "kind", "outputFlowId"]
+      pure
+        (.timerBoundaryEvent
+          ⟨← stringField json "id"⟩
+          ⟨← stringField json "attachedToRef"⟩
+          (← stringField json "durationLiteral")
+          ⟨← stringField json "outputFlowId"⟩)
   | "userTask" =>
       requireObjectShape json ["id", "kind", "name"]
       pure

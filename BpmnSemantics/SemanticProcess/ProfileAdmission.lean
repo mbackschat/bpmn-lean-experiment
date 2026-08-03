@@ -157,6 +157,9 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
       "bpmn-2.0.2-called-process-call-activity-draft" then
     some (2,
       { starts := 2, callActivities := 1, userTasks := 2, ends := 2 })
+  else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
+    some (1,
+      { starts := 1, boundaryTimers := 1, userTasks := 3, ends := 2 })
   else none
 
 private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
@@ -214,6 +217,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (2, withScopeCompletions 1
       { initiates := 1, processInvokes := 1, processReturns := 1,
         userTasks := 2, ends := 2 })
+  else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, boundedUserTasks := 1, userTasks := 2, ends := 2 })
   else none
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/

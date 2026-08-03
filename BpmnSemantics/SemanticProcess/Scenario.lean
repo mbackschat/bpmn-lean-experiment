@@ -27,29 +27,47 @@ private def commandId : Stimulus → SemanticId
   | .fireTimer id _ _
   | .completeEffect id _ _ => id
 
+/-- The external waits one operation can own, so every public projection reads one inventory. -/
+private structure OwnedWaitDefinitions where
+  tasks : List UserTaskDefinition := []
+  messages : List MessageDefinition := []
+  timers : List TimerDefinition := []
+  effects : List EffectDefinition := []
+
+/-- Deliberately exhaustive with no wildcard: a new operation variant must decide here which public waits it exposes. A catch-all made a composite family's waits silently invisible to every observation instead of failing to compile. -/
+private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
+  | .awaitUserTask _ _ _ _ task => { tasks := [task] }
+  | .awaitTimer _ _ _ _ timer => { timers := [timer] }
+  | .awaitMessage _ _ _ _ message => { messages := [message] }
+  | .awaitEffect _ _ _ _ effect _ => { effects := [effect] }
+  | .awaitEventRace _ _ _ message timer =>
+      { messages :=
+          [{ elementId := message.elementId, channel := message.channel }]
+        timers :=
+          [{ elementId := timer.elementId, durationMs := timer.durationMs }] }
+  | .awaitBoundedUserTask _ _ _ task boundaryTimer =>
+      { tasks := [{ id := task.id, name := task.name }]
+        timers :=
+          [{ elementId := boundaryTimer.elementId
+             durationMs := boundaryTimer.durationMs }] }
+  | .initiate .. | .enterScope .. | .invokeProcess .. | .returnProcess ..
+  | .duplicate .. | .synchronize .. | .choose .. | .selectMany ..
+  | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
+  | .completeScope .. => {}
+
 private def taskDefinitions (program : Program) : List UserTaskDefinition :=
-  program.operations.filterMap fun
-    | .awaitUserTask _ _ _ _ task => some task
-    | _ => none
+  program.operations.flatMap fun operation => (ownedWaitDefinitions operation).tasks
 
 private def timerDefinitions (program : Program) : List TimerDefinition :=
-  program.operations.filterMap fun
-    | .awaitTimer _ _ _ _ timer => some timer
-    | .awaitEventRace _ _ _ _ timer =>
-        some { elementId := timer.elementId, durationMs := timer.durationMs }
-    | _ => none
+  program.operations.flatMap fun operation => (ownedWaitDefinitions operation).timers
 
 private def messageDefinitions (program : Program) : List MessageDefinition :=
-  program.operations.filterMap fun
-    | .awaitMessage _ _ _ _ message => some message
-    | .awaitEventRace _ _ _ message _ =>
-        some { elementId := message.elementId, channel := message.channel }
-    | _ => none
+  program.operations.flatMap fun operation =>
+    (ownedWaitDefinitions operation).messages
 
 private def effectDefinitions (program : Program) : List EffectDefinition :=
-  program.operations.filterMap fun
-    | .awaitEffect _ _ _ _ effect _ => some effect
-    | _ => none
+  program.operations.flatMap fun operation =>
+    (ownedWaitDefinitions operation).effects
 
 def timerWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
   (state.timerWaits.filter fun wait =>
