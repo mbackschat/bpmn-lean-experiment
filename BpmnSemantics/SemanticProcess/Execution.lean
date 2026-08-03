@@ -1,65 +1,13 @@
-import BpmnSemantics.SemanticProcess.Message
-import BpmnSemantics.SemanticProcess.EffectCompletion
+import BpmnSemantics.SemanticProcess.WaitCompletion
 
 /-! # Semantic Process external execution
 
-This module owns external command admission, explicit operation choice, bounded internal closure, the pure `applyStimulus` boundary, and reusable full-occurrence-identity refusal laws. It does not own scenario projection or capsule fixtures.
+This module owns external command admission, explicit operation choice, bounded internal closure, the pure `applyStimulus` boundary, and reusable full-occurrence-identity refusal laws. It does not own external wait completion, scenario projection, or capsule fixtures.
 -/
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-def perIncomingJoinReady (state : RuntimeState)
-    (inputs : List ControlPlaceId) : Bool :=
-  inputs.all (hasToken state)
-
-def countBasedJoinReady (state : RuntimeState)
-    (inputs : List ControlPlaceId) : Bool :=
-  inputs.foldl (fun count input => count + tokenMultiplicity state input) 0 ≥
-    inputs.length
-
-def completeUserTask (state : RuntimeState) (processInstanceId : SemanticId)
-    (taskId : TaskDefinitionId) (activation : Nat) : Option RuntimeState :=
-  match state.waits.find? fun wait =>
-      decide (
-        wait.processInstanceId = processInstanceId &&
-          wait.task.id = taskId &&
-          wait.activation = activation) with
-  | none => none
-  | some wait =>
-      some
-        { state with
-          waits := state.waits.erase wait
-          tokens := addToken state.tokens wait.output wait.owner }
-
-def timerDefinitionMatches (program : Program) (wait : TimerWait) : Bool :=
-  program.operations.any fun
-    | .awaitTimer _ _ _ _ timer =>
-        decide (timer.elementId = wait.elementId)
-    | _ => false
-
-def fireTimer (program : Program) (state : RuntimeState)
-    (timerId : TimerOccurrenceId)
-    (logicalTimeMs : Nat) : Option RuntimeState :=
-  match state.timerWaits.find? fun wait =>
-      decide (
-        wait.processInstanceId = timerId.processInstanceId &&
-          wait.elementId.value = timerId.elementId.value &&
-          wait.activation = timerId.activation) with
-  | none => none
-  | some wait =>
-      if state.eventRaces.any (eventRaceHasTimer · wait) then
-        eventRaceTimerWinner? program state timerId logicalTimeMs
-      else if logicalTimeMs = wait.deadlineMs &&
-          timerDefinitionMatches program wait then
-          some
-            { state with
-              timerWaits := state.timerWaits.erase wait
-              tokens := addToken state.tokens wait.output wait.owner
-              logicalTimeMs := wait.deadlineMs }
-        else
-          none
 
 def runChoices (program : Program) : RuntimeState → List OperationId →
     Option RuntimeState

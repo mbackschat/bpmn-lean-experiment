@@ -12,6 +12,7 @@ import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.ErrorPropagation
 import BpmnSemantics.SemanticProcess.Message
 import BpmnSemantics.SemanticProcess.EffectCompletion
+import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcess.Fixtures

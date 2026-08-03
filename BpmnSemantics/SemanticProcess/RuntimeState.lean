@@ -213,6 +213,16 @@ def tokenMultiplicity (state : RuntimeState) (place : ControlPlaceId) : Nat :=
 def hasToken (state : RuntimeState) (place : ControlPlaceId) : Bool :=
   tokenMultiplicity state place > 0
 
+def perIncomingJoinReady (state : RuntimeState)
+    (inputs : List ControlPlaceId) : Bool :=
+  inputs.all (hasToken state)
+
+/-- Counts total multiplicity across the inputs, so it admits a join whose tokens are stacked on fewer places than `perIncomingJoinReady` requires. The two disagree exactly on that unbalanced case. -/
+def countBasedJoinReady (state : RuntimeState)
+    (inputs : List ControlPlaceId) : Bool :=
+  inputs.foldl (fun count input => count + tokenMultiplicity state input) 0 ≥
+    inputs.length
+
 def tokenOwners (state : RuntimeState) (place : ControlPlaceId) :
     List ScopeOccurrenceId :=
   (state.tokens.filter fun token => decide (token.placeId = place)).map (·.owner)
