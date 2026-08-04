@@ -130,14 +130,14 @@ def completedObservation : StateObservation :=
     enabledInteractions := [] }
 
 theorem exact_definition_binding_is_valid :
-    definitionBindingValid checkedProcess program = true := by decide
+    definitionBindingValid checkedProcess program = true := by decide +kernel
 
 theorem start_closure_is_exactly_three_steps :
     calledWaiting.outcome = .committed ∧
       calledWaiting.internalStepBoundExceeded = false ∧
       (applyStimulus 2 program initialState start).internalStepBoundExceeded = true ∧
       observeStableState program calledWaiting.state = some calledWaitingObservation ∧
-      enabledInternalOperationCount program calledWaiting.state = 0 := by decide
+      enabledInternalOperationCount program calledWaiting.state = 0 := by decide +kernel
 
 theorem called_completion_closure_is_exactly_three_steps :
     callerWaiting.outcome = .committed ∧
@@ -145,22 +145,22 @@ theorem called_completion_closure_is_exactly_three_steps :
       (applyStimulus 2 program calledWaiting.state completeCalled).internalStepBoundExceeded =
         true ∧
       observeStableState program callerWaiting.state = some callerWaitingObservation ∧
-      enabledInternalOperationCount program callerWaiting.state = 0 := by decide
+      enabledInternalOperationCount program callerWaiting.state = 0 := by decide +kernel
 
 theorem caller_completion_closure_is_exactly_two_steps :
     completed.outcome = .committed ∧
       completed.internalStepBoundExceeded = false ∧
       (applyStimulus 1 program callerWaiting.state completeCaller).internalStepBoundExceeded =
         true ∧
-      observeStableState program completed.state = some completedObservation := by decide
+      observeStableState program completed.state = some completedObservation := by decide +kernel
 
 theorem called_wait_uses_derived_identity_and_caller_observation_identity :
     calledWaiting.state.waits.map (·.processInstanceId) = [calledInstanceId] ∧
       calledInstanceId ≠ callerInstanceId ∧
-      calledWaitingObservation.instanceId = callerInstanceId := by decide
+      calledWaitingObservation.instanceId = callerInstanceId := by decide +kernel
 
 theorem delimiter_and_non_ascii_identity_uses_utf8_lengths :
-    calledInstanceId.value = "call:18:Caller:Instance:é:6:B_Call:1" := by decide
+    calledInstanceId.value = "call:18:Caller:Instance:é:6:B_Call:1" := by decide +kernel
 
 theorem nonempty_start_data_is_rejected_with_exact_preservation :
     applyStimulus scenarioClosureLimit program initialState
@@ -169,7 +169,7 @@ theorem nonempty_start_data_is_rejected_with_exact_preservation :
       { outcome := .rejected
         state := initialState
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide
+        ambiguousInternalChoice := false } := by decide +kernel
 
 private def nonCallProfileInvokeReuseProgram : Program :=
   { program with
@@ -184,7 +184,7 @@ theorem non_call_profile_reusing_invoke_does_not_inherit_empty_start_data :
       (.startProcess ⟨"non-call-start"⟩ ⟨callerProcessId.value⟩
         callerInstanceId initialVariables)
     result.outcome = .committed ∧
-      result.state.variables.process.bindings = initialVariables := by decide
+      result.state.variables.process.bindings = initialVariables := by decide +kernel
 
 theorem nonempty_called_completion_data_is_rejected_with_exact_preservation :
     applyStimulus scenarioClosureLimit program calledWaiting.state
@@ -193,13 +193,13 @@ theorem nonempty_called_completion_data_is_rejected_with_exact_preservation :
       { outcome := .rejected
         state := calledWaiting.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide
+        ambiguousInternalChoice := false } := by decide +kernel
 
 theorem caller_identity_cannot_complete_called_task :
     (applyStimulus scenarioClosureLimit program calledWaiting.state
       (.completeUserTaskInstance ⟨"wrong-instance"⟩
         { calledTaskId with processInstanceId := callerInstanceId } [])).outcome =
-      .rejected := by decide
+      .rejected := by decide +kernel
 
 private def returnOperation : SemanticOperation :=
   .returnProcess ⟨"operation:return-process:B_Call"⟩
@@ -219,7 +219,7 @@ private def duplicateIdentityRecordState : RuntimeState :=
 
 theorem duplicate_identity_record_with_one_otherwise_valid_disables_return :
     calledProcessAssociationsValid duplicateIdentityRecordState = false ∧
-      fire? returnOperation duplicateIdentityRecordState = none := by decide
+      fire? returnOperation duplicateIdentityRecordState = none := by decide +kernel
 
 private def duplicateCalledRootState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
@@ -232,7 +232,7 @@ private def duplicateCalledRootState : RuntimeState :=
 
 theorem duplicate_called_root_with_one_otherwise_valid_disables_return :
     calledProcessAssociationsValid duplicateCalledRootState = false ∧
-      fire? returnOperation duplicateCalledRootState = none := by decide
+      fire? returnOperation duplicateCalledRootState = none := by decide +kernel
 
 private def zeroActivationRecordState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
@@ -251,7 +251,7 @@ private def zeroActivationRecordState : RuntimeState :=
 
 theorem zero_activation_record_is_nonresumable_and_has_no_return :
     calledProcessAssociationsValid zeroActivationRecordState = false ∧
-      fire? returnOperation zeroActivationRecordState = none := by decide
+      fire? returnOperation zeroActivationRecordState = none := by decide +kernel
 
 private def aliasedCalledScopeState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
@@ -270,7 +270,7 @@ private def aliasedCalledScopeState : RuntimeState :=
 
 theorem called_scope_alias_is_nonresumable_and_has_no_return :
     calledProcessAssociationsValid aliasedCalledScopeState = false ∧
-      fire? returnOperation aliasedCalledScopeState = none := by decide
+      fire? returnOperation aliasedCalledScopeState = none := by decide +kernel
 
 private def alternateHostingRootId : ScopeOccurrenceId :=
   { processInstanceId := callerInstanceId
@@ -291,7 +291,7 @@ private def childCallerState : RuntimeState :=
 
 theorem child_caller_with_one_hosting_root_is_nonresumable :
     calledProcessAssociationsValid childCallerState = false ∧
-      fire? returnOperation childCallerState = none := by decide
+      fire? returnOperation childCallerState = none := by decide +kernel
 
 private def duplicateHostingRootState : RuntimeState :=
   { calledWaiting.state with
@@ -301,7 +301,7 @@ private def duplicateHostingRootState : RuntimeState :=
 
 theorem duplicate_hosting_root_with_one_valid_original_is_nonresumable :
     calledProcessAssociationsValid duplicateHostingRootState = false ∧
-      fire? returnOperation duplicateHostingRootState = none := by decide
+      fire? returnOperation duplicateHostingRootState = none := by decide +kernel
 
 private def duplicateInvokeProgram : Program :=
   match program.operations.find? fun
@@ -311,7 +311,7 @@ private def duplicateInvokeProgram : Program :=
   | none => program
 
 theorem duplicate_identity_definition_with_one_otherwise_valid_is_rejected :
-    callOperationsPaired duplicateInvokeProgram = false := by decide
+    callOperationsPaired duplicateInvokeProgram = false := by decide +kernel
 
 private def duplicateCalledRootProgram : Program :=
   { program with
@@ -321,7 +321,7 @@ private def duplicateCalledRootProgram : Program :=
         originElementId := ⟨calledProcessId.value⟩ } :: program.definitionScopes }
 
 theorem duplicate_called_process_identity_with_one_valid_root_is_rejected :
-    callOperationsPaired duplicateCalledRootProgram = false := by decide
+    callOperationsPaired duplicateCalledRootProgram = false := by decide +kernel
 
 private def wrongCalledEntryProgram : Program :=
   { program with
@@ -332,7 +332,7 @@ private def wrongCalledEntryProgram : Program :=
       | operation => operation }
 
 theorem target_root_entry_permutation_fails_binding :
-    definitionBindingValid checkedProcess wrongCalledEntryProgram = false := by decide
+    definitionBindingValid checkedProcess wrongCalledEntryProgram = false := by decide +kernel
 
 private def wrongCalledRootProgram : Program :=
   { program with
@@ -345,7 +345,7 @@ private def wrongCalledRootProgram : Program :=
 
 theorem wrong_target_root_is_rejected :
     callOperationsPaired wrongCalledRootProgram = false ∧
-      definitionBindingValid checkedProcess wrongCalledRootProgram = false := by decide
+      definitionBindingValid checkedProcess wrongCalledRootProgram = false := by decide +kernel
 
 private def wrongReturnOwnerProgram : Program :=
   { program with
@@ -356,7 +356,7 @@ private def wrongReturnOwnerProgram : Program :=
 
 theorem wrong_return_owner_is_rejected :
     callOperationsPaired wrongReturnOwnerProgram = false ∧
-      definitionBindingValid checkedProcess wrongReturnOwnerProgram = false := by decide
+      definitionBindingValid checkedProcess wrongReturnOwnerProgram = false := by decide +kernel
 
 private def wrongReturnPairProgram : Program :=
   { program with
@@ -367,27 +367,27 @@ private def wrongReturnPairProgram : Program :=
       | operation => operation }
 
 theorem wrong_return_pair_is_rejected :
-    callOperationsPaired wrongReturnPairProgram = false := by decide
+    callOperationsPaired wrongReturnPairProgram = false := by decide +kernel
 
 theorem stale_called_completion_preserves_exact_state :
     applyStimulus scenarioClosureLimit program callerWaiting.state completeCalled =
       { outcome := .rejected
         state := callerWaiting.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide
+        ambiguousInternalChoice := false } := by decide +kernel
 
 private def orphanCalledRootState : RuntimeState :=
   { calledWaiting.state with calledProcessOccurrences := [] }
 
 theorem orphan_called_root_is_nonresumable :
     calledProcessAssociationsValid orphanCalledRootState = false ∧
-      stableStateResumable orphanCalledRootState = false := by decide
+      stableStateResumable orphanCalledRootState = false := by decide +kernel
 
 theorem return_refuses_nonquiescent_called_scope :
     returnProcessState? calledWaiting.state
         ⟨"operation:return-process:B_Call"⟩ { elementId := ⟨"B_Call"⟩ }
         calledProcessId calledScopeId ⟨"place:F2_CallCallerTask"⟩ = none ∧
       calledWaiting.state.calledProcessOccurrences.all fun record =>
-        scopeQuiescent calledWaiting.state record.calledRoot = false := by decide
+        scopeQuiescent calledWaiting.state record.calledRoot = false := by decide +kernel
 
 end BpmnSemantics.CallActivityConformance

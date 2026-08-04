@@ -27,36 +27,36 @@ theorem string_equals_expression_parses_exactly :
 
 theorem leading_whitespace_is_rejected :
     parseSimpleBooleanExpression " isPresent(route)" = none := by
-  decide
+  decide +kernel
 
 theorem missing_binding_is_not_present :
     evaluateSimpleBooleanExpression (.isPresent "route") [] =
       some false := by
-  decide
+  decide +kernel
 
 theorem null_binding_is_null :
     evaluateSimpleBooleanExpression (.isNull "route")
       [{ name := "route", value := .null }] = some true := by
-  decide
+  decide +kernel
 
 theorem matching_string_binding_is_equal :
     evaluateSimpleBooleanExpression (.stringEquals "route" "review")
       [{ name := "route", value := .string "review" }] = some true := by
-  decide
+  decide +kernel
 
 theorem first_true_candidate_selects_its_output :
     selectConditionalOutput
       [ candidate "Flow_First" (.literal false)
       , candidate "Flow_Second" (.literal true) ]
       defaultOutput [] = some secondOutput := by
-  decide
+  decide +kernel
 
 theorem all_false_candidates_select_the_default :
     selectConditionalOutput
       [ candidate "Flow_First" (.literal false)
       , candidate "Flow_Second" (.literal false) ]
       defaultOutput [] = some defaultOutput := by
-  decide
+  decide +kernel
 
 /-- Once the first candidate is true, later candidates cannot affect routing. -/
 theorem first_true_ignores_tail

@@ -40,7 +40,7 @@ private def disconnectedProgram : Program :=
 /-- A structurally disconnected program must fail standalone validation. -/
 theorem disconnectedProgramIsRejected :
     programWellFormed disconnectedProgram = false := by
-  decide
+  decide +kernel
 
 private def twoSegmentSource : CheckedProcess :=
   { identity :=
@@ -115,23 +115,23 @@ private def twoTimerSource : CheckedProcess :=
 
 theorem twoSegmentSourceIsAccepted :
     structuredAdmissionDecider twoSegmentSource = true := by
-  decide
+  decide +kernel
 
 theorem parallelSourceIsAccepted :
     structuredAdmissionDecider parallelCheckedProcess = true := by
-  decide
+  decide +kernel
 
 theorem zeroSegmentSourceIsRejected :
     structuredAdmissionDecider zeroSegmentSource = false := by
-  decide
+  decide +kernel
 
 theorem disconnectedCycleIsRejected :
     sourceGraphWellFormed disconnectedCycleSource = false := by
-  decide
+  decide +kernel
 
 theorem secondTimerIsRejected :
     structuredAdmissionDecider twoTimerSource = false := by
-  decide
+  decide +kernel
 
 private def exactProbeServiceNode (route : Option CheckedBpmnErrorRoute := none) :
     CheckedNode :=
@@ -180,24 +180,24 @@ theorem composedWaitSurfaceIsExact :
           [] [] none) = false ∧
       composedNodeSurfaceValid
         (exactProbeServiceNode (some excludedBoundaryRoute)) = false := by
-  decide
+  decide +kernel
 
 /-- Expanding the production checked-node union does not silently expand the frozen structured-admission experiment. -/
 theorem exclusiveGatewayRemainsOutsideFrozenExperiment :
     nodeArityValid twoSegmentSource excludedExclusiveGateway = false ∧
       composedNodeSurfaceValid excludedExclusiveGateway = false := by
-  decide
+  decide +kernel
 
 /-- Production Message support does not silently expand the frozen structured-admission experiment. -/
 theorem messageCatchRemainsOutsideFrozenExperiment :
     composedNodeSurfaceValid excludedMessageCatch = false := by
-  decide
+  decide +kernel
 
 /-- Production embedded-scope support does not silently expand the frozen structured-admission experiment. -/
 theorem embeddedSubProcessRemainsOutsideFrozenExperiment :
     nodeArityValid twoSegmentSource excludedEmbeddedSubProcess = false ∧
       composedNodeSurfaceValid excludedEmbeddedSubProcess = false := by
-  decide
+  decide +kernel
 
 private def threeCycle : List (GraphEdge NodeId) :=
   [ { source := ⟨"A"⟩, target := ⟨"B"⟩ }
@@ -206,20 +206,20 @@ private def threeCycle : List (GraphEdge NodeId) :=
 
 /-- One search round misses the three-edge return path. -/
 theorem boundedSearchWronglyAccepts :
-    acyclicWithin threeCycle 1 = true := by decide
+    acyclicWithin threeCycle 1 = true := by decide +kernel
 
 /-- Saturation certification rejects the same under-fueled search. -/
 theorem saturationCertifiedRejects :
-    acyclicClosed threeCycle 1 = false := by decide
+    acyclicClosed threeCycle 1 = false := by decide +kernel
 
 /-- Vertex-count fuel is a control showing that the retained witness is not a live fixture defect. -/
 theorem bothRejectAtVertexFuel :
     acyclicWithin threeCycle 3 = false ∧
-      acyclicClosed threeCycle 3 = false := by decide
+      acyclicClosed threeCycle 3 = false := by decide +kernel
 
 /-- Two search rounds already expose the return path in the old predicate. -/
 theorem boundedSearchCorrectAtTwo :
-    acyclicWithin threeCycle 2 = false := by decide
+    acyclicWithin threeCycle 2 = false := by decide +kernel
 
 private def graphPredicateChecks : Bool :=
   let forward : List (GraphEdge NodeId) :=

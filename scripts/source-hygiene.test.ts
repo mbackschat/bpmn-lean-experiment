@@ -508,3 +508,55 @@ test("hand-written source respects reviewed module-size boundaries", () => {
     "Lean umbrella modules must contain only imports, comments, and whitespace",
   );
 });
+
+/**
+ * Tactic-position `decide` sites that pay for their reduction twice.
+ *
+ * Plain `decide` reduces the `Decidable` instance in the elaborator, confirms `isTrue`, then discards
+ * that result and lets the kernel redo the whole reduction — the toolchain's own implementation says
+ * so. `decide +kernel` reduces once, in the kernel, proving the same proposition from the same
+ * instance with no new axiom and with the elaborator's `whnf` removed from the trusted path.
+ *
+ * Measured on this repository's clean Lean gate: 475s of CPU became 249s. Without a guard the saving
+ * erodes one capsule at a time, because plain `decide` is what a contributor writes by default.
+ *
+ * Deliberately narrow. It matches only tactic position, so the Bool-valued `decide (…)` application
+ * and `Decidable.decide` are untouched, and it says nothing about whether a finite decided fixture is
+ * the right evidence for a claim — [the capsule rules](../CLAUDE.md) own that question.
+ */
+function unkernelledDecideSites(path: string, source: string): string[] {
+  return source.split("\n").flatMap((line, index) => {
+    // `^\s*` matters: a bare `decide` on its own line was the most common form in this repository,
+    // and an anchor without it made the guard silently blind to two thirds of the sites.
+    const isTacticPosition = /(?:^\s*|\bby\s+|[|⟨,]\s*)decide\s*(?:[,⟩)\]]|$)/u.test(line);
+    return isTacticPosition && !line.includes("decide +kernel")
+      ? [`${path}:${index + 1}`]
+      : [];
+  });
+}
+
+test("every Lean tactic-position decide reduces once, in the kernel", () => {
+  const leanSources = worktreeSourceFiles().filter((path) => path.endsWith(".lean"));
+  assert.ok(leanSources.length > 50, `Lean enumeration returned ${leanSources.length} files`);
+
+  assert.deepEqual(
+    leanSources.flatMap((path) => unkernelledDecideSites(path, readFileSync(path, "utf8"))),
+    [],
+    "replace `decide` with `decide +kernel` so the reduction is not performed twice",
+  );
+});
+
+test("the kernel-decide policy detects a plain tactic site and ignores applications", () => {
+  assert.deepEqual(
+    unkernelledDecideSites("Probe.lean", [
+      "theorem a : 1 = 1 := by decide",
+      "  decide",
+      "  exact ⟨by decide, rfl⟩",
+      "theorem b : 2 = 2 := by decide +kernel",
+      "  decide +kernel",
+      "  hosts.filter (fun h => decide (h = target))",
+      "  Decidable.decide (a = b)",
+    ].join("\n")),
+    ["Probe.lean:1", "Probe.lean:2", "Probe.lean:3"],
+  );
+});

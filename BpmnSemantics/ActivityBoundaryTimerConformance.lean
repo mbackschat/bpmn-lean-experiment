@@ -58,22 +58,22 @@ def program : Program :=
   lowerCheckedProcess checkedProcess
 
 theorem checked_process_is_well_formed :
-    checkedWellFormed checkedProcess = true := by decide
+    checkedWellFormed checkedProcess = true := by decide +kernel
 
 theorem lowered_program_is_well_formed :
-    programWellFormed program = true := by decide
+    programWellFormed program = true := by decide +kernel
 
 theorem checked_process_lowering_is_exact :
-    lowerCheckedProcess checkedProcess = program := by decide
+    lowerCheckedProcess checkedProcess = program := by decide +kernel
 
 /-- The deadline never becomes an independent `awaitTimer`; it exists only as the Activity operation's own arm. -/
 theorem boundary_timer_is_not_lowered_as_a_standalone_timer :
     (program.operations.filter fun
       | .awaitTimer .. => true
-      | _ => false) = [] := by decide
+      | _ => false) = [] := by decide +kernel
 
 theorem exactly_one_activity_owns_a_boundary_deadline :
-    (boundedTaskOperations program).length = 1 := by decide
+    (boundedTaskOperations program).length = 1 := by decide +kernel
 
 /-- Redirects only the deadline's attachment, keeping every other byte of the admitted source. -/
 private def misattachedDeadline : CheckedProcess :=
@@ -85,7 +85,7 @@ private def misattachedDeadline : CheckedProcess :=
 
 /-- A deadline whose attachment does not resolve to a User Task is refused at admission rather than dropped. It lowers to no operation of its own, so without this rule the program would simply have no deadline and nothing downstream would object. -/
 theorem misattached_deadline_is_refused_at_admission :
-    checkedWellFormed misattachedDeadline = false := by decide
+    checkedWellFormed misattachedDeadline = false := by decide +kernel
 
 def instanceId : SemanticId := ⟨"Instance_1"⟩
 
@@ -113,7 +113,7 @@ theorem activity_and_deadline_arm_atomically :
       (armedState.timerWaits.map fun wait =>
         (wait.elementId.value, wait.activation, wait.deadlineMs)) =
         [("Deadline", 1, 1000)] ∧
-      armedState.tokens = [] := by decide
+      armedState.tokens = [] := by decide +kernel
 
 private def observations : List ObservationKind :=
   [ .deployment
@@ -207,7 +207,7 @@ theorem activity_victory_routes_to_its_own_output_and_withdraws_the_deadline :
           , .state armedObservation
           , .command ⟨"complete-bounded-task"⟩ .committed
           , .state (waitingOn "NormalTask" "Completed in time" 0) ] } := by
-  decide
+  decide +kernel
 
 theorem deadline_victory_routes_to_the_boundary_output_and_abandons_the_activity :
     runScenario program deadlineWinsScenario =
@@ -218,12 +218,12 @@ theorem deadline_victory_routes_to_the_boundary_output_and_abandons_the_activity
           , .state armedObservation
           , .command ⟨"fire-deadline"⟩ .committed
           , .state (waitingOn "BoundaryTask" "Deadline reached" 1000) ] } := by
-  decide
+  decide +kernel
 
 /-- The victories differ at the approved public observation boundary rather than in a hidden microstep: they expose different open tasks and different logical time. -/
 theorem victories_are_publicly_distinguishable :
     (runScenario program taskWinsScenario).trace ≠
-      (runScenario program deadlineWinsScenario).trace := by decide
+      (runScenario program deadlineWinsScenario).trace := by decide +kernel
 
 /-- Firing before the deadline is refused with exact state preservation, so exact deadline equality is semantically material rather than a host-scheduler convenience. -/
 theorem pre_due_deadline_firing_is_rejected :
@@ -232,7 +232,7 @@ theorem pre_due_deadline_firing_is_rejected :
       { outcome := .rejected
         state := armedState
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide
+        ambiguousInternalChoice := false } := by decide +kernel
 
 /-- State reached when the Activity arm wins. -/
 def afterActivityVictory : RuntimeState :=
@@ -251,7 +251,7 @@ theorem deadline_firing_after_the_activity_victory_is_rejected :
       { outcome := .rejected
         state := afterActivityVictory
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide
+        ambiguousInternalChoice := false } := by decide +kernel
 
 /-- Symmetrically, after the deadline wins the Activity occurrence is gone, so its completion is refused with the winning state preserved exactly. This is the losing arm in the other direction. -/
 theorem bounded_task_completion_after_the_deadline_victory_is_rejected :
@@ -260,7 +260,7 @@ theorem bounded_task_completion_after_the_deadline_victory_is_rejected :
       { outcome := .rejected
         state := afterDeadlineVictory
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide
+        ambiguousInternalChoice := false } := by decide +kernel
 
 /-- A refused pre-due firing leaves the deadline armed rather than consuming it, so the exact firing at `1000` still commits afterwards and reaches the same victory state. Stating this as equality between the two firings would prove nothing: it would hold under a mutation that made both reject, so the committed outcome and the exact resulting state are pinned here instead. -/
 theorem exact_firing_still_wins_after_a_refused_pre_due_firing :
@@ -271,13 +271,13 @@ theorem exact_firing_still_wins_after_a_refused_pre_due_firing :
       { outcome := .committed
         state := afterDeadlineVictory
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide
+        ambiguousInternalChoice := false } := by decide +kernel
 
 /-- The timing profile admits no completion patch, so a submitted variable is refused rather than ignored: silently dropping it would add a data claim to a timing capsule. -/
 theorem submitted_values_are_rejected_rather_than_ignored :
     (applyStimulus scenarioClosureLimit program armedState
       (.completeUserTaskInstance ⟨"complete-with-data"⟩ taskId
         [{ name := "decision", value := .string "approved" }])).outcome =
-      .rejected := by decide
+      .rejected := by decide +kernel
 
 end BpmnSemantics.ActivityBoundaryTimerConformance

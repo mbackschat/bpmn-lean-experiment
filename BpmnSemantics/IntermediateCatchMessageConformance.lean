@@ -184,13 +184,13 @@ def expectedTrace : List CanonicalObservation :=
 /-- The checked graph and lowered program are admitted without a complete-topology predicate. -/
 theorem exact_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
-  decide
+  decide +kernel
 
 /-- A checked Intermediate Catch Message Event requires its complete Operation address. -/
 theorem catch_event_rejects_direct_message_channel :
     definitionBindingValid directChannelCheckedProcess
       (lowerCheckedProcess directChannelCheckedProcess) = false := by
-  decide
+  decide +kernel
 
 /-- Canonical lowering retains the complete reference-resolved channel and Catch Event identity. -/
 theorem lowering_preserves_message_channel :
@@ -204,7 +204,7 @@ theorem lowering_preserves_message_channel :
           ⟨"place:Flow_StartToMessage"⟩
           ⟨"place:Flow_MessageToTask"⟩
           { elementId := ⟨"MessageCatch_ApprovalRequest"⟩, channel }) := by
-  decide
+  decide +kernel
 
 /-- Start requires exactly the initiate and Message-activation internal steps. -/
 theorem start_closure_uses_two_internal_steps :
@@ -214,7 +214,7 @@ theorem start_closure_uses_two_internal_steps :
         false ∧
       messageWaitingResult.internalStepBoundExceeded = false ∧
       enabledInternalOperationCount program messageWaitingResult.state = 0 := by
-  decide
+  decide +kernel
 
 /-- `awaitMessage` creates one Process-owned occurrence with the definition channel and stops closure. -/
 theorem message_activation_preserves_complete_subscription :
@@ -228,7 +228,7 @@ theorem message_activation_preserves_complete_subscription :
            output := ⟨"place:Flow_MessageToTask"⟩ }] ∧
       observeStableState program messageWaitingResult.state =
         some messageWaitingObservation := by
-  decide
+  decide +kernel
 
 /-- Exact delivery consumes the subscription and needs one automatic User Task activation step. -/
 theorem exact_delivery_opens_only_the_trailing_task :
@@ -238,7 +238,7 @@ theorem exact_delivery_opens_only_the_trailing_task :
       taskWaitingResult.state.messageWaits = [] ∧
       observeStableState program taskWaitingResult.state =
         some taskWaitingObservation := by
-  decide
+  decide +kernel
 
 def mismatchedDeliveries : List Stimulus :=
   [ .deliverMessage ⟨"wrong-instance"⟩
@@ -265,7 +265,7 @@ theorem every_message_mismatch_preserves_state :
             messageWaitingResult.state stimulus
         (result.outcome, result.state)) =
       List.replicate 6 (.rejected, messageWaitingResult.state) := by
-  decide
+  decide +kernel
 
 /-- A fresh command targeting the consumed occurrence is stale and cannot consume it twice. -/
 theorem consumed_subscription_cannot_be_delivered_again :
@@ -275,13 +275,13 @@ theorem consumed_subscription_cannot_be_delivered_again :
         state := taskWaitingResult.state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 /-- The answer-free scenario closes through the exact canonical public observations. -/
 theorem scenario_matches_expected_trace :
     runScenario program scenario =
       { outcome := .semantic .committed, trace := expectedTrace } := by
-  decide
+  decide +kernel
 
 def reverseCheckedProcess : CheckedProcess :=
   { checkedProcess with
@@ -332,7 +332,7 @@ theorem reverse_order_is_admitted_and_preserves_progress :
       reverseCompleted.outcome = .committed ∧
       reverseCompleted.state.control =
         .completed subscriptionId.processInstanceId := by
-  decide
+  decide +kernel
 
 /-- Before reverse-order Message activation, even an otherwise exact delivery rejects without changing the User Task wait. -/
 theorem reverse_order_pre_activation_delivery_is_rejected :
@@ -342,6 +342,6 @@ theorem reverse_order_pre_activation_delivery_is_rejected :
         state := reverseTaskWaiting.state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.IntermediateCatchMessageConformance

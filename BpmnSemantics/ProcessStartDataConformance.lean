@@ -26,7 +26,7 @@ theorem exact_start_data_is_visible_at_first_wait :
         state := afterStartState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 /-- A Process-identity mismatch rejects without installing even a discriminating initial binding. -/
 theorem wrong_process_start_installs_no_data :
@@ -38,13 +38,13 @@ theorem wrong_process_start_installs_no_data :
         state := initialState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 /-- Start data does not change the quiescent enabled-operation count of the admitted first wait. -/
 theorem first_wait_enabledness_is_initial_data_independent :
     enabledInternalOperationCount program afterStartState =
       enabledInternalOperationCount program
         { afterStartState with variables := emptyScopedVariables } := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.ProcessStartDataConformance

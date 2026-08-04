@@ -130,18 +130,18 @@ def expectedTrace : List CanonicalObservation :=
   , .state completedObservation ]
 
 theorem checked_process_is_well_formed :
-    checkedWellFormed checkedProcess = true := by decide
+    checkedWellFormed checkedProcess = true := by decide +kernel
 
 theorem lowered_program_is_well_formed :
-    programWellFormed program = true := by decide
+    programWellFormed program = true := by decide +kernel
 
 theorem checked_process_lowering_is_exact :
-    lowerCheckedProcess checkedProcess = program := by decide
+    lowerCheckedProcess checkedProcess = program := by decide +kernel
 
 theorem successful_effect_trace_is_exact :
     runScenario program scenario =
       { outcome := .semantic .committed, trace := expectedTrace } := by
-  decide
+  decide +kernel
 
 theorem start_prefix_projects_one_effect_intent :
     (runScenario program
@@ -149,7 +149,7 @@ theorem start_prefix_projects_one_effect_intent :
       [ .deployment .committed
       , .command ⟨"start-process"⟩ .committed
       , .state waitingObservation ] := by
-  decide
+  decide +kernel
 
 theorem wrong_effect_activation_is_rejected :
     applyStimulus scenarioClosureLimit program
@@ -162,7 +162,7 @@ theorem wrong_effect_activation_is_rejected :
         ambiguousInternalChoice := false } :=
   effect_identity_mismatch_is_rejected
     program effectWait ⟨"wrong-activation"⟩
-    { effectId with activation := 2 } (.success []) 0 (by decide)
+    { effectId with activation := 2 } (.success []) 0 (by decide +kernel)
 
 /-- Executable wrong account: accepting an arbitrary result would advance even when no effect occurrence was ever activated. -/
 private def acceptAnyEffectResult (state : RuntimeState)
@@ -183,6 +183,6 @@ theorem accept_any_effect_result_is_a_non_law :
           state := before
           internalStepBoundExceeded := false
           ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.ServiceTaskEffectConformance

@@ -224,15 +224,15 @@ def expectedTrace : List CanonicalObservation :=
   , .state completedObservation ]
 
 theorem checked_process_is_well_formed :
-    checkedWellFormed checkedProcess = true := by decide
+    checkedWellFormed checkedProcess = true := by decide +kernel
 
 theorem lowered_program_is_well_formed :
-    programWellFormed program = true := by decide
+    programWellFormed program = true := by decide +kernel
 
 theorem caught_error_trace_is_exact :
     runScenario program scenario =
       { outcome := .semantic .committed, trace := expectedTrace } := by
-  decide
+  decide +kernel
 
 theorem null_patch_applies_the_profile_mapping :
     applyEffectResult
@@ -242,7 +242,7 @@ theorem null_patch_applies_the_profile_mapping :
         []
         (errorResult none) =
       some [expectedVariable] := by
-  decide
+  decide +kernel
 
 theorem message_does_not_affect_caught_transition
     (first second : Option String) :
@@ -287,6 +287,6 @@ theorem error_route_and_success_route_are_distinct :
       caught.state.endOccurrences = 0 ∧
       wrong.state.waits.length = 0 ∧
       wrong.state.endOccurrences = 1 := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.BoundaryErrorConformance

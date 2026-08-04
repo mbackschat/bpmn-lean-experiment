@@ -143,7 +143,7 @@ private def syntheticInterrupted : RuntimeState :=
 theorem synthetic_throw_catches_and_cancels_region :
     throwErrorState? syntheticState ⟨"place:ErrorInput"⟩
       errorReference errorHandler = some syntheticInterrupted := by
-  decide
+  decide +kernel
 
 /-- The synthetic cross-kind witness locks descendant removal, parent preservation, Activity-scope cleanup, and monotonic history together. -/
 theorem synthetic_interruption_inventory :
@@ -162,11 +162,11 @@ theorem synthetic_interruption_inventory :
       syntheticInterrupted.effectActivations = syntheticState.effectActivations ∧
       syntheticInterrupted.scopeActivations = syntheticState.scopeActivations ∧
       syntheticInterrupted.endOccurrences = 1 := by
-  decide
+  decide +kernel
 
 /-- Nearest checked non-law: interrupting a child region is not global wait cancellation. -/
 theorem regional_interruption_is_not_global_cancellation :
     syntheticInterrupted.waits ≠ [] := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.SemanticProcess

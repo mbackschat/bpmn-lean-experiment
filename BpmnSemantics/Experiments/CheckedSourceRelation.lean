@@ -158,7 +158,7 @@ def renamedCountermodelDiverges : Bool :=
 theorem positionalCountermodelProgramIsAccepted :
     programWellFormed (positionalLowerCheckedProcess renamedCountermodel) =
       true := by
-  decide
+  decide +kernel
 
 def renamedCountermodelMatchesEndpointLowering : Bool :=
   decide (

@@ -47,7 +47,7 @@ private theorem premises :
       startToFork ∈ parallelCheckedProcess.sequenceFlows ∧
       forkNode ∈ parallelCheckedProcess.nodes ∧
       aToJoin ∈ parallelCheckedProcess.sequenceFlows ∧
-      joinNode ∈ parallelCheckedProcess.nodes := by decide
+      joinNode ∈ parallelCheckedProcess.nodes := by decide +kernel
 
 /-- A token before the fork enables exactly the diverging gateway. -/
 theorem forkFrontierIsSingleton :
@@ -56,7 +56,7 @@ theorem forkFrontierIsSingleton :
         [⟨"Flow_ForkToA"⟩, ⟨"Flow_ForkToB"⟩])] := by
   obtain ⟨wellFormed, flowMember, nodeMember, _, _⟩ := premises
   rw [enabledTransitionsAtSingleToken parallelCheckedProcess atFork startToFork
-    forkNode wellFormed flowMember nodeMember (by rfl) (by decide) (by decide)]
+    forkNode wellFormed flowMember nodeMember (by rfl) (by decide +kernel) (by decide +kernel)]
   rfl
 
 /-- One branch-output token before the join enables no internal transition. -/
@@ -64,7 +64,7 @@ theorem halfJoinFrontierIsEmpty :
     enabledTransitions parallelCheckedProcess atHalfJoin = [] := by
   obtain ⟨wellFormed, _, _, flowMember, nodeMember⟩ := premises
   rw [enabledTransitionsAtSingleToken parallelCheckedProcess atHalfJoin aToJoin
-    joinNode wellFormed flowMember nodeMember (by rfl) (by decide) (by decide)]
+    joinNode wellFormed flowMember nodeMember (by rfl) (by decide +kernel) (by decide +kernel)]
   rfl
 
 private def forkToA : CheckedSequenceFlow :=
@@ -108,7 +108,7 @@ private theorem twoTokenPremises :
       forkToA ∈ parallelCheckedProcess.sequenceFlows ∧
       forkToB ∈ parallelCheckedProcess.sequenceFlows ∧
       taskA ∈ parallelCheckedProcess.nodes ∧
-      taskB ∈ parallelCheckedProcess.nodes := by decide
+      taskB ∈ parallelCheckedProcess.nodes := by decide +kernel
 
 /-- The reordered source holds identity, Process ID, Sequence Flows, and node membership fixed while changing only node order.
 
@@ -119,7 +119,7 @@ private theorem reorderedDiffersOnlyInNodeOrder :
       reorderedParallelProcess.sequenceFlows = parallelCheckedProcess.sequenceFlows ∧
       reorderedParallelProcess.nodes.Perm parallelCheckedProcess.nodes ∧
       reorderedParallelProcess.nodes ≠ parallelCheckedProcess.nodes :=
-  ⟨rfl, rfl, rfl, List.reverse_perm _, by decide⟩
+  ⟨rfl, rfl, rfl, List.reverse_perm _, by decide +kernel⟩
 
 /-- Node order is visible in the raw enabled list: the graph-equivalent sources disagree on equality and agree up to permutation. -/
 theorem enabledListOrderFollowsNodeOrder :
@@ -127,7 +127,7 @@ theorem enabledListOrderFollowsNodeOrder :
         enabledTransitions parallelCheckedProcess atBothBranches ∧
       (enabledTransitions reorderedParallelProcess atBothBranches).Perm
         (enabledTransitions parallelCheckedProcess atBothBranches) := by
-  exact ⟨by decide, by decide⟩
+  exact ⟨by decide +kernel, by decide +kernel⟩
 
 /-- Exact equality is false on the reordered graph while the quantified permutation result still holds. -/
 theorem reorderedFrontierRefusesExactEquality :
@@ -142,10 +142,10 @@ theorem reorderedFrontierRefusesExactEquality :
           ((fireNode? reorderedParallelProcess taskB atBothBranches).map
             fun successor => (taskB, successor)).toList) := by
   obtain ⟨reorderedWellFormed, _, _, _, _⟩ := twoTokenPremises
-  exact ⟨by decide, enabledTransitionsAtTwoTokens reorderedParallelProcess
+  exact ⟨by decide +kernel, enabledTransitionsAtTwoTokens reorderedParallelProcess
     atBothBranches forkToA forkToB taskA taskB reorderedWellFormed
-    (by decide) (by decide) (by decide) (by decide) (by rfl) (by rfl)
-    (by decide) (by rfl) (by rfl)⟩
+    (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel) (by rfl) (by rfl)
+    (by decide +kernel) (by rfl) (by rfl)⟩
 
 /-- Even on the unmodified fixture, exchanging the two anchors refutes an orientation-dependent equality while preserving the permutation. -/
 theorem swappedAnchorsRefuseExactEquality :
@@ -162,10 +162,10 @@ theorem swappedAnchorsRefuseExactEquality :
   obtain ⟨_, memberForkToA, memberForkToB, memberA, memberB⟩ :=
     twoTokenPremises
   obtain ⟨wellFormed, _, _, _, _⟩ := premises
-  exact ⟨by decide, enabledTransitionsAtTwoTokens parallelCheckedProcess
+  exact ⟨by decide +kernel, enabledTransitionsAtTwoTokens parallelCheckedProcess
     atBothBranches forkToB forkToA taskB taskA wellFormed
     memberForkToB memberForkToA memberB memberA (by rfl) (by rfl)
-    (by decide) (by decide) (by rfl)⟩
+    (by decide +kernel) (by decide +kernel) (by rfl)⟩
 
 /-- Both branch tokens after the fork enable exactly the two independent User Task activations. -/
 theorem forkedFrontierEnablesBothBranchTasks :
@@ -179,8 +179,8 @@ theorem forkedFrontierEnablesBothBranchTasks :
   obtain ⟨wellFormed, _, _, _, _⟩ := premises
   refine List.Perm.trans (enabledTransitionsAtTwoTokens parallelCheckedProcess
     atBothBranches forkToA forkToB taskA taskB wellFormed memberForkToA
-    memberForkToB memberA memberB (by rfl) (by rfl) (by decide) (by rfl) (by rfl)) ?_
-  decide
+    memberForkToB memberA memberB (by rfl) (by rfl) (by decide +kernel) (by rfl) (by rfl)) ?_
+  decide +kernel
 
 /-- A half-ready join contributes nothing while its live sibling target still fits the two-token characterization. -/
 theorem halfReadyJoinContributesNothing :
@@ -194,10 +194,10 @@ theorem halfReadyJoinContributesNothing :
             fun successor => (taskB, successor)).toList) := by
   obtain ⟨_, _, memberForkToB, _, memberB⟩ := twoTokenPremises
   obtain ⟨wellFormed, _, _, memberAToJoin, memberJoin⟩ := premises
-  exact ⟨by decide, by decide, by decide, enabledTransitionsAtTwoTokens parallelCheckedProcess
+  exact ⟨by decide +kernel, by decide +kernel, by decide +kernel, enabledTransitionsAtTwoTokens parallelCheckedProcess
     atJoinAndBranchB aToJoin forkToB joinNode taskB wellFormed
     memberAToJoin memberForkToB memberJoin memberB (by rfl) (by rfl)
-    (by decide) (by rfl) (by rfl)⟩
+    (by decide +kernel) (by rfl) (by rfl)⟩
 
 /-- Distinct targets and a settled initiation flag are load-bearing: at each violating instance the theorem's own permutation conclusion is false, because a ready join contributes once rather than twice and pending initiation adds an unaccounted Start transition.
 
@@ -215,7 +215,7 @@ theorem excludedTwoTokenShapes :
             fun successor => (taskB, successor)).toList) ∧
       (enabledTransitions parallelCheckedProcess atReadyJoin).length = 1 ∧
       (enabledTransitions parallelCheckedProcess atBothBranchesPending).length = 3 := by
-  decide
+  decide +kernel
 
 def stageThreeAFrontierChecks : Bool :=
   decide (

@@ -187,13 +187,13 @@ def completedObservation : StateObservation :=
 
 theorem exact_scoped_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
-  decide
+  decide +kernel
 
 theorem start_enters_one_child_scope_and_opens_both_tasks :
     childWaiting.outcome = .committed ∧
       observeStableState program childWaiting.state = some childWaitingObservation ∧
       childWaiting.state.scopeOccurrences.length = 2 := by
-  decide
+  decide +kernel
 
 /-- Reaching one child None End Event preserves the other child wait, so the child scope is not quiescent and cannot resume its parent. -/
 theorem first_child_end_does_not_complete_scope :
@@ -201,7 +201,7 @@ theorem first_child_end_does_not_complete_scope :
       observeStableState program afterA.state = some afterFirstChildObservation ∧
       afterA.state.scopeOccurrences.length = 2 ∧
       afterA.state.endOccurrences = 1 := by
-  decide
+  decide +kernel
 
 theorem stale_child_completion_preserves_state :
     applyStimulus scenarioClosureLimit program afterA.state
@@ -210,18 +210,18 @@ theorem stale_child_completion_preserves_state :
         state := afterA.state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 theorem child_completion_order_has_same_parent_observation :
     observeStableState program afterAThenB.state = some afterScopeObservation ∧
       observeStableState program afterBThenA.state = some afterScopeObservation := by
-  decide
+  decide +kernel
 
 theorem outer_task_completes_root_scope :
     completed.outcome = .committed ∧
       observeStableState program completed.state = some completedObservation ∧
       completed.state.scopeOccurrences = [] ∧
       completed.state.endOccurrences = 3 := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.EmbeddedSubProcessCompletionConformance

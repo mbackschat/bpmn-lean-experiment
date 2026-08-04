@@ -39,16 +39,16 @@ theorem unpaired_surrogate_is_rejected :
   native_decide
 
 theorem maximum_safe_wire_nat_is_accepted :
-    isSafeWireNat 9007199254740991 = true := by decide
+    isSafeWireNat 9007199254740991 = true := by decide +kernel
 
 theorem first_unsafe_wire_nat_is_rejected :
-    isSafeWireNat 9007199254740992 = false := by decide
+    isSafeWireNat 9007199254740992 = false := by decide +kernel
 
 theorem bmp_scalar_precedes_supplementary_scalar :
     compare "\uE000" "𐀀" = .lt := by native_decide
 
 theorem canonically_equivalent_strings_remain_distinct :
-    ("e\u0301" : String) ≠ "\u00E9" := by decide
+    ("e\u0301" : String) ≠ "\u00E9" := by decide +kernel
 
 theorem scenario_unknown_field_is_rejected :
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\"},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]},\"unexpected\":true}" = true := by

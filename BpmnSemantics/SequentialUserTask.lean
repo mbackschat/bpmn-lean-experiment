@@ -85,7 +85,7 @@ theorem start_reaches_single_user_task_wait :
         state := afterStartState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 theorem matching_completion_terminates :
     applyStimulus scenarioClosureLimit program afterStartState
@@ -94,7 +94,7 @@ theorem matching_completion_terminates :
         state := completedState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 theorem no_completion_before_matching_command :
     applyStimulus scenarioClosureLimit program afterStartState
@@ -105,7 +105,7 @@ theorem no_completion_before_matching_command :
         state := afterStartState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 theorem wrong_activation_is_rejected
     (submittedActivation : Nat) (mismatch : submittedActivation ≠ 1) :
@@ -129,6 +129,6 @@ theorem element_id_alone_is_insufficient :
       (applyStimulus scenarioClosureLimit program afterStartState
         (.completeUserTaskInstance
           ⟨"wrong-activation"⟩ wrongTaskId submittedValues)).outcome = .rejected := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.SequentialUserTask

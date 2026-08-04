@@ -33,7 +33,7 @@ private def escapedChar : Parser Char := do
         else
           fail "unpaired Unicode surrogate"
       else
-        return ⟨value.toUInt32, Or.inr ⟨Nat.not_lt.mp h', Nat.lt_trans value.toFin.isLt (by decide)⟩⟩
+        return ⟨value.toUInt32, Or.inr ⟨Nat.not_lt.mp h', Nat.lt_trans value.toFin.isLt (by decide +kernel)⟩⟩
   | _ => fail "illegal JSON escape"
 
 private partial def stringCore (acc : String) : Parser String := do

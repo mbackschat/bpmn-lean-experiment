@@ -428,6 +428,17 @@ Two review findings changed the capsule's substance rather than its wording, and
 That selection is a planning decision and approves no semantic account. Authoring the proposal is available work; its independent cold proposal review and the owner's approval of its decisions are separate steps that gate implementation.
 
 
+
+**The Lean gate's dominant cost was `decide` doing its work twice, and it is now halved.** Plain `decide` reduces the `Decidable` instance in the elaborator, confirms `isTrue`, then discards that result and lets the kernel redo the same reduction; the toolchain's own `Lean.Elab.Tactic.Decide` says so in a comment. That is why every profile showed tactic and kernel time at roughly 60/40 on identical work. All 199 tactic-position sites across 25 modules now use `decide +kernel`, which reduces once in the kernel.
+
+Measured here on clean builds, back to back on one machine: `lake build` CPU 326.0s → 178.3s, `lake test` CPU 149.0s → 71.0s, combined wall 146.1s → 100.3s. That is **−48% CPU and −31% wall**, reproducing an independent measurement of −49% CPU. Treat CPU as the reliable figure: wall clock on this host drifts 10-25% between runs, and `+kernel` sets `Elab.async := false` for its auxiliary lemma, so intra-module parallelism is traded for the removed duplication.
+
+Nothing about what is proven changed, and this was checked rather than assumed. Same propositions, same instances, same kernel; trust narrows because the elaborator's `whnf` leaves the path. `halfReadyJoinContributesNothing` still reports exactly `[propext, Classical.choice, Quot.sound]`, matching what this document already recorded, and no site gained `ofReduceBool`. `native_decide` remains excluded.
+
+[A source-hygiene guard](../scripts/source-hygiene.test.ts) now rejects a tactic-position `decide` without `+kernel`, verified by seeding one plain site and watching it fail. The guard's own negative check earned its place immediately: the first regex anchored on `^` rather than `^\s*` and was silently blind to a bare `decide` on its own line, which was 131 of the 199 sites.
+
+Two further findings from the same investigation are recorded rather than acted on. Repeated `definitionBindingValid` facts re-evaluate the shared `checkedWellFormed` conjunct because `&&` is right-associated — worth roughly 4% of one module after `+kernel`, at the cost of replacing an opaque `decide` with `simp only`, so it is not yet worth the brittleness. And `deriving Repr` is unused throughout the Lean sources but is **not** a speed lever: a no-`Repr` tree measured slower overall, so the 22% smaller generated C is worth about 1% and does not justify touching thirteen files.
+
 **The capsule's first green implementation checkpoint is reached, and the checkpoint review is the next gate.** Every focused gate is green on the checkpoint tree: `test:semantic-core` 128, `test:bpmn-source` 73, `test:contracts` 42, `test:infrastructure` 160, `check:source-hygiene` 23, `check:harness-types`, plus `lake build` and `lake test`. `test:temporal` and the complete `./scripts/verify.sh` gate have **not** run on this tree, because both need host port-binding authorization that was not requested before the checkpoint.
 
 Four facts about this checkpoint bind whoever continues it.

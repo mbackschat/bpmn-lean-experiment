@@ -189,7 +189,7 @@ def wrongHandlerOutputProgram : Program :=
 /-- The exact checked Error graph is admitted and independently lowers to its program. -/
 theorem exact_error_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
-  decide
+  decide +kernel
 
 /-- Typed nested-handler mutations remain representable but cannot pass exact checked-source lowering equality. -/
 theorem handler_mutations_fail_exact_lowering :
@@ -197,7 +197,7 @@ theorem handler_mutations_fail_exact_lowering :
       wrongHandlerOutputProgram ≠ lowerCheckedProcess checkedProcess ∧
       definitionBindingValid checkedProcess wrongAttachedScopeProgram = false ∧
       definitionBindingValid checkedProcess wrongHandlerOutputProgram = false := by
-  decide
+  decide +kernel
 
 /-- Before automatic closure, the Error throw is uniquely enabled and child normal completion cannot compete. -/
 theorem throw_precedes_unreachable_normal_completion :
@@ -206,7 +206,7 @@ theorem throw_precedes_unreachable_normal_completion :
           ⟨"operation:EndEvent_ScopedFailure"⟩ ≠ none ∧
       step program triggerCommittedBeforeClosure
           ⟨"operation:complete-scope:scope:SubProcess_Work"⟩ = none := by
-  decide
+  decide +kernel
 
 /-- Trigger-first cancellation removes the child occurrence and preserves its zero-End history. -/
 theorem trigger_first_reaches_exact_recovery_state :
@@ -217,7 +217,7 @@ theorem trigger_first_reaches_exact_recovery_state :
       tokenMultiplicity triggerFirst.state ⟨"place:Flow_ScopeToNormalEnd"⟩ = 0 ∧
       enabledInternalOperationCount program triggerFirst.state = 0 ∧
       stableStateResumable triggerFirst.state = true := by
-  decide
+  decide +kernel
 
 /-- Sibling-first retains its historical End count while exposing the same public recovery result. -/
 theorem sibling_first_has_same_public_recovery_not_same_history :
@@ -227,7 +227,7 @@ theorem sibling_first_has_same_public_recovery_not_same_history :
       observeStableState program siblingThenTrigger.state =
         observeStableState program triggerFirst.state ∧
       siblingThenTrigger.state ≠ triggerFirst.state := by
-  decide
+  decide +kernel
 
 /-- A command against the interrupted sibling is rejected with exact state preservation. -/
 theorem stale_sibling_completion_preserves_recovery :
@@ -237,7 +237,7 @@ theorem stale_sibling_completion_preserves_recovery :
         state := triggerFirst.state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 /-- Completing Recover reaches only the recovered root completion. -/
 theorem recover_completes_process_without_normal_route :
@@ -246,6 +246,6 @@ theorem recover_completes_process_without_normal_route :
       completed.state.scopeOccurrences = [] ∧
       completed.state.endOccurrences = 1 ∧
       tokenMultiplicity completed.state ⟨"place:Flow_ScopeToNormalEnd"⟩ = 0 := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.SubProcessErrorPropagationConformance

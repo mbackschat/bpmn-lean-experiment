@@ -117,20 +117,20 @@ def completedObservation : StateObservation :=
 /-- The selected checked node and reused operation multiset pass independent definition binding. -/
 theorem exact_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
-  decide
+  decide +kernel
 
 /-- The Receive Task profile rejects a Catch Event even when lowering would erase the locus. -/
 theorem catch_event_locus_is_not_receive_task_source :
     checkedProfileCapabilitiesValid locusSwappedCheckedProcess = false ∧
       definitionBindingValid locusSwappedCheckedProcess
         (lowerCheckedProcess locusSwappedCheckedProcess) = false := by
-  decide
+  decide +kernel
 
 /-- A checked Receive Task cannot carry the operation-addressed Event channel arm. -/
 theorem receive_task_rejects_operation_message_channel :
     definitionBindingValid crossArmCheckedProcess
       (lowerCheckedProcess crossArmCheckedProcess) = false := by
-  decide
+  decide +kernel
 
 /-- Lowering preserves the Receive Task element and direct Message arm without an invented Interface or Operation. -/
 theorem lowering_preserves_direct_message_address :
@@ -144,7 +144,7 @@ theorem lowering_preserves_direct_message_address :
           ⟨"place:SequenceFlow_StartToReceive"⟩
           ⟨"place:SequenceFlow_ReceiveToEnd"⟩
           { elementId := ⟨"ReceiveTask_WaitForInvoice"⟩, channel }) := by
-  decide
+  decide +kernel
 
 /-- Start requires exactly initiation followed by activation of the passive Message wait. -/
 theorem start_closure_uses_two_internal_steps :
@@ -154,7 +154,7 @@ theorem start_closure_uses_two_internal_steps :
         false ∧
       waitingResult.internalStepBoundExceeded = false ∧
       enabledInternalOperationCount program waitingResult.state = 0 := by
-  decide
+  decide +kernel
 
 /-- The stable wait retains the complete Process-owned occurrence and direct address. -/
 theorem activation_creates_exact_direct_subscription :
@@ -167,14 +167,14 @@ theorem activation_creates_exact_direct_subscription :
            channel
            output := ⟨"place:SequenceFlow_ReceiveToEnd"⟩ }] ∧
       stableStateResumable waitingResult.state = true := by
-  decide
+  decide +kernel
 
 /-- Canonical observation exposes the complete direct subscription and its sole interaction. -/
 theorem canonical_observation_preserves_direct_subscription :
     observeStableState program waitingResult.state = some waitingObservation ∧
       observeStableState program completedResult.state =
         some completedObservation := by
-  decide
+  decide +kernel
 
 /-- Exact delivery needs the End and root-completion steps, then terminates with no subscription. -/
 theorem exact_delivery_completes_after_two_internal_steps :
@@ -187,7 +187,7 @@ theorem exact_delivery_completes_after_two_internal_steps :
       completedResult.state.messageWaits = [] ∧
       completedResult.state.control =
         .completed subscriptionId.processInstanceId := by
-  decide
+  decide +kernel
 
 /-- The executable direct delivery remains covered by the generic declarative Message relation. -/
 theorem exact_direct_delivery_is_permitted
@@ -216,7 +216,7 @@ theorem every_direct_address_mismatch_preserves_state :
           applyStimulus scenarioClosureLimit program waitingResult.state stimulus
         (result.outcome, result.state)) =
       List.replicate 3 (.rejected, waitingResult.state) := by
-  decide
+  decide +kernel
 
 /-- A well-formed delivery before activation cannot create a subscription or progress control. -/
 theorem pre_activation_delivery_is_rejected :
@@ -225,7 +225,7 @@ theorem pre_activation_delivery_is_rejected :
         state := initialState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 /-- A fresh semantic command cannot consume the completed Receive Task twice. -/
 theorem consumed_subscription_is_stale :
@@ -235,6 +235,6 @@ theorem consumed_subscription_is_stale :
         state := completedResult.state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.ReceiveTaskConformance

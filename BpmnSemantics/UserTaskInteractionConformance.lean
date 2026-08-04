@@ -117,30 +117,30 @@ theorem successful_scenario_trace_is_exact :
     run successfulScenario =
       { outcome := .semantic .committed
         trace := expectedSuccessfulTrace } := by
-  decide
+  decide +kernel
 
 theorem wrong_activation_scenario_trace_is_exact :
     run wrongActivationScenario =
       { outcome := .semantic .rejected
         trace := expectedWrongActivationTrace } := by
-  decide
+  decide +kernel
 
 theorem stale_completion_is_rejected_without_reactivation :
     run staleCompletionScenario =
       { outcome := .semantic .rejected
         trace := expectedStaleCompletionTrace } := by
-  decide
+  decide +kernel
 
 theorem waiting_projection_is_independent_of_next_command :
     (run successfulScenario).trace[2]? =
       (run wrongActivationScenario).trace[2]? := by
-  decide
+  decide +kernel
 
 theorem zero_closure_limit_is_a_harness_failure :
     runWithClosureLimit 0 successfulScenario =
       { outcome := .harnessFailure
         trace := [.deployment .committed] } := by
-  decide
+  decide +kernel
 
 theorem wrong_activation_application_is_rejected :
     BpmnSemantics.SemanticProcess.applyStimulus
@@ -155,7 +155,7 @@ theorem wrong_activation_application_is_rejected :
         state := afterStartState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } :=
-  wrong_activation_is_rejected 2 (by decide)
+  wrong_activation_is_rejected 2 (by decide +kernel)
 
 theorem wrong_process_instance_is_rejected :
     BpmnSemantics.SemanticProcess.applyStimulus

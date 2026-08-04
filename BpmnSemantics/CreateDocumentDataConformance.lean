@@ -162,14 +162,14 @@ def expectedTrace : List CanonicalObservation :=
   , .state completedObservation ]
 
 theorem checked_process_is_well_formed :
-    checkedWellFormed checkedProcess = true := by decide
+    checkedWellFormed checkedProcess = true := by decide +kernel
 
 theorem lowered_program_is_well_formed :
-    programWellFormed program = true := by decide
+    programWellFormed program = true := by decide +kernel
 
 theorem literal_input_commits_exact_arguments :
     evaluateInputMappings inputMappings = some arguments := by
-  decide
+  decide +kernel
 
 def expectedWaitingVariables : ScopedVariables :=
   { process := { bindings := [] }
@@ -177,7 +177,7 @@ def expectedWaitingVariables : ScopedVariables :=
 
 theorem activation_creates_complete_occurrence_owned_local_scope :
     waitingState.variables = expectedWaitingVariables := by
-  decide
+  decide +kernel
 
 def secondEffectId : EffectOccurrenceId :=
   { effectId with activation := 2 }
@@ -191,7 +191,7 @@ theorem completion_removes_only_the_matching_owned_scope :
       some
         { process := { bindings := [expectedVariable "Document:42"] }
           activities := [{ owner := secondEffectId, bindings := arguments }] } := by
-  decide
+  decide +kernel
 
 theorem duplicate_owned_scope_is_rejected :
     completeActivityVariableScope
@@ -200,7 +200,7 @@ theorem duplicate_owned_scope_is_rejected :
             expectedWaitingVariables.activities ++
               expectedWaitingVariables.activities }
         effectId outputMappings (successResult "Document:42") = none := by
-  decide
+  decide +kernel
 
 def missingOwnedScopeState : RuntimeState :=
   { waitingState with variables := emptyScopedVariables }
@@ -213,7 +213,7 @@ theorem missing_owned_scope_rejects_with_exact_state_preservation :
         state := missingOwnedScopeState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 def privateLocalState : RuntimeState :=
   { waitingState with
@@ -229,7 +229,7 @@ theorem activity_local_bindings_remain_outside_public_observation :
     (observeStableState program privateLocalState).map
         (fun state => (state.variables, state.openEffects)) =
       some ([], waitingObservation.openEffects) := by
-  decide
+  decide +kernel
 
 theorem scoped_data_adds_no_closure_step :
     scenarioClosureLimit = 8 ∧
@@ -241,7 +241,7 @@ theorem scoped_data_adds_no_closure_step :
         (.startProcess ⟨"start-create-document"⟩
           ⟨"Process_A12CreateDocument"⟩ effectId.processInstanceId [])
       ).internalStepBoundExceeded = true := by
-  decide
+  decide +kernel
 
 def beforeEffectActivationState : RuntimeState :=
   { (runningProgramStartState? program effectId.processInstanceId []).getD
@@ -261,12 +261,12 @@ theorem scoped_data_does_not_change_internal_enabledness :
         (fire? operation beforeEffectActivationState).isSome) =
       program.operations.map (fun operation =>
         (fire? operation beforeEffectActivationWithUnrelatedData).isSome) := by
-  decide
+  decide +kernel
 
 theorem successful_mapping_trace_is_exact :
     runScenario program scenario =
       { outcome := .semantic .committed, trace := expectedTrace } := by
-  decide
+  decide +kernel
 
 theorem successful_result_maps_only_process_target (reference : String) :
     completeActivityVariableScope expectedWaitingVariables effectId
@@ -301,7 +301,7 @@ theorem missing_patch_is_rejected :
         state := waitingState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } :=
-  invalid_patch_is_rejected ⟨"missing-patch"⟩ (.success []) (by decide)
+  invalid_patch_is_rejected ⟨"missing-patch"⟩ (.success []) (by decide +kernel)
 
 theorem extra_patch_is_rejected :
     applyStimulus scenarioClosureLimit program waitingState
@@ -317,7 +317,7 @@ theorem extra_patch_is_rejected :
     (.success
       [ { name := "newDocRef", value := .string "Document:42" }
       , { name := "extra", value := .string "extra" } ])
-    (by decide)
+    (by decide +kernel)
 
 theorem duplicate_patch_is_rejected :
     applyStimulus scenarioClosureLimit program waitingState
@@ -333,7 +333,7 @@ theorem duplicate_patch_is_rejected :
     (.success
       [ { name := "newDocRef", value := .string "Document:42" }
       , { name := "newDocRef", value := .string "Document:43" } ])
-    (by decide)
+    (by decide +kernel)
 
 /-- Executable wrong account: the host writes the Worker's local patch directly into Process scope instead of applying the admitted output mapping. -/
 private def writeLocalPatchToProcessScope (state : RuntimeState) : RuntimeState :=
@@ -353,6 +353,6 @@ theorem direct_patch_to_process_scope_is_a_non_law :
         (.completeEffect ⟨"mapped-patch"⟩ effectId
           (successResult "Document:42"))).state.variables.process.bindings =
         [expectedVariable "Document:42"] := by
-  decide
+  decide +kernel
 
 end BpmnSemantics.CreateDocumentDataConformance

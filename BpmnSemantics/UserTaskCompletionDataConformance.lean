@@ -40,13 +40,13 @@ theorem exact_completion_merges_process_bindings :
         state := completedStateWithMergedBindings
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 /-- Merely placing completion data in a future stimulus cannot affect the operations enabled by the current waiting state. -/
 theorem waiting_enabledness_is_data_independent :
     enabledInternalOperationCount program stateWithExistingBindings =
       enabledInternalOperationCount program afterStartState := by
-  decide
+  decide +kernel
 
 /-- A mismatched completion preserves every Process and Activity-local binding supplied by the pre-command state. -/
 theorem mismatched_completion_preserves_all_scoped_variables
@@ -63,6 +63,6 @@ theorem mismatched_completion_preserves_all_scoped_variables
   exact task_identity_mismatch_is_rejected
     program exactWait ⟨"wrong-activation"⟩
       { exactTaskInstanceId with activation := 2 }
-      submittedValues 0 variables (Or.inr (Or.inr (by decide)))
+      submittedValues 0 variables (Or.inr (Or.inr (by decide +kernel)))
 
 end BpmnSemantics.UserTaskCompletionDataConformance

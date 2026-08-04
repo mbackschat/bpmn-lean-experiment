@@ -314,7 +314,7 @@ theorem parallel_start_creates_exact_branch_waits :
     waitMultiplicity parallelWaitingState ⟨"UserTask_A"⟩ = 1 ∧
       waitMultiplicity parallelWaitingState ⟨"UserTask_B"⟩ = 1 ∧
       parallelWaitingState.tokens = [] := by
-  decide
+  decide +kernel
 
 theorem parallel_task_activation_order_has_same_observation :
     observeStableState parallelProgram parallelWaitingState =
@@ -329,22 +329,22 @@ theorem parallel_supported_closure_reaches_exact_waiting_state :
         state := parallelWaitingStateFor ⟨"Instance_1"⟩
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  decide
+  decide +kernel
 
 theorem exact_completion_removes_only_named_occurrence :
     waitMultiplicity parallelAfterCompletingA ⟨"UserTask_A"⟩ = 0 ∧
       waitMultiplicity parallelAfterCompletingA ⟨"UserTask_B"⟩ = 1 ∧
       tokenMultiplicity parallelAfterCompletingA ⟨"place:Flow_AToJoin"⟩ = 1 := by
-  decide
+  decide +kernel
 
 theorem completion_order_independent_at_final_state :
     parallelFinalAThenB = parallelFinalBThenA := by
-  decide
+  decide +kernel
 
 theorem synchronize_consumes_per_incoming_and_preserves_excess :
     step parallelProgram excessJoinState parallelJoinOperation =
       some excessAfterJoin := by
-  decide
+  decide +kernel
 
 theorem token_projection_ignores_storage_permutation :
     projectTokenMultiplicities parallelProgram
@@ -357,7 +357,7 @@ theorem token_projection_ignores_storage_permutation :
             , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
                 ⟨"place:Flow_AToJoin"⟩ ] } =
       projectTokenMultiplicities parallelProgram excessJoinState := by
-  decide
+  decide +kernel
 
 /-- This synthetic state is deliberately outside current admission: it locks the cross-language canonical order before mixed wait kinds become reachable. -/
 private def mixedWaitProjectionProgram : Program :=
@@ -479,13 +479,13 @@ theorem active_wait_projection_orders_by_semantic_kind :
         , { elementId := ⟨"D_Effect"⟩
             kind := .effect
             multiplicity := 1 } ] := by
-  decide
+  decide +kernel
 
 /-- The nearest count-based join proposition is false for two offers on only the left incoming flow. -/
 theorem duplicate_left_no_right_non_law :
     countBasedJoinReady duplicateLeftNoRightState parallelJoinInputs = true ∧
       perIncomingJoinReady duplicateLeftNoRightState parallelJoinInputs = false := by
-  decide
+  decide +kernel
 
 
 end BpmnSemantics.SemanticProcess

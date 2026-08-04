@@ -35,11 +35,11 @@ private theorem colon_absent_from_nat_string (value : Nat) :
     ∀ character ∈ (toString value).toList, (character == ':') = false := by
   intro character member
   have digit : character.isDigit := by
-    apply Nat.isDigit_of_mem_toDigits (b := 10) (by decide) (by decide)
+    apply Nat.isDigit_of_mem_toDigits (b := 10) (by decide +kernel) (by decide +kernel)
     simpa [Nat.toString_eq_ofList_toDigits] using member
   by_cases equal : character = ':'
   · subst character
-    have colonNotDigit : (':').isDigit = false := by decide
+    have colonNotDigit : (':').isDigit = false := by decide +kernel
     rw [colonNotDigit] at digit
     contradiction
   · exact Bool.eq_false_iff.mpr fun beqTrue =>
@@ -171,8 +171,8 @@ theorem calledProcessIdentity_differs_from_caller
   have sizes := congrArg (fun value : SemanticId => value.value.utf8ByteSize) equal
   simp [deriveCalledProcessInstanceId, calledProcessIdentityPrefix,
     String.utf8ByteSize_append] at sizes
-  have callTagSize : "call:".utf8ByteSize = 5 := by decide
-  have separatorSize : ":".utf8ByteSize = 1 := by decide
+  have callTagSize : "call:".utf8ByteSize = 5 := by decide +kernel
+  have separatorSize : ":".utf8ByteSize = 1 := by decide +kernel
   rw [callTagSize, separatorSize] at sizes
   omega
 

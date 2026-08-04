@@ -20,15 +20,15 @@ end CommandOutcome
 
 theorem rollback_and_rejection_outcomes_are_distinct :
     ScenarioOutcome.semantic .rolledBack ≠ .semantic .rejected := by
-  decide
+  decide +kernel
 
 theorem semantic_and_harness_failures_are_distinct :
     ScenarioOutcome.semantic .semanticFailure ≠ .harnessFailure := by
-  decide
+  decide +kernel
 
 theorem infrastructure_and_harness_failures_are_distinct :
     ScenarioOutcome.infrastructureFailure ≠ .harnessFailure := by
-  decide
+  decide +kernel
 
 def contractScenario : Scenario :=
   { kind := .scenario

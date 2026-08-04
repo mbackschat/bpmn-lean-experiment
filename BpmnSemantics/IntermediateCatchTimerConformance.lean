@@ -133,18 +133,18 @@ def expectedTrace : List CanonicalObservation :=
   , .state completedObservation ]
 
 theorem checked_process_is_well_formed :
-    checkedWellFormed checkedProcess = true := by decide
+    checkedWellFormed checkedProcess = true := by decide +kernel
 
 theorem lowered_program_is_well_formed :
-    programWellFormed program = true := by decide
+    programWellFormed program = true := by decide +kernel
 
 theorem checked_process_lowering_is_exact :
-    lowerCheckedProcess checkedProcess = program := by decide
+    lowerCheckedProcess checkedProcess = program := by decide +kernel
 
 theorem exact_deadline_scenario_trace_is_exact :
     runScenario program scenario =
       { outcome := .semantic .committed, trace := expectedTrace } := by
-  decide
+  decide +kernel
 
 theorem early_timer_firing_is_rejected :
     applyStimulus scenarioClosureLimit program
@@ -155,14 +155,14 @@ theorem early_timer_firing_is_rejected :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } :=
   timer_identity_or_time_mismatch_is_rejected
-    program timerWait fireCommandId timerId 999 0 (by decide)
+    program timerWait fireCommandId timerId 999 0 (by decide +kernel)
 
 /-- The admitted timer does not permit early firing; exact deadline equality is semantically material rather than a host-scheduler convenience. -/
 theorem early_timer_firing_is_not_permitted :
     (applyStimulus scenarioClosureLimit program
       (singletonTimerWaitingState timerWait)
       (.fireTimer fireCommandId timerId 999)).outcome ≠ .committed := by
-  decide
+  decide +kernel
 
 theorem late_timer_firing_is_rejected :
     applyStimulus scenarioClosureLimit program
@@ -173,6 +173,6 @@ theorem late_timer_firing_is_rejected :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } :=
   timer_identity_or_time_mismatch_is_rejected
-    program timerWait fireCommandId timerId 1001 0 (by decide)
+    program timerWait fireCommandId timerId 1001 0 (by decide +kernel)
 
 end BpmnSemantics.IntermediateCatchTimerConformance
