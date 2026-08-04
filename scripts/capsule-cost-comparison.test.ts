@@ -68,17 +68,22 @@ function rankOf(values: ReadonlyArray<number>, own: number): number {
  * Ordinal phrasings a later row can silently falsify by landing above the row that used them.
  *
  * These are checkable in principle and stale in practice: "second only to" was true when written and
- * became rank 5 as two capsules were recorded above it, with nothing failing. Requiring the rank form
- * instead makes the same claim survive a growing table, because the guard recomputes it. Comparative
- * words that are genuinely ambiguous — "nearest recorded", which may mean nearest in value or most
- * recently recorded — are deliberately not listed, since forbidding them would force a rewrite of
- * historical rows on a contested reading.
+ * became rank 5 as three capsules were recorded above it, with nothing failing. Requiring the rank
+ * form instead makes the same claim survive a growing table, because the guard recomputes it.
+ *
+ * Matched by pattern rather than by literal, because a literal list is leaky at exactly this width: a
+ * first formulation listed four exact phrases and missed the wording of the first recorded instance
+ * ("the largest documentation figure in its ledger"), every capitalised variant, and "third only to".
+ * An ordinal or superlative word scoped to this ledger is the category; the phrases were only its
+ * current instances.
+ *
+ * Comparative words that are genuinely ambiguous — "nearest recorded", which may mean nearest in
+ * value or most recently recorded — are deliberately excluded, since forbidding them would force a
+ * rewrite of historical rows on a contested reading.
  */
-const staleOrdinalPhrases = [
-  "largest recorded in this ledger",
-  "largest in this ledger",
-  "smallest recorded in this ledger",
-  "second only to",
+const staleOrdinalPatterns = [
+  /(largest|smallest|highest|lowest|most|fewest)\b[^.|]{0,40}\bin (this|its|the) (ledger|table)/iu,
+  /\b(second|third|fourth|fifth)\s+only\s+to\b/iu,
 ] as const;
 
 export function inaccurateRankClaims(
@@ -87,10 +92,11 @@ export function inaccurateRankClaims(
   const rows = measurements(markdown);
   const found: string[] = [];
   for (const row of rows) {
-    for (const phrase of staleOrdinalPhrases) {
-      if (row.consequence.includes(phrase)) {
+    for (const pattern of staleOrdinalPatterns) {
+      const stale = pattern.exec(row.consequence);
+      if (stale !== null) {
         found.push(
-          `${row.increment}: states "${phrase}" instead of a checkable rank claim`,
+          `${row.increment}: states "${stale[0]}" instead of a checkable rank claim`,
         );
       }
     }
@@ -158,12 +164,25 @@ test("rejects a wrong rank and a stale row count", () => {
     inaccurateRankClaims(`${table}rank 1 of 2 by code |`).length,
     1,
   );
-  // An ordinal phrase is rejected on sight: it was true when written and a later row falsified it
-  // with nothing failing, which is the defect the rank form exists to prevent.
-  assert.equal(
-    inaccurateRankClaims(`${table}code additions are second only to Beta |`).length,
-    1,
-  );
+  // Each of these escaped a literal-substring first formulation, including the exact wording of the
+  // first recorded instance, so they are locked individually rather than trusted to one phrasing.
+  for (
+    const stale of [
+      "code additions are second only to Beta",
+      "code additions are third only to Beta",
+      "the largest documentation figure in its ledger",
+      "documentation additions are the second largest in this ledger",
+      "Largest in this ledger by documentation",
+      "the smallest in this ledger",
+      "the largest recorded in this table",
+    ]
+  ) {
+    assert.equal(
+      inaccurateRankClaims(`${table}${stale} |`).length,
+      1,
+      `admitted a stale ordinal claim: ${stale}`,
+    );
+  }
   // "nearest recorded" stays admissible, because it may mean most-recently-recorded and forbidding it
   // would rewrite historical rows on a contested reading.
   assert.deepEqual(
