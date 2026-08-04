@@ -108,11 +108,11 @@ Use red/green TDD:
 1. run `node scripts/what-binds.ts <path>...` on every path the change will add or grow, and treat its guard, registry, and `OWNER` headroom lines as constraints on the plan rather than as output to skim;
 2. identify the normative requirement, CIB probe, or explicit open interpretation;
 3. add the smallest separating executable example;
-3. complete the capsule's Temporal hosting/refinement preflight before production Lean or semantic-core implementation;
-4. confirm failure for the intended missing mechanism;
-5. implement the semantic root rather than a case-specific patch;
-6. run the focused gate and then the complete applicable gate;
-7. update the owning research, experiment, implementation, and plan documents.
+4. complete the capsule's Temporal hosting/refinement preflight before production Lean or semantic-core implementation;
+5. confirm failure for the intended missing mechanism;
+6. implement the semantic root rather than a case-specific patch;
+7. run the focused gate and then the complete applicable gate;
+8. update the owning research, experiment, implementation, and plan documents.
 
 For coverage work, begin from the BPMN requirement and reusable mechanism. Add CIB source admission, probes, profile rules, and retained evidence only when the standard is ambiguous, the selected compatibility profile differs or adds behavior, a real downstream model requires an extension, or the Temporal mapping needs an engine observation. Do not require a CIB extension merely to complete a vendor-neutral BPMN capsule.
 

@@ -301,24 +301,16 @@ Both plans must still answer their follow-on task, so neither example ends in an
 
 Pre-release policy applies: the new operation kind is added atomically across the checked-graph compiler, Semantic Process contract, JSON Schemas, Lean decoder and lowering, semantic core, the adapter's typed contract module and host-capability classifier, differential catalog, and every fixture, with no compatibility reader, format counter, or migration branch. No retained Event History is kept beyond the disposable gate.
 
-### Owners this implementation grows
+### Extractions this implementation forced
 
-Nonblank headroom from `node scripts/what-binds.ts <path>...`. Every figure below is recomputed by [the reviewability guard](../../scripts/document-reviewability.test.ts) on each run and must equal the measured value, so changing an owner's size fails the gate and forces this inventory to be revisited. That is deliberate: a structural claim such as "this owner is full, extract first" holds only under a measurement, and recording the conclusion without re-deriving the measurement is what lets it outlive its own premise.
+This capsule crossed three module-size extraction boundaries rather than one, and each landed as a separate behavior-preserving commit rather than as work done under a size squeeze inside a semantic change.
 
-Each row therefore states the condition under which its consequence stops applying, rather than a bare instruction.
+- The adapter runner: nine forwarding probe methods moved to [mutation probes](../../packages/temporal-adapter/src/mutation-probes.ts) behind a narrow host contract at `d14570b`.
+- The semantic core runtime: [control-flow token transitions](../../packages/semantic-core/src/semantic-process-control-flow-runtime.ts) became their own owner.
+- The Lean definition decoder: the former combined owner split into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and [the program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean).
+- [Checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) absorbed the bounded-task clause and was left below the extraction threshold, which the next family cleared.
 
-| Owner | Headroom | Consequence, and when it expires |
-|---|---:|---|
-| [adapter runner](../../packages/temporal-adapter/src/runner.ts) | 152 | Extraction landed at `d14570b`: nine forwarding probe methods moved to [mutation probes](../../packages/temporal-adapter/src/mutation-probes.ts) behind a narrow host contract, so this owner is no longer size-constrained for the adapter lane. |
-| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 25 | **Expired.** The bounded-task lowering landed here and dropped headroom under 40, so the next family extracts this owner first. |
-| [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Cleared from 5 by extracting [control-flow token transitions](../../packages/semantic-core/src/semantic-process-control-flow-runtime.ts) into their own owner. Re-expires under 40. |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 51 | Sufficient; already carries the new operation kind and checked node variant. Expires under 40. |
-| [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 179 | Sufficient. |
-| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 215 | Cleared from 12 by splitting the former combined definition decoder into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and this program owner. |
-| [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 354 | Sufficient. |
-| [host capability classifier](../../packages/temporal-adapter/src/host-admission.ts) | 448 | Sufficient; already carries the bounded-wait class and its shared single-managed-operation check. |
-
-Three owners were at or near the review target when this inventory was first derived, so this capsule crosses three extraction boundaries rather than one. Each extraction is a separate behavior-preserving commit, never work done under a size squeeze inside a semantic change; two have landed and the adapter runner remains.
+**This section deliberately records no headroom figures.** The planning inventory that carried them belonged to this capsule while it was a proposal, where [the reviewability guard](../../scripts/document-reviewability.test.ts) recomputes every figure against measurement. That guard reads proposals only, so the table went out of jurisdiction at graduation and seven of its eight figures drifted while its own preamble still promised they were recomputed — a false claim about coverage rather than a stale number. Measure a current owner with `node scripts/what-binds.ts <path>...`; [an executable guard](../../scripts/document-reviewability.test.ts) now rejects a graduated specification that reintroduces the table.
 
 The Lean split supersedes the boundary recorded in [the archived Lean comment-discipline proposal](../archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md), which deliberately kept checked-process and program decoding in one owner and retained the shared element decoders there. That choice was sound at its size, and its substantive constraint is preserved: the shared decoders are still neither duplicated nor pushed into the wire-primitive support module. What changed is that the combined owner reached the review target while every future operation needs a clause in its program half, and the file already exposed exactly two public entry points, so the representation boundary was the split the code was already asking for.
 

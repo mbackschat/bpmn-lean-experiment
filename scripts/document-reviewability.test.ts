@@ -479,6 +479,61 @@ test("every capsule proposal names the guards and owners that already bind it", 
 // family naming convention, only the filesystem. It deliberately does not reach a cross-cutting
 // enumeration such as a registry listing every family in prose, whose names are not derivable —
 // those are kept out of maintained prose instead of guarded.
+/**
+ * A graduated specification must retain no owner-headroom figure at all.
+ *
+ * The inventory guard above reads proposals only, because headroom figures constrain a *plan*. A
+ * graduated capsule therefore leaves that jurisdiction silently and its figures drift while the
+ * table's own preamble still promises they are recomputed, which is a false claim about coverage
+ * rather than a stale number. That happened: the interrupting Activity boundary Timer specification
+ * carried seven wrong figures out of eight after graduation, and the first attempt to record *that*
+ * defect miscounted it as three of four by reading only the first rows of the table it described.
+ *
+ * This matches the measured row shape rather than one heading string, so renaming the table does not
+ * evade it and a stray figure outside a table is still caught.
+ */
+function retainedHeadroomFigures(markdown: string): ReadonlyArray<string> {
+  return markdown.split("\n").flatMap((line, index) => {
+    const row = /^\|\s*\[[^\]]+\]\((\.\.\/[^)]+)\)\s*\|\s*(\d+)\s*\|/u.exec(line);
+    return row === null ? [] : [`line ${index + 1}: ${row[1]} states ${row[2]}`];
+  });
+}
+
+test("no graduated specification retains an owner-headroom figure", async () => {
+  const capsuleRoot = path.join(projectRoot, "docs/capsules");
+  const specifications = (await readdir(capsuleRoot))
+    .filter((entry) => entry.endsWith("-SPEC.md"));
+  assert.ok(
+    specifications.length > 5,
+    `specification enumeration returned ${specifications.length} files`,
+  );
+  const findings: string[] = [];
+  for (const specification of specifications) {
+    const markdown = await readFile(path.join(capsuleRoot, specification), "utf8");
+    findings.push(
+      ...retainedHeadroomFigures(markdown).map((finding) => `${specification}: ${finding}`),
+    );
+  }
+
+  assert.deepEqual(
+    findings,
+    [],
+    "graduation drops owner-headroom figures; record the extractions the capsule forced instead",
+  );
+});
+
+test("the graduation policy matches a headroom row and ignores prose and guard rows", () => {
+  assert.deepEqual(
+    retainedHeadroomFigures([
+      "| [runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Sufficient. |",
+      "| [guard](../../scripts/capsule-roundtrip.test.ts) | Every artifact is registered. |",
+      "Prose naming [an owner](../../packages/semantic-core/src/index.ts) with 47 lines spare.",
+      "| Owner | Headroom | Consequence |",
+    ].join("\n")),
+    ["line 1: ../../packages/semantic-core/src/semantic-process-runtime.ts states 47"],
+  );
+});
+
 test("links every scenario document from its own family README", async () => {
   const unlinked: string[] = [];
   const families = await readdir(path.join(projectRoot, "scenarios"), {
