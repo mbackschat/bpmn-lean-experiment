@@ -10,6 +10,8 @@ import type {
   SemanticOperation,
 } from "@bpmn-lean/semantic-core";
 
+import { controlPlaceId } from "./semantic-process-identifiers.js";
+
 export function lowerEventRaceOperation(
   node: Extract<CheckedNode, { kind: CheckedNodeKind.EventBasedGateway }>,
   source: CheckedProcess,
@@ -118,7 +120,7 @@ function onlyFlowPlace(
     .filter((flow) =>
       direction === "incoming" ? flow.targetId === nodeId : flow.sourceId === nodeId
     )
-    .map(({ id }) => `place:${id}`)
+    .map(({ id }) => controlPlaceId(id))
     .sort(compareCanonicalStrings);
   const flow = flows[0];
   if (flows.length !== 1 || flow === undefined) {

@@ -265,7 +265,7 @@ Nonblank headroom from `node scripts/what-binds.ts <path>...`. Every figure is r
 
 | Owner | Headroom | Consequence, and when it expires |
 |---|---:|---|
-| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 25 | **Already expired.** A behavior-preserving extraction is a prerequisite commit before any lowering clause is added here. |
+| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 103 | Cleared from the expired 25 by extracting [conditional branch lowering](../../packages/bpmn-source/src/conditional-branch-lowering.ts) and [the identifier conventions](../../packages/bpmn-source/src/semantic-process-identifiers.ts) into their own owners. Re-expires under 40. |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 75 | The tightest owner after the expired one, and the file decision 2 is actually about: it holds `boundaryTimersAttachToUserTasks`. Adding an enumerated host-kind set plus its negative cases here expires this budget, so measure again before the edit and extract if it falls under 40. |
 | [Lean checked-process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 309 | Sufficient; holds `checkedBoundaryTimerAttachmentValid`, the independent mirror of the same host predicate. |
 | [source projection for boundary Timers](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 515 | Sufficient; must accept a Sub-Process attachment host. |
@@ -283,7 +283,9 @@ Nonblank headroom from `node scripts/what-binds.ts <path>...`. Every figure is r
 | [host capability classifier](../../packages/temporal-adapter/src/host-admission.ts) | 448 | Sufficient; must gain the bounded-scope class and reject it beside a managed race. |
 | [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 354 | Sufficient; carries the new refusal identity. |
 
-One owner is already expired and one more is within 75 lines, so this capsule crosses one mandatory extraction boundary and must re-measure a second before editing it. Each extraction is a separate behavior-preserving commit and never work done under a size squeeze inside a semantic change.
+The one expired owner's extraction has landed as its own behavior-preserving commit, so no owner is now above its review target and the tightest remaining is `checked-process-admission.ts` at 75. That one must be re-measured before it is edited, because decision 2's host-kind widening and its per-excluded-kind negative cases land there. No extraction is ever work done under a size squeeze inside a semantic change.
+
+That extraction also removed a pre-existing smell rather than only moving lines: the `place:` control-place prefix was spelled in three places across the lowering modules, and it is wire-visible — it reaches the program, its JSON Schema, Lean's independent decoder, and runtime token state — so a second spelling would have been a silent contract fork. It now has one owner.
 
 The two attachment validators are near-duplicates across TypeScript and Lean encoding one host predicate, so widening them is a single conceptual edit applied twice. A wrong widening therefore lands identically in both targets and the differential lane cannot separate them. That is the same correlated-failure shape recorded under common-mode risks for the shared cancellation helper, but at the admission boundary, and it is why decision 2's negative cases must be written per excluded host kind rather than as one positive case.
 

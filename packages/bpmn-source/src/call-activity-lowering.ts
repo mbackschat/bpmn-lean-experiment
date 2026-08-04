@@ -12,6 +12,8 @@ import type {
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
+import { controlPlaceId } from "./semantic-process-identifiers.js";
+
 export type ScopedCallOperation = Readonly<{
   operation: InvokeProcessOperation | ReturnProcessOperation;
   scopeId: string;
@@ -220,7 +222,7 @@ function requireOnlyFlowPlace(
   if (flows.length !== 1 || flow === undefined) {
     throw new TypeError(`Checked node ${nodeId} requires one ${direction} flow`);
   }
-  return `place:${flow.id}`;
+  return controlPlaceId(flow.id);
 }
 
 function sameDefinitionScopes(

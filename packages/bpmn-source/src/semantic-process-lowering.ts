@@ -16,9 +16,6 @@ import type {
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import {
-  parseSimpleBooleanExpression,
-} from "./simple-boolean-expression.js";
-import {
   eventRaceConfigurationFlowIds,
   isEventRaceCatch,
   lowerEventRaceOperation,
@@ -27,6 +24,15 @@ import {
   lowerCallActivityInvoke,
   lowerCalledProcessReturn,
 } from "./call-activity-lowering.js";
+import {
+  lowerConditionalCandidate,
+  lowerInclusiveCandidate,
+  lowerInclusiveDefaultBranch,
+} from "./conditional-branch-lowering.js";
+import {
+  controlPlaceId,
+  operationId,
+} from "./semantic-process-identifiers.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -60,7 +66,7 @@ export function lowerCheckedProcess(
     controlPlaceScopes: source.sequenceFlowScopes
       .filter(({ sequenceFlowId }) => !configurationFlows.has(sequenceFlowId))
       .map(({ sequenceFlowId, scopeId }) => ({
-        controlPlaceId: placeId(sequenceFlowId),
+        controlPlaceId: controlPlaceId(sequenceFlowId),
         scopeId,
       }))
       .sort((left, right) =>
@@ -69,7 +75,7 @@ export function lowerCheckedProcess(
     controlPlaces: source.sequenceFlows
       .filter(({ id }) => !configurationFlows.has(id))
       .map((flow) => ({
-      id: placeId(flow.id),
+      id: controlPlaceId(flow.id),
       origin: {
         kind: SemanticOriginKind.BpmnSequenceFlow,
         elementId: flow.id,
@@ -208,7 +214,7 @@ function lowerNode(
           ? null
           : {
               code: node.bpmnErrorRoute.code,
-              output: placeId(node.bpmnErrorRoute.outputFlowId),
+              output: controlPlaceId(node.bpmnErrorRoute.outputFlowId),
               origin: {
                 kind: SemanticOriginKind.BpmnElement,
                 boundaryEventId: node.bpmnErrorRoute.boundaryEventId,
@@ -246,7 +252,7 @@ function lowerNode(
           ReturnType<typeof lowerConditionalCandidate>,
           ReturnType<typeof lowerConditionalCandidate>,
         ],
-        defaultOutput: placeId(node.defaultFlowId),
+        defaultOutput: controlPlaceId(node.defaultFlowId),
         defaultOrigin: {
           kind: SemanticOriginKind.BpmnSequenceFlow,
           elementId: node.defaultFlowId,
@@ -294,7 +300,7 @@ function lowerNode(
         handler: {
           attachedScopeId: handler.attachedScopeId,
           code: handler.boundary.error.code,
-          output: placeId(handler.boundary.outputFlowId),
+          output: controlPlaceId(handler.boundary.outputFlowId),
           origin: {
             kind: SemanticOriginKind.BpmnElement,
             boundaryEventId: handler.boundary.id,
@@ -431,93 +437,8 @@ function flowPlaces(
         ? flow.targetId === nodeId
         : flow.sourceId === nodeId
     )
-    .map(({ id }) => placeId(id))
+    .map(({ id }) => controlPlaceId(id))
     .sort(compareCanonicalStrings);
-}
-
-function lowerConditionalCandidate(
-  flows: ReadonlyArray<CheckedSequenceFlow>,
-  flowId: string,
-) {
-  const flow = flows.find(({ id }) => id === flowId);
-  if (flow === undefined || flow.condition === null) {
-    throw new TypeError(
-      `Checked conditional Sequence Flow ${flowId} is missing its condition`,
-    );
-  }
-  const condition = parseSimpleBooleanExpression(flow.condition.body);
-  if (condition === undefined) {
-    throw new TypeError(
-      `Checked conditional Sequence Flow ${flowId} has an invalid expression`,
-    );
-  }
-  return {
-    condition,
-    output: placeId(flow.id),
-    origin: {
-      kind: SemanticOriginKind.BpmnSequenceFlow,
-      elementId: flow.id,
-    },
-  } as const;
-}
-
-function lowerInclusiveCandidate(
-  source: CheckedProcess,
-  splitId: string,
-  flowId: string,
-) {
-  return {
-    ...lowerConditionalCandidate(source.sequenceFlows, flowId),
-    expectedJoinInput: expectedJoinInputForBranch(source, splitId, flowId),
-  } as const;
-}
-
-function lowerInclusiveDefaultBranch(
-  source: CheckedProcess,
-  splitId: string,
-  flowId: string,
-) {
-  const flow = source.sequenceFlows.find(({ id }) => id === flowId);
-  if (flow === undefined || flow.condition !== null || flow.sourceId !== splitId) {
-    throw new TypeError(`Checked Inclusive default Sequence Flow ${flowId} is invalid`);
-  }
-  return {
-    output: placeId(flow.id),
-    expectedJoinInput: expectedJoinInputForBranch(source, splitId, flowId),
-    origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: flow.id },
-  } as const;
-}
-
-function expectedJoinInputForBranch(
-  source: CheckedProcess,
-  splitId: string,
-  flowId: string,
-): string {
-  const branch = source.sequenceFlows.find(
-    (flow) => flow.id === flowId && flow.sourceId === splitId,
-  );
-  const task = branch === undefined
-    ? undefined
-    : source.nodes.find(({ id }) => id === branch.targetId);
-  const join = source.nodes.find(
-    (node): node is Extract<CheckedNode, {
-      kind: CheckedNodeKind.InclusiveGateway;
-      direction: GatewayDirection.Converging;
-    }> =>
-      node.kind === CheckedNodeKind.InclusiveGateway &&
-      node.direction === GatewayDirection.Converging &&
-      node.pairedGatewayId === splitId,
-  );
-  const joinInputs = task === undefined || join === undefined
-    ? []
-    : source.sequenceFlows.filter(
-        ({ sourceId, targetId }) => sourceId === task.id && targetId === join.id,
-      );
-  const joinInput = joinInputs[0];
-  if (task?.kind !== CheckedNodeKind.UserTask || joinInputs.length !== 1 || joinInput === undefined) {
-    throw new TypeError(`Checked Inclusive branch ${flowId} has no unique paired join input`);
-  }
-  return placeId(joinInput.id);
 }
 
 /** The interrupting Timer Boundary Event attached to this Activity, when the profile admitted one. */
@@ -579,14 +500,6 @@ function requireExactThree(
     throw new TypeError(`Checked node ${nodeId} requires exactly three ${direction} flows`);
   }
   return [first, second, third];
-}
-
-function placeId(flowId: string): string {
-  return `place:${flowId}`;
-}
-
-function operationId(elementId: string): string {
-  return `operation:${elementId}`;
 }
 
 function compareIds(
