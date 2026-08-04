@@ -1,0 +1,77 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-activity-boundary-timer-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-interrupting-pt1s-timer-boundary-event-on-one-user-task",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.4.3",
+      "Clause 13.5.2",
+      "Clause 13.5.3",
+      "Table 10.87",
+      "Table 13.4 WCP-19"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "interrupting-timer-boundary-event",
+      "default-cancel-activity-true",
+      "literal-time-duration-pt1s",
+      "atomic-activity-and-boundary-arming",
+      "activity-completion-withdraws-boundary-deadline",
+      "boundary-deadline-abandons-activity",
+      "boundary-output-sequence-flow",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-boundary-event-compatibility-claim",
+    "non-interrupting-boundary-event",
+    "boundary-events-on-any-other-activity-type",
+    "more-than-one-boundary-event-per-activity",
+    "error-signal-message-conditional-escalation-and-compensation-boundaries",
+    "timer-date-cycle-and-other-durations",
+    "boundary-attachment-exactness-beyond-a-unique-same-scope-user-task-host",
+    "which-none-end-event-each-route-reaches",
+    "portable-physical-simultaneity-order",
+    "coalesced-completion-and-deadline-winner",
+    "repeated-and-nested-boundaries",
+    "loops",
+    "multi-instance",
+    "event-subprocesses",
+    "general-cancellation",
+    "a12-adoption-coverage",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

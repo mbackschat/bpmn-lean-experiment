@@ -1,0 +1,63 @@
+{
+  "kind": "scenario",
+  "id": "activity-boundary-timer-deadline-wins",
+  "profile": "bpmn-2.0.2-activity-boundary-timer-draft",
+  "bpmn": {
+    "id": "activity-boundary-timer",
+    "relativePath": "scenarios/activity-boundary-timer/process.bpmn",
+    "sha256": "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-deadline-wins",
+      "processId": "Process_ActivityBoundaryTimer",
+      "instanceId": "BoundedInstance_DeadlineWins",
+      "initialVariables": []
+    },
+    {
+      "kind": "fireTimer",
+      "commandId": "fire-timer-sha256:1117b14fa96cbdf549ef3b94a2cb8ed8f7c4a302a1023e78246c6b7d0bcc0394",
+      "timerId": {
+        "processInstanceId": "BoundedInstance_DeadlineWins",
+        "elementId": "Deadline",
+        "activation": 1
+      },
+      "logicalTimeMs": 1000
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-boundary-follow-on",
+      "taskId": {
+        "processInstanceId": "BoundedInstance_DeadlineWins",
+        "elementId": "BoundaryTask",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.3",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 13.4 WCP-19"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/BoundaryEventImpl.java"
+    ]
+  }
+}
