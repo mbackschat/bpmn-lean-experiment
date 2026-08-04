@@ -138,7 +138,7 @@ export function registerServiceTaskEffectTemporalTests(
       input.semanticProcess,
     ).trace;
     const execution = await withDeadline(
-      getRunner().runEffectExhaustion(
+      getRunner().probes.runEffectExhaustion(
         input.scenario,
         input.semanticProcess,
         "service-task-effect-exhausted",
@@ -167,7 +167,7 @@ export function registerServiceTaskEffectTemporalTests(
     const input = serviceTaskEffectInput();
     const expected = runScenario(input.scenario, input.semanticProcess);
     const execution = await withDeadline(
-      getRunner().runEffectBypassMutation(
+      getRunner().probes.runEffectBypassMutation(
         input.scenario,
         input.semanticProcess,
         "service-task-effect-bypass",
@@ -192,7 +192,7 @@ export function registerServiceTaskEffectTemporalTests(
     const first = serviceTaskEffectInput("Instance_1");
     const second = serviceTaskEffectInput("Instance_2");
     const result = await withDeadline(
-      getRunner().runEffectScenariosWithSharedStore([
+      getRunner().probes.runEffectScenariosWithSharedStore([
         {
           ...first,
           options: {

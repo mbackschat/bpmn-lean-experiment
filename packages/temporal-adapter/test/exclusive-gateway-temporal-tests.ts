@@ -96,7 +96,7 @@ export function registerExclusiveGatewayTemporalTests(
     const input = await compileExecutionInput(scenario, bpmnUrl);
     const expected = runScenario(input.scenario, input.semanticProcess);
     const execution = await withDeadline(
-      getRunner().runBranchBypassMutation(
+      getRunner().probes.runBranchBypassMutation(
         input.scenario,
         input.semanticProcess,
         "simple-boolean-exclusive-gateway-branch-bypass",

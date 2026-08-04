@@ -96,7 +96,7 @@ export function registerBoundaryErrorTemporalTests(
       input.semanticProcess,
     ).trace;
     const execution = await withDeadline(
-      getRunner().runUnhandledBpmnError(
+      getRunner().probes.runUnhandledBpmnError(
         input.scenario,
         input.semanticProcess,
         "boundary-error-unhandled",
@@ -138,7 +138,7 @@ export function registerBoundaryErrorTemporalTests(
     const input = await boundaryErrorInput();
     const expected = runScenario(input.scenario, input.semanticProcess);
     const execution = await withDeadline(
-      getRunner().runEffectBypassMutation(
+      getRunner().probes.runEffectBypassMutation(
         input.scenario,
         input.semanticProcess,
         "boundary-error-bypass",

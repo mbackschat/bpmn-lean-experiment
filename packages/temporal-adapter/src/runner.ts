@@ -1,7 +1,6 @@
 import type {
   CanonicalObservation,
   CompleteUserTaskInstanceStimulus,
-  FireTimerStimulus,
   OpenUserTask,
   Scenario,
   SemanticProcessProgram,
@@ -9,7 +8,9 @@ import type {
 import type {
   WorkflowHandle,
 } from "@temporalio/client";
-import { TestWorkflowEnvironment } from "@temporalio/testing";
+import {
+  TestWorkflowEnvironment,
+} from "@temporalio/testing";
 import {
   createCachedLocalEnvironment,
   createCachedTimeSkippingEnvironment,
@@ -18,36 +19,19 @@ import {
 import {
   bpmnOpenUserTasksQueryName,
   bpmnTraceQueryName,
-  TemporalCompletionDelivery,
   TemporalExecutionSchedule,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
   CompletedProcessReceipt,
   TemporalHistory,
-  TemporalBranchBypassMutationExecution,
-  TemporalEffectBypassMutationExecution,
-  TemporalErrorPropagationBypassMutationExecution,
-  TemporalEffectFailureExecution,
   TemporalReplayItem,
   TemporalScenarioBatchItem,
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
-  TemporalScopeBypassMutationExecution,
   TemporalScenarioRunnerOptions,
-  TemporalTimerBypassMutationExecution,
-  TemporalSharedEffectExecutions,
-  TemporalUnhandledBpmnErrorExecution,
   TemporalTimeSkippingRunnerOptions,
 } from "./contracts.js";
-import {
-  runBranchBypassMutation,
-  runCompletionDataBypassMutation,
-  runEffectBypassMutation,
-  runErrorPropagationBypassMutation,
-  runScopeBypassMutation,
-  runTimerBypassMutation,
-} from "./bypass-mutation.js";
 import {
   deliverCompletions,
 } from "./completion-delivery.js";
@@ -56,20 +40,14 @@ import {
   EffectProbeStore,
 } from "./effect-probe.js";
 import {
-  runEffectExhaustion,
   runEffectScenario,
-  runEffectScenariosWithSharedStore,
 } from "./effect-scenario-execution.js";
-import {
-  runUnhandledBpmnError,
-} from "./boundary-error-scenario-execution.js";
 import {
   requireDurableTimerHistory,
   reconcileHarnessTraceEvidence,
 } from "./harness-evidence.js";
 import {
   completedState,
-  isCompletedProcessReceipt,
   openEffectsInTrace,
   openTimersInTrace,
   requireCompletedProcessReceipt,
@@ -103,6 +81,9 @@ import {
   waitForOpenUserTask,
   waitForTraceLength,
 } from "./runner-query-waits.js";
+import {
+  TemporalMutationProbes,
+} from "./mutation-probes.js";
 
 const temporalTestIdentity = "bpmn-lean-test-runtime";
 const operationDeadlineMs = 5_000;
@@ -114,11 +95,23 @@ const shutdownDeadlineMs = 10_000;
 export class TemporalScenarioRunner {
   private shutdownStarted = false;
 
+  /** Bypass-mutation and failure probes over this runner's live runtime. */
+  readonly probes: TemporalMutationProbes;
+
   private constructor(
     private readonly environment: TestWorkflowEnvironment,
     private readonly effectProbeRegistry: EffectProbeActivityRegistry,
     private readonly workerHost: TemporalWorkerHost,
-  ) {}
+  ) {
+    this.probes = new TemporalMutationProbes({
+      assertAvailable: () => this.assertAvailable(),
+      assertHealthy: () => this.workerHost.assertHealthy(),
+      environment: this.environment,
+      effectProbeRegistry: this.effectProbeRegistry,
+      runRegisteredScenario: (scenario, semanticProcess, options, store) =>
+        this.runRegisteredScenario(scenario, semanticProcess, options, store),
+    });
+  }
 
   static async create(
     options: TemporalScenarioRunnerOptions,
@@ -400,151 +393,6 @@ export class TemporalScenarioRunner {
           throw new Error("Rejected batch result escaped failure handling");
       }
     });
-  }
-
-  async runTimerBypassMutation(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalTimerBypassMutationExecution> {
-    this.assertAvailable();
-    return runTimerBypassMutation(
-      this.environment,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, completion) =>
-        this.waitForOpenUserTask(handle, completion),
-    );
-  }
-
-  async runBranchBypassMutation(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalBranchBypassMutationExecution> {
-    this.assertAvailable();
-    return runBranchBypassMutation(
-      this.environment,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, minimumLength) =>
-        this.waitForTrace(handle, minimumLength),
-    );
-  }
-
-  async runScopeBypassMutation(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalScopeBypassMutationExecution> {
-    this.assertAvailable();
-    return runScopeBypassMutation(
-      this.environment,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, minimumLength) =>
-        this.waitForTrace(handle, minimumLength),
-    );
-  }
-
-  async runErrorPropagationBypassMutation(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalErrorPropagationBypassMutationExecution> {
-    this.assertAvailable();
-    return runErrorPropagationBypassMutation(
-      this.environment,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, minimumLength) =>
-        this.waitForTrace(handle, minimumLength),
-    );
-  }
-
-  async runCompletionDataBypassMutation(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalTimerBypassMutationExecution> {
-    this.assertAvailable();
-    return runCompletionDataBypassMutation(
-      this.environment,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, completion) =>
-        this.waitForOpenUserTask(handle, completion),
-    );
-  }
-
-  async runEffectBypassMutation(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalEffectBypassMutationExecution> {
-    this.assertAvailable();
-    return runEffectBypassMutation(
-      this.environment,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, completion) =>
-        this.waitForOpenUserTask(handle, completion),
-    );
-  }
-
-  async runEffectExhaustion(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalEffectFailureExecution> {
-    this.assertAvailable();
-    return runEffectExhaustion(
-      this.environment,
-      this.effectProbeRegistry,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
-    );
-  }
-
-  async runEffectScenariosWithSharedStore(
-    items: ReadonlyArray<TemporalScenarioBatchItem>,
-  ): Promise<TemporalSharedEffectExecutions> {
-    this.assertAvailable();
-    return runEffectScenariosWithSharedStore(
-      this.effectProbeRegistry,
-      items,
-      (scenario, semanticProcess, options, store) =>
-        this.runRegisteredScenario(
-          scenario,
-          semanticProcess,
-          options,
-          store,
-        ),
-    );
-  }
-
-  async runUnhandledBpmnError(
-    scenario: Scenario,
-    semanticProcess: SemanticProcessProgram,
-    workflowId: string,
-  ): Promise<TemporalUnhandledBpmnErrorExecution> {
-    this.assertAvailable();
-    return runUnhandledBpmnError(
-      this.environment,
-      this.effectProbeRegistry,
-      scenario,
-      semanticProcess,
-      workflowId,
-      (handle, minimumLength) => this.waitForTrace(handle, minimumLength),
-    );
   }
 
   async replayHistory(history: unknown, workflowId: string): Promise<void> {

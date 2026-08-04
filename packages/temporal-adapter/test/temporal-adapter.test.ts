@@ -231,7 +231,7 @@ test("completion-data bypass writes outside the core but fails durable reconcili
   const input = await loadExecutionInput(requiredScenarioUrl(0));
 
   await assert.rejects(
-    activeRunner().runCompletionDataBypassMutation(
+    activeRunner().probes.runCompletionDataBypassMutation(
       input.scenario,
       input.semanticProcess,
       "user-task-completion-data-bypass",
@@ -342,7 +342,7 @@ test("timer-bypass mutation preserves pure observations but loses durable timer 
   const input = await compileExecutionInput(scenario, timerBpmnUrl);
   const expected = runScenario(input.scenario, input.semanticProcess);
   const execution = await withDeadline(
-    activeRunner().runTimerBypassMutation(
+    activeRunner().probes.runTimerBypassMutation(
       input.scenario,
       input.semanticProcess,
       "intermediate-catch-timer-bypass-mutation",

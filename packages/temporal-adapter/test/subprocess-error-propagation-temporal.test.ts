@@ -221,7 +221,7 @@ test("Error-bypass Workflow matches recovery then diverges on stale sibling", as
   });
   try {
     const execution = await withDeadline(
-      runner.runErrorPropagationBypassMutation(
+      runner.probes.runErrorPropagationBypassMutation(
         scenario,
         input.semanticProcess,
         "subprocess-error-propagation-bypass",

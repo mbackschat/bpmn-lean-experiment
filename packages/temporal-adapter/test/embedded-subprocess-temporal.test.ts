@@ -216,7 +216,7 @@ test("scope-bypass Workflow fabricates premature exit outside the semantic core"
   });
   try {
     const execution = await withDeadline(
-      runner.runScopeBypassMutation(
+      runner.probes.runScopeBypassMutation(
         scenario,
         input.semanticProcess,
         "embedded-subprocess-scope-bypass",

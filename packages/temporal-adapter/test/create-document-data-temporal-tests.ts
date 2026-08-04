@@ -122,7 +122,7 @@ export function registerCreateDocumentDataTemporalTests(
     const input = await createDocumentInput();
     const expected = runScenario(input.scenario, input.semanticProcess);
     const execution = await withDeadline(
-      getRunner().runEffectBypassMutation(
+      getRunner().probes.runEffectBypassMutation(
         input.scenario,
         input.semanticProcess,
         "create-document-data-bypass",
