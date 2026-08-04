@@ -357,6 +357,56 @@ theorem interruptBoundedUserTask_none_of_not_due (program : Program)
   | none => simp [found, pairFound]
   | some _ => simp [found, pairFound, notDue]
 
+/-- No victory produces a half-withdrawn pair: both arms remove exactly one live task and one live deadline.
+
+This is the victory counterpart of atomic arming. The pair keeps no ownership record, so a state
+holding one member without the other is unrecoverable rather than a resumption surface; this law is
+what rules that state out for every victory rather than for one fixture. -/
+theorem bounded_victory_withdraws_both_arms (program : Program)
+    (before after : RuntimeState)
+    (step : BoundedTaskVictoryStep program before after) :
+    ∃ task timer, task ∈ before.waits ∧ timer ∈ before.timerWaits ∧
+      after.waits = before.waits.erase task ∧
+      after.timerWaits = before.timerWaits.erase timer := by
+  cases step with
+  | activity _ task timer _ _ _ taskLive timerLive _ =>
+      exact ⟨task, timer, taskLive, timerLive, rfl, rfl⟩
+  | deadline _ task timer _ _ _ taskLive timerLive _ =>
+      exact ⟨task, timer, taskLive, timerLive, rfl, rfl⟩
+
+/-- A victory removes its own deadline occurrence, so the same pair cannot win twice.
+
+The `Nodup` hypothesis is load-bearing and names a fact the state type does not enforce: `RuntimeState`
+carries no uniqueness invariant over `timerWaits`, so nothing in the type rules out two identical
+occurrences. The stronger claim — that no later lookup *by key* can rediscover the withdrawn
+deadline — needs uniqueness of the (instance, element, activation) key rather than of the whole
+value, and that invariant is likewise unstated. Both are recorded as hypotheses here instead of
+being assumed silently. -/
+theorem bounded_victory_removes_its_own_deadline (program : Program)
+    (before after : RuntimeState)
+    (step : BoundedTaskVictoryStep program before after)
+    (nodup : before.timerWaits.Nodup) :
+    ∃ timer, timer ∈ before.timerWaits ∧ timer ∉ after.timerWaits := by
+  obtain ⟨task, timer, taskLive, timerLive, _, timerErased⟩ :=
+    bounded_victory_withdraws_both_arms program before after step
+  exact ⟨timer, timerLive, timerErased ▸ nodup.not_mem_erase⟩
+
+/-- The Activity arm refuses an identity that names no live task, for any state.
+
+Quantified rather than fixture-bound because the refusal must hold for every unmatched identity, not
+for the three the conformance fixture happens to try. -/
+theorem completeBoundedUserTask_none_of_no_match (program : Program)
+    (state : RuntimeState) (processInstanceId : SemanticId)
+    (taskId : TaskDefinitionId) (activation : Nat)
+    (missing : state.waits.find? (fun wait =>
+      decide (wait.processInstanceId = processInstanceId) &&
+        decide (wait.task.id = taskId) &&
+        decide (wait.activation = activation)) = none) :
+    completeBoundedUserTask? program state processInstanceId taskId activation =
+      none := by
+  unfold completeBoundedUserTask?
+  simp [missing]
+
 /-- Neither arm rewinds an activation counter, so a withdrawn occurrence can never be reissued. -/
 theorem bounded_victory_preserves_activation_counters (program : Program)
     (before after : RuntimeState)
