@@ -122,6 +122,83 @@ private def commitVictory (state : RuntimeState) (pair : BoundedPair)
           logicalTimeMs }
   | _ => none
 
+/-- A committed bounded-task operation joins this exact task and deadline occurrence, naming both routes.
+
+Stated over the program's committed operations rather than over the evaluator's lookup, so the
+relation below constrains what a legal victory *is* instead of restating how one is computed. -/
+def BoundedPairing (program : Program) (task : UserTaskWait) (timer : TimerWait)
+    (taskOutput timerOutput : ControlPlaceId) : Prop :=
+  ∃ operation ∈ boundedTaskOperations program,
+    operation.2.1.id = task.task.id ∧
+    operation.2.2.elementId = timer.elementId ∧
+    operation.2.1.output = taskOutput ∧
+    operation.2.2.output = timerOutput ∧
+    timer.activation = task.activation ∧
+    timer.owner = task.owner
+
+/-- Declarative victory relation with exactly two constructors, one per arm.
+
+Both arms withdraw both waits and produce a single token, which is what makes the victories mutually
+exclusive without an ownership record. They differ only in the route taken and in logical time: the
+Activity arm preserves it, while the deadline arm advances it to the exact deadline. Neither arm
+permits an intermediate state in which one wait is gone and the other is live. -/
+inductive BoundedTaskVictoryStep (program : Program) :
+    RuntimeState → RuntimeState → Prop where
+  | activity (before : RuntimeState) (instanceId : SemanticId)
+      (task : UserTaskWait) (timer : TimerWait)
+      (taskOutput timerOutput : ControlPlaceId)
+      (running : before.control = .running instanceId)
+      (taskLive : task ∈ before.waits)
+      (timerLive : timer ∈ before.timerWaits)
+      (paired : BoundedPairing program task timer taskOutput timerOutput) :
+      BoundedTaskVictoryStep program before
+        { before with
+          waits := before.waits.erase task
+          timerWaits := before.timerWaits.erase timer
+          tokens := addToken before.tokens taskOutput task.owner
+          logicalTimeMs := before.logicalTimeMs }
+  | deadline (before : RuntimeState) (instanceId : SemanticId)
+      (task : UserTaskWait) (timer : TimerWait)
+      (taskOutput timerOutput : ControlPlaceId)
+      (running : before.control = .running instanceId)
+      (taskLive : task ∈ before.waits)
+      (timerLive : timer ∈ before.timerWaits)
+      (paired : BoundedPairing program task timer taskOutput timerOutput) :
+      BoundedTaskVictoryStep program before
+        { before with
+          waits := before.waits.erase task
+          timerWaits := before.timerWaits.erase timer
+          tokens := addToken before.tokens timerOutput task.owner
+          logicalTimeMs := timer.deadlineMs }
+
+private theorem boundedPairForTask_pairing (program : Program)
+    (state : RuntimeState) (task : UserTaskWait) (pair : BoundedPair)
+    (found : boundedPairForTask? program state task = some pair) :
+    BoundedPairing program pair.task pair.timer pair.taskOutput pair.timerOutput ∧
+      pair.task = task ∧ pair.timer ∈ state.timerWaits := by
+  unfold boundedPairForTask? at found
+  cases opFound : (boundedTaskOperations program).find? (fun candidate =>
+      decide (candidate.2.1.id = task.task.id)) with
+  | none => simp [opFound] at found
+  | some op =>
+      cases twFound : state.timerWaits.find? (fun candidate =>
+          decide (candidate.elementId = op.2.2.elementId) &&
+            decide (candidate.activation = task.activation) &&
+            decide (candidate.owner = task.owner)) with
+      | none => simp [opFound, twFound] at found
+      | some tw =>
+          simp [opFound, twFound] at found
+          cases found
+          have opProperty : op.2.1.id = task.task.id := by
+            simpa using List.find?_some opFound
+          have twProperty : tw.elementId = op.2.2.elementId ∧
+              tw.activation = task.activation ∧ tw.owner = task.owner := by
+            simpa [Bool.and_eq_true, decide_eq_true_eq, and_assoc]
+              using List.find?_some twFound
+          exact ⟨⟨op, List.mem_of_find?_eq_some opFound, opProperty,
+            twProperty.1.symm, rfl, rfl, twProperty.2.1, twProperty.2.2⟩,
+            rfl, List.mem_of_find?_eq_some twFound⟩
+
 /-- Commits the Activity arm, withdrawing the deadline. The profile admits no completion patch, so the caller must reject a non-empty submission rather than ignore it: variable submission is a separately reviewed proposition and admitting it here would add a data claim to a timing capsule. -/
 def completeBoundedUserTask? (program : Program) (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId)
@@ -162,5 +239,142 @@ theorem interruptBoundedUserTask_none_of_no_task_wait (program : Program)
           wait.activation = timerId.activation) with
   | none => simp
   | some _ => simp [noTasks]
+
+/-- Mirror of the pairing helper for the deadline arm, which looks the pair up from the other side. -/
+private theorem boundedPairForTimer_pairing (program : Program)
+    (state : RuntimeState) (timer : TimerWait) (pair : BoundedPair)
+    (found : boundedPairForTimer? program state timer = some pair) :
+    BoundedPairing program pair.task pair.timer pair.taskOutput pair.timerOutput ∧
+      pair.timer = timer ∧ pair.task ∈ state.waits := by
+  unfold boundedPairForTimer? at found
+  cases opFound : (boundedTaskOperations program).find? (fun candidate =>
+      decide (candidate.2.2.elementId = timer.elementId)) with
+  | none => simp [opFound] at found
+  | some op =>
+      cases taskFound : state.waits.find? (fun candidate =>
+          decide (candidate.task.id = op.2.1.id) &&
+            decide (candidate.activation = timer.activation) &&
+            decide (candidate.owner = timer.owner)) with
+      | none => simp [opFound, taskFound] at found
+      | some tk =>
+          simp [opFound, taskFound] at found
+          cases found
+          have opProperty : op.2.2.elementId = timer.elementId := by
+            simpa using List.find?_some opFound
+          have taskProperty : tk.task.id = op.2.1.id ∧
+              tk.activation = timer.activation ∧ tk.owner = timer.owner := by
+            simpa [Bool.and_eq_true, decide_eq_true_eq, and_assoc]
+              using List.find?_some taskFound
+          exact ⟨⟨op, List.mem_of_find?_eq_some opFound, taskProperty.1.symm,
+            opProperty, rfl, rfl, taskProperty.2.1.symm, taskProperty.2.2.symm⟩,
+            rfl, List.mem_of_find?_eq_some taskFound⟩
+
+/-- Every Activity victory the evaluator produces is permitted by the declarative relation. -/
+theorem completeBoundedUserTask_sound (program : Program)
+    (before after : RuntimeState) (processInstanceId : SemanticId)
+    (taskId : TaskDefinitionId) (activation : Nat)
+    (success : completeBoundedUserTask? program before processInstanceId taskId
+      activation = some after) :
+    BoundedTaskVictoryStep program before after := by
+  unfold completeBoundedUserTask? at success
+  cases taskFound : before.waits.find? (fun wait =>
+      decide (wait.processInstanceId = processInstanceId) &&
+        decide (wait.task.id = taskId) &&
+        decide (wait.activation = activation)) with
+  | none => simp [taskFound] at success
+  | some task =>
+      cases pairFound : boundedPairForTask? program before task with
+      | none => simp [taskFound, pairFound] at success
+      | some pair =>
+          obtain ⟨pairing, taskEq, timerMem⟩ :=
+            boundedPairForTask_pairing program before task pair pairFound
+          have taskLive : pair.task ∈ before.waits := by
+            rw [taskEq]; exact List.mem_of_find?_eq_some taskFound
+          simp [taskFound, pairFound] at success
+          unfold commitVictory at success
+          cases running : before.control with
+          | running instanceId =>
+              simp only [running, Option.some.injEq] at success
+              cases success
+              rw [← running]
+              exact .activity before instanceId pair.task pair.timer
+                pair.taskOutput pair.timerOutput running taskLive timerMem pairing
+          | completed => simp [running] at success
+          | notStarted => simp [running] at success
+
+/-- Every deadline victory the evaluator produces is permitted by the declarative relation. -/
+theorem interruptBoundedUserTask_sound (program : Program)
+    (before after : RuntimeState) (timerId : TimerOccurrenceId)
+    (logicalTimeMs : Nat)
+    (success : interruptBoundedUserTask? program before timerId logicalTimeMs =
+      some after) :
+    BoundedTaskVictoryStep program before after := by
+  unfold interruptBoundedUserTask? at success
+  cases timerFound : before.timerWaits.find? (fun wait =>
+      decide (wait.processInstanceId = timerId.processInstanceId) &&
+        decide (wait.elementId.value = timerId.elementId.value) &&
+        decide (wait.activation = timerId.activation)) with
+  | none => simp [timerFound] at success
+  | some timer =>
+      cases pairFound : boundedPairForTimer? program before timer with
+      | none => simp [timerFound, pairFound] at success
+      | some pair =>
+          obtain ⟨pairing, sameTimer, taskMem⟩ :=
+            boundedPairForTimer_pairing program before timer pair pairFound
+          have timerLive : pair.timer ∈ before.timerWaits := by
+            rw [sameTimer]; exact List.mem_of_find?_eq_some timerFound
+          simp [timerFound, pairFound] at success
+          obtain ⟨_, success⟩ := success
+          unfold commitVictory at success
+          cases running : before.control with
+          | running instanceId =>
+              rw [running] at success
+              cases success
+              rw [← running, ← sameTimer]
+              exact .deadline before instanceId pair.task pair.timer
+                pair.taskOutput pair.timerOutput running taskMem timerLive
+                pairing
+          | completed => rw [running] at success; simp at success
+          | notStarted => rw [running] at success; simp at success
+
+/-- The deadline arm refuses every firing that is not exactly due, for any state and any timer.
+
+This is the quantified form of the capsule's arming-instant discriminator. A concrete fixture cannot
+carry it: arming at Activity activation is a recorded interpretation rather than a clause
+consequence, so the claim that matters is that *no* pre-due or post-due firing commits, not that one
+chosen instant is refused. -/
+theorem interruptBoundedUserTask_none_of_not_due (program : Program)
+    (state : RuntimeState) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
+    (timer : TimerWait)
+    (found : state.timerWaits.find? (fun wait =>
+      decide (wait.processInstanceId = timerId.processInstanceId) &&
+        decide (wait.elementId.value = timerId.elementId.value) &&
+        decide (wait.activation = timerId.activation)) = some timer)
+    (notDue : logicalTimeMs ≠ timer.deadlineMs) :
+    interruptBoundedUserTask? program state timerId logicalTimeMs = none := by
+  unfold interruptBoundedUserTask?
+  cases pairFound : boundedPairForTimer? program state timer with
+  | none => simp [found, pairFound]
+  | some _ => simp [found, pairFound, notDue]
+
+/-- Neither arm rewinds an activation counter, so a withdrawn occurrence can never be reissued. -/
+theorem bounded_victory_preserves_activation_counters (program : Program)
+    (before after : RuntimeState)
+    (step : BoundedTaskVictoryStep program before after) :
+    after.activations = before.activations ∧
+      after.timerActivations = before.timerActivations := by
+  cases step with
+  | activity => exact ⟨rfl, rfl⟩
+  | deadline => exact ⟨rfl, rfl⟩
+
+/-- The deadline arm publishes exactly its own deadline as logical time, while the Activity arm leaves logical time untouched. This is what makes the two victories distinguishable without an ownership record. -/
+theorem bounded_victory_logical_time (program : Program)
+    (before after : RuntimeState)
+    (step : BoundedTaskVictoryStep program before after) :
+    after.logicalTimeMs = before.logicalTimeMs ∨
+      ∃ timer ∈ before.timerWaits, after.logicalTimeMs = timer.deadlineMs := by
+  cases step with
+  | activity => exact .inl rfl
+  | deadline _ _ timer _ _ _ _ timerLive _ => exact .inr ⟨timer, timerLive, rfl⟩
 
 end BpmnSemantics.SemanticProcess
