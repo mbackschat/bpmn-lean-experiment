@@ -2,9 +2,9 @@
 
 ## Status
 
-**Owner-approved on 2026-08-04; not implemented.** All four decisions below are approved as recommended. The owner delegated the decision in this session rather than ruling on each one individually, so the approval rests on the recommendations and rationales recorded here and on the closed proposal review; it is not an independent owner analysis of the four alternatives. Approval authorizes exactly the scope recorded in this document and nothing beyond it.
+**Owner-approved on 2026-08-04; at its first green implementation checkpoint and not evidence-closed.** All four decisions below are approved as recommended. The owner delegated the decision in this session rather than ruling on each one individually, so the approval rests on the recommendations and rationales recorded here and on the closed proposal review; it is not an independent owner analysis of the four alternatives. Approval authorizes exactly the scope recorded in this document and nothing beyond it.
 
-Nothing here is implemented or evidenced, and no sentence in this document is a coverage, conformance, or CIB compatibility claim. This document keeps its `-PROPOSAL` role until the contract is implemented, and the conditional semantic-checkpoint review comes at the first green implementation checkpoint.
+The checkpoint implements the source, admission, IL, semantic-core, and adapter-host layers; Lean carries **arming only**, and no answer-free scenario, differential case, seeded mutation, or Temporal witness exists yet, so **no cross-target agreement is claimed**. No sentence in this document is a coverage, conformance, or CIB compatibility claim. This document keeps its `-PROPOSAL` role until the contract is implemented and evidenced, and the conditional semantic-checkpoint review is now the blocking gate: writes to the next lanes stay paused until it passes.
 
 Implemented and absent scope is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md#current-claim) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
 
@@ -13,7 +13,7 @@ Implemented and absent scope is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATI
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `3c6b645` | `fork-turns-none` | `approve-with-required-edits` | `6a87774` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `3f2de80` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 A commit cannot contain its own Git identity, so the immutable proposal target was recorded by a documentation-only follow-up before the review prompt was handed off, exactly as [the receipt form](../TESTING-SPEC.md#review-receipt) provides for. The reviewed target is that follow-up, `3c6b645`; its baseline is `c29db82`.
@@ -27,6 +27,8 @@ The reviewer left one forward-looking note that is deliberately not acted on yet
 **The proposal stage is closed and all four decisions are approved.** Implementation may begin, starting with the prerequisite extraction the owner inventory names. The conditional semantic-checkpoint review comes after the first green implementation checkpoint, because this capsule changes a wire contract, the checked graph, admission capability, and a transition family. The two required findings were both about *where* the work lands rather than what it means. First, the owner inventory omitted seven source owners the implementation must change, including the 75-line `checked-process-admission.ts`, which is both the tightest owner after the already-expired one and the file the second owner decision is actually about; it also omitted the profile-capability-row obligation. Second, owner decision 2 rested on a false premise: the checked-node variant's attachment reference carries no host domain in either target, so nothing there needed widening, and the real change site is a pair of near-duplicate admission validators the capsule never named or measured. Both are instances of mechanisms already carried in [the process-assessment ledger](../PROCESS-ASSESSMENT-LEDGER.md#findings) rather than new classes.
 
 Two advisory findings changed substance rather than wording. The reviewer's reading of Clause 13.3.2's own Figure 13.2 moved the normative resolution off engine calibration and onto the standard, and the observation that quiescence is decided by an owner-scoped `timerWaits` conjunct produced a silent-deadlock counterexample this capsule now records with its own stop condition.
+
+The semantic-checkpoint row names `3f2de80`, the first green implementation checkpoint, as its pending target. A commit cannot contain its own Git identity, so the handed-off immutable target is the documentation-only follow-up carrying this paragraph, which brings this Status section current with that implementation; its baseline is `225e32d`, so the reviewed range is the checkpoint commit, the Lean `decide +kernel` reduction, one documentation correction, and this update. Every focused gate is green on that tree — semantic core, BPMN source, contracts, infrastructure, source hygiene, harness types, `lake build`, and `lake test` — and the complete `./scripts/verify.sh` gate runs concurrently with the review rather than before it, because it mutates no tracked file. Writes to the Lean victory lane, the two answer-free scenarios, and the Temporal witness stay paused until the verdict.
 
 ## Question
 
