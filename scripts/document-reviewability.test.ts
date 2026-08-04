@@ -4,6 +4,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { markdownTableRows, withoutBackticks } from "./markdown-tables.ts";
 import { headroom, nonblankLines } from "./source-measure.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -15,17 +16,6 @@ const profileCapabilitySectionEnd = "## Structural validators";
 const semanticProfileMapStart =
   "export const SemanticProfileId = Object.freeze({";
 const semanticProfileMapEnd = "} as const);";
-const familyMapSectionStart = "## Process Execution mechanism-family map";
-const familyMapSectionEnd = "## Reviewer proto-MVP dependency map";
-const reviewedRequirementSectionStart = "## Reviewed requirements";
-const reviewedRequirementSectionEnd = "## Growth rule";
-const familyIdPrefix = "BPMN-MECH-";
-const closedSliceCell = 5;
-const dispositionCell = 4;
-const decidedDispositions: ReadonlySet<string> = new Set([
-  "supported",
-  "rejected",
-]);
 /** Artifact trees whose registry README must reach every one of their directories. */
 const artifactRegistries = ["profiles", "scenarios"] as const;
 /** Document trees whose own README must reach every sibling Markdown document. */
@@ -79,45 +69,8 @@ function registeredSemanticProfileIds(source: string): ReadonlyArray<string> {
   return profileIds;
 }
 
-function markdownTableRows(
-  markdown: string,
-  sectionStart: string,
-  sectionEnd: string,
-  expectedCellCount: number,
-): ReadonlyArray<ReadonlyArray<string>> {
-  const start = markdown.indexOf(sectionStart);
-  const end = markdown.indexOf(sectionEnd, start);
-  assert.notEqual(start, -1);
-  assert.notEqual(end, -1);
-  return markdown
-    .slice(start, end)
-    .split("\n")
-    .filter((line) => line.startsWith("| ") && !line.startsWith("|---"))
-    .slice(1)
-    .map((line) => {
-      const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
-      // A changed column count would leave the fixed cell indices below
-      // addressing a different claim while still comparing two equal lists.
-      assert.equal(cells.length, expectedCellCount);
-      return cells;
-    });
-}
 
-function citedRequirementIds(cell: string): ReadonlyArray<string> {
-  return [...cell.matchAll(/`(BPMN-[A-Z0-9-]+)`/gu)]
-    .map((match) => {
-      const requirementId = match[1];
-      if (requirementId === undefined) {
-        throw new Error("Requirement citation matched without an identifier.");
-      }
-      return requirementId;
-    })
-    .filter((requirementId) => !requirementId.startsWith(familyIdPrefix));
-}
 
-function withoutBackticks(cell: string): string {
-  return cell.replaceAll("`", "");
-}
 
 /** Heading owning the atomic-change inventory required of every capsule proposal. */
 const bindingInventoryHeading = "## Versioning consequences";
@@ -320,69 +273,6 @@ test("covers every registered semantic profile in the admission capability table
     {
       rowCount: profileIds.length,
       missingOrDuplicateProfiles: [],
-    },
-  );
-});
-
-// Contract: a requirement the mechanism-family map cites as a closed reviewed
-// slice must carry a decided disposition in the same ledger. The oracle is the
-// ledger itself, so this detects a row whose disposition was never advanced
-// when its capsule closed rather than judging the disposition's correctness.
-//
-// The check is deliberately one-directional. Requiring every `supported` row to
-// be cited back would turn the prose closed-slice column into a second copy of
-// the requirement inventory, and it would wrongly reject a row such as
-// `BPMN-RECEIVE-TASK-IMPLEMENTATION-01`, which links an implemented
-// specification while its own Web-service requirement stays unsupported.
-test("keeps every closed reviewed slice consistent with its requirement disposition", async () => {
-  const ledger = await readFile(
-    path.join(projectRoot, "docs/BPMN-REQUIREMENT-LEDGER.md"),
-    "utf8",
-  );
-  const familyRows = markdownTableRows(
-    ledger,
-    familyMapSectionStart,
-    familyMapSectionEnd,
-    6,
-  );
-  const requirementRows = markdownTableRows(
-    ledger,
-    reviewedRequirementSectionStart,
-    reviewedRequirementSectionEnd,
-    7,
-  );
-  const dispositionByRequirementId = new Map(
-    requirementRows.map((cells) => [
-      withoutBackticks(cells[0] ?? ""),
-      withoutBackticks(cells[dispositionCell] ?? ""),
-    ]),
-  );
-  const citedRequirements = [
-    ...new Set(
-      familyRows.flatMap((cells) =>
-        citedRequirementIds(cells[closedSliceCell] ?? "")
-      ),
-    ),
-  ].sort();
-
-  assert.deepEqual(
-    {
-      // A restructured table that cites nothing would satisfy both lists below.
-      citedRequirementCount: citedRequirements.length > 0,
-      unknownRequirementIds: citedRequirements.filter(
-        (requirementId) => !dispositionByRequirementId.has(requirementId),
-      ),
-      undecidedClosedSlices: citedRequirements.filter((requirementId) => {
-        const disposition = dispositionByRequirementId.get(requirementId);
-        return (
-          disposition !== undefined && !decidedDispositions.has(disposition)
-        );
-      }),
-    },
-    {
-      citedRequirementCount: true,
-      unknownRequirementIds: [],
-      undecidedClosedSlices: [],
     },
   );
 });
