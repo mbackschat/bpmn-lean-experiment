@@ -532,7 +532,10 @@ function unkernelledDecideSites(path: string, source: string): string[] {
   // Bool-valued application this guard deliberately leaves alone.
   const tacticPosition =
     /(?:^|\bby|<;>|·|;|\btry|\brepeat|\ball_goals|\bfirst|[|⟨,])\s*$/u;
-  const tacticTerminator = /^\s*(?:[,⟩)\]]|--|$)/u;
+  // A following combinator terminates the tactic too, so `first | decide | simp` counts. `\|(?!\|)`
+  // keeps a Bool-valued `decide h || decide g` out, where `||` is disjunction rather than an
+  // alternative branch.
+  const tacticTerminator = /^\s*(?:[,⟩)\]]|\|(?!\|)|<;>|--|$)/u;
   // Own token only: `native_decide`, `Decidable.decide`, and `decide_eq_true` are other declarations.
   const ownToken = /(?<![\w.])decide(?![\w])/gu;
 
@@ -593,9 +596,12 @@ test("the kernel-decide policy reaches combinator positions and per-occurrence e
       "  try decide",
       "  repeat decide",
       "  exact ⟨by decide +kernel, by decide⟩",
+      "  first | decide | simp",
+      "  cases outcome <;> decide <;> simp",
       "  cases outcome <;> decide +kernel",
       "/-- A new variant must decide here which waits it exposes. -/",
       "  -- plain decide would be wrong here",
+      "  hosts.all (fun h => decide h || decide g)",
     ].join("\n")),
     [
       "Probe.lean:1",
@@ -604,6 +610,8 @@ test("the kernel-decide policy reaches combinator positions and per-occurrence e
       "Probe.lean:4",
       "Probe.lean:5",
       "Probe.lean:6",
+      "Probe.lean:7",
+      "Probe.lean:8",
     ],
   );
 });
