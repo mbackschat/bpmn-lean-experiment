@@ -2,7 +2,9 @@
 
 ## Status
 
-**Draft proposal awaiting the independent cold proposal review and owner approval.** Nothing here is approved, implemented, or evidenced, and no sentence in this document is a coverage, conformance, or CIB compatibility claim. The owner decisions this proposal asks for are listed last. Implementation may not begin before both the review verdict and owner approval are recorded in the receipt below.
+**Owner-approved on 2026-08-04; not implemented.** All four decisions below are approved as recommended. The owner delegated the decision in this session rather than ruling on each one individually, so the approval rests on the recommendations and rationales recorded here and on the closed proposal review; it is not an independent owner analysis of the four alternatives. Approval authorizes exactly the scope recorded in this document and nothing beyond it.
+
+Nothing here is implemented or evidenced, and no sentence in this document is a coverage, conformance, or CIB compatibility claim. This document keeps its `-PROPOSAL` role until the contract is implemented, and the conditional semantic-checkpoint review comes at the first green implementation checkpoint.
 
 Implemented and absent scope is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md#current-claim) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
 
@@ -22,7 +24,7 @@ A second audit of `6a87774` returned `AUDIT: closed` with no issues, and the aud
 
 The reviewer left one forward-looking note that is deliberately not acted on yet. Two of the four second-round defects received no process-ledger entry, and the reviewer's reading is that the ledger's update rule places that obligation at capsule closure or session handoff rather than here, that the cross-reference defect is likely below the ledger's cost denominator, and that the over-generalized figure description is the better candidate of the two. Both are named in this receipt so the reflection boundary inherits them rather than rediscovering them.
 
-**The proposal stage is closed and the capsule is not approved.** Owner approval of the four decisions below is the remaining gate before implementation, and the conditional semantic-checkpoint review comes after the first green implementation checkpoint. The two required findings were both about *where* the work lands rather than what it means. First, the owner inventory omitted seven source owners the implementation must change, including the 75-line `checked-process-admission.ts`, which is both the tightest owner after the already-expired one and the file the second owner decision is actually about; it also omitted the profile-capability-row obligation. Second, owner decision 2 rested on a false premise: the checked-node variant's attachment reference carries no host domain in either target, so nothing there needed widening, and the real change site is a pair of near-duplicate admission validators the capsule never named or measured. Both are instances of mechanisms already carried in [the process-assessment ledger](../PROCESS-ASSESSMENT-LEDGER.md#findings) rather than new classes.
+**The proposal stage is closed and all four decisions are approved.** Implementation may begin, starting with the prerequisite extraction the owner inventory names. The conditional semantic-checkpoint review comes after the first green implementation checkpoint, because this capsule changes a wire contract, the checked graph, admission capability, and a transition family. The two required findings were both about *where* the work lands rather than what it means. First, the owner inventory omitted seven source owners the implementation must change, including the 75-line `checked-process-admission.ts`, which is both the tightest owner after the already-expired one and the file the second owner decision is actually about; it also omitted the profile-capability-row obligation. Second, owner decision 2 rested on a false premise: the checked-node variant's attachment reference carries no host domain in either target, so nothing there needed widening, and the real change site is a pair of near-duplicate admission validators the capsule never named or measured. Both are instances of mechanisms already carried in [the process-assessment ledger](../PROCESS-ASSESSMENT-LEDGER.md#findings) rather than new classes.
 
 Two advisory findings changed substance rather than wording. The reviewer's reading of Clause 13.3.2's own Figure 13.2 moved the normative resolution off engine calibration and onto the standard, and the observation that quiescence is decided by an owner-scoped `timerWaits` conjunct produced a silent-deadlock counterexample this capsule now records with its own stop condition.
 
@@ -315,7 +317,10 @@ Stop and return to review rather than deciding in implementation if any of the f
 - a public observation requires an engine-specific choice, which is a phase-zero probe obligation;
 - a required Lean law needs the unstated key-uniqueness invariant, which this capsule may not establish.
 
-## Owner decisions required
+## Owner decisions
+
+All four are **approved as recommended**, under the delegation recorded in the Status section.
+
 
 1. **The arming instant for a scope host.** Recommended: arm atomically with child scope creation at Sub-Process entry, per `SPTIMER-ARM-01`. The alternative — arming when the child's first wait becomes active — makes the deadline depend on the child's internal topology and is rejected above.
 2. **How the two attachment validators admit a Sub-Process host.** Recommended: widen each validator's host-kind conjunct to an explicitly enumerated set of `UserTask` and the admitted Sub-Process, leaving the same-scope and one-host conjuncts untouched, and add a negative case per newly excluded Activity kind. The checked-node variant itself needs no change, because its attachment reference carries no host domain. The alternative — relaxing the conjunct to any Activity — is rejected above because it readmits the silently deadline-free program the validators exist to prevent.
