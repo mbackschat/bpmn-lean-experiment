@@ -64,12 +64,36 @@ function rankOf(values: ReadonlyArray<number>, own: number): number {
   return [...values].sort((left, right) => right - left).indexOf(own) + 1;
 }
 
+/**
+ * Ordinal phrasings a later row can silently falsify by landing above the row that used them.
+ *
+ * These are checkable in principle and stale in practice: "second only to" was true when written and
+ * became rank 5 as two capsules were recorded above it, with nothing failing. Requiring the rank form
+ * instead makes the same claim survive a growing table, because the guard recomputes it. Comparative
+ * words that are genuinely ambiguous — "nearest recorded", which may mean nearest in value or most
+ * recently recorded — are deliberately not listed, since forbidding them would force a rewrite of
+ * historical rows on a contested reading.
+ */
+const staleOrdinalPhrases = [
+  "largest recorded in this ledger",
+  "largest in this ledger",
+  "smallest recorded in this ledger",
+  "second only to",
+] as const;
+
 export function inaccurateRankClaims(
   markdown: string,
 ): ReadonlyArray<string> {
   const rows = measurements(markdown);
   const found: string[] = [];
   for (const row of rows) {
+    for (const phrase of staleOrdinalPhrases) {
+      if (row.consequence.includes(phrase)) {
+        found.push(
+          `${row.increment}: states "${phrase}" instead of a checkable rank claim`,
+        );
+      }
+    }
     for (
       const [, position, total, column] of row.consequence.matchAll(
         /rank (\d+) of (\d+) by (code|documentation)/gu,
@@ -133,5 +157,17 @@ test("rejects a wrong rank and a stale row count", () => {
   assert.equal(
     inaccurateRankClaims(`${table}rank 1 of 2 by code |`).length,
     1,
+  );
+  // An ordinal phrase is rejected on sight: it was true when written and a later row falsified it
+  // with nothing failing, which is the defect the rank form exists to prevent.
+  assert.equal(
+    inaccurateRankClaims(`${table}code additions are second only to Beta |`).length,
+    1,
+  );
+  // "nearest recorded" stays admissible, because it may mean most-recently-recorded and forbidding it
+  // would rewrite historical rows on a contested reading.
+  assert.deepEqual(
+    inaccurateRankClaims(`${table}smaller than the nearest recorded Beta increment |`),
+    [],
   );
 });
