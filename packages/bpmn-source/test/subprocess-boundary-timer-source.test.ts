@@ -55,9 +55,12 @@ test("admits one interrupting PT1S deadline attached to the embedded Sub-Process
 });
 
 /**
- * A deadline on the child task is the nearest wrong attachment: it is inside the admitted scope, its
- * host is a legal boundary host under the sibling profile, and it satisfies both the same-scope and
- * one-host conjuncts. Only the host-kind conjunct combined with this profile's shape rejects it.
+ * A deadline on the child task is the nearest wrong attachment, and the conjunct that rejects it is
+ * the *same-scope* one, not the host-kind one. The boundary node sits in the root Process scope while
+ * `ChildTask` sits in `scope:Scope`, so `nodeScopes.get(deadline) === nodeScopes.get(host)` is what
+ * fails; the host-kind allowlist passes here, because `UserTask` is in it. This case therefore carries
+ * no host-kind weight — the two below do — and it is retained because reaching across a scope boundary
+ * is the wrong attachment a Sub-Process host makes newly expressible.
  */
 test("rejects a deadline attached to the child task instead of the scope", async () => {
   const result = await compile(

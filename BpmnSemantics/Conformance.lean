@@ -14,7 +14,7 @@ namespace CommandOutcome
 
 theorem isCommit_iff_committed (outcome : CommandOutcome) :
     outcome.isCommit = true ↔ outcome = .committed := by
-  cases outcome <;> decide
+  cases outcome <;> decide +kernel
 
 end CommandOutcome
 

@@ -525,13 +525,32 @@ test("hand-written source respects reviewed module-size boundaries", () => {
  * the right evidence for a claim — [the capsule rules](../CLAUDE.md) own that question.
  */
 function unkernelledDecideSites(path: string, source: string): string[] {
+  // Both bounds are load-bearing and each was refuted by a live site rather than reasoned about.
+  // The prefix must include the tactic combinators, because an alternation of only line-start, `by`,
+  // and the bracket forms was blind to `cases outcome <;> decide`. The suffix must stay, because
+  // without it the word "decide" in an English docstring matches, and `decide (x = y)` is the
+  // Bool-valued application this guard deliberately leaves alone.
+  const tacticPosition =
+    /(?:^|\bby|<;>|·|;|\btry|\brepeat|\ball_goals|\bfirst|[|⟨,])\s*$/u;
+  const tacticTerminator = /^\s*(?:[,⟩)\]]|--|$)/u;
+  // Own token only: `native_decide`, `Decidable.decide`, and `decide_eq_true` are other declarations.
+  const ownToken = /(?<![\w.])decide(?![\w])/gu;
+
   return source.split("\n").flatMap((line, index) => {
-    // `^\s*` matters: a bare `decide` on its own line was the most common form in this repository,
-    // and an anchor without it made the guard silently blind to two thirds of the sites.
-    const isTacticPosition = /(?:^\s*|\bby\s+|[|⟨,]\s*)decide\s*(?:[,⟩)\]]|$)/u.test(line);
-    return isTacticPosition && !line.includes("decide +kernel")
-      ? [`${path}:${index + 1}`]
-      : [];
+    const sites: string[] = [];
+    for (const match of line.matchAll(ownToken)) {
+      const before = line.slice(0, match.index);
+      const after = line.slice(match.index + "decide".length);
+      // Per occurrence, not per line: a line-wide `includes("decide +kernel")` exempted the plain
+      // half of `⟨by decide +kernel, by decide⟩`.
+      if (!tacticPosition.test(before) || /^\s*\+\s*kernel\b/u.test(after)) {
+        continue;
+      }
+      if (tacticTerminator.test(after)) {
+        sites.push(`${path}:${index + 1}`);
+      }
+    }
+    return sites;
   });
 }
 
@@ -558,5 +577,33 @@ test("the kernel-decide policy detects a plain tactic site and ignores applicati
       "  Decidable.decide (a = b)",
     ].join("\n")),
     ["Probe.lean:1", "Probe.lean:2", "Probe.lean:3"],
+  );
+});
+
+/**
+ * The combinator forms a live `cases outcome <;> decide` survived, plus the two exemptions that
+ * make the predicate narrow. Each flagged line here was invisible to the predicate this replaced.
+ */
+test("the kernel-decide policy reaches combinator positions and per-occurrence exemptions", () => {
+  assert.deepEqual(
+    unkernelledDecideSites("Probe.lean", [
+      "  cases outcome <;> decide",
+      "  · decide",
+      "  all_goals decide",
+      "  try decide",
+      "  repeat decide",
+      "  exact ⟨by decide +kernel, by decide⟩",
+      "  cases outcome <;> decide +kernel",
+      "/-- A new variant must decide here which waits it exposes. -/",
+      "  -- plain decide would be wrong here",
+    ].join("\n")),
+    [
+      "Probe.lean:1",
+      "Probe.lean:2",
+      "Probe.lean:3",
+      "Probe.lean:4",
+      "Probe.lean:5",
+      "Probe.lean:6",
+    ],
   );
 });

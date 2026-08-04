@@ -265,6 +265,86 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
 });
 
 /**
+ * `native_decide` sites, recorded exactly because they widen the trusted path.
+ *
+ * A `native_decide` proof compiles the decision procedure and trusts the result, so it adds a
+ * `native_decide` axiom to its theorem's footprint; `#print axioms` on
+ * `string_equals_expression_parses_exactly` reports one beside `propext`, `Classical.choice`, and
+ * `Quot.sound`. The kernel-decide policy in [CLAUDE.md](../CLAUDE.md) prefers `decide +kernel`,
+ * which adds no axiom.
+ *
+ * These six modules predate that policy, so this inventory is a ratchet rather than a permission:
+ * a new site, or any new module, fails here instead of silently enlarging what the project trusts.
+ * Removing sites is always admissible and only requires lowering a figure; raising one is an owner
+ * decision about the trusted path. The guard exists because prose alone did not hold — a
+ * repository-wide "`native_decide` remains excluded" sentence was written while all 56 sites below
+ * were live.
+ */
+const recordedNativeDecideSites = Object.freeze([
+  Object.freeze({ path: "BpmnSemantics/EventBasedGatewayConformance.lean", sites: 25 }),
+  Object.freeze({ path: "BpmnSemantics/SemanticProcessJsonConformance.lean", sites: 15 }),
+  Object.freeze({ path: "BpmnSemantics/InclusiveGatewayConformance.lean", sites: 13 }),
+  Object.freeze({
+    path: "BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean",
+    sites: 1,
+  }),
+  Object.freeze({ path: "BpmnSemantics/SemanticProcess/Fixtures.lean", sites: 1 }),
+  Object.freeze({
+    path: "BpmnSemantics/Experiments/CheckedSourceCorrespondence.lean",
+    sites: 1,
+  }),
+]);
+
+/**
+ * Counts tactic-position sites only, so a comment explaining why a module avoids `native_decide`
+ * cannot inflate a recorded figure and turn this ratchet into a false alarm.
+ */
+export function nativeDecideSites(source: string): number {
+  const tacticPosition =
+    /(?:^|\bby|<;>|·|;|\btry|\brepeat|\ball_goals|\bfirst|[|⟨,])\s*$/u;
+  const tacticTerminator = /^\s*(?:[,⟩)\]]|--|$)/u;
+
+  return source.split(/\r?\n/u).reduce((total, line) => {
+    let sites = 0;
+    for (const match of line.matchAll(/(?<![\w.])native_decide(?![\w])/gu)) {
+      const before = line.slice(0, match.index);
+      const after = line.slice(match.index + "native_decide".length);
+      if (tacticPosition.test(before) && tacticTerminator.test(after)) {
+        sites += 1;
+      }
+    }
+    return total + sites;
+  }, 0);
+}
+
+test("native_decide stays inside its exactly recorded exception set", () => {
+  const recorded = new Map(
+    recordedNativeDecideSites.map(({ path: p, sites }) => [p, sites]),
+  );
+  const measured = worktreeLeanSourceFiles()
+    .map((sourcePath) => ({
+      path: sourcePath,
+      sites: nativeDecideSites(readFileSync(sourcePath, "utf8")),
+    }))
+    .filter(({ sites }) => sites > 0)
+    .sort((left, right) => right.sites - left.sites || left.path.localeCompare(right.path));
+
+  assert.deepEqual(
+    measured,
+    [...recorded]
+      .map(([p, sites]) => ({ path: p, sites }))
+      .sort((left, right) => right.sites - left.sites || left.path.localeCompare(right.path)),
+    "a new native_decide site trusts the compiler for a proposition the kernel could decide; use `decide +kernel` or move the recorded figure deliberately",
+  );
+});
+
+test("the native_decide inventory counts tactic sites and not prose", () => {
+  assert.equal(nativeDecideSites("  native_decide\n  exact ⟨by native_decide, rfl⟩"), 2);
+  assert.equal(nativeDecideSites("/-- Why this avoids native_decide entirely. -/"), 0);
+  assert.equal(nativeDecideSites("  decide +kernel\n  Decidable.decide (a = b)"), 0);
+});
+
+/**
  * Declarations whose result is a *collection contribution* over a semantic variant, where a
  * wildcard arm silently returns "contributes nothing" for a variant nobody considered.
  *
