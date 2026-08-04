@@ -143,9 +143,11 @@ def taskWinsScenario : Scenario :=
     observations
     provenance :=
       { normativeRefs :=
-          [ "BPMN 2.0.2 §10.4.3"
-          , "BPMN 2.0.2 §13.5.2"
-          , "BPMN 2.0.2 §13.5.3" ]
+          [ "BPMN 2.0.2 Clause 10.5.6"
+          , "BPMN 2.0.2 Clause 13.5.3"
+          , "BPMN 2.0.2 Clause 13.3.2"
+          , "BPMN 2.0.2 Table 10.91"
+          , "BPMN 2.0.2 Table 10.92" ]
         cibRevision := ""
         cibRefs := [] } }
 
