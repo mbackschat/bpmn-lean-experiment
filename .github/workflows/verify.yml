@@ -63,15 +63,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends --yes libxml2-utils
 
+      - name: Resolve pinned toolchain versions
+        # package.json owns both pins, so CI reads them through the same script the
+        # wrapper and doctor use instead of restating versions a bump would miss.
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          {
+            printf 'node=%s\n' "$required_node_version"
+            printf 'pnpm=%s\n' "$required_pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Set up pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
-          version: 11.18.0
+          version: ${{ steps.pins.outputs.pnpm }}
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.18.0
+          node-version: ${{ steps.pins.outputs.node }}
           cache: pnpm
 
       - name: Set up Java

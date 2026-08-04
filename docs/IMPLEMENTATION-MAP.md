@@ -58,7 +58,8 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 
 - Lean 4.31.0/Lake 5.0
 - Node 24.18.0
-- pnpm 11.18.0 with a repository-pinned CI-oriented local virtual-store projection, shared content-addressable store, exact wrapper-owned CLI selection that disables pnpm's recursive project-driven version switching, bounded wrapper regression execution, and ordinary/CI bare-wrapper guards
+- pnpm 11.20.0 with a repository-pinned CI-oriented local virtual-store projection, shared content-addressable store, exact wrapper-owned CLI selection that disables pnpm's recursive project-driven version switching, bounded wrapper regression execution, and ordinary/CI bare-wrapper guards
+- both the Node and pnpm pins owned by a single `package.json` field each, derived by the wrapper, doctor, and CI setup steps through `scripts/pinned-toolchain.sh`, and guarded against a stale selector, `engines` entry, derived consumer, or documented version
 - TypeScript 7.0.2
 - Ajv 8.20.0
 - direct MIT-licensed Node 24 declarations for strict no-emit checking

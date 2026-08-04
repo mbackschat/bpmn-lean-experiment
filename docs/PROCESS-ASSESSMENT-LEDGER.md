@@ -48,6 +48,7 @@ Dispositions are a closed set:
 | A registered profile was landed without the live example its oracle requires, turning the complete gate red after the focused gates passed | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 1 | `review question` | [question 1](#self-assessment-questions) |
 | A collection-contributing match over a semantic variant used a wildcard arm, so a new family silently contributed nothing instead of failing to compile: a boundary Event was unreachable because its Activity edge was keyed on trigger kind, and a composite family's task and timer waits were missing from every public projection | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 3 | `executable guard` | [exhaustive variant inventories](../scripts/lean-source-contracts.test.ts) |
 | A wall-time figure was measured while a review sub-agent competed for the same cores, making it non-comparable | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 1 | `review question` | [contended-measurement rule](TESTING-SPEC.md#default-verification) |
+| One external pin was restated in every consumer instead of derived from a single owner, so a host tool upgrade blocked the complete gate and no gate could have caught a bump that stranded a stale copy | [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) proposal | 1 | `executable guard` | [pin owner agreement](../scripts/pinned-toolchain.test.ts) |
 
 ## Update rule
 

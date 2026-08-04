@@ -131,7 +131,7 @@ Prerequisites:
 - `curl` and either `shasum` or `sha256sum`;
 - Lean through `elan`, honoring [lean-toolchain](lean-toolchain);
 - Node `24.18.0`, selected through [.nvmrc](.nvmrc), [.node-version](.node-version), or the Homebrew fallback;
-- pnpm `11.18.0`;
+- pnpm `11.20.0`;
 - Java 21, optionally selected with `BPMN_JAVA_HOME`;
 - permission for the first Temporal test to download pinned CLI `v1.8.1` into ignored `.cache/temporal-cli/` and run a local server.
 

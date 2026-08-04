@@ -59,6 +59,18 @@ test("pins the repository-local virtual store in ordinary and CI execution", asy
 });
 
 test("disables pnpm CLI self-switching for version discovery and dispatch", async (context) => {
+  // The stub must satisfy the wrapper's exact version check, so it answers with the
+  // pin resolved from package.json rather than a literal that a bump would strand.
+  const resolvedPins = await runCommand("./scripts/pinned-toolchain.sh", [], {
+    cwd: projectRoot,
+    env: process.env,
+    timeoutMs: 10_000,
+  });
+  const pinnedPnpmVersion = /required_pnpm_version=(\S+)/u.exec(
+    resolvedPins.stdout,
+  )?.[1];
+  assert.match(pinnedPnpmVersion ?? "", /^\d+\.\d+\.\d+$/u);
+
   const fixtureDirectory = await mkdtemp(
     path.join(tmpdir(), "bpmn-pnpm-wrapper-"),
   );
@@ -76,7 +88,7 @@ if test "\${1-}" != "--pm-on-fail=ignore"; then
 fi
 shift
 if test "\${1-}" = "--version"; then
-  printf '%s\\n' '11.18.0'
+  printf '%s\\n' '${pinnedPnpmVersion}'
   exit 0
 fi
 printf 'dispatched:%s\\n' "$*"

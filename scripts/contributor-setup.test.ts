@@ -140,8 +140,11 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(preflight, /HEAD:\$submodule_path/u);
   assert.match(preflight, /rev-parse --show-toplevel/u);
   assert.match(doctor, /check-external-sources\.sh/u);
-  assert.match(doctor, /Node 24\.18\.0/u);
-  assert.match(doctor, /pnpm 11\.18\.0/u);
+  // The pin values themselves are owned by scripts/pinned-toolchain.test.ts; the
+  // doctor's obligation here is to report both tools from that single owner.
+  assert.match(doctor, /pinned-toolchain\.sh/u);
+  assert.match(doctor, /DOCTOR_OK Node \$required_node_version/u);
+  assert.match(doctor, /DOCTOR_OK pnpm \$required_pnpm_version/u);
   assert.match(doctor, /DOCTOR_EXTERNAL_DECLARED/u);
   assert.match(doctor, /DOCTOR_DEPENDENCY_OWNER/u);
   assert.match(doctor, /workspace-cache\.lock/u);

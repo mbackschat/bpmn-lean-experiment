@@ -2,9 +2,10 @@
 
 set -eu
 
-required_node_version="24.18.0"
-required_pnpm_version="11.18.0"
-homebrew_node_bin="/opt/homebrew/opt/node@24/bin"
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+eval "$("$script_dir/pinned-toolchain.sh")"
+node_major=${required_node_version%%.*}
+homebrew_node_bin="/opt/homebrew/opt/node@$node_major/bin"
 homebrew_pnpm_bin="/opt/homebrew/opt/pnpm/bin"
 
 active_node_version=""
@@ -19,7 +20,7 @@ if test "$active_node_version" != "$required_node_version"; then
     export PATH
   else
     echo "Node $required_node_version is required." >&2
-    echo "Use 'nvm install && nvm use' or install Homebrew node@24." >&2
+    echo "Use 'nvm install && nvm use' or install Homebrew node@$node_major." >&2
     exit 1
   fi
 fi

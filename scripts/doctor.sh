@@ -14,6 +14,7 @@ esac
 
 script_dir=${0%/*}
 project_root=$(CDPATH= cd "$script_dir/.." && pwd)
+eval "$("$script_dir/pinned-toolchain.sh")"
 external_root=${BPMN_EXTERNAL_ROOT:-"$project_root/../oss"}
 maven_user_home=${MAVEN_USER_HOME:-"$HOME/.m2"}
 cache_lock="$script_dir/workspace-cache.lock"
@@ -34,7 +35,7 @@ check_command git "Homebrew: brew install git" || true
 check_command curl "provided by macOS; Homebrew: brew install curl" || true
 check_command jq "Homebrew: brew install jq" || true
 check_command xmllint "Homebrew: brew install libxml2" || true
-check_command node "install Node 24.18.0 through nvm, asdf, or Homebrew" || true
+check_command node "install Node $required_node_version through nvm, asdf, or Homebrew" || true
 check_command lake "install Lean through elan using lean-toolchain" || true
 
 hash_command=""
@@ -159,14 +160,14 @@ if test -n "$maven_distribution"; then
 fi
 
 node_version=$(node --version 2>/dev/null || true)
-if test "$node_version" != "v24.18.0"; then
-  echo "DOCTOR_FAIL Node 24.18.0 required, found $node_version" >&2
+if test "$node_version" != "v$required_node_version"; then
+  echo "DOCTOR_FAIL Node $required_node_version required, found $node_version" >&2
   doctor_failed=1
 fi
 
 pnpm_version=$("$script_dir/pnpm.sh" --version 2>/dev/null || true)
-if test "$pnpm_version" != "11.18.0"; then
-  echo "DOCTOR_FAIL pnpm 11.18.0 required, found $pnpm_version" >&2
+if test "$pnpm_version" != "$required_pnpm_version"; then
+  echo "DOCTOR_FAIL pnpm $required_pnpm_version required, found $pnpm_version" >&2
   doctor_failed=1
 fi
 
@@ -185,8 +186,8 @@ if ! test -d "$project_root/node_modules/.pnpm"; then
   doctor_failed=1
 fi
 
-test "$node_version" = "v24.18.0" && echo "DOCTOR_OK Node 24.18.0"
-test "$pnpm_version" = "11.18.0" && echo "DOCTOR_OK pnpm 11.18.0"
+test "$node_version" = "v$required_node_version" && echo "DOCTOR_OK Node $required_node_version"
+test "$pnpm_version" = "$required_pnpm_version" && echo "DOCTOR_OK pnpm $required_pnpm_version"
 test "$java_major" = "21" && echo "DOCTOR_OK Java 21 $java_home"
 command -v git >/dev/null 2>&1 && echo "DOCTOR_OK $(git --version)"
 command -v lake >/dev/null 2>&1 && echo "DOCTOR_OK $(lake --version | head -1)"
