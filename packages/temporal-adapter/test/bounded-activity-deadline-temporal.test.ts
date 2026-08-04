@@ -1,0 +1,64 @@
+/** Locks the host's boundary-deadline scheduler against winner selection and unconditional refusal. */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import { bpmnBoundedActivitySchedulerUnavailableFailureType } from "@bpmn-lean/temporal-adapter";
+
+import {
+  requireDeadlineNotWithdrawn,
+  requireDeadlineWithdrawn,
+  requireNoHostFailure,
+  requireNoWinnerSelected,
+  requireRouteCompleted,
+  requireRouteNotTaken,
+  runBoundedActivityDeadlineWitness,
+} from "./bounded-activity-deadline-witness.ts";
+
+const deadlineWitness = runBoundedActivityDeadlineWitness();
+
+/**
+ * Both ordinary outcomes must execute. A host that refuses whenever a deadline is merely armed
+ * makes the family unreachable, which is indistinguishable from not implementing it.
+ *
+ * Each route is observed by completing *its own* follow-on User Task and requiring the Process to
+ * reach an End Event. Absence of failure would not discriminate here: a Workflow that did nothing at
+ * all also never fails.
+ */
+test("the host executes each victory when only its own callback arrives", async () => {
+  const witness = await deadlineWitness;
+  requireNoHostFailure(witness.activityVictoryCompletions);
+  requireNoHostFailure(witness.deadlineVictoryCompletions);
+  requireRouteCompleted(witness.activityVictoryCompletions);
+  requireRouteCompleted(witness.deadlineVictoryCompletions);
+  requireDeadlineWithdrawn(witness.activityVictoryCompletions);
+  requireDeadlineNotWithdrawn(witness.deadlineVictoryCompletions);
+});
+
+/**
+ * The routes must actually differ. This completes the *normal* follow-on Task after the deadline
+ * won, which no route offers, so the Process must not reach an End Event — without this, both
+ * victories above would pass on a host that always took the same route.
+ */
+test("the deadline victory does not open the normal route's follow-on Task", async () => {
+  requireRouteNotTaken((await deadlineWitness).crossRouteCompletions);
+});
+
+/**
+ * This capsule defines no winner for host simultaneity, so a shared activation must refuse under
+ * its own identity rather than let raw job order decide BPMN meaning. The two assertions are
+ * distinct: refusing is not enough if the refusal is reached by first committing a victory.
+ */
+test("a shared activation refuses under the bounded identity instead of choosing", async () => {
+  const witness = await deadlineWitness;
+  requireNoWinnerSelected(
+    witness.sharedActivationCompletion,
+    bpmnBoundedActivitySchedulerUnavailableFailureType,
+  );
+  assert.throws(
+    () => requireNoWinnerSelected(
+      witness.sharedActivationCompletion,
+      "BpmnEventRaceOrderingUnavailable",
+    ),
+    /BpmnBoundedActivitySchedulerUnavailable/u,
+  );
+});

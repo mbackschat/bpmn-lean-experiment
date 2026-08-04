@@ -47,10 +47,16 @@ export type DirectVmActivationRun = Readonly<{
   assertInitialization: (completion: Completion) => void;
 }>;
 
-/** Initializes the Workflow, then delivers `readyJobs` as a single second activation. */
-export async function runDirectVmActivation(
+/**
+ * Initializes the Workflow, then delivers each batch as its own activation.
+ *
+ * Returns one completion per batch, because a route is often only observable once a later step
+ * either accepts or refuses work that only one route can offer.
+ */
+export async function runDirectVmActivations(
   run: DirectVmActivationRun,
-): Promise<Completion> {
+  laterBatches: ReadonlyArray<NonNullable<Activation["jobs"]>> = [],
+): Promise<ReadonlyArray<Completion>> {
   const creator = await VMWorkflowCreator.create(run.bundle, 1_000, new Set([
     "executeBpmnEffect",
   ]));
@@ -60,9 +66,10 @@ export async function runDirectVmActivation(
     now: 0,
     showStackTraceSources: false,
   });
+  const runId = workflowRunId(run.workflowType, run.replaying);
   try {
     run.assertInitialization(await workflow.activate({
-      runId: workflowRunId(run.workflowType, run.replaying),
+      runId,
       timestamp: await timestamp(0),
       historyLength: 3,
       isReplaying: run.replaying,
@@ -74,17 +81,36 @@ export async function runDirectVmActivation(
         },
       }],
     }));
-    return workflow.activate({
-      runId: workflowRunId(run.workflowType, run.replaying),
-      timestamp: await timestamp(1_000),
-      historyLength: 7,
-      isReplaying: run.replaying,
-      jobs: run.readyJobs,
-    });
+    const completions: Completion[] = [];
+    let elapsedMs = 0;
+    let historyLength = 3;
+    for (const jobs of [run.readyJobs, ...laterBatches]) {
+      elapsedMs += 1_000;
+      historyLength += 4;
+      completions.push(await workflow.activate({
+        runId,
+        timestamp: await timestamp(elapsedMs),
+        historyLength,
+        isReplaying: run.replaying,
+        jobs,
+      }));
+    }
+    return completions;
   } finally {
     await workflow.dispose();
     await creator.destroy();
   }
+}
+
+/** Initializes the Workflow, then delivers `readyJobs` as a single second activation. */
+export async function runDirectVmActivation(
+  run: DirectVmActivationRun,
+): Promise<Completion> {
+  const [completion] = await runDirectVmActivations(run);
+  if (completion === undefined) {
+    throw new TypeError("Direct-VM activation produced no completion");
+  }
+  return completion;
 }
 
 export function commands(completion: Completion) {

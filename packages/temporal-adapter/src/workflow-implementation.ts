@@ -76,6 +76,9 @@ import {
   effectTransportKey,
 } from "./effect-transport.js";
 import {
+  createBoundedActivityDeadlineScheduler,
+} from "./bounded-activity-deadline-scheduler.js";
+import {
   EventRaceActivationDrain,
   createEventRaceReadinessScheduler,
 } from "./event-race-readiness-scheduler.js";
@@ -139,6 +142,10 @@ export async function runBpmnProcessWithHostEffects(
     waitForTimer,
     eventRaceActivationDrain,
   );
+  const boundedDeadlineScheduler = createBoundedActivityDeadlineScheduler(
+    semanticProcess,
+    waitForTimer,
+  );
 
   // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
   enqueueStimulus(acceptedStimuli, pendingStimuli, start);
@@ -186,7 +193,13 @@ export async function runBpmnProcessWithHostEffects(
   setHandler(
     bpmnCompleteUserTaskUpdate,
     async (stimulus) => {
-      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+      // A bounded completion races its deadline, so the scheduler classifies it by activation
+      // instead of the loop draining it in arrival order.
+      if (boundedDeadlineScheduler.recordCompletionCallback(state, stimulus)) {
+        acceptedStimuli.push(stimulus);
+      } else {
+        enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+      }
       await condition(
         () =>
           commandOutcome(commandResults, stimulus.commandId) !== undefined,
@@ -245,14 +258,18 @@ export async function runBpmnProcessWithHostEffects(
       } else if (timers.length > 0) {
         // A boundary deadline races the completion Update, so the generic path below is unsound for
         // it: that path arms a bare durable timer and, on an activation carrying both callbacks,
-        // would let raw job order pick the winner. The barrier-backed scheduler this family needs
-        // does not exist yet, so fail closed under its own identity before either callback reaches
-        // the core rather than letting the host select BPMN meaning.
+        // would let raw job order pick the winner. Its own barrier-backed scheduler owns the
+        // deadline instead, and refuses only the shared-activation case this capsule leaves undefined.
         if (timers.some((timer) => isBoundaryTimerDefinition(semanticProcess, timer.id))) {
-          throw ApplicationFailure.nonRetryable(
-            "The Temporal host cannot yet schedule an interrupting Activity boundary deadline against its completion Update",
-            bpmnBoundedActivitySchedulerUnavailableFailureType,
-          );
+          for (const stimulus of await boundedDeadlineScheduler.waitForReadiness(state)) {
+            if (stimulus.kind === StimulusKind.CompleteUserTaskInstance) {
+              // Its Update handler already accepted it; re-accepting would drop it from the queue.
+              pendingStimuli.push(stimulus);
+            } else {
+              enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
+            }
+          }
+          continue;
         }
         if (timers.length !== 1) {
           throw ApplicationFailure.nonRetryable(
@@ -373,6 +390,7 @@ export async function runBpmnProcessWithHostEffects(
         case ScenarioStepKind.Terminal:
           state = step.state;
           eventRaceScheduler.reconcileCommittedState(state);
+          boundedDeadlineScheduler.reconcileCommittedState(state);
           break;
         case ScenarioStepKind.HarnessFailure:
           throw ApplicationFailure.nonRetryable(
