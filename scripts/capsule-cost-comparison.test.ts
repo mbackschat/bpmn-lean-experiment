@@ -80,6 +80,13 @@ function rankOf(values: ReadonlyArray<number>, own: number): number {
  * Comparative words that are genuinely ambiguous — "nearest recorded", which may mean nearest in
  * value or most recently recorded — are deliberately excluded, since forbidding them would force a
  * rewrite of historical rows on a contested reading.
+ *
+ * **Do not widen these patterns further.** A review probe found thirteen additional escaping wordings
+ * — synonyms, scope variants, reversed word order, a universal comparative with an except clause —
+ * and English magnitude claims are an open set, so each addition buys one wording and invites the next
+ * probe. The guard's purpose is to make the rank form the path of least resistance and to catch
+ * regression to any wording already seen, not to decide magnitude prose. The residual is recorded
+ * under the `unguardable` row in [the process-assessment ledger](../docs/PROCESS-ASSESSMENT-LEDGER.md).
  */
 const staleOrdinalPatterns = [
   /(largest|smallest|highest|lowest|most|fewest)\b[^.|]{0,40}\bin (this|its|the) (ledger|table)/iu,
