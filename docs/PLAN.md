@@ -340,6 +340,7 @@ A merely strategic assessment does not authorize implementation; the explicit ow
 - any expansion of the exact Simple Boolean v1 grammar or use outside its Exclusive Gateway capsule; JUEL, capability-bearing expressions, variable mutation, XPath, DMN/FEEL, Groovy, FreeMarker, and JavaScript remain separate profile/runtime decisions;
 - a separate CIB parallel-compatibility profile until it has a concrete consumer;
 - a classified four-quadrant project-admission × CIB-deployment lane over the pinned MIWG corpus; schedule it with or after the admission-successor checkpoint, report all four quadrants without asserting set equality, and do not count it as execution evidence;
+- a runtime uniqueness invariant over the wait collections, which the [interrupting Activity boundary Timer capsule](capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md) carries as two explicit hypotheses and needs for its quantified stale-identity law. Its shape is settled, not open: `eventRaceAssociationsValid` and `calledProcessAssociationsValid` already assert cardinality-one over the collections they own, guard their operations, and appear as law hypotheses. Both are also conjuncts of `stableStateResumable`, so a third conjunct must land with any replacement of that predicate rather than before it, and the reopen trigger is whichever comes first;
 - immutable profile or production Event History compatibility;
 - public BPMN conformance or broad CIB compatibility claims.
 
