@@ -45,6 +45,8 @@ import {
   compileExecutionInput,
   loadExecutionInput,
   loadJson,
+  boundaryDeadlineBpmnUrl,
+  boundaryDeadlineScenarioUrl,
   requiredAt,
   requiredScenarioUrl,
   semanticPrefixThroughCompletion,
@@ -238,6 +240,40 @@ test("completion-data bypass writes outside the core but fails durable reconcili
     ),
     /Query trace and durable Event History contain different completed Update commands/u,
   );
+});
+
+/**
+ * The boundary deadline must survive the Worker being absent across its due instant.
+ *
+ * This is the interrupting family's Worker-replacement obligation. Unlike the Intermediate Catch
+ * Timer sibling below, an Activity is live while the deadline runs, so the replacement Worker has to
+ * commit the interruption — abandoning that Activity and taking the boundary route — from committed
+ * state alone rather than resume a bare wait.
+ */
+test("boundary deadline survives Worker absence at due time and takes the boundary route", async () => {
+  const scenario = await loadJson<Scenario>(boundaryDeadlineScenarioUrl);
+  const input = await compileExecutionInput(scenario, boundaryDeadlineBpmnUrl);
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    activeRunner().runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "activity-boundary-timer-worker-restart",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.WorkerDownAtTimerDue,
+      effectExecutionSchedule: null,
+    }),
+    20_000,
+    "Activity boundary deadline Worker-restart execution",
+  );
+
+  assert.deepEqual(execution.result, expected);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+  // The bounded Activity is open while the deadline runs, so the wait state must show the bounded
+  // task and its deadline rather than a bare timer.
+  assert.equal(
+    stateObservationAt(execution.waitTrace, 2).openUserTasks.length,
+    1,
+  );
+  assert.equal(stateObservationAt(execution.waitTrace, 2).openTimers.length, 1);
 });
 
 test("durable timer survives Worker absence at due time and replays exactly", async () => {
