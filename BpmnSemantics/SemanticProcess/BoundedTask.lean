@@ -225,6 +225,27 @@ def interruptBoundedUserTask? (program : Program) (state : RuntimeState)
     commitVictory state pair pair.timerOutput timer.deadlineMs
   else none
 
+/-- The Activity arm cannot commit while no deadline wait is live, mirroring the deadline arm below.
+
+Together the two make a half-armed pair unusable from either side, which is the negative counterpart
+of atomic arming: neither member can be spent alone, so a partially armed state cannot be mistaken
+for a resumption surface in either direction. -/
+@[simp]
+theorem completeBoundedUserTask_none_of_no_deadline_wait (program : Program)
+    (state : RuntimeState) (processInstanceId : SemanticId)
+    (taskId : TaskDefinitionId) (activation : Nat)
+    (noTimers : state.timerWaits = []) :
+    completeBoundedUserTask? program state processInstanceId taskId activation =
+      none := by
+  unfold completeBoundedUserTask? boundedPairForTask?
+  cases found : state.waits.find? fun wait =>
+      decide (
+        wait.processInstanceId = processInstanceId &&
+          wait.task.id = taskId &&
+          wait.activation = activation) with
+  | none => simp
+  | some _ => simp [noTimers]
+
 /-- The deadline arm cannot commit while no Activity wait is live. A state holding the deadline without its Activity is invalid rather than a resumption surface, so the arm refuses instead of producing the boundary token on its own. -/
 @[simp]
 theorem interruptBoundedUserTask_none_of_no_task_wait (program : Program)
