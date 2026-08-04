@@ -3,14 +3,16 @@ import {
   ApplicationFailure,
   condition,
   defineSignal,
+  defineUpdate,
   setHandler,
   sleep,
   workflowInfo,
 } from "@temporalio/workflow";
 
 const readinessSignal = defineSignal("eventRaceSdkReadiness");
+const completionUpdate = defineUpdate<void>("boundedCompletionSdkReadiness");
 
-type ReadinessKind = "message" | "timer";
+type ReadinessKind = "message" | "timer" | "update";
 
 type Readiness = Readonly<{
   activation: number;
@@ -18,7 +20,9 @@ type Readiness = Readonly<{
 }>;
 
 export async function eventRaceSdkActivationProbe(): Promise<ReadinessKind> {
-  const batch = await collectActivationBatch();
+  const batch = await collectActivationBatch("message", (record) => {
+    setHandler(readinessSignal, record);
+  });
   if (hasBothKinds(batch)) {
     throw ApplicationFailure.nonRetryable(
       "Signal and Timer callbacks shared one Workflow activation",
@@ -33,7 +37,9 @@ export async function eventRaceSdkActivationProbe(): Promise<ReadinessKind> {
 }
 
 export async function eventRaceFixedMessagePriorityCoreBypassMutation(): Promise<ReadinessKind> {
-  const batch = await collectActivationBatch();
+  const batch = await collectActivationBatch("message", (record) => {
+    setHandler(readinessSignal, record);
+  });
   if (hasBothKinds(batch)) {
     return "message";
   }
@@ -44,12 +50,21 @@ export async function eventRaceFixedMessagePriorityCoreBypassMutation(): Promise
   return first.kind;
 }
 
-async function collectActivationBatch(): Promise<ReadonlyArray<Readiness>> {
+/**
+ * @param deliveryKind labels what the installed handler observes, so a coalesced batch names the
+ *   real delivery mechanism instead of borrowing another one's label.
+ * @param registerDelivery receives the recorder and installs the handler under test, so one
+ *   collector serves both delivery kinds.
+ */
+async function collectActivationBatch(
+  deliveryKind: Exclude<ReadinessKind, "timer">,
+  registerDelivery: (record: () => void) => void,
+): Promise<ReadonlyArray<Readiness>> {
   const readiness: Readiness[] = [];
-  setHandler(readinessSignal, () => {
+  registerDelivery(() => {
     readiness.push({
       activation: workflowInfo().historyLength,
-      kind: "message",
+      kind: deliveryKind,
     });
   });
   void sleep(1_000).then(() => {
@@ -72,6 +87,33 @@ async function collectActivationBatch(): Promise<ReadonlyArray<Readiness>> {
 }
 
 function hasBothKinds(batch: ReadonlyArray<Readiness>): boolean {
-  return batch.some(({ kind }) => kind === "message") &&
+  return batch.some(({ kind }) => kind !== "timer") &&
     batch.some(({ kind }) => kind === "timer");
+}
+
+/**
+ * Observes whether a completion Update and a due Timer share one activation.
+ *
+ * This is the bounded-Activity deadline premise. Unlike a Signal, an Update leaves the SDK's
+ * `hasSignals` predicate false, so its activation takes the single-batch path irrespective of
+ * `ProcessWorkflowActivationJobsAsSingleBatch`. Coalescing is therefore the expected outcome even
+ * with that flag unavailable, which is what the failure marker records.
+ */
+export async function boundedCompletionUpdateSdkActivationProbe(): Promise<ReadinessKind> {
+  const batch = await collectActivationBatch("update", (record) => {
+    setHandler(completionUpdate, () => {
+      record();
+    });
+  });
+  if (hasBothKinds(batch)) {
+    throw ApplicationFailure.nonRetryable(
+      "Completion Update and Timer callbacks shared one Workflow activation",
+      "BpmnBoundedCompletionUpdateCoalescedWithTimer",
+    );
+  }
+  const first = batch[0];
+  if (first === undefined) {
+    throw new TypeError("Bounded completion probe classified an empty batch");
+  }
+  return first.kind;
 }

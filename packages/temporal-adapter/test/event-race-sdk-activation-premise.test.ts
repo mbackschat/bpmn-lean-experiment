@@ -4,6 +4,8 @@ import { test } from "node:test";
 
 import {
   assertPinnedSingleBatchSource,
+  requireUpdateCoalescedWithTimer,
+  runBoundedCompletionUpdateWitness,
   readInstalledPinnedSdkActivationSource,
   requireFixedMessagePriorityCoreBypass,
   requireMessageCoreAdvancement,
@@ -13,6 +15,7 @@ import {
 } from "./event-race-sdk-activation-witness.ts";
 
 const activationWitness = runEventRaceSdkActivationWitness();
+const boundedCompletionUpdateWitness = runBoundedCompletionUpdateWitness();
 
 test("the pinned SDK closes one Signal and Timer activation before semantic advancement", async () => {
   const witness = await activationWitness;
@@ -36,6 +39,24 @@ test("the installed pinned SDK source lock rejects removal of single-batch activ
   assert.throws(
     () => assertPinnedSingleBatchSource(mutation),
     /ProcessWorkflowActivationJobsAsSingleBatch/u,
+  );
+});
+
+/**
+ * The executable half of the bounded-Activity deadline premise.
+ *
+ * Both completions run the same probe module with the single-batch SdkFlag withheld, differing only
+ * in whether readiness arrives as a Signal or as an Update. The Signal splits into two batches and
+ * the Update does not, which is the unconditional licence the coalescing barrier depends on — and
+ * it is a behavioral observation, not a second reading of the SDK source.
+ */
+test("an Update coalesces with a due Timer where a Signal splits, with the flag withheld", async () => {
+  const { disabledPremiseCompletion } = await activationWitness;
+  requireUpdateCoalescedWithTimer(await boundedCompletionUpdateWitness);
+  requireSplitBatchPriorityExposure(disabledPremiseCompletion);
+  assert.throws(
+    () => requireUpdateCoalescedWithTimer(disabledPremiseCompletion),
+    /BpmnBoundedCompletionUpdateCoalescedWithTimer/u,
   );
 });
 

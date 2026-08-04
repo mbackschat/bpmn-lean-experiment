@@ -101,6 +101,37 @@ export async function runEventRaceSdkActivationWitness(): Promise<EventRaceSdkAc
   };
 }
 
+/**
+ * Drives one activation carrying a completion Update and a due Timer, with the single-batch SdkFlag
+ * unavailable.
+ *
+ * Replay is how the flag is withheld: `hasFlag` answers false for a Workflow whose original
+ * execution recorded no flag, which is the same construction the Event-race disabled-premise
+ * completion uses. The Event-race probe splits under exactly this condition, so the pair separates
+ * a conditional licence from the unconditional one an Update enjoys.
+ */
+export async function runBoundedCompletionUpdateWitness(): Promise<Completion> {
+  return withWorkflow(
+    await loadProbeBundle(),
+    "boundedCompletionUpdateSdkActivationProbe",
+    true,
+    [],
+    [completionUpdateJob(), timerJob()],
+  );
+}
+
+/** Requires the Update and the Timer to have shared one activation. */
+export function requireUpdateCoalescedWithTimer(completion: Completion): void {
+  assert.equal(
+    workflowFailureType(completion),
+    "BpmnBoundedCompletionUpdateCoalescedWithTimer",
+  );
+  // The licence must not come from the flag. The Workflow does report its used internal flags, and
+  // the single-batch flag is absent from them, so the coalescing came from `hasSignals` being false
+  // rather than from `ProcessWorkflowActivationJobsAsSingleBatch` being available.
+  assert.equal(completion.successful?.usedInternalFlags?.includes(2), false);
+}
+
 export function assertPinnedSingleBatchSource(source: string): void {
   // Pins the predicate's definition, not only its use below. `!hasSignals` is what sends an
   // Update-only activation down the single-batch path irrespective of the SdkFlag, and that
@@ -319,6 +350,24 @@ function messageJob(delivery: DeliverMessageStimulus): NonNullable<Activation["j
     signalWorkflow: {
       signalName: bpmnDeliverMessageSignalName,
       input: [defaultPayloadConverter.toPayload(delivery)],
+    },
+  };
+}
+
+/**
+ * A `doUpdate` job for the probe's completion Update.
+ *
+ * `id`, `protocolInstanceId`, and `name` are the three fields the installed activator requires; a
+ * missing one is a `TypeError` rather than a batching observation, so they are set explicitly.
+ */
+function completionUpdateJob(): NonNullable<Activation["jobs"]>[number] {
+  return {
+    doUpdate: {
+      id: "bounded-completion-premise",
+      protocolInstanceId: "bounded-completion-premise",
+      name: "boundedCompletionSdkReadiness",
+      input: [],
+      runValidator: false,
     },
   };
 }
