@@ -30,9 +30,19 @@ import { parseWorkflowCode } from "@temporalio/worker/lib/worker.js";
 import {
   defaultPayloadConverter,
 } from "@temporalio/workflow";
+
+import {
+  commands,
+  completedWorkflowResult,
+  installedWorkerRequire,
+  requireStartedTimer,
+  runDirectVmActivation,
+  workflowFailureType,
+} from "./direct-vm-activation-harness.ts";
 import type {
-  WorkflowInfo,
-} from "@temporalio/workflow";
+  Activation,
+  Completion,
+} from "./direct-vm-activation-harness.ts";
 
 import {
   bpmnEventRaceOrderingUnavailableFailureType,
@@ -41,6 +51,7 @@ import {
   loadBpmnWorkflowBundle,
 } from "@bpmn-lean/temporal-adapter";
 
+const eventRaceTaskQueue = "event-race-sdk-activation";
 const fixtureUrl = new URL(
   "../../../scenarios/event-based-gateway-message-timer/process.bpmn",
   import.meta.url,
@@ -49,13 +60,6 @@ const probeWorkflowUrl = new URL(
   "./event-race-sdk-activation-workflows.ts",
   import.meta.url,
 );
-const installedWorkerRequire = createRequire(
-  createRequire(import.meta.url).resolve("@temporalio/worker"),
-);
-
-type Activation = Parameters<Workflow["activate"]>[0];
-type Completion = Awaited<ReturnType<Workflow["activate"]>>;
-type Timestamp = NonNullable<Activation["timestamp"]>;
 
 export type EventRaceSdkActivationWitness = Readonly<{
   disabledPremiseCompletion: Completion;
@@ -111,13 +115,15 @@ export async function runEventRaceSdkActivationWitness(): Promise<EventRaceSdkAc
  * a conditional licence from the unconditional one an Update enjoys.
  */
 export async function runBoundedCompletionUpdateWitness(): Promise<Completion> {
-  return withWorkflow(
-    await loadProbeBundle(),
-    "boundedCompletionUpdateSdkActivationProbe",
-    true,
-    [],
-    [completionUpdateJob(), timerJob()],
-  );
+  return runDirectVmActivation({
+    bundle: await loadProbeBundle(),
+    workflowType: "boundedCompletionUpdateSdkActivationProbe",
+    replaying: true,
+    taskQueue: eventRaceTaskQueue,
+    args: [],
+    readyJobs: [completionUpdateJob(), timerJob()],
+    assertInitialization: (completion) => requireStartedTimer(completion, 1),
+  });
 }
 
 /** Requires the Update and the Timer to have shared one activation. */
@@ -214,16 +220,18 @@ async function activateProductionRace(
   replaying: boolean,
   jobs: NonNullable<Activation["jobs"]>,
 ): Promise<Completion> {
-  return withWorkflow(
+  return runDirectVmActivation({
     bundle,
-    bpmnProcessWorkflowType,
+    workflowType: bpmnProcessWorkflowType,
     replaying,
-    [
+    taskQueue: eventRaceTaskQueue,
+    args: [
       defaultPayloadConverter.toPayload(fixture.start),
       defaultPayloadConverter.toPayload(fixture.program),
     ],
-    jobs,
-  );
+    readyJobs: jobs,
+    assertInitialization: (completion) => requireStartedTimer(completion, 1),
+  });
 }
 
 async function activateProbeWithSdkFlag(
@@ -231,63 +239,18 @@ async function activateProbeWithSdkFlag(
   workflowType: string,
   replaying: boolean,
 ): Promise<Completion> {
-  return withWorkflow(
+  return runDirectVmActivation({
     bundle,
     workflowType,
     replaying,
-    [],
-    [
+    taskQueue: eventRaceTaskQueue,
+    args: [],
+    readyJobs: [
       { signalWorkflow: { signalName: "eventRaceSdkReadiness", input: [] } },
       timerJob(),
     ],
-  );
-}
-
-async function withWorkflow(
-  bundle: ReturnType<typeof parseWorkflowCode>,
-  workflowType: string,
-  replaying: boolean,
-  args: ReadonlyArray<ReturnType<typeof defaultPayloadConverter.toPayload>>,
-  readyJobs: NonNullable<Activation["jobs"]>,
-): Promise<Completion> {
-  const creator = await VMWorkflowCreator.create(bundle, 1_000, new Set([
-    "executeBpmnEffect",
-  ]));
-  const workflow = await creator.createWorkflow({
-    info: await workflowInfo(workflowType, replaying),
-    randomnessSeed: Array.from({ length: 32 }, () => 7),
-    now: 0,
-    showStackTraceSources: false,
+    assertInitialization: (completion) => requireStartedTimer(completion, 1),
   });
-  try {
-    const initialization = await workflow.activate({
-      runId: workflowInfoRunId(workflowType, replaying),
-      timestamp: await timestamp(0),
-      historyLength: 3,
-      isReplaying: replaying,
-      jobs: [{
-        initializeWorkflow: {
-          workflowId: workflowInfoWorkflowId(workflowType, replaying),
-          workflowType,
-          arguments: [...args],
-        },
-      }],
-    });
-    assert.equal(
-      commands(initialization).some(({ startTimer }) => startTimer?.seq === 1),
-      true,
-    );
-    return workflow.activate({
-      runId: workflowInfoRunId(workflowType, replaying),
-      timestamp: await timestamp(1_000),
-      historyLength: 7,
-      isReplaying: replaying,
-      jobs: readyJobs,
-    });
-  } finally {
-    await workflow.dispose();
-    await creator.destroy();
-  }
 }
 
 async function loadProbeBundle(): Promise<ReturnType<typeof parseWorkflowCode>> {
@@ -374,132 +337,6 @@ function completionUpdateJob(): NonNullable<Activation["jobs"]>[number] {
 
 function timerJob(): NonNullable<Activation["jobs"]>[number] {
   return { fireTimer: { seq: 1 } };
-}
-
-function commands(completion: Completion) {
-  return completion.successful?.commands ?? [];
-}
-
-function workflowFailureType(completion: Completion): string | undefined {
-  return commands(completion).find(
-    ({ failWorkflowExecution }) => failWorkflowExecution !== undefined,
-  )?.failWorkflowExecution?.failure?.applicationFailureInfo?.type ?? undefined;
-}
-
-function completedWorkflowResult(completion: Completion): unknown {
-  const payload = commands(completion).find(
-    ({ completeWorkflowExecution }) => completeWorkflowExecution !== undefined,
-  )?.completeWorkflowExecution?.result;
-  if (payload === null || payload === undefined) {
-    throw new TypeError("SDK activation probe completed without a result payload");
-  }
-  return defaultPayloadConverter.fromPayload(payload);
-}
-
-async function workflowInfo(
-  workflowType: string,
-  replaying: boolean,
-): Promise<WorkflowInfo> {
-  return {
-    workflowType,
-    runId: workflowInfoRunId(workflowType, replaying),
-    workflowId: workflowInfoWorkflowId(workflowType, replaying),
-    namespace: "default",
-    firstExecutionRunId: workflowInfoRunId(workflowType, replaying),
-    attempt: 1,
-    taskTimeoutMs: 1_000,
-    taskQueue: "event-race-sdk-activation",
-    searchAttributes: {},
-    typedSearchAttributes: await typedSearchAttributes(),
-    historyLength: 3,
-    historySize: 0,
-    continueAsNewSuggested: false,
-    targetWorkerDeploymentVersionChanged: false,
-    startTime: new Date(0),
-    runStartTime: new Date(0),
-    unsafe: {
-      isReplaying: replaying,
-      isReplayingHistoryEvents: replaying,
-      now: () => 0,
-      random: {
-        random: () => 0.5,
-        uuid4: () => "00000000-0000-4000-8000-000000000000",
-        fillRandom: (bytes) => bytes.fill(7),
-      },
-    },
-  };
-}
-
-function workflowInfoRunId(workflowType: string, replaying: boolean): string {
-  return `${workflowType}-${replaying ? "legacy" : "current"}-run`;
-}
-
-function workflowInfoWorkflowId(workflowType: string, replaying: boolean): string {
-  return `${workflowType}-${replaying ? "legacy" : "current"}`;
-}
-
-async function timestamp(milliseconds: number): Promise<Timestamp> {
-  const module = await importInstalledWorkerDependency(
-    "@temporalio/common/lib/time.js",
-  );
-  const candidate = module["msNumberToTs"];
-  if (typeof candidate !== "function") {
-    throw new TypeError("Pinned Temporal common package does not export msNumberToTs");
-  }
-  const value: unknown = Reflect.apply(candidate, undefined, [milliseconds]);
-  if (!isTimestamp(value)) {
-    throw new TypeError("Pinned Temporal common package returned an invalid timestamp");
-  }
-  return value;
-}
-
-async function typedSearchAttributes(): Promise<WorkflowInfo["typedSearchAttributes"]> {
-  const module = await importInstalledWorkerDependency("@temporalio/common");
-  const Constructor = module["TypedSearchAttributes"];
-  if (typeof Constructor !== "function") {
-    throw new TypeError("Pinned Temporal common package does not export TypedSearchAttributes");
-  }
-  const value: unknown = Reflect.construct(Constructor, []);
-  if (!isTypedSearchAttributes(value)) {
-    throw new TypeError("Pinned Temporal common package returned invalid typed search attributes");
-  }
-  return value;
-}
-
-async function importInstalledWorkerDependency(
-  specifier: string,
-): Promise<Readonly<Record<string, unknown>>> {
-  const module: unknown = await import(
-    pathToFileURL(installedWorkerRequire.resolve(specifier)).href
-  );
-  if (module === null || typeof module !== "object" || Array.isArray(module)) {
-    throw new TypeError(`Pinned Temporal dependency ${specifier} is not a module object`);
-  }
-  return Object.fromEntries(Object.entries(module));
-}
-
-function isTimestamp(value: unknown): value is Timestamp {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-  const nanos = Reflect.get(value, "nanos");
-  const seconds = Reflect.get(value, "seconds");
-  return typeof nanos === "number" &&
-    seconds !== null &&
-    typeof seconds === "object" &&
-    !Array.isArray(seconds) &&
-    typeof Reflect.get(seconds, "mul") === "function";
-}
-
-function isTypedSearchAttributes(
-  value: unknown,
-): value is WorkflowInfo["typedSearchAttributes"] {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-  return typeof Reflect.get(value, "get") === "function" &&
-    typeof Reflect.get(value, "copy") === "function" &&
-    typeof Reflect.get(value, "getAll") === "function";
 }
 
 function installedPackageVersion(value: unknown): string | undefined {
