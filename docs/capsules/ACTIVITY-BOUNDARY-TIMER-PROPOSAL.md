@@ -177,13 +177,13 @@ The armed state publishes exactly one open User Task and one open Timer through 
 
 ## Laws, non-laws, and separating witnesses
 
-Required Lean content, all with exact hypotheses:
+Required Lean content, all with exact hypotheses. This list is the single owner of the Lean obligation; the rule-to-evidence matrix below carries evidence pointers only, and no other section restates it.
 
 - a declarative arming relation and a two-constructor victory relation, both distinct from the evaluator;
 - soundness from every evaluator-produced arming and victory transition to that relation;
-- a quantified exclusivity law: one victory removes both waits and makes the sibling stimulus ineligible;
+- a quantified exclusivity law in the form the state type supports: one victory removes both live waits and removes its own deadline occurrence, so the same pair cannot win twice. Sibling *ineligibility by key* after a victory is deliberately **not** required quantified, because refuting a later lookup needs a `timerWaits` uniqueness invariant `RuntimeState` does not carry; it is a finite checked witness plus the independent core refusal, and the quantified form is deferred under [Deferred with a named blocker](#required-optional-and-excluded);
 - a quantified interruption law: the interrupting arm produces the boundary token and no normal token;
-- exact state-preservation laws for wrong and stale identities;
+- an exact state-preservation law for a wrong identity, quantified over every state; the stale-identity counterpart is the same deferral as above;
 - the nearest **checked non-law**: it is *not* a law that reaching logical time `1000` produces the boundary token, because an earlier committed completion stimulus has already withdrawn the Timer. Stimulus order is an explicit semantic input, so this is a statement about the core's sequential inputs and not about host simultaneity, which the preflight handles separately by failing closed. The finite witness must exhibit that state rather than assert the non-law in prose.
 
 Three schedules over one definition:
@@ -202,7 +202,7 @@ The published follow-on task identity is the discriminator, and it differs at th
 
 Start closure is exactly two internal steps, `initiate` and `awaitBoundedUserTask`. The armed state has no internal transition and is resumable through its published task interaction, so it is stable and not stranded. Each victory enables exactly one follow-on `awaitUserTask`, and completing it closes through one `reachNoneEnd` and root `completeScope`. No newly reachable multiple-enabled internal state exists, and the capsule must executable-check that every newly reachable closure stays inside `semanticProcessClosureLimit`.
 
-Required mutations, each of which must be detected at the public boundary: an implementation that leaves the loser wait; one that produces both tokens; one that routes interruption to `task.output`, which now publishes the wrong follow-on task; one that fires before the deadline; and one that erases the boundary Sequence Flow identity so both routes lower to the same output.
+Required negative content, each detected at the public boundary. This list is the single owner of the negative obligation, and each entry names the form its witness takes, because a seeded pipeline mutation is not available for every one of them: a seeded mutation for an implementation that leaves the loser wait; a seeded mutation for one that routes interruption to `task.output`, which publishes the wrong follow-on task; a positive lowering lock against erasure of the boundary Sequence Flow identity; a quantified Lean law plus an independent core test for a firing before the deadline; and a checked non-law in both directions for a half-armed pair, which subsumes an implementation producing both tokens — neither arm can commit while the other's wait is absent, and the exact-trace theorems and the core's exact state comparison pin the token set on every committed transition. A both-tokens *seeded mutation* is deliberately not required, because the state it would perturb is unreachable rather than merely unobserved.
 
 ## Temporal hosting and refinement preflight
 
@@ -259,7 +259,7 @@ The coalescing premise carries two lanes whose instrument is shared: both the so
 | `ABTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active; the arming instant itself is a project interpretation, since no clause fixes when a boundary Event's waiting begins (13.5.2's “reached” cannot apply to a Boundary Event) | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
 | `ABTIMER-COMPLETE-01` | Clause 13.5.3 normal continuation | quantified exclusivity law | victory removes both waits | completion history: Timer canceled, never fired | mutation that leaves the Timer wait live |
 | `ABTIMER-INTERRUPT-01` | Clause 13.5.3 three-step order | quantified interruption law with counter preservation | boundary token only, no normal token | interruption history: Timer fired, no cancellation | mutation routing interruption to `task.output`, detected by the wrong published follow-on task |
-| `ABTIMER-REFUSE-01` | exact-occurrence and exact-time refusal | quantified refusal of every off-deadline instant, plus state-preservation laws for wrong and stale identities | independent core refusal with both seeded defect directions rejected | no registered schedule can present an off-deadline firing | pre-due firing at `999` and its `1001` mirror; stale sibling after either victory |
+| `ABTIMER-REFUSE-01` | exact-occurrence and exact-time refusal | quantified off-deadline and wrong-identity refusal; stale identity as a checked witness under its recorded deferral | independent core refusal with both seeded defect directions rejected | no registered schedule can present an off-deadline firing | pre-due firing at `999` and its `1001` mirror; stale sibling after either victory |
 | `ABTIMER-OBSERVE-01` | four-kind canonical ordering | projection agreement | published follow-on task identity distinguishes the route | canonical Query projects core state only | boundary-Flow identity erasure collapsing both routes to one output |
 
 CIB Seven is deliberately absent from every row; see the CIB relationship section.
@@ -284,7 +284,7 @@ If implementation discovers a public observation this profile cannot produce wit
 
 This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires.
 
-It also closes a recorded product-evidence gap rather than only adding a profile. The driver's precedence rule keeps waiting while a timer wait is open precisely so a host-resolved wait can withdraw an enabled interaction, but no current example declines an enabled interaction to let a timer win, so that arm is not product-reachable today. This profile makes both arms reachable from declared configuration alone: a plan answering the bounded task exercises Activity victory, and a plan that answers only the boundary follow-on task exercises deadline victory. Two example configurations over one definition therefore close the gap.
+The driver's precedence rule keeps waiting while a timer wait is open precisely so a host-resolved wait can withdraw an enabled interaction, and that arm is already product-reachable and live through the `event-based-gateway-timer-wins` example, which a separate increment added before this capsule's implementation baseline. This profile adds a second definition where both arms are reachable from declared configuration alone: a plan answering the bounded task exercises Activity victory, and a plan that answers only the boundary follow-on task exercises deadline victory. Both boundary examples are checked for admission and configuration only; neither is a live durable product run, so they claim no product evidence beyond that.
 
 Both plans must still answer their follow-on task, so neither example ends in an observation-limit refusal.
 
