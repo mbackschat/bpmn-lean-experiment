@@ -76,12 +76,17 @@ import {
   effectTransportKey,
 } from "./effect-transport.js";
 import {
+  ActivationDrain,
+} from "./activation-tagged-readiness.js";
+import {
   createBoundedActivityDeadlineScheduler,
 } from "./bounded-activity-deadline-scheduler.js";
 import {
-  EventRaceActivationDrain,
   createEventRaceReadinessScheduler,
 } from "./event-race-readiness-scheduler.js";
+import {
+  hostInvariantFailure,
+} from "./host-invariant.js";
 import {
   timerFiringStimulus,
 } from "./timer-command.js";
@@ -121,8 +126,7 @@ export async function runBpmnProcessWithHostEffects(
   executeEffect: (
     request: EffectRequest,
   ) => Promise<EffectExecutionResult>,
-  eventRaceActivationDrain: EventRaceActivationDrain =
-    EventRaceActivationDrain.Required,
+  eventRaceActivationDrain: ActivationDrain = ActivationDrain.Required,
 ): Promise<CompletedProcessReceipt> {
   const deployment = deployProcess(start, semanticProcess);
   if (deployment.outcome !== CommandOutcome.Committed) {
@@ -228,9 +232,8 @@ export async function runBpmnProcessWithHostEffects(
       const effects = projectOpenEffects(state);
       if (state.eventRaces.length > 0) {
         if (effects.length > 0) {
-          throw ApplicationFailure.nonRetryable(
+          throw hostInvariantFailure(
             "Pre-start host admission allowed an effect beside a managed event race",
-            "BpmnHostCapabilityInvariantViolation",
           );
         }
         const readyStimuli = await eventRaceScheduler.waitForReadiness(state);
@@ -244,9 +247,8 @@ export async function runBpmnProcessWithHostEffects(
         continue;
       }
       if (timers.length > 0 && effects.length > 0) {
-        throw ApplicationFailure.nonRetryable(
+        throw hostInvariantFailure(
           "Pre-start host admission failed to exclude concurrent timer and effect waits",
-          "BpmnHostCapabilityInvariantViolation",
         );
       }
       if (timers.length === 0 && effects.length === 0) {
@@ -272,9 +274,8 @@ export async function runBpmnProcessWithHostEffects(
           continue;
         }
         if (timers.length !== 1) {
-          throw ApplicationFailure.nonRetryable(
+          throw hostInvariantFailure(
             "Pre-start host admission failed to exclude multiple committed timer waits",
-            "BpmnHostCapabilityInvariantViolation",
           );
         }
         const timer = timers[0];
@@ -301,9 +302,8 @@ export async function runBpmnProcessWithHostEffects(
         );
       } else {
         if (effects.length !== 1) {
-          throw ApplicationFailure.nonRetryable(
+          throw hostInvariantFailure(
             "Pre-start host admission failed to exclude multiple committed effect intents",
-            "BpmnHostCapabilityInvariantViolation",
           );
         }
         const effect = effects[0];

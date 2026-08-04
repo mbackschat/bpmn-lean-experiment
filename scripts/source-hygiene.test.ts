@@ -96,6 +96,20 @@ function directTypeScriptHarnessFiles(): string[] {
 }
 
 /**
+ * Shipped TypeScript: the package and runner `src` trees, excluding build output.
+ *
+ * Narrower than the size measurement, which covers every hand-written file. Tests and scripts build
+ * report text and fixture lines by joining on separators, which is not an identity claim, so the
+ * composite-key rule applies only where a value can become a durable key.
+ */
+function shippedTypeScriptFiles(): string[] {
+  return worktreeSourceFiles().filter((path) =>
+    path.endsWith(".ts") &&
+    /^(?:packages|runners)\/[^/]+\/src\//u.test(path)
+  );
+}
+
+/**
  * Specifiers TypeScript resolves: `from` clauses, side-effect imports, and
  * literal dynamic imports.
  *
@@ -118,6 +132,33 @@ function importBearingLines(source: string): string[] {
   return source
     .split(/\r?\n/u)
     .filter((line) => !/^\s*["'`]/u.test(line));
+}
+
+/**
+ * `Array.prototype.join` with a separator, which no composite identity may use.
+ *
+ * `path.join` is a different API and stays admissible, as does an empty separator: that is pure
+ * concatenation and claims nothing about delimiting. A non-empty separator does make such a claim,
+ * and in this project it is always false — the shared wire domain admits every Unicode scalar value,
+ * so no character is reserved and one part can absorb the separator to forge another part's key.
+ */
+const separatorJoinPattern =
+  /(?<!\bpath)\.join\(\s*(?!(?:""|''|``)\s*\))/u;
+
+/**
+ * Reports composite values built by joining parts on a separator.
+ *
+ * Two host schedulers shipped a durable timer key joined on `U+0000` under a comment asserting that
+ * the separator made forgery impossible. It did not: `isWellFormedWireString` admits that scalar, so
+ * moving the separator into an identifier produced a byte-identical key for two different committed
+ * timers. `canonicalTypedTupleEncoding` owns composite identity and delimits structurally instead.
+ */
+function separatorJoins(path: string, source: string): string[] {
+  return source
+    .split(/\r?\n/u)
+    .flatMap((line, index) =>
+      separatorJoinPattern.test(line) ? [`${path}:${index + 1}`] : []
+    );
 }
 
 function isProjectBuildOutput(specifier: string): boolean {
@@ -389,6 +430,37 @@ test("direct TypeScript harnesses use only erasable syntax", () => {
     erasableSyntaxDiagnostics(directTypeScriptHarnessFiles()),
     [],
     "Node executes harness TypeScript without a transform step",
+  );
+});
+
+test("the composite-key policy separates delimiting claims from concatenation", () => {
+  assert.deepEqual(
+    separatorJoins(
+      "probe.ts",
+      [
+        // The exact shipped defect, and the same shape with the other quotings.
+        '  ].join("\\u0000");',
+        "  ].join('-');",
+        "  ].join(`:`);",
+        "  return parts.join(separator);",
+        // Admissible: concatenation claims no delimiter, and `path.join` is another API.
+        '  ].join("");',
+        "  ].join('');",
+        "  ].join(``);",
+        '  const absolute = path.join(projectRoot, relativePath);',
+      ].join("\n"),
+    ),
+    ["probe.ts:1", "probe.ts:2", "probe.ts:3", "probe.ts:4"],
+  );
+});
+
+test("no shipped composite value is built by joining on a separator", () => {
+  assert.deepEqual(
+    shippedTypeScriptFiles().flatMap((path) =>
+      separatorJoins(path, readFileSync(path, "utf8")),
+    ),
+    [],
+    "build a composite identity with canonicalTypedTupleEncoding; no separator character is reserved in the shared wire domain",
   );
 });
 

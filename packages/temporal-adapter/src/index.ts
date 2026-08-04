@@ -1,5 +1,7 @@
+export * from "./activation-batch.js";
 export * from "./canonical-encoding.js";
 export * from "./command-identity.js";
+export * from "./durable-timer-key.js";
 export * from "./contracts.js";
 export * from "./deterministic-sha256.js";
 export * from "./effect-probe.js";

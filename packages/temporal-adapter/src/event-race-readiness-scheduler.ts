@@ -1,8 +1,10 @@
 /**
  * Durable readiness scheduling for the bounded one-Message/one-Timer Event-Based Gateway profile.
  *
- * Callback order is not semantic order. Every callback is tagged with the current Workflow activation,
- * and the required microtask drain closes that activation before a batch is classified.
+ * This module owns what is specific to the race: which committed state counts as one managed pair,
+ * that a Message and its Timer sharing one activation has no portable BPMN winner, and that a message
+ * already accepted by its Signal handler is not resubmitted. The activation-tagged batching and the
+ * durable Timer ownership are shared host mechanisms and live with their own owners.
  */
 import {
   StimulusKind,
@@ -15,47 +17,37 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   ApplicationFailure,
-  CancellationScope,
-  condition,
-  isCancellation,
-  workflowInfo,
 } from "@temporalio/workflow";
 
+import {
+  ActivationDrain,
+  createActivationTaggedReadiness,
+} from "./activation-tagged-readiness.js";
 import {
   bpmnEventRaceOrderingUnavailableFailureType,
 } from "./contracts.js";
 import {
-  timerFiringStimulus,
-} from "./timer-command.js";
-
-export const EventRaceActivationDrain = {
-  Required: "required",
-  RemovedMutation: "removedMutation",
-} as const;
-
-export type EventRaceActivationDrain =
-  typeof EventRaceActivationDrain[keyof typeof EventRaceActivationDrain];
+  createDurableTimerOwner,
+} from "./durable-timer-owner.js";
+import type {
+  DurableTimer,
+} from "./durable-timer-owner.js";
+import {
+  hostInvariantFailure,
+} from "./host-invariant.js";
 
 type MessageReadiness = Readonly<{
   kind: typeof StimulusKind.DeliverMessage;
-  activation: number;
   stimulus: DeliverMessageStimulus;
   submitToCore: boolean;
 }>;
 
 type TimerReadiness = Readonly<{
   kind: typeof StimulusKind.FireTimer;
-  activation: number;
   stimulus: FireTimerStimulus;
 }>;
 
 type EventRaceReadiness = MessageReadiness | TimerReadiness;
-
-type ActiveTimer = {
-  key: string;
-  scope: CancellationScope;
-  fired: boolean;
-};
 
 export type EventRaceReadinessScheduler = Readonly<{
   recordMessageCallback: (
@@ -69,11 +61,22 @@ export type EventRaceReadinessScheduler = Readonly<{
 
 export function createEventRaceReadinessScheduler(
   waitForTimer: (durationMs: number) => Promise<void>,
-  activationDrain: EventRaceActivationDrain,
+  activationDrain: ActivationDrain,
 ): EventRaceReadinessScheduler {
-  let readiness: EventRaceReadiness[] = [];
-  let activeTimer: ActiveTimer | undefined;
-  let timerFailure: unknown;
+  const readiness = createActivationTaggedReadiness<EventRaceReadiness>(
+    activationDrain,
+    "Event race scheduler woke without one classified callback",
+  );
+  const timer = createDurableTimerOwner({
+    waitForTimer,
+    refusals: {
+      replaced: "Event race attempted to replace its live durable Timer",
+      identityChanged: "Committed event race changed its durable Timer identity",
+    },
+    onFiring: (stimulus) =>
+      readiness.record({ kind: StimulusKind.FireTimer, stimulus }),
+    onFailure: readiness.recordFailure,
+  });
 
   return {
     recordMessageCallback(state, stimulus, submitToCore) {
@@ -81,9 +84,8 @@ export function createEventRaceReadinessScheduler(
         return false;
       }
       requireManagedRaceTimer(state);
-      readiness.push({
+      readiness.record({
         kind: StimulusKind.DeliverMessage,
-        activation: workflowInfo().historyLength,
         stimulus,
         submitToCore,
       });
@@ -91,27 +93,8 @@ export function createEventRaceReadinessScheduler(
     },
 
     async waitForReadiness(state) {
-      const timer = requireManagedRaceTimer(state);
-      ensureDurableTimer(timer);
-      await condition(() => readiness.length > 0 || timerFailure !== undefined);
-      if (timerFailure !== undefined) {
-        throw timerFailure;
-      }
-      if (activationDrain === EventRaceActivationDrain.Required) {
-        await Promise.resolve();
-      }
-      const first = readiness[0];
-      if (first === undefined) {
-        throw hostInvariantFailure(
-          "Event race scheduler woke without one classified callback",
-        );
-      }
-      const batch = readiness.filter(
-        ({ activation }) => activation === first.activation,
-      );
-      readiness = readiness.filter(
-        ({ activation }) => activation !== first.activation,
-      );
+      timer.ensureArmed(requireManagedRaceTimer(state));
+      const batch = await readiness.takeBatch();
       if (
         batch.some(({ kind }) => kind === StimulusKind.DeliverMessage) &&
         batch.some(({ kind }) => kind === StimulusKind.FireTimer)
@@ -121,85 +104,42 @@ export function createEventRaceReadinessScheduler(
           bpmnEventRaceOrderingUnavailableFailureType,
         );
       }
-      const stimuli: Stimulus[] = [];
-      for (const callback of batch) {
-        switch (callback.kind) {
-          case StimulusKind.DeliverMessage:
-            if (callback.submitToCore) {
-              stimuli.push(callback.stimulus);
-            }
-            break;
-          case StimulusKind.FireTimer:
-            stimuli.push(callback.stimulus);
-            break;
-          default:
-            assertNever(callback);
-        }
-      }
-      return stimuli;
+      return submittedStimuli(batch);
     },
 
     reconcileCommittedState(state) {
-      const timer = activeTimer;
-      if (state.eventRaces.length > 0) {
-        const required = requireManagedRaceTimer(state);
-        if (timer !== undefined && timer.key !== timerKey(required)) {
-          throw hostInvariantFailure(
-            "Committed event race changed its durable Timer identity",
-          );
-        }
-        return;
-      }
-      if (timer !== undefined) {
-        if (!timer.fired) {
-          timer.scope.cancel();
-        }
-        activeTimer = undefined;
-      }
+      timer.reconcile(
+        state.eventRaces.length > 0
+          ? requireManagedRaceTimer(state)
+          : undefined,
+      );
     },
   };
-
-  function ensureDurableTimer(timer: ManagedRaceTimer): void {
-    const key = timerKey(timer);
-    if (activeTimer !== undefined) {
-      if (activeTimer.key !== key) {
-        throw hostInvariantFailure(
-          "Event race attempted to replace its live durable Timer",
-        );
-      }
-      return;
-    }
-    const scope = new CancellationScope({ cancellable: true });
-    const ownedTimer: ActiveTimer = { key, scope, fired: false };
-    activeTimer = ownedTimer;
-    void scope.run(() => waitForTimer(timer.remainingMs)).then(
-      () => {
-        if (activeTimer !== ownedTimer) {
-          return;
-        }
-        ownedTimer.fired = true;
-        readiness.push({
-          kind: StimulusKind.FireTimer,
-          activation: workflowInfo().historyLength,
-          stimulus: timerFiringStimulus(timer),
-        });
-      },
-      (error: unknown) => {
-        if (!isCancellation(error)) {
-          timerFailure = error;
-        }
-      },
-    );
-  }
 }
 
-type ManagedRaceTimer = Readonly<{
-  id: RuntimeState["timerWaits"][number]["id"];
-  deadlineMs: number;
-  remainingMs: number;
-}>;
+/** A Signal-delivered message its handler already accepted is not offered to the core a second time. */
+function submittedStimuli(
+  batch: ReadonlyArray<EventRaceReadiness>,
+): ReadonlyArray<Stimulus> {
+  const stimuli: Stimulus[] = [];
+  for (const callback of batch) {
+    switch (callback.kind) {
+      case StimulusKind.DeliverMessage:
+        if (callback.submitToCore) {
+          stimuli.push(callback.stimulus);
+        }
+        break;
+      case StimulusKind.FireTimer:
+        stimuli.push(callback.stimulus);
+        break;
+      default:
+        assertNever(callback);
+    }
+  }
+  return stimuli;
+}
 
-function requireManagedRaceTimer(state: RuntimeState): ManagedRaceTimer {
+function requireManagedRaceTimer(state: RuntimeState): DurableTimer {
   const [race] = state.eventRaces;
   const [message] = state.messageWaits;
   const [timer] = state.timerWaits;
@@ -225,15 +165,6 @@ function requireManagedRaceTimer(state: RuntimeState): ManagedRaceTimer {
     deadlineMs: timer.deadlineMs,
     remainingMs: 1_000,
   };
-}
-
-function timerKey(timer: ManagedRaceTimer): string {
-  return [
-    timer.id.processInstanceId,
-    timer.id.elementId,
-    timer.id.activation,
-    timer.deadlineMs,
-  ].join("\u0000");
 }
 
 function sameOccurrence(
@@ -268,13 +199,6 @@ function sameOwner(
   return left.processInstanceId === right.processInstanceId &&
     left.definitionScopeId === right.definitionScopeId &&
     left.activation === right.activation;
-}
-
-function hostInvariantFailure(message: string): ApplicationFailure {
-  return ApplicationFailure.nonRetryable(
-    message,
-    "BpmnHostCapabilityInvariantViolation",
-  );
 }
 
 function assertNever(value: never): never {

@@ -10,8 +10,8 @@ import type {
   CompletedProcessReceipt,
 } from "./contracts.js";
 import {
-  EventRaceActivationDrain,
-} from "./event-race-readiness-scheduler.js";
+  ActivationDrain,
+} from "./activation-tagged-readiness.js";
 import {
   runBpmnProcessWithHostEffects,
 } from "./workflow-implementation.js";
@@ -30,6 +30,6 @@ export function runBpmnProcessEventRaceBarrierRemovalMutation(
         "Event-race barrier mutation does not host Service Task effects",
       );
     },
-    EventRaceActivationDrain.RemovedMutation,
+    ActivationDrain.RemovedMutation,
   );
 }

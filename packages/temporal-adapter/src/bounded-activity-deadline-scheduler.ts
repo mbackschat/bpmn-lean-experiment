@@ -1,15 +1,12 @@
 /**
  * Durable readiness scheduling for one bounded User Task and its interrupting boundary deadline.
  *
- * The two callbacks race, and this capsule defines no winner for host simultaneity. So the deadline
- * is owned in a cancellation scope rather than awaited inline: awaiting it would park the semantic
- * loop, leaving the arriving completion to be drained in whatever order the jobs happened to land,
- * which would make the host — not BPMN — choose the victor.
- *
- * Every callback is tagged with the Workflow activation that produced it, and a completion and a
- * deadline sharing one activation is refused under its own identity. That identity is deliberately
- * distinct from the Event-race one: the mechanisms coincide, but the semantic claims do not, and an
- * operator must be able to tell which contract is unavailable.
+ * This module owns what is specific to the family: which committed state counts as one bounded pair,
+ * and that a completion and its deadline sharing one activation is refused under this family's own
+ * identity. That identity is deliberately distinct from the Event-race one: the host mechanisms
+ * coincide, but the semantic claims do not, and an operator must be able to tell which contract is
+ * unavailable. The activation-tagged batching and the durable deadline ownership are those shared
+ * mechanisms and live with their own owners.
  */
 import { StimulusKind } from "@bpmn-lean/semantic-core";
 import type {
@@ -20,34 +17,26 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import { isBoundaryTimerDefinition } from "@bpmn-lean/semantic-core";
-import {
-  ApplicationFailure,
-  CancellationScope,
-  condition,
-  isCancellation,
-  workflowInfo,
-} from "@temporalio/workflow";
+import { ApplicationFailure } from "@temporalio/workflow";
 
+import {
+  ActivationDrain,
+  createActivationTaggedReadiness,
+} from "./activation-tagged-readiness.js";
 import { bpmnBoundedActivitySchedulerUnavailableFailureType } from "./contracts.js";
-import { timerFiringStimulus } from "./timer-command.js";
+import { createDurableTimerOwner } from "./durable-timer-owner.js";
+import type { DurableTimer } from "./durable-timer-owner.js";
+import { hostInvariantFailure } from "./host-invariant.js";
 
 type BoundedReadiness =
   | Readonly<{
     kind: typeof StimulusKind.CompleteUserTaskInstance;
-    activation: number;
     stimulus: CompleteUserTaskInstanceStimulus;
   }>
   | Readonly<{
     kind: typeof StimulusKind.FireTimer;
-    activation: number;
     stimulus: FireTimerStimulus;
   }>;
-
-type ActiveDeadline = {
-  key: string;
-  scope: CancellationScope;
-  fired: boolean;
-};
 
 export type BoundedActivityDeadlineScheduler = Readonly<{
   /**
@@ -67,47 +56,37 @@ export function createBoundedActivityDeadlineScheduler(
   semanticProcess: SemanticProcessProgram,
   waitForTimer: (durationMs: number) => Promise<void>,
 ): BoundedActivityDeadlineScheduler {
-  let readiness: BoundedReadiness[] = [];
-  let activeDeadline: ActiveDeadline | undefined;
-  let deadlineFailure: unknown;
+  const readiness = createActivationTaggedReadiness<BoundedReadiness>(
+    ActivationDrain.Required,
+    "Bounded deadline scheduler woke without one classified callback",
+  );
+  const deadline = createDurableTimerOwner({
+    waitForTimer,
+    refusals: {
+      replaced: "Bounded Activity attempted to replace its live durable deadline",
+      identityChanged:
+        "Committed bounded Activity changed its durable deadline identity",
+    },
+    onFiring: (stimulus) =>
+      readiness.record({ kind: StimulusKind.FireTimer, stimulus }),
+    onFailure: readiness.recordFailure,
+  });
 
   return {
     recordCompletionCallback(state, stimulus) {
       if (managedDeadline(semanticProcess, state) === undefined) {
         return false;
       }
-      readiness.push({
+      readiness.record({
         kind: StimulusKind.CompleteUserTaskInstance,
-        activation: workflowInfo().historyLength,
         stimulus,
       });
       return true;
     },
 
     async waitForReadiness(state) {
-      const deadline = requireManagedDeadline(semanticProcess, state);
-      ensureDurableDeadline(deadline);
-      await condition(
-        () => readiness.length > 0 || deadlineFailure !== undefined,
-      );
-      if (deadlineFailure !== undefined) {
-        throw deadlineFailure;
-      }
-      // Closes the activation before classifying, so a callback delivered in the same batch is
-      // counted with its own batch rather than appearing in the next one.
-      await Promise.resolve();
-      const first = readiness[0];
-      if (first === undefined) {
-        throw hostInvariantFailure(
-          "Bounded deadline scheduler woke without one classified callback",
-        );
-      }
-      const batch = readiness.filter(
-        ({ activation }) => activation === first.activation,
-      );
-      readiness = readiness.filter(
-        ({ activation }) => activation !== first.activation,
-      );
+      deadline.ensureArmed(requireManagedDeadline(semanticProcess, state));
+      const batch = await readiness.takeBatch();
       if (
         batch.some(
           ({ kind }) => kind === StimulusKind.CompleteUserTaskInstance,
@@ -123,66 +102,14 @@ export function createBoundedActivityDeadlineScheduler(
     },
 
     reconcileCommittedState(state) {
-      const deadline = activeDeadline;
-      if (managedDeadline(semanticProcess, state) !== undefined) {
-        const required = requireManagedDeadline(semanticProcess, state);
-        if (deadline !== undefined && deadline.key !== deadlineKey(required)) {
-          throw hostInvariantFailure(
-            "Committed bounded Activity changed its durable deadline identity",
-          );
-        }
-        return;
-      }
-      // The bounded wait is gone, so a victory committed. An unfired deadline is withdrawn here
-      // rather than left to expire against a task that no longer exists.
-      if (deadline !== undefined) {
-        if (!deadline.fired) {
-          deadline.scope.cancel();
-        }
-        activeDeadline = undefined;
-      }
+      deadline.reconcile(
+        managedDeadline(semanticProcess, state) === undefined
+          ? undefined
+          : requireManagedDeadline(semanticProcess, state),
+      );
     },
   };
-
-  function ensureDurableDeadline(deadline: ManagedDeadline): void {
-    const key = deadlineKey(deadline);
-    if (activeDeadline !== undefined) {
-      if (activeDeadline.key !== key) {
-        throw hostInvariantFailure(
-          "Bounded Activity attempted to replace its live durable deadline",
-        );
-      }
-      return;
-    }
-    const scope = new CancellationScope({ cancellable: true });
-    const owned: ActiveDeadline = { key, scope, fired: false };
-    activeDeadline = owned;
-    void scope.run(() => waitForTimer(deadline.remainingMs)).then(
-      () => {
-        if (activeDeadline !== owned) {
-          return;
-        }
-        owned.fired = true;
-        readiness.push({
-          kind: StimulusKind.FireTimer,
-          activation: workflowInfo().historyLength,
-          stimulus: timerFiringStimulus(deadline),
-        });
-      },
-      (error: unknown) => {
-        if (!isCancellation(error)) {
-          deadlineFailure = error;
-        }
-      },
-    );
-  }
 }
-
-type ManagedDeadline = Readonly<{
-  id: RuntimeState["timerWaits"][number]["id"];
-  deadlineMs: number;
-  remainingMs: number;
-}>;
 
 /**
  * The bounded pair, or `undefined` when this state holds no boundary deadline.
@@ -193,7 +120,7 @@ type ManagedDeadline = Readonly<{
 function managedDeadline(
   semanticProcess: SemanticProcessProgram,
   state: RuntimeState,
-): ManagedDeadline | undefined {
+): DurableTimer | undefined {
   const [timer] = state.timerWaits;
   if (
     state.timerWaits.length !== 1 ||
@@ -212,7 +139,7 @@ function managedDeadline(
 function requireManagedDeadline(
   semanticProcess: SemanticProcessProgram,
   state: RuntimeState,
-): ManagedDeadline {
+): DurableTimer {
   const deadline = managedDeadline(semanticProcess, state);
   const [task] = state.userTaskWaits;
   if (
@@ -227,23 +154,4 @@ function requireManagedDeadline(
     );
   }
   return deadline;
-}
-
-function deadlineKey(deadline: ManagedDeadline): string {
-  return [
-    deadline.id.processInstanceId,
-    deadline.id.elementId,
-    deadline.id.activation,
-    deadline.deadlineMs,
-  // NUL separates the parts so no identifier value can forge another key by containing the
-  // separator. Written as an escape: a literal control character makes the file binary to Git
-  // and invisible to grep.
-  ].join("\u0000");
-}
-
-function hostInvariantFailure(message: string): ApplicationFailure {
-  return ApplicationFailure.nonRetryable(
-    message,
-    "BpmnHostCapabilityInvariantViolation",
-  );
 }
