@@ -273,15 +273,20 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
  * `Quot.sound`. The kernel-decide policy in [CLAUDE.md](../CLAUDE.md) prefers `decide +kernel`,
  * which adds no axiom.
  *
- * These six modules predate that policy, so this inventory is a ratchet rather than a permission:
- * a new site, or any new module, fails here instead of silently enlarging what the project trusts.
+ * These modules predate that policy, so this inventory is a ratchet rather than a permission: a new
+ * site, or any new module, fails here instead of silently enlarging what the project trusts.
  * Removing sites is always admissible and only requires lowering a figure; raising one is an owner
  * decision about the trusted path. The guard exists because prose alone did not hold — a
- * repository-wide "`native_decide` remains excluded" sentence was written while all 56 sites below
- * were live.
+ * repository-wide "`native_decide` remains excluded" sentence was written while 56 sites in six
+ * modules were live.
+ *
+ * The Event-Based Gateway module's 25 sites are converted and its row is gone, which is what
+ * lowering looks like. That conversion is measured, not free: it costs about 13.9 seconds of user
+ * CPU where `native_decide` cost 0.4, and it removed the compiler-trusting axiom from the module's
+ * theorems. Each remaining module needs its own measurement, because kernel reduction cost follows
+ * a proposition's reduction depth rather than a module's site count.
  */
 const recordedNativeDecideSites = Object.freeze([
-  Object.freeze({ path: "BpmnSemantics/EventBasedGatewayConformance.lean", sites: 25 }),
   Object.freeze({ path: "BpmnSemantics/SemanticProcessJsonConformance.lean", sites: 15 }),
   Object.freeze({ path: "BpmnSemantics/InclusiveGatewayConformance.lean", sites: 13 }),
   Object.freeze({
