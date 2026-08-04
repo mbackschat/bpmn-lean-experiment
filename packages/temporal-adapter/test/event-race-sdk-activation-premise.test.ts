@@ -39,6 +39,28 @@ test("the installed pinned SDK source lock rejects removal of single-batch activ
   );
 });
 
+/**
+ * The barrier that coalesces Update-delivered completion with a due timer is licensed by
+ * `hasSignals === false`, which sends an Update-only activation down the single-batch path
+ * unconditionally, independently of the SdkFlag. That holds only while the predicate reads
+ * `signalWorkflow` alone, so this locks the definition and not merely its use: a definition that
+ * also counted `doUpdate` would split the batch the barrier depends on while leaving every
+ * use-site assertion matching.
+ */
+test("the source lock rejects a hasSignals definition that also counts Updates", async () => {
+  const source = await readInstalledPinnedSdkActivationSource();
+  assertPinnedSingleBatchSource(source);
+  const mutation = source.replace(
+    "const hasSignals = activation.jobs.some(({ signalWorkflow }) => signalWorkflow != null);",
+    "const hasSignals = activation.jobs.some(({ signalWorkflow, doUpdate }) => signalWorkflow != null || doUpdate != null);",
+  );
+  assert.notEqual(mutation, source);
+  assert.throws(
+    () => assertPinnedSingleBatchSource(mutation),
+    /signalWorkflow/u,
+  );
+});
+
 test("fixed Message priority and core bypass cannot replace coalesced failure", async () => {
   const witness = await activationWitness;
   requireFixedMessagePriorityCoreBypass(

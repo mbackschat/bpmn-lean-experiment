@@ -102,6 +102,14 @@ export async function runEventRaceSdkActivationWitness(): Promise<EventRaceSdkAc
 }
 
 export function assertPinnedSingleBatchSource(source: string): void {
+  // Pins the predicate's definition, not only its use below. `!hasSignals` is what sends an
+  // Update-only activation down the single-batch path irrespective of the SdkFlag, and that
+  // licence survives only while the predicate reads `signalWorkflow` alone. A definition widened
+  // to count `doUpdate` would split the batch while every use-site assertion kept matching.
+  assert.match(
+    source,
+    /const hasSignals = activation\.jobs\.some\(\(\{ signalWorkflow \}\) => signalWorkflow != null\);/u,
+  );
   assert.match(
     source,
     /const doSingleBatch = !hasSignals \|\| this\.activator\.hasFlag\([^)]*SdkFlags\.ProcessWorkflowActivationJobsAsSingleBatch\);/u,
