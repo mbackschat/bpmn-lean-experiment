@@ -27,7 +27,8 @@ import {
 } from "./event-race-admission.js";
 import {
   isWellFormedAwaitBoundedUserTaskOperation,
-} from "./bounded-task-admission.js";
+  isWellFormedEnterBoundedScopeOperation,
+} from "./bounded-wait-admission.js";
 import {
   isWellFormedInvokeProcessOperation,
   isWellFormedReturnProcessOperation,
@@ -70,6 +71,13 @@ export function isWellFormedSemanticOperation(
         isPlaceReference(value.childEntry, placeIds) &&
         isNonEmptyString(value.childScopeId) &&
         scopeIds.has(value.childScopeId)
+      );
+    case SemanticOperationKind.EnterBoundedScope:
+      return isWellFormedEnterBoundedScopeOperation(
+        value,
+        placeIds,
+        placeOrigins,
+        scopeIds,
       );
     case SemanticOperationKind.InvokeProcess:
       return isWellFormedInvokeProcessOperation(value, placeIds, scopeIds);

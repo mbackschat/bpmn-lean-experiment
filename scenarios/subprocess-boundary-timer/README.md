@@ -1,0 +1,9 @@
+# Interrupting Sub-Process boundary Timer scenarios
+
+This directory contains the exact BPMN 2.0.2 source for the [interrupting Sub-Process boundary Timer capsule](../../docs/capsules/SUBPROCESS-BOUNDARY-TIMER-PROPOSAL.md). One embedded Sub-Process containing a single child User Task owns one interrupting `PT1S` Timer Boundary Event, and each route reaches its own follow-on User Task — After Scope on the quiescent-completion route, the Escalation Task on the deadline route — which is what makes the route choice observable at the public boundary. The two distinct root None End Events are structural symmetry only and are not a discriminator, because the canonical observation exposes no terminal element identity.
+
+`cancelActivity` is deliberately omitted from the source rather than written as `true`. The XSD and CMOF default it to `true`, so omission is the admissible interrupting form; lexical `false` is a separate proposition and is rejected at admission. `triggeredByEvent` is likewise omitted, and `triggeredByEvent="true"` is rejected: an Event Sub-Process is not a boundary host under this profile.
+
+**No answer-free scenario is registered yet, and that is a deliberate boundary rather than an omission.** This source is currently admitted, lowered, and executed only through the focused source, semantic-core, and host-admission gates. Registering a scenario obligates a differential pipeline case with a meaningful seeded semantic mutation, a Temporal relation for every registered scenario, and Lean's own victory relations — none of which this checkpoint claims. The [plan](../../docs/PLAN.md) owns the exact remaining lanes. Target inputs added here must carry no winner annotation and no expected result.
+
+No CIB Seven boundary-Timer relationship, target, or retained evidence is selected for this profile; the pinned corpus was used for scheduling and calibration only.

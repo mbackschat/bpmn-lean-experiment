@@ -40,7 +40,9 @@ The code is split by responsibility:
 | [semantic-process-profile.ts](src/semantic-process-profile.ts) | Exact profile operation-kind cardinality capabilities |
 | [call-activity-admission.ts](src/call-activity-admission.ts) | Cross-definition invocation/return pairing and virtual completion edges |
 | [semantic-process-call-runtime.ts](src/semantic-process-call-runtime.ts) | Called-instance identity, invocation, quiescent return, and subtree cleanup |
-| [semantic-process-error-runtime.ts](src/semantic-process-error-runtime.ts) | Direct-parent Error propagation and regional child-occurrence cancellation |
+| [semantic-process-error-runtime.ts](src/semantic-process-error-runtime.ts) | Direct-parent Error propagation catching one exact Error at its attached scope |
+| [semantic-process-scope-cancellation.ts](src/semantic-process-scope-cancellation.ts) | Regional cancellation of one scope occurrence subtree, shared by Error propagation and deadline interruption |
+| [semantic-process-bounded-scope-runtime.ts](src/semantic-process-bounded-scope-runtime.ts) | Sub-Process scope entry that arms an interrupting deadline, its quiescence withdrawal, and its interruption victory |
 | [message-channel.ts](src/message-channel.ts) | Strict closed-arm Message-channel validation and exact equality shared by program and stimulus admission |
 | [semantic-process-message.ts](src/semantic-process-message.ts) | Message-subscription activation, exact delivery, state-preserving refusal, and projection |
 | [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, external command admission, enum-based operation dispatch for all current operations, operation-ID-stable internal closure, and `applyStimulus` |

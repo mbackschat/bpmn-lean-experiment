@@ -193,7 +193,7 @@ test("two left tokens cannot satisfy a join missing its right input", () => {
   ]);
 
   assert.equal(
-    applyInternalOperation(join, duplicateLeftNoRight),
+    applyInternalOperation(parallelProgram, join, duplicateLeftNoRight),
     null,
   );
 });
@@ -205,7 +205,7 @@ test("one join activation consumes per incoming flow and retains excess", () => 
     { placeId: "place:Flow_AToJoin", owner, multiplicity: 2 },
   ]);
 
-  const synchronized = applyInternalOperation(join, excess);
+  const synchronized = applyInternalOperation(parallelProgram, join, excess);
 
   assert.ok(synchronized !== null, "the join must be enabled");
   assert.deepEqual(synchronized.controlTokens, [

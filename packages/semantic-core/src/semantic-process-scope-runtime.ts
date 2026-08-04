@@ -49,28 +49,51 @@ export function enterScope(
   state: RuntimeState,
   parent: ScopeOccurrenceId,
 ): RuntimeState | null {
+  return enterChildScope(state, parent, operation);
+}
+
+/** The entry an operation names when it consumes a token at a scope-hosting Activity. */
+export type ChildScopeEntry = Readonly<{
+  input: string;
+  childEntry: string;
+  childScopeId: string;
+}>;
+
+/**
+ * Atomically replaces the host Activity's token with a fresh child scope occurrence and its entry
+ * token, refusing a second live occurrence of the same definition scope.
+ *
+ * Shared with the bounded-scope family, which arms a deadline on top of exactly this state change.
+ * The two must not drift on activation ordinals: the deadline is paired to the child occurrence by
+ * their equal counters, so a separately written entry would silently break that recovery.
+ */
+export function enterChildScope(
+  state: RuntimeState,
+  parent: ScopeOccurrenceId,
+  entry: ChildScopeEntry,
+): RuntimeState | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
     state.scopeOccurrences.some(
-      ({ id }) => id.definitionScopeId === operation.childScopeId,
+      ({ id }) => id.definitionScopeId === entry.childScopeId,
     )
   ) {
     return null;
   }
   const activation =
     (state.scopeActivations.find(
-      ({ elementId }) => elementId === operation.childScopeId,
+      ({ elementId }) => elementId === entry.childScopeId,
     )?.count ?? 0) + 1;
   const child = {
     processInstanceId: state.control.instanceId,
-    definitionScopeId: operation.childScopeId,
+    definitionScopeId: entry.childScopeId,
     activation,
   };
   return {
     ...state,
     controlTokens: addToken(
-      removeToken(state.controlTokens, operation.input, parent),
-      operation.childEntry,
+      removeToken(state.controlTokens, entry.input, parent),
+      entry.childEntry,
       child,
     ),
     scopeOccurrences: [
@@ -79,7 +102,7 @@ export function enterScope(
     ].sort(compareScopeOccurrenceRecords),
     scopeActivations: setActivationCount(
       state.scopeActivations,
-      operation.childScopeId,
+      entry.childScopeId,
       activation,
     ),
   };

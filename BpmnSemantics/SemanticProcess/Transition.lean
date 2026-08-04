@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.BoundedScope
 import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
@@ -101,6 +102,14 @@ inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState �
         enterScopeState? before input childEntry childScopeId = some after) :
       OperationStep
         (.enterScope id origin input childEntry childScopeId) before after
+  | enterBoundedScope (id origin input childEntry childScopeId boundaryTimer)
+      (before after : RuntimeState)
+      (transition :
+        BoundedScopeArmingStep before input childEntry childScopeId boundaryTimer
+          after) :
+      OperationStep
+        (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer)
+        before after
   | invokeProcess (id origin input calledProcessId calledRootScopeId calledEntry
       returnOperationId) (before after : RuntimeState)
       (transition : InvokeProcessStep before origin input calledProcessId
@@ -187,6 +196,8 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
   | .initiate _ _ output => initiateState? state output
   | .enterScope _ _ input childEntry childScopeId =>
       enterScopeState? state input childEntry childScopeId
+  | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
+      armBoundedScopeState? state input childEntry childScopeId boundaryTimer
   | .invokeProcess _ origin input calledProcessId calledRootScopeId calledEntry
       returnOperationId =>
       invokeProcessState? state origin input calledProcessId calledRootScopeId
@@ -227,6 +238,9 @@ theorem fire_sound (operation : SemanticOperation)
   cases operation <;> first
     | exact .initiate _ _ _ before after result
     | exact .enterScope _ _ _ _ _ before after result
+    | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
+        (armBoundedScopeState_sound before after _ _ _ _
+          (by simpa [fire?] using result))
     | exact .invokeProcess _ _ _ _ _ _ _ before after
         (invokeProcessState_sound _ _ _ _ _ _ _ _ result)
     | exact .returnProcess _ _ _ _ _ before after

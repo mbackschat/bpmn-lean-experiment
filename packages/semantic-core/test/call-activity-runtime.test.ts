@@ -117,6 +117,7 @@ test("keeps root and called wait identities owned by their semantic instances", 
     activation: 1,
   };
   const syntheticTimer = applyInternalOperation(
+    program,
     {
       id: "operation:Synthetic_Timer",
       kind: SemanticOperationKind.AwaitTimer,
@@ -202,9 +203,9 @@ test("keeps a live call hidden but blocks caller completion and exposes early-co
     userTaskWaits: [],
     controlTokens: [],
   };
-  assert.equal(applyInternalOperation(completionOperation, hiddenOnly), null);
+  assert.equal(applyInternalOperation(program, completionOperation, hiddenOnly), null);
 
-  const bypassed = applyInternalOperation(callerTask, {
+  const bypassed = applyInternalOperation(program, callerTask, {
     ...started.state,
     controlTokens: [{
       placeId: "place:Call_To_Caller_Task",
@@ -264,7 +265,7 @@ test("interrupting a caller removes its separately parentless called Process sub
     }],
   };
 
-  const interrupted = applyInternalOperation(errorOperation, synthetic);
+  const interrupted = applyInternalOperation(program, errorOperation, synthetic);
   assert.ok(interrupted !== null);
   assert.deepEqual(interrupted.calledProcessOccurrences, []);
   assert.deepEqual(interrupted.userTaskWaits, []);
@@ -289,10 +290,10 @@ function assertSingleEnabledClosure(initial: RuntimeState): void {
     }
     assert.equal(count, 1);
     const operation = program.operations.find(
-      (candidate) => applyInternalOperation(candidate, state) !== null,
+      (candidate) => applyInternalOperation(program, candidate, state) !== null,
     );
     assert.ok(operation !== undefined);
-    const successor = applyInternalOperation(operation, state);
+    const successor = applyInternalOperation(program, operation, state);
     assert.ok(successor !== null);
     state = successor;
   }

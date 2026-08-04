@@ -213,13 +213,27 @@ private def lowerNode (source : CheckedProcess) :
       | none => none
   | .embeddedSubProcess id childScopeId => do
       let scopeId ← checkedNodeScopeId? source id
-      pure
-        (.enterScope
-          (nodeOperationId id)
-          { elementId := id }
-          (firstPlace (incomingPlaces source id))
-          (childEntryPlace source childScopeId)
-          childScopeId, scopeId)
+      match timerBoundaryFor source id with
+      | some (timerId, durationLiteral, outputFlowId) =>
+          pure
+            (.enterBoundedScope
+              (nodeOperationId id)
+              { elementId := id }
+              (firstPlace (incomingPlaces source id))
+              (childEntryPlace source childScopeId)
+              childScopeId
+              { elementId := timerId
+                durationMs := normalizeTimerDuration durationLiteral
+                output := firstPlace (outgoingPlaces source timerId)
+                origin := { elementId := outputFlowId } }, scopeId)
+      | none =>
+          pure
+            (.enterScope
+              (nodeOperationId id)
+              { elementId := id }
+              (firstPlace (incomingPlaces source id))
+              (childEntryPlace source childScopeId)
+              childScopeId, scopeId)
   | .callActivity id calledProcessId => do
       let scopeId ← checkedNodeScopeId? source id
       let calledRoot ← source.definitionScopes.find? fun scope =>

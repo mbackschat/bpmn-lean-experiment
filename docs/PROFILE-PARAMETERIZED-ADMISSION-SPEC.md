@@ -44,6 +44,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | CIB Seven ordinary embedded Sub-Process completion (`cibseven-2.2.0-embedded-subprocess-completion-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
 | CIB Seven embedded Sub-Process Error propagation (`cibseven-2.2.0-subprocess-error-propagation-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `throwError`, three `reachNoneEnd`, two `completeScope` |
 | BPMN called Process Call Activity (`bpmn-2.0.2-called-process-call-activity-draft`) | 2 | one `initiate`, one `invokeProcess`, two `awaitUserTask`, two `reachNoneEnd`, one `returnProcess`, one `completeScope` |
+| BPMN interrupting Sub-Process boundary Timer (`bpmn-2.0.2-subprocess-boundary-timer-draft`) | 2 | one `initiate`, one `enterBoundedScope`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
 
 The typed capability table in `packages/semantic-core/src/semantic-process-profile.ts` remains the executable authority. The documentation-reviewability guard derives the registered identifiers from that source and requires this summary to contain exactly one row for every identifier.
 

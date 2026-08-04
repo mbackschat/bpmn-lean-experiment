@@ -442,7 +442,7 @@ test("does not add closure steps or make enabledness depend on scoped data", () 
   };
   const enabledPattern = (state: RuntimeState) =>
     program.operations.map(
-      (operation) => applyInternalOperation(operation, state) !== null,
+      (operation) => applyInternalOperation(program, operation, state) !== null,
     );
 
   assert.deepEqual(

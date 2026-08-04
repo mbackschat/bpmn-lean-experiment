@@ -211,7 +211,7 @@ test("blocks scope quiescence around a hidden race and rejects malformed operati
     messageWaits: [],
     timerWaits: [],
   };
-  assert.equal(applyInternalOperation(completion, hiddenOnly), null);
+  assert.equal(applyInternalOperation(eventRaceProgram, completion, hiddenOnly), null);
 
   const race = eventRaceProgram.operations.find(
     (operation) => operation.kind === SemanticOperationKind.AwaitEventRace,
@@ -354,7 +354,7 @@ test("owner interruption removes the race and both members while retaining count
       },
     },
   } as const satisfies SemanticOperation;
-  const interrupted = applyInternalOperation(operation, {
+  const interrupted = applyInternalOperation(eventRaceProgram, operation, {
     ...armed,
     scopeOccurrences: [root, { id: child, parent: root.id }],
     controlTokens: [{ placeId: "place:ErrorInput", owner: child, multiplicity: 1 }],

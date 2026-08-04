@@ -30,6 +30,12 @@ import {
   synchronize,
 } from "./semantic-process-control-flow-runtime.js";
 import {
+  armBoundedScope,
+  completeScopeWithdrawingDeadline,
+  interruptBoundedScope,
+  isBoundedScopeDeadlineDefinition,
+} from "./semantic-process-bounded-scope-runtime.js";
+import {
   armBoundedUserTask,
   completeBoundedUserTask,
   interruptBoundedUserTask,
@@ -57,7 +63,6 @@ import {
 } from "./semantic-process-message.js";
 import {
   commonTokenOwner,
-  completeScope,
   enterScope,
   onlyTokenOwner,
 } from "./semantic-process-scope-runtime.js";
@@ -240,6 +245,12 @@ function admit(
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
       }
+      if (isBoundedScopeDeadlineDefinition(program, stimulus.timerId)) {
+        const next = interruptBoundedScope(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       const wait = state.timerWaits.find((candidate) =>
         sameOccurrence(candidate.id, stimulus.timerId)
       );
@@ -330,7 +341,7 @@ function enabledInternalOperations(
   return program.operations
     .map((operation) => ({
       operation,
-      successor: applyInternalOperation(operation, state),
+      successor: applyInternalOperation(program, operation, state),
     }))
     .filter(
       (
@@ -393,7 +404,15 @@ function internalStep(
   return enabled[0]?.successor ?? null;
 }
 
+/**
+ * The internal transition of one operation, including the consequences only the program determines.
+ *
+ * `program` is not decoration: a bounded scope's deadline is paired to its child scope through the
+ * committed bounded-scope operation rather than through a runtime record, so the completing scope's
+ * own operation cannot name the deadline it withdraws.
+ */
 export function applyInternalOperation(
+  program: SemanticProcessProgram,
   operation: SemanticOperation,
   state: RuntimeState,
 ): RuntimeState | null {
@@ -419,6 +438,12 @@ export function applyInternalOperation(
       return owner === undefined
         ? null
         : enterScope(operation, state, owner);
+    }
+    case SemanticOperationKind.EnterBoundedScope: {
+      const boundedParent = onlyTokenOwner(state, operation.input);
+      return boundedParent === undefined
+        ? null
+        : armBoundedScope(operation, state, boundedParent);
     }
     case SemanticOperationKind.InvokeProcess: {
       const caller = onlyTokenOwner(state, operation.input);
@@ -503,7 +528,7 @@ export function applyInternalOperation(
         : null;
     }
     case SemanticOperationKind.CompleteScope:
-      return completeScope(operation, state);
+      return completeScopeWithdrawingDeadline(program, operation, state);
     default:
       return assertNever(operation);
   }

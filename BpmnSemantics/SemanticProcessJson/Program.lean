@@ -221,6 +221,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "childEntry"⟩
           ⟨← stringField json "childScopeId"⟩)
+  | "enterBoundedScope" =>
+      requireObjectShape json
+        ["boundaryTimer", "childEntry", "childScopeId", "id", "input", "kind",
+          "origin"]
+      pure
+        (.enterBoundedScope id origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "childEntry"⟩
+          ⟨← stringField json "childScopeId"⟩
+          (← decodeBoundaryTimerArm (← field json "boundaryTimer")))
   | "invokeProcess" =>
       requireObjectShape json
         ["calledEntry", "calledProcessId", "calledRootScopeId", "id",

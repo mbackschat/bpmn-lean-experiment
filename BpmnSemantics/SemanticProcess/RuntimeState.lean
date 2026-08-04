@@ -312,7 +312,8 @@ private def elementActivationCount (activations : List (NodeId × Nat))
   (activations.find? fun activation => decide (activation.1 = elementId))
     |>.map (·.2) |>.getD 0
 
-private def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
+/-- The monotonic activation ordinal already reached by this Timer element. Shared with the bounded-scope family, whose deadline must be numbered from the same counter so the pair keeps one ordinal. -/
+def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
     Nat :=
   elementActivationCount (state.timerActivations.map fun value =>
     (value.elementId, value.count)) elementId

@@ -83,11 +83,11 @@ test("requires single-token invocation and a quiescent called Process", () => {
   );
   assert.ok(invokeOperation?.kind === SemanticOperationKind.InvokeProcess);
   assert.ok(returnOperation?.kind === SemanticOperationKind.ReturnProcess);
-  assert.equal(applyInternalOperation(returnOperation, started.state), null);
+  assert.equal(applyInternalOperation(program, returnOperation, started.state), null);
 
   const beforeInvoke = applyStimulus(program, initialState, start(), 1).state;
   assert.equal(
-    applyInternalOperation(invokeOperation, {
+    applyInternalOperation(program, invokeOperation, {
       ...beforeInvoke,
       controlTokens: beforeInvoke.controlTokens.map((token) => ({
         ...token,
@@ -146,7 +146,7 @@ test("rejects malformed call records and called roots", () => {
     },
   ];
   for (const state of malformedStates) {
-    assert.equal(applyInternalOperation(returnOperation, state), null);
+    assert.equal(applyInternalOperation(program, returnOperation, state), null);
   }
 });
 
@@ -167,7 +167,7 @@ test("binds a call record caller to the exact hosting root occurrence", () => {
     userTaskWaits: [callerWait(activeWait, childCaller)],
     calledProcessOccurrences: [{ ...record, caller: childCaller }],
   };
-  assert.equal(applyInternalOperation(returnOperation, childCallerState), null);
+  assert.equal(applyInternalOperation(program, returnOperation, childCallerState), null);
   assert.equal(isStableStateResumable(childCallerState), false);
 });
 
@@ -190,7 +190,7 @@ test("requires exactly one parentless hosting root occurrence", () => {
     userTaskWaits: [callerWait(activeWait, hostingRoot.id)],
   };
   assert.equal(
-    applyInternalOperation(returnOperation, duplicateHostingRootState),
+    applyInternalOperation(program, returnOperation, duplicateHostingRootState),
     null,
   );
   assert.equal(isStableStateResumable(duplicateHostingRootState), false);

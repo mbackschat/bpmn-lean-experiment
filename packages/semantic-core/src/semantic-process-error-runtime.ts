@@ -5,16 +5,14 @@ import type {
   SemanticOperation,
 } from "./semantic-process-contract.js";
 import {
-  removeCalledProcessSubtreesForCallers,
-} from "./semantic-process-call-runtime.js";
+  removeScopeOccurrenceSubtree,
+} from "./semantic-process-scope-cancellation.js";
 import {
   addToken,
   ControlStateKind,
-  sameOccurrence,
   sameScopeOccurrence,
 } from "./semantic-process-state.js";
 import type {
-  RuntimeScopeOccurrence,
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
@@ -50,75 +48,13 @@ export function throwError(
     return null;
   }
 
-  const interrupted = interruptedOccurrences(state.scopeOccurrences, attached);
-  const isInterrupted = (owner: ScopeOccurrenceId): boolean =>
-    interrupted.some(({ id }) => sameScopeOccurrence(id, owner));
-  const interruptedEffects = state.effectWaits
-    .filter(({ owner }) => isInterrupted(owner))
-    .map(({ id }) => id);
-  const withoutCalledProcesses = removeCalledProcessSubtreesForCallers(
-    state,
-    interrupted.map(({ id }) => id),
-  );
+  const cancelled = removeScopeOccurrenceSubtree(state, attached);
   return {
-    ...withoutCalledProcesses,
+    ...cancelled,
     controlTokens: addToken(
-      withoutCalledProcesses.controlTokens.filter(
-        ({ owner }) => !isInterrupted(owner),
-      ),
+      cancelled.controlTokens,
       operation.handler.output,
       parent,
     ),
-    scopeOccurrences: withoutCalledProcesses.scopeOccurrences.filter(
-      ({ id }) => !isInterrupted(id),
-    ),
-    userTaskWaits: withoutCalledProcesses.userTaskWaits.filter(
-      ({ owner }) => !isInterrupted(owner),
-    ),
-    messageWaits: withoutCalledProcesses.messageWaits.filter(
-      ({ owner }) => !isInterrupted(owner),
-    ),
-    timerWaits: withoutCalledProcesses.timerWaits.filter(
-      ({ owner }) => !isInterrupted(owner),
-    ),
-    effectWaits: withoutCalledProcesses.effectWaits.filter(
-      ({ owner }) => !isInterrupted(owner),
-    ),
-    selectedBranchSets: withoutCalledProcesses.selectedBranchSets.filter(
-      ({ owner }) => !isInterrupted(owner),
-    ),
-    eventRaces: withoutCalledProcesses.eventRaces.filter(
-      ({ owner }) => !isInterrupted(owner),
-    ),
-    variables: {
-      ...withoutCalledProcesses.variables,
-      activities: withoutCalledProcesses.variables.activities.filter(
-        ({ owner }) =>
-          !interruptedEffects.some((effectId) => sameOccurrence(owner, effectId)),
-      ),
-    },
   };
-}
-
-function interruptedOccurrences(
-  occurrences: ReadonlyArray<RuntimeScopeOccurrence>,
-  root: RuntimeScopeOccurrence,
-): ReadonlyArray<RuntimeScopeOccurrence> {
-  const interrupted = [root];
-  for (let index = 0; index < interrupted.length; index += 1) {
-    const parent = interrupted[index];
-    if (parent === undefined) {
-      continue;
-    }
-    for (const candidate of occurrences) {
-      if (
-        candidate.parent !== null &&
-        sameScopeOccurrence(candidate.parent, parent.id) &&
-        !interrupted.some(({ id }) => sameScopeOccurrence(id, candidate.id))
-      ) {
-        interrupted.push(candidate);
-      }
-    }
-  }
-  return interrupted;
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SubProcessBoundaryTimer"
+  targetNamespace="https://bpmn-lean.local/tests/subprocess-boundary-timer">
+  <bpmn:process id="Process_SubProcessBoundaryTimer" name="Bounded scope with deadline" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="Scope" name="Bounded scope">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Normal</bpmn:outgoing>
+      <bpmn:startEvent id="ChildStart">
+        <bpmn:outgoing>Flow_Child</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="ChildTask" name="Work inside the scope">
+        <bpmn:incoming>Flow_Child</bpmn:incoming>
+        <bpmn:outgoing>Flow_Child_End</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="ChildEnd">
+        <bpmn:incoming>Flow_Child_End</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Child" sourceRef="ChildStart" targetRef="ChildTask"/>
+      <bpmn:sequenceFlow id="Flow_Child_End" sourceRef="ChildTask" targetRef="ChildEnd"/>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Deadline" name="Deadline" attachedToRef="Scope">
+      <bpmn:outgoing>Flow_Boundary</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="AfterScope" name="Scope completed in time">
+      <bpmn:incoming>Flow_Normal</bpmn:incoming>
+      <bpmn:outgoing>Flow_Normal_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="EscalationTask" name="Deadline reached">
+      <bpmn:incoming>Flow_Boundary</bpmn:incoming>
+      <bpmn:outgoing>Flow_Boundary_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="NormalEnd">
+      <bpmn:incoming>Flow_Normal_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="BoundaryEnd">
+      <bpmn:incoming>Flow_Boundary_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Scope"/>
+    <bpmn:sequenceFlow id="Flow_Normal" sourceRef="Scope" targetRef="AfterScope"/>
+    <bpmn:sequenceFlow id="Flow_Normal_End" sourceRef="AfterScope" targetRef="NormalEnd"/>
+    <bpmn:sequenceFlow id="Flow_Boundary" sourceRef="Deadline" targetRef="EscalationTask"/>
+    <bpmn:sequenceFlow id="Flow_Boundary_End" sourceRef="EscalationTask" targetRef="BoundaryEnd"/>
+  </bpmn:process>
+</bpmn:definitions>

@@ -3,6 +3,7 @@ import {
   SemanticOperationKind,
 } from "@bpmn-lean/semantic-core";
 import type {
+  SemanticOperation,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
@@ -11,6 +12,7 @@ import {
   TemporalHostCapabilityResultKind,
 } from "./contracts.js";
 import type {
+  TemporalHostAdmissionFailure,
   TemporalHostCapabilityResult,
 } from "./contracts.js";
 
@@ -21,13 +23,14 @@ import type {
  * split combined with a timer or effect can create more than one host-driven
  * branch, which requires a scheduler that this adapter does not implement.
  *
- * Two operation classes are managed rather than passive, each owning one
- * scheduler instance: the Event-Based Gateway race and the bounded User Task
- * with its interrupting boundary Timer. The host admits at most one managed
- * operation across both classes, so a race beside a bounded Activity wait is
- * rejected even though each alone is admissible. Every composition needing a
- * second host-driven branch or a second managed scheduler is rejected before
- * Workflow start, with one typed code per class.
+ * Three operation classes are managed rather than passive, each owning one
+ * scheduler instance: the Event-Based Gateway race, the bounded User Task, and
+ * the bounded Sub-Process scope, each with its interrupting boundary Timer. The
+ * host admits at most one managed operation across all three classes, so a race
+ * beside a bounded Activity wait is rejected even though each alone is
+ * admissible. Every composition needing a second host-driven branch or a second
+ * managed scheduler is rejected before Workflow start, with one typed code per
+ * class.
  */
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
@@ -39,60 +42,32 @@ export function assessTemporalHostCapability(
     ({ kind }) =>
       classifyHostOperation(kind) === HostOperationClass.HostDrivenWait,
   );
-  const managedEventRaces = program.operations.filter(
-    ({ kind }) =>
-      classifyHostOperation(kind) === HostOperationClass.ManagedEventRace,
-  );
-  const boundedActivityWaits = program.operations.filter(
-    ({ kind }) =>
-      classifyHostOperation(kind) === HostOperationClass.BoundedActivityWait,
-  );
+  const claimants = managedClasses.map((managed) => ({
+    managed,
+    operations: program.operations.filter(
+      ({ kind }) => classifyHostOperation(kind) === managed.operationClass,
+    ),
+  }));
   // Each managed class owns one scheduler instance, so the host admits at most one managed
-  // operation across both classes. Checking the classes independently would admit a race beside a
-  // bounded Activity wait, which needs two schedulers this adapter does not run concurrently.
-  const managedTotal = managedEventRaces.length + boundedActivityWaits.length;
-  if (managedEventRaces.length > 0) {
-    const [race] = managedEventRaces;
-    if (
-      managedTotal === 1 &&
-      race?.kind === SemanticOperationKind.AwaitEventRace &&
-      race.message.channel.kind === MessageChannelKind.OperationMessage &&
-      race.timer.durationMs === 1_000 &&
-      !canSplitTokens &&
-      !hasHostDrivenWait
-    ) {
-      return { kind: TemporalHostCapabilityResultKind.Admitted };
-    }
-    return {
-      kind: TemporalHostCapabilityResultKind.Rejected,
-      failure: {
-        code:
-          TemporalHostAdmissionFailureCode.EventRaceSchedulerUnavailable,
-        evidence:
-          "The Temporal host admits only one isolated operation-addressed Message/PT1S managed race.",
-      },
-    };
-  }
-  if (boundedActivityWaits.length > 0) {
-    const [bounded] = boundedActivityWaits;
-    if (
-      managedTotal === 1 &&
-      bounded?.kind === SemanticOperationKind.AwaitBoundedUserTask &&
-      bounded.boundaryTimer.durationMs === 1_000 &&
-      !canSplitTokens &&
-      !hasHostDrivenWait
-    ) {
-      return { kind: TemporalHostCapabilityResultKind.Admitted };
-    }
-    return {
-      kind: TemporalHostCapabilityResultKind.Rejected,
-      failure: {
-        code:
-          TemporalHostAdmissionFailureCode.BoundedActivitySchedulerUnavailable,
-        evidence:
-          "The Temporal host admits only one isolated bounded User Task with an exact PT1S boundary Timer.",
-      },
-    };
+  // operation across every class. Counting per class would admit a race beside a bounded Activity
+  // wait, which needs two schedulers this adapter does not run concurrently.
+  const managedTotal = claimants.reduce(
+    (total, { operations }) => total + operations.length,
+    0,
+  );
+  const claimed = claimants.find(({ operations }) => operations.length > 0);
+  if (claimed !== undefined) {
+    const [operation] = claimed.operations;
+    return managedTotal === 1 &&
+        operation !== undefined &&
+        claimed.managed.isAdmissibleIsolatedForm(operation) &&
+        !canSplitTokens &&
+        !hasHostDrivenWait
+      ? { kind: TemporalHostCapabilityResultKind.Admitted }
+      : {
+        kind: TemporalHostCapabilityResultKind.Rejected,
+        failure: claimed.managed.failure,
+      };
   }
   if (canSplitTokens && hasHostDrivenWait) {
     return {
@@ -114,10 +89,61 @@ const HostOperationClass = {
   HostDrivenWait: "hostDrivenWait",
   ManagedEventRace: "managedEventRace",
   BoundedActivityWait: "boundedActivityWait",
+  BoundedScopeWait: "boundedScopeWait",
 } as const;
 
 type HostOperationClass =
   typeof HostOperationClass[keyof typeof HostOperationClass];
+
+/**
+ * One managed class: which operations claim its scheduler, the isolated form that scheduler proves,
+ * and the identity an operator receives when the claim is refused.
+ *
+ * Declaration order decides which refusal a program claiming two managed classes reports, so the
+ * operator is told about the first class present rather than an arbitrary one.
+ */
+type ManagedHostClass = Readonly<{
+  operationClass: HostOperationClass;
+  isAdmissibleIsolatedForm: (operation: SemanticOperation) => boolean;
+  failure: TemporalHostAdmissionFailure;
+}>;
+
+const managedClasses: ReadonlyArray<ManagedHostClass> = [
+  {
+    operationClass: HostOperationClass.ManagedEventRace,
+    isAdmissibleIsolatedForm: (operation) =>
+      operation.kind === SemanticOperationKind.AwaitEventRace &&
+      operation.message.channel.kind === MessageChannelKind.OperationMessage &&
+      operation.timer.durationMs === 1_000,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.EventRaceSchedulerUnavailable,
+      evidence:
+        "The Temporal host admits only one isolated operation-addressed Message/PT1S managed race.",
+    },
+  },
+  {
+    operationClass: HostOperationClass.BoundedActivityWait,
+    isAdmissibleIsolatedForm: (operation) =>
+      operation.kind === SemanticOperationKind.AwaitBoundedUserTask &&
+      operation.boundaryTimer.durationMs === 1_000,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.BoundedActivitySchedulerUnavailable,
+      evidence:
+        "The Temporal host admits only one isolated bounded User Task with an exact PT1S boundary Timer.",
+    },
+  },
+  {
+    operationClass: HostOperationClass.BoundedScopeWait,
+    isAdmissibleIsolatedForm: (operation) =>
+      operation.kind === SemanticOperationKind.EnterBoundedScope &&
+      operation.boundaryTimer.durationMs === 1_000,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.BoundedScopeSchedulerUnavailable,
+      evidence:
+        "The Temporal host admits only one isolated bounded Sub-Process scope with an exact PT1S boundary Timer.",
+    },
+  },
+];
 
 function classifyHostOperation(
   kind: SemanticOperationKind,
@@ -133,6 +159,8 @@ function classifyHostOperation(
       return HostOperationClass.ManagedEventRace;
     case SemanticOperationKind.AwaitBoundedUserTask:
       return HostOperationClass.BoundedActivityWait;
+    case SemanticOperationKind.EnterBoundedScope:
+      return HostOperationClass.BoundedScopeWait;
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:

@@ -265,6 +265,73 @@ test("admits only the exact managed Event-Based Gateway race", async () => {
   );
 });
 
+/**
+ * The cross-class barrier, which the two same-class cases above do not reach.
+ *
+ * Both existing managed cases pair an operation with another of its own class, so a classifier that
+ * counted each class independently would still pass them. This one pairs a bounded scope with a
+ * managed race: each is admissible alone, and together they need two schedulers the adapter does not
+ * run concurrently. The refusal identity is the race's, because that class is present and is reported
+ * first, so an operator is told about a class the program actually contains.
+ */
+test("rejects a bounded Sub-Process scope beside a managed race", async () => {
+  const boundedScope = await compileFixture(
+    "../../../scenarios/subprocess-boundary-timer/process.bpmn",
+    "subprocess-boundary-timer-host-admission",
+    "bpmn-2.0.2-subprocess-boundary-timer-draft",
+  );
+  const eventRace = await compileFixture(
+    "../../../scenarios/event-based-gateway-message-timer/process.bpmn",
+    "event-race-beside-bounded-scope",
+    "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+  );
+  const scope = boundedScope.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.EnterBoundedScope,
+  );
+  const race = eventRace.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitEventRace,
+  );
+  assert.ok(scope?.kind === SemanticOperationKind.EnterBoundedScope);
+  assert.ok(race?.kind === SemanticOperationKind.AwaitEventRace);
+
+  assert.deepEqual(assessTemporalHostCapability(boundedScope), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...boundedScope,
+      operations: [...boundedScope.operations, race],
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.EventRaceSchedulerUnavailable,
+        evidence:
+          "The Temporal host admits only one isolated operation-addressed Message/PT1S managed race.",
+      },
+    },
+  );
+  // A second bounded scope reports this capsule's own identity, which is what makes the new code
+  // falsifiable rather than only reachable through the race's.
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...boundedScope,
+      operations: [
+        ...boundedScope.operations,
+        { ...scope, id: `${scope.id}:second` },
+      ],
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.BoundedScopeSchedulerUnavailable,
+        evidence:
+          "The Temporal host admits only one isolated bounded Sub-Process scope with an exact PT1S boundary Timer.",
+      },
+    },
+  );
+});
+
 test("admits embedded scope waits independently of semantic operation order", async () => {
   const program = await compileFixture(
     "../../../scenarios/embedded-subprocess-completion/process.bpmn",

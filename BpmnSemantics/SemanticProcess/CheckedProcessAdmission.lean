@@ -258,16 +258,21 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 
-/-- Every interrupting boundary Timer attaches to exactly one same-scope User Task, and no two claim the same host. Without this the node admits and then lowers to no operation, because the deadline belongs to the Activity's operation rather than to itself, so a misattached boundary node yields a silently deadline-free program that nothing downstream rejects. -/
+/-- The node kinds whose lowered operation carries an interrupting boundary Timer deadline. An allowlist, so an unrecognised kind fails closed; a kind belongs here only once some lowering clause folds the deadline into that host's operation. -/
+def checkedOwnsBoundaryTimerDeadline (node : CheckedNode) (host : NodeId) : Bool :=
+  match node with
+  | .userTask hostId _ => decide (hostId = host)
+  | .embeddedSubProcess hostId _ => decide (hostId = host)
+  | _ => false
+
+/-- Every interrupting boundary Timer attaches to exactly one same-scope deadline-owning Activity, and no two claim the same host. Without this the node admits and then lowers to no operation, because the deadline belongs to the Activity's operation rather than to itself, so a misattached boundary node yields a silently deadline-free program that nothing downstream rejects. -/
 def checkedBoundaryTimerAttachmentValid (source : CheckedProcess) : Bool :=
   let hosts := source.nodes.filterMap fun
     | .timerBoundaryEvent _ attachedToRef _ _ => some attachedToRef
     | _ => none
   source.nodes.all fun
     | .timerBoundaryEvent id attachedToRef _ _ =>
-        source.nodes.any (fun
-          | .userTask hostId _ => decide (hostId = attachedToRef)
-          | _ => false) &&
+        source.nodes.any (checkedOwnsBoundaryTimerDeadline · attachedToRef) &&
           checkedNodeScopeId? source id ==
             checkedNodeScopeId? source attachedToRef &&
           (hosts.filter (· = attachedToRef)).length = 1

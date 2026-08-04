@@ -300,6 +300,7 @@ export enum SemanticProcessCompilerId {
 export enum SemanticOperationKind {
   Initiate = "initiate",
   EnterScope = "enterScope",
+  EnterBoundedScope = "enterBoundedScope",
   InvokeProcess = "invokeProcess",
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
@@ -443,13 +444,26 @@ export type AwaitEventRaceOperation = OperationBase &
   }>;
 
 /**
+ * The interrupting deadline every bounded-wait operation owns alongside its own wait.
+ *
+ * `elementId` is the Boundary Event and is the element published as the timer occurrence, while
+ * `origin` carries the boundary Sequence Flow's BPMN provenance because control places and BPMN
+ * elements are separate namespaces. A boundary-attached Timer is never represented as a standalone
+ * `awaitTimer`. One owner because the wire schema and Lean's contract each share one arm shape too,
+ * so a second spelling here would be a silent contract fork rather than a local style difference.
+ */
+export type BoundaryTimerArm = DeepReadonly<{
+  elementId: string;
+  durationMs: 1000;
+  output: string;
+  origin: BpmnSequenceFlowOrigin;
+}>;
+
+/**
  * One User Task occurrence that owns an interrupting boundary Timer deadline.
  *
  * The arms are named rather than listed so candidate order is unrepresentable, and they are
- * deliberately asymmetric: only the Timer arm interrupts. `boundaryTimer.elementId` is the Boundary
- * Event and is the element published as the timer occurrence, while `origin` carries the boundary
- * Sequence Flow's BPMN provenance because control places and BPMN elements are separate namespaces.
- * A boundary-attached Timer is never represented as a standalone `awaitTimer`.
+ * deliberately asymmetric: only the Timer arm interrupts.
  */
 export type AwaitBoundedUserTaskOperation = OperationBase &
   DeepReadonly<{
@@ -460,12 +474,27 @@ export type AwaitBoundedUserTaskOperation = OperationBase &
       name: string | null;
       output: string;
     };
-    boundaryTimer: {
-      elementId: string;
-      durationMs: 1000;
-      output: string;
-      origin: BpmnSequenceFlowOrigin;
-    };
+    boundaryTimer: BoundaryTimerArm;
+  }>;
+
+/**
+ * One embedded Sub-Process occurrence that owns an interrupting boundary Timer deadline.
+ *
+ * Entry and deadline are one operation because neither is a resumable state without the other: a
+ * live child scope with no deadline would run unbounded, and a deadline with no child scope would
+ * have no region to cancel. That is why this is not an `enterScope` beside an `awaitTimer`.
+ *
+ * The deadline's normal withdrawal has no field here. It is the child scope's own `completeScope`,
+ * which this operation is paired to by `childScopeId`, because withdrawal is decided by child
+ * quiescence rather than by anything the entry could name.
+ */
+export type EnterBoundedScopeOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.EnterBoundedScope;
+    input: string;
+    childEntry: string;
+    childScopeId: string;
+    boundaryTimer: BoundaryTimerArm;
   }>;
 
 export type InvokeProcessOperation = OperationBase &
@@ -499,6 +528,7 @@ export type SemanticOperation =
         childEntry: string;
         childScopeId: string;
       }>)
+  | EnterBoundedScopeOperation
   | InvokeProcessOperation
   | ReturnProcessOperation
   | (OperationBase &

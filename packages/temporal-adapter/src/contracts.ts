@@ -56,6 +56,14 @@ export enum TemporalHostAdmissionFailureCode {
    * that licenses it, so one code per host class keeps the two separately falsifiable.
    */
   BoundedActivitySchedulerUnavailable = "boundedActivitySchedulerUnavailable",
+  /**
+   * Deliberately distinct from `BoundedActivitySchedulerUnavailable`.
+   *
+   * Both are one Activity racing one deadline, but the contract an operator loses is different: here
+   * the losing arm is a whole child region reaching quiescence, not one task completion, so a shared
+   * code would report an unavailable scheduler without saying which semantic outcome is unreachable.
+   */
+  BoundedScopeSchedulerUnavailable = "boundedScopeSchedulerUnavailable",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{

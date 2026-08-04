@@ -60,7 +60,7 @@ export function isAdmittedCheckedProcess(
     embeddedNodesOwnChildScopes(graph, nodeScopes, semanticProfile) &&
     hasSelectedCallActivityDefinitions(semanticProfile, graph, nodeScopes) &&
     errorNodesHaveDirectHandlers(graph, nodeScopes) &&
-    boundaryTimersAttachToUserTasks(graph, nodeScopes) &&
+    boundaryTimersAttachToDeadlineOwners(graph, nodeScopes) &&
     hasSelectedExpressionLanguage(
       semanticProfile,
       expressionLanguage,
@@ -97,8 +97,25 @@ function isAdmittedDefinitionScope(
 }
 
 /**
- * Every interrupting boundary Timer must attach to exactly one User Task in its own scope, and no
- * two may claim the same host.
+ * The node kinds whose lowered operation carries an interrupting boundary Timer deadline.
+ *
+ * An allowlist rather than an exclusion list, so an unrecognised kind fails closed. A host kind
+ * belongs here only once some lowering clause folds the deadline into that host's operation; adding
+ * a kind here without that clause is exactly the deadline-free program the caller rejects.
+ */
+function ownsBoundaryTimerDeadline(node: CheckedNode): boolean {
+  switch (node.kind) {
+    case CheckedNodeKind.UserTask:
+    case CheckedNodeKind.EmbeddedSubProcess:
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Every interrupting boundary Timer must attach to exactly one deadline-owning Activity in its own
+ * scope, and no two may claim the same host.
  *
  * Without this the node still admits and then lowers to no operation, because the deadline belongs
  * to the Activity's operation rather than to itself. The result is a silently deadline-free program:
@@ -106,7 +123,7 @@ function isAdmittedDefinitionScope(
  * consumed. The attachment reference is the only place this can be caught, so the check is stated
  * here rather than left to program support.
  */
-function boundaryTimersAttachToUserTasks(
+function boundaryTimersAttachToDeadlineOwners(
   graph: CheckedProcessGraph,
   nodeScopes: ReadonlyMap<string, string>,
 ): boolean {
@@ -119,9 +136,7 @@ function boundaryTimersAttachToUserTasks(
   const hosts = deadlines.map((deadline) => deadline.attachedToRef);
   return deadlines.every((deadline) => {
     const host = graph.nodes.find(
-      (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.UserTask }> =>
-        node.id === deadline.attachedToRef &&
-        node.kind === CheckedNodeKind.UserTask,
+      (node) => node.id === deadline.attachedToRef && ownsBoundaryTimerDeadline(node),
     );
     return host !== undefined &&
       nodeScopes.get(deadline.id) === nodeScopes.get(host.id) &&

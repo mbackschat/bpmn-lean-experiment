@@ -38,7 +38,7 @@ export async function runBpmnProcessCallActivityEarlyReturnMutation(
   const started = requireStartedCall(start, semanticProcess);
   const callerRoot = requireCallerRoot(start, semanticProcess, started.state);
   const callerTask = requireCallerTask(semanticProcess, callerRoot);
-  const bypassed = applyInternalOperation(callerTask, {
+  const bypassed = applyInternalOperation(semanticProcess, callerTask, {
     ...started.state,
     controlTokens: [
       ...started.state.controlTokens,

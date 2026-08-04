@@ -12,6 +12,8 @@ export const SemanticProfileId = Object.freeze({
   CreateDocument: "cibseven-2.0.0-a12-create-document-draft",
   EmbeddedSubProcessCompletion:
     "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  SubProcessBoundaryTimer:
+    "bpmn-2.0.2-subprocess-boundary-timer-draft",
   SubProcessErrorPropagation:
     "cibseven-2.2.0-subprocess-error-propagation-draft",
   ExclusiveGatewaySimpleBoolean:
@@ -178,6 +180,22 @@ function requiredCheckedProcessShape(
           end,
         ],
       };
+    case SemanticProfileId.SubProcessBoundaryTimer:
+      return {
+        definitionScopeCount: 2,
+        nodeKinds: [
+          start,
+          CheckedNodeKind.EmbeddedSubProcess,
+          CheckedNodeKind.TimerBoundaryEvent,
+          CheckedNodeKind.UserTask,
+          CheckedNodeKind.UserTask,
+          end,
+          end,
+          start,
+          CheckedNodeKind.UserTask,
+          end,
+        ],
+      };
     case SemanticProfileId.SubProcessErrorPropagation:
       return {
         definitionScopeCount: 2,
@@ -337,6 +355,22 @@ function requiredProgramShape(
           SemanticOperationKind.Initiate,
           SemanticOperationKind.EnterScope,
           SemanticOperationKind.Duplicate,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.CompleteScope,
+          SemanticOperationKind.CompleteScope,
+        ],
+      };
+    case SemanticProfileId.SubProcessBoundaryTimer:
+      return {
+        definitionScopeCount: 2,
+        operationKinds: [
+          SemanticOperationKind.Initiate,
+          SemanticOperationKind.EnterBoundedScope,
           SemanticOperationKind.AwaitUserTask,
           SemanticOperationKind.AwaitUserTask,
           SemanticOperationKind.AwaitUserTask,

@@ -50,6 +50,24 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty childScopeId.value &&
         placeExists program.controlPlaces input &&
         placeExists program.controlPlaces childEntry
+  | .enterBoundedScope id origin input childEntry childScopeId boundaryTimer =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty childScopeId.value &&
+        nonempty boundaryTimer.elementId.value &&
+        nonempty boundaryTimer.origin.elementId.value &&
+        boundaryTimer.durationMs = 1000 &&
+        decide (
+          origin.elementId.value ≠ boundaryTimer.elementId.value ∧
+          childEntry ≠ boundaryTimer.output ∧
+          input ≠ childEntry ∧ input ≠ boundaryTimer.output) &&
+        -- Same token-carrying requirement as the task host: the deadline output must be exactly the
+        -- boundary Sequence Flow's place, not some other place that merely exists.
+        places.any (fun place =>
+          decide (place.id = boundaryTimer.output ∧
+            place.origin = boundaryTimer.origin)) &&
+        placeExists program.controlPlaces input &&
+        placeExists program.controlPlaces childEntry
   | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned =>
       invokeProcessOperationWellFormed program id origin input calledProcessId
         calledRoot calledEntry returned

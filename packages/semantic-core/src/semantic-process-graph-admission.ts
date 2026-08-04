@@ -177,6 +177,19 @@ function operationRespectsScopes(
           ({ id, parentScopeId }) =>
             id === operation.childScopeId && parentScopeId === owner,
         );
+    // The two outputs land in different scopes and that asymmetry is the rule: the child entry is
+    // inside the new region, while the boundary route is produced beside the Sub-Process, because the
+    // deadline belongs to the host Activity's own scope.
+    case SemanticOperationKind.EnterBoundedScope:
+      return referencesOwnedBy(
+        [operation.input, operation.boundaryTimer.output],
+        owner,
+      ) &&
+        referencesOwnedBy([operation.childEntry], operation.childScopeId) &&
+        graph.definitionScopes.some(
+          ({ id, parentScopeId }) =>
+            id === operation.childScopeId && parentScopeId === owner,
+        );
     case SemanticOperationKind.InvokeProcess:
       return referencesOwnedBy([operation.input], owner) &&
         referencesOwnedBy(
@@ -224,7 +237,13 @@ function hasOneCompletionStrategyPerScope(
     graph,
     SemanticOperationKind.CompleteScope,
   );
-  const entries = operationsOfKind(graph, SemanticOperationKind.EnterScope);
+  // Every kind that creates a child scope occurrence counts as that scope's one entry. Reading only
+  // the unbounded kind would leave a deadline-bearing child scope with no entry at all, which reads
+  // as a malformed program rather than as the missing case it is.
+  const entries = [
+    ...operationsOfKind(graph, SemanticOperationKind.EnterScope),
+    ...operationsOfKind(graph, SemanticOperationKind.EnterBoundedScope),
+  ];
   const returns = operationsOfKind(graph, SemanticOperationKind.ReturnProcess);
   return graph.definitionScopes.every(({ id, parentScopeId }) =>
     (parentScopeId === null
@@ -352,6 +371,7 @@ function operationInputs(
     case SemanticOperationKind.ReturnProcess:
       return [];
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.EnterBoundedScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
@@ -389,6 +409,10 @@ function operationOutputs(
       return [operation.task.output, operation.boundaryTimer.output];
     case SemanticOperationKind.EnterScope:
       return [operation.childEntry];
+    // The normal route is deliberately absent, exactly as for `enterScope`: it is the child scope's
+    // own `completeScope` parent output, because the deadline is withdrawn by child quiescence.
+    case SemanticOperationKind.EnterBoundedScope:
+      return [operation.childEntry, operation.boundaryTimer.output];
     case SemanticOperationKind.InvokeProcess:
       return [operation.calledEntry];
     case SemanticOperationKind.ReturnProcess:

@@ -1260,6 +1260,9 @@
           "$ref": "#/$defs/enterScope"
         },
         {
+          "$ref": "#/$defs/enterBoundedScope"
+        },
+        {
           "$ref": "#/$defs/invokeProcess"
         },
         {
@@ -1386,6 +1389,42 @@
         },
         "task": {
           "$ref": "#/$defs/boundedTaskArm"
+        },
+        "boundaryTimer": {
+          "$ref": "#/$defs/boundaryTimerArm"
+        }
+      }
+    },
+    "enterBoundedScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "childEntry",
+        "childScopeId",
+        "boundaryTimer"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "enterBoundedScope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childEntry": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childScopeId": {
+          "$ref": "#/$defs/nonemptyString"
         },
         "boundaryTimer": {
           "$ref": "#/$defs/boundaryTimerArm"

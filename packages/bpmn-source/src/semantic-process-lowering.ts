@@ -8,6 +8,7 @@ import {
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
+  BoundaryTimerArm,
   CheckedNode,
   CheckedProcess,
   CheckedSequenceFlow,
@@ -116,14 +117,24 @@ function lowerNode(
         : [];
     case CheckedNodeKind.CallActivity:
       return [lowerCallActivityInvoke(node, source)];
-    case CheckedNodeKind.EmbeddedSubProcess:
-      return scoped({
-        ...base,
-        kind: SemanticOperationKind.EnterScope,
+    case CheckedNodeKind.EmbeddedSubProcess: {
+      const entry = {
         input: requireOnly(incoming, node.id, "incoming"),
         childEntry: childEntryPlace(source, node.childScopeId),
         childScopeId: node.childScopeId,
-      });
+      } as const;
+      const boundaryTimer = timerBoundaryFor(source, node.id);
+      return scoped(
+        boundaryTimer === undefined
+          ? { ...base, kind: SemanticOperationKind.EnterScope, ...entry }
+          : {
+              ...base,
+              kind: SemanticOperationKind.EnterBoundedScope,
+              ...entry,
+              boundaryTimer: lowerBoundaryTimerArm(source, boundaryTimer),
+            },
+      );
+    }
     case CheckedNodeKind.BoundaryErrorEvent:
       return [];
     // The deadline has no operation of its own: it is owned by the Activity it is attached to, so
@@ -142,19 +153,7 @@ function lowerNode(
             name: node.name,
             output: requireOnly(outgoing, node.id, "outgoing"),
           },
-          boundaryTimer: {
-            elementId: boundaryTimer.id,
-            durationMs: normalizeTimerDuration(boundaryTimer.durationLiteral),
-            output: requireOnly(
-              flowPlaces(source.sequenceFlows, boundaryTimer.id, "outgoing"),
-              boundaryTimer.id,
-              "outgoing",
-            ),
-            origin: {
-              kind: SemanticOriginKind.BpmnSequenceFlow,
-              elementId: boundaryTimer.outputFlowId,
-            },
-          },
+          boundaryTimer: lowerBoundaryTimerArm(source, boundaryTimer),
         });
       }
       return scoped({
@@ -439,6 +438,31 @@ function flowPlaces(
     )
     .map(({ id }) => controlPlaceId(id))
     .sort(compareCanonicalStrings);
+}
+
+/**
+ * The deadline arm every host Activity folds into its own operation.
+ *
+ * One owner across host kinds: the arm's shape is a wire contract, so a per-host copy would let the
+ * two hosts drift on `durationMs` normalization or on which namespace `origin` carries.
+ */
+function lowerBoundaryTimerArm(
+  source: CheckedProcess,
+  boundaryTimer: Extract<CheckedNode, { kind: CheckedNodeKind.TimerBoundaryEvent }>,
+): BoundaryTimerArm {
+  return {
+    elementId: boundaryTimer.id,
+    durationMs: normalizeTimerDuration(boundaryTimer.durationLiteral),
+    output: requireOnly(
+      flowPlaces(source.sequenceFlows, boundaryTimer.id, "outgoing"),
+      boundaryTimer.id,
+      "outgoing",
+    ),
+    origin: {
+      kind: SemanticOriginKind.BpmnSequenceFlow,
+      elementId: boundaryTimer.outputFlowId,
+    },
+  };
 }
 
 /** The interrupting Timer Boundary Event attached to this Activity, when the profile admitted one. */

@@ -32,6 +32,7 @@ private structure ShapeCardinalities where
   synchronizeSelected : Nat := 0
   eventRaces : Nat := 0
   boundedUserTasks : Nat := 0
+  boundedScopeEntries : Nat := 0
   errorEnds : Nat := 0
   errorThrows : Nat := 0
   ends : Nat := 0
@@ -79,6 +80,8 @@ private def operationCardinalities (operations : List SemanticOperation) :
     match operation with
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
     | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
+    | .enterBoundedScope .. =>
+        { counts with boundedScopeEntries := counts.boundedScopeEntries + 1 }
     | .invokeProcess .. =>
         { counts with processInvokes := counts.processInvokes + 1 }
     | .returnProcess .. =>
@@ -160,6 +163,10 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1,
       { starts := 1, boundaryTimers := 1, userTasks := 3, ends := 2 })
+  else if profile = "bpmn-2.0.2-subprocess-boundary-timer-draft" then
+    some (2,
+      { starts := 2, embeddedScopes := 1, boundaryTimers := 1,
+        userTasks := 3, ends := 3 })
   else none
 
 private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
@@ -220,6 +227,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, boundedUserTasks := 1, userTasks := 2, ends := 2 })
+  else if profile = "bpmn-2.0.2-subprocess-boundary-timer-draft" then
+    some (2, withScopeCompletions 2
+      { initiates := 1, boundedScopeEntries := 1, userTasks := 3, ends := 3 })
   else none
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/

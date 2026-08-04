@@ -419,7 +419,7 @@ test("regional interruption removes every child runtime owner and preserves root
     endOccurrences: 1,
   };
 
-  const caught = applyInternalOperation(throwOperation, synthetic);
+  const caught = applyInternalOperation(program, throwOperation, synthetic);
   assert.ok(caught !== null);
   assert.deepEqual(openTaskIds(caught), ["SyntheticRootTask"]);
   assert.deepEqual(caught.scopeOccurrences, [root]);

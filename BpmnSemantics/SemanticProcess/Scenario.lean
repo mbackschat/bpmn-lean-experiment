@@ -50,6 +50,12 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
         timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
+  -- The deadline only. The bounded child's own task wait belongs to the child scope's `awaitUserTask`,
+  -- so publishing it here would expose one task occurrence twice.
+  | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
+      { timers :=
+          [{ elementId := boundaryTimer.elementId
+             durationMs := boundaryTimer.durationMs }] }
   | .initiate .. | .enterScope .. | .invokeProcess .. | .returnProcess ..
   | .duplicate .. | .synchronize .. | .choose .. | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..

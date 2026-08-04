@@ -249,7 +249,7 @@ test("a stranded child token is quiescent to the host but not completable", () =
       operation.scopeId === childScopeId,
   );
   assert.ok(completionOperation !== undefined);
-  assert.equal(applyInternalOperation(completionOperation, stranded), null);
+  assert.equal(applyInternalOperation(program, completionOperation, stranded), null);
   assert.equal(isStableStateResumable(stranded), false);
 });
 

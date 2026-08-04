@@ -307,6 +307,13 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (input childEntry : ControlPlaceId)
       (childScopeId : DefinitionScopeId)
+  /-- Scope entry that arms an interrupting deadline in the same transition. Entry and deadline are one operation because neither is a resumable state without the other. -/
+  | enterBoundedScope
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input childEntry : ControlPlaceId)
+      (childScopeId : DefinitionScopeId)
+      (boundaryTimer : BoundaryTimerArm)
   | invokeProcess
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -408,6 +415,7 @@ inductive SemanticOperation where
 def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
   | .enterScope id _ _ _ _
+  | .enterBoundedScope id _ _ _ _ _
   | .invokeProcess id _ _ _ _ _ _
   | .returnProcess id _ _ _ _
   | .awaitUserTask id _ _ _ _

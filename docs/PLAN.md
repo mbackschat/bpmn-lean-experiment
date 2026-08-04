@@ -428,6 +428,20 @@ Two review findings changed the capsule's substance rather than its wording, and
 That selection is a planning decision and approves no semantic account. Authoring the proposal is available work; its independent cold proposal review and the owner's approval of its decisions are separate steps that gate implementation.
 
 
+**The capsule's first green implementation checkpoint is reached, and the checkpoint review is the next gate.** Every focused gate is green on the checkpoint tree: `test:semantic-core` 128, `test:bpmn-source` 73, `test:contracts` 42, `test:infrastructure` 160, `check:source-hygiene` 23, `check:harness-types`, plus `lake build` and `lake test`. `test:temporal` and the complete `./scripts/verify.sh` gate have **not** run on this tree, because both need host port-binding authorization that was not requested before the checkpoint.
+
+Four facts about this checkpoint bind whoever continues it.
+
+**The increment could not be smaller, and the reason is worth keeping.** Registering the profile identifier in `SemanticProfileId` immediately obligates the `## Current profile capabilities` row and a product example, and the example oracle runs `assessTemporalHostCapability`, so the adapter's host class is forced by the same registration. The compiler then forces every exhaustive match: `applyInternalOperation`, `operationInputs`/`operationOutputs`, `classifyHostOperation`, and eight Lean modules. Attempting a source-only increment therefore produces a program that admits and then stalls, and a partial runtime is worse than none: with arming but no withdrawal, the child scope completes while the deadline stays armed, so the root occurrence is never quiescent and the process deadlocks after its normal route. Arm, withdraw, and interrupt had to land together.
+
+**Two unforeseen admission sites were found by running the test, not by reading the plan.** `hasOneCompletionStrategyPerScope` counted only `enterScope` as a child scope's entry, so a deadline-bearing child scope had no entry at all; and `operationRespectsScopes` had no clause for an operation whose two outputs land in different scopes. Both are now explicit clauses. Neither was in the capsule's owner inventory, which is the second time this capsule's inventory proved narrower than the change.
+
+**`applyInternalOperation` gained a `program` parameter, and the ripple is a standing hazard.** Nineteen semantic-core tests broke at runtime while every `build:*` target passed, because test files are not type-checked. That is the recorded "built output lies" trap in a new form: a public signature change is invisible to the compiler across the test boundary.
+
+**Two owners are now effectively full** and the next change touching either needs a behavior-preserving extraction as its own commit first: `packages/semantic-core/src/semantic-process-contract.ts` at 23 nonblank lines of headroom and `packages/semantic-core/src/semantic-process-runtime.ts` at 22. Fifteen headroom figures in the capsule's inventory moved and were corrected against measurement, not recall.
+
+**The exact next actions, in order.** First, obtain the conditional semantic-checkpoint review, which is due because this checkpoint changes a wire contract, the checked graph, admission capability, and a transition family. Then Lean's victory lane: the two-constructor victory relation, both evaluator-soundness bridges, the activation-counter and `endOccurrences` preservation law, the logical-time separation law, the quantified not-exactly-due refusal, the no-half-withdrawal and win-once laws, and the required checked non-law that interruption does **not** preserve child-scope-owned state — plus withdrawal in Lean's `completeScope`, which is the one place Lean currently disagrees with the core. Then the atomic scenario change: two answer-free scenarios, one per route, with their pipeline cases and seeded mutations. Then the Temporal witness: durable arming, both victories, Worker replacement, and replay. `docs/IMPLEMENTATION-MAP.md` records the exact implemented and absent scope; do not widen any claim beyond it.
+
 
 
 

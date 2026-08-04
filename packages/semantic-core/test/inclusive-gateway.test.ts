@@ -115,16 +115,16 @@ test("exposes exactly the independent two-task activation set after both-true se
   assert.equal(afterSelection.internalStepBoundExceeded, true);
   assert.equal(enabledInternalOperationCount(inclusiveProgram, afterSelection.state), 2);
   const enabled = inclusiveProgram.operations.filter((operation) =>
-    applyInternalOperation(operation, afterSelection.state) !== null
+    applyInternalOperation(inclusiveProgram, operation, afterSelection.state) !== null
   );
   assert.deepEqual(enabled.map(({ id }) => id), ["operation:Task_A", "operation:Task_B"]);
   const [taskA, taskB] = enabled;
   assert.ok(taskA !== undefined && taskB !== undefined);
-  const afterA = applyInternalOperation(taskA, afterSelection.state);
-  const afterB = applyInternalOperation(taskB, afterSelection.state);
+  const afterA = applyInternalOperation(inclusiveProgram, taskA, afterSelection.state);
+  const afterB = applyInternalOperation(inclusiveProgram, taskB, afterSelection.state);
   assert.ok(afterA !== null && afterB !== null);
-  const aThenB = applyInternalOperation(taskB, afterA);
-  const bThenA = applyInternalOperation(taskA, afterB);
+  const aThenB = applyInternalOperation(inclusiveProgram, taskB, afterA);
+  const bThenA = applyInternalOperation(inclusiveProgram, taskA, afterB);
   assert.deepEqual(aThenB, bThenA);
 });
 
@@ -143,7 +143,7 @@ test("waits for the selected subset and makes both completion orders equivalent"
   );
   assert.ok(join?.kind === SemanticOperationKind.SynchronizeSelected);
   assert.equal(
-    applyInternalOperation(join, { ...afterA.state, selectedBranchSets: [] }),
+    applyInternalOperation(inclusiveProgram, join, { ...afterA.state, selectedBranchSets: [] }),
     null,
   );
 
@@ -171,7 +171,7 @@ test("does not complete an otherwise-quiescent scope around a live selected set"
     controlTokens: [],
   };
 
-  assert.equal(applyInternalOperation(completion, hiddenOnly), null);
+  assert.equal(applyInternalOperation(inclusiveProgram, completion, hiddenOnly), null);
 });
 
 test("admits only complete selected-input pairings while leaving same-set pairing to definition binding", () => {
@@ -225,7 +225,7 @@ test("owner interruption removes hidden selected-branch records", () => {
       },
     },
   } as const satisfies SemanticOperation;
-  const interrupted = applyInternalOperation(operation, {
+  const interrupted = applyInternalOperation(inclusiveProgram, operation, {
     ...initialState,
     control: { kind: ControlStateKind.Running, instanceId: "inclusive-instance" },
     scopeOccurrences: [{ id: root, parent: null }, { id: child, parent: root }],

@@ -71,6 +71,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .returnProcess ..
   | .completeScope .. => []
   | .enterScope _ _ input _ _
+  | .enterBoundedScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitTimer _ _ input _ _
@@ -99,6 +100,9 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
       [task.output, boundaryTimer.output]
   | .synchronizeSelected _ _ _ output _ => [output]
   | .enterScope _ _ _ childEntry _ => [childEntry]
+  -- The boundary route is token-carrying and lands in the parent scope, unlike the child entry.
+  | .enterBoundedScope _ _ _ childEntry _ boundaryTimer =>
+      [childEntry, boundaryTimer.output]
   | .awaitEffect _ _ _ output _ route =>
       output :: route.toList.map (·.output)
   | .duplicate _ _ _ outputs => outputs
