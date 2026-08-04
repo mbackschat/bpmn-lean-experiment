@@ -184,7 +184,7 @@ theorem twoSegmentEnabledTransitionsCorrespondence :
       enabledTransitionsCorrespondAt twoSegmentSource beforeTaskA = true ∧
       enabledTransitionsCorrespondAt twoSegmentSource beforeTaskB = true ∧
       enabledTransitionsCorrespondAt twoSegmentSource beforeEnd = true := by
-  native_decide
+  decide +kernel
 
 def twoSegmentEnabledTransitionsCorrespond : Bool :=
   enabledTransitionsCorrespondAt twoSegmentSource beforeStart &&

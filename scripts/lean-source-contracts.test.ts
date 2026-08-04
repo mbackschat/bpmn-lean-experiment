@@ -273,29 +273,27 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
  * `Quot.sound`. The kernel-decide policy in [CLAUDE.md](../CLAUDE.md) prefers `decide +kernel`,
  * which adds no axiom.
  *
- * These modules predate that policy, so this inventory is a ratchet rather than a permission: a new
- * site, or any new module, fails here instead of silently enlarging what the project trusts.
- * Removing sites is always admissible and only requires lowering a figure; raising one is an owner
- * decision about the trusted path. The guard exists because prose alone did not hold — a
- * repository-wide "`native_decide` remains excluded" sentence was written while 56 sites in six
- * modules were live.
+ * This inventory is a ratchet rather than a permission: a new site, or any new module, fails here
+ * instead of silently enlarging what the project trusts. Removing sites is always admissible and
+ * only requires lowering a figure; raising one is an owner decision about the trusted path. The
+ * guard exists because prose alone did not hold — a repository-wide "`native_decide` remains
+ * excluded" sentence was written while 56 sites in six modules were live.
  *
- * The Event-Based Gateway module's 25 sites are converted and its row is gone, which is what
- * lowering looks like. That conversion is measured, not free: it costs about 13.9 seconds of user
- * CPU where `native_decide` cost 0.4, and it removed the compiler-trusting axiom from the module's
- * theorems. Each remaining module needs its own measurement, because kernel reduction cost follows
- * a proposition's reduction depth rather than a module's site count.
+ * Forty of those 56 are now converted, and every module was measured before its conversion because
+ * kernel cost follows a proposition's reduction depth rather than a module's site count. The
+ * remaining two rows are **not** a cost decision and cannot be lowered by spending more CPU: both
+ * decide a fact about parsing a `String` literal, and the kernel does not reduce `String`
+ * operations, so `decide +kernel` fails to elaborate rather than running slowly. `parseRejected
+ * "{\"id\":1,\"id\":1}" = true` and `parseSimpleBooleanExpression "stringEquals(route,\"review\")"`
+ * both report that their `Decidable` instance "did not reduce to `isTrue` or `isFalse`".
+ * `native_decide` decides them because compiled code walks the string. Removing these two requires
+ * restating the propositions over a non-`String` representation, which is a semantic change to what
+ * the fixtures lock, not a tactic swap.
  */
 const recordedNativeDecideSites = Object.freeze([
   Object.freeze({ path: "BpmnSemantics/SemanticProcessJsonConformance.lean", sites: 15 }),
-  Object.freeze({ path: "BpmnSemantics/InclusiveGatewayConformance.lean", sites: 13 }),
   Object.freeze({
     path: "BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean",
-    sites: 1,
-  }),
-  Object.freeze({ path: "BpmnSemantics/SemanticProcess/Fixtures.lean", sites: 1 }),
-  Object.freeze({
-    path: "BpmnSemantics/Experiments/CheckedSourceCorrespondence.lean",
     sites: 1,
   }),
 ]);
