@@ -187,6 +187,28 @@ function cancelledDeadline(completions: ReadonlyArray<Completion>): boolean {
   );
 }
 
+/**
+ * Requires the refused completion Update to have been answered rather than left silent.
+ *
+ * This is the command-level half of the preflight's durable-resolution obligation. The refusal
+ * carries an in-flight Update, and the two ways it could go wrong are opposite: no response at all
+ * would strand the caller, while a `completed` response would mean the host had chosen a winner
+ * after all. The assertions below reject both.
+ *
+ * What this does *not* establish: that a client awaiting the Update observes the failure. That is a
+ * server-side fact and needs the real Temporal service, so it remains outstanding.
+ */
+export function requireRefusedUpdateAnswered(completion: Completion): void {
+  const responses = commands(completion).flatMap(({ updateResponse }) =>
+    updateResponse === undefined || updateResponse === null ? [] : [updateResponse]
+  );
+  assert.equal(responses.length, 1);
+  assert.notEqual(responses[0]?.accepted, undefined);
+  // The refusal is non-retryable, so no later attempt can produce this result either.
+  assert.equal(responses[0]?.completed, undefined);
+  assert.equal(responses[0]?.rejected, undefined);
+}
+
 /** Requires no activation in the run to have failed. */
 export function requireNoHostFailure(
   completions: ReadonlyArray<Completion>,

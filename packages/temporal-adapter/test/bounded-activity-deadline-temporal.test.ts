@@ -6,6 +6,7 @@ import { bpmnBoundedActivitySchedulerUnavailableFailureType } from "@bpmn-lean/t
 
 import {
   requireDeadlineNotWithdrawn,
+  requireRefusedUpdateAnswered,
   requireDeadlineWithdrawn,
   requireNoHostFailure,
   requireNoWinnerSelected,
@@ -61,4 +62,21 @@ test("a shared activation refuses under the bounded identity instead of choosing
     ),
     /BpmnBoundedActivitySchedulerUnavailable/u,
   );
+});
+
+/**
+ * The refusal must not strand the completion it refuses. Its Update is accepted and then answered by
+ * the Workflow's own failure, never by a result — a result would mean a winner was chosen after the
+ * host declared it could not choose one.
+ */
+test("the refused shared activation answers its in-flight completion Update", async () => {
+  const witness = await deadlineWitness;
+  requireRefusedUpdateAnswered(witness.sharedActivationCompletion);
+  // The successful runs do produce a result, so the assertion above is reading the refusal's own
+  // shape rather than a property every activation happens to have.
+  const victoryFirstActivation = witness.activityVictoryCompletions[0];
+  assert.notEqual(victoryFirstActivation, undefined);
+  if (victoryFirstActivation !== undefined) {
+    assert.throws(() => requireRefusedUpdateAnswered(victoryFirstActivation));
+  }
 });
