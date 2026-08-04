@@ -1,7 +1,7 @@
 /**
  * Locks exact source admission and lowering for the interrupting Activity boundary Timer profile.
  *
- * The oracle is the [approved capsule](../../../docs/capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md):
+ * The oracle is the [approved capsule](../../../docs/capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md):
  * one bounded User Task owns one interrupting `PT1S` Timer Boundary Event, and both routes lead to
  * a distinct published follow-on User Task, which is what makes the route choice observable.
  *

@@ -83,11 +83,11 @@ function disagreements(markdown: string): ReadonlyArray<string> {
 test("keeps every ordered-work status label consistent with its resume-point claim", async () => {
   const markdown = await readFile(planPath, "utf8");
 
-  // Anti-vacuity: a renamed heading or a changed sentence form would otherwise report success over
-  // an empty set, which is how a status guard silently stops guarding.
+  // Anti-vacuity covers the label discovery only. A plan with nothing blocked is a legitimate state
+  // and produces no resume-point claim, so requiring one would fail the moment the last blocker
+  // cleared; the negative test below keeps the comparison itself honest instead.
   const labels = orderedWorkLabels(markdown);
   assert.ok(labels.size > 5, `only ${labels.size} ordered-work labels parsed`);
-  assert.ok(blockedClaims(markdown).size > 0, "no resume-point blocked claim parsed");
 
   assert.deepEqual(disagreements(markdown), []);
 });

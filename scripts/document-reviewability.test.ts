@@ -524,8 +524,9 @@ test("the maintained process-assessment ledger satisfies its own escalation rule
 // lists mechanically; nothing here trusts recall.
 test("every capsule proposal names the guards and owners that already bind it", async () => {
   const capsuleRoot = path.join(projectRoot, "docs/capsules");
-  const proposals = (await readdir(capsuleRoot))
-    .filter((entry) => entry.endsWith("-PROPOSAL.md"));
+  const capsules = (await readdir(capsuleRoot))
+    .filter((entry) => entry.endsWith("-PROPOSAL.md") || entry.endsWith("-SPEC.md"));
+  const proposals = capsules.filter((entry) => entry.endsWith("-PROPOSAL.md"));
   const findings: string[] = [];
   for (const proposal of proposals) {
     const markdown = await readFile(path.join(capsuleRoot, proposal), "utf8");
@@ -573,9 +574,11 @@ test("every capsule proposal names the guards and owners that already bind it", 
     );
   }
 
+  // Anti-vacuity guards the discovery, not the project's current state: every capsule graduating to
+  // `-SPEC` is a legitimate outcome and leaves zero proposals, while a broken glob must still fail.
   assert.deepEqual(
-    { proposalCount: proposals.length > 0, findings },
-    { proposalCount: true, findings: [] },
+    { capsuleCount: capsules.length > 0, findings },
+    { capsuleCount: true, findings: [] },
   );
 });
 

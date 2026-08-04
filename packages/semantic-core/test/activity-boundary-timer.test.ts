@@ -1,7 +1,7 @@
 /**
  * Focused semantic-core behavior for the interrupting Activity boundary Timer family.
  *
- * The oracle is the [approved capsule](../../../docs/capsules/ACTIVITY-BOUNDARY-TIMER-PROPOSAL.md).
+ * The oracle is the [approved capsule](../../../docs/capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md).
  * Every peer family has a test at this level and this one did not: its transition family reached the
  * differential pipeline only through the two victory schedules, and neither of those submits an
  * off-deadline firing. So the pre-due refusal — the capsule's own arming-instant discriminator, and
