@@ -10,11 +10,15 @@ Implemented and absent scope is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATI
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `54b9c03` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `3c6b645` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-A commit cannot contain its own Git identity, so the immutable proposal target is recorded by a documentation-only follow-up before the review prompt is handed off, exactly as [the receipt form](../TESTING-SPEC.md#review-receipt) provides for.
+A commit cannot contain its own Git identity, so the immutable proposal target was recorded by a documentation-only follow-up before the review prompt was handed off, exactly as [the receipt form](../TESTING-SPEC.md#review-receipt) provides for. The reviewed target is that follow-up, `3c6b645`; its baseline is `c29db82`.
+
+The cold proposal review of that target ran under `fork-turns-none` and returned `approve-with-required-edits` across two required and six advisory findings. All eight are corrected in the commit carrying this paragraph. The row above stays `pending` until the same reviewer audits that correction commit, because [the receipt guard](../../scripts/independent-review-policy.test.ts) requires a recorded `approve-with-required-edits` verdict to name a resolved audit target, and no commit can contain its own identity. Recording the verdict before the audit would assert a closed stage that is still open. The two required findings were both about *where* the work lands rather than what it means. First, the owner inventory omitted seven source owners the implementation must change, including the 75-line `checked-process-admission.ts`, which is both the tightest owner after the already-expired one and the file the second owner decision is actually about; it also omitted the profile-capability-row obligation. Second, owner decision 2 rested on a false premise: the checked-node variant's attachment reference carries no host domain in either target, so nothing there needed widening, and the real change site is a pair of near-duplicate admission validators the capsule never named or measured. Both are instances of mechanisms already carried in [the process-assessment ledger](../PROCESS-ASSESSMENT-LEDGER.md#findings) rather than new classes.
+
+Two advisory findings changed substance rather than wording. The reviewer's reading of Clause 13.3.2's own Figure 13.2 moved the normative resolution off engine calibration and onto the standard, and the observation that quiescence is decided by an owner-scoped `timerWaits` conjunct produced a silent-deadlock counterexample this capsule now records with its own stop condition.
 
 ## Question
 
@@ -49,15 +53,25 @@ Clause 13.3.2's Activity lifecycle governs what happens *inside* the cancelled S
 
 > An **Activity**'s execution is interrupted if an interrupting **Event** is raised (such as an _error_) or if an interrupting **Event Sub-Process** is initiated, In this case, the **Activity**'s state changes to _Failing_ (in case of an _error_) or _Terminating_ (in case any other interrupting **Event**). All nested **Activities** that are not in _Ready_, _Active_ or a final state (_Completed_, _Compensated_, _Failed_, etc.) and non-interrupting **Event Sub-Processes** are terminated.
 
-Read literally, the set that gets terminated *excludes* nested Activities in `Ready` and `Active` — that is, it excludes exactly the live child work an interruption exists to stop, and the clause then supplies no other disposition for it. That reading is incoherent: it would leave a `Terminating` Sub-Process containing an `Active` child User Task with no rule to remove it and no rule to let it complete.
+Read literally, the set that gets terminated *excludes* nested Activities in `Ready` and `Active` — that is, it excludes exactly the live child work an interruption exists to stop, and the prose then supplies no other disposition for it. That reading is incoherent: it would leave a `Terminating` Sub-Process containing an `Active` child User Task with no rule to remove it and no rule to let it complete.
 
-This proposal resolves the conflict as **all non-final nested work is terminated**, and records the resolution here rather than agreeing with the clause silently. Three reasons, in decreasing weight:
+**The same clause contradicts that reading in its own normative figure.** Clause 13.3.2 states that the lifecycle is "described as a UML state diagram in Figure 13.2", and that figure carries an `Activity Interrupted` edge out of `Ready`, out of `Active`, and out of `Completing`, each into a choice whose `Interrupting Event` path reaches a further choice that splits `Error → Failing` and `Non-Error → Terminating → Terminated`. So `Ready` and `Active` are interruptible states in the figure, and the prose's exclusion of them cannot be a deliberate carve-out. What the figure does **not** supply is parent-to-child propagation: its edges describe an Activity being interrupted, not a parent in `Terminating` terminating its contents.
 
-1. Clause 13.5.3's own instruction is that the attached Activity "is then cancelled", and Clause 13.3.4 makes the Sub-Process's contained elements part of that Activity. A cancelled Activity that still owns a live wait has not been cancelled.
-2. The project already resolved the same substance from the other direction. `SUBERR-INTERRUPT-01` in the [Sub-Process Error propagation specification](SUBPROCESS-ERROR-PROPAGATION-SPEC.md#stable-semantic-rules) removes every scope-owned token, wait, and live runtime owner in the child occurrence. This proposal inherits that account rather than inventing a second one, which is the whole reason the capsule is small.
-3. The pinned CIB engine agrees at the public boundary: after the deadline, `SubProcessTest.testSimpleSubProcessWithTimer` finds the boundary task as the *single* result of a task query, so the child task is gone.
+This proposal therefore resolves the conflict as **all non-final nested work is terminated**, on two normative reasons plus one non-load-bearing check:
 
-The third reason is calibration, not authority, and it must not be recorded as a CIB relationship: the standard resolves this once its own cancellation instruction is applied, so no engine choice is being adopted. The conflict is nonetheless novel to this capsule — the Error capsule never needed the clause, because an Error is thrown from *inside* the child and the child scope's removal answers the nested question implicitly. A Timer arrives at the boundary from outside, which is exactly what makes the clause load-bearing here.
+1. Figure 13.2 establishes that a nested Activity in `Ready` or `Active` is an interruptible state reaching `Terminating` on a non-Error interrupting Event, which is what the prose sentence denies.
+2. Clause 13.5.3's own instruction is that the attached Activity "is then cancelled", and Clause 13.3.4 makes the Sub-Process's contained elements part of that Activity. Together with reason 1 this supplies the propagation the figure alone does not: a cancelled Activity that still owns a live wait has not been cancelled.
+3. Not load-bearing, and recorded only so it is not mistaken for authority: the project already resolved the same substance from the other direction in `SUBERR-INTERRUPT-01` in the [Sub-Process Error propagation specification](SUBPROCESS-ERROR-PROPAGATION-SPEC.md#stable-semantic-rules), and the pinned CIB engine agrees at the public boundary. Neither is evidence about BPMN, and no CIB relationship is registered on either.
+
+The conflict is novel to this capsule. The Error capsule never needed the clause, because an Error is thrown from *inside* the child and the child scope's removal answers the nested question implicitly. A Timer arrives at the boundary from outside, which is exactly what makes the clause load-bearing here.
+
+### A second normative tension, recorded but not resolved
+
+Clause 10.5.6, which this proposal cites for what interrupting means, also states under its `Interrupting Event Handlers` heading — whose scope includes Timer — that "The parent **Activity** is canceled **after** either the error handler completes or **Sequence Flow** from the boundary **Event** is followed." That is a *later* cancellation point than Clause 13.5.3's order, which cancels the Activity before following the boundary Flow.
+
+This proposal does not resolve the tension and does not need to: `SPTIMER-INTERRUPT-01` is one atomic transition with no observable intermediate state, so the two orders are indistinguishable at the approved observation boundary. It is recorded because a later capsule that exposes an intermediate state, or that admits an inline handler, inherits a real choice here rather than discovering one.
+
+The same sub-clause also carries a published erratum in the pinned corpus: a `Non-interrupting Event Handlers` heading whose body describes `cancelActivity` set to *false*. It is present in the PDF and is not a conversion artifact. Nothing in this proposal depends on that passage.
 
 ### One project interpretation this capsule inherits
 
@@ -110,7 +124,11 @@ The source compiler manifest needs **no new CMOF fact**: `BoundaryEvent`, `attac
 
 ## Checked graph and lowering
 
-The checked graph reuses the existing Timer Boundary Event node variant introduced by the sibling capsule, whose payload is the boundary event identity, the resolved attachment target identity, the exact retained `PT1S` literal, and the boundary Sequence Flow identity. **Whether that variant is reusable unchanged is decision 2 below**, because its attachment field currently resolves to a User Task host and this profile resolves it to a scope-owning Activity. A shared variant with a widened host domain and a shared attachment validator is the recommendation; a second near-duplicate variant is the outcome to avoid.
+The checked graph reuses the existing Timer Boundary Event node variant introduced by the sibling capsule unchanged. Its payload is the boundary event identity, the attachment reference, the exact retained `PT1S` literal, and the boundary Sequence Flow identity, and `attachedToRef` is an undiscriminated identifier in both targets — a bare `string` in [the Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) and a `NodeId` in [its Lean mirror](../../BpmnSemantics/SemanticProcessContract.lean). The variant carries **no host domain to widen**, so no new or amended checked-node variant is proposed.
+
+The User Task restriction lives entirely in two admission validators, and they are the real change site: `boundaryTimersAttachToUserTasks` in [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) and `checkedBoundaryTimerAttachmentValid` in [its Lean counterpart](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean). Each resolves the reference to a node whose kind is `UserTask`, requires the host to sit in the boundary node's own scope, and requires no two deadlines to claim one host. The same-scope and one-host conjuncts already hold for a Sub-Process host, because the Sub-Process node and its boundary event both sit in the parent scope; only the host-kind conjunct excludes this profile. Widening it to admit a Sub-Process is decision 2 below.
+
+That widening carries a stated risk rather than being mechanical. Both validators exist for one reason, recorded in their own documentation: a boundary Timer node that admits but resolves to no host lowers to no operation, because the deadline belongs to the host Activity's operation rather than to the boundary node, so a misattached node yields a *silently deadline-free program* that nothing downstream rejects. A host-kind predicate widened to any Activity would readmit exactly that failure for every Activity kind this profile excludes. The recommendation is therefore an explicitly enumerated host-kind set, not a relaxation to "any Activity".
 
 The boundary Sequence Flow is a token-carrying control place in the ordinary `ControlPlace.origin` arm, as in the sibling. The Event-Based Gateway's disjoint configuration-Flow classification does not apply and no second exception is added.
 
@@ -121,6 +139,8 @@ Lowering produces one bounded-scope operation that owns the child scope entry an
 ## Runtime state
 
 No new runtime collection is proposed. The child scope occurrence already exists with complete identity, and the Timer wait family already carries complete occurrence identity.
+
+**The deadline's `owner` must be the *parent* scope occurrence, and this is a correctness requirement rather than a modelling preference.** `isScopeOccurrenceQuiescent` in [the scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) decides quiescence as nine owner-scoped emptiness conjuncts, one of which requires that no `timerWaits` entry is owned by the occurrence under test. A deadline owned by the *child* occurrence would therefore make that occurrence permanently non-quiescent, so `SPTIMER-QUIESCE-01` could never fire and the quiescence arm would deadlock silently. Under this profile that failure has **no separating witness**: the deadline would still win at its instant, the boundary route would still be observable, and only the normal route would be unreachable — which is why the requirement is stated here, with a matching stop condition, rather than left to be discovered by a scenario that does not exist. Owning the deadline at the parent occurrence is also what "owned by the Sub-Process Activity occurrence" means, since the Sub-Process node itself sits in the parent scope.
 
 The ownership relation rests on one falsifiable claim, stated so it can be refuted rather than assumed: a boundary Timer occurrence and its host scope occurrence are recoverable from the committed program plus the live scope occurrence and Timer wait, because the profile admits exactly one Sub-Process with exactly one boundary Timer. Atomic arming and atomic removal keep the two occurrences' `activation` counters equal, so the recovery key is the complete occurrence pair rather than an element identity. An admitted state in which two live waits are ambiguous about ownership refutes the claim and forces an explicit occurrence record; the nearest such state is a repeated or Multi-Instance Sub-Process, which this profile excludes.
 
@@ -224,7 +244,8 @@ This capsule reaches the product command through example configuration and the e
 
 - **A shared cancellation helper could make Lean and the core agree by construction.** Regional cancellation is reused from the Error family, so if both targets call one shared routine, agreement on the interruption arm proves nothing about this trigger. The independence obligation is that the semantic core is separately written; the mitigation is that the checked non-law and the seeded mutation must discriminate on the *trigger* path, not only on the cancellation result.
 - **Quiescence coinciding with last-token-consumption under this profile.** Both instants are equal here, so no witness can separate them, and a rule written over the wrong one would still pass every gate. The mitigation is the rule statement plus an explicit note in the Lean law's hypotheses; this is honestly a limit of the profile, not a solved problem.
-- **The two schedulers' refusal identities.** Three families now share one readiness mechanism. A copied identity would be invisible to every existing assertion, so the new identity needs its own negative assertion, exactly as the bounded-Activity one has.
+- **The schedulers' refusal identities.** Two families share one readiness mechanism today and this capsule makes a third. A copied identity would be invisible to every existing assertion, so the new identity needs its own negative assertion, exactly as the bounded-Activity one has.
+- **The two attachment validators are correlated by construction.** Recorded in full under the owner inventory, because that is where the change sites are named: one host predicate encoded twice means a wrong widening lands identically in Lean and TypeScript, so agreement between them proves nothing about the widening.
 
 ## Versioning consequences
 
@@ -237,6 +258,13 @@ Nonblank headroom from `node scripts/what-binds.ts <path>...`. Every figure is r
 | Owner | Headroom | Consequence, and when it expires |
 |---|---:|---|
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 25 | **Already expired.** A behavior-preserving extraction is a prerequisite commit before any lowering clause is added here. |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 75 | The tightest owner after the expired one, and the file decision 2 is actually about: it holds `boundaryTimersAttachToUserTasks`. Adding an enumerated host-kind set plus its negative cases here expires this budget, so measure again before the edit and extract if it falls under 40. |
+| [Lean checked-process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 309 | Sufficient; holds `checkedBoundaryTimerAttachmentValid`, the independent mirror of the same host predicate. |
+| [source projection for boundary Timers](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 515 | Sufficient; must accept a Sub-Process attachment host. |
+| [semantic profile admission](../../packages/semantic-core/src/semantic-process-profile.ts) | 195 | Sufficient; owns `SemanticProfileId` and the exact checked-node and operation multiset predicates this profile's admission is specified in terms of. |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 371 | Sufficient; the independent counterpart of those multiset predicates. |
+| [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 179 | Sufficient; declares the Lean operation kinds, so the new bounded-scope operation lands here. Expires under 40. |
+| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 173 | Sufficient; carries the independent checked-graph-to-program lowering this capsule requires to equal the received program. |
 | [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Dispatch only; the family's transitions belong in a new narrow owner beside [the bounded-task runtime](../../packages/semantic-core/src/semantic-process-bounded-task-runtime.ts). Re-expires under 40. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 51 | Sufficient for one operation kind and no new node variant. Expires under 40. |
 | [scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 433 | Sufficient; owns the quiescence predicate this family races. |
@@ -247,18 +275,21 @@ Nonblank headroom from `node scripts/what-binds.ts <path>...`. Every figure is r
 | [host capability classifier](../../packages/temporal-adapter/src/host-admission.ts) | 448 | Sufficient; must gain the bounded-scope class and reject it beside a managed race. |
 | [adapter typed contracts](../../packages/temporal-adapter/src/contracts.ts) | 354 | Sufficient; carries the new refusal identity. |
 
-One owner is already expired, so this capsule crosses one mandatory extraction boundary. That extraction is a separate behavior-preserving commit and never work done under a size squeeze inside a semantic change.
+One owner is already expired and one more is within 75 lines, so this capsule crosses one mandatory extraction boundary and must re-measure a second before editing it. Each extraction is a separate behavior-preserving commit and never work done under a size squeeze inside a semantic change.
+
+The two attachment validators are near-duplicates across TypeScript and Lean encoding one host predicate, so widening them is a single conceptual edit applied twice. A wrong widening therefore lands identically in both targets and the differential lane cannot separate them. That is the same correlated-failure shape recorded under common-mode risks for the shared cancellation helper, but at the admission boundary, and it is why decision 2's negative cases must be written per excluded host kind rather than as one positive case.
 
 ### Guards and oracles this implementation must change or satisfy
 
-These oracles already constrain the planned artifacts; none is new work invented by this capsule. Enumerate them again with `node scripts/what-binds.ts` before the first edit rather than from recall.
+Most of these already constrain the planned artifacts; two rows are new assertion work and are marked. Enumerate them again with `node scripts/what-binds.ts` before the first edit rather than from recall.
 
-| Guard | Requirement it already places on this capsule |
+| Guard | Requirement it places on this capsule |
 |---|---|
+| [profile-parameterized admission](../../docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) via [document reviewability](../../scripts/document-reviewability.test.ts) | Exactly one `## Current profile capabilities` row per registered profile identifier. A newly registered profile without its row turns the gate red, so the row lands in the same change as the profile. |
 | [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts) | Every added profile, scenario, and retained-evidence artifact is registered in the same change, with no unreferenced profile and no unregistered artifact. |
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | Every registered scenario needs exactly one pipeline case carrying a meaningful seeded semantic mutation. |
 | [product example configs](../../packages/temporal-adapter/test/product-example-configs.test.ts) | Every registered profile has a live example and every example names a registered profile; two examples over one definition are admissible. |
-| [host admission](../../packages/temporal-adapter/test/host-admission.test.ts) | The bounded-scope wait must be classified against concurrent host-driven waits, including the race-plus-bounded shape that must stay rejected. |
+| [host admission](../../packages/temporal-adapter/test/host-admission.test.ts) | **New assertion work, not an existing constraint.** The classifier already rejects two concurrent managed waits in source, but no test feeds a bounded-wait-bearing program in and expects its refusal; the existing two-managed cases are both same-class races. This capsule adds the bounded-scope case rather than inheriting it. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) | The new fixture must validate against the pinned normative schema, with `cancelActivity` omitted rather than asserted. |
 | [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) | The new operation must project into the shared wire contracts and their JSON Schemas atomically. |
 | [normative reference resolution](../../scripts/normative-reference-resolution.test.ts) | Every declared reference in the profile artifact, scenarios, and fixtures must resolve in the pinned corpus. |
@@ -272,7 +303,8 @@ Stop and return to review rather than deciding in implementation if any of the f
 
 - an admitted state makes the deadline-to-scope ownership ambiguous, which refutes the no-hidden-record claim and forces an explicit occurrence record;
 - child quiescence and last-token-consumption turn out to be separable under this profile, which would mean the withdrawal rule was chosen without a witness;
-- the checked Timer Boundary Event variant cannot carry both host domains without weakening its attachment validation;
+- either attachment validator cannot admit a Sub-Process host without also readmitting a host kind this profile excludes, which would mean the enumerated-set widening is unavailable and the deadline-free program is back;
+- the deadline's owning scope occurrence cannot be the parent occurrence, which would make `SPTIMER-QUIESCE-01` unreachable as described below;
 - the host cannot recognise the scope deadline from committed state alone;
 - a public observation requires an engine-specific choice, which is a phase-zero probe obligation;
 - a required Lean law needs the unstated key-uniqueness invariant, which this capsule may not establish.
@@ -280,6 +312,6 @@ Stop and return to review rather than deciding in implementation if any of the f
 ## Owner decisions required
 
 1. **The arming instant for a scope host.** Recommended: arm atomically with child scope creation at Sub-Process entry, per `SPTIMER-ARM-01`. The alternative — arming when the child's first wait becomes active — makes the deadline depend on the child's internal topology and is rejected above.
-2. **Checked-node reuse.** Recommended: widen the existing Timer Boundary Event variant's attachment host domain and share one attachment validator, rather than adding a second near-duplicate variant. This is the decision most likely to be revisited during implementation, so it is stated as a decision rather than assumed.
+2. **How the two attachment validators admit a Sub-Process host.** Recommended: widen each validator's host-kind conjunct to an explicitly enumerated set of `UserTask` and the admitted Sub-Process, leaving the same-scope and one-host conjuncts untouched, and add a negative case per newly excluded Activity kind. The checked-node variant itself needs no change, because its attachment reference carries no host domain. The alternative — relaxing the conjunct to any Activity — is rejected above because it readmits the silently deadline-free program the validators exist to prevent.
 3. **A distinct host refusal identity.** Recommended: a new typed failure identity for a child-completion-and-deadline shared activation, distinct from the bounded-Activity one, so an operator can tell which semantic contract is unavailable.
 4. **Standards-only scope with no CIB relationship.** Recommended: confirm, on the CIB on-demand gate's five answers above. The pinned corpus is used for scheduling and calibration only.
