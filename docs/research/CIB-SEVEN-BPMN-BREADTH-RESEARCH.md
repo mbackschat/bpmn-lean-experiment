@@ -108,9 +108,29 @@ Three invariants hold over the pinned corpus and each is an independent check on
 
 Occurrence counts exceed file counts most sharply for Service Task hosts, at 115 occurrences across 70 files, which reflects repeated attachment fixtures rather than 115 distinct propositions.
 
-The committed split deliberately does not cross trigger with host, because the per-trigger host question arises once per capsule and a stored matrix would mostly hold zeros. The one-off query behind the decision below reports 25 files and 29 occurrences of an interrupting Timer attached to a User Task, 19 files and 19 occurrences attached to a Sub-Process, 5 files attached to a Call Activity, and 10 files and 11 occurrences of a non-interrupting Timer attached to a User Task. For comparison, the largest single combination is an interrupting Compensation boundary on a Service Task at 39 files and 71 occurrences.
+The committed split deliberately does not cross trigger with host, because the per-trigger host question arises once per capsule and a stored matrix would mostly hold zeros. The one-off queries behind the decisions below report 25 files and 29 occurrences of an interrupting Timer attached to a User Task, 19 files and 19 occurrences attached to a Sub-Process, 5 files attached to a Call Activity, and 10 files and 11 occurrences of a non-interrupting Timer attached to a User Task; an interrupting Message boundary on a User Task is 16 files and 20 occurrences. For comparison, the largest single combination is an interrupting Compensation boundary on a Service Task at 39 files and 71 occurrences.
 
-## Priority decision after the full-profile product surface
+Both queries reproduce the committed dimension rules — `cancelActivity !== "false"` for interruption, the local name of the element `attachedToRef` resolves to for the host, the child event definition for the trigger — and their crossed cells sum to the same 394 occurrences the three stored dimensions each sum to. The second query additionally reproduces every figure the first one published, which is what makes it comparable to them rather than a separate measurement.
+
+## Priority decision after the interrupting Activity boundary Timer
+
+An **interrupting Boundary Timer Event attached to an embedded Sub-Process** is selected next, at a measured 19 files and 19 occurrences. It is not the largest remaining combination; it is selected because it generalizes the boundary mechanism along the axis that compounds.
+
+The two candidates needing no new host mechanism are close in size: this one at 19 files and 19 occurrences, and an interrupting boundary Message on a User Task at 16 files and 20 occurrences. Leverage separates them. Attaching to a scope makes the boundary mechanism host-generic over the largest host slice in the corpus, at 103 files and 116 occurrences, and five trigger families remain that would each otherwise have to settle the scope-host question for themselves. The Message trigger instead unlocks its own 27 files and 35 occurrences and nothing beyond them, because every other remaining trigger — Compensation, Escalation, Conditional, Cancel, and Signal — needs a new trigger family regardless of which of these two lands first. So the Message boundary is the cheaper capsule and the smaller unlock, and it stays available at the same cost afterwards.
+
+Every prerequisite is closed. Boundary arming, withdrawal, and the both-directions race come from the [interrupting Activity boundary Timer specification](../capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) together with its durable host deadline in a cancellation scope; scope entry and quiescent completion come from the [ordinary embedded Sub-Process completion specification](../capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md); regional cancellation of a live child scope preserving monotonic counters comes from the [Sub-Process Error propagation specification](../capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md).
+
+The distinct new proposition is correspondingly narrow: a deadline scoped to a *scope occurrence* rather than an Activity occurrence, racing that scope's own quiescent completion rather than a single task's completion, and cancelling a live child region that may hold a waiting child Activity. It must settle when the deadline arms relative to scope entry and whether child quiescence or the Sub-Process's outgoing flow withdraws it — the two are the same instant only under this profile's ordering and must not be assumed equal.
+
+A12 prevalence deliberately supplies no support here. No distinct A12 model contains a Timer Event Definition at all, as [the compatibility ledger](A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) records, so this selection rests on standards leverage and CIB breadth only. A12 does break the tie against the two largest untouched families. That ledger records Multi-Instance Loop Characteristics as absent from every distinct model by name, and Compensation appears nowhere in its surface inventory, so neither family gains priority from prevalence; both also open a new mechanism family rather than reusing an evidenced host seam.
+
+No CIB relationship is selected by this decision. The pinned corpus supplies the scheduling signal only; a capsule may register a relationship solely together with a project-owned phase-zero probe and verifier coverage.
+
+This planning decision does not approve a semantic account. The proposal, its independent cold review, and the owner's approval of its decisions remain separate steps.
+
+## Earlier priority decision after the full-profile product surface
+
+This decision is **closed**: the [interrupting Activity boundary Timer specification](../capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) is implemented and evidence-closed, and `BPMN-BOUNDARY-TIMER-01` carries its disposition in [the requirement ledger](../BPMN-REQUIREMENT-LEDGER.md).
 
 An **interrupting Boundary Timer Event attached to an Activity** is selected next. It is not selected because Boundary Event is the largest tag family; it is selected because it is the largest boundary combination that requires no new host mechanism.
 
