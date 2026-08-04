@@ -317,42 +317,42 @@ test("binds the Call Activity node and exact invocation pair", async () => {
 /**
  * Covers both closed definition schemas, not only the checked graph.
  *
- * This is a second, uncorrelated detector for an unreferenced `$defs` entry: writing a variant
- * definition and forgetting the one-line wiring into its union is the shape that actually landed
- * once, and it landed in the Semantic Process schema.
+ * This is a second detector for an unreferenced `$defs` entry over the same reachability
+ * traversal: it catches a forgotten union wiring by a different assertion, and additionally
+ * rejects the orphaned arm definitions that wiring leaves behind, but it shares that
+ * traversal's failure modes rather than being uncorrelated with the coverage guard.
  */
 test("keeps every definition schema's entries reachable", async () => {
   for (const file of ["checked-process.schema.json", "semantic-process.schema.json"]) {
-  const schema = JSON.parse(
-    await readFile(`${projectRoot}/contracts/schemas/${file}`, "utf8"),
-  ) as Readonly<Record<string, unknown>>;
-  const definitions = schema.$defs;
-  assert.ok(isRecord(definitions));
+    const schema = JSON.parse(
+      await readFile(`${projectRoot}/contracts/schemas/${file}`, "utf8"),
+    ) as Readonly<Record<string, unknown>>;
+    const definitions = schema.$defs;
+    assert.ok(isRecord(definitions));
 
-  const root = Object.fromEntries(
-    Object.entries(schema).filter(([key]) => key !== "$defs"),
-  );
-  const reachable = new Set<string>();
-  const pending = [...localDefinitionReferences(root)];
-  while (pending.length > 0) {
-    const name = pending.pop();
-    assert.ok(name !== undefined);
-    if (reachable.has(name)) {
-      continue;
+    const root = Object.fromEntries(
+      Object.entries(schema).filter(([key]) => key !== "$defs"),
+    );
+    const reachable = new Set<string>();
+    const pending = [...localDefinitionReferences(root)];
+    while (pending.length > 0) {
+      const name = pending.pop();
+      assert.ok(name !== undefined);
+      if (reachable.has(name)) {
+        continue;
+      }
+      const definition = definitions[name];
+      assert.notEqual(definition, undefined, `missing $defs.${name}`);
+      reachable.add(name);
+      pending.push(...localDefinitionReferences(definition));
     }
-    const definition = definitions[name];
-    assert.notEqual(definition, undefined, `missing $defs.${name}`);
-    reachable.add(name);
-    pending.push(...localDefinitionReferences(definition));
+
+    assert.deepEqual(
+      [...reachable].sort(compareCanonicalStrings),
+      Object.keys(definitions).sort(compareCanonicalStrings),
+    );
   }
-
-  assert.deepEqual(
-    [...reachable].sort(compareCanonicalStrings),
-    Object.keys(definitions).sort(compareCanonicalStrings),
-  );
-}
 });
-
 
 test("accepts the canonical checked-process and Semantic Process contract shapes", async () => {
   for (const artifacts of [
