@@ -287,7 +287,7 @@ Each row therefore states the condition under which its consequence stops applyi
 
 | Owner | Headroom | Consequence, and when it expires |
 |---|---:|---|
-| [adapter runner](../../packages/temporal-adapter/src/runner.ts) | 8 | Extract before adding any line here **while headroom stays under 40**. Not yet a confirmed change site: the generic `runRegisteredScenario` path already handles completion and timer stimuli, so this row expires unrequired if the adapter lane never grows this file. |
+| [adapter runner](../../packages/temporal-adapter/src/runner.ts) | 152 | Extraction landed at `d14570b`: nine forwarding probe methods moved to [mutation probes](../../packages/temporal-adapter/src/mutation-probes.ts) behind a narrow host contract, so this owner is no longer size-constrained for the adapter lane. |
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 25 | **Expired.** The bounded-task lowering landed here and dropped headroom under 40, so the next family extracts this owner first. |
 | [semantic core runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Cleared from 5 by extracting [control-flow token transitions](../../packages/semantic-core/src/semantic-process-control-flow-runtime.ts) into their own owner. Re-expires under 40. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 51 | Sufficient; already carries the new operation kind and checked node variant. Expires under 40. |
