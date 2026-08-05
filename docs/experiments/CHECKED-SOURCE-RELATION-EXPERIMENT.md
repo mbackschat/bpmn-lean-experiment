@@ -55,8 +55,8 @@ The renamed endpoint-agreement check is also a finite regression guard for the e
 The first focused build failed because `BpmnSemantics.Experiments.CheckedSourceRelation` did not exist. After the provisional source account and discriminator were added:
 
 ```sh
-lake build checkCheckedSourceRelationExperiment
-lake exe checkCheckedSourceRelationExperiment
+./scripts/lake.sh build checkCheckedSourceRelationExperiment
+./scripts/lake.sh exe checkCheckedSourceRelationExperiment
 ```
 
 Both commands passed, and the executable reported `Checked-source relation experiment checks passed.` The gate comprises approximately 700 lines across the source account, witness, and main. It requires all six retained fixtures to survive the mutation, the direct source account to agree with correct endpoint-based lowering on the renamed graph, and the same source result to disagree with positional lowering.
@@ -67,7 +67,7 @@ The 2026-07-29 Stage 2 red build proved that the old standalone `programWellForm
 
 The vacuous derivation and the two overclaimed theorems were removed. The four escaped grammar surfaces now reject explicitly, and the structural witnesses use kernel `decide` instead of `native_decide`. The retained graph/probe work remains within the approved 500-line ceiling and source hygiene remains exception-free.
 
-The 2026-07-29 Stage 3b red elaboration introduced the reviewed `enabledTransitionsAtTwoTokens` statement without a proof and failed on the intended unresolved `List.Perm` goal. The root refactor then extracted permutation-aware token absence, list-parameterized incoming untokenedness, and arity-based node disabling while preserving the accepted Stage 3a theorem statements and axiom footprints. The green implementation uses the reviewed erase/permutation route for the two-anchor isolation theorem, adding only the explicitly authorized `Classical.choice` footprint; forced elaboration of all three touched proof modules, `lake build checkCheckedSourceRelationExperiment`, and `lake exe checkCheckedSourceRelationExperiment` pass. The post-amendment focused build consumed 3.18 seconds user against the unchanged five-second stop. No Stage 3b Boolean re-decision was added because the conformance declarations are themselves kernel-checked, and the infrastructure guard locks the direct conformance-to-parallel-frontier import that makes the default proof target elaborate them.
+The 2026-07-29 Stage 3b red elaboration introduced the reviewed `enabledTransitionsAtTwoTokens` statement without a proof and failed on the intended unresolved `List.Perm` goal. The root refactor then extracted permutation-aware token absence, list-parameterized incoming untokenedness, and arity-based node disabling while preserving the accepted Stage 3a theorem statements and axiom footprints. The green implementation uses the reviewed erase/permutation route for the two-anchor isolation theorem, adding only the explicitly authorized `Classical.choice` footprint; forced elaboration of all three touched proof modules, `./scripts/lake.sh build checkCheckedSourceRelationExperiment`, and `./scripts/lake.sh exe checkCheckedSourceRelationExperiment` pass. The post-amendment focused build consumed 3.18 seconds user against the unchanged five-second stop. No Stage 3b Boolean re-decision was added because the conformance declarations are themselves kernel-checked, and the infrastructure guard locks the direct conformance-to-parallel-frontier import that makes the default proof target elaborate them.
 
 ## Precise unresolved boundary
 

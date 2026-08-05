@@ -129,7 +129,7 @@ The deterministic sequential transition code is intentionally too small to serve
 The red build was run before the candidate implementation existed:
 
 ```text
-lake build checkSemanticRepresentationSpike
+./scripts/lake.sh build checkSemanticRepresentationSpike
 ```
 
 It failed because `BpmnSemantics.Experiments.SemanticRepresentations` was absent.
@@ -137,8 +137,8 @@ It failed because `BpmnSemantics.Experiments.SemanticRepresentations` was absent
 After implementing the candidate module:
 
 ```text
-lake build checkSemanticRepresentationSpike
-lake exe checkSemanticRepresentationSpike
+./scripts/lake.sh build checkSemanticRepresentationSpike
+./scripts/lake.sh exe checkSemanticRepresentationSpike
 ```
 
 Both commands passed, and the executable reported `Semantic representation spike checks passed.`

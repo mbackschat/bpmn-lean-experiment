@@ -156,13 +156,18 @@ Useful focused gates:
 
 When a task explicitly needs the optional A12 exact-source evidence, provision and run it separately with `./scripts/setup-external-sources.sh adoption` followed by `./scripts/test-a12-adoption.sh`.
 
-Lean's build parallelism is pinned by `config.leanBuildThreads` in [package.json](package.json), which both [the gate](scripts/verify.sh) and [the pnpm wrapper](scripts/pnpm.sh) export as `LEAN_NUM_THREADS`. The default is deliberately conservative: this project decides finite fixtures in the Lean kernel, kernel reduction holds its terms in resident memory, and Lake otherwise sizes its build pool from the host's core count, which measured a 7978 MB peak on an 8-core machine against 2411 MB pinned. Raise it per run on a host with spare RAM, and measure rather than extrapolate, because it did not scale linearly:
+Invoke Lean through [`./scripts/lake.sh`](scripts/lake.sh) rather than `lake`. It forwards every Lake argument unchanged and is the single owner of Lean's build parallelism, pinned by `config.leanBuildThreads` in [package.json](package.json) and exported as `LEAN_NUM_THREADS`:
+
+```sh
+./scripts/lake.sh build
+./scripts/lake.sh test
+```
+
+The default is deliberately conservative: this project decides finite fixtures in the Lean kernel, kernel reduction holds its terms in resident memory, and Lake otherwise sizes its build pool from the host's core count, which measured a 7978 MB peak on an 8-core machine against 2411 MB pinned. Raise it per run on a host with spare RAM, and measure rather than extrapolate, because it did not scale linearly:
 
 ```sh
 LEAN_NUM_THREADS=4 ./scripts/verify.sh
 ```
-
-A bare `lake build` typed outside those wrappers inherits your core count, so export the variable yourself for direct Lean invocations.
 
 The complete gate matrix and evidence boundaries are in [TESTING-SPEC.md](docs/TESTING-SPEC.md).
 

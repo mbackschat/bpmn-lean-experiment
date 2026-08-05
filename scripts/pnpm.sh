@@ -5,11 +5,6 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 eval "$("$script_dir/pinned-toolchain.sh")"
 
-# Export the Lean build pin here so every gate invoked through this wrapper inherits it, not only the
-# complete gate. `test:semantic` runs `lake test` directly, so without this the documented fast
-# semantic gate would build Lean at the host's core count and reproduce the unpinned memory peak.
-LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-$required_lean_build_threads}"
-export LEAN_NUM_THREADS
 node_major=${required_node_version%%.*}
 homebrew_node_bin="/opt/homebrew/opt/node@$node_major/bin"
 homebrew_pnpm_bin="/opt/homebrew/opt/pnpm/bin"

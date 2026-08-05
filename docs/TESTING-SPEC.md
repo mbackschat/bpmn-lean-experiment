@@ -60,7 +60,7 @@ git diff --check
 | Change | Required focused gate |
 |---|---|
 | Semantic profile, scenario, evidence, or JSON Schema | `./scripts/pnpm.sh run test:contracts` |
-| Lean semantic definition or law | `lake test` |
+| Lean semantic definition or law | `./scripts/lake.sh test` |
 | TypeScript semantic core | `./scripts/pnpm.sh run test:semantic-core` |
 | Lean plus TypeScript semantic loop | `./scripts/pnpm.sh run test:semantic` |
 | TypeScript semantic contract or type abstraction | `./scripts/pnpm.sh run check:semantic-types` plus the owning runtime gate |
@@ -75,8 +75,8 @@ git diff --check
 | Directly executed TypeScript harness or utility | `./scripts/pnpm.sh run check:harness-types` plus its applicable runtime gate |
 | Source ownership, module boundary, or structural refactor | `./scripts/pnpm.sh run check:source-hygiene` plus the narrow language gate |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` (strict harness types plus runtime tests) |
-| Provisional representation experiment | `lake build checkSemanticRepresentationSpike && lake exe checkSemanticRepresentationSpike` |
-| Checked-source relation experiment | `lake build checkCheckedSourceRelationExperiment && lake exe checkCheckedSourceRelationExperiment` |
+| Provisional representation experiment | `./scripts/lake.sh build checkSemanticRepresentationSpike && ./scripts/lake.sh exe checkSemanticRepresentationSpike` |
+| Checked-source relation experiment | `./scripts/lake.sh build checkCheckedSourceRelationExperiment && ./scripts/lake.sh exe checkCheckedSourceRelationExperiment` |
 
 Default verification runs both checked-source experiment commands. The build kernel-checks the theorem declarations, including the Stage 3a witnesses; the executable then evaluates `stageTwoAdmissionChecks`, `stageThreeAFrontierChecks`, and the retained positional-lowering controls. `scripts/verification-entrypoint.test.ts` guards both exact commands plus the Stage 3a module imports, so neither theorem reachability nor executable negative-witness coverage can silently leave the default lane. Because the frozen experiment consumes the current checked-source contract, every closed-union widening must keep its exhaustive readers compiling and must explicitly reject any new variant outside the experiment's frozen semantic surface; the transitive build is the executable atomic-consumer guard.
 

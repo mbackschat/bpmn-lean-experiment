@@ -36,7 +36,7 @@
     "test:pipeline": "node scripts/test-pipeline.ts",
     "test:semantic-core": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
     "test:bpmn-source": "node scripts/check-bpmn-semantic-process-metamodel.ts && tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && node --test --test-concurrency=1 packages/bpmn-source/test/*.test.ts",
-    "test:semantic": "lake test && tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
+    "test:semantic": "./scripts/lake.sh test && tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
     "test:temporal": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json && node --test --test-concurrency=1 packages/temporal-adapter/test/*.test.ts",
     "test:timer-time-skipping": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/bpmn-source/tsconfig.json && tsc -p packages/temporal-adapter/tsconfig.json && node packages/temporal-adapter/calibration/timer-time-skipping.ts"
   },

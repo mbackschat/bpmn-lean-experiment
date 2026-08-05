@@ -81,11 +81,11 @@ test("verification scripts validate BPMN XML through one preflighting owner", as
 test("default verification builds and executes the checked-source proof experiment", async () => {
   await assertLineOccursOnce(
     verifyScriptPath,
-    "lake build checkCheckedSourceRelationExperiment",
+    "./scripts/lake.sh build checkCheckedSourceRelationExperiment",
   );
   await assertLineOccursOnce(
     verifyScriptPath,
-    "lake exe checkCheckedSourceRelationExperiment",
+    "./scripts/lake.sh exe checkCheckedSourceRelationExperiment",
   );
 });
 
@@ -108,37 +108,84 @@ test("frontier conformance imports the Stage 3b parallel-frontier module", async
 });
 
 /**
- * The complete gate must bound Lean's build parallelism.
+ * Every Lean invocation must bound its build parallelism, so exactly one wrapper owns the pin.
  *
  * This repository decides finite fixtures in the kernel, and kernel reduction holds its terms in
  * resident memory. Lake sizes its build pool from `LEAN_NUM_THREADS` or the logical processor count
- * and exposes no `--jobs` option, so an unpinned gate scaled with core count: measured on an 8-core
+ * and exposes no `--jobs` option, so an unpinned build scales with core count: measured on an 8-core
  * host, four concurrent `lean` processes each exceeded 2 GB and the group peaked at 7978 MB, against
- * 2411 MB with the pin. An unpinned gate therefore fails on a smaller CI runner for a reason no test
- * would explain, which is why the pin is asserted rather than left to a comment.
+ * 2411 MB with the pin. An unpinned build therefore exhausts a smaller CI runner for a reason no
+ * test would explain.
+ *
+ * The pin lived on the two gate entry points before this guard, which left every command outside
+ * them — the documented experiment gates, and any Lean build a contributor or agent types directly —
+ * running at the host's core count behind nothing but a prose caveat asking them to remember.
  */
-test("the complete gate pins Lean build parallelism", async () => {
-  const gate = await readFile(
-    fileURLToPath(new URL("../scripts/verify.sh", import.meta.url)),
-    "utf8",
-  );
+test("one wrapper owns the Lean thread pin", async () => {
   const wrapper = await readFile(
-    fileURLToPath(new URL("../scripts/pnpm.sh", import.meta.url)),
+    fileURLToPath(new URL("../scripts/lake.sh", import.meta.url)),
     "utf8",
   );
-  // Derived, never restated: a literal here could drift from the manifest and leave one entry point
-  // building Lean at the host's core count. The pnpm wrapper is checked too, because `test:semantic`
-  // runs `lake test`, which builds the proofs on a cold tree and reaches the same peak.
-  for (const [name, script] of [["verify.sh", gate], ["pnpm.sh", wrapper]] as const) {
-    assert.match(
-      script,
-      /LEAN_NUM_THREADS="\$\{LEAN_NUM_THREADS:-\$required_lean_build_threads\}"/u,
-      `${name} must derive the Lean thread pin from the manifest, not restate a literal`,
+  // Derived, never restated: a literal here could drift from the manifest.
+  assert.match(
+    wrapper,
+    /LEAN_NUM_THREADS="\$\{LEAN_NUM_THREADS:-\$required_lean_build_threads\}"/u,
+    "scripts/lake.sh must derive the Lean thread pin from the manifest, not restate a literal",
+  );
+  assert.match(
+    wrapper,
+    /^export LEAN_NUM_THREADS$/mu,
+    "scripts/lake.sh must export the pin so lake inherits it",
+  );
+  assert.match(
+    wrapper,
+    /^exec lake "\$@"$/mu,
+    "scripts/lake.sh must forward every argument to lake so it can replace bare invocations",
+  );
+});
+
+/**
+ * No runnable Lean command may bypass that wrapper.
+ *
+ * A pin on the entry points is not a pin on the toolchain: the memory peak is reached by whichever
+ * `lake` actually runs. Scanning the executable scripts alone would leave the exposure that produced
+ * this guard, because the commands that stayed unpinned longest were the *documented* ones, copied
+ * from a gate table and run verbatim.
+ *
+ * The scan covers the instruction surfaces only. `docs/PLAN.md` and the ledgers are excluded because
+ * there the command's *unpinned-ness is the measured fact* — "a clean `lake build` peaks at 7978 MB"
+ * becomes false when rewritten to the pinned wrapper. Where a quoted command merely identifies a
+ * build target, the wrapper prefix changes no recorded result and the scan applies. Subcommands are
+ * required, so `lake --version` probes and prose naming the tool itself do not match.
+ */
+test("no documented or scripted Lean command bypasses the wrapper", async () => {
+  const instructionSurfaces = [
+    "scripts/verify.sh",
+    "scripts/test-cibseven-oracle.sh",
+    "package.json",
+    "CLAUDE.md",
+    "README.md",
+    "docs/TESTING-SPEC.md",
+    "docs/experiments/README.md",
+    "docs/experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md",
+    "docs/experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md",
+  ] as const;
+  const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\b/u;
+
+  for (const relativePath of instructionSurfaces) {
+    const source = await readFile(
+      fileURLToPath(new URL(`../${relativePath}`, import.meta.url)),
+      "utf8",
     );
-    assert.match(
-      script,
-      /^export LEAN_NUM_THREADS$/mu,
-      `${name} must export the pin so lake inherits it`,
+    const offenders = source
+      .split("\n")
+      .map((line, index) => ({ line, number: index + 1 }))
+      .filter(({ line }) => bareLeanCommand.test(line));
+    assert.deepEqual(
+      offenders,
+      [],
+      `${relativePath} must invoke Lean through ./scripts/lake.sh, which pins build parallelism: ` +
+        offenders.map(({ number, line }) => `${number}: ${line.trim()}`).join(" | "),
     );
   }
 });
