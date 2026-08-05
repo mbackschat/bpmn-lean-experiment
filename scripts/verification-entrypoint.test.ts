@@ -106,3 +106,26 @@ test("frontier conformance imports the Stage 3b parallel-frontier module", async
     "import BpmnSemantics.Experiments.CheckedSourceParallelFrontier",
   );
 });
+
+/**
+ * The complete gate must bound Lean's build parallelism.
+ *
+ * This repository decides finite fixtures in the kernel, and kernel reduction holds its terms in
+ * resident memory. Lake sizes its build pool from `LEAN_NUM_THREADS` or the logical processor count
+ * and exposes no `--jobs` option, so an unpinned gate scaled with core count: measured on an 8-core
+ * host, four concurrent `lean` processes each exceeded 2 GB and the group peaked at 7978 MB, against
+ * 2411 MB with the pin. An unpinned gate therefore fails on a smaller CI runner for a reason no test
+ * would explain, which is why the pin is asserted rather than left to a comment.
+ */
+test("the complete gate pins Lean build parallelism", async () => {
+  const gate = await readFile(
+    fileURLToPath(new URL("../scripts/verify.sh", import.meta.url)),
+    "utf8",
+  );
+  assert.match(
+    gate,
+    /LEAN_NUM_THREADS="\$\{LEAN_NUM_THREADS:-\d+\}"/u,
+    "verify.sh must pin LEAN_NUM_THREADS with an overridable default",
+  );
+  assert.match(gate, /^export LEAN_NUM_THREADS$/mu, "the pin must be exported to lake");
+});
