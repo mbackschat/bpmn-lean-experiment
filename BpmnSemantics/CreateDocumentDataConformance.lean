@@ -258,9 +258,9 @@ def beforeEffectActivationWithUnrelatedData : RuntimeState :=
 
 theorem scoped_data_does_not_change_internal_enabledness :
     program.operations.map (fun operation =>
-        (fire? operation beforeEffectActivationState).isSome) =
+        (fire? program operation beforeEffectActivationState).isSome) =
       program.operations.map (fun operation =>
-        (fire? operation beforeEffectActivationWithUnrelatedData).isSome) := by
+        (fire? program operation beforeEffectActivationWithUnrelatedData).isSome) := by
   decide +kernel
 
 theorem successful_mapping_trace_is_exact :

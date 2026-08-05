@@ -116,7 +116,7 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
 private def enabledTransitions (program : Program) (state : RuntimeState) :
     List (SemanticOperation × RuntimeState) :=
   program.operations.filterMap fun operation =>
-    match fire? operation state with
+    match fire? program operation state with
     | none => none
     | some successor => some (operation, successor)
 

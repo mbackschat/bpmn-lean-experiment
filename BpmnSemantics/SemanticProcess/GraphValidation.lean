@@ -169,6 +169,16 @@ private def operationRespectsScopes (program : Program)
             placesOwnedBy program [childEntry] childScopeId &&
             (definitionScope? program childScopeId).any fun scope =>
               scope.parentScopeId == some owner
+      -- Same scope contract as the ordinary entry, plus the boundary route: the deadline's output is
+      -- token-carrying and lands in the *parent*, so it is owner-scoped while the child entry is not.
+      -- Without this arm the operation falls to the catch-all below, which demands that every output
+      -- be owner-scoped and therefore rejects the child entry it is required to produce.
+      | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
+          placesOwnedBy program [input] owner &&
+            placesOwnedBy program [childEntry] childScopeId &&
+            placesOwnedBy program [boundaryTimer.output] owner &&
+            (definitionScope? program childScopeId).any fun scope =>
+              scope.parentScopeId == some owner
       | .invokeProcess _ _ input _ calledRoot childEntry _ =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] calledRoot
@@ -222,6 +232,22 @@ private def scopedOwnershipComplete (program : Program)
       program.controlPlaces.map (·.id) &&
     program.operations.all (operationRespectsScopes program entryRootId)
 
+/-- The child definition scope this operation enters, for every family that enters one.
+
+Listed exhaustively rather than behind a wildcard. A scope-entering family omitted from a wildcard
+match contributes nothing instead of failing to compile, and the rules below read that silence as a
+child scope nobody enters — which is a *validation pass* for the sibling arm and a rejection for the
+entering one, so the omission surfaces as an unexplained well-formedness failure rather than as a
+missing case. -/
+private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
+  | .enterScope _ _ _ _ childScopeId
+  | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
+  | .initiate .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
+  | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
+  | .awaitBoundedUserTask .. | .awaitEffect .. | .duplicate ..
+  | .synchronize .. | .choose .. | .selectMany .. | .synchronizeSelected ..
+  | .throwError .. | .reachNoneEnd .. | .completeScope .. => none
+
 private def oneCompletionStrategyPerScope (program : Program)
     (entryRootId : DefinitionScopeId) : Bool :=
   program.definitionScopes.all fun scope =>
@@ -251,13 +277,11 @@ private def oneCompletionStrategyPerScope (program : Program)
           | _ => false).length = 1) &&
     match scope.parentScopeId with
     | none =>
-        program.operations.all fun
-          | .enterScope _ _ _ _ childScopeId => childScopeId ≠ scope.id
-          | _ => true
+        program.operations.all fun operation =>
+          enteredChildScopeId? operation ≠ some scope.id
     | some _ =>
-        (program.operations.filter fun
-          | .enterScope _ _ _ _ childScopeId => childScopeId = scope.id
-          | _ => false).length = 1
+        (program.operations.filter fun operation =>
+          enteredChildScopeId? operation = some scope.id).length = 1
 
 private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
     Option OperationId :=

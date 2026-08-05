@@ -145,6 +145,66 @@ def interruptBoundedScope? (program : Program) (state : RuntimeState)
               else none
   | _, _ => none
 
+/-- The committed bounded-scope operation this completing child scope belongs to. -/
+def boundedScopeDefinitionForChild? (program : Program)
+    (childScopeId : DefinitionScopeId) :
+    Option (DefinitionScopeId × BoundaryTimerArm) :=
+  (boundedScopeOperations program).find? fun candidate =>
+    decide (candidate.1 = childScopeId)
+
+/-- The parent occurrence that owns the completing child's deadline. Read before completion, because completion removes the child occurrence that names the parent. -/
+def boundedScopeParentFor? (state : RuntimeState)
+    (childScopeId : DefinitionScopeId) : Option ScopeOccurrenceId :=
+  (state.scopeOccurrences.find? fun occurrence =>
+    decide (occurrence.id.definitionScopeId = childScopeId)).bind (·.parent)
+
+/-- The live deadline this parent owns for that boundary Timer. -/
+def parentOwnedDeadline? (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (boundaryTimer : BoundaryTimerArm) : Option TimerWait :=
+  state.timerWaits.find? fun candidate =>
+    decide (
+      candidate.elementId = boundaryTimer.elementId &&
+        candidate.owner = owner)
+
+/-- Commits the quiescence arm: the child scope completes and its deadline is withdrawn in the same transition.
+
+Withdrawal is a consequence of the child's completion rather than a transition of its own, so this
+composes the shared scope completion instead of reimplementing quiescence. It is also mandatory. The
+deadline is owned by the *parent*, so a surviving Timer wait would keep that parent permanently
+non-quiescent, and no later firing could consume it either, because `boundedScopeChildFor?` no longer
+finds the child region it bounds.
+
+An unbounded scope passes straight through. A bounded scope whose deadline is absent refuses rather
+than completing, because atomic arming made that state unreachable and silently accepting it would
+publish a completion that no arming could have produced. -/
+def completeBoundedScope? (program : Program) (state : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId) :
+    Option RuntimeState :=
+  match completeScopeState? state scopeId parentOutput with
+  | none => none
+  | some completed =>
+      match boundedScopeDefinitionForChild? program scopeId with
+      | none => some completed
+      | some definition =>
+          match boundedScopeParentFor? state scopeId with
+          | none => none
+          | some owner =>
+              match parentOwnedDeadline? completed owner definition.2 with
+              | none => none
+              | some deadline =>
+                  some { completed with
+                          timerWaits := completed.timerWaits.erase deadline }
+
+/-- Completing a scope that no bounded-scope operation entered is exactly the shared completion, so this family adds no behavior to an ordinary Sub-Process. -/
+theorem completeBoundedScope_eq_completeScope_of_unbounded (program : Program)
+    (state : RuntimeState) (scopeId : DefinitionScopeId)
+    (parentOutput : Option ControlPlaceId)
+    (unbounded : boundedScopeDefinitionForChild? program scopeId = none) :
+    completeBoundedScope? program state scopeId parentOutput =
+      completeScopeState? state scopeId parentOutput := by
+  unfold completeBoundedScope?
+  cases completeScopeState? state scopeId parentOutput <;> simp [unbounded]
+
 /-- The deadline arm refuses every firing that is not exactly due, for any program, state, and timer. Quantified rather than fixture-shaped, because a pre-due firing must leave the armed triple able to win later at its exact instant. -/
 theorem interruptBoundedScope_none_of_not_due (program : Program)
     (state : RuntimeState) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)

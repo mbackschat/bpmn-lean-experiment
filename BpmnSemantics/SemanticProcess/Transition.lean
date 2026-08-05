@@ -92,105 +92,107 @@ def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
     else none
 
 /-- Declarative transition relation for one explicitly selected Semantic Process operation. -/
-inductive OperationStep : SemanticOperation → RuntimeState → RuntimeState → Prop where
+inductive OperationStep (program : Program) :
+    SemanticOperation → RuntimeState → RuntimeState → Prop where
   | initiate (id origin output) (before after : RuntimeState)
       (transition : initiateState? before output = some after) :
-      OperationStep (.initiate id origin output) before after
+      OperationStep program (.initiate id origin output) before after
   | enterScope (id origin input childEntry childScopeId)
       (before after : RuntimeState)
       (transition :
         enterScopeState? before input childEntry childScopeId = some after) :
-      OperationStep
+      OperationStep program
         (.enterScope id origin input childEntry childScopeId) before after
   | enterBoundedScope (id origin input childEntry childScopeId boundaryTimer)
       (before after : RuntimeState)
       (transition :
         BoundedScopeArmingStep before input childEntry childScopeId boundaryTimer
           after) :
-      OperationStep
+      OperationStep program
         (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer)
         before after
   | invokeProcess (id origin input calledProcessId calledRootScopeId calledEntry
       returnOperationId) (before after : RuntimeState)
       (transition : InvokeProcessStep before origin input calledProcessId
         calledRootScopeId calledEntry returnOperationId after) :
-      OperationStep
+      OperationStep program
         (.invokeProcess id origin input calledProcessId calledRootScopeId
           calledEntry returnOperationId) before after
   | returnProcess (id origin calledProcessId calledRootScopeId callerOutput)
       (before after : RuntimeState)
       (transition : ReturnProcessStep before id origin calledProcessId
         calledRootScopeId callerOutput after) :
-      OperationStep
+      OperationStep program
         (.returnProcess id origin calledProcessId calledRootScopeId callerOutput)
         before after
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
-      OperationStep (.awaitUserTask id origin input output task) before after
+      OperationStep program (.awaitUserTask id origin input output task) before after
   | awaitTimer (id origin input output timer) (before after : RuntimeState)
       (transition : awaitTimerState? before input output timer = some after) :
-      OperationStep (.awaitTimer id origin input output timer) before after
+      OperationStep program (.awaitTimer id origin input output timer) before after
   | awaitMessage (id origin input output message) (before after : RuntimeState)
       (transition : awaitMessageState? before input output message = some after) :
-      OperationStep (.awaitMessage id origin input output message) before after
+      OperationStep program (.awaitMessage id origin input output message) before after
   | awaitEventRace (id origin input message timer) (before after : RuntimeState)
       (transition :
         EventRaceArmingStep before origin input message timer after) :
-      OperationStep (.awaitEventRace id origin input message timer) before after
+      OperationStep program (.awaitEventRace id origin input message timer) before after
   | awaitBoundedUserTask (id origin input task boundaryTimer)
       (before after : RuntimeState)
       (transition :
         BoundedTaskArmingStep before input task boundaryTimer after) :
-      OperationStep
+      OperationStep program
         (.awaitBoundedUserTask id origin input task boundaryTimer) before after
   | awaitEffect (id origin input output effect route)
       (before after : RuntimeState)
       (transition :
         awaitEffectState? before input output effect route = some after) :
-      OperationStep
+      OperationStep program
         (.awaitEffect id origin input output effect route) before after
   | duplicate (id origin input outputs) (before after : RuntimeState)
       (transition : duplicateState? before input outputs = some after) :
-      OperationStep (.duplicate id origin input outputs) before after
+      OperationStep program (.duplicate id origin input outputs) before after
   | synchronize (id origin inputs output) (before after : RuntimeState)
       (transition : synchronizeState? before inputs output = some after) :
-      OperationStep (.synchronize id origin inputs output) before after
+      OperationStep program (.synchronize id origin inputs output) before after
   | choose (id origin input candidates defaultOutput defaultOrigin)
       (before after : RuntimeState)
       (transition :
         chooseState? before input candidates defaultOutput = some after) :
-      OperationStep
+      OperationStep program
         (.choose id origin input candidates defaultOutput defaultOrigin)
         before after
   | selectMany (id origin input candidates defaultBranch selectionKey)
       (before after : RuntimeState)
       (transition :
         SelectManyStep before input candidates defaultBranch selectionKey after) :
-      OperationStep
+      OperationStep program
         (.selectMany id origin input candidates defaultBranch selectionKey)
         before after
   | synchronizeSelected (id origin inputs output selectionKey)
       (before after : RuntimeState)
       (transition :
         SynchronizeSelectedStep before output selectionKey after) :
-      OperationStep
+      OperationStep program
         (.synchronizeSelected id origin inputs output selectionKey) before after
   | throwError (id origin input error handler) (before after : RuntimeState)
       (transition :
         throwErrorState? before input error handler = some after) :
-      OperationStep (.throwError id origin input error handler) before after
+      OperationStep program (.throwError id origin input error handler) before after
   | reachNoneEnd (id origin input) (before after : RuntimeState)
       (transition : reachNoneEndState? before input = some after) :
-      OperationStep (.reachNoneEnd id origin input) before after
+      OperationStep program (.reachNoneEnd id origin input) before after
   | completeScope (id origin scopeId parentOutput)
       (before after : RuntimeState)
       (transition :
-        completeScopeState? before scopeId parentOutput = some after) :
-      OperationStep
+        completeBoundedScope? program before scopeId parentOutput = some after) :
+      OperationStep program
         (.completeScope id origin scopeId parentOutput) before after
 
 /-- Executable transition for one operation. It performs no operation selection. -/
-def fire? (operation : SemanticOperation) (state : RuntimeState) :
+def fire? (program : Program) (operation : SemanticOperation)
+    (state : RuntimeState) :
     Option RuntimeState :=
   match operation with
   | .initiate _ _ output => initiateState? state output
@@ -229,12 +231,12 @@ def fire? (operation : SemanticOperation) (state : RuntimeState) :
       throwErrorState? state input error handler
   | .reachNoneEnd _ _ input => reachNoneEndState? state input
   | .completeScope _ _ scopeId parentOutput =>
-      completeScopeState? state scopeId parentOutput
+      completeBoundedScope? program state scopeId parentOutput
 
-theorem fire_sound (operation : SemanticOperation)
+theorem fire_sound (program : Program) (operation : SemanticOperation)
     (before after : RuntimeState)
-    (result : fire? operation before = some after) :
-    OperationStep operation before after := by
+    (result : fire? program operation before = some after) :
+    OperationStep program operation before after := by
   cases operation <;> first
     | exact .initiate _ _ _ before after result
     | exact .enterScope _ _ _ _ _ before after result
@@ -272,7 +274,7 @@ def ProgramStep (program : Program) (before : RuntimeState)
   ∃ operation,
     operation ∈ program.operations ∧
       operation.id = choice ∧
-        OperationStep operation before after
+        OperationStep program operation before after
 
 /-- Select and execute exactly the operation named by the semantic input. -/
 def step (program : Program) (state : RuntimeState) (choice : OperationId) :
@@ -280,7 +282,7 @@ def step (program : Program) (state : RuntimeState) (choice : OperationId) :
   match program.operations.find? fun operation =>
       decide (operation.id = choice) with
   | none => none
-  | some operation => fire? operation state
+  | some operation => fire? program operation state
 
 /-- Every evaluator-produced transition is permitted by the declarative program relation. -/
 theorem step_sound :
@@ -300,6 +302,6 @@ theorem step_sound :
               decide (candidate.id = choice))
             selectedEq
         exact of_decide_eq_true selectedMatches
-      · exact fire_sound operation state successor result
+      · exact fire_sound program operation state successor result
 
 end BpmnSemantics.SemanticProcess

@@ -17,6 +17,7 @@ import BpmnSemantics.EventBasedGatewayConformance
 import BpmnSemantics.EmbeddedSubProcessCompletionConformance
 import BpmnSemantics.SubProcessErrorPropagationConformance
 import BpmnSemantics.ActivityBoundaryTimerConformance
+import BpmnSemantics.SubProcessBoundaryTimerConformance
 
 /-! Root of the BPMN semantic contract library.
 

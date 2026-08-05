@@ -219,7 +219,7 @@ private def duplicateIdentityRecordState : RuntimeState :=
 
 theorem duplicate_identity_record_with_one_otherwise_valid_disables_return :
     calledProcessAssociationsValid duplicateIdentityRecordState = false ∧
-      fire? returnOperation duplicateIdentityRecordState = none := by decide +kernel
+      fire? program returnOperation duplicateIdentityRecordState = none := by decide +kernel
 
 private def duplicateCalledRootState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
@@ -232,7 +232,7 @@ private def duplicateCalledRootState : RuntimeState :=
 
 theorem duplicate_called_root_with_one_otherwise_valid_disables_return :
     calledProcessAssociationsValid duplicateCalledRootState = false ∧
-      fire? returnOperation duplicateCalledRootState = none := by decide +kernel
+      fire? program returnOperation duplicateCalledRootState = none := by decide +kernel
 
 private def zeroActivationRecordState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
@@ -251,7 +251,7 @@ private def zeroActivationRecordState : RuntimeState :=
 
 theorem zero_activation_record_is_nonresumable_and_has_no_return :
     calledProcessAssociationsValid zeroActivationRecordState = false ∧
-      fire? returnOperation zeroActivationRecordState = none := by decide +kernel
+      fire? program returnOperation zeroActivationRecordState = none := by decide +kernel
 
 private def aliasedCalledScopeState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
@@ -270,7 +270,7 @@ private def aliasedCalledScopeState : RuntimeState :=
 
 theorem called_scope_alias_is_nonresumable_and_has_no_return :
     calledProcessAssociationsValid aliasedCalledScopeState = false ∧
-      fire? returnOperation aliasedCalledScopeState = none := by decide +kernel
+      fire? program returnOperation aliasedCalledScopeState = none := by decide +kernel
 
 private def alternateHostingRootId : ScopeOccurrenceId :=
   { processInstanceId := callerInstanceId
@@ -291,7 +291,7 @@ private def childCallerState : RuntimeState :=
 
 theorem child_caller_with_one_hosting_root_is_nonresumable :
     calledProcessAssociationsValid childCallerState = false ∧
-      fire? returnOperation childCallerState = none := by decide +kernel
+      fire? program returnOperation childCallerState = none := by decide +kernel
 
 private def duplicateHostingRootState : RuntimeState :=
   { calledWaiting.state with
@@ -301,7 +301,7 @@ private def duplicateHostingRootState : RuntimeState :=
 
 theorem duplicate_hosting_root_with_one_valid_original_is_nonresumable :
     calledProcessAssociationsValid duplicateHostingRootState = false ∧
-      fire? returnOperation duplicateHostingRootState = none := by decide +kernel
+      fire? program returnOperation duplicateHostingRootState = none := by decide +kernel
 
 private def duplicateInvokeProgram : Program :=
   match program.operations.find? fun
