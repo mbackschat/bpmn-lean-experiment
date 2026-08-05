@@ -110,12 +110,12 @@ private def closeRootIfEnabled (program : Program) (state : RuntimeState) :
       | .completeScope _ _ _ none => true
       | _ => false with
   | none => state
-  | some completion => (fire? completion state).getD state
+  | some completion => (fire? program completion state).getD state
 
 private def programEnabledTransitions (program : Program)
     (state : RuntimeState) : List (OperationId × RuntimeState) :=
   program.operations.filterMap fun operation =>
-    (fire? operation state).map fun successor =>
+    (fire? program operation state).map fun successor =>
       (operation.id, closeRootIfEnabled program successor)
 
 private def enabledTransitionsCorrespondAt (source : CheckedProcess)

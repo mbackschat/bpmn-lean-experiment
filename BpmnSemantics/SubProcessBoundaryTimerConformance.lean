@@ -175,4 +175,79 @@ theorem quiescent_completion_preserves_logical_time :
     quiescentVictoryState.logicalTimeMs = armedState.logicalTimeMs := by
   decide +kernel
 
+def deadlineVictoryState : RuntimeState :=
+  (applyStimulus scenarioClosureLimit program armedState
+    (.fireTimer ⟨"fire-deadline"⟩ deadlineId 1000)).state
+
+/-- `SPTIMER-INTERRUPT-01`: the deadline arm cancels the child region and follows the boundary route.
+
+The child scope occurrence, its live child task, and the deadline itself are all gone, and the published
+follow-on is the Escalation Task rather than After Scope. The deadline is erased explicitly because it
+is owned by the parent and therefore survives the regional cancellation that removes everything else. -/
+theorem deadline_victory_cancels_the_child_region :
+    deadlineVictoryState.timerWaits = [] ∧
+      (deadlineVictoryState.scopeOccurrences.map fun occurrence =>
+        occurrence.id.definitionScopeId.value) =
+        ["scope:Process_SubProcessBoundaryTimer"] ∧
+      (deadlineVictoryState.waits.map fun wait => wait.task.id.value) =
+        ["EscalationTask"] := by decide +kernel
+
+/-- The other half of the arms' separating law: the deadline arm advances logical time to exactly the deadline, while the quiescence arm above leaves it unchanged. -/
+theorem deadline_victory_advances_logical_time_to_the_deadline :
+    deadlineVictoryState.logicalTimeMs = 1000 ∧
+      armedState.logicalTimeMs = 0 := by decide +kernel
+
+/-- The follow-on User Task identity is the capsule's separating witness, and the two arms differ on it at the approved public boundary rather than through a hidden microstep or storage order. -/
+theorem the_two_arms_differ_at_the_public_boundary :
+    (quiescentVictoryState.waits.map fun wait => wait.task.id.value) ≠
+      (deadlineVictoryState.waits.map fun wait => wait.task.id.value) := by
+  decide +kernel
+
+/-- The normal Sub-Process output is unreachable on the deadline arm, the analogue of `SUBERR-NORMAL-01`.
+
+Cancelling the region is not enough on its own: an implementation that cancelled the child and *also*
+emitted the normal outgoing token would satisfy every count above while running both routes. -/
+theorem normal_output_is_unreachable_on_the_deadline_arm :
+    (deadlineVictoryState.tokens.map fun token => token.placeId.value) = [] ∧
+      deadlineVictoryState.waits.all (fun wait =>
+        wait.task.id.value ≠ "AfterScope") = true := by decide +kernel
+
+/-- A firing one millisecond early leaves the armed triple exactly intact, deadline included, and still able to win at its exact instant.
+
+The interesting half is the *second* conjunct: a refusal that consumed the Timer occurrence while
+rejecting the transition would also leave the triple looking untouched at every other observation. -/
+theorem an_early_firing_preserves_the_armed_triple :
+    (applyStimulus scenarioClosureLimit program armedState
+        (.fireTimer ⟨"fire-early"⟩ deadlineId 999)).state = armedState ∧
+      (applyStimulus scenarioClosureLimit program armedState
+        (.fireTimer ⟨"fire-early"⟩ deadlineId 999)).outcome = .rejected := by
+  decide +kernel
+
+/-- Interruption does **not** preserve child-scope-owned runtime state, which is the exact converse of the Error capsule's regional-cancellation preservation claim.
+
+This checked non-law exists to stop the two families from being restated as one over-general
+preservation theorem: the Error capsule preserves runtime history across an interrupting handler, while
+this arm must destroy the child region's own waits. A single law covering both would be false here. -/
+theorem interruption_does_not_preserve_child_scope_state :
+    armedState.waits ≠ deadlineVictoryState.waits ∧
+      armedState.scopeOccurrences ≠ deadlineVictoryState.scopeOccurrences := by
+  decide +kernel
+
+/-- Firing the deadline after the child already completed in time. -/
+def lateDeadlineResult : StimulusResult :=
+  applyStimulus scenarioClosureLimit program quiescentVictoryState
+    (.fireTimer ⟨"late-deadline"⟩ deadlineId 1000)
+
+/-- Completing the child task after the deadline already cancelled its region. -/
+def lateChildTaskResult : StimulusResult :=
+  applyStimulus scenarioClosureLimit program deadlineVictoryState
+    (.completeUserTaskInstance ⟨"late-child-task"⟩ childTaskId [])
+
+/-- After either victory the sibling stimulus is ineligible and is rejected with exact state preservation, so no pair can win twice. -/
+theorem each_victory_makes_its_sibling_ineligible :
+    lateDeadlineResult.outcome = .rejected ∧
+      lateDeadlineResult.state = quiescentVictoryState ∧
+      lateChildTaskResult.outcome = .rejected ∧
+      lateChildTaskResult.state = deadlineVictoryState := by decide +kernel
+
 end BpmnSemantics.SubProcessBoundaryTimerConformance
