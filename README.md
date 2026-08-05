@@ -160,14 +160,28 @@ The complete gate matrix and evidence boundaries are in [TESTING-SPEC.md](docs/T
 
 ## Run the Temporal MVP
 
-Start or select an existing Temporal service separately; the BPMN runtime never binds a server port. The maintained example expects `localhost:7233`, Namespace `default`, and a fresh semantic Process-instance ID:
+Running the product surface needs far less than developing it: the full [Quick start](#quick-start) prerequisites above are for the verification gates, while the runtime path is TypeScript only and needs no Lean, Java, or reference checkout.
+
+To run it you need:
+
+- Node `24.18.0` and pnpm `11.20.0`, as pinned in [package.json](package.json);
+- the **Temporal CLI**, which provides the local development server. Install it with `brew install temporal`, or follow [the Temporal CLI documentation](https://docs.temporal.io/cli#install). The BPMN runtime itself never starts a server or binds a server port, so an already-running Temporal service is equally fine.
 
 ```sh
+./scripts/pnpm.sh install --frozen-lockfile
 temporal server start-dev --headless
 ./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
 ```
 
-Run those commands in separate terminals. Edit the explicit `temporal` fields or `process.instanceId` in a copied config when needed. The [MVP specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md#running-the-maintained-demonstration) documents the supported BPMN/data subset, event records, exit codes, and the unsupported-model demonstration.
+Run the server and the BPMN command in separate terminals. The maintained examples expect `localhost:7233`, Namespace `default`, and a fresh semantic Process-instance ID; edit the explicit `temporal` fields or `process.instanceId` in a copied config when either differs, because Workflow ID reuse is deliberately rejected.
+
+One example needs no Temporal service at all and demonstrates that an unsupported model is rejected before any connection is opened:
+
+```sh
+./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/unsupported.json
+```
+
+Every registered semantic profile has at least one example in [examples/temporal-mvp](examples/temporal-mvp); pick any of them. The [MVP specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md#running-the-maintained-demonstration) documents the supported BPMN and data subset, the emitted event records, the exit codes, and the bounded feature set this command does and does not claim.
 
 ## Repository guide
 
