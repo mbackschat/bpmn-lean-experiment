@@ -1,4 +1,4 @@
-# BPMN Lean Experiment — Proto-MVP Reviewer's Guide
+# BPMN Lean Experiment — MVP Reviewer's Guide
 
 ## Status
 
@@ -76,7 +76,7 @@ For a management and architecture review:
 
 1. Read [PROJECT-DESIGN.md](PROJECT-DESIGN.md), especially the layered architecture, authority model, Lean rationale, and independence boundary.
 2. Read [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) for the exact implemented and absent surfaces.
-3. Read the [Proto-MVP milestone](PLAN.md#reviewer-proto-mvp-milestone) and current checkpoint in [PLAN.md](PLAN.md).
+3. Read the [reviewer MVP milestone](PLAN.md#reviewer-proto-mvp-milestone) and current checkpoint in [PLAN.md](PLAN.md).
 4. Use the [capsule registry](capsules/README.md) to inspect the specifications governing any capability you probe; the representative walkthrough is owned by the [Call Activity specification](capsules/CALL-ACTIVITY-SPEC.md).
 5. Inspect the complete target and mutation requirements in [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline).
 
