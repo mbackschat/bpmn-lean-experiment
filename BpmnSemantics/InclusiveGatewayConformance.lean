@@ -115,7 +115,7 @@ def wronglyPairedProgram : Program :=
 
 theorem exact_checked_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
-  decide +kernel
+  native_decide
 
 theorem lowering_derives_branch_local_join_inputs :
     program.operations.find? (fun operation =>
@@ -135,12 +135,12 @@ theorem lowering_derives_branch_local_join_inputs :
             expectedJoinInput := ⟨"place:Flow_Default_Join"⟩
             origin := { elementId := ⟨"Flow_Default"⟩ } }
           "Split") := by
-  decide +kernel
+  native_decide
 
 theorem permuted_branch_pairing_fails_definition_binding :
     programWellFormed wronglyPairedProgram = true ∧
       definitionBindingValid checkedProcess wronglyPairedProgram = false := by
-  decide +kernel
+  native_decide
 
 theorem one_true_selects_exactly_one_branch :
     oneWaiting.outcome = .committed ∧
@@ -148,7 +148,7 @@ theorem one_true_selects_exactly_one_branch :
       oneWaiting.state.waits.map (·.task.id.value) = ["Task_A"] ∧
       oneWaiting.state.selectedBranchSets.map (·.expectedInputs) =
         [[⟨"place:Flow_A_Join"⟩]] := by
-  decide +kernel
+  native_decide
 
 theorem both_true_selects_both_branches :
     bothWaiting.outcome = .committed ∧
@@ -156,14 +156,14 @@ theorem both_true_selects_both_branches :
       bothWaiting.state.waits.map (·.task.id.value) = ["Task_A", "Task_B"] ∧
       bothWaiting.state.selectedBranchSets.map (·.expectedInputs) =
         [[⟨"place:Flow_A_Join"⟩, ⟨"place:Flow_B_Join"⟩]] := by
-  decide +kernel
+  native_decide
 
 theorem all_false_selects_only_default :
     defaultWaiting.outcome = .committed ∧
       defaultWaiting.state.waits.map (·.task.id.value) = ["Task_Default"] ∧
       defaultWaiting.state.selectedBranchSets.map (·.expectedInputs) =
         [[⟨"place:Flow_Default_Join"⟩]] := by
-  decide +kernel
+  native_decide
 
 theorem longest_start_closure_is_four_steps :
     (applyStimulus 3 program initialState
@@ -172,7 +172,7 @@ theorem longest_start_closure_is_four_steps :
       (applyStimulus 4 program initialState
         (start [present "takeA", present "takeB"])).internalStepBoundExceeded =
         false := by
-  decide +kernel
+  native_decide
 
 private def bothSplitState : RuntimeState :=
   (applyStimulus 2 program initialState
@@ -190,32 +190,32 @@ theorem both_task_activation_orders_have_equal_runtime_and_observation :
     activatedAThenB = activatedBThenA ∧
       observeStableState program activatedAThenB =
         observeStableState program activatedBThenA := by
-  decide +kernel
+  native_decide
 
 theorem first_arrival_does_not_complete_selected_join :
     bothAfterA.outcome = .committed ∧
       bothAfterA.state.control = .running instanceId ∧
       bothAfterA.state.waits.map (·.task.id.value) = ["Task_B"] ∧
       bothAfterA.state.selectedBranchSets.length = 1 := by
-  decide +kernel
+  native_decide
 
 theorem both_completion_orders_reach_the_same_terminal_state :
     bothAThenB.state = bothBThenA.state ∧
       bothAThenB.state.control = .completed instanceId ∧
       bothAThenB.state.selectedBranchSets = [] := by
-  decide +kernel
+  native_decide
 
 theorem terminal_closure_uses_three_internal_steps :
     (applyStimulus 2 program bothAfterA.state
         (completeTask "Task_B")).internalStepBoundExceeded = true ∧
       (applyStimulus 3 program bothAfterA.state
         (completeTask "Task_B")).internalStepBoundExceeded = false := by
-  decide +kernel
+  native_decide
 
 theorem synchronize_without_selection_record_is_disabled :
     let stranded := { bothAfterA.state with selectedBranchSets := [] }
     synchronizeSelectedState? stranded ⟨"place:Flow_End"⟩ "Split" = none := by
-  decide +kernel
+  native_decide
 
 theorem live_selection_blocks_scope_quiescence :
     let owner := rootScopeOccurrenceId instanceId processId
@@ -226,6 +226,6 @@ theorem live_selection_blocks_scope_quiescence :
           [{ owner, selectionKey := "Split",
              expectedInputs := [⟨"place:Flow_A_Join"⟩] }] }
     scopeQuiescent otherwiseQuiescent owner = false := by
-  decide +kernel
+  native_decide
 
 end BpmnSemantics.InclusiveGatewayConformance

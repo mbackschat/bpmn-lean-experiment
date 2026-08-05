@@ -291,7 +291,9 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
  * the fixtures lock, not a tactic swap.
  */
 const recordedNativeDecideSites = Object.freeze([
+  Object.freeze({ path: "BpmnSemantics/EventBasedGatewayConformance.lean", sites: 25 }),
   Object.freeze({ path: "BpmnSemantics/SemanticProcessJsonConformance.lean", sites: 15 }),
+  Object.freeze({ path: "BpmnSemantics/InclusiveGatewayConformance.lean", sites: 13 }),
   Object.freeze({
     path: "BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean",
     sites: 1,
