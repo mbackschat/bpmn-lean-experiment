@@ -21,7 +21,8 @@ bpmn_path="scenarios/user-task-discovery-completion/process.bpmn"
 # exceeds them on an 8-core host. Raising this is a per-machine decision for hosts with spare RAM:
 # export LEAN_NUM_THREADS before the gate and measure the peak rather than assuming it scales
 # linearly.
-LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-1}"
+eval "$(./scripts/pinned-toolchain.sh)"
+LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-$required_lean_build_threads}"
 export LEAN_NUM_THREADS
 
 ./scripts/doctor.sh verify

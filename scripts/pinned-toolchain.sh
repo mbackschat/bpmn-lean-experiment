@@ -23,10 +23,18 @@ required_pnpm_version=$(
   sed -n 's/^[[:space:]]*"packageManager"[[:space:]]*:[[:space:]]*"pnpm@\([^"]*\)".*/\1/p' "$manifest"
 )
 
-if test -z "$required_node_version" || test -z "$required_pnpm_version"; then
+# Lean build parallelism shares the toolchain pins' single-owner problem: the gate and the pnpm
+# wrapper both need it, so a restated literal could leave one of them unpinned.
+required_lean_build_threads=$(
+  sed -n 's/^[[:space:]]*"leanBuildThreads"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
+)
+
+if test -z "$required_node_version" || test -z "$required_pnpm_version" ||
+    test -z "$required_lean_build_threads"; then
   echo "pinned-toolchain.sh read no Node or pnpm pin from $manifest" >&2
   exit 1
 fi
 
 printf 'required_node_version=%s\n' "$required_node_version"
 printf 'required_pnpm_version=%s\n' "$required_pnpm_version"
+printf 'required_lean_build_threads=%s\n' "$required_lean_build_threads"

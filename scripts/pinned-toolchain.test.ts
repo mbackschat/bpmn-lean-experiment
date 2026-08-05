@@ -57,7 +57,11 @@ async function ownerPins(): Promise<ManifestPins> {
   assert.equal(manager, "pnpm");
   assert.match(pnpmVersion ?? "", /^\d+\.\d+\.\d+$/u);
   assert.match(manifest.engines.node ?? "", /^\d+\.\d+\.\d+$/u);
-  return { node: manifest.engines.node ?? "", pnpm: pnpmVersion ?? "" };
+  return {
+    node: manifest.engines.node ?? "",
+    pnpm: pnpmVersion ?? "",
+    leanThreads: manifest.config?.leanBuildThreads ?? "",
+  };
 }
 
 test("resolves the manifest pins for shell consumers", async () => {
@@ -72,7 +76,9 @@ test("resolves the manifest pins for shell consumers", async () => {
   // a second `"node"` key or a reordered `packageManager` would drift here first.
   assert.equal(
     resolved.stdout,
-    `required_node_version=${pins.node}\nrequired_pnpm_version=${pins.pnpm}\n`,
+    `required_node_version=${pins.node}\n` +
+      `required_pnpm_version=${pins.pnpm}\n` +
+      `required_lean_build_threads=${pins.leanThreads}\n`,
   );
 });
 

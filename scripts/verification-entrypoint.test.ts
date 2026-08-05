@@ -122,10 +122,23 @@ test("the complete gate pins Lean build parallelism", async () => {
     fileURLToPath(new URL("../scripts/verify.sh", import.meta.url)),
     "utf8",
   );
-  assert.match(
-    gate,
-    /LEAN_NUM_THREADS="\$\{LEAN_NUM_THREADS:-\d+\}"/u,
-    "verify.sh must pin LEAN_NUM_THREADS with an overridable default",
+  const wrapper = await readFile(
+    fileURLToPath(new URL("../scripts/pnpm.sh", import.meta.url)),
+    "utf8",
   );
-  assert.match(gate, /^export LEAN_NUM_THREADS$/mu, "the pin must be exported to lake");
+  // Derived, never restated: a literal here could drift from the manifest and leave one entry point
+  // building Lean at the host's core count. The pnpm wrapper is checked too, because `test:semantic`
+  // runs `lake test`, which builds the proofs on a cold tree and reaches the same peak.
+  for (const [name, script] of [["verify.sh", gate], ["pnpm.sh", wrapper]] as const) {
+    assert.match(
+      script,
+      /LEAN_NUM_THREADS="\$\{LEAN_NUM_THREADS:-\$required_lean_build_threads\}"/u,
+      `${name} must derive the Lean thread pin from the manifest, not restate a literal`,
+    );
+    assert.match(
+      script,
+      /^export LEAN_NUM_THREADS$/mu,
+      `${name} must export the pin so lake inherits it`,
+    );
+  }
 });

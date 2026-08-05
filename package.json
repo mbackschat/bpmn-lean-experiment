@@ -5,6 +5,9 @@
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@11.20.0",
+  "config": {
+    "leanBuildThreads": "1"
+  },
   "engines": {
     "node": "24.18.0",
     "pnpm": "11.20.0"
