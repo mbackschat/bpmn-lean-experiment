@@ -74,4 +74,91 @@ theorem armBoundedScope_adds_one_deadline (state : RuntimeState)
       state.timerWaits.length + 1 := by
   simp [armScopeDeadline]
 
+/-- Every committed bounded-scope operation, as the child scope it enters paired with its deadline. -/
+def boundedScopeOperations (program : Program) :
+    List (DefinitionScopeId × BoundaryTimerArm) :=
+  program.operations.filterMap fun
+    | .enterBoundedScope _ _ _ _ childScopeId boundaryTimer =>
+        some (childScopeId, boundaryTimer)
+    | _ => none
+
+/-- True when the occurrence names the boundary Timer of a committed bounded-scope operation. This routes an arriving deadline into this family instead of to the ordinary Timer transition, which would emit a token and leave the child region live. -/
+def isBoundedScopeDeadlineDefinition (program : Program) (elementId : NodeId) :
+    Bool :=
+  (boundedScopeOperations program).any fun operation =>
+    decide (operation.2.elementId = elementId)
+
+/-- The live deadline named by this full occurrence identity. -/
+def boundedScopeDeadlineWait? (state : RuntimeState)
+    (timerId : TimerOccurrenceId) : Option TimerWait :=
+  state.timerWaits.find? fun candidate =>
+    decide (
+      candidate.processInstanceId = timerId.processInstanceId &&
+        candidate.elementId.value = timerId.elementId.value &&
+        candidate.activation = timerId.activation)
+
+/-- The committed operation whose boundary Timer this deadline realizes. -/
+def boundedScopeDefinitionFor? (program : Program) (deadline : TimerWait) :
+    Option (DefinitionScopeId × BoundaryTimerArm) :=
+  (boundedScopeOperations program).find? fun candidate =>
+    decide (candidate.2.elementId = deadline.elementId)
+
+/-- The child occurrence this deadline bounds.
+
+Matched on the deadline's own activation ordinal, which atomic arming keeps equal to the child's, so a
+deadline left from an earlier activation cannot claim a later child region. Each lookup is a named
+definition rather than an inline `find?` inside a `do` block, so a proof can discharge one step at a
+time; the `do` form left the elaborated lambdas unmatchable by a `cases` hypothesis. -/
+def boundedScopeChildFor? (state : RuntimeState)
+    (childScopeId : DefinitionScopeId) (deadline : TimerWait) :
+    Option ScopeOccurrenceId :=
+  (state.scopeOccurrences.find? fun occurrence =>
+    decide (
+      occurrence.id.definitionScopeId = childScopeId &&
+        occurrence.id.activation = deadline.activation &&
+        occurrence.parent = some deadline.owner)).map (·.id)
+
+/-- Commits the deadline arm at its exact deadline, cancelling the live child region.
+
+Clause 13.5.3's order — consume the Timer occurrence, cancel every non-final owner of the child
+region, remove the child occurrence, then produce the boundary token in the parent scope — is one
+atomic transition with no observable intermediate state. The deadline is owned by the *parent*
+occurrence and therefore survives regional cancellation, so it is erased explicitly rather than by
+the shared subtree removal. -/
+def interruptBoundedScope? (program : Program) (state : RuntimeState)
+    (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) : Option RuntimeState :=
+  match state.control, boundedScopeDeadlineWait? state timerId with
+  | .running _, some deadline =>
+      match boundedScopeDefinitionFor? program deadline with
+      | none => none
+      | some definition =>
+          match boundedScopeChildFor? state definition.1 deadline with
+          | none => none
+          | some child =>
+              if logicalTimeMs = deadline.deadlineMs then
+                let cancelled :=
+                  interruptScope state child deadline.owner definition.2.output
+                some
+                  { cancelled with
+                    timerWaits := cancelled.timerWaits.erase deadline
+                    logicalTimeMs := deadline.deadlineMs }
+              else none
+  | _, _ => none
+
+/-- The deadline arm refuses every firing that is not exactly due, for any program, state, and timer. Quantified rather than fixture-shaped, because a pre-due firing must leave the armed triple able to win later at its exact instant. -/
+theorem interruptBoundedScope_none_of_not_due (program : Program)
+    (state : RuntimeState) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
+    (deadline : TimerWait)
+    (found : boundedScopeDeadlineWait? state timerId = some deadline)
+    (notDue : logicalTimeMs ≠ deadline.deadlineMs) :
+    interruptBoundedScope? program state timerId logicalTimeMs = none := by
+  unfold interruptBoundedScope?
+  cases state.control <;> simp_all
+  cases definitionFound : boundedScopeDefinitionFor? program deadline with
+  | none => simp
+  | some definition =>
+      cases childFound : boundedScopeChildFor? state definition.1 deadline with
+      | none => simp [childFound]
+      | some child => simp [childFound]
+
 end BpmnSemantics.SemanticProcess

@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.BoundedScope
 import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.Message
 import BpmnSemantics.SemanticProcess.EffectCompletion
@@ -45,6 +46,8 @@ def fireTimer (program : Program) (state : RuntimeState)
         eventRaceTimerWinner? program state timerId logicalTimeMs
       else if isBoundaryTimerDefinition program wait.elementId then
         interruptBoundedUserTask? program state timerId logicalTimeMs
+      else if isBoundedScopeDeadlineDefinition program wait.elementId then
+        interruptBoundedScope? program state timerId logicalTimeMs
       else if logicalTimeMs = wait.deadlineMs &&
           timerDefinitionMatches program wait then
           some

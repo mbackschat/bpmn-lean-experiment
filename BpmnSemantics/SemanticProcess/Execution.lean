@@ -458,10 +458,16 @@ theorem timer_identity_or_time_mismatch_is_rejected
             wait.elementId.value = submittedTimerId.elementId.value
           · by_cases activationMatches :
               wait.activation = submittedTimerId.activation
-            · simp [applyStimulus, admitStimulus, fireTimer,
-                singletonTimerWaitingState, initialState,
-                processMatches, elementMatches,
-                activationMatches, timeMismatch]
+            · -- The bounded-scope deadline arm is unreachable here structurally rather than by
+              -- timing: this state holds one root occurrence, so no child region exists to cancel.
+              -- Splitting on the definition lookup lets both arms reduce, since each yields `none`.
+              cases definitionFound : boundedScopeDefinitionFor? program wait <;>
+                simp [applyStimulus, admitStimulus, fireTimer,
+                  singletonTimerWaitingState, initialState,
+                  processMatches, elementMatches,
+                  activationMatches, timeMismatch, definitionFound,
+                  interruptBoundedScope?, boundedScopeDeadlineWait?,
+                  boundedScopeChildFor?]
             · have noMatch : ¬ (
                   (wait.processInstanceId =
                       submittedTimerId.processInstanceId ∧
