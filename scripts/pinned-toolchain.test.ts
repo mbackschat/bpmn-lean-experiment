@@ -46,12 +46,13 @@ async function readProjectFile(relativePath: string): Promise<string> {
   return readFile(path.join(projectRoot, relativePath), "utf8");
 }
 
-type ManifestPins = Readonly<{ node: string; pnpm: string }>;
+type ManifestPins = Readonly<{ node: string; pnpm: string; leanThreads: string }>;
 
 async function ownerPins(): Promise<ManifestPins> {
   const manifest = JSON.parse(await readProjectFile("package.json")) as Readonly<{
     packageManager: string;
     engines: Readonly<Record<string, string>>;
+    config: Readonly<Record<string, string>>;
   }>;
   const [manager, pnpmVersion] = manifest.packageManager.split("@");
   assert.equal(manager, "pnpm");
@@ -60,7 +61,7 @@ async function ownerPins(): Promise<ManifestPins> {
   return {
     node: manifest.engines.node ?? "",
     pnpm: pnpmVersion ?? "",
-    leanThreads: manifest.config?.leanBuildThreads ?? "",
+    leanThreads: manifest.config.leanBuildThreads ?? "",
   };
 }
 
