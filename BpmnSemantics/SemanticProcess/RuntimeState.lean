@@ -580,48 +580,4 @@ def enterScopeState? (state : RuntimeState) (input childEntry : ControlPlaceId)
           state.scopeActivations.filter fun value =>
             decide (value.scopeId ≠ childScopeId) }
 
-def scopeQuiescent (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
-  !(state.tokens.any fun token => token.owner == owner) &&
-    !(state.waits.any fun wait => wait.owner == owner) &&
-    !(state.messageWaits.any fun wait => wait.owner == owner) &&
-    !(state.timerWaits.any fun wait => wait.owner == owner) &&
-    !(state.effectWaits.any fun wait => wait.owner == owner) &&
-    !(state.selectedBranchSets.any fun record => record.owner == owner) &&
-    !(state.eventRaces.any fun race => race.owner == owner) &&
-    !(state.calledProcessOccurrences.any fun record => record.caller == owner) &&
-    !(state.scopeOccurrences.any fun occurrence => occurrence.parent == some owner)
-
-def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)
-    (parentOutput : Option ControlPlaceId) : Option RuntimeState := do
-  let occurrence ← match state.scopeOccurrences.filter fun occurrence =>
-      decide (occurrence.id.definitionScopeId = scopeId) with
-    | [occurrence] => some occurrence
-    | _ => none
-  if !scopeQuiescent state occurrence.id then none
-  else match occurrence.parent, parentOutput, state.control with
-    | none, none, .running instanceId =>
-        if state.initiationPending then none
-        else some ({ state with
-            control := .completed instanceId
-            scopeOccurrences := [] })
-    | some parent, some output, .running _ =>
-        if state.scopeOccurrences.any fun candidate => candidate.id == parent then
-          some ({ state with
-              tokens := addToken state.tokens output parent
-              scopeOccurrences := state.scopeOccurrences.filter fun candidate =>
-                decide (candidate.id ≠ occurrence.id) })
-        else none
-    | _, _, _ => none
-
-/-- A uniquely identified live scope cannot complete while any owned token, wait, or child occurrence remains. -/
-theorem completeScopeState_refuses_nonquiescent
-    (state : RuntimeState) (scopeId : DefinitionScopeId)
-    (parentOutput : Option ControlPlaceId) (occurrence : RuntimeScopeOccurrence)
-    (unique :
-      state.scopeOccurrences.filter (fun candidate =>
-        decide (candidate.id.definitionScopeId = scopeId)) = [occurrence])
-    (blocked : scopeQuiescent state occurrence.id = false) :
-    completeScopeState? state scopeId parentOutput = none := by
-  simp [completeScopeState?, unique, blocked]
-
 end BpmnSemantics.SemanticProcess

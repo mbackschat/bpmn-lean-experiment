@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.CallActivityIdentity
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Called-Process Call Activity runtime semantics
 

@@ -233,6 +233,18 @@ theorem interruption_does_not_preserve_child_scope_state :
       armedState.scopeOccurrences ≠ deadlineVictoryState.scopeOccurrences := by
   decide +kernel
 
+/-- Neither victory rewinds an activation counter or invents End history.
+
+The scope counter is what keeps a cancelled child from being re-entered under its old ordinal, and the
+timer counter is what keeps a withdrawn deadline from being re-armed under its own. Both victories are
+checked, because a counter reset would be invisible in the follow-on identity that separates them. -/
+theorem neither_victory_rewinds_a_counter :
+    quiescentVictoryState.scopeActivations = armedState.scopeActivations ∧
+      quiescentVictoryState.timerActivations = armedState.timerActivations ∧
+      deadlineVictoryState.scopeActivations = armedState.scopeActivations ∧
+      deadlineVictoryState.timerActivations = armedState.timerActivations := by
+  decide +kernel
+
 /-- Firing the deadline after the child already completed in time. -/
 def lateDeadlineResult : StimulusResult :=
   applyStimulus scenarioClosureLimit program quiescentVictoryState

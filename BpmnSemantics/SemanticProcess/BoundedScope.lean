@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Interrupting Sub-Process boundary Timer
 
@@ -346,6 +346,122 @@ theorem interruptBoundedScope_sound (program : Program) (before after : RuntimeS
                         childActivation⟩
                       (parentOwned child deadline definition.2.output)
                   · simp at success
+
+private theorem boundedScopeDefinitionForChild_pairs (program : Program)
+    (childScopeId : DefinitionScopeId)
+    (definition : DefinitionScopeId × BoundaryTimerArm)
+    (found : boundedScopeDefinitionForChild? program childScopeId = some definition) :
+    definition ∈ boundedScopeOperations program ∧ definition.1 = childScopeId := by
+  unfold boundedScopeDefinitionForChild? at found
+  exact ⟨List.mem_of_find?_eq_some found, by simpa using List.find?_some found⟩
+
+private theorem parentOwnedDeadline_matches (state : RuntimeState)
+    (child parent : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm)
+    (deadline : TimerWait)
+    (found : parentOwnedDeadline? state child parent boundaryTimer = some deadline) :
+    deadline ∈ state.timerWaits ∧
+      deadline.elementId = boundaryTimer.elementId ∧
+      deadline.activation = child.activation := by
+  unfold parentOwnedDeadline? at found
+  have property := List.find?_some found
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at property
+  exact ⟨List.mem_of_find?_eq_some found, property.1.1, property.2⟩
+
+private theorem boundedScopeChildOccurrence_scope (state : RuntimeState)
+    (childScopeId : DefinitionScopeId)
+    (occurrence : ScopeOccurrenceId × ScopeOccurrenceId)
+    (found : boundedScopeChildOccurrence? state childScopeId = some occurrence) :
+    occurrence.1.definitionScopeId = childScopeId := by
+  unfold boundedScopeChildOccurrence? at found
+  obtain ⟨candidate, candidateFound, mapped⟩ := Option.bind_eq_some_iff.mp found
+  obtain ⟨parent, _, parentMapped⟩ := Option.map_eq_some_iff.mp mapped
+  have property := List.find?_some candidateFound
+  simp only [decide_eq_true_eq] at property
+  exact parentMapped ▸ property
+
+/-- Every quiescence victory the evaluator produces is permitted by the declarative relation.
+
+`running` is an explicit hypothesis because the shared scope completion decides it and does not export
+it; the dispatcher that reaches this transition has already established it. The deadline's liveness in
+`before` is *derived* rather than assumed, through the shared completion's component preservation: the
+evaluator finds the deadline in the completed state, and completion leaves `timerWaits` untouched. -/
+theorem completeBoundedScope_sound (program : Program) (before after : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (instanceId : SemanticId) (running : before.control = .running instanceId)
+    (bounded : (boundedScopeDefinitionForChild? program scopeId).isSome)
+    (success : completeBoundedScope? program before scopeId parentOutput = some after) :
+    BoundedScopeVictoryStep program before after := by
+  unfold completeBoundedScope? at success
+  cases completion : completeScopeState? before scopeId parentOutput with
+  | none => simp [completion] at success
+  | some completed =>
+      cases definitionFound : boundedScopeDefinitionForChild? program scopeId with
+      | none => simp [definitionFound] at bounded
+      | some definition =>
+          cases occurrenceFound : boundedScopeChildOccurrence? before scopeId with
+          | none =>
+              simp [completion, definitionFound, occurrenceFound] at success
+          | some occurrence =>
+              cases deadlineFound :
+                  parentOwnedDeadline? completed occurrence.1 occurrence.2
+                    definition.2 with
+              | none =>
+                  simp [completion, definitionFound, occurrenceFound,
+                    deadlineFound] at success
+              | some deadline =>
+                  simp only [completion, definitionFound, occurrenceFound,
+                    deadlineFound, Option.some.injEq] at success
+                  subst success
+                  obtain ⟨definitionLive, childScope⟩ :=
+                    boundedScopeDefinitionForChild_pairs program scopeId definition
+                      definitionFound
+                  obtain ⟨deadlineInCompleted, elementMatches, activationMatches⟩ :=
+                    parentOwnedDeadline_matches completed occurrence.1 occurrence.2
+                      definition.2 deadline deadlineFound
+                  obtain ⟨timersPreserved, _⟩ :=
+                    completeScopeState_preserves_unrelated_components before completed
+                      scopeId parentOutput completion
+                  have occurrenceScope :=
+                    boundedScopeChildOccurrence_scope before scopeId occurrence
+                      occurrenceFound
+                  exact .quiescence before completed instanceId occurrence.1 deadline
+                    parentOutput running (timersPreserved ▸ deadlineInCompleted)
+                    ⟨definition, definitionLive,
+                      childScope.trans occurrenceScope.symm, elementMatches.symm,
+                      activationMatches⟩
+                    (by rw [occurrenceScope]; exact completion) deadlineInCompleted
+
+/-- Neither arm rewinds an activation counter and neither invents End history, so a withdrawn occurrence can never be reissued and no victory is mistaken for a completion event.
+
+Both counters are load-bearing: the scope counter keeps a cancelled child from being re-entered under
+its old ordinal, and the timer counter keeps a withdrawn deadline from being re-armed under its own. -/
+theorem bounded_scope_victory_preserves_counters_and_history (program : Program)
+    (before after : RuntimeState)
+    (step : BoundedScopeVictoryStep program before after) :
+    after.scopeActivations = before.scopeActivations ∧
+      after.timerActivations = before.timerActivations ∧
+      after.endOccurrences = before.endOccurrences := by
+  cases step with
+  | quiescence completed _ _ _ parentOutput _ _ _ completion _ =>
+      obtain ⟨_, _, scopes, timers, ends, _⟩ :=
+        completeScopeState_preserves_unrelated_components _ completed _ parentOutput
+          completion
+      exact ⟨scopes, timers, ends⟩
+  | deadline => exact ⟨rfl, rfl, rfl⟩
+
+/-- The arms are separated by logical time: quiescence preserves it while the deadline arm publishes exactly its own deadline. -/
+theorem bounded_scope_victory_logical_time (program : Program)
+    (before after : RuntimeState)
+    (step : BoundedScopeVictoryStep program before after) :
+    after.logicalTimeMs = before.logicalTimeMs ∨
+      ∃ deadline ∈ before.timerWaits, after.logicalTimeMs = deadline.deadlineMs := by
+  cases step with
+  | quiescence completed _ _ _ parentOutput _ _ _ completion _ =>
+      exact .inl
+        (completeScopeState_preserves_unrelated_components _ completed _ parentOutput
+          completion).2.2.2.2.2
+  | deadline _ _ deadline _ _ deadlineLive _ _ =>
+      exact .inr ⟨deadline, deadlineLive, rfl⟩
 
 /-- No victory half-withdraws the triple: both arms retire exactly the deadline they were armed with, and that deadline is paired to the child occurrence by a committed operation rather than by proximity.
 
