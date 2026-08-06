@@ -34,13 +34,22 @@ cleanup() {
 }
 trap cleanup 0 1 2 3 15
 
+# Retries because a single transient stream error otherwise fails the whole
+# provisioning step before any gate runs: on 2026-08-06 a hosted run died on
+# `curl: (92) HTTP/2 stream 1 was not closed cleanly` fetching one archive.
+# `--retry-all-errors` is required for that class, since `--retry` alone covers
+# transient HTTP status codes and timeouts rather than a broken stream. Retrying
+# cannot mask corruption: every file is checked against the tracked manifest
+# before installation.
 fetch_file() {
   relative_path=$1
   source_url=$2
   destination="$download_root/$relative_path"
   mkdir -p "${destination%/*}"
   echo "Fetching $relative_path"
-  curl --fail --location --silent --show-error --output "$destination" "$source_url"
+  curl --fail --location --silent --show-error \
+    --retry 3 --retry-delay 2 --retry-all-errors \
+    --output "$destination" "$source_url"
 }
 
 fetch_file "BPMN-2.0.2.pdf" "https://www.omg.org/spec/BPMN/2.0.2/PDF"

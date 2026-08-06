@@ -101,6 +101,19 @@ jobs:
           test: false
           use-mathlib-cache: false
 
+      - name: Cache the pinned OMG corpus
+        # Every run otherwise downloads all 15 official files from omg.org, on
+        # both platforms, to let the default gate read two of them. That staked
+        # each build on a third-party server: on 2026-08-06 a run died fetching
+        # an archive no default-lane gate opens. A restored corpus weakens
+        # nothing, because setup-external-sources.sh verifies an existing tree
+        # against the tracked manifest instead of fetching it. The key is the
+        # manifest itself, so changing the official set misses and refetches.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ../oss/omg-bpmn-2.0.2
+          key: bpmn-corpus-${{ runner.os }}-${{ hashFiles('docs/reference/bpmn-2.0.2/LOCAL-CORPUS.sha256') }}
+
       - name: Provision pinned external inputs
         run: ./scripts/setup-external-sources.sh verify
 
