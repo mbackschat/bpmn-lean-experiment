@@ -11,9 +11,7 @@
  * Event's wait when a token *reaches* it, and a Boundary Event is never reached. Only the pre-due
  * firing witness discriminates that instant, so it is evidence rather than bookkeeping.
  */
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitBoundedUserTaskOperation,
   SemanticProcessProgram,

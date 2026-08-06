@@ -1,10 +1,7 @@
-import {
-  CheckedNodeKind,
-  SemanticOperationKind,
-  SemanticOriginKind,
-} from "../src/semantic-process-contract.js";
+import { CheckedNodeKind } from "../src/checked-process-contract.js";
+import { SemanticOperationKind, SemanticOriginKind } from "../src/semantic-process-contract.js";
+import type { CheckedNode } from "../src/checked-process-contract.js";
 import type {
-  CheckedNode,
   InvokeProcessOperation,
   ReturnProcessOperation,
 } from "../src/semantic-process-contract.js";

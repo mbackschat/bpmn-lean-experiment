@@ -4,12 +4,8 @@ import {
 import type {
   VariableBinding,
 } from "./contract.js";
-import {
-  SimpleBooleanExpressionKind,
-} from "./semantic-process-contract.js";
-import type {
-  SimpleBooleanExpression,
-} from "./semantic-process-contract.js";
+import { SimpleBooleanExpressionKind } from "./semantic-value-contract.js";
+import type { SimpleBooleanExpression } from "./semantic-value-contract.js";
 
 /** Evaluates one admitted Simple Boolean v1 AST over complete Process bindings. */
 export function evaluateSimpleBooleanExpression(

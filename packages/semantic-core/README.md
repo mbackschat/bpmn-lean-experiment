@@ -33,7 +33,9 @@ The code is split by responsibility:
 
 | File | Responsibility |
 |---|---|
-| [semantic-process-contract.ts](src/semantic-process-contract.ts) | Checked BPMN graph and Semantic Process definition data |
+| [semantic-value-contract.ts](src/semantic-value-contract.ts) | Value shapes the checked graph and the program carry unchanged |
+| [checked-process-contract.ts](src/checked-process-contract.ts) | Checked BPMN graph: the admitted representation still in BPMN elements |
+| [semantic-process-contract.ts](src/semantic-process-contract.ts) | Semantic Process IL: operations, control places, and program data |
 | [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario/program validation and identity admission |
 | [semantic-process-operation-admission.ts](src/semantic-process-operation-admission.ts) | Closed operation-shape, payload, reference, and origin validation |
 | [semantic-process-graph-admission.ts](src/semantic-process-graph-admission.ts) | Topology-independent producer/consumer, reachability, co-reachability, and acyclicity validation |

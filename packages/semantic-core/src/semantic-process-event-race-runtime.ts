@@ -7,9 +7,7 @@ import type {
   MessageSubscriptionId,
   TimerOccurrenceId,
 } from "./contract.js";
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitEventRaceOperation,
   SemanticProcessProgram,

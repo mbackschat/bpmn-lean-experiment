@@ -1,9 +1,7 @@
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { DefinitionScope } from "./semantic-value-contract.js";
 import type {
   ControlPlaceScopeOwnership,
-  DefinitionScope,
   OperationScopeOwnership,
   SemanticOperation,
 } from "./semantic-process-contract.js";

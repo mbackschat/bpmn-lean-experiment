@@ -20,19 +20,25 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
  * schemas while every other gate passed.
  */
 test("gives every semantic operation and checked node kind a wire-schema branch", async () => {
-  const contract = await readFile(
-    `${projectRoot}/packages/semantic-core/src/semantic-process-contract.ts`,
-    "utf8",
-  );
+  const [program, checked] = await Promise.all([
+    readFile(
+      `${projectRoot}/packages/semantic-core/src/semantic-process-contract.ts`,
+      "utf8",
+    ),
+    readFile(
+      `${projectRoot}/packages/semantic-core/src/checked-process-contract.ts`,
+      "utf8",
+    ),
+  ]);
   const cases = [
     {
       schema: "semantic-process.schema.json",
-      kinds: declaredEnumValues(contract, "SemanticOperationKind"),
+      kinds: declaredEnumValues(program, "SemanticOperationKind"),
       anchor: "awaitBoundedUserTask",
     },
     {
       schema: "checked-process.schema.json",
-      kinds: declaredEnumValues(contract, "CheckedNodeKind"),
+      kinds: declaredEnumValues(checked, "CheckedNodeKind"),
       anchor: "timerBoundaryEvent",
     },
   ];

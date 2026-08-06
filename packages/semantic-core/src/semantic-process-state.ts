@@ -8,11 +8,11 @@ import type {
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type {
-  BpmnErrorRoute,
   EffectDescriptor,
   MessageChannel,
   VariableMapping,
-} from "./semantic-process-contract.js";
+} from "./semantic-value-contract.js";
+import type { BpmnErrorRoute } from "./semantic-process-contract.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export enum ControlStateKind {

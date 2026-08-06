@@ -290,20 +290,21 @@ Pre-release policy applies: the new operation kind is added atomically across th
 
 Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scripts/document-reviewability.test.ts) recomputes every figure, so a row whose owner changes size fails the gate rather than reading as permanent.
 
-| Owner | Headroom before the review target |
+| Owner | Headroom |
 |---|---:|
 | [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 9 |
-| [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 22 |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 23 |
+| [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 27 |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 61 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 81 |
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 83 |
-| [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 155 |
-| [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 161 |
-| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 180 |
+| [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 157 |
+| [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 163 |
+| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 183 |
+| [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 266 |
 | [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 386 |
+| [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 404 |
 | [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 422 |
-| [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 453 |
+| [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 456 |
 | [Timer Boundary Event source admission](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 515 |
 
 **One of those owners carries the admission inversion, and without changing it this profile cannot be admitted at all.** [The Timer Boundary Event source reader](../../packages/bpmn-source/src/timer-boundary-event-source.ts) today accepts `cancelActivity` only when it is absent or `true` and returns no checked node otherwise, so the inversion is a change to that predicate rather than a new one beside it. [Checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) parses no `cancelActivity` but owns `ownsBoundaryTimerDeadline` and `boundaryTimersAttachToDeadlineOwners`, both currently documented as interrupting-only, and it is the tightest listed owner after the three below.
@@ -311,7 +312,8 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 Three of those owners are close enough that the order of work is constrained, and each condition states when it stops applying rather than being a bare instruction.
 
 - **The Workflow implementation must be extracted before this family's clause is added if that clause exceeds 9 nonblank lines.** Selecting a third deadline family is plausibly one arm of an existing selector, which may fit; adding a branch that does not is what forces the extraction. Measure the intended clause, do not estimate it.
-- **The runtime dispatcher and the Semantic Process contract each take one clause and one type.** The new operation type is roughly the sibling's 11 lines plus two union members, against 23; the dispatcher takes one `case` plus its delegation, against 22. Both fit only if the family's transitions live in their own module, which they must anyway.
+- **The contract owner was the tightest of these and was split before any semantics were written.** At 577 nonblank lines it held two responsibilities — the checked BPMN graph and the Semantic Process IL — against a measured need of about 24 lines and 23 of headroom. The behaviour-preserving split gives the IL, the checked graph, and the value shapes both carry unchanged one owner each, so this capsule's operation type and interruption disposition are no longer written under a size squeeze.
+- **The runtime dispatcher takes one `case` plus its delegation, against 27.** That fits only if the family's transitions live in their own module, which they must anyway.
 - **The family's three transitions belong in a new `semantic-process-monitored-task-runtime.ts` owner**, not in the sibling's file. The two families share an arm shape and no transition, and the sibling's `boundedPair` requires both waits while this family requires a one-sided join, so merging them would put two invariants behind one helper.
 
 If a measured clause exceeds its owner's headroom, land the extraction as its own behavior-preserving commit before the semantic change, so the new work is not written under a size squeeze.

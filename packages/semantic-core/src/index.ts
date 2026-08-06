@@ -16,6 +16,8 @@ export {
 export {
   isBoundedScopeDeadlineDefinition,
 } from "./semantic-process-bounded-scope-runtime.js";
+export * from "./semantic-value-contract.js";
+export * from "./checked-process-contract.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
 export * from "./semantic-process-graph-admission.js";

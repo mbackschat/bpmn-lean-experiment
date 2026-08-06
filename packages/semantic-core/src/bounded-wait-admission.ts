@@ -11,10 +11,7 @@
  * checkable instead of a comment, and it rejects a program that names a boundary Flow while routing
  * the deadline through some other place.
  */
-import {
-  SemanticOperationKind,
-  SemanticOriginKind,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
 import type {
   AwaitBoundedUserTaskOperation,
   EnterBoundedScopeOperation,

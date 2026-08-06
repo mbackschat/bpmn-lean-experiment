@@ -1,10 +1,6 @@
 /** Standalone contract and pairing admission for selected-branch synchronization. */
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
-import type {
-  SemanticOperation,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   isSequenceFlowOrigin,
   isWellFormedSimpleBooleanExpression,

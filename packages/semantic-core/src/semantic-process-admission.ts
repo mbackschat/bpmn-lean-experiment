@@ -12,9 +12,9 @@ import {
   SemanticProcessCompilerId,
   SemanticProcessKind,
 } from "./semantic-process-contract.js";
+import type { DefinitionScope } from "./semantic-value-contract.js";
 import type {
   ControlPlaceScopeOwnership,
-  DefinitionScope,
   OperationScopeOwnership,
   SemanticOperation,
   SemanticProcessProgram,

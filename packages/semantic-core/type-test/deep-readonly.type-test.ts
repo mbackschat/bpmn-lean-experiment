@@ -1,11 +1,7 @@
 import type { DeepReadonly } from "../src/deep-readonly.js";
 import type { RuntimeState } from "../src/semantic-process-state.js";
-import type {
-  SemanticOperation,
-} from "../src/semantic-process-contract.js";
-import {
-  SemanticOperationKind,
-} from "../src/semantic-process-contract.js";
+import type { SemanticOperation } from "../src/semantic-process-contract.js";
+import { SemanticOperationKind } from "../src/semantic-process-contract.js";
 
 type MutableContract = {
   status: "ready";

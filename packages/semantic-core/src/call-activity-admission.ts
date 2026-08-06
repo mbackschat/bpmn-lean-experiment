@@ -1,9 +1,6 @@
-import {
-  SemanticOperationKind,
-  SemanticOriginKind,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
+import type { DefinitionScope } from "./semantic-value-contract.js";
 import type {
-  DefinitionScope,
   InvokeProcessOperation,
   ReturnProcessOperation,
   SemanticOperation,

@@ -2,12 +2,8 @@ import {
   addActivityVariableScope,
   evaluateInputMappings,
 } from "./semantic-process-data.js";
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
-import type {
-  SemanticOperation,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   compareEffectWaits,
   compareTimerWaits,

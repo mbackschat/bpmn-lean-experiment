@@ -4,13 +4,8 @@ import {
 import type {
   DeliverMessageStimulus,
 } from "./contract.js";
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
-import type {
-  SemanticOperation,
-  SemanticProcessProgram,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   sameMessageChannel,
 } from "./message-channel.js";

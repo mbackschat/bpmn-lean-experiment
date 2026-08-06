@@ -26,9 +26,7 @@ import {
   supportsSemanticProcessExecution,
   supportsSemanticProcessScenario,
 } from "./semantic-process-admission.js";
-import type {
-  SemanticProcessProgram,
-} from "./semantic-process-contract.js";
+import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   ControlStateKind,
   applyStimulus,

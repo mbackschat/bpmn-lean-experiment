@@ -66,7 +66,7 @@ export type DeliverMessageStimulus = DeepReadonly<{
   kind: StimulusKind.DeliverMessage;
   commandId: string;
   subscriptionId: MessageSubscriptionId;
-  channel: import("./semantic-process-contract.js").MessageChannel;
+  channel: import("./semantic-value-contract.js").MessageChannel;
 }>;
 
 export type TimerOccurrenceId = OccurrenceId;
@@ -189,7 +189,7 @@ export type CompleteUserTaskInstanceInteraction = DeepReadonly<{
 export type DeliverMessageInteraction = DeepReadonly<{
   kind: StimulusKind.DeliverMessage;
   subscriptionId: MessageSubscriptionId;
-  channel: import("./semantic-process-contract.js").MessageChannel;
+  channel: import("./semantic-value-contract.js").MessageChannel;
 }>;
 
 export type EnabledInteraction =
@@ -198,7 +198,7 @@ export type EnabledInteraction =
 
 export type OpenMessageSubscription = DeepReadonly<{
   id: MessageSubscriptionId;
-  channel: import("./semantic-process-contract.js").MessageChannel;
+  channel: import("./semantic-value-contract.js").MessageChannel;
 }>;
 
 export type OpenTimer = DeepReadonly<{
@@ -208,7 +208,7 @@ export type OpenTimer = DeepReadonly<{
 
 export type OpenEffect = DeepReadonly<{
   id: EffectOccurrenceId;
-  descriptor: import("./semantic-process-contract.js").EffectDescriptor;
+  descriptor: import("./semantic-value-contract.js").EffectDescriptor;
   arguments: VariableBinding[];
 }>;
 

@@ -13,9 +13,7 @@
  * Timer and because arming is atomic, so the two share one activation ordinal. A repeated or
  * Multi-Instance Sub-Process would break that recovery and requires an explicit occurrence record.
  */
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   EnterBoundedScopeOperation,
   SemanticOperation,

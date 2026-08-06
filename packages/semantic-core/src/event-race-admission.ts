@@ -1,11 +1,6 @@
-import {
-  MessageChannelKind,
-  SemanticOperationKind,
-  SemanticOriginKind,
-} from "./semantic-process-contract.js";
-import type {
-  AwaitEventRaceOperation,
-} from "./semantic-process-contract.js";
+import { MessageChannelKind } from "./semantic-value-contract.js";
+import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
+import type { AwaitEventRaceOperation } from "./semantic-process-contract.js";
 import {
   isMessageChannel,
 } from "./message-channel.js";

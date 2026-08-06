@@ -6,9 +6,7 @@
  * That is the boundary: an operation that creates, cancels, or observes a wait belongs to its own
  * family module, and the dispatcher composes both.
  */
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation } from "./semantic-process-contract.js";
 import { evaluateSimpleBooleanExpression } from "./simple-boolean-expression.js";
 import {

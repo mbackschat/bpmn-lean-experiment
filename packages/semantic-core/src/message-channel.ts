@@ -1,9 +1,5 @@
-import {
-  MessageChannelKind,
-} from "./semantic-process-contract.js";
-import type {
-  MessageChannel,
-} from "./semantic-process-contract.js";
+import { MessageChannelKind } from "./semantic-value-contract.js";
+import type { MessageChannel } from "./semantic-value-contract.js";
 import {
   isWellFormedWireString,
 } from "./wire.js";

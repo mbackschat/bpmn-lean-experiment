@@ -7,13 +7,8 @@ import type {
   Stimulus,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
-import type {
-  SemanticOperation,
-  SemanticProcessProgram,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   calledProcessAssociationsAreValid,
   invokeCalledProcess,

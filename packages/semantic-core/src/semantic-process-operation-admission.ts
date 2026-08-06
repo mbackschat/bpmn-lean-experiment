@@ -2,12 +2,9 @@ import {
   EffectOperation,
   EffectProtocol,
   MappingExpressionKind,
-  SemanticOperationKind,
-  SemanticOriginKind,
-} from "./semantic-process-contract.js";
-import type {
-  SemanticOperation,
-} from "./semantic-process-contract.js";
+} from "./semantic-value-contract.js";
+import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
+import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   isWellFormedChooseOperation,
 } from "./simple-boolean-choice-admission.js";

@@ -1,9 +1,5 @@
-import {
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
-import type {
-  SemanticOperation,
-} from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   removeScopeOccurrenceSubtree,
 } from "./semantic-process-scope-cancellation.js";

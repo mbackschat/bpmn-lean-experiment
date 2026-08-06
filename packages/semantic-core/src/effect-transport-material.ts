@@ -4,10 +4,8 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
-import type {
-  EffectDescriptor,
-  SemanticProcessProgram,
-} from "./semantic-process-contract.js";
+import type { EffectDescriptor } from "./semantic-value-contract.js";
+import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 
 /**
  * Definition fields that remain stable across compiler-only changes.

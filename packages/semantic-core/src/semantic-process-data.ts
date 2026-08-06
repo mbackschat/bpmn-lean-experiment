@@ -3,12 +3,8 @@ import type {
   EffectOccurrenceId,
   VariableBinding,
 } from "./contract.js";
-import {
-  MappingExpressionKind,
-} from "./semantic-process-contract.js";
-import type {
-  VariableMapping,
-} from "./semantic-process-contract.js";
+import { MappingExpressionKind } from "./semantic-value-contract.js";
+import type { VariableMapping } from "./semantic-value-contract.js";
 import {
   compareCanonicalStrings,
 } from "./wire.js";

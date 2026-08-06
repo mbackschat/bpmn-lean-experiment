@@ -1,7 +1,5 @@
-import {
-  CheckedNodeKind,
-  SemanticOperationKind,
-} from "./semantic-process-contract.js";
+import { CheckedNodeKind } from "./checked-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 
 export const SemanticProfileId = Object.freeze({
   ActivityBoundaryTimer:

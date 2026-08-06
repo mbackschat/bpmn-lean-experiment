@@ -1,10 +1,6 @@
-import type {
-  CheckedNode,
-} from "../src/semantic-process-contract.js";
-import {
-  CheckedNodeKind,
-  MessageChannelKind,
-} from "../src/semantic-process-contract.js";
+import type { CheckedNode } from "../src/checked-process-contract.js";
+import { MessageChannelKind } from "../src/semantic-value-contract.js";
+import { CheckedNodeKind } from "../src/checked-process-contract.js";
 
 const operationMessageChannel = {
   kind: MessageChannelKind.OperationMessage,

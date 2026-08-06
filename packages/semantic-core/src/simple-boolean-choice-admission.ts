@@ -2,14 +2,9 @@
  * Exact program admission for the first Simple Boolean conditional-choice
  * execution surface.
  */
-import {
-  SemanticOperationKind,
-  SemanticOriginKind,
-  SimpleBooleanExpressionKind,
-} from "./semantic-process-contract.js";
-import type {
-  SemanticOperation,
-} from "./semantic-process-contract.js";
+import { SimpleBooleanExpressionKind } from "./semantic-value-contract.js";
+import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
+import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   isWellFormedWireString,
   utf8ByteLength,
