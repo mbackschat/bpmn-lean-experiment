@@ -47,6 +47,8 @@ import {
   loadJson,
   boundaryDeadlineBpmnUrl,
   boundaryDeadlineScenarioUrl,
+  scopeDeadlineBpmnUrl,
+  scopeDeadlineScenarioUrl,
   requiredAt,
   requiredScenarioUrl,
   semanticPrefixThroughCompletion,
@@ -269,6 +271,42 @@ test("boundary deadline survives Worker absence at due time and takes the bounda
   assert.equal(isCompletedProcessReceipt(execution.receipt), true);
   // The bounded Activity is open while the deadline runs, so the wait state must show the bounded
   // task and its deadline rather than a bare timer.
+  assert.equal(
+    stateObservationAt(execution.waitTrace, 2).openUserTasks.length,
+    1,
+  );
+  assert.equal(stateObservationAt(execution.waitTrace, 2).openTimers.length, 1);
+});
+
+/**
+ * The bounded-scope deadline must survive the Worker being absent across its due instant.
+ *
+ * This is a strictly stronger obligation than its bounded-Activity sibling above. There the
+ * replacement Worker abandons one task; here it must cancel a whole live child region — the child
+ * scope occurrence and the child task inside it — and emit the boundary route in the parent, all
+ * from committed state alone. A host that resumed the bare wait instead would leave the child task
+ * open, which the wait-state assertions below would not catch, so the result comparison against the
+ * pure core carries that weight.
+ */
+test("bounded-scope deadline survives Worker absence at due time and cancels the child region", async () => {
+  const scenario = await loadJson<Scenario>(scopeDeadlineScenarioUrl);
+  const input = await compileExecutionInput(scenario, scopeDeadlineBpmnUrl);
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    activeRunner().runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "subprocess-boundary-timer-worker-restart",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.WorkerDownAtTimerDue,
+      effectExecutionSchedule: null,
+    }),
+    20_000,
+    "Sub-Process boundary deadline Worker-restart execution",
+  );
+
+  assert.deepEqual(execution.result, expected);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+  // The child task is live inside the bounded scope while the deadline runs, so the wait state must
+  // show that task and its parent-owned deadline rather than a bare timer.
   assert.equal(
     stateObservationAt(execution.waitTrace, 2).openUserTasks.length,
     1,

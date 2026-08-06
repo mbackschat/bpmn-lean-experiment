@@ -39,6 +39,14 @@ export const bpmnEventRaceOrderingUnavailableFailureType =
  */
 export const bpmnBoundedActivitySchedulerUnavailableFailureType =
   "BpmnBoundedActivitySchedulerUnavailable";
+/**
+ * Distinct from the bounded-Activity identity for the same reason that one is distinct from the
+ * Event race: both are one wait racing one deadline, but the semantic outcome an operator loses
+ * differs. Here the losing arm is a whole child region reaching quiescence rather than one task
+ * completion, so a shared identity would leave a defect in either family invisible in both.
+ */
+export const bpmnBoundedScopeSchedulerUnavailableFailureType =
+  "BpmnBoundedScopeSchedulerUnavailable";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
 export enum TemporalHostCapabilityResultKind {

@@ -162,6 +162,14 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/activity-boundary-timer/deadline-wins.scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/subprocess-boundary-timer/scope-completes.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

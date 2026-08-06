@@ -9,7 +9,6 @@ import {
   advanceScenario,
   deployProcess,
   initialState,
-  isBoundaryTimerDefinition,
   isWellFormedStimulus,
   isWellFormedEffectExecutionResult,
   projectEffectTransportMaterial,
@@ -79,8 +78,10 @@ import {
   ActivationDrain,
 } from "./activation-tagged-readiness.js";
 import {
-  createBoundedActivityDeadlineScheduler,
-} from "./bounded-activity-deadline-scheduler.js";
+  boundedActivityDeadlineFamily,
+  boundedScopeDeadlineFamily,
+  createBoundedDeadlineScheduler,
+} from "./bounded-deadline-scheduler.js";
 import {
   createEventRaceReadinessScheduler,
 } from "./event-race-readiness-scheduler.js";
@@ -146,10 +147,25 @@ export async function runBpmnProcessWithHostEffects(
     waitForTimer,
     eventRaceActivationDrain,
   );
-  const boundedDeadlineScheduler = createBoundedActivityDeadlineScheduler(
-    semanticProcess,
-    waitForTimer,
-  );
+  // One scheduler per boundary-deadline host kind. Each owns only the deadlines its own family
+  // defines, so at most one ever claims a given committed state and neither can schedule the
+  // other's pair under the wrong refusal identity.
+  const boundedDeadlineSchedulers = [
+    createBoundedDeadlineScheduler(
+      semanticProcess,
+      waitForTimer,
+      boundedActivityDeadlineFamily,
+    ),
+    createBoundedDeadlineScheduler(
+      semanticProcess,
+      waitForTimer,
+      boundedScopeDeadlineFamily,
+    ),
+  ] as const;
+  const boundedDeadlineSchedulerFor = (candidate: RuntimeState) =>
+    boundedDeadlineSchedulers.find((scheduler) =>
+      scheduler.ownsCommittedDeadline(candidate)
+    );
 
   // Update handlers can run as soon as they are registered, including during replay after Worker restart. Start must already lead the semantic input queue.
   enqueueStimulus(acceptedStimuli, pendingStimuli, start);
@@ -199,7 +215,12 @@ export async function runBpmnProcessWithHostEffects(
     async (stimulus) => {
       // A bounded completion races its deadline, so the scheduler classifies it by activation
       // instead of the loop draining it in arrival order.
-      if (boundedDeadlineScheduler.recordCompletionCallback(state, stimulus)) {
+      if (
+        boundedDeadlineSchedulerFor(state)?.recordCompletionCallback(
+          state,
+          stimulus,
+        ) === true
+      ) {
         acceptedStimuli.push(stimulus);
       } else {
         enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus);
@@ -262,7 +283,8 @@ export async function runBpmnProcessWithHostEffects(
         // it: that path arms a bare durable timer and, on an activation carrying both callbacks,
         // would let raw job order pick the winner. Its own barrier-backed scheduler owns the
         // deadline instead, and refuses only the shared-activation case this capsule leaves undefined.
-        if (timers.some((timer) => isBoundaryTimerDefinition(semanticProcess, timer.id))) {
+        const boundedDeadlineScheduler = boundedDeadlineSchedulerFor(state);
+        if (boundedDeadlineScheduler !== undefined) {
           for (const stimulus of await boundedDeadlineScheduler.waitForReadiness(state)) {
             if (stimulus.kind === StimulusKind.CompleteUserTaskInstance) {
               // Its Update handler already accepted it; re-accepting would drop it from the queue.
@@ -390,7 +412,9 @@ export async function runBpmnProcessWithHostEffects(
         case ScenarioStepKind.Terminal:
           state = step.state;
           eventRaceScheduler.reconcileCommittedState(state);
-          boundedDeadlineScheduler.reconcileCommittedState(state);
+          for (const scheduler of boundedDeadlineSchedulers) {
+            scheduler.reconcileCommittedState(state);
+          }
           break;
         case ScenarioStepKind.HarnessFailure:
           throw ApplicationFailure.nonRetryable(

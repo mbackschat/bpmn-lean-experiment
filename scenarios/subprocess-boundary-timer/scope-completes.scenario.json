@@ -1,0 +1,65 @@
+{
+  "kind": "scenario",
+  "id": "subprocess-boundary-timer-scope-completes",
+  "profile": "bpmn-2.0.2-subprocess-boundary-timer-draft",
+  "bpmn": {
+    "id": "subprocess-boundary-timer",
+    "relativePath": "scenarios/subprocess-boundary-timer/process.bpmn",
+    "sha256": "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-scope-completes",
+      "processId": "Process_SubProcessBoundaryTimer",
+      "instanceId": "BoundedScopeInstance_ScopeCompletes",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-child-task",
+      "taskId": {
+        "processInstanceId": "BoundedScopeInstance_ScopeCompletes",
+        "elementId": "ChildTask",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-after-scope",
+      "taskId": {
+        "processInstanceId": "BoundedScopeInstance_ScopeCompletes",
+        "elementId": "AfterScope",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.6",
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 10.92"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/BoundaryEventImpl.java",
+      "model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/SubProcessImpl.java"
+    ]
+  }
+}

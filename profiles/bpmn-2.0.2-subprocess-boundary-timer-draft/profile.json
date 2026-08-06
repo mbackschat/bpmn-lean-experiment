@@ -1,0 +1,88 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-subprocess-boundary-timer-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-interrupting-pt1s-timer-boundary-event-on-one-embedded-sub-process",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.5.5",
+      "Clause 10.5.6",
+      "Clause 13.3.2",
+      "Clause 13.3.4",
+      "Clause 13.5.3",
+      "Clause 13.5.4",
+      "Table 10.92",
+      "Table 10.101",
+      "Table 10.122"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "embedded-sub-process",
+      "sub-process-quiescent-completion",
+      "interrupting-timer-boundary-event",
+      "boundary-event-on-embedded-sub-process",
+      "default-cancel-activity-true",
+      "literal-time-duration-pt1s",
+      "atomic-scope-and-boundary-arming",
+      "scope-completion-withdraws-boundary-deadline",
+      "boundary-deadline-terminates-child-region",
+      "boundary-output-sequence-flow",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-boundary-event-compatibility-claim",
+    "non-interrupting-boundary-event",
+    "nested-sub-processes-and-any-depth-beyond-one",
+    "more-than-one-child-task",
+    "multi-instance-and-repeated-sub-processes",
+    "transaction-and-cancel-semantics",
+    "event-subprocesses",
+    "boundary-timers-on-call-activity-service-task-receive-task-or-transaction-hosts",
+    "more-than-one-boundary-event-per-sub-process",
+    "error-signal-message-conditional-escalation-and-compensation-boundaries",
+    "timer-date-cycle-and-other-durations",
+    "child-local-data-and-mappings",
+    "public-cancel-command",
+    "incidents",
+    "which-none-end-event-each-route-reaches",
+    "portable-physical-simultaneity-order",
+    "coalesced-completion-and-deadline-winner",
+    "off-deadline-firing-as-a-registered-schedule",
+    "loops",
+    "a12-adoption-coverage",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

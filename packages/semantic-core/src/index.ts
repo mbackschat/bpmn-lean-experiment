@@ -13,6 +13,9 @@ export {
   isBoundaryTimerDefinition,
   isBoundedTaskDefinition,
 } from "./semantic-process-bounded-task-runtime.js";
+export {
+  isBoundedScopeDeadlineDefinition,
+} from "./semantic-process-bounded-scope-runtime.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
 export * from "./semantic-process-graph-admission.js";

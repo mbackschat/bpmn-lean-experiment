@@ -69,6 +69,18 @@ export const boundaryDeadlineBpmnUrl = new URL(
   "../../../scenarios/activity-boundary-timer/process.bpmn",
   import.meta.url,
 );
+export const scopeDeadlineScenarioUrl = new URL(
+  "../../../scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
+  import.meta.url,
+);
+export const scopeQuiescenceScenarioUrl = new URL(
+  "../../../scenarios/subprocess-boundary-timer/scope-completes.scenario.json",
+  import.meta.url,
+);
+export const scopeDeadlineBpmnUrl = new URL(
+  "../../../scenarios/subprocess-boundary-timer/process.bpmn",
+  import.meta.url,
+);
 export const timerUserTaskCompositionScenarioUrl = new URL(
   "../../../scenarios/timer-user-task-composition/scenario.json",
   import.meta.url,
