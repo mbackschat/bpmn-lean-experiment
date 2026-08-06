@@ -266,10 +266,21 @@ function diagnostic(
  * Deliberately conservative and element-blind: it rejects the whole source when any occurrence is
  * ambiguous, rather than resolving which element carries it. Narrowing it would require re-parsing
  * the attribute's owner here, which is the parser's job and not this guard's.
+ *
+ * Both XML attribute-value delimiters are matched. An earlier form matched only the double-quoted
+ * spelling, which left `cancelActivity='1'` — schema-valid, meaning *true* — admitted under the
+ * non-interrupting profile. A guard over a syntactic class needs a case per position of the class,
+ * not per value.
+ *
+ * It compares lexemes, so it also refuses an entity-encoded spelling of a valid boolean such as
+ * `&#116;rue`. That over-rejection is the safe direction and is intentional: resolving entities here
+ * would mean decoding XML outside the parser.
  */
 function firstAmbiguousCancelActivityLexeme(xml: string): string | undefined {
-  for (const [, lexeme] of xml.matchAll(/\bcancelActivity\s*=\s*"([^"]*)"/gu)) {
-    if (lexeme !== "true" && lexeme !== "false") {
+  const attribute = /\bcancelActivity\s*=\s*(?:"([^"]*)"|'([^']*)')/gu;
+  for (const [, doubleQuoted, singleQuoted] of xml.matchAll(attribute)) {
+    const lexeme = doubleQuoted ?? singleQuoted;
+    if (lexeme !== undefined && lexeme !== "true" && lexeme !== "false") {
       return lexeme;
     }
   }

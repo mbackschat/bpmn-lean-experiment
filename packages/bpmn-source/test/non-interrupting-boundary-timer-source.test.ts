@@ -186,24 +186,41 @@ test("refuses the opposite disposition at the checked-graph boundary", () => {
  * `"false"` agree on the disposition but are still separated, because admitting `"0"` here would
  * mean the guard passed for a reason it cannot state.
  */
-for (const lexeme of ["1", "0", "maybe", "FALSE", ""]) {
-  test(`refuses cancelActivity="${lexeme}" before parsing`, async () => {
-    const ambiguous = await compile(
-      source.replace('cancelActivity="false"', `cancelActivity="${lexeme}"`),
-    );
+// Both XML attribute-value delimiters, because the guard is over a syntactic class and a case per
+// value would certify only the spelling it happened to use. The single-quoted `'1'` is the case an
+// earlier double-quote-only form admitted.
+for (const quote of ['"', "'"]) {
+  for (const lexeme of ["1", "0", "maybe", "FALSE", ""]) {
+    test(`refuses cancelActivity=${quote}${lexeme}${quote} before parsing`, async () => {
+      const ambiguous = await compile(
+        source.replace(
+          'cancelActivity="false"',
+          `cancelActivity=${quote}${lexeme}${quote}`,
+        ),
+      );
 
-    assert.notEqual(ambiguous.status, BpmnCompilationStatus.Accepted);
-    if (ambiguous.status === BpmnCompilationStatus.Accepted) {
-      return;
-    }
-    // Named rather than status-only: the two admitted lexemes are already refused by later stages,
-    // so a status-only assertion would pass without this guard existing.
-    assert.deepEqual(
-      ambiguous.diagnostics.map(({ code }) => code),
-      [BpmnSourceDiagnosticCode.AmbiguousBooleanLexeme],
-    );
-  });
+      assert.notEqual(ambiguous.status, BpmnCompilationStatus.Accepted);
+      if (ambiguous.status === BpmnCompilationStatus.Accepted) {
+        return;
+      }
+      // Named rather than status-only: the two admitted lexemes are already refused by later
+      // stages, so a status-only assertion would pass without this guard existing.
+      assert.deepEqual(
+        ambiguous.diagnostics.map(({ code }) => code),
+        [BpmnSourceDiagnosticCode.AmbiguousBooleanLexeme],
+      );
+    });
+  }
 }
+
+/** The single-quoted admitted spelling must still compile, so the guard rejects by lexeme rather than by delimiter. */
+test("admits a single-quoted non-interrupting deadline", async () => {
+  const singleQuoted = await compile(
+    source.replace('cancelActivity="false"', "cancelActivity='false'"),
+  );
+
+  assert.equal(singleQuoted.status, BpmnCompilationStatus.Accepted);
+});
 
 /**
  * A non-interrupting deadline whose `attachedToRef` does not resolve to a User Task in its own scope
