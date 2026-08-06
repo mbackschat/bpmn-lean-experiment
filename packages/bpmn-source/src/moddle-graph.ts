@@ -1,3 +1,5 @@
+import { carriesDeclaredDefault } from "./metamodel-defaults.js";
+
 export type ElementRecord = Record<string, unknown>;
 
 export function asElement(value: unknown): ElementRecord | undefined {
@@ -18,12 +20,21 @@ export function asElementArray(
     : undefined;
 }
 
-export function hasOnlyOwnKeys(
+/**
+ * Whether every own key of `element` is either listed in `allowedKeys` or carries no information.
+ *
+ * An own key holding its declared metamodel default is admitted without being listed, because the
+ * parser resolves that same value when the source omits the attribute; see
+ * [the default resolver](./metamodel-defaults.ts). Every other unlisted key is foreign and refuses.
+ */
+export function hasOnlyModelledKeys(
   element: ElementRecord,
   allowedKeys: ReadonlyArray<string>,
 ): boolean {
   const allowed = new Set(allowedKeys);
-  return Object.keys(element).every((key) => allowed.has(key));
+  return Object.keys(element).every(
+    (key) => allowed.has(key) || carriesDeclaredDefault(element, key),
+  );
 }
 
 export function readId(element: ElementRecord): string | undefined {

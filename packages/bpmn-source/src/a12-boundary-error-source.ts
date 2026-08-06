@@ -22,7 +22,7 @@ import type {
 import {
   asElement,
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readForeignAttributes,
   readId,
 } from "./moddle-graph.js";
@@ -61,7 +61,7 @@ export function compileA12BoundaryError(
   if (
     definitions === undefined ||
     definitions.$type !== "bpmn:Definitions" ||
-    !hasOnlyOwnKeys(definitions, [
+    !hasOnlyModelledKeys(definitions, [
       "$type",
       "$attrs",
       "id",
@@ -96,7 +96,7 @@ function projectProcess(
   source: BpmnSourceIdentity,
 ): Projection {
   if (
-    !hasOnlyOwnKeys(process, [
+    !hasOnlyModelledKeys(process, [
       "$type",
       "id",
       "isExecutable",
@@ -232,7 +232,7 @@ function projectServiceTask(
     route === undefined ||
     id !== "CreateRelationshipLinkTask" ||
     value.implementation !== protocol ||
-    !hasOnlyOwnKeys(value, [
+    !hasOnlyModelledKeys(value, [
       "$type",
       "id",
       "name",
@@ -288,7 +288,7 @@ function projectBoundaryRoute(
     serviceId !== "CreateRelationshipLinkTask" ||
     readId(attached ?? {}) !== serviceId ||
     boundary.cancelActivity !== true ||
-    !hasOnlyOwnKeys(boundary, [
+    !hasOnlyModelledKeys(boundary, [
       "$type",
       "id",
       "name",
@@ -297,7 +297,7 @@ function projectBoundaryRoute(
     definitions?.length !== 1 ||
     definition?.$type !== "bpmn:ErrorEventDefinition" ||
     readId(definition) !== "ErrorEventDefinition_LinkLimitReached" ||
-    !hasOnlyOwnKeys(definition, ["$type", "id"]) ||
+    !hasOnlyModelledKeys(definition, ["$type", "id"]) ||
     readId(referencedError ?? {}) !== readId(error)
   ) {
     return undefined;
@@ -319,7 +319,7 @@ function isExactRootError(value: ElementRecord): boolean {
     readId(value) === "Error_LinkLimitReached" &&
     value.name === "Link Limit Reached" &&
     value.errorCode === caughtCode &&
-    hasOnlyOwnKeys(value, ["$type", "id", "name", "errorCode"]);
+    hasOnlyModelledKeys(value, ["$type", "id", "name", "errorCode"]);
 }
 
 function readInputOutput(value: unknown) {
@@ -331,10 +331,10 @@ function readInputOutput(value: unknown) {
   const output = children?.[1];
   if (
     extension?.$type !== "bpmn:ExtensionElements" ||
-    !hasOnlyOwnKeys(extension, ["$type", "values"]) ||
+    !hasOnlyModelledKeys(extension, ["$type", "values"]) ||
     values?.length !== 1 ||
     inputOutput?.$type !== "camunda:inputOutput" ||
-    !hasOnlyOwnKeys(inputOutput, ["$type", "$children"]) ||
+    !hasOnlyModelledKeys(inputOutput, ["$type", "$children"]) ||
     children?.length !== 2 ||
     !isParameter(
       input,
@@ -372,7 +372,7 @@ function isParameter(
   return value?.$type === type &&
     value.name === name &&
     value.$body === body &&
-    hasOnlyOwnKeys(value, ["$type", "name", "$body"]);
+    hasOnlyModelledKeys(value, ["$type", "name", "$body"]);
 }
 
 function projectPlainNode<K extends
@@ -383,7 +383,7 @@ function projectPlainNode<K extends
 ): Extract<CheckedNode, { kind: K }> | undefined {
   const id = readId(value);
   return id === expectedId &&
-      hasOnlyOwnKeys(value, ["$type", "id"])
+      hasOnlyModelledKeys(value, ["$type", "id"])
     ? ({ kind, id } as Extract<CheckedNode, { kind: K }>)
     : undefined;
 }
@@ -406,7 +406,7 @@ function projectUserTask(
   const id = readId(value);
   return id === "ExpectedUserTaskAfterBPMNError" &&
       value.name === "Expected User Task After BPMN Error" &&
-      hasOnlyOwnKeys(value, ["$type", "id", "name"])
+      hasOnlyModelledKeys(value, ["$type", "id", "name"])
     ? {
         kind: CheckedNodeKind.UserTask,
         id,
@@ -424,7 +424,7 @@ function projectFlows(
     const id = readId(flow);
     const sourceId = readId(source ?? {});
     const targetId = readId(target ?? {});
-    return hasOnlyOwnKeys(flow, ["$type", "id"]) &&
+    return hasOnlyModelledKeys(flow, ["$type", "id"]) &&
         id !== undefined &&
         sourceId !== undefined &&
         targetId !== undefined

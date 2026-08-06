@@ -6,7 +6,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 
 import {
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
 } from "./moddle-graph.js";
 import type {
   ElementRecord,
@@ -26,7 +26,7 @@ export function projectReceiveTask(
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ReceiveTask }> | undefined {
   if (
     !isDirectMessageRootArtifacts(artifacts) ||
-    !hasOnlyOwnKeys(element, [
+    !hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",

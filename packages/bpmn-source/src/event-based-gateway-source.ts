@@ -11,7 +11,7 @@ import {
   declaredGatewayDirectionMatches,
 } from "./gateway-direction-source.js";
 import {
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
 } from "./moddle-graph.js";
 import type {
   ElementRecord,
@@ -24,7 +24,7 @@ export function projectEventBasedGateway(
 ): Extract<CheckedNode, { kind: CheckedNodeKind.EventBasedGateway }> | undefined {
   const incoming = flows.filter(({ targetId }) => targetId === id).length;
   const outgoing = flows.filter(({ sourceId }) => sourceId === id).length;
-  return hasOnlyOwnKeys(element, [
+  return hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",

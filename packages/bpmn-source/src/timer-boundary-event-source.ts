@@ -21,7 +21,7 @@ import type {
 import {
   asElement,
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
@@ -39,7 +39,7 @@ export function projectTimerBoundaryEvent(
   const interruption = readInterruption(element.cancelActivity);
   if (
     interruption === undefined ||
-    !hasOnlyOwnKeys(element, [
+    !hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",
@@ -100,12 +100,12 @@ function hasExactPt1sTimerDefinition(
     definitions.length !== 1 ||
     definition === undefined ||
     definition.$type !== timerEventDefinitionType ||
-    !hasOnlyOwnKeys(definition, ["$type", "timeDuration"])
+    !hasOnlyModelledKeys(definition, ["$type", "timeDuration"])
   ) {
     return false;
   }
   const duration = asElement(definition.timeDuration);
   return duration !== undefined &&
-    hasOnlyOwnKeys(duration, ["$type", "body"]) &&
+    hasOnlyModelledKeys(duration, ["$type", "body"]) &&
     duration.body === "PT1S";
 }

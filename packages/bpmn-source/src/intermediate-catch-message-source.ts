@@ -10,7 +10,7 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 };
 import {
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type {
@@ -35,7 +35,7 @@ export function projectIntermediateCatchMessage(
 > | undefined {
   if (
     !isOperationMessageRootArtifacts(artifacts) ||
-    !hasOnlyOwnKeys(element, [
+    !hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",
@@ -50,7 +50,7 @@ export function projectIntermediateCatchMessage(
     definitions?.length !== 1 ||
     definition === undefined ||
     definition.$type !== bpmnTypes.messageEventDefinitionType ||
-    !hasOnlyOwnKeys(definition, ["$type", "id"]) ||
+    !hasOnlyModelledKeys(definition, ["$type", "id"]) ||
     readId(definition) === undefined ||
     definition.messageRef !== artifacts.message ||
     definition.operationRef !== artifacts.operation ||

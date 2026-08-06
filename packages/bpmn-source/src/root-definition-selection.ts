@@ -12,7 +12,7 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 };
 import {
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type {
@@ -104,9 +104,9 @@ function selectMessageRoots(
     interfaces.length !== 1 ||
     message === undefined ||
     interface_ === undefined ||
-    !hasOnlyOwnKeys(message, ["$type", "id", "name"]) ||
+    !hasOnlyModelledKeys(message, ["$type", "id", "name"]) ||
     message.itemRef !== undefined ||
-    !hasOnlyOwnKeys(interface_, ["$type", "id", "name", "operations"])
+    !hasOnlyModelledKeys(interface_, ["$type", "id", "name", "operations"])
   ) {
     return undefined;
   }
@@ -120,7 +120,7 @@ function selectMessageRoots(
     operations?.length !== 1 ||
     operation === undefined ||
     operation.$type !== bpmnTypes.operationType ||
-    !hasOnlyOwnKeys(operation, ["$type", "id", "name"]) ||
+    !hasOnlyModelledKeys(operation, ["$type", "id", "name"]) ||
     operation.inMessageRef !== message ||
     operation.outMessageRef !== undefined ||
     operation.errorRefs !== undefined ||
@@ -158,7 +158,7 @@ function selectDirectMessageRoots(
     rootElements.length !== 2 ||
     messages.length !== 1 ||
     message === undefined ||
-    !hasOnlyOwnKeys(message, ["$type", "id", "name"]) ||
+    !hasOnlyModelledKeys(message, ["$type", "id", "name"]) ||
     typeof message.name !== "string" ||
     message.name.length === 0 ||
     !isWellFormedWireString(message.name)

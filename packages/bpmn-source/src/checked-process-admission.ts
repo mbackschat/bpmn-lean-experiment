@@ -35,7 +35,6 @@ export type CheckedProcessGraph = Readonly<{
 export function isAdmittedCheckedProcess(
   graph: CheckedProcessGraph,
   expressionLanguage: unknown,
-  hasExplicitExpressionLanguage: boolean,
   semanticProfile: string,
 ): boolean {
   const nodeScopes = ownershipMap(
@@ -62,11 +61,7 @@ export function isAdmittedCheckedProcess(
     hasSelectedCallActivityDefinitions(semanticProfile, graph, nodeScopes) &&
     errorNodesHaveDirectHandlers(graph, nodeScopes) &&
     boundaryTimersAttachToDeadlineOwners(graph, nodeScopes) &&
-    hasSelectedExpressionLanguage(
-      semanticProfile,
-      expressionLanguage,
-      hasExplicitExpressionLanguage,
-    ) &&
+    hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
     hasSelectedInclusivePairing(semanticProfile, graph) &&
     hasSelectedEventRaceTopology(semanticProfile, graph) &&
@@ -285,19 +280,24 @@ function ownershipMap<K extends "nodeId" | "sequenceFlowId">(
     : undefined;
 }
 
+/**
+ * Decides the expression language from the resolved value alone.
+ *
+ * Whether the source wrote the attribute is deliberately not consulted: the parser resolves the same
+ * BPMN default when it is omitted, so admitting on presence would refuse a model that spelled out a
+ * value already in force. The simple-boolean profiles need no presence test either, because their
+ * required URI is not any default and cannot be resolved without being written.
+ */
 function hasSelectedExpressionLanguage(
   semanticProfile: string,
   expressionLanguage: unknown,
-  hasExplicitExpressionLanguage: boolean,
 ): boolean {
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
-      return hasExplicitExpressionLanguage &&
-        expressionLanguage === SimpleBooleanExpressionLanguage;
+      return expressionLanguage === SimpleBooleanExpressionLanguage;
     default:
-      return !hasExplicitExpressionLanguage &&
-        expressionLanguage === bpmnDefaultExpressionLanguage;
+      return expressionLanguage === bpmnDefaultExpressionLanguage;
   }
 }
 

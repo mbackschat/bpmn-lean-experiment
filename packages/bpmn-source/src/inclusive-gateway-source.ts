@@ -14,7 +14,7 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 };
 import {
   asElement,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
@@ -28,7 +28,7 @@ export function projectInclusiveGateway(
   flows: ReadonlyArray<CheckedSequenceFlow>,
   elements: ReadonlyArray<ElementRecord>,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.InclusiveGateway }> | undefined {
-  if (!hasOnlyOwnKeys(element, ["$type", "id", "name", "gatewayDirection", "default"])) {
+  if (!hasOnlyModelledKeys(element, ["$type", "id", "name", "gatewayDirection", "default"])) {
     return undefined;
   }
   const incoming = flows.filter(({ targetId }) => targetId === id);

@@ -302,7 +302,7 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 3 |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 52 |
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 |
-| [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 81 |
+| [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 82 |
 | [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 126 |
 | [Lean monitored-task family](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 129 |
 | [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 154 |

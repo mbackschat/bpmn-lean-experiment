@@ -23,7 +23,7 @@ import type {
 import {
   asElement,
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
@@ -64,7 +64,7 @@ export function compileCallActivityCheckedProcess(
   if (
     definitions === undefined ||
     definitions.$type !== bpmnTypes.definitionsType ||
-    !hasOnlyOwnKeys(definitions, [
+    !hasOnlyModelledKeys(definitions, [
       "$type",
       "id",
       "targetNamespace",
@@ -150,7 +150,6 @@ export function compileCallActivityCheckedProcess(
   if (!isAdmittedCheckedProcess(
     graph,
     definitions.expressionLanguage,
-    Object.hasOwn(definitions, "expressionLanguage"),
     semanticProfile,
   )) {
     return unsupported("The two Process graphs do not satisfy the bounded Call Activity profile.");
@@ -176,7 +175,7 @@ export function compileCallActivityCheckedProcess(
 
 function projectProcessElements(process: ElementRecord): ProcessElements | undefined {
   if (
-    !hasOnlyOwnKeys(process, ["$type", "id", "name", "isExecutable", "flowElements"]) ||
+    !hasOnlyModelledKeys(process, ["$type", "id", "name", "isExecutable", "flowElements"]) ||
     process.isExecutable !== true
   ) {
     return undefined;
@@ -225,7 +224,7 @@ function resolveCalledProcessId(
   processes: ReadonlyArray<ProcessElements>,
   callerProcessId: string,
 ): string | undefined {
-  if (!hasOnlyOwnKeys(call, ["$type", "id", "name", "calledElement"]) || typeof call.calledElement !== "string") {
+  if (!hasOnlyModelledKeys(call, ["$type", "id", "name", "calledElement"]) || typeof call.calledElement !== "string") {
     return undefined;
   }
   const parts = call.calledElement.split(":");
@@ -293,7 +292,7 @@ function projectSequenceFlows(
   elements: ReadonlyArray<ElementRecord>,
 ): ReadonlyArray<CheckedSequenceFlow> | undefined {
   const projected = elements.map((flow): CheckedSequenceFlow | undefined => {
-    if (!hasOnlyOwnKeys(flow, ["$type", "id", "name", "conditionExpression"])) {
+    if (!hasOnlyModelledKeys(flow, ["$type", "id", "name", "conditionExpression"])) {
       return undefined;
     }
     const id = readId(flow);
@@ -315,7 +314,7 @@ function projectSequenceFlows(
 }
 
 function isPlainNode(element: ElementRecord): boolean {
-  return hasOnlyOwnKeys(element, ["$type", "id", "name"]);
+  return hasOnlyModelledKeys(element, ["$type", "id", "name"]);
 }
 
 function readOptionalName(element: ElementRecord): string | null | undefined {

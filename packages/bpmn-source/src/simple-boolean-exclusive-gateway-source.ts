@@ -17,7 +17,7 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 };
 import {
   asElement,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type {
@@ -39,7 +39,7 @@ export function projectExclusiveGateway(
   { kind: CheckedNodeKind.ExclusiveGateway }
 > | undefined {
   if (
-    !hasOnlyOwnKeys(element, [
+    !hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",
@@ -101,7 +101,7 @@ export function projectSimpleBooleanCondition(
     expressionLanguage !== SimpleBooleanExpressionLanguage ||
     expression === undefined ||
     expression.$type !== bpmnTypes.formalExpressionType ||
-    !hasOnlyOwnKeys(expression, ["$type", "body"]) ||
+    !hasOnlyModelledKeys(expression, ["$type", "body"]) ||
     typeof expression.body !== "string" ||
     parseSimpleBooleanExpression(expression.body) === undefined
   ) {

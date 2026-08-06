@@ -25,7 +25,7 @@ import type {
 import {
   asElement,
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readForeignAttributes,
   readId,
 } from "./moddle-graph.js";
@@ -66,7 +66,7 @@ export function compileA12CreateDocument(
   if (
     definitions === undefined ||
     definitions.$type !== bpmnTypes.definitionsType ||
-    !hasOnlyOwnKeys(definitions, [
+    !hasOnlyModelledKeys(definitions, [
       "$type",
       "id",
       "targetNamespace",
@@ -84,7 +84,7 @@ export function compileA12CreateDocument(
   if (
     roots?.length !== 1 ||
     process?.$type !== bpmnTypes.processType ||
-    !hasOnlyOwnKeys(process, [
+    !hasOnlyModelledKeys(process, [
       "$type",
       "id",
       "name",
@@ -179,7 +179,7 @@ function projectPlainNode(
   const id = value === undefined ? undefined : readId(value);
   return value !== undefined &&
       id !== undefined &&
-      hasOnlyOwnKeys(value, ["$type", "id", "name"])
+      hasOnlyModelledKeys(value, ["$type", "id", "name"])
     ? ({ kind, id } as Extract<CheckedNode, { kind: typeof kind }>)
     : undefined;
 }
@@ -190,7 +190,7 @@ function projectCreateDocument(
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ServiceTask }> | undefined {
   if (
     value === undefined ||
-    !hasOnlyOwnKeys(value, ["$type", "id", "name", "extensionElements"])
+    !hasOnlyModelledKeys(value, ["$type", "id", "name", "extensionElements"])
   ) {
     return undefined;
   }
@@ -254,10 +254,10 @@ function readInputOutput(value: unknown):
   const output = children?.[1];
   if (
     extension?.$type !== "bpmn:ExtensionElements" ||
-    !hasOnlyOwnKeys(extension, ["$type", "values"]) ||
+    !hasOnlyModelledKeys(extension, ["$type", "values"]) ||
     values?.length !== 1 ||
     inputOutput?.$type !== "camunda:inputOutput" ||
-    !hasOnlyOwnKeys(inputOutput, ["$type", "$children"]) ||
+    !hasOnlyModelledKeys(inputOutput, ["$type", "$children"]) ||
     children?.length !== 2 ||
     !isParameter(input, "camunda:inputParameter", "documentModelName", "MyDocumentModel") ||
     !isParameter(output, "camunda:outputParameter", "myDocumentReference", "${newDocRef}")
@@ -279,7 +279,7 @@ function isParameter(
   return value?.$type === type &&
     value.name === name &&
     value.$body === body &&
-    hasOnlyOwnKeys(value, ["$type", "name", "$body"]);
+    hasOnlyModelledKeys(value, ["$type", "name", "$body"]);
 }
 
 function hasExactVersionTag(
@@ -300,7 +300,7 @@ function projectFlows(
     const id = readId(flow);
     const sourceId = source === undefined ? undefined : readId(source);
     const targetId = target === undefined ? undefined : readId(target);
-    return hasOnlyOwnKeys(flow, ["$type", "id", "name"]) &&
+    return hasOnlyModelledKeys(flow, ["$type", "id", "name"]) &&
         id !== undefined &&
         sourceId !== undefined &&
         targetId !== undefined

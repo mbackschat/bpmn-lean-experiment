@@ -3,7 +3,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type {
@@ -99,7 +99,7 @@ function collectScope(
 }
 
 function isPlainEmbeddedSubProcess(element: ElementRecord): boolean {
-  return hasOnlyOwnKeys(element, [
+  return hasOnlyModelledKeys(element, [
     "$type",
     "id",
     "name",

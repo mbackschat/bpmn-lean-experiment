@@ -25,7 +25,7 @@ import type {
 import {
   asElement,
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readForeignAttributes,
   readId,
 } from "./moddle-graph.js";
@@ -92,7 +92,7 @@ export function compileCheckedProcess(
   if (
     definitions === undefined ||
     definitions.$type !== bpmnTypes.definitionsType ||
-    !hasOnlyOwnKeys(definitions, [
+    !hasOnlyModelledKeys(definitions, [
       "$type",
       "id",
       "targetNamespace",
@@ -117,7 +117,7 @@ export function compileCheckedProcess(
 
   const process = rootSelection.process;
   if (
-    !hasOnlyOwnKeys(process, [
+    !hasOnlyModelledKeys(process, [
       "$type",
       "id",
       "name",
@@ -215,7 +215,6 @@ export function compileCheckedProcess(
         flows: sequenceFlows,
       },
       definitions.expressionLanguage,
-      Object.hasOwn(definitions, "expressionLanguage"),
       semanticProfile,
     )
   ) {
@@ -347,7 +346,7 @@ function classifyGateway(
   flows: ReadonlyArray<CheckedSequenceFlow>,
 ): GatewayDirection | undefined {
   if (
-    !hasOnlyOwnKeys(element, [
+    !hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",
@@ -379,7 +378,7 @@ function projectSequenceFlows(
 ): ReadonlyArray<CheckedSequenceFlow> | undefined {
   const projected = flows.map((flow) => {
     if (
-      !hasOnlyOwnKeys(flow, [
+      !hasOnlyModelledKeys(flow, [
         "$type",
         "id",
         "name",
@@ -447,7 +446,7 @@ function projectServiceTask(
   id: string,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ServiceTask }> | undefined {
   if (
-    !hasOnlyOwnKeys(element, ["$type", "id", "name", "implementation"]) ||
+    !hasOnlyModelledKeys(element, ["$type", "id", "name", "implementation"]) ||
     element.implementation !== effectProtocol
   ) {
     return undefined;
@@ -477,7 +476,7 @@ function projectServiceTask(
 
 function isExactPt1sTimerEvent(element: ElementRecord): boolean {
   if (
-    !hasOnlyOwnKeys(element, [
+    !hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",
@@ -497,7 +496,7 @@ function isExactPt1sTimerEvent(element: ElementRecord): boolean {
   if (
     definition === undefined ||
     definition.$type !== bpmnTypes.timerEventDefinitionType ||
-    !hasOnlyOwnKeys(definition, ["$type", "timeDuration"])
+    !hasOnlyModelledKeys(definition, ["$type", "timeDuration"])
   ) {
     return false;
   }
@@ -505,13 +504,13 @@ function isExactPt1sTimerEvent(element: ElementRecord): boolean {
   return (
     duration !== undefined &&
     duration.$type === bpmnTypes.formalExpressionType &&
-    hasOnlyOwnKeys(duration, ["$type", "body"]) &&
+    hasOnlyModelledKeys(duration, ["$type", "body"]) &&
     duration.body === "PT1S"
   );
 }
 
 function isPlainFlowNode(element: ElementRecord): boolean {
-  return hasOnlyOwnKeys(element, ["$type", "id", "name"]);
+  return hasOnlyModelledKeys(element, ["$type", "id", "name"]);
 }
 
 function readOptionalName(

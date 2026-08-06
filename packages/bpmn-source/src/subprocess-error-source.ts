@@ -13,7 +13,7 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 import {
   asElement,
   asElementArray,
-  hasOnlyOwnKeys,
+  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type {
@@ -29,7 +29,7 @@ export function projectErrorEndEvent(
   errorArtifact: ElementRecord | undefined,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ErrorEndEvent }> | undefined {
   if (
-    !hasOnlyOwnKeys(element, ["$type", "id", "name", "eventDefinitions"])
+    !hasOnlyModelledKeys(element, ["$type", "id", "name", "eventDefinitions"])
   ) {
     return undefined;
   }
@@ -50,7 +50,7 @@ export function projectBoundaryErrorEvent(
 > | undefined {
   if (
     element.cancelActivity !== true ||
-    !hasOnlyOwnKeys(element, [
+    !hasOnlyModelledKeys(element, [
       "$type",
       "id",
       "name",
@@ -117,11 +117,11 @@ function projectErrorReference(
   if (
     definitions?.length !== 1 ||
     definition?.$type !== bpmnTypes.errorEventDefinitionType ||
-    !hasOnlyOwnKeys(definition, ["$type", "id"]) ||
+    !hasOnlyModelledKeys(definition, ["$type", "id"]) ||
     errorDefinitionId === undefined ||
     referencedError !== errorArtifact ||
     errorArtifact?.$type !== bpmnTypes.errorType ||
-    !hasOnlyOwnKeys(errorArtifact, ["$type", "id", "name", "errorCode"]) ||
+    !hasOnlyModelledKeys(errorArtifact, ["$type", "id", "name", "errorCode"]) ||
     errorElementId === undefined ||
     errorArtifact.errorCode !== selectedErrorCode ||
     (errorArtifact.name !== undefined && typeof errorArtifact.name !== "string")
