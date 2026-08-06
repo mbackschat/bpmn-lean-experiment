@@ -24,6 +24,8 @@ import {
   applyStimulus,
   initialState,
   isWellFormedSemanticProcessProgram,
+  projectOpenTimers,
+  projectOpenUserTasks,
 } from "@bpmn-lean/semantic-core";
 import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 
@@ -317,6 +319,51 @@ test("the normal route is unreachable once the deadline has won", () => {
     ),
     false,
   );
+});
+
+/**
+ * `SPTIMER-OBSERVE-01` at the boundary it actually claims.
+ *
+ * The assertions above read `state.userTaskWaits` and `state.timerWaits` directly, which is the right
+ * level for the ownership and counter facts they check but is not the contract this rule states. The
+ * canonical projection is what every target compares, so the route discriminator is asserted here
+ * rather than only in the differential catalog's mutation calibration, which executes solely when the
+ * injector runs and is therefore a fragile home for a semantic assertion.
+ */
+test("both routes are distinguishable at the canonical observation boundary", () => {
+  const armedProjection = projectOpenUserTasks(armed());
+  assert.deepEqual(armedProjection.map(({ id }) => id.elementId), ["ChildTask"]);
+  assert.deepEqual(
+    projectOpenTimers(armed()).map(({ id, deadlineMs }) => [
+      id.elementId,
+      deadlineMs,
+    ]),
+    [["Deadline", 1000]],
+  );
+
+  const quiescence = applyStimulus(
+    boundedScopeProgram,
+    armed(),
+    completeChildTask,
+  ).state;
+  const interruption = applyStimulus(
+    boundedScopeProgram,
+    armed(),
+    fireDeadline,
+  ).state;
+
+  assert.deepEqual(
+    projectOpenUserTasks(quiescence).map(({ id }) => id.elementId),
+    ["AfterScope"],
+  );
+  assert.deepEqual(
+    projectOpenUserTasks(interruption).map(({ id }) => id.elementId),
+    ["EscalationTask"],
+  );
+  // Both arms retire the deadline, so the timer projection alone cannot separate them; the follow-on
+  // task identity is the discriminator, which is why the two assertions above carry that weight.
+  assert.deepEqual(projectOpenTimers(quiescence), []);
+  assert.deepEqual(projectOpenTimers(interruption), []);
 });
 
 test("every off-deadline firing rejects with the armed triple preserved exactly", () => {
