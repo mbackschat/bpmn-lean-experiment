@@ -11,8 +11,12 @@ Implementation paused at the conditional semantic checkpoint after the first gre
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `818c661` | `fork-turns-none` | `approve-with-required-edits` | `b98db80` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `16535cc` | `fork-turns-none` | `approve-with-required-edits` | `2c59d4b` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The checkpoint review returned five required findings and three advisories. Its audits ran the two rounds [the bound](../TESTING-SPEC.md#independent-cold-review-gate) allows: round one closed four and left the `cancelActivity` lexeme guard evadable by single-quoting, and round two closed that and found `triggeredByEvent`. Two findings were material rather than documentary. The Lean boundary-attachment allowlist was not disposition-aware, so a non-interrupting deadline on a Sub-Process host passed the structural rule and lowered to an interrupting scope entry, refused only by the profile cardinality table. And the reviewer's advisory about an unwitnessed reader arm turned out to be a live defect: `bpmn-moddle` reduces `xsd:boolean` to `value === "true"` without warning, so `cancelActivity="1"` — schema-valid, meaning *true* — was admitted as non-interrupting.
+
+**One finding is outside this capsule and is the owner's decision.** The same coercion makes `triggeredByEvent="1"` admit an Event Sub-Process as an ordinary embedded Sub-Process, in three requirement rows already recorded `supported`. It predates this capsule, is recorded as [ordered-work item 18](../PLAN.md#ordered-work) with its absence in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md), and the checkpoint did not wait on it.
 
 The proposal review returned eight required findings, closed at `f44ff31`. Its audits then ran three rounds because each correction introduced a new required defect of its own: a sibling requirement-ledger copy left stale, an invented taxonomy claiming `BoundaryEvent` subclasses `IntermediateCatchEvent`, and a sub-heading named one level too high. The audit cell names `b98db80` because that is the last commit the reviewer actually audited.
 
