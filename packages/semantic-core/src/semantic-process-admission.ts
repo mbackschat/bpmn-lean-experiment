@@ -157,7 +157,9 @@ export function isWellFormedSemanticProcessProgram(
   }
 
   const placeIds = new Set<string>();
-  const scopeIds = new Set(definitionScopes.map(({ id }) => id));
+  const scopeOrigins = new Map(
+    definitionScopes.map(({ id, originElementId }) => [id, originElementId]),
+  );
   const placeOrigins = new Map<string, string>();
   for (const place of controlPlaces) {
     if (
@@ -181,7 +183,7 @@ export function isWellFormedSemanticProcessProgram(
       operation,
       placeIds,
       placeOrigins,
-      scopeIds,
+      scopeOrigins,
     )) {
       return false;
     }

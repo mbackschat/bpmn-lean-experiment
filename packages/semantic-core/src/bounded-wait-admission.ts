@@ -61,7 +61,7 @@ export function isWellFormedEnterBoundedScopeOperation(
   value: Record<string, unknown>,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
-  scopeIds: ReadonlySet<string>,
+  scopeOrigins: ReadonlyMap<string, string>,
 ): value is EnterBoundedScopeOperation {
   if (
     !hasOnlyKeys(value, [
@@ -77,7 +77,7 @@ export function isWellFormedEnterBoundedScopeOperation(
     !isPlaceReference(value.input, placeIds) ||
     !isPlaceReference(value.childEntry, placeIds) ||
     !isNonEmptyString(value.childScopeId) ||
-    !scopeIds.has(value.childScopeId) ||
+    !scopeOrigins.has(value.childScopeId) ||
     !isWellFormedBoundaryTimerArm(value.boundaryTimer, placeIds, placeOrigins)
   ) {
     return false;
@@ -86,6 +86,10 @@ export function isWellFormedEnterBoundedScopeOperation(
     value.input !== value.boundaryTimer.output &&
     value.childEntry !== value.boundaryTimer.output &&
     hostElementId(value.origin) !== value.boundaryTimer.elementId &&
+    // The host binding its sibling states positively: this operation's origin must be the element
+    // that owns the child scope it enters. Without it the operation could name any other element as
+    // its host, misattributing every occurrence the transition creates.
+    hostElementId(value.origin) === scopeOrigins.get(value.childScopeId) &&
     placeOrigins.get(value.boundaryTimer.output) ===
       value.boundaryTimer.origin.elementId;
 }

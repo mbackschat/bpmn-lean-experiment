@@ -39,7 +39,7 @@ export function isWellFormedSemanticOperation(
   value: unknown,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
-  scopeIds: ReadonlySet<string>,
+  scopeOrigins: ReadonlyMap<string, string>,
 ): value is SemanticOperation {
   if (
     !isRecord(value) ||
@@ -70,19 +70,19 @@ export function isWellFormedSemanticOperation(
         isPlaceReference(value.input, placeIds) &&
         isPlaceReference(value.childEntry, placeIds) &&
         isNonEmptyString(value.childScopeId) &&
-        scopeIds.has(value.childScopeId)
+        scopeOrigins.has(value.childScopeId)
       );
     case SemanticOperationKind.EnterBoundedScope:
       return isWellFormedEnterBoundedScopeOperation(
         value,
         placeIds,
         placeOrigins,
-        scopeIds,
+        scopeOrigins,
       );
     case SemanticOperationKind.InvokeProcess:
-      return isWellFormedInvokeProcessOperation(value, placeIds, scopeIds);
+      return isWellFormedInvokeProcessOperation(value, placeIds, scopeOrigins);
     case SemanticOperationKind.ReturnProcess:
-      return isWellFormedReturnProcessOperation(value, placeIds, scopeIds);
+      return isWellFormedReturnProcessOperation(value, placeIds, scopeOrigins);
     case SemanticOperationKind.AwaitUserTask:
       return (
         hasOnlyKeys(value, [
@@ -209,7 +209,7 @@ export function isWellFormedSemanticOperation(
         value,
         placeIds,
         placeOrigins,
-        scopeIds,
+        scopeOrigins,
       );
     case SemanticOperationKind.ReachNoneEnd:
       return (
@@ -226,7 +226,7 @@ export function isWellFormedSemanticOperation(
           "parentOutput",
         ]) &&
         isNonEmptyString(value.scopeId) &&
-        scopeIds.has(value.scopeId) &&
+        scopeOrigins.has(value.scopeId) &&
         (value.parentOutput === null ||
           isPlaceReference(value.parentOutput, placeIds))
       );
@@ -239,7 +239,7 @@ function isWellFormedThrowError(
   value: Record<string, unknown>,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
-  scopeIds: ReadonlySet<string>,
+  scopeOrigins: ReadonlyMap<string, string>,
 ): boolean {
   if (
     !hasOnlyKeys(value, [
@@ -260,7 +260,7 @@ function isWellFormedThrowError(
       "origin",
     ]) ||
     !isNonEmptyString(value.handler.attachedScopeId) ||
-    !scopeIds.has(value.handler.attachedScopeId) ||
+    !scopeOrigins.has(value.handler.attachedScopeId) ||
     value.handler.code !== value.error.code ||
     !isPlaceReference(value.handler.output, placeIds) ||
     !isRecord(value.handler.origin) ||

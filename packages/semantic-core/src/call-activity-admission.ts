@@ -15,7 +15,7 @@ type OperationEdge = Readonly<{ source: string; target: string }>;
 export function isWellFormedInvokeProcessOperation(
   value: Record<string, unknown>,
   placeIds: ReadonlySet<string>,
-  scopeIds: ReadonlySet<string>,
+  scopeOrigins: ReadonlyMap<string, string>,
 ): value is InvokeProcessOperation {
   return hasOnlyKeys(value, [
       "id",
@@ -30,7 +30,7 @@ export function isWellFormedInvokeProcessOperation(
     isPlaceReference(value.input, placeIds) &&
     isNonEmptyString(value.calledProcessId) &&
     isNonEmptyString(value.calledRootScopeId) &&
-    scopeIds.has(value.calledRootScopeId) &&
+    scopeOrigins.has(value.calledRootScopeId) &&
     isPlaceReference(value.calledEntry, placeIds) &&
     isNonEmptyString(value.returnOperationId);
 }
@@ -38,7 +38,7 @@ export function isWellFormedInvokeProcessOperation(
 export function isWellFormedReturnProcessOperation(
   value: Record<string, unknown>,
   placeIds: ReadonlySet<string>,
-  scopeIds: ReadonlySet<string>,
+  scopeOrigins: ReadonlyMap<string, string>,
 ): value is ReturnProcessOperation {
   return hasOnlyKeys(value, [
       "id",
@@ -50,7 +50,7 @@ export function isWellFormedReturnProcessOperation(
     ]) &&
     isNonEmptyString(value.calledProcessId) &&
     isNonEmptyString(value.calledRootScopeId) &&
-    scopeIds.has(value.calledRootScopeId) &&
+    scopeOrigins.has(value.calledRootScopeId) &&
     isPlaceReference(value.callerOutput, placeIds);
 }
 

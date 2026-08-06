@@ -221,6 +221,33 @@ test("the hand-built fixture is a well-formed program", () => {
   assert.equal(isWellFormedSemanticProcessProgram(boundedScopeProgram), true);
 });
 
+/**
+ * The scope-entry operation's origin must be the element that owns the child scope it enters.
+ *
+ * Its sibling `awaitBoundedUserTask` binds origin to host identity positively, while this operation
+ * only ever asserted that its origin is *not* the boundary Timer. That leaves an operation free to
+ * claim any other element as its host, which would misattribute every runtime occurrence the
+ * transition creates to an element that does not enter the scope.
+ */
+test("a scope-entry operation whose origin does not own its child scope is rejected", () => {
+  const misattributed = {
+    ...boundedScopeProgram,
+    operations: boundedScopeProgram.operations.map((operation) =>
+      operation.kind === SemanticOperationKind.EnterBoundedScope
+        ? {
+          ...operation,
+          origin: {
+            kind: SemanticOriginKind.BpmnElement,
+            elementId: "AfterScope",
+          },
+        }
+        : operation
+    ),
+  };
+
+  assert.equal(isWellFormedSemanticProcessProgram(misattributed), false);
+});
+
 test("start arms the child scope, its entry, and the deadline together", () => {
   const state = armed();
 
