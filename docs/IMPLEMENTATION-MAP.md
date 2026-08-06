@@ -567,7 +567,7 @@ The new `BpmnBoundedScopeSchedulerUnavailable` identity now carries its own nega
 
 The pre-due firing and the post-victory stale refusal are excluded from the registry for two distinct structural reasons recorded in [the scenario README](../scenarios/subprocess-boundary-timer/README.md). The host derives its firing instant from the wait's own committed deadline, and only completion stimuli reach Temporal at all, so a stale timer firing would reach no host while a stale child completion after the deadline would race the host's own firing. Both stale directions remain covered in Lean and the focused core test, where the order is exact.
 
-The requirement row `BPMN-SUBPROCESS-BOUNDARY-TIMER-01` and the capsule's `-PROPOSAL` role are unchanged until closure review approves graduation. The conditional semantic-checkpoint review required by [the cold-review rule](../CLAUDE.md#independent-cold-review) is complete: the review of `ef4edd4` returned `approve-with-required-edits` and the same reviewer's audit of `3652549` returned `AUDIT: closed`.
+The requirement row `BPMN-SUBPROCESS-BOUNDARY-TIMER-01` is `supported` for exactly this bounded slice, and the capsule graduated to [a specification](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md) on the closed closure review. The conditional semantic-checkpoint review required by [the cold-review rule](../CLAUDE.md#independent-cold-review) is complete: the review of `ef4edd4` returned `approve-with-required-edits` and the same reviewer's audit of `3652549` returned `AUDIT: closed`.
 
 ## Current evidence
 

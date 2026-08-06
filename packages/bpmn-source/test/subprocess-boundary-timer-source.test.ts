@@ -1,7 +1,7 @@
 /**
  * Locks exact source admission and lowering for the interrupting Sub-Process boundary Timer profile.
  *
- * The oracle is the [approved capsule](../../../docs/capsules/SUBPROCESS-BOUNDARY-TIMER-PROPOSAL.md):
+ * The oracle is the [approved capsule](../../../docs/capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md):
  * one embedded Sub-Process owns one interrupting `PT1S` Timer Boundary Event, and both routes lead to
  * a distinct published follow-on User Task, which is what makes the route choice observable at the
  * canonical boundary.

@@ -1,7 +1,7 @@
 /**
  * Focused semantic-core behavior for the interrupting Sub-Process boundary Timer family.
  *
- * The oracle is the [approved capsule](../../../docs/capsules/SUBPROCESS-BOUNDARY-TIMER-PROPOSAL.md).
+ * The oracle is the [approved capsule](../../../docs/capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md).
  *
  * Two facts here cannot be reached by any registered schedule and are the reason this lane exists at
  * this level. The deadline's *owner* is a correctness requirement with no separating witness: a
