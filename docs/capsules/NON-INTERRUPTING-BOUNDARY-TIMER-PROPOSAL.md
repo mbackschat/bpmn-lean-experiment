@@ -30,7 +30,7 @@ BPMN 2.0.2 is the sole semantic authority for this capsule.
 
 - Clause 10.5.6 owns the behavior directly and unusually explicitly: “For non-interrupting boundary Events, the cancelActivity attribute is set to *false*. Whenever the Event occurs, the associated Activity continues to be active. As a *token* is generated for the Sequence Flow from the boundary Event in parallel to the continuing execution of the Activity, care MUST be taken when this flow is merged into the main flow of the Process – typically it should be ended with its own End Event.”
 - Clause 13.5.3 owns the boundary handling order and its non-interrupting arm: handling first consumes the Event occurrence; the attached Activity is cancelled only “if the cancelActivity attribute is set”, and otherwise “the Activity continues execution (only possible for Message, Signal, Timer, and Conditional Events, not for Error Events)”; execution then follows the Sequence Flow connected to the boundary Event.
-- Clause 10.5 Table 10.91 owns the Boundary Event attributes and Table 10.92 owns the legal `cancelActivity` values per trigger, whose Timer row reads `True/false`. This capsule cites the table numbers rather than a `10.5.x` sub-clause because the local Markdown conversion lost intermediate headings, so the nearest numbered heading it can resolve is not evidence of the owning sub-clause.
+- Clause 10.5.4 *Intermediate Event* owns Table 10.91, the Boundary Event attributes, and Table 10.92, the legal `cancelActivity` values per trigger, whose Timer row reads `True/false`. A Boundary Event is a kind of Intermediate Event, which is why both tables sit there.
 - Clause 10.5.5 Table 10.101, *TimerEventDefinition model associations*, owns `timeDuration`, already admitted at exactly `PT1S` by the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md). It makes the three Timer attributes mutually exclusive when `isExecutable` is `true`, which this profile satisfies, and requires `timeCycle` to conform to the ISO-8601 recurring-interval format. Clause 10.5.8 Table 10.122 owns the corresponding XML schema.
 - Clause 13.2 owns Process completion, which requires that no token remains within the Process instance and that no Activity of the Process is still active.
 - Clause 13.3.2 owns the Activity lifecycle whose continued active state is the observable difference from interruption.
@@ -151,7 +151,7 @@ The monitored task is completed by the ordinary completion command, whose stimul
 
 ### `NBTIMER-QUIESCE-01` — the enclosing scope completes only after both branches
 
-The root scope completes only when no token and no active Activity remains in it, which is Clause 13.2's condition verbatim, so neither branch reaching its None End Event completes the Process while the other is live. This rule adds no mechanism: it is the quiescent completion the [ordinary embedded Sub-Process completion specification](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) established, now reached by a scope whose concurrency came from an Event rather than from a Gateway.
+The root scope completes only when no token and no active Activity remains in it, which is Clause 13.2's two-part condition unchanged, so neither branch reaching its None End Event completes the Process while the other is live. This rule adds no mechanism: it is the quiescent completion the [ordinary embedded Sub-Process completion specification](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) established, now reached by a scope whose concurrency came from an Event rather than from a Gateway.
 
 It is stated as a rule because it is the proposition an interrupting implementation would silently satisfy for the wrong reason, and because the branch that ends first differs between the two registered schedules.
 
@@ -289,17 +289,17 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 22 |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 23 |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 61 |
-| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 83 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 81 |
-| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 180 |
+| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 83 |
 | [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 155 |
 | [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 161 |
+| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 180 |
 | [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 386 |
 | [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 422 |
 | [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 453 |
 | [Timer Boundary Event source admission](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 515 |
 
-**One of those owners is the change site without which this profile cannot be admitted at all.** [The Timer Boundary Event source reader](../../packages/bpmn-source/src/timer-boundary-event-source.ts) today accepts `cancelActivity` only when it is absent or `true` and returns no checked node otherwise, so the inverted admission this profile requires is a change to that predicate rather than a new one beside it. [Checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) owns `ownsBoundaryTimerDeadline` and `boundaryTimersAttachToDeadlineOwners`, both currently documented as interrupting-only, and it is the tightest listed owner after the three below.
+**Two of those owners carry the admission inversion, and one of them is the change site without which this profile cannot be admitted at all.** [The Timer Boundary Event source reader](../../packages/bpmn-source/src/timer-boundary-event-source.ts) today accepts `cancelActivity` only when it is absent or `true` and returns no checked node otherwise, so the inversion is a change to that predicate rather than a new one beside it. [Checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) owns `ownsBoundaryTimerDeadline` and `boundaryTimersAttachToDeadlineOwners`, both currently documented as interrupting-only, and it is the tightest listed owner after the three below.
 
 Three of those owners are close enough that the order of work is constrained, and each condition states when it stops applying rather than being a bare instruction.
 
