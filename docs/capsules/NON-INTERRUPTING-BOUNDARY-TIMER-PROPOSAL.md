@@ -8,9 +8,13 @@
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `818c661` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `818c661` | `fork-turns-none` | `approve-with-required-edits` | `b98db80` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal review returned eight required findings, closed at `f44ff31`. Its audits then ran three rounds because each correction introduced a new required defect of its own: a sibling requirement-ledger copy left stale, an invented taxonomy claiming `BoundaryEvent` subclasses `IntermediateCatchEvent`, and a sub-heading named one level too high. The audit cell names `b98db80` because that is the last commit the reviewer actually audited.
+
+**One further one-sentence correction landed after that audit and was not re-audited**, under [the two-round bound](../TESTING-SPEC.md#independent-cold-review-gate) the owner set on 2026-08-06. It moves Tables 10.91 and 10.92 from the *Intermediate Events Attached to an Activity Boundary* sub-heading to the sibling *Attributes for Boundary Events* that owns them, verified against the corpus at lines 7659, 7665, 7674, and 7689. The clause-level attribution the requirement ledger and the reference guard consume was already correct at 10.5.4 and is unchanged by it.
 
 ## Question
 
@@ -30,7 +34,7 @@ BPMN 2.0.2 is the sole semantic authority for this capsule.
 
 - Clause 10.5.6 owns the behavior directly and unusually explicitly: “For non-interrupting boundary Events, the cancelActivity attribute is set to *false*. Whenever the Event occurs, the associated Activity continues to be active. As a *token* is generated for the Sequence Flow from the boundary Event in parallel to the continuing execution of the Activity, care MUST be taken when this flow is merged into the main flow of the Process – typically it should be ended with its own End Event.”
 - Clause 13.5.3 owns the boundary handling order and its non-interrupting arm: handling first consumes the Event occurrence; the attached Activity is cancelled only “if the cancelActivity attribute is set”, and otherwise “the Activity continues execution (only possible for Message, Signal, Timer, and Conditional Events, not for Error Events)”; execution then follows the Sequence Flow connected to the boundary Event.
-- Clause 10.5.4 *Intermediate Event* owns Table 10.91, the Boundary Event attributes, and Table 10.92, the legal `cancelActivity` values per trigger, whose Timer row reads `True/false`. Both sit under that clause's *Intermediate Events Attached to an Activity Boundary* sub-heading, which Table 10.90 introduces as the intermediate Events that may be attached to an Activity boundary. `BoundaryEvent` is not a subclass of `IntermediateCatchEvent`: `BPMN20.cmof` derives both from `CatchEvent`, and the same page states that “The BoundaryEvent element inherits the attributes and model associations of CatchEvent.”
+- Clause 10.5.4 *Intermediate Event* owns Table 10.91, the Boundary Event attributes, and Table 10.92, the legal `cancelActivity` values per trigger, whose Timer row reads `True/false`. Both sit under that clause's *Attributes for Boundary Events* sub-heading; the sibling sub-heading *Intermediate Events Attached to an Activity Boundary* and its Table 10.90 are why boundary Events fall under Clause 10.5.4 at all. `BoundaryEvent` is not a subclass of `IntermediateCatchEvent`: `BPMN20.cmof` derives both from `CatchEvent`, and the same page states that “The BoundaryEvent element inherits the attributes and model associations of CatchEvent.”
 - Table 10.91's own `cancelActivity` row supplies the repetition consequence directly: “If the Activity is not canceled, multiple *instances* of that handler can run concurrently.” This profile admits only the `timeDuration` form, so exactly one handler instance is reachable, and that is the exclusion rather than a claim about non-interrupting boundaries generally.
 - Clause 10.5.5 Table 10.101, *TimerEventDefinition model associations*, owns `timeDuration`, already admitted at exactly `PT1S` by the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md). It makes the three Timer attributes mutually exclusive when `isExecutable` is `true`, which this profile satisfies, and requires `timeCycle` to conform to the ISO-8601 recurring-interval format. Clause 10.5.8 Table 10.122 owns the corresponding XML schema.
 - Clause 13.2 owns Process completion, which requires that no token remains within the Process instance and that no Activity of the Process is still active.

@@ -570,6 +570,8 @@ The report is issue-first. It may name a brief supported claim when that fact is
 
 `APPROVE WITH REQUIRED EDITS` and `REJECT` block the stage. The correction audit in the same reviewer thread must name the correction target and explicitly close or retain every required finding. Advisory findings do not block unless applying one changes the selected account or reviewed boundary. No repository receipt records approval until required findings are closed.
 
+**A correction audit runs at most twice per stage.** The owner set this bound on 2026-08-06 after a proposal-stage audit reached a third round: each round closed the previous findings and each correction introduced a new required defect, at roughly 640,000 reviewer tokens for one planning document. The rounds converge in finding count and do not converge on their own, because every correction is new prose that can carry a new defect. After the second audit, apply any remaining advisory or cosmetic finding without re-auditing, and stop the stage for owner direction with each open required finding stated in full rather than opening a third round. A stage that cannot close in two rounds is telling you the document needs owner judgement, not another reviewer pass. This bounds only the *audit* recursion; the cold stage review itself remains mandatory and unbounded in scope.
+
 ### Review receipt
 
 The governed proposal or specification records a concise receipt rather than copying a chat transcript or full review report:
