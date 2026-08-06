@@ -281,8 +281,9 @@ function diagnostic(
  *
  * Deliberately conservative and markup-blind: it rejects the whole source when any occurrence is
  * ambiguous, rather than resolving which element carries it — or whether an element carries it at
- * all, since a commented-out boundary Event or a `name` attribute quoting one is refused too. Narrowing it would require re-parsing
- * the attribute's owner here, which is the parser's job and not this guard's. Both XML
+ * all, since a commented-out boundary Event or a `name` attribute quoting one is refused too.
+ * Narrowing it would require re-parsing the attribute's owner here, which is the parser's job and
+ * not this guard's. Both XML
  * attribute-value delimiters are matched, and comparison is by lexeme, so an entity-encoded spelling
  * of a valid boolean such as `&#116;rue` and a whitespace-collapsible `" true "` that `xs:boolean`
  * accepts are also refused. Those over-rejections are the safe direction and are intentional:

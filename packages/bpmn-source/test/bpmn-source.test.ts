@@ -20,7 +20,6 @@ import type {
 } from "@bpmn-lean/bpmn-source";
 import type { Scenario } from "@bpmn-lean/semantic-core";
 
-
 import {
   findModdleElement,
   importCompiledBpmnGraph,
@@ -508,6 +507,12 @@ test("derives the guarded boolean attributes from the metamodel manifest", () =>
  * this package and keeps the assertion non-circular: the guard admits `isExecutable="0"`, so what
  * rejects the source afterwards is the coercion delivering `false` to a profile requiring `true`. A
  * parser that flipped `0` would make this source compile.
+ *
+ * This is not the only lock on the admitted set, and it is the weaker kind. `false` is locked by the
+ * three profile admit-cases that would break on a `"false"`→true flip, and `0` additionally by
+ * `admits cancelActivity="0"` in the non-interrupting source suite. Those are admit-assertions on an
+ * admitted lexeme, which cannot go vacuous — both hazards turn accept into reject — where a
+ * reject-assertion like this one can. Do not delete the stronger locks believing this replaces them.
  */
 test("locks the pinned parser's coercion of the one lexeme the guard admits", async () => {
   const canonicalSource = new TextDecoder().decode(canonicalBytes);
@@ -520,5 +525,13 @@ test("locks the pinned parser's coercion of the one lexeme the guard admits", as
     );
 
   assert.equal((await executable("true")).status, BpmnCompilationStatus.Accepted);
-  assert.notEqual((await executable("0")).status, BpmnCompilationStatus.Accepted);
+  const zero = await executable("0");
+  assert.notEqual(zero.status, BpmnCompilationStatus.Accepted);
+  // The exact code, not merely "not accepted": that weaker form is satisfied by the guard refusing
+  // the lexeme as well as by the coercion refusing the Process, so dropping `0` from the admitted
+  // set would leave this green while it observed nothing.
+  assert.deepEqual(
+    zero.diagnostics.map(({ code }) => code),
+    [BpmnSourceDiagnosticCode.UnsupportedModel],
+  );
 });
