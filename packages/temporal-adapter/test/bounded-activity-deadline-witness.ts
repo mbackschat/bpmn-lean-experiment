@@ -33,10 +33,8 @@ import {
 } from "@bpmn-lean/temporal-adapter";
 
 import {
-  commands,
   requireStartedTimer,
   runDirectVmActivations,
-  workflowFailureType,
 } from "./direct-vm-activation-harness.ts";
 import type {
   Activation,
@@ -108,30 +106,6 @@ export async function runBoundedActivityDeadlineWitness(): Promise<BoundedActivi
   };
 }
 
-/** Requires the route to have reached its own End Event. */
-export function requireRouteCompleted(
-  completions: ReadonlyArray<Completion>,
-): void {
-  assert.equal(reachedCompletion(completions), true);
-}
-
-/** Requires the other route's follow-on Task to have never opened. */
-export function requireRouteNotTaken(
-  completions: ReadonlyArray<Completion>,
-): void {
-  assert.equal(reachedCompletion(completions), false);
-}
-
-function reachedCompletion(
-  completions: ReadonlyArray<Completion>,
-): boolean {
-  return completions.some((completion) =>
-    commands(completion).some(
-      ({ completeWorkflowExecution }) => completeWorkflowExecution !== undefined,
-    )
-  );
-}
-
 function followOnCompletionJob(
   fixture: ReturnType<typeof boundedFixture>,
   elementId: string,
@@ -146,76 +120,6 @@ function followOnCompletionJob(
     },
     submittedValues: [],
   });
-}
-
-/** Requires the host to have refused rather than selected a winner. */
-export function requireNoWinnerSelected(
-  completion: Completion,
-  failureType: string,
-): void {
-  assert.equal(workflowFailureType(completion), failureType);
-  // A refusal that had already cancelled the deadline would have committed a victory first.
-  assert.equal(
-    commands(completion).some(({ cancelTimer }) => cancelTimer !== undefined),
-    false,
-  );
-}
-
-/**
- * Requires the Activity's own completion to have withdrawn its durable deadline.
- *
- * This is the host half of the capsule's withdrawal claim. Its counterpart below must stay
- * separate: a deadline that fired was never withdrawn, so asserting withdrawal on both routes
- * would assert nothing about either.
- */
-export function requireDeadlineWithdrawn(
-  completions: ReadonlyArray<Completion>,
-): void {
-  assert.equal(cancelledDeadline(completions), true);
-}
-
-/** Requires the winning deadline not to have been cancelled, since it fired instead. */
-export function requireDeadlineNotWithdrawn(
-  completions: ReadonlyArray<Completion>,
-): void {
-  assert.equal(cancelledDeadline(completions), false);
-}
-
-function cancelledDeadline(completions: ReadonlyArray<Completion>): boolean {
-  return completions.some((completion) =>
-    commands(completion).some(({ cancelTimer }) => cancelTimer?.seq === 1)
-  );
-}
-
-/**
- * Requires the refused completion Update to have been answered rather than left silent.
- *
- * This is the command-level half of the preflight's durable-resolution obligation. The refusal
- * carries an in-flight Update, and the two ways it could go wrong are opposite: no response at all
- * would strand the caller, while a `completed` response would mean the host had chosen a winner
- * after all. The assertions below reject both.
- *
- * What this does *not* establish: that a client awaiting the Update observes the failure. That is a
- * server-side fact and needs the real Temporal service, so it remains outstanding.
- */
-export function requireRefusedUpdateAnswered(completion: Completion): void {
-  const responses = commands(completion).flatMap(({ updateResponse }) =>
-    updateResponse === undefined || updateResponse === null ? [] : [updateResponse]
-  );
-  assert.equal(responses.length, 1);
-  assert.notEqual(responses[0]?.accepted, undefined);
-  // The refusal is non-retryable, so no later attempt can produce this result either.
-  assert.equal(responses[0]?.completed, undefined);
-  assert.equal(responses[0]?.rejected, undefined);
-}
-
-/** Requires no activation in the run to have failed. */
-export function requireNoHostFailure(
-  completions: ReadonlyArray<Completion>,
-): void {
-  for (const completion of completions) {
-    assert.equal(workflowFailureType(completion), undefined);
-  }
 }
 
 function completionUpdateJob(

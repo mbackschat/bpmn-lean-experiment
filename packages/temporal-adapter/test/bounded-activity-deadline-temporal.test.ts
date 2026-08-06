@@ -6,12 +6,14 @@ import { bpmnBoundedActivitySchedulerUnavailableFailureType } from "@bpmn-lean/t
 
 import {
   requireDeadlineNotWithdrawn,
-  requireRefusedUpdateAnswered,
   requireDeadlineWithdrawn,
   requireNoHostFailure,
   requireNoWinnerSelected,
+  requireRefusedUpdateAnswered,
   requireRouteCompleted,
   requireRouteNotTaken,
+} from "./boundary-deadline-assertions.ts";
+import {
   runBoundedActivityDeadlineWitness,
 } from "./bounded-activity-deadline-witness.ts";
 
