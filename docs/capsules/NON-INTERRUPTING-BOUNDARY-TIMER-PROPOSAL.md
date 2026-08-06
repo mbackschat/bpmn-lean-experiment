@@ -107,7 +107,7 @@ None Start → Monitored User Task ──normal──→ Normal User Task → No
 - no parser warning of any kind, which remains admission-blocking;
 - one monitored User Task with exactly one incoming and one outgoing Sequence Flow;
 - one Boundary Event whose `attachedToRef` resolves to that monitored User Task;
-- `cancelActivity` lexically `false`. An omitted attribute and lexical `true` are both **rejected** as the retained hostile controls, because the machine-readable default resolves omission to `true` and interrupting behavior is the sibling capsule's proposition;
+- `cancelActivity` naming `false`, which its `xs:boolean` lexemes `false` and `0` both do. An omitted attribute and lexical `true` are both **rejected** as the retained hostile controls, because the machine-readable default resolves omission to `true` and interrupting behavior is the sibling capsule's proposition. `1` is rejected too, and not because it is non-canonical: it is the one valid lexeme `bpmn-moddle` inverts, and admitting it would give this profile a source that means *interrupting*. **This widens decision 4's wording from "lexically `false`" to "naming `false`" and needs owner confirmation**; it preserves what decision 4 secured, because the two profiles' admitted sets stay disjoint;
 - exactly one Timer Event Definition containing exactly one `timeDuration` whose exact lexical value is `PT1S`; `timeCycle` and `timeDate` are rejected;
 - exactly one outgoing boundary Sequence Flow and no incoming boundary Flow;
 - two distinct follow-on User Tasks, one on each route, each with exactly one incoming and one outgoing Sequence Flow;

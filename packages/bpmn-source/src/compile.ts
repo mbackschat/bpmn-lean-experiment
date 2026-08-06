@@ -8,6 +8,9 @@ import type {
   BpmnSourceIdentity,
   CompileBpmnToSemanticProcessRequest,
 } from "./contracts.js";
+import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
+  type: "json",
+};
 import {
   importBpmnGraph,
   parserFailureDiagnostics,
@@ -117,12 +120,12 @@ export async function compileBpmnToSemanticProcess(
     ]);
   }
 
-  const ambiguousLexeme = firstAmbiguousCancelActivityLexeme(xml);
-  if (ambiguousLexeme !== undefined) {
+  const ambiguous = firstAmbiguousBooleanLexeme(xml);
+  if (ambiguous !== undefined) {
     return reject([
       diagnostic(
         BpmnSourceDiagnosticCode.AmbiguousBooleanLexeme,
-        `cancelActivity="${ambiguousLexeme}" does not name an interruption disposition.`,
+        `${ambiguous.attribute}="${ambiguous.lexeme}" is not an exact xsd:boolean lexeme.`,
       ),
     ]);
   }
@@ -254,43 +257,67 @@ function diagnostic(
 }
 
 /**
- * The first `cancelActivity` lexeme that is neither exactly `true` nor exactly `false`.
+ * The first boolean-typed attribute occurrence whose lexeme is neither exactly `true` nor `false`.
  *
- * This is checked on the exact decoded source rather than after parsing, because `bpmn-moddle`
- * reduces this `xsd:boolean` attribute to `value === "true"` and reports no warning. Every other
- * lexeme therefore reaches the checked graph as `false`, which is the non-interrupting disposition:
- * `cancelActivity="1"` is a schema-valid *interrupting* boundary Event that would be admitted as
- * non-interrupting, and `cancelActivity="maybe"` would be admitted at all. No profile admits both
- * dispositions, so silently choosing one is a semantic decision the source did not make.
+ * Checked on the exact decoded source rather than after parsing, because `bpmn-moddle` reduces every
+ * `xsd:boolean` attribute to `value === "true"` and reports no warning. Whether that is safe depends
+ * on which way the consumer compares: a reader requiring `true` refuses a coerced value, while a
+ * reader admitting `false` admits it. Both shapes exist here, so the coercion cannot be left to the
+ * consumers.
+ *
+ * What is refused is exactly the disagreement, not every non-canonical spelling. `xs:boolean` admits
+ * `true`, `false`, `1`, and `0`; the coercion maps `false` and `0` to false and `true` to true,
+ * agreeing with all three, and maps `1` to false where the type means *true*. So `0` is admitted and
+ * `1` is not, which looks asymmetric and is the whole point: `1` is the one valid lexeme the parser
+ * silently inverts. Whitespace-padded forms are refused because `whiteSpace=collapse` is the type's
+ * rule and applying it here would mean decoding XML outside the parser.
+ *
+ * The attribute set is derived from the metamodel manifest's `Boolean`-typed properties rather than
+ * listed, so it spans exactly the class the coercion spans and a boolean added to the manifest is
+ * covered when it is added. Enumerating attribute names here would be the same value-not-position
+ * mistake that left `cancelActivity='1'` admitted.
  *
  * Deliberately conservative and element-blind: it rejects the whole source when any occurrence is
  * ambiguous, rather than resolving which element carries it. Narrowing it would require re-parsing
- * the attribute's owner here, which is the parser's job and not this guard's.
- *
- * Both XML attribute-value delimiters are matched. An earlier form matched only the double-quoted
- * spelling, which left `cancelActivity='1'` — schema-valid, meaning *true* — admitted under the
- * non-interrupting profile. A guard over a syntactic class needs a case per position of the class,
- * not per value.
- *
- * It compares lexemes, so it also refuses an entity-encoded spelling of a valid boolean such as
- * `&#116;rue`, and a whitespace-collapsible `" true "` that `xs:boolean` would accept. Those
- * over-rejections are the safe direction and are intentional: resolving entities or applying
- * `whiteSpace=collapse` here would mean decoding XML outside the parser.
- *
- * The coercion this answers is a property of every `xsd:boolean` in the metamodel, and this guard
- * covers exactly one attribute of it. That is a stated bound, not an implied claim about the class:
- * `triggeredByEvent` admits on the coerced value rather than refusing on it, so the same coercion
- * fails open there. Widening this regex per attribute would repeat the enumeration mistake it was
- * written for; the class-level fix drives the check from the boolean-typed attributes the
- * repository's own metamodel manifest already declares, and is tracked as its own work item.
+ * the attribute's owner here, which is the parser's job and not this guard's. Both XML
+ * attribute-value delimiters are matched, and comparison is by lexeme, so an entity-encoded spelling
+ * of a valid boolean such as `&#116;rue` and a whitespace-collapsible `" true "` that `xs:boolean`
+ * accepts are also refused. Those over-rejections are the safe direction and are intentional:
+ * resolving entities or applying `whiteSpace=collapse` here would mean decoding XML outside the
+ * parser.
  */
-function firstAmbiguousCancelActivityLexeme(xml: string): string | undefined {
-  const attribute = /\bcancelActivity\s*=\s*(?:"([^"]*)"|'([^']*)')/gu;
-  for (const [, doubleQuoted, singleQuoted] of xml.matchAll(attribute)) {
-    const lexeme = doubleQuoted ?? singleQuoted;
-    if (lexeme !== undefined && lexeme !== "true" && lexeme !== "false") {
-      return lexeme;
+function firstAmbiguousBooleanLexeme(
+  xml: string,
+): Readonly<{ attribute: string; lexeme: string }> | undefined {
+  for (const attribute of booleanAttributeNames) {
+    const occurrence = new RegExp(
+      `\\b${attribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`,
+      "gu",
+    );
+    for (const [, doubleQuoted, singleQuoted] of xml.matchAll(occurrence)) {
+      const lexeme = doubleQuoted ?? singleQuoted;
+      if (lexeme !== undefined && !coercionAgreesWithXsdBoolean.has(lexeme)) {
+        return { attribute, lexeme };
+      }
     }
   }
   return undefined;
 }
+
+/** The lexemes on which `bpmn-moddle`'s `value === "true"` coercion and `xs:boolean` agree. */
+const coercionAgreesWithXsdBoolean: ReadonlySet<string> = new Set([
+  "true",
+  "false",
+  "0",
+]);
+
+/** Every `Boolean`-typed property the manifest declares, deduplicated because a name may have several owners. */
+const booleanAttributeNames: ReadonlyArray<string> = [
+  ...new Set(
+    metamodelManifest.properties
+      .filter((property): property is typeof property & { type: "Boolean" } =>
+        property.type === "Boolean"
+      )
+      .map(({ name }) => name),
+  ),
+].sort();

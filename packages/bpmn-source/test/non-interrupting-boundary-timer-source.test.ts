@@ -190,7 +190,7 @@ test("refuses the opposite disposition at the checked-graph boundary", () => {
 // value would certify only the spelling it happened to use. The single-quoted `'1'` is the case an
 // earlier double-quote-only form admitted.
 for (const quote of ['"', "'"]) {
-  for (const lexeme of ["1", "0", "maybe", "FALSE", ""]) {
+  for (const lexeme of ["1", "maybe", "FALSE", " false ", ""]) {
     test(`refuses cancelActivity=${quote}${lexeme}${quote} before parsing`, async () => {
       const ambiguous = await compile(
         source.replace(
@@ -213,14 +213,21 @@ for (const quote of ['"', "'"]) {
   }
 }
 
-/** The single-quoted admitted spelling must still compile, so the guard rejects by lexeme rather than by delimiter. */
-test("admits a single-quoted non-interrupting deadline", async () => {
-  const singleQuoted = await compile(
-    source.replace('cancelActivity="false"', "cancelActivity='false'"),
-  );
+/**
+ * The admitted spellings: single-quoting is not a discriminator, and `0` is a valid `xs:boolean`
+ * *false* that the parser coerces correctly, so it names this profile's disposition as exactly as
+ * `false` does. `1` is refused two cases above because it is the one valid lexeme the parser
+ * inverts, not because it is non-canonical.
+ */
+for (const attribute of ["cancelActivity='false'", 'cancelActivity="0"']) {
+  test(`admits ${attribute}`, async () => {
+    const admitted = await compile(
+      source.replace('cancelActivity="false"', attribute),
+    );
 
-  assert.equal(singleQuoted.status, BpmnCompilationStatus.Accepted);
-});
+    assert.equal(admitted.status, BpmnCompilationStatus.Accepted);
+  });
+}
 
 /**
  * A non-interrupting deadline whose `attachedToRef` does not resolve to a User Task in its own scope

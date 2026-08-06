@@ -87,15 +87,38 @@ test("rejects a duration this profile does not admit", async () => {
   assert.notEqual(result.status, BpmnCompilationStatus.Accepted);
 });
 
-test("rejects an Event Sub-Process host", async () => {
+/**
+ * Every spelling of a *true* `triggeredByEvent`, not only the canonical one.
+ *
+ * `bpmn-moddle` reduces an `xsd:boolean` to `value === "true"`, and scoped flow-element admission
+ * admits a Sub-Process whose `triggeredByEvent` is absent or `false` — it admits on the coerced
+ * value rather than refusing on it. So `"1"`, `'1'`, and `" true "` are all schema-valid spellings
+ * of true that were once admitted, and an Event Sub-Process was lowered as an ordinary embedded
+ * Sub-Process. `"true"` is refused by the admission predicate; the rest by the exact-lexeme guard.
+ */
+for (const lexeme of ['"true"', '"1"', "'1'", '" true "']) {
+  test(`rejects an Event Sub-Process host declared as ${lexeme}`, async () => {
+    const result = await compile(
+      source.replaceAll(
+        '<bpmn:subProcess id="Scope" name="Bounded scope">',
+        `<bpmn:subProcess id="Scope" name="Bounded scope" triggeredByEvent=${lexeme}>`,
+      ),
+    );
+
+    assert.notEqual(result.status, BpmnCompilationStatus.Accepted);
+  });
+}
+
+/** The admitted spelling still compiles, so the guard refuses by lexeme rather than by attribute presence. */
+test("admits an ordinary embedded Sub-Process declared with an exact false", async () => {
   const result = await compile(
     source.replaceAll(
       '<bpmn:subProcess id="Scope" name="Bounded scope">',
-      '<bpmn:subProcess id="Scope" name="Bounded scope" triggeredByEvent="true">',
+      '<bpmn:subProcess id="Scope" name="Bounded scope" triggeredByEvent="false">',
     ),
   );
 
-  assert.notEqual(result.status, BpmnCompilationStatus.Accepted);
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
 });
 
 /**
