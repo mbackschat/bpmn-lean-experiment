@@ -117,6 +117,16 @@ export async function compileBpmnToSemanticProcess(
     ]);
   }
 
+  const ambiguousLexeme = firstAmbiguousCancelActivityLexeme(xml);
+  if (ambiguousLexeme !== undefined) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.AmbiguousBooleanLexeme,
+        `cancelActivity="${ambiguousLexeme}" does not name an interruption disposition.`,
+      ),
+    ]);
+  }
+
   let imported;
   try {
     imported = await importBpmnGraph(xml, request.limits.parserDeadlineMs);
@@ -241,4 +251,27 @@ function diagnostic(
   evidence: string,
 ): BpmnSourceDiagnostic {
   return { code, evidence };
+}
+
+/**
+ * The first `cancelActivity` lexeme that is neither exactly `true` nor exactly `false`.
+ *
+ * This is checked on the exact decoded source rather than after parsing, because `bpmn-moddle`
+ * reduces an `xsd:boolean` attribute to `value === "true"` and reports no warning. Every other
+ * lexeme therefore reaches the checked graph as `false`, which is the non-interrupting disposition:
+ * `cancelActivity="1"` is a schema-valid *interrupting* boundary Event that would be admitted as
+ * non-interrupting, and `cancelActivity="maybe"` would be admitted at all. No profile admits both
+ * dispositions, so silently choosing one is a semantic decision the source did not make.
+ *
+ * Deliberately conservative and element-blind: it rejects the whole source when any occurrence is
+ * ambiguous, rather than resolving which element carries it. Narrowing it would require re-parsing
+ * the attribute's owner here, which is the parser's job and not this guard's.
+ */
+function firstAmbiguousCancelActivityLexeme(xml: string): string | undefined {
+  for (const [, lexeme] of xml.matchAll(/\bcancelActivity\s*=\s*"([^"]*)"/gu)) {
+    if (lexeme !== "true" && lexeme !== "false") {
+      return lexeme;
+    }
+  }
+  return undefined;
 }

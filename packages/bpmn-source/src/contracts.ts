@@ -14,6 +14,7 @@ export enum BpmnSourceDiagnosticCode {
   UnsupportedEncoding = "unsupportedEncoding",
   InvalidUtf8 = "invalidUtf8",
   DoctypeForbidden = "doctypeForbidden",
+  AmbiguousBooleanLexeme = "ambiguousBooleanLexeme",
   ParserFailure = "parserFailure",
   ParserWarning = "parserWarning",
   SourceIdentityMismatch = "sourceIdentityMismatch",

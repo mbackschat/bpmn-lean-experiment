@@ -374,7 +374,7 @@ def activateTimer (state : RuntimeState) (instanceId : SemanticId)
         state.timerActivations.filter fun value =>
           decide (value.elementId ≠ timer.elementId) }
 
-/-- Arms the Activity occurrence and its interrupting deadline as one transition, consuming the incoming token exactly once. Both occurrences take a fresh ordinal from their own element's counter, so the pair shares one activation only because arming is atomic; that shared ordinal is what later recovers the pair without a stored ownership record. -/
+/-- Arms the Activity occurrence and its boundary deadline as one transition, in either interruption disposition, consuming the incoming token exactly once. Both occurrences take a fresh ordinal from their own element's counter, so the pair shares one activation only because arming is atomic; that shared ordinal is what later recovers the pair without a stored ownership record. -/
 def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input : ControlPlaceId)
     (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) : RuntimeState :=

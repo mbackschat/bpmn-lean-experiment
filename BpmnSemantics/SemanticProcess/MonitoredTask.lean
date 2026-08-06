@@ -408,21 +408,39 @@ theorem monitored_completion_routes_to_normal (program : Program)
   | afterSpawn _ task _ taskOutput _ _ taskLive _ =>
       exact ⟨task, taskLive, taskOutput, rfl, rfl, rfl⟩
 
-/-- A completion withdraws every deadline it found live, so no later firing of that occurrence can commit.
+/-- A completion that changed the deadline collection removed exactly one live deadline, so no later firing of that occurrence can commit.
+
+Keyed on the observable change rather than stated as a disjunction over both constructors. A
+disjunction whose branches include `after.timerWaits = before.timerWaits` is satisfiable by that
+branch alone, so it would hold for an evaluator that never withdrew anything; the `changed`
+hypothesis is what forces the withdrawing case and makes the conclusion carry the removal.
 
 The `Nodup` hypothesis is load-bearing and names a fact the state type does not enforce:
 `RuntimeState` carries no uniqueness invariant over `timerWaits`, so nothing in the type rules out
 two identical occurrences. It is recorded here instead of being assumed silently. -/
-theorem monitored_completion_withdraws_live_deadline (program : Program)
-    (before after : RuntimeState)
+theorem monitored_completion_that_changed_deadlines_removed_one
+    (program : Program) (before after : RuntimeState)
     (step : MonitoredCompletionStep program before after)
-    (nodup : before.timerWaits.Nodup) :
-    after.timerWaits = before.timerWaits ∨
-      ∃ timer ∈ before.timerWaits, timer ∉ after.timerWaits := by
+    (nodup : before.timerWaits.Nodup)
+    (changed : after.timerWaits ≠ before.timerWaits) :
+    ∃ timer ∈ before.timerWaits,
+      after.timerWaits = before.timerWaits.erase timer ∧
+        timer ∉ after.timerWaits := by
   cases step with
   | withdrawing _ _ timer _ _ _ _ timerLive _ _ _ =>
-      exact .inr ⟨timer, timerLive, nodup.not_mem_erase⟩
-  | afterSpawn _ _ _ _ _ _ _ _ => exact .inl rfl
+      exact ⟨timer, timerLive, rfl, nodup.not_mem_erase⟩
+  | afterSpawn _ _ _ _ _ _ _ _ => exact absurd rfl changed
+
+/-- The other arm, stated positively so neither is carried by the other: a completion whose deadline was already consumed leaves the deadline collection untouched. -/
+theorem monitored_completion_after_a_spawn_keeps_every_deadline
+    (program : Program) (before after : RuntimeState)
+    (step : MonitoredCompletionStep program before after)
+    (noLiveDeadline : before.timerWaits = []) :
+    after.timerWaits = before.timerWaits := by
+  cases step with
+  | withdrawing _ _ _ _ _ _ _ timerLive _ _ _ =>
+      exact absurd (noLiveDeadline ▸ timerLive) (List.not_mem_nil)
+  | afterSpawn _ _ _ _ _ _ _ _ => rfl
 
 /-- The spawn refuses every firing that is not exactly due, for any state and any timer.
 

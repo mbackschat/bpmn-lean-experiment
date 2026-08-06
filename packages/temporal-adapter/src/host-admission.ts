@@ -23,10 +23,13 @@ import type {
  * split combined with a timer or effect can create more than one host-driven
  * branch, which requires a scheduler that this adapter does not implement.
  *
- * Three operation classes are managed rather than passive, each owning one
- * scheduler instance: the Event-Based Gateway race, the bounded User Task, and
- * the bounded Sub-Process scope, each with its interrupting boundary Timer. The
- * host admits at most one managed operation across all three classes, so a race
+ * Four operation classes are managed rather than passive, each owning one
+ * scheduler instance: the Event-Based Gateway race, the bounded User Task, the
+ * bounded Sub-Process scope, and the monitored User Task whose deadline spawns
+ * a branch without ending it. The first three race a deadline against an end;
+ * the fourth races it against a withdrawal, which is a different outcome under
+ * the same undefined activation order. The host admits at most one managed
+ * operation across all four classes, so a race
  * beside a bounded Activity wait is rejected even though each alone is
  * admissible. Every composition needing a second host-driven branch or a second
  * managed scheduler is rejected before Workflow start, with one typed code per

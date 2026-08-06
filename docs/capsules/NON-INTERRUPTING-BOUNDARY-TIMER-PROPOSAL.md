@@ -298,15 +298,15 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 81 |
 | [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 126 |
-| [Lean monitored-task family](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 145 |
+| [Lean monitored-task family](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 129 |
 | [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 154 |
 | [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 176 |
-| [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 244 |
+| [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 241 |
 | [semantic-core monitored-task runtime](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 306 |
 | [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 359 |
 | [Lean conformance locks](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) | 390 |
 | [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 392 |
-| [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 404 |
+| [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 401 |
 | [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 416 |
 | [Timer Boundary Event source admission](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 493 |
 

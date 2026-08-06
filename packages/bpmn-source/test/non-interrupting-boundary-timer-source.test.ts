@@ -17,10 +17,17 @@ import { test } from "node:test";
 
 import {
   BpmnCompilationStatus,
+  BpmnSourceDiagnosticCode,
   compileBpmnToSemanticProcess,
   SemanticOperationKind,
 } from "@bpmn-lean/bpmn-source";
-import { isWellFormedSemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import {
+  BoundaryInterruption,
+  CheckedNodeKind,
+  isWellFormedSemanticProcessProgram,
+  profileAllowsCheckedProcessShape,
+} from "@bpmn-lean/semantic-core";
+import type { CheckedNode } from "@bpmn-lean/semantic-core";
 
 const profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft";
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
@@ -119,14 +126,84 @@ test("admits only a lexical non-interrupting deadline", async () => {
 
 /**
  * The inversion runs both ways: this profile's source must not be admissible to the interrupting
- * sibling either. Both profiles pin the same checked-node multiset, so the operation multiset is the
- * only place this separation can be observed.
+ * sibling either. Both profiles pin the same checked-node multiset, so the disposition is what
+ * separates them, and it is checked in checked source before any operation exists.
  */
 test("refuses this source under the interrupting sibling profile", async () => {
   const sibling = await compile(source, "bpmn-2.0.2-activity-boundary-timer-draft");
 
   assert.notEqual(sibling.status, BpmnCompilationStatus.Accepted);
 });
+
+/**
+ * The refusals above are stage-blind: `BpmnCompilationStatus` carries no stage discriminator, so
+ * `notEqual(status, Accepted)` would also hold if the separation lived only in the operation
+ * multiset. This asserts the checked-graph predicate directly, so the TypeScript side has its own
+ * witness that the disposition is refused before lowering rather than after it.
+ */
+test("refuses the opposite disposition at the checked-graph boundary", () => {
+  const graph = (interruption: BoundaryInterruption) => [
+    { kind: CheckedNodeKind.NoneStartEvent, id: "Start" },
+    { kind: CheckedNodeKind.UserTask, id: "MonitoredTask", name: null },
+    {
+      kind: CheckedNodeKind.TimerBoundaryEvent,
+      id: "Reminder",
+      attachedToRef: "MonitoredTask",
+      interruption,
+      durationLiteral: "PT1S",
+      outputFlowId: "Flow_Boundary",
+    },
+    { kind: CheckedNodeKind.UserTask, id: "NormalTask", name: null },
+    { kind: CheckedNodeKind.UserTask, id: "HandlerTask", name: null },
+    { kind: CheckedNodeKind.NoneEndEvent, id: "NormalEnd" },
+    { kind: CheckedNodeKind.NoneEndEvent, id: "HandlerEnd" },
+  ] as const satisfies ReadonlyArray<CheckedNode>;
+
+  assert.equal(
+    profileAllowsCheckedProcessShape(
+      profile,
+      graph(BoundaryInterruption.NonInterrupting),
+      1,
+    ),
+    true,
+  );
+  // The same node kinds with the opposite disposition, which is the only difference.
+  assert.equal(
+    profileAllowsCheckedProcessShape(
+      profile,
+      graph(BoundaryInterruption.Interrupting),
+      1,
+    ),
+    false,
+  );
+});
+
+/**
+ * `bpmn-moddle` reduces an `xsd:boolean` attribute to `value === "true"` and reports no warning, so
+ * every lexeme except `true` reaches the checked graph as `false` — the non-interrupting
+ * disposition. `"1"` is the sharpest case: it is schema-valid and means *true*, so without an exact
+ * lexeme check a valid interrupting boundary Event is admitted as non-interrupting. `"0"` and
+ * `"false"` agree on the disposition but are still separated, because admitting `"0"` here would
+ * mean the guard passed for a reason it cannot state.
+ */
+for (const lexeme of ["1", "0", "maybe", "FALSE", ""]) {
+  test(`refuses cancelActivity="${lexeme}" before parsing`, async () => {
+    const ambiguous = await compile(
+      source.replace('cancelActivity="false"', `cancelActivity="${lexeme}"`),
+    );
+
+    assert.notEqual(ambiguous.status, BpmnCompilationStatus.Accepted);
+    if (ambiguous.status === BpmnCompilationStatus.Accepted) {
+      return;
+    }
+    // Named rather than status-only: the two admitted lexemes are already refused by later stages,
+    // so a status-only assertion would pass without this guard existing.
+    assert.deepEqual(
+      ambiguous.diagnostics.map(({ code }) => code),
+      [BpmnSourceDiagnosticCode.AmbiguousBooleanLexeme],
+    );
+  });
+}
 
 /**
  * A non-interrupting deadline whose `attachedToRef` does not resolve to a User Task in its own scope

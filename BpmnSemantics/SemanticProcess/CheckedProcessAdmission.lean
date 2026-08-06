@@ -258,21 +258,23 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 
-/-- The node kinds whose lowered operation carries an interrupting boundary Timer deadline. An allowlist, so an unrecognised kind fails closed; a kind belongs here only once some lowering clause folds the deadline into that host's operation. -/
-def checkedOwnsBoundaryTimerDeadline (node : CheckedNode) (host : NodeId) : Bool :=
-  match node with
-  | .userTask hostId _ => decide (hostId = host)
-  | .embeddedSubProcess hostId _ => decide (hostId = host)
-  | _ => false
+/-- The node kinds whose lowered operation carries a boundary Timer deadline of the given disposition. An allowlist, so an unrecognised kind fails closed; a kind belongs here only once some lowering clause folds the deadline into that host's operation *and* preserves its disposition. The two dispositions have different allowlists because they have different lowering clauses: `enterBoundedScope` is interrupting by construction and discards the disposition it was given, so a non-interrupting deadline on a Sub-Process host must be refused here rather than lowered into it. -/
+def checkedOwnsBoundaryTimerDeadline (node : CheckedNode)
+    (interruption : BoundaryInterruption) (host : NodeId) : Bool :=
+  match node, interruption with
+  | .userTask hostId _, _ => decide (hostId = host)
+  | .embeddedSubProcess hostId _, .interrupting => decide (hostId = host)
+  | _, _ => false
 
-/-- Every interrupting boundary Timer attaches to exactly one same-scope deadline-owning Activity, and no two claim the same host. Without this the node admits and then lowers to no operation, because the deadline belongs to the Activity's operation rather than to itself, so a misattached boundary node yields a silently deadline-free program that nothing downstream rejects. -/
+/-- Every boundary Timer attaches to exactly one same-scope deadline-owning Activity that admits its disposition, and no two claim the same host. Without this the node admits and then lowers to no operation, because the deadline belongs to the Activity's operation rather than to itself, so a misattached boundary node yields a silently deadline-free program that nothing downstream rejects. Checking the disposition here rather than leaving it to the profile cardinality table is what keeps the rule fail-closed: a profile that happened to pin the wrong pair would otherwise be the only thing standing between a non-interrupting source and an interrupting scope entry. -/
 def checkedBoundaryTimerAttachmentValid (source : CheckedProcess) : Bool :=
   let hosts := source.nodes.filterMap fun
     | .timerBoundaryEvent _ attachedToRef _ _ _ => some attachedToRef
     | _ => none
   source.nodes.all fun
-    | .timerBoundaryEvent id attachedToRef _ _ _ =>
-        source.nodes.any (checkedOwnsBoundaryTimerDeadline · attachedToRef) &&
+    | .timerBoundaryEvent id attachedToRef interruption _ _ =>
+        source.nodes.any
+            (checkedOwnsBoundaryTimerDeadline · interruption attachedToRef) &&
           checkedNodeScopeId? source id ==
             checkedNodeScopeId? source attachedToRef &&
           (hosts.filter (· = attachedToRef)).length = 1

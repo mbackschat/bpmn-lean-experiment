@@ -299,4 +299,28 @@ theorem each_victory_makes_its_sibling_ineligible :
       lateChildTaskResult.outcome = .rejected ∧
       lateChildTaskResult.state = deadlineVictoryState := by decide +kernel
 
+/-- The same graph with only the deadline's disposition flipped. -/
+private def nonInterruptingDeadline : CheckedProcess :=
+  { checkedProcess with
+    nodes := checkedProcess.nodes.map fun
+      | .timerBoundaryEvent id attachedToRef _ durationLiteral outputFlowId =>
+          .timerBoundaryEvent id attachedToRef .nonInterrupting durationLiteral
+            outputFlowId
+      | node => node }
+
+/-- A non-interrupting deadline on a Sub-Process host is refused by the attachment rule itself, not merely by the profile's cardinality table.
+
+`enterBoundedScope` is interrupting by construction and discards the disposition it is handed, so a
+graph that reached lowering would silently acquire interrupting semantics. Asserting the structural
+predicate rather than `checkedWellFormed` is what makes this a fail-closed attachment rule: the
+weaker statement would still hold if the only thing refusing the graph were a profile that happens
+to pin no such pair. -/
+theorem a_non_interrupting_deadline_on_a_scope_host_is_refused_structurally :
+    checkedBoundaryTimerAttachmentValid nonInterruptingDeadline = false := by
+  decide +kernel
+
+/-- The interrupting original passes that same predicate, so the theorem above discriminates the disposition rather than some other defect the flip introduced. -/
+theorem the_interrupting_scope_host_passes_the_same_attachment_rule :
+    checkedBoundaryTimerAttachmentValid checkedProcess = true := by decide +kernel
+
 end BpmnSemantics.SubProcessBoundaryTimerConformance

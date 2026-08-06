@@ -176,7 +176,10 @@ export type AwaitEventRaceOperation = OperationBase &
   }>;
 
 /**
- * The interrupting deadline every bounded-wait operation owns alongside its own wait.
+ * The boundary Timer deadline every deadline-owning operation carries alongside its own wait.
+ *
+ * The shape says nothing about interruption: whether firing ends the host is carried by the
+ * operation kind, and before lowering by the checked node's own disposition.
  *
  * `elementId` is the Boundary Event and is the element published as the timer occurrence, while
  * `origin` carries the boundary Sequence Flow's BPMN provenance because control places and BPMN
