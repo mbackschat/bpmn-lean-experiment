@@ -189,3 +189,55 @@ test("no documented or scripted Lean command bypasses the wrapper", async () => 
     );
   }
 });
+
+/**
+ * The contributor guide carries its own copy of the gate list because agents hold that file in
+ * context and choose a proportionate gate from what it shows them. A gate the guide omits is a gate
+ * they do not run: `test:infrastructure` was absent while being the only complete gate that needs no
+ * host port, so a restricted sandbox had the choice between an unrunnable `verify.sh` and nothing.
+ *
+ * Equality, not containment, is the assertion that catches that. Containment would only reject a
+ * guide naming a gate the owner never defined, which is the harmless direction.
+ *
+ * Scope is the `./scripts/pnpm.sh run` gates in both documents. Shell entry points and the Lean
+ * experiment command pairs are deliberately outside it: they carry arguments and multi-line forms
+ * that this comparison would have to model, and the claim here is exactly what it checks.
+ *
+ * The specification side reads its gate tables rather than its prose, because a pnpm script named in
+ * prose need not be a gate at all. `replace:cib-evidence` is the discriminating case: it is the
+ * evidence-replacement operation the guide places deliberately outside ordinary verification, and a
+ * prose-wide scan would demand the guide advertise it as something to run.
+ */
+test("the contributor guide names every pnpm gate the testing specification defines", async () => {
+  const pnpmGate = /\.\/scripts\/pnpm\.sh run ([\w:-]+)/gu;
+  const gateNames = async (
+    path: string,
+    lineFilter: (line: string) => boolean = () => true,
+  ): Promise<readonly string[]> => {
+    const source = await readFile(path, "utf8");
+    return source
+      .split("\n")
+      .filter(lineFilter)
+      .flatMap((line) => [...line.matchAll(pnpmGate)].map(([, name]) => name as string))
+      .sort();
+  };
+
+  const guideGates = new Set(await gateNames(contributorGuidePath));
+  const specGates = new Set(
+    await gateNames(testingSpecPath, (line) => line.trimStart().startsWith("|")),
+  );
+
+  const missingFromGuide = [...specGates].filter((name) => !guideGates.has(name)).sort();
+  const unknownToSpec = [...guideGates].filter((name) => !specGates.has(name)).sort();
+
+  assert.deepEqual(
+    missingFromGuide,
+    [],
+    `CLAUDE.md omits gates that docs/TESTING-SPEC.md defines, so an agent choosing from the guide cannot reach them: ${missingFromGuide.join(", ")}`,
+  );
+  assert.deepEqual(
+    unknownToSpec,
+    [],
+    `CLAUDE.md names gates docs/TESTING-SPEC.md does not define as focused gates: ${unknownToSpec.join(", ")}`,
+  );
+});

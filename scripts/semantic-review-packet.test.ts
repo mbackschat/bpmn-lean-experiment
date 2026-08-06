@@ -122,6 +122,23 @@ test("the semantic review packet is deterministic and digest-sensitive", () => {
   assert.notEqual(first.packetSha256, changed.packetSha256);
 });
 
+/**
+ * A file Git classifies as binary reports `-` instead of line counts, and the packet used to record
+ * that as a null count and emit successfully. A single NUL byte in a Lean scheduler source did
+ * exactly this: its 246 lines were absent from the change inventory a cold reviewer worked from, so
+ * the review that governed a stage boundary covered less than its own immutable target and no one
+ * could tell. An inventory that cannot count a file must refuse to be a review packet.
+ */
+test("the semantic review packet refuses a changed file it cannot count", () => {
+  assert.throws(
+    () => assembleSemanticReviewPacket({
+      ...packetInput,
+      changedFiles: [{ path: "BpmnSemantics/Example.lean", added: null, removed: 2 }],
+    } as unknown as SemanticReviewPacketInput),
+    /count/u,
+  );
+});
+
 test("the semantic review packet rejects duplicate routes and malformed gates", () => {
   assert.throws(
     () => assembleSemanticReviewPacket({

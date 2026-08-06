@@ -121,6 +121,8 @@ Semantic program admission and host capability are separate gates. Before Workfl
 
 ## Delegated implementation protocol
 
+Delegate only when a lane is genuinely independent and large enough to repay its handoff cost. Work the root integrator could finish in a handful of tool calls stays with the root integrator, and no lane is asked to verify or double-check its own output; independent verification is governed by [the independent cold-review gate](#independent-cold-review-gate). Prefer one lane to several and keep the number of concurrent lanes low.
+
 The root integrator decomposes parallel work into disjoint file owners and retains shared integration points, lifecycle and status documentation, commits, and complete verification. Each new lane receives a task-shaped agent name. Reusing an old implementation agent under a misleading name is forbidden; reuse the exact existing agent only when a warm correction audit requires reviewer continuity.
 
 Before work starts, the delegation prompt defines:

@@ -124,6 +124,8 @@ Prefer enum-based pattern matching or switch statements for semantic variants. K
 
 ### Delegated implementation
 
+Spawning a sub-agent for a review lane or a bounded implementation lane defined in this document is standing authorization; do not treat it as needing separate per-invocation permission, and do not substitute self-review because permission was not asked for. What bounds delegation is the worth-opening floor in [the delegated implementation protocol](docs/TESTING-SPEC.md#delegated-implementation-protocol), not an approval step.
+
 Give each implementation sub-agent a task-shaped name and one bounded lane. Its prompt names the exact invariant algorithm, one adversarial counterexample that must fail before the correction, the cross-target invariant matrix of required facts and explicit non-requirements, the files it may own, the files it must not touch, the proportionate focused gates, and the `node scripts/what-binds.ts` output for the files it may own so the lane inherits the guard, registry, and headroom bounds instead of rediscovering them mid-edit. A desired outcome without the deciding algorithm and realistic wrong case is not a sufficient delegation contract.
 
 Assign disjoint file ownership to concurrent agents. The root integrator owns shared integration points, lifecycle and status documentation, commits, and the repository-wide full gate; do not ask two active agents to edit the same owner or use an implementation agent as its own independent reviewer.
@@ -227,7 +229,7 @@ After the technical gate is green but before marking a milestone or semantic cap
 7. keep BPMN requirements, CIB evidence, Lean properties, TypeScript correspondence, and Temporal refinement/replay as distinct claims;
 8. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
-10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall;
+10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall. The removed weight must bear on the measure that rose, or the row states why no such weight exists; a removal on an axis that already improved leaves the growing cost unaddressed and satisfies the only subtractive rule in this process without subtracting anything;
 11. answer the fixed self-assessment questions in [PROCESS-ASSESSMENT-LEDGER.md](docs/PROCESS-ASSESSMENT-LEDGER.md) and either add a row or record that none applied; this assesses how the work was carried out and is separate from the claim review above;
 12. decide whether the result changes the next best step;
 13. complete the applicable proposal, conditional semantic-checkpoint, and closure reviews under [the independent cold-review rule](#independent-cold-review) before crossing their stage boundaries.
@@ -307,7 +309,7 @@ In a managed sandbox, agents must request host port-binding authorization before
 
 **Never invoke `lake` directly. Use [the Lean wrapper](scripts/lake.sh), which accepts every Lake argument unchanged: `./scripts/lake.sh build`, `./scripts/lake.sh test`, `./scripts/lake.sh exe <target>`, `./scripts/lake.sh env lean <file>`.** It is the single owner of Lean's build parallelism; [package.json](package.json)'s `config.leanBuildThreads` owns the value, and the wrapper derives it through [the pin reader](scripts/pinned-toolchain.sh) and exports it as `LEAN_NUM_THREADS`. Changing that manifest field therefore changes every Lean build, and no entry point holds a copy that can drift. An environment `LEAN_NUM_THREADS` overrides it for one run on a host with spare memory; raise it by measuring the peak rather than by assuming it scales linearly.
 
-The pin exists because this repository decides finite fixtures in the kernel and kernel reduction holds its terms in resident memory. Lake sizes its build pool from that variable or from the logical processor count and offers no `--jobs` option, so an unpinned build scales its peak with core count: on an 8-core host it ran four concurrent `lean` processes above 2 GB each and peaked at 7978 MB, against 2411 MB at one thread and 4699 MB at two, at roughly double the wall time. The default is the most conservative value on purpose, because the peak grows with the number of kernel-decided fixtures and that number grows with every capsule; a GitHub-hosted runner for a private repository has 7 GB and the lightweight tier 5 GB, so an unpinned build already exceeds them. The wrapper exists rather than an exported pin on each gate because that earlier arrangement pinned the gates and nothing else: the documented experiment commands and every Lean build typed directly stayed at the host's core count behind a prose caveat asking the reader to remember. [The infrastructure guard](scripts/verification-entrypoint.test.ts) now rejects a bare `lake` subcommand in any script, manifest, or instruction surface, so the requirement is executable rather than asserted.
+The pin exists because this repository decides finite fixtures in the kernel and kernel reduction holds its terms in resident memory. Lake sizes its build pool from that variable or from the logical processor count and offers no `--jobs` option, so an unpinned build scales its peak with core count: on an 8-core host it ran four concurrent `lean` processes above 2 GB each and peaked at 7978 MB, against 2411 MB at one thread and 4699 MB at two, at roughly double the wall time. The default is the most conservative value on purpose, because the peak grows with the number of kernel-decided fixtures and that number grows with every capsule; a GitHub-hosted runner for a private repository has 7 GB and the lightweight tier 5 GB, so an unpinned build already exceeds them. The wrapper exists rather than an exported pin on each gate because that earlier arrangement pinned the gates and nothing else: the documented experiment commands and every Lean build typed directly stayed at the host's core count behind a prose caveat asking the reader to remember. [The infrastructure guard](scripts/verification-entrypoint.test.ts) now rejects a bare `lake` subcommand in the verification scripts, the package manifest, and the documentation surfaces it enumerates, so the requirement is executable rather than asserted for those files. It scans that enumerated set, not every tracked file: `PLAN.md` and the ledgers are excluded because there an unpinned command is the measured fact, and any surface outside the list is still governed by prose alone.
 
 Current verification gate:
 
@@ -320,6 +322,13 @@ Fast semantic gate (Lean plus TypeScript semantic core):
 
 ```sh
 ./scripts/pnpm.sh run test:semantic
+```
+
+Focused TypeScript semantic-core gate, and its compile-time contract gate:
+
+```sh
+./scripts/pnpm.sh run test:semantic-core
+./scripts/pnpm.sh run check:semantic-types
 ```
 
 Focused Temporal refinement and replay gate:
@@ -345,10 +354,34 @@ Strict no-emit gate for directly executed TypeScript harnesses:
 ./scripts/pnpm.sh run check:harness-types
 ```
 
+Focused source-ownership and module-boundary gate:
+
+```sh
+./scripts/pnpm.sh run check:source-hygiene
+```
+
+Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:
+
+```sh
+./scripts/pnpm.sh run test:infrastructure
+```
+
+Focused pure differential comparator gate:
+
+```sh
+./scripts/pnpm.sh run test:differential
+```
+
 Optional local pinned MIWG observation gate:
 
 ```sh
 ./scripts/pnpm.sh run test:miwg
+```
+
+Optional timer time-skipping calibration gate:
+
+```sh
+./scripts/pnpm.sh run test:timer-time-skipping
 ```
 
 Complete fast differential/refinement gate:

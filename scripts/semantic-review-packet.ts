@@ -35,10 +35,16 @@ function parseReviewPacketStage(value: string): ReviewPacketStage {
   }
 }
 
+/**
+ * Counts are non-nullable on purpose. Git reports `-` for a file it classifies as binary, and an
+ * inventory that silently carries that as "unknown" understates the diff the reviewer is accountable
+ * for. The packet refuses instead, so a binary-classified source file is fixed before a stage
+ * boundary rather than discovered after it.
+ */
 export type ReviewPacketChangedFile = Readonly<{
   path: string;
-  added: number | null;
-  removed: number | null;
+  added: number;
+  removed: number;
 }>;
 
 export type ReviewPacketSection = Readonly<{
@@ -155,8 +161,10 @@ export function assembleSemanticReviewPacket(
   for (const changedFile of input.changedFiles) {
     assertRepositoryPath(changedFile.path, "changed file");
     for (const [label, count] of [["added", changedFile.added], ["removed", changedFile.removed]] as const) {
-      if (count !== null && (!Number.isSafeInteger(count) || count < 0)) {
-        throw new Error(`${changedFile.path} ${label} count must be nonnegative or null`);
+      if (!Number.isSafeInteger(count) || count < 0) {
+        throw new Error(
+          `${changedFile.path} ${label} count must be a nonnegative integer; an uncountable file cannot enter a review inventory`,
+        );
       }
     }
   }
@@ -324,7 +332,15 @@ function parseNumstat(baseline: string, target: string): ReadonlyArray<ReviewPac
     const addedText = record.slice(0, firstTab);
     const removedText = record.slice(firstTab + 1, secondTab);
     const filePath = record.slice(secondTab + 1);
-    const count = (value: string): number | null => value === "-" ? null : Number(value);
+    const count = (value: string): number => {
+      if (value === "-") {
+        throw new Error(
+          `git reports no line counts for ${filePath}, so it is classified as binary and cannot be inventoried. ` +
+            "Make the file text, or exclude it from the reviewed range, before generating a packet.",
+        );
+      }
+      return Number(value);
+    };
     return { path: filePath, added: count(addedText), removed: count(removedText) };
   });
 }

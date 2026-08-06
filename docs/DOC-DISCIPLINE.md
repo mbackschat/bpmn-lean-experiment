@@ -145,7 +145,11 @@ Write one Markdown paragraph per line without fixed-column hard wrapping. Prefer
 
 Markdown line count is not a useful generic size metric under the one-paragraph-per-line rule. Reviewability is enforced at the ownership and review-unit boundary: split a document when it combines unrelated owners, makes mandatory context impractical to read in full, or exceeds an applicable document-specific executable limit.
 
+Match a document's length to the substance its owner actually holds. Do not pad with filler sections, redundant summaries, restated context, or boilerplate. Apply a deletion test to each paragraph: if removing it loses no owned fact, invariant, decision, evidence pointer, or exclusion, remove it.
+
 Use regular relative Markdown links for project documents. Do not duplicate an owned fact merely to avoid a link.
+
+When a fact genuinely must appear in two owners, the change that creates the second copy adds an executable check that fails when the copies disagree. A claim written about a referent without reading that referent is the mechanism behind both rejected closure targets recorded in this repository, and a copy nobody compares is the same defect waiting on a reader who does not check.
 
 Write documents as current contracts or arguments, not changelogs. Preserve historical rationale only where it remains useful; keep volatile disposition in [PLAN.md](PLAN.md), a `-GAPS` document, or an archived proposal.
 
