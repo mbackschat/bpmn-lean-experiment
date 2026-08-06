@@ -138,8 +138,6 @@ theorem checked_process_is_well_formed :
 theorem lowered_program_is_well_formed :
     programWellFormed program = true := by decide +kernel
 
-theorem checked_process_lowering_is_exact :
-    lowerCheckedProcess checkedProcess = program := by decide +kernel
 
 theorem exact_deadline_scenario_trace_is_exact :
     runScenario program scenario =

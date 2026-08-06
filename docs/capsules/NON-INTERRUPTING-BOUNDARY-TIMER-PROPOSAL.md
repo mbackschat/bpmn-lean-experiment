@@ -308,7 +308,7 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 241 |
 | [semantic-core monitored-task runtime](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 306 |
 | [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 359 |
-| [Lean conformance locks](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) | 390 |
+| [Lean conformance locks](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) | 392 |
 | [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 392 |
 | [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 401 |
 | [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 416 |

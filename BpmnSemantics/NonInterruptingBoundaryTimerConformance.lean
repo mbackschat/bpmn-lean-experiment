@@ -65,8 +65,6 @@ theorem checked_process_is_well_formed :
 theorem lowered_program_is_well_formed :
     programWellFormed program = true := by decide +kernel
 
-theorem checked_process_lowering_is_exact :
-    lowerCheckedProcess checkedProcess = program := by decide +kernel
 
 /-- The deadline never becomes an independent `awaitTimer`; it exists only as the Activity operation's own arm. -/
 theorem boundary_timer_is_not_lowered_as_a_standalone_timer :

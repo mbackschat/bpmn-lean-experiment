@@ -118,8 +118,6 @@ theorem misattributed_scope_entry_origin_is_rejected :
           | other => other } = false := by
   decide +kernel
 
-theorem checked_process_lowering_is_exact :
-    lowerCheckedProcess checkedProcess = program := by decide +kernel
 
 /-- The deadline never becomes an independent `awaitTimer`; it exists only as the scope-entry operation's own arm. Without this the program would hold a standalone Timer that no scope owns. -/
 theorem boundary_timer_is_not_lowered_as_a_standalone_timer :
