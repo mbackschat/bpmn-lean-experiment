@@ -115,7 +115,7 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
 - no parser warning of any kind, which remains admission-blocking;
 - one bounded User Task with exactly one incoming and one outgoing Sequence Flow;
 - one Boundary Event whose `attachedToRef` resolves to that bounded User Task;
-- `cancelActivity` omitted or lexically `true`; lexical `false` is **rejected** as the retained hostile control, because non-interrupting behavior is a separate proposition;
+- `cancelActivity` omitted or lexically `true`; every lexeme naming *false*, which is `false` and `0`, is **rejected** as the retained hostile control, because non-interrupting behavior is a separate proposition. `1` is refused too, before parsing and with a different diagnostic, because it is the one valid lexeme `bpmn-moddle` inverts; the compiler refuses it rather than let this profile see it as *false*;
 - exactly one Timer Event Definition containing exactly one `timeDuration` whose exact lexical value is `PT1S`;
 - exactly one outgoing boundary Sequence Flow and no incoming boundary Flow;
 - two distinct follow-on User Tasks, one on each route, each with exactly one incoming and one outgoing Sequence Flow;
@@ -126,7 +126,7 @@ None Start → Bounded User Task ──normal──→ Normal User Task → None
 
 The resulting program inventory is one `initiate`, one `awaitBoundedUserTask`, two `awaitUserTask`, two `reachNoneEnd`, and one root `completeScope`. No standalone `awaitTimer` appears, because the boundary Timer is owned by the bounded operation.
 
-Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, `cancelActivity="false"`, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, a missing follow-on task on either route, any additional Flow Node such as a third User Task or Gateway, any Sequence Flow count other than five, and any parser warning.
+Admission rejects a missing or unresolvable `attachedToRef`, an `attachedToRef` naming a non-Activity, a `cancelActivity` naming *false*, a second Boundary Event, a non-Timer Event Definition, a second Timer Event Definition, any duration other than `PT1S`, an incoming boundary Flow, a missing follow-on task on either route, any additional Flow Node such as a third User Task or Gateway, any Sequence Flow count other than five, and any parser warning.
 
 A shared End Event is also outside this exact profile and is rejected, but for exactness rather than for semantic reasons: it would not weaken the separating witness, which the follow-on tasks now carry. That rejection must not be defended in evidence as a discrimination requirement.
 
