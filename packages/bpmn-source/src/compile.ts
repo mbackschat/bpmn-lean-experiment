@@ -257,7 +257,7 @@ function diagnostic(
  * The first `cancelActivity` lexeme that is neither exactly `true` nor exactly `false`.
  *
  * This is checked on the exact decoded source rather than after parsing, because `bpmn-moddle`
- * reduces an `xsd:boolean` attribute to `value === "true"` and reports no warning. Every other
+ * reduces this `xsd:boolean` attribute to `value === "true"` and reports no warning. Every other
  * lexeme therefore reaches the checked graph as `false`, which is the non-interrupting disposition:
  * `cancelActivity="1"` is a schema-valid *interrupting* boundary Event that would be admitted as
  * non-interrupting, and `cancelActivity="maybe"` would be admitted at all. No profile admits both
@@ -273,8 +273,16 @@ function diagnostic(
  * not per value.
  *
  * It compares lexemes, so it also refuses an entity-encoded spelling of a valid boolean such as
- * `&#116;rue`. That over-rejection is the safe direction and is intentional: resolving entities here
- * would mean decoding XML outside the parser.
+ * `&#116;rue`, and a whitespace-collapsible `" true "` that `xs:boolean` would accept. Those
+ * over-rejections are the safe direction and are intentional: resolving entities or applying
+ * `whiteSpace=collapse` here would mean decoding XML outside the parser.
+ *
+ * The coercion this answers is a property of every `xsd:boolean` in the metamodel, and this guard
+ * covers exactly one attribute of it. That is a stated bound, not an implied claim about the class:
+ * `triggeredByEvent` admits on the coerced value rather than refusing on it, so the same coercion
+ * fails open there. Widening this regex per attribute would repeat the enumeration mistake it was
+ * written for; the class-level fix drives the check from the boolean-typed attributes the
+ * repository's own metamodel manifest already declares, and is tracked as its own work item.
  */
 function firstAmbiguousCancelActivityLexeme(xml: string): string | undefined {
   const attribute = /\bcancelActivity\s*=\s*(?:"([^"]*)"|'([^']*)')/gu;
