@@ -81,6 +81,14 @@ export const scopeDeadlineBpmnUrl = new URL(
   "../../../scenarios/subprocess-boundary-timer/process.bpmn",
   import.meta.url,
 );
+export const monitoredDeadlineScenarioUrl = new URL(
+  "../../../scenarios/non-interrupting-boundary-timer/deadline-then-both-branches.scenario.json",
+  import.meta.url,
+);
+export const monitoredDeadlineBpmnUrl = new URL(
+  "../../../scenarios/non-interrupting-boundary-timer/process.bpmn",
+  import.meta.url,
+);
 export const timerUserTaskCompositionScenarioUrl = new URL(
   "../../../scenarios/timer-user-task-composition/scenario.json",
   import.meta.url,

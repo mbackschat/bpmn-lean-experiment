@@ -47,6 +47,8 @@ import {
   loadJson,
   boundaryDeadlineBpmnUrl,
   boundaryDeadlineScenarioUrl,
+  monitoredDeadlineBpmnUrl,
+  monitoredDeadlineScenarioUrl,
   scopeDeadlineBpmnUrl,
   scopeDeadlineScenarioUrl,
   requiredAt,
@@ -312,6 +314,49 @@ test("bounded-scope deadline survives Worker absence at due time and cancels the
     1,
   );
   assert.equal(stateObservationAt(execution.waitTrace, 2).openTimers.length, 1);
+});
+
+/**
+ * The monitored deadline must survive the Worker being absent across its due instant.
+ *
+ * This differs from both interrupting siblings above in what the replacement Worker has to do. There
+ * the recovered deadline removes a live occurrence; here it must *add* a branch and leave the host
+ * task exactly as it was, from committed state alone. A host that recovered the deadline by
+ * interrupting would publish one open task and a host that lost it would publish one as well, so the
+ * open-task count after firing is what separates recovery from both failures.
+ */
+test("monitored deadline survives Worker absence at due time and spawns beside its host", async () => {
+  const scenario = await loadJson<Scenario>(monitoredDeadlineScenarioUrl);
+  const input = await compileExecutionInput(scenario, monitoredDeadlineBpmnUrl);
+  const expected = runScenario(input.scenario, input.semanticProcess);
+  const execution = await withDeadline(
+    activeRunner().runScenario(input.scenario, input.semanticProcess, {
+      workflowId: "non-interrupting-boundary-timer-worker-restart",
+      completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.WorkerDownAtTimerDue,
+      effectExecutionSchedule: null,
+    }),
+    20_000,
+    "Monitored deadline Worker-restart execution",
+  );
+
+  assert.deepEqual(execution.result, expected);
+  assert.equal(isCompletedProcessReceipt(execution.receipt), true);
+  // The monitored task is open while the deadline runs, so the wait state must show that task and
+  // its deadline rather than a bare timer.
+  assert.equal(
+    stateObservationAt(execution.waitTrace, 2).openUserTasks.length,
+    1,
+  );
+  assert.equal(stateObservationAt(execution.waitTrace, 2).openTimers.length, 1);
+  // The recovered firing spawns rather than interrupts: both branches are open together, which
+  // neither an interrupting recovery nor a lost deadline can produce.
+  assert.deepEqual(
+    stateObservationAt(execution.result.trace, 4)
+      .openUserTasks.map(({ id }) => id.elementId)
+      .toSorted(),
+    ["HandlerTask", "MonitoredTask"],
+  );
 });
 
 test("durable timer survives Worker absence at due time and replays exactly", async () => {
