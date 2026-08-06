@@ -101,6 +101,14 @@ jobs:
           test: false
           use-mathlib-cache: false
 
+      - name: Resolve the external source root
+        # The scripts default this to repository sibling `../oss`, but
+        # actions/cache rejects a glob containing a `..` segment and reports it
+        # only as a post-job warning, so a relative path leaves a green run that
+        # cached nothing. Exporting the resolved absolute root keeps the sibling
+        # layout and gives the cache and every provisioning script one value.
+        run: printf 'BPMN_EXTERNAL_ROOT=%s\n' "$(cd "$GITHUB_WORKSPACE/.." && pwd)/oss" >> "$GITHUB_ENV"
+
       - name: Cache the pinned OMG corpus
         # Every run otherwise downloads all 15 official files from omg.org, on
         # both platforms, to let the default gate read two of them. That staked
@@ -111,7 +119,7 @@ jobs:
         # manifest itself, so changing the official set misses and refetches.
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ../oss/omg-bpmn-2.0.2
+          path: ${{ env.BPMN_EXTERNAL_ROOT }}/omg-bpmn-2.0.2
           key: bpmn-corpus-${{ runner.os }}-${{ hashFiles('docs/reference/bpmn-2.0.2/LOCAL-CORPUS.sha256') }}
 
       - name: Provision pinned external inputs

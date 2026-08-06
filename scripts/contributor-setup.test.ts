@@ -164,6 +164,10 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(packageManifest, /"test:a12-adoption"/u);
   assert.match(corpusFetch, /mktemp -d "\$corpus_parent\/\.bpmn-corpus-fetch\.XXXXXX"/u);
   assert.match(workflow, /setup-external-sources\.sh verify/u);
+  // The corpus cache path is written as an expression, so the relative-segment guard below can
+  // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
+  // actions/cache requires; without it the expansion reintroduces the segment the guard rejects.
+  assert.match(workflow, /BPMN_EXTERNAL_ROOT=[^\n]*pwd\)[^\n]*>> "\$GITHUB_ENV"/u);
   assert.match(guide, /setup-external-sources\.sh adoption/u);
   assert.match(guide, /doctor\.sh research/u);
   assert.match(guide, /workspace meta-repository/u);
@@ -316,4 +320,45 @@ test("no default-lane gate requires an optional external cache", async () => {
     0,
     `${readers.join(", ")} require an optional external cache:\n${probe.stdout}${probe.stderr}`,
   );
+});
+
+/** Yields each `path:` value declared by an `actions/cache` step, one entry per cached path. */
+function cachedPaths(workflow: string): ReadonlyArray<string> {
+  return workflow
+    .split(/^ *- name:/mu)
+    .filter((step) => /uses: actions\/cache@/u.test(step))
+    .flatMap((step) => {
+      const declaration =
+        /^ *path: *(?<block>\|-?|>-?)?(?<inline>.*)$(?<lines>(?:\n +\S.*)*)/mu.exec(step);
+      assert.ok(declaration?.groups, `an actions/cache step declares no path:\n${step}`);
+      const { block, inline = "", lines = "" } = declaration.groups;
+      return block === undefined
+        ? [inline.trim()]
+        : lines.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+    });
+}
+
+test("every cached CI path resolves without a relative segment", async () => {
+  // `actions/cache` refuses a glob containing `.` or `..` and its restore step reports only a
+  // miss, so the pattern surfaces once as a post-job warning and the run stays green while
+  // nothing is ever stored. The corpus cache shipped that way and saved nothing on both
+  // platforms. Rejecting the segment here is the only signal that does not require reading a
+  // successful run's cleanup log.
+  const relativeSegment = /(^|\/)\.\.?(\/|$)/u;
+  const workflows: string[] = [];
+  for await (const entry of glob(".github/workflows/*.yml", { cwd: projectRoot })) {
+    workflows.push(entry);
+  }
+  assert.ok(workflows.length > 0, "no workflow declares a cache to check");
+
+  for (const entry of workflows) {
+    const declared = cachedPaths(await readFile(path.join(projectRoot, entry), "utf8"));
+    for (const cachedPath of declared) {
+      assert.doesNotMatch(
+        cachedPath,
+        relativeSegment,
+        `${entry} caches "${cachedPath}", which actions/cache silently declines to save`,
+      );
+    }
+  }
 });
