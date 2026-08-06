@@ -2,7 +2,9 @@
 
 ## Status
 
-**Draft, pending independent cold proposal review and owner approval.** Nothing here is implemented, and nothing here is a coverage, conformance, or CIB compatibility claim. The selection this capsule rests on is a recorded *scheduling* decision owned by [the breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#priority-decision-after-the-interrupting-sub-process-boundary-timer), which states in the same section that it approves no semantic account; approving the selection as a semantic commitment is decision 1 below and has not happened. The exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) and is deliberately not restated here.
+**Owner-approved on 2026-08-06; not yet implemented.** The owner approved all six decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and its findings were audited closed. Approval authorizes exactly the scope recorded here and nothing beyond it; this document stays a `-PROPOSAL` until its contract is implemented. Nothing here is a coverage, conformance, or CIB compatibility claim, and the exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than being restated here.
+
+Implementation must pause at the conditional semantic checkpoint after the first green Lean and semantic-core result, before any artifact, differential, or Temporal lane begins. The selection this capsule rests on was first a scheduling decision owned by [the breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#priority-decision-after-the-interrupting-sub-process-boundary-timer), which approves no semantic account; decision 1 is what made it a semantic commitment.
 
 ## Independent cold-review receipt
 
