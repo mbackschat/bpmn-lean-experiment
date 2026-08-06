@@ -1,0 +1,84 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-non-interrupting-pt1s-timer-boundary-event-on-one-user-task",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.5.4",
+      "Clause 10.5.6",
+      "Clause 13.2",
+      "Clause 13.5.3",
+      "Table 10.91",
+      "Table 10.92"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "non-interrupting-timer-boundary-event",
+      "lexical-cancel-activity-false",
+      "literal-time-duration-pt1s",
+      "atomic-activity-and-boundary-arming",
+      "activity-completion-withdraws-boundary-deadline",
+      "boundary-deadline-spawns-a-concurrent-branch",
+      "host-activity-stays-active-after-its-boundary-deadline",
+      "boundary-output-sequence-flow",
+      "quiescent-process-completion-over-concurrent-branches",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-boundary-event-compatibility-claim",
+    "interrupting-boundary-event",
+    "omitted-or-lexically-true-cancel-activity",
+    "repeated-firing-of-one-non-interrupting-boundary-event",
+    "concurrent-handler-instances",
+    "boundary-events-on-any-other-activity-type",
+    "more-than-one-boundary-event-per-activity",
+    "error-signal-message-conditional-escalation-and-compensation-boundaries",
+    "timer-date-cycle-and-other-durations",
+    "boundary-attachment-exactness-beyond-a-unique-same-scope-user-task-host",
+    "which-none-end-event-each-branch-reaches",
+    "portable-physical-simultaneity-order",
+    "coalesced-completion-and-deadline-outcome",
+    "off-deadline-firing-as-a-registered-schedule",
+    "repeated-and-nested-boundaries",
+    "loops",
+    "multi-instance",
+    "event-subprocesses",
+    "general-cancellation",
+    "a12-adoption-coverage",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

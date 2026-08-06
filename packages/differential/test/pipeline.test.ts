@@ -188,6 +188,8 @@ test(
         "activity-boundary-timer-deadline-wins",
         "subprocess-boundary-timer-scope-completes",
         "subprocess-boundary-timer-deadline-wins",
+        "non-interrupting-boundary-timer-deadline-then-both-branches",
+        "non-interrupting-boundary-timer-completion-before-the-deadline",
         "called-process-call-activity",
         "service-task-effect-success",
         "a12-create-document-data",
@@ -213,26 +215,6 @@ test(
           "expected wait trace",
         ),
       );
-      // `openUserTasksAtWait` is queried after the runner waits for the *first completion's* task,
-      // so "first state with any open task" is only a proxy for the state the host paused at. The
-      // proxy holds while host-driven progress happens before any task opens, and fails for a
-      // family whose progress *replaces* an already open task: an interrupting boundary deadline
-      // abandons the task it bounds and opens a different continuation. Selecting the last such
-      // state names the awaited occurrence for that shape. Both boundary-deadline hosts qualify —
-      // the Activity host abandons its own bounded task, and the Sub-Process host cancels the live
-      // child region's task — so this set is keyed by that shape rather than by one capsule.
-      const callerWaitStates = caseEvidence.primaryTemporalResult.trace.filter(
-        (observation): observation is StateObservation =>
-          observation.kind === CanonicalObservationKind.State &&
-          observation.openUserTasks.length > 0,
-      );
-      const hostProgressReplacesAnOpenTask = [
-        "activity-boundary-timer-deadline-wins",
-        "subprocess-boundary-timer-deadline-wins",
-      ].includes(caseReport.scenario.id);
-      const firstCallerWaitState = (hostProgressReplacesAnOpenTask
-        ? callerWaitStates[callerWaitStates.length - 1]
-        : callerWaitStates[0]) ?? expectedWaitState;
       assert.equal(caseReport.scenario.id, pipelineCase.id);
       assert.equal(caseEvidence.scenarioId, pipelineCase.id);
       assert.equal(
@@ -330,7 +312,7 @@ test(
       assert.notEqual(caseEvidence.temporalInteractionEvidence, null);
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.openUserTasksAtWait,
-        firstCallerWaitState.openUserTasks,
+        caseEvidence.expectedOpenUserTasksAtFirstCompletionWait,
       );
       assert.deepEqual(
         caseEvidence.temporalInteractionEvidence.openTimersAtWait,

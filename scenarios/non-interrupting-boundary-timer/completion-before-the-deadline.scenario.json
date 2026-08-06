@@ -1,0 +1,63 @@
+{
+  "kind": "scenario",
+  "id": "non-interrupting-boundary-timer-completion-before-the-deadline",
+  "profile": "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+  "bpmn": {
+    "id": "non-interrupting-boundary-timer",
+    "relativePath": "scenarios/non-interrupting-boundary-timer/process.bpmn",
+    "sha256": "032948b26d8c177d722036267cca71b2399fe947aeebb180900108fea3267b2f"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-completion-before-the-deadline",
+      "processId": "Process_NonInterruptingBoundaryTimer",
+      "instanceId": "MonitoredInstance_CompletionFirst",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-monitored-task-before-its-deadline",
+      "taskId": {
+        "processInstanceId": "MonitoredInstance_CompletionFirst",
+        "elementId": "MonitoredTask",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-normal-follow-on",
+      "taskId": {
+        "processInstanceId": "MonitoredInstance_CompletionFirst",
+        "elementId": "NormalTask",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.6",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/impl/instance/BoundaryEventImpl.java"
+    ]
+  }
+}

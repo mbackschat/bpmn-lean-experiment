@@ -25,6 +25,9 @@ import {
 } from "@bpmn-lean/temporal-adapter";
 
 import {
+  hostInteractionExpectations,
+} from "./pipeline-expectations.ts";
+import {
   CibEffectExecutionSchedule,
   CibCaseRelation,
   PipelineReplaySelection,
@@ -329,47 +332,11 @@ export function compareCase(
       },
     ],
   );
-  const completionStimuli = scenario.stimuli.slice(1).filter(
-    (stimulus) =>
-      stimulus.kind === StimulusKind.CompleteUserTaskInstance,
+  const expectations = hostInteractionExpectations(
+    scenario,
+    semanticCoreResult,
+    pipelineCase.temporalRelation === TemporalCaseRelation.PostTerminalClosed,
   );
-  const completionCommandIds = new Set(
-    completionStimuli.map(({ commandId }) => commandId),
-  );
-  const expectedCompletionOutcomes = semanticCoreResult.trace.flatMap(
-    (observation) =>
-      observation.kind === CanonicalObservationKind.Command &&
-      completionCommandIds.has(observation.commandId)
-        ? [observation.outcome]
-        : [],
-  );
-  if (
-    pipelineCase.temporalRelation ===
-      TemporalCaseRelation.PostTerminalClosed
-  ) {
-    expectedCompletionOutcomes.pop();
-  }
-  const intermediateCompletionCommandIds = completionStimuli
-    .slice(0, -1)
-    .map(({ commandId }) => commandId);
-  const expectedOpenUserTasksAfterCompletions =
-    intermediateCompletionCommandIds.map((commandId) => {
-      const commandIndex = semanticCoreResult.trace.findIndex(
-        (observation) =>
-          observation.kind === CanonicalObservationKind.Command &&
-          observation.commandId === commandId,
-      );
-      const state = semanticCoreResult.trace[commandIndex + 1];
-      if (
-        commandIndex < 0 ||
-        state?.kind !== CanonicalObservationKind.State
-      ) {
-        throw new Error(
-          `No stable state follows completion ${commandId}`,
-        );
-      }
-      return state.openUserTasks;
-    });
 
   return {
     report: {
@@ -412,8 +379,11 @@ export function compareCase(
         expectedPostTerminalCommand === null
           ? null
           : ProcessCommandResultKind.ProcessClosed,
-      expectedCompletionOutcomes,
-      expectedOpenUserTasksAfterCompletions,
+      expectedCompletionOutcomes: expectations.completionOutcomes,
+      expectedOpenUserTasksAfterCompletions:
+        expectations.openUserTasksAfterCompletions,
+      expectedOpenUserTasksAtFirstCompletionWait:
+        expectations.openUserTasksAtFirstCompletionWait,
       expectedDerivedTimerCommandId:
         scenario.stimuli.find(
           (stimulus) => stimulus.kind === StimulusKind.FireTimer,

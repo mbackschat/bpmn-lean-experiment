@@ -6,4 +6,8 @@ This directory contains one exact BPMN 2.0.2 source for the [non-interrupting bo
 
 The second End Event is normatively motivated rather than structural symmetry: Clause 10.5.6 recommends that the boundary flow be ended with its own End Event. It remains a modelling fact and not a discriminator, because the canonical observation exposes no terminal element identity.
 
-**No answer-free schedule is registered here yet.** The capsule pauses at its semantic checkpoint after the first green Lean and semantic-core result, and its two schedules, differential cases, seeded mutations, and Temporal histories belong to the evidence lanes that follow that review. Target inputs added here must carry no winner annotation and no expected result.
+Two answer-free schedules are registered. The [deadline-then-both-branches scenario](deadline-then-both-branches.scenario.json) fires the exact `PT1S` deadline and then completes the **handler** branch before the monitored task, which is the order in which an implementation that completed the Process at its first End Event is publicly wrong. The [completion-before-the-deadline scenario](completion-before-the-deadline.scenario.json) completes the monitored task first, which withdraws the deadline. Each ends with a stale exact firing of the consumed Timer, which must be rejected without disturbing the state before it.
+
+Only the first schedule separates this family from its sibling. The second one's public trace is identical under both interruption dispositions, because a completion before the deadline withdraws it either way; its discriminating power is against a retained deadline, not against interruption.
+
+Lean, the independently implemented TypeScript semantic core, and the Temporal adapter all execute this source and agree on both schedules. No CIB boundary-Timer relationship, target, or retained evidence is selected. Target inputs added here must carry no winner annotation and no expected result.

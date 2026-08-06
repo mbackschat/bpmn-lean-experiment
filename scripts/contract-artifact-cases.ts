@@ -170,6 +170,14 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/non-interrupting-boundary-timer/deadline-then-both-branches.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/non-interrupting-boundary-timer/completion-before-the-deadline.scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{
