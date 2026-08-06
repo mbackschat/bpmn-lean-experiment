@@ -29,6 +29,7 @@ export type {
   RejectedBpmnCompilation,
 } from "./contracts.js";
 export {
+  booleanAttributeNames,
   compileBpmnToSemanticProcess,
 } from "./compile.js";
 export {

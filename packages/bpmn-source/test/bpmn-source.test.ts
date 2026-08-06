@@ -10,6 +10,7 @@ import {
   CheckedNodeKind,
   SemanticOperationKind,
   SemanticProcessCompilerId,
+  booleanAttributeNames,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import type {
@@ -473,4 +474,21 @@ test("enforces the caller-provided byte limit before parsing", async () => {
     result.diagnostics.map(({ code }) => code),
     [BpmnSourceDiagnosticCode.SourceTooLarge],
   );
+});
+
+/**
+ * The exact-lexeme guard derives its attribute set from the metamodel manifest rather than a list,
+ * which is what makes it class-level. Nothing else would notice a manifest edit: `scoped-flow-elements.ts`
+ * hardcodes `triggeredByEvent` in its own allowlist, so dropping that property from the manifest would
+ * leave the compiler working and the guard silently un-armed for the one attribute whose reader admits
+ * on the coerced value.
+ */
+test("derives the guarded boolean attributes from the metamodel manifest", () => {
+  assert.deepEqual(booleanAttributeNames, [
+    "cancelActivity",
+    "instantiate",
+    "isExecutable",
+    "isInterrupting",
+    "triggeredByEvent",
+  ]);
 });

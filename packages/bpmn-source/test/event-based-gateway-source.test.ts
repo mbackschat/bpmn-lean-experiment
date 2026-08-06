@@ -90,6 +90,9 @@ test("derives the Event-Based Gateway defaults and rejects non-exclusive or inst
   }
   for (const candidate of [
     source.replace('<bpmn:eventBasedGateway id="Race">', '<bpmn:eventBasedGateway id="Race" instantiate="true">'),
+    // `instantiate="1"` is a schema-valid *true* that the parser coerces to false, so it was once
+    // admitted as non-instantiating. This requirement states the qualifier, so the spelling matters.
+    source.replace('<bpmn:eventBasedGateway id="Race">', '<bpmn:eventBasedGateway id="Race" instantiate="1">'),
     source.replace('<bpmn:eventBasedGateway id="Race">', '<bpmn:eventBasedGateway id="Race" eventGatewayType="Parallel">'),
     source.replace('<bpmn:eventBasedGateway id="Race">', '<bpmn:eventBasedGateway id="Race" gatewayDirection="Converging">'),
     source.replace('<bpmn:eventBasedGateway id="Race">', '<bpmn:eventBasedGateway id="Race" gatewayDirection="Mixed">'),

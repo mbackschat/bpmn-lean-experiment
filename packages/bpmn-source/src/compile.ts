@@ -125,7 +125,7 @@ export async function compileBpmnToSemanticProcess(
     return reject([
       diagnostic(
         BpmnSourceDiagnosticCode.AmbiguousBooleanLexeme,
-        `${ambiguous.attribute}="${ambiguous.lexeme}" is not an exact xsd:boolean lexeme.`,
+        `${ambiguous.attribute}="${ambiguous.lexeme}" is not a boolean lexeme this parser preserves.`,
       ),
     ]);
   }
@@ -257,7 +257,7 @@ function diagnostic(
 }
 
 /**
- * The first boolean-typed attribute occurrence whose lexeme is neither exactly `true` nor `false`.
+ * The first boolean-typed attribute occurrence whose lexeme the parser coercion does not preserve.
  *
  * Checked on the exact decoded source rather than after parsing, because `bpmn-moddle` reduces every
  * `xsd:boolean` attribute to `value === "true"` and reports no warning. Whether that is safe depends
@@ -273,12 +273,15 @@ function diagnostic(
  * rule and applying it here would mean decoding XML outside the parser.
  *
  * The attribute set is derived from the metamodel manifest's `Boolean`-typed properties rather than
- * listed, so it spans exactly the class the coercion spans and a boolean added to the manifest is
- * covered when it is added. Enumerating attribute names here would be the same value-not-position
+ * listed, so it spans exactly the boolean attributes this compiler admits — the class its readers can
+ * be fooled by — and a boolean added to the manifest is covered when it is added. The coercion itself
+ * applies to every `xsd:boolean` in the full parser descriptor, which is wider than this manifest's
+ * declared partial coverage. Enumerating attribute names here would be the same value-not-position
  * mistake that left `cancelActivity='1'` admitted.
  *
- * Deliberately conservative and element-blind: it rejects the whole source when any occurrence is
- * ambiguous, rather than resolving which element carries it. Narrowing it would require re-parsing
+ * Deliberately conservative and markup-blind: it rejects the whole source when any occurrence is
+ * ambiguous, rather than resolving which element carries it — or whether an element carries it at all,
+ * since a commented-out boundary Event or a `name` attribute quoting one is refused too. Narrowing it would require re-parsing
  * the attribute's owner here, which is the parser's job and not this guard's. Both XML
  * attribute-value delimiters are matched, and comparison is by lexeme, so an entity-encoded spelling
  * of a valid boolean such as `&#116;rue` and a whitespace-collapsible `" true "` that `xs:boolean`
@@ -290,8 +293,11 @@ function firstAmbiguousBooleanLexeme(
   xml: string,
 ): Readonly<{ attribute: string; lexeme: string }> | undefined {
   for (const attribute of booleanAttributeNames) {
+    // Escaped although CMOF identifiers are alphanumeric today: a manifest name is data, and an
+    // unescaped metacharacter would widen the pattern silently rather than failing.
+    const escaped = attribute.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
     const occurrence = new RegExp(
-      `\\b${attribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`,
+      `\\b${escaped}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`,
       "gu",
     );
     for (const [, doubleQuoted, singleQuoted] of xml.matchAll(occurrence)) {
@@ -312,7 +318,7 @@ const coercionAgreesWithXsdBoolean: ReadonlySet<string> = new Set([
 ]);
 
 /** Every `Boolean`-typed property the manifest declares, deduplicated because a name may have several owners. */
-const booleanAttributeNames: ReadonlyArray<string> = [
+export const booleanAttributeNames: ReadonlyArray<string> = [
   ...new Set(
     metamodelManifest.properties
       .filter((property): property is typeof property & { type: "Boolean" } =>
