@@ -51,6 +51,14 @@ private def decodeCheckedCondition : Json →
           { language := ← stringField json "language"
             body := ← stringField json "body" })
 
+/-- Rejects any lexeme outside the closed disposition, so an unknown value never defaults into one. -/
+private def decodeBoundaryInterruption (value : String) :
+    Except String BoundaryInterruption :=
+  match value with
+  | "interrupting" => pure .interrupting
+  | "nonInterrupting" => pure .nonInterrupting
+  | other => throw s!"unknown boundary interruption: {other}"
+
 private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   let kind ← stringField json "kind"
   match kind with
@@ -80,11 +88,13 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "outputFlowId"⟩)
   | "timerBoundaryEvent" =>
       requireObjectShape json
-        ["attachedToRef", "durationLiteral", "id", "kind", "outputFlowId"]
+        ["attachedToRef", "durationLiteral", "id", "interruption", "kind",
+          "outputFlowId"]
       pure
         (.timerBoundaryEvent
           ⟨← stringField json "id"⟩
           ⟨← stringField json "attachedToRef"⟩
+          (← decodeBoundaryInterruption (← stringField json "interruption"))
           (← stringField json "durationLiteral")
           ⟨← stringField json "outputFlowId"⟩)
   | "userTask" =>

@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.BoundedScope
 import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
+import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
@@ -144,6 +145,12 @@ inductive OperationStep (program : Program) :
         BoundedTaskArmingStep before input task boundaryTimer after) :
       OperationStep program
         (.awaitBoundedUserTask id origin input task boundaryTimer) before after
+  | awaitMonitoredUserTask (id origin input task boundaryTimer)
+      (before after : RuntimeState)
+      (transition :
+        MonitoredTaskArmingStep before input task boundaryTimer after) :
+      OperationStep program
+        (.awaitMonitoredUserTask id origin input task boundaryTimer) before after
   | awaitEffect (id origin input output effect route)
       (before after : RuntimeState)
       (transition :
@@ -217,6 +224,8 @@ def fire? (program : Program) (operation : SemanticOperation)
       awaitEventRaceState? state origin input message timer
   | .awaitBoundedUserTask _ _ input task boundaryTimer =>
       armBoundedUserTaskState? state input task boundaryTimer
+  | .awaitMonitoredUserTask _ _ input task boundaryTimer =>
+      armMonitoredUserTaskState? state input task boundaryTimer
   | .awaitEffect _ _ input output effect route =>
       awaitEffectState? state input output effect route
   | .duplicate _ _ input outputs => duplicateState? state input outputs
@@ -255,6 +264,9 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
           (by simpa [fire?, awaitEventRaceState?] using result))
     | exact OperationStep.awaitBoundedUserTask _ _ _ _ _ before after
         (armBoundedUserTaskState_sound before after _ _ _
+          (by simpa [fire?] using result))
+    | exact OperationStep.awaitMonitoredUserTask _ _ _ _ _ before after
+        (armMonitoredUserTaskState_sound before after _ _ _
           (by simpa [fire?] using result))
     | exact .awaitEffect _ _ _ _ _ _ before after result
     | exact .duplicate _ _ _ _ before after result

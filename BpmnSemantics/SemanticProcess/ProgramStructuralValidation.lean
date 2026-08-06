@@ -120,7 +120,8 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         placeExists places input &&
         placeExists places message.output &&
         placeExists places timer.output
-  | .awaitBoundedUserTask id origin input task boundaryTimer =>
+  | .awaitBoundedUserTask id origin input task boundaryTimer
+  | .awaitMonitoredUserTask id origin input task boundaryTimer =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
         nonempty task.id.value &&

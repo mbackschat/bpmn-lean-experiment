@@ -93,14 +93,24 @@ structure ErrorReference where
   code : String
   deriving Repr, DecidableEq
 
+/-- Whether a Boundary Event ends its host Activity's occurrence when it fires.
+
+A closed value rather than the source attribute's boolean, so the two dispositions select different
+lowering clauses in checked source instead of being decided by a field after lowering. -/
+inductive BoundaryInterruption where
+  | interrupting
+  | nonInterrupting
+  deriving DecidableEq, Repr, Inhabited
+
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | embeddedSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
   | callActivity (id : NodeId) (calledProcessId : ProcessId)
   | boundaryErrorEvent (id attachedToRef : NodeId)
       (error : ErrorReference) (outputFlowId : SequenceFlowId)
-  /-- `cancelActivity` is absent because only the interrupting form is admitted: the XSD and CMOF default it to `true`, so an omitted attribute already means interrupting and a lexical `false` is refused at source admission. `durationLiteral` keeps the exact source lexeme so this side normalizes it to milliseconds independently. -/
+  /-- `interruption` is the resolved `cancelActivity` disposition, and it selects the host's lowering clause. The XSD and CMOF default the attribute to `true`, so an omitted one is `interrupting`; a lexical `false` is `nonInterrupting`. `durationLiteral` keeps the exact source lexeme so this side normalizes it to milliseconds independently. -/
   | timerBoundaryEvent (id attachedToRef : NodeId)
+      (interruption : BoundaryInterruption)
       (durationLiteral : String) (outputFlowId : SequenceFlowId)
   | userTask (id : NodeId) (name : Option String)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
@@ -134,7 +144,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .embeddedSubProcess id _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
-  | .timerBoundaryEvent id _ _ _
+  | .timerBoundaryEvent id _ _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
@@ -358,6 +368,12 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (task : BoundedTaskArm)
       (boundaryTimer : BoundaryTimerArm)
+  | awaitMonitoredUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (task : BoundedTaskArm)
+      (boundaryTimer : BoundaryTimerArm)
   | awaitEffect
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -423,6 +439,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .awaitMessage id _ _ _ _
   | .awaitEventRace id _ _ _ _
   | .awaitBoundedUserTask id _ _ _ _
+  | .awaitMonitoredUserTask id _ _ _ _
   | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _

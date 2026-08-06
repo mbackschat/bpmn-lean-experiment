@@ -12,7 +12,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .embeddedSubProcess id _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
-  | .timerBoundaryEvent id _ _ _
+  | .timerBoundaryEvent id _ _ _ _
   | .userTask id _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
@@ -66,7 +66,7 @@ private def checkedEdges (source : CheckedProcess)
 /-- Keyed on attachment, not on trigger kind: every boundary Event is reachable only through the Activity it is attached to, so a family added here without its edge would leave its own node unreachable. -/
 private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .boundaryErrorEvent id attachedToRef _ _
-  | .timerBoundaryEvent id attachedToRef _ _ =>
+  | .timerBoundaryEvent id attachedToRef _ _ _ =>
       some { source := attachedToRef, target := id }
   | .noneStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .userTask .. | .intermediateCatchTimerEvent ..

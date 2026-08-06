@@ -301,6 +301,16 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           (← decodeBoundedTaskArm (← field json "task"))
           (← decodeBoundaryTimerArm (← field json "boundaryTimer")))
+  | "awaitMonitoredUserTask" =>
+      requireObjectShape json
+        ["boundaryTimer", "id", "input", "kind", "origin", "task"]
+      pure
+        (.awaitMonitoredUserTask
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          (← decodeBoundedTaskArm (← field json "task"))
+          (← decodeBoundaryTimerArm (← field json "boundaryTimer")))
   | "awaitEffect" =>
       requireObjectShape json
         ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",

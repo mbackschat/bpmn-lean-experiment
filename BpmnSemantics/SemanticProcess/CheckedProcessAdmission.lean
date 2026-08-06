@@ -199,7 +199,7 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       errorReferenceValid error &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
-  | .timerBoundaryEvent id _ durationLiteral outputFlowId =>
+  | .timerBoundaryEvent id _ _ durationLiteral outputFlowId =>
       durationLiteral = "PT1S" &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
@@ -268,10 +268,10 @@ def checkedOwnsBoundaryTimerDeadline (node : CheckedNode) (host : NodeId) : Bool
 /-- Every interrupting boundary Timer attaches to exactly one same-scope deadline-owning Activity, and no two claim the same host. Without this the node admits and then lowers to no operation, because the deadline belongs to the Activity's operation rather than to itself, so a misattached boundary node yields a silently deadline-free program that nothing downstream rejects. -/
 def checkedBoundaryTimerAttachmentValid (source : CheckedProcess) : Bool :=
   let hosts := source.nodes.filterMap fun
-    | .timerBoundaryEvent _ attachedToRef _ _ => some attachedToRef
+    | .timerBoundaryEvent _ attachedToRef _ _ _ => some attachedToRef
     | _ => none
   source.nodes.all fun
-    | .timerBoundaryEvent id attachedToRef _ _ =>
+    | .timerBoundaryEvent id attachedToRef _ _ _ =>
         source.nodes.any (checkedOwnsBoundaryTimerDeadline · attachedToRef) &&
           checkedNodeScopeId? source id ==
             checkedNodeScopeId? source attachedToRef &&

@@ -32,7 +32,7 @@ def checkedProcess : CheckedProcess :=
       [ .noneEndEvent ⟨"BoundaryEnd"⟩
       , .userTask ⟨"BoundaryTask"⟩ (some "Deadline reached")
       , .userTask ⟨"BoundedTask"⟩ (some "Bounded work")
-      , .timerBoundaryEvent ⟨"Deadline"⟩ ⟨"BoundedTask"⟩ "PT1S"
+      , .timerBoundaryEvent ⟨"Deadline"⟩ ⟨"BoundedTask"⟩ .interrupting "PT1S"
           ⟨"Flow_Boundary"⟩
       , .noneEndEvent ⟨"NormalEnd"⟩
       , .userTask ⟨"NormalTask"⟩ (some "Completed in time")
@@ -79,8 +79,9 @@ theorem exactly_one_activity_owns_a_boundary_deadline :
 private def misattachedDeadline : CheckedProcess :=
   { checkedProcess with
     nodes := checkedProcess.nodes.map fun
-      | .timerBoundaryEvent id _ durationLiteral outputFlowId =>
-          .timerBoundaryEvent id ⟨"NormalEnd"⟩ durationLiteral outputFlowId
+      | .timerBoundaryEvent id _ interruption durationLiteral outputFlowId =>
+          .timerBoundaryEvent id ⟨"NormalEnd"⟩ interruption durationLiteral
+            outputFlowId
       | node => node }
 
 /-- A deadline whose attachment does not resolve to a User Task is refused at admission rather than dropped. It lowers to no operation of its own, so without this rule the program would simply have no deadline and nothing downstream would object. -/

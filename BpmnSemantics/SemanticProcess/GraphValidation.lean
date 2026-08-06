@@ -78,6 +78,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitMessage _ _ input _ _
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
+  | .awaitMonitoredUserTask _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
   | .choose _ _ input _ _ _
@@ -96,7 +97,10 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output => [output]
   | .awaitEventRace _ _ _ message timer => [message.output, timer.output]
-  | .awaitBoundedUserTask _ _ _ task boundaryTimer =>
+  -- The monitored family declares the same two outputs, though it can produce both within one run
+  -- rather than one of them.
+  | .awaitBoundedUserTask _ _ _ task boundaryTimer
+  | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
       [task.output, boundaryTimer.output]
   | .synchronizeSelected _ _ _ output _ => [output]
   | .enterScope _ _ _ childEntry _ => [childEntry]
@@ -244,7 +248,8 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
   | .initiate .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
-  | .awaitBoundedUserTask .. | .awaitEffect .. | .duplicate ..
+  | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
+  | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .choose .. | .selectMany .. | .synchronizeSelected ..
   | .throwError .. | .reachNoneEnd .. | .completeScope .. => none
 

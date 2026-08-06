@@ -46,6 +46,8 @@ def fireTimer (program : Program) (state : RuntimeState)
         eventRaceTimerWinner? program state timerId logicalTimeMs
       else if isBoundaryTimerDefinition program wait.elementId then
         interruptBoundedUserTask? program state timerId logicalTimeMs
+      else if isMonitoredBoundaryTimerDefinition program wait.elementId then
+        spawnFromMonitoredUserTask? program state timerId logicalTimeMs
       else if isBoundedScopeDeadlineDefinition program wait.elementId then
         interruptBoundedScope? program state timerId logicalTimeMs
       else if logicalTimeMs = wait.deadlineMs &&

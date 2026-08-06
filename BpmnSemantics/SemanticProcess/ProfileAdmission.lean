@@ -14,6 +14,7 @@ private structure ShapeCardinalities where
   callActivities : Nat := 0
   boundaryErrors : Nat := 0
   boundaryTimers : Nat := 0
+  monitoredBoundaryTimers : Nat := 0
   scopeEntries : Nat := 0
   processInvokes : Nat := 0
   processReturns : Nat := 0
@@ -32,6 +33,7 @@ private structure ShapeCardinalities where
   synchronizeSelected : Nat := 0
   eventRaces : Nat := 0
   boundedUserTasks : Nat := 0
+  monitoredUserTasks : Nat := 0
   boundedScopeEntries : Nat := 0
   errorEnds : Nat := 0
   errorThrows : Nat := 0
@@ -50,8 +52,13 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with callActivities := counts.callActivities + 1 }
     | .boundaryErrorEvent .. =>
         { counts with boundaryErrors := counts.boundaryErrors + 1 }
-    | .timerBoundaryEvent .. =>
+    -- Counted per disposition, because the two boundary-Timer profiles pin the same node kinds and
+    -- the disposition is the only thing separating them at checked-source admission.
+    | .timerBoundaryEvent _ _ .interrupting _ _ =>
         { counts with boundaryTimers := counts.boundaryTimers + 1 }
+    | .timerBoundaryEvent _ _ .nonInterrupting _ _ =>
+        { counts with
+          monitoredBoundaryTimers := counts.monitoredBoundaryTimers + 1 }
     | .userTask .. => { counts with userTasks := counts.userTasks + 1 }
     | .intermediateCatchTimerEvent .. =>
         { counts with timers := counts.timers + 1 }
@@ -92,6 +99,8 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .awaitEventRace .. => { counts with eventRaces := counts.eventRaces + 1 }
     | .awaitBoundedUserTask .. =>
         { counts with boundedUserTasks := counts.boundedUserTasks + 1 }
+    | .awaitMonitoredUserTask .. =>
+        { counts with monitoredUserTasks := counts.monitoredUserTasks + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
     | .duplicate .. => { counts with duplicates := counts.duplicates + 1 }
     | .synchronize .. =>
@@ -163,6 +172,9 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1,
       { starts := 1, boundaryTimers := 1, userTasks := 3, ends := 2 })
+  else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
+    some (1,
+      { starts := 1, monitoredBoundaryTimers := 1, userTasks := 3, ends := 2 })
   else if profile = "bpmn-2.0.2-subprocess-boundary-timer-draft" then
     some (2,
       { starts := 2, embeddedScopes := 1, boundaryTimers := 1,
@@ -227,6 +239,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, boundedUserTasks := 1, userTasks := 2, ends := 2 })
+  else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, monitoredUserTasks := 1, userTasks := 2, ends := 2 })
   else if profile = "bpmn-2.0.2-subprocess-boundary-timer-draft" then
     some (2, withScopeCompletions 2
       { initiates := 1, boundedScopeEntries := 1, userTasks := 3, ends := 3 })

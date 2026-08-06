@@ -45,7 +45,8 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
           [{ elementId := message.elementId, channel := message.channel }]
         timers :=
           [{ elementId := timer.elementId, durationMs := timer.durationMs }] }
-  | .awaitBoundedUserTask _ _ _ task boundaryTimer =>
+  | .awaitBoundedUserTask _ _ _ task boundaryTimer
+  | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
       { tasks := [{ id := task.id, name := task.name }]
         timers :=
           [{ elementId := boundaryTimer.elementId

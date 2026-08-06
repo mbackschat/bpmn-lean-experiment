@@ -185,13 +185,14 @@ private def sortInclusiveCandidates :
   | candidate :: rest =>
       insertInclusiveCandidate candidate (sortInclusiveCandidates rest)
 
-/-- The interrupting Timer Boundary Event attached to this Activity, when the profile admitted one. -/
+/-- The Timer Boundary Event attached to this Activity, when the profile admitted one, with the disposition that selects the host's operation kind. -/
 private def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
-    Option (NodeId × String × SequenceFlowId) :=
+    Option (NodeId × BoundaryInterruption × String × SequenceFlowId) :=
   source.nodes.findSome? fun
-    | .timerBoundaryEvent id attachedToRef durationLiteral outputFlowId =>
+    | .timerBoundaryEvent id attachedToRef interruption durationLiteral
+        outputFlowId =>
         if attachedToRef = activityId then
-          some (id, durationLiteral, outputFlowId)
+          some (id, interruption, durationLiteral, outputFlowId)
         else none
     | _ => none
 
@@ -214,7 +215,7 @@ private def lowerNode (source : CheckedProcess) :
   | .embeddedSubProcess id childScopeId => do
       let scopeId ← checkedNodeScopeId? source id
       match timerBoundaryFor source id with
-      | some (timerId, durationLiteral, outputFlowId) =>
+      | some (timerId, _, durationLiteral, outputFlowId) =>
           pure
             (.enterBoundedScope
               (nodeOperationId id)
@@ -254,9 +255,13 @@ private def lowerNode (source : CheckedProcess) :
   | .timerBoundaryEvent .. => none
   | .userTask id name =>
       match timerBoundaryFor source id with
-      | some (timerId, durationLiteral, outputFlowId) =>
+      -- The disposition selects the operation kind, and that kind is the whole difference: one
+      -- family's firing removes the task occurrence and the other's preserves it.
+      | some (timerId, interruption, durationLiteral, outputFlowId) =>
           checkedNodeScopeId? source id |>.map fun scopeId =>
-          (.awaitBoundedUserTask
+          ((match interruption with
+            | .interrupting => SemanticOperation.awaitBoundedUserTask
+            | .nonInterrupting => SemanticOperation.awaitMonitoredUserTask)
             (nodeOperationId id)
             { elementId := id }
             (firstPlace (incomingPlaces source id))

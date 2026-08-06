@@ -54,6 +54,16 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
                 else
                   { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
+          else if isMonitoredTaskDefinition program ⟨taskId.elementId.value⟩ then
+            match completeMonitoredUserTask? program state
+                taskId.processInstanceId ⟨taskId.elementId.value⟩
+                taskId.activation with
+            | some successor =>
+                if taskId.processInstanceId = instanceId && submittedValues.isEmpty then
+                  { outcome := .committed, state := successor }
+                else
+                  { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
           else
           match completeUserTask state taskId.processInstanceId
               ⟨taskId.elementId.value⟩ taskId.activation with
@@ -387,7 +397,8 @@ theorem task_identity_mismatch_is_rejected
       intro exactMatch
       exact processMismatch exactMatch.1.1.symm
     simp [applyStimulus, admitStimulus, completeUserTask,
-      completeBoundedUserTask?, singletonWaitingState, noMatch]
+      completeBoundedUserTask?, completeMonitoredUserTask?,
+      singletonWaitingState, noMatch]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTaskId.processInstanceId ∧
@@ -397,7 +408,8 @@ theorem task_identity_mismatch_is_rejected
         exact elementMismatch
           (congrArg TaskDefinitionId.value exactMatch.1.2).symm
       simp [applyStimulus, admitStimulus, completeUserTask,
-        completeBoundedUserTask?, singletonWaitingState, noMatch]
+        completeBoundedUserTask?, completeMonitoredUserTask?,
+      singletonWaitingState, noMatch]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTaskId.processInstanceId ∧
             wait.task.id = ⟨submittedTaskId.elementId.value⟩) ∧
@@ -405,7 +417,8 @@ theorem task_identity_mismatch_is_rejected
         intro exactMatch
         exact activationMismatch exactMatch.2.symm
       simp [applyStimulus, admitStimulus, completeUserTask,
-        completeBoundedUserTask?, singletonWaitingState, noMatch]
+        completeBoundedUserTask?, completeMonitoredUserTask?,
+      singletonWaitingState, noMatch]
 
 /-- Any mismatch in the full timer-occurrence identity or exact logical deadline rejects firing with exact state preservation. This one law covers both early and late firing. -/
 theorem timer_identity_or_time_mismatch_is_rejected
