@@ -324,6 +324,24 @@ private def rootCompletionIds (program : Program) : List OperationId :=
           if scopeId = root then some id else none
       | _ => none
 
+/-- A bounded scope-entry operation's origin must be the element that owns the child scope it enters.
+
+Mirrors `isWellFormedEnterBoundedScopeOperation` in the semantic core, which binds origin to host
+identity positively exactly as its bounded-task sibling does. Without it an operation may name any
+other element as its host, misattributing every occurrence the transition creates to an element that
+does not enter the scope. The unbounded `enterScope` family is deliberately left as it was: neither
+target binds its origin today, so widening that here would make the two encodings disagree in the
+opposite direction. -/
+private def boundedScopeEntryOriginsOwnTheirScopes (program : Program) : Bool :=
+  program.operations.all fun operation =>
+    match operation with
+    | .enterBoundedScope _ origin _ _ childScopeId _ =>
+        match program.definitionScopes.find? fun scope =>
+            decide (scope.id = childScopeId) with
+        | some scope => decide (scope.originElementId = origin.elementId)
+        | none => false
+    | _ => true
+
 /-- Standalone graph backstop for decoded programs, independent of lowering equality. -/
 def programGraphWellFormed (program : Program) : Bool :=
   let operationIds := program.operations.map (·.id)
@@ -338,6 +356,7 @@ def programGraphWellFormed (program : Program) : Bool :=
           operationScope? program start = some entryRoot &&
             scopeForestWellFormed program &&
             scopedOwnershipComplete program entryRoot &&
+            boundedScopeEntryOriginsOwnTheirScopes program &&
             oneCompletionStrategyPerScope program entryRoot &&
             program.controlPlaces.all (fun place =>
             (producers program.operations place.id).length = 1 &&

@@ -100,6 +100,23 @@ theorem checked_process_is_well_formed :
 theorem lowered_program_is_well_formed :
     programWellFormed program = true := by decide +kernel
 
+/-- The scope-entry origin binding rejects an operation claiming an element it does not own.
+
+Without this conjunct the operation could name any element as its host, and every runtime occurrence
+the transition creates would be attributed to an element that does not enter the scope. `AfterScope`
+is chosen because it is a real node of this program in the parent scope, so only the binding itself
+can reject it. -/
+theorem misattributed_scope_entry_origin_is_rejected :
+    programWellFormed
+      { program with
+        operations := program.operations.map fun operation =>
+          match operation with
+          | .enterBoundedScope id _ input childEntry childScopeId boundaryTimer =>
+              .enterBoundedScope id ⟨⟨"AfterScope"⟩⟩ input childEntry childScopeId
+                boundaryTimer
+          | other => other } = false := by
+  decide +kernel
+
 theorem checked_process_lowering_is_exact :
     lowerCheckedProcess checkedProcess = program := by decide +kernel
 
