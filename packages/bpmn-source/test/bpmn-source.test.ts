@@ -20,6 +20,7 @@ import type {
 } from "@bpmn-lean/bpmn-source";
 import type { Scenario } from "@bpmn-lean/semantic-core";
 
+
 import {
   findModdleElement,
   importCompiledBpmnGraph,
@@ -491,4 +492,33 @@ test("derives the guarded boolean attributes from the metamodel manifest", () =>
     "isInterrupting",
     "triggeredByEvent",
   ]);
+});
+
+/**
+ * Locks the pinned parser's `xsd:boolean` coercion on the one lexeme where nothing else would notice
+ * it changing.
+ *
+ * `coercionAgreesWithXsdBoolean` admits `true`, `false`, and `0`. The guard's over-rejection bounds
+ * the risk for every lexeme it refuses and bounds nothing for those three, and `0` is the unbounded
+ * case: if the parser ever mapped it to `true`, the guard would pass it and every reader keying on
+ * `triggeredByEvent` or `instantiate` would invert silently — the original defect with a different
+ * lexeme.
+ *
+ * Observed through the public compiler rather than the parser adapter, which keeps raw moddle inside
+ * this package and keeps the assertion non-circular: the guard admits `isExecutable="0"`, so what
+ * rejects the source afterwards is the coercion delivering `false` to a profile requiring `true`. A
+ * parser that flipped `0` would make this source compile.
+ */
+test("locks the pinned parser's coercion of the one lexeme the guard admits", async () => {
+  const canonicalSource = new TextDecoder().decode(canonicalBytes);
+  const executable = (lexeme: string) =>
+    compile(
+      new TextEncoder().encode(
+        canonicalSource.replace('isExecutable="true"', `isExecutable="${lexeme}"`),
+      ),
+      { expectedSha256: undefined },
+    );
+
+  assert.equal((await executable("true")).status, BpmnCompilationStatus.Accepted);
+  assert.notEqual((await executable("0")).status, BpmnCompilationStatus.Accepted);
 });
