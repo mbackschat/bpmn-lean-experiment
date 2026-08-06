@@ -152,6 +152,25 @@ theorem deadline_is_owned_by_the_parent_occurrence :
       (wait.owner.definitionScopeId.value, wait.owner.activation)) =
       [("scope:Process_SubProcessBoundaryTimer", 1)] := by decide +kernel
 
+/-- `interruptBoundedScope_sound`'s `parentOwned` premise is satisfiable, and this is what keeps that
+bridge from being a theorem about nothing.
+
+The premise is an implication guarded by the evaluator's own three lookups, so a state where any lookup
+fails satisfies it vacuously and witnesses nothing. This chains all three against the armed state — the
+exact state a deadline victory starts from — and requires each to succeed *and* the parent-owned
+deadline to survive regional cancellation of the child region. Stating the premise over every
+`TimerWait` instead would be unsatisfiable, because `interruptScope` only filters `timerWaits`; a
+future weakening in that direction fails here rather than silently deleting the bridge. -/
+theorem deadline_arm_bridge_premise_is_satisfiable :
+    (do
+      let deadline ← boundedScopeDeadlineWait? armedState deadlineId
+      let definition ← boundedScopeDefinitionFor? program deadline
+      let child ← boundedScopeChildFor? armedState definition.1 deadline
+      pure (decide (deadline ∈
+        (interruptScope armedState child deadline.owner
+          definition.2.output).timerWaits))) = some true := by
+  decide +kernel
+
 def quiescentVictoryState : RuntimeState :=
   (applyStimulus scenarioClosureLimit program armedState
     (.completeUserTaskInstance ⟨"complete-child-task"⟩ childTaskId [])).state

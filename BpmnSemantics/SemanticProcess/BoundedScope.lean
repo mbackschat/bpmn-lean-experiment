@@ -304,13 +304,26 @@ private theorem boundedScopeDefinitionFor_pairs (program : Program)
 `parentOwned` is an explicit hypothesis rather than a derivation, and the gap it names is real: the
 evaluator erases the deadline after regional cancellation without re-checking that cancellation left it
 there. Atomic arming establishes it — `armScopeDeadline` sets the owner to the parent, which is outside
-the cancelled subtree — so the case is unreachable under this profile, but it is a property of arming
-rather than of this transition and is therefore stated instead of assumed. -/
+the cancelled subtree — but that is a property of arming rather than of this transition, and deriving it
+here would additionally need scope-tree acyclicity and an empty called-instance closure, neither of
+which `RuntimeState` enforces.
+
+Its three antecedents are load-bearing rather than decorative. They pin the hypothesis to the exact
+deadline, definition, and child occurrence this evaluator selects, so it constrains only states the
+transition actually reaches. Stating it over *every* `TimerWait` instead would be unsatisfiable —
+`interruptScope` only filters `timerWaits`, so no state contains a timer absent from `before` — and an
+unsatisfiable premise does not weaken a theorem, it deletes it.
+`deadline_arm_bridge_premise_is_satisfiable` in the conformance module holds that line by instantiating
+this premise at the armed state. -/
 theorem interruptBoundedScope_sound (program : Program) (before after : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
     (success : interruptBoundedScope? program before timerId logicalTimeMs = some after)
-    (parentOwned : ∀ child deadline output,
-      deadline ∈ (interruptScope before child deadline.owner output).timerWaits) :
+    (parentOwned : ∀ deadline definition child,
+      boundedScopeDeadlineWait? before timerId = some deadline →
+      boundedScopeDefinitionFor? program deadline = some definition →
+      boundedScopeChildFor? before definition.1 deadline = some child →
+      deadline ∈
+        (interruptScope before child deadline.owner definition.2.output).timerWaits) :
     BoundedScopeVictoryStep program before after := by
   unfold interruptBoundedScope? at success
   cases running : before.control with
@@ -344,7 +357,8 @@ theorem interruptBoundedScope_sound (program : Program) (before after : RuntimeS
                         (by simpa [boundedScopeDeadlineWait?] using deadlineFound))
                       ⟨definition, definitionLive, childScope.symm, elementMatches,
                         childActivation⟩
-                      (parentOwned child deadline definition.2.output)
+                      (parentOwned deadline definition child deadlineFound
+                        definitionFound childFound)
                   · simp at success
 
 private theorem boundedScopeDefinitionForChild_pairs (program : Program)
@@ -449,7 +463,11 @@ theorem bounded_scope_victory_preserves_counters_and_history (program : Program)
       exact ⟨scopes, timers, ends⟩
   | deadline => exact ⟨rfl, rfl, rfl⟩
 
-/-- The arms are separated by logical time: quiescence preserves it while the deadline arm publishes exactly its own deadline. -/
+/-- Logical time after any victory is either unchanged or exactly some live deadline.
+
+This is a joint bound over both arms and deliberately **not** a separation law: it carries no arm
+hypothesis, so a victory step alone does not say which disjunct its arm produced. The two laws below
+own the separation, each quantified over its own evaluator. -/
 theorem bounded_scope_victory_logical_time (program : Program)
     (before after : RuntimeState)
     (step : BoundedScopeVictoryStep program before after) :
@@ -462,6 +480,78 @@ theorem bounded_scope_victory_logical_time (program : Program)
           completion).2.2.2.2.2
   | deadline _ _ deadline _ _ deadlineLive _ _ =>
       exact .inr ⟨deadline, deadlineLive, rfl⟩
+
+/-- The quiescence arm leaves logical time untouched, for every program, scope, and parent output.
+
+Half of the arms' separation. Quantified over the evaluator rather than over the victory relation,
+because the relation's two constructors are indistinguishable from a step alone, so a law stated there
+cannot attribute a disjunct to an arm. -/
+theorem completeBoundedScope_logical_time (program : Program) (before after : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (success : completeBoundedScope? program before scopeId parentOutput = some after) :
+    after.logicalTimeMs = before.logicalTimeMs := by
+  unfold completeBoundedScope? at success
+  cases completed : completeScopeState? before scopeId parentOutput with
+  | none => simp [completed] at success
+  | some state =>
+      simp only [completed] at success
+      -- Every surviving branch returns the completed state, optionally with one timer erased, so the
+      -- shared completion's own logical-time preservation is what all of them inherit.
+      have preserved :=
+        (completeScopeState_preserves_unrelated_components before state scopeId parentOutput
+          completed).2.2.2.2.2
+      cases definitionFound : boundedScopeDefinitionForChild? program scopeId with
+      | none =>
+          simp only [definitionFound] at success
+          injection success with success
+          subst success
+          exact preserved
+      | some definition =>
+          cases occurrenceFound : boundedScopeChildOccurrence? before scopeId with
+          | none => simp [definitionFound, occurrenceFound] at success
+          | some occurrence =>
+              cases deadlineFound :
+                  parentOwnedDeadline? state occurrence.1 occurrence.2 definition.2 with
+              | none =>
+                  simp [definitionFound, occurrenceFound, deadlineFound] at success
+              | some deadline =>
+                  simp only [definitionFound, occurrenceFound, deadlineFound] at success
+                  injection success with success
+                  subst success
+                  exact preserved
+
+/-- The deadline arm advances logical time to exactly the instant it fired at.
+
+The other half of the separation, and it is exact rather than bounded: combined with
+`interruptBoundedScope_none_of_not_due`, which refuses every instant that is not the committed
+deadline, the published time is that deadline and no other. -/
+theorem interruptBoundedScope_logical_time (program : Program) (before after : RuntimeState)
+    (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
+    (success : interruptBoundedScope? program before timerId logicalTimeMs = some after) :
+    after.logicalTimeMs = logicalTimeMs := by
+  unfold interruptBoundedScope? at success
+  cases running : before.control with
+  | notStarted => simp [running] at success
+  | completed => simp [running] at success
+  | running instanceId =>
+      cases deadlineFound : boundedScopeDeadlineWait? before timerId with
+      | none => simp [running, deadlineFound] at success
+      | some deadline =>
+          cases definitionFound : boundedScopeDefinitionFor? program deadline with
+          | none => simp [running, deadlineFound, definitionFound] at success
+          | some definition =>
+              cases childFound :
+                  boundedScopeChildFor? before definition.1 deadline with
+              | none =>
+                  simp [running, deadlineFound, definitionFound, childFound] at success
+              | some child =>
+                  simp only [running, deadlineFound, definitionFound, childFound] at success
+                  split at success
+                  · rename_i due
+                    injection success with success
+                    subst success
+                    exact due.symm
+                  · simp at success
 
 /-- No victory half-withdraws the triple: both arms retire exactly the deadline they were armed with, and that deadline is paired to the child occurrence by a committed operation rather than by proximity.
 
