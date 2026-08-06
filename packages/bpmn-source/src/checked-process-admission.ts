@@ -1,4 +1,5 @@
 import {
+  BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
   SemanticProfileId,
@@ -51,7 +52,7 @@ export function isAdmittedCheckedProcess(
   );
   return profileAllowsCheckedProcessShape(
       semanticProfile,
-      graph.nodes.map(({ kind }) => kind),
+      graph.nodes,
       graph.definitionScopes.length,
     ) &&
     nodeScopes !== undefined &&
@@ -97,25 +98,31 @@ function isAdmittedDefinitionScope(
 }
 
 /**
- * The node kinds whose lowered operation carries an interrupting boundary Timer deadline.
+ * The node kinds whose lowered operation carries a boundary Timer deadline of the given disposition.
  *
  * An allowlist rather than an exclusion list, so an unrecognised kind fails closed. A host kind
  * belongs here only once some lowering clause folds the deadline into that host's operation; adding
- * a kind here without that clause is exactly the deadline-free program the caller rejects.
+ * a kind here without that clause is exactly the deadline-free program the caller rejects. The two
+ * dispositions have different allowlists because they have different lowering clauses: only the
+ * interrupting one has a Sub-Process host, so a non-interrupting deadline on a Sub-Process is
+ * refused here rather than lowering to an entry operation that would drop it.
  */
-function ownsBoundaryTimerDeadline(node: CheckedNode): boolean {
-  switch (node.kind) {
-    case CheckedNodeKind.UserTask:
-    case CheckedNodeKind.EmbeddedSubProcess:
-      return true;
-    default:
-      return false;
+function ownsBoundaryTimerDeadline(
+  node: CheckedNode,
+  interruption: BoundaryInterruption,
+): boolean {
+  switch (interruption) {
+    case BoundaryInterruption.Interrupting:
+      return node.kind === CheckedNodeKind.UserTask ||
+        node.kind === CheckedNodeKind.EmbeddedSubProcess;
+    case BoundaryInterruption.NonInterrupting:
+      return node.kind === CheckedNodeKind.UserTask;
   }
 }
 
 /**
- * Every interrupting boundary Timer must attach to exactly one deadline-owning Activity in its own
- * scope, and no two may claim the same host.
+ * Every boundary Timer must attach to exactly one deadline-owning Activity in its own scope, and no
+ * two may claim the same host.
  *
  * Without this the node still admits and then lowers to no operation, because the deadline belongs
  * to the Activity's operation rather than to itself. The result is a silently deadline-free program:
@@ -136,7 +143,9 @@ function boundaryTimersAttachToDeadlineOwners(
   const hosts = deadlines.map((deadline) => deadline.attachedToRef);
   return deadlines.every((deadline) => {
     const host = graph.nodes.find(
-      (node) => node.id === deadline.attachedToRef && ownsBoundaryTimerDeadline(node),
+      (node) =>
+        node.id === deadline.attachedToRef &&
+        ownsBoundaryTimerDeadline(node, deadline.interruption),
     );
     return host !== undefined &&
       nodeScopes.get(deadline.id) === nodeScopes.get(host.id) &&

@@ -38,6 +38,13 @@ import {
   isBoundedTaskDefinition,
 } from "./semantic-process-bounded-task-runtime.js";
 import {
+  armMonitoredUserTask,
+  completeMonitoredUserTask,
+  isMonitoredBoundaryTimerDefinition,
+  isMonitoredTaskDefinition,
+  spawnFromMonitoredUserTask,
+} from "./semantic-process-monitored-task-runtime.js";
+import {
   throwError,
 } from "./semantic-process-error-runtime.js";
 import {
@@ -185,6 +192,12 @@ function admit(
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
       }
+      if (isMonitoredTaskDefinition(program, stimulus.taskId)) {
+        const next = completeMonitoredUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       const wait = state.userTaskWaits.find((candidate) =>
         sameOccurrence(candidate.id, stimulus.taskId)
       );
@@ -236,6 +249,12 @@ function admit(
       }
       if (isBoundaryTimerDefinition(program, stimulus.timerId)) {
         const next = interruptBoundedUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      if (isMonitoredBoundaryTimerDefinition(program, stimulus.timerId)) {
+        const next = spawnFromMonitoredUserTask(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
@@ -476,6 +495,12 @@ export function applyInternalOperation(
       const boundedOwner = onlyTokenOwner(state, operation.input);
       return boundedOwner !== undefined
         ? armBoundedUserTask(operation, state, boundedOwner)
+        : null;
+    }
+    case SemanticOperationKind.AwaitMonitoredUserTask: {
+      const monitoredOwner = onlyTokenOwner(state, operation.input);
+      return monitoredOwner !== undefined
+        ? armMonitoredUserTask(operation, state, monitoredOwner)
         : null;
     }
     case SemanticOperationKind.AwaitEffect: {

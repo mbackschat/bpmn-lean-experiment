@@ -36,6 +36,7 @@ export enum SemanticOperationKind {
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
   AwaitBoundedUserTask = "awaitBoundedUserTask",
+  AwaitMonitoredUserTask = "awaitMonitoredUserTask",
   AwaitMessage = "awaitMessage",
   AwaitTimer = "awaitTimer",
   AwaitEffect = "awaitEffect",
@@ -209,6 +210,27 @@ export type AwaitBoundedUserTaskOperation = OperationBase &
   }>;
 
 /**
+ * One User Task occurrence that owns a non-interrupting boundary Timer deadline.
+ *
+ * The arm shape is `awaitBoundedUserTask`'s, and the operation kind is the whole difference: firing
+ * this deadline spawns a branch on `boundaryTimer.output` and preserves the task occurrence, where
+ * the interrupting family's firing removes it. The two are separate kinds rather than one kind with
+ * a flag because their state invariants disagree — a task held without its deadline is invalid
+ * there and is the normal post-firing state here.
+ */
+export type AwaitMonitoredUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitMonitoredUserTask;
+    input: string;
+    task: {
+      elementId: string;
+      name: string | null;
+      output: string;
+    };
+    boundaryTimer: BoundaryTimerArm;
+  }>;
+
+/**
  * One embedded Sub-Process occurrence that owns an interrupting boundary Timer deadline.
  *
  * Entry and deadline are one operation because neither is a resumable state without the other: a
@@ -283,6 +305,7 @@ export type SemanticOperation =
         };
       }>)
   | AwaitBoundedUserTaskOperation
+  | AwaitMonitoredUserTaskOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.AwaitMessage;

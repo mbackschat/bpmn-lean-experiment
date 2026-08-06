@@ -1,9 +1,11 @@
 /**
- * Well-formedness of the two bounded-wait operations and the interrupting deadline arm they share.
+ * Well-formedness of the three boundary-deadline operations and the deadline arm they share.
  *
- * One owner because the arm is one wire shape checked identically for both hosts. The hosts differ
- * only in what the deadline races: a single task occurrence, or a whole child scope reaching
- * quiescence.
+ * One owner because the arm is one wire shape checked identically for every host. The hosts differ
+ * in what the deadline accompanies — a single task occurrence, a whole child scope reaching
+ * quiescence, or a task that keeps running past it — and in whether firing ends that host. None of
+ * those differences reaches the arm, which is why interruption is not a field here: it is carried by
+ * the operation kind and, before lowering, by the checked node's own disposition.
  *
  * The boundary Sequence Flow is an ordinary token-carrying control place, unlike an Event-Based
  * Gateway's configuration Flows, so this checks the opposite of that family: `origin` must be exactly
@@ -14,6 +16,7 @@
 import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
 import type {
   AwaitBoundedUserTaskOperation,
+  AwaitMonitoredUserTaskOperation,
   EnterBoundedScopeOperation,
 } from "./semantic-process-contract.js";
 import { isWellFormedWireString } from "./wire.js";
@@ -23,9 +26,47 @@ export function isWellFormedAwaitBoundedUserTaskOperation(
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
 ): value is AwaitBoundedUserTaskOperation {
+  return isWellFormedTaskHostedDeadline(
+    value,
+    placeIds,
+    placeOrigins,
+    SemanticOperationKind.AwaitBoundedUserTask,
+  );
+}
+
+export function isWellFormedAwaitMonitoredUserTaskOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+  placeOrigins: ReadonlyMap<string, string>,
+): value is AwaitMonitoredUserTaskOperation {
+  return isWellFormedTaskHostedDeadline(
+    value,
+    placeIds,
+    placeOrigins,
+    SemanticOperationKind.AwaitMonitoredUserTask,
+  );
+}
+
+/**
+ * The shape both User Task hosts share, discriminated only by the operation kind they must carry.
+ *
+ * The kind is a parameter rather than a union member so neither family can admit the other's
+ * program: the two profiles pin disjoint interruption dispositions, and this is the layer at which
+ * that separation survives lowering.
+ */
+function isWellFormedTaskHostedDeadline<
+  Operation extends
+    | AwaitBoundedUserTaskOperation
+    | AwaitMonitoredUserTaskOperation,
+>(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+  placeOrigins: ReadonlyMap<string, string>,
+  kind: Operation["kind"],
+): value is Operation {
   if (
     !hasOnlyKeys(value, ["id", "kind", "origin", "input", "task", "boundaryTimer"]) ||
-    value.kind !== SemanticOperationKind.AwaitBoundedUserTask ||
+    value.kind !== kind ||
     !isPlaceReference(value.input, placeIds) ||
     !isRecord(value.task) ||
     !hasOnlyKeys(value.task, ["elementId", "name", "output"]) ||
@@ -38,8 +79,9 @@ export function isWellFormedAwaitBoundedUserTaskOperation(
   }
   return value.input !== value.task.output &&
     value.input !== value.boundaryTimer.output &&
-    // Distinct routes are the capsule's separating boundary: one shared output would make the two
-    // victories publicly indistinguishable.
+    // Distinct routes are the separating boundary for both hosts, for different reasons: one shared
+    // output would make the interrupting family's two victories publicly indistinguishable, and
+    // would merge the monitored family's two concurrent branches into one place.
     value.task.output !== value.boundaryTimer.output &&
     value.task.elementId !== value.boundaryTimer.elementId &&
     hostElementId(value.origin) === value.task.elementId &&

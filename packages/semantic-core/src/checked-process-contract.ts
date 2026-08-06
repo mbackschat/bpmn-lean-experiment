@@ -44,6 +44,18 @@ export enum GatewayDirection {
   Converging = "converging",
 }
 
+/**
+ * Whether a Boundary Event ends its host Activity's occurrence when it fires.
+ *
+ * A closed value rather than the source attribute's boolean, so the two dispositions select
+ * different lowering clauses in checked source instead of being decided by a field after lowering.
+ * The XSD and CMOF default `cancelActivity` to `true`, so an omitted attribute is `Interrupting`.
+ */
+export enum BoundaryInterruption {
+  Interrupting = "interrupting",
+  NonInterrupting = "nonInterrupting",
+}
+
 export type CheckedProcessIdentity = DeepReadonly<{
   semanticProfile: string;
   sourceId: string;
@@ -98,17 +110,18 @@ export type CheckedNode =
       outputFlowId: string;
     }>
   /**
-   * An interrupting Timer Boundary Event.
+   * A Timer Boundary Event, in either interruption disposition.
    *
    * `durationLiteral` retains the exact source lexeme so Lean normalizes it to milliseconds
-   * independently instead of trusting the TypeScript compiler's arithmetic. `cancelActivity` is absent
-   * because only the interrupting form is admitted: the XSD and CMOF default it to `true`, so an
-   * omitted attribute is interrupting and a lexical `false` is rejected at admission.
+   * independently instead of trusting the TypeScript compiler's arithmetic. `interruption` is what
+   * selects the host's lowering clause, so a source cannot acquire the wrong interruption semantics
+   * by matching a shape; which dispositions a given profile admits is the profile's own decision.
    */
   | DeepReadonly<{
       kind: CheckedNodeKind.TimerBoundaryEvent;
       id: string;
       attachedToRef: string;
+      interruption: BoundaryInterruption;
       durationLiteral: "PT1S";
       outputFlowId: string;
     }>

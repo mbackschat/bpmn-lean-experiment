@@ -24,6 +24,7 @@ import {
 } from "./event-race-admission.js";
 import {
   isWellFormedAwaitBoundedUserTaskOperation,
+  isWellFormedAwaitMonitoredUserTaskOperation,
   isWellFormedEnterBoundedScopeOperation,
 } from "./bounded-wait-admission.js";
 import {
@@ -197,6 +198,12 @@ export function isWellFormedSemanticOperation(
       return isWellFormedAwaitEventRaceOperation(value, placeIds, placeOrigins);
     case SemanticOperationKind.AwaitBoundedUserTask:
       return isWellFormedAwaitBoundedUserTaskOperation(
+        value,
+        placeIds,
+        placeOrigins,
+      );
+    case SemanticOperationKind.AwaitMonitoredUserTask:
+      return isWellFormedAwaitMonitoredUserTaskOperation(
         value,
         placeIds,
         placeOrigins,

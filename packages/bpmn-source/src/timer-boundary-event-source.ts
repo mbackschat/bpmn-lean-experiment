@@ -1,15 +1,18 @@
 /**
- * Admission of one interrupting `PT1S` Timer Boundary Event.
+ * Admission of one `PT1S` Timer Boundary Event, in either interruption disposition.
  *
- * Only the interrupting form is admitted. The XSD and CMOF default `cancelActivity` to `true`, so an
- * omitted attribute is interrupting; Clause 13.5.3's "if the attribute is not set" must be read as
- * "not set to `true`", because the literal reading would make an omitted attribute non-interrupting.
- * A lexical `false` is a separate proposition and is rejected as the retained hostile control.
+ * `cancelActivity` is resolved to a closed disposition here and nowhere else. The XSD and CMOF
+ * default it to `true`, so an omitted attribute is interrupting; Clause 13.5.3's "if the attribute
+ * is not set" must be read as "not set to `true`", because the literal reading would make an omitted
+ * attribute non-interrupting. Clause 10.5.6 grants a lexical `false` the continuing-Activity
+ * behavior directly, which is why the two dispositions are admitted here rather than one being
+ * refused. Which of them a given profile accepts is decided by that profile's operation multiset,
+ * because both dispositions produce the same checked-node kind.
  *
  * The exact `PT1S` lexeme is retained rather than normalized here, so Lean converts it to milliseconds
  * independently instead of inheriting this compiler's arithmetic.
  */
-import { CheckedNodeKind } from "@bpmn-lean/semantic-core";
+import { BoundaryInterruption, CheckedNodeKind } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
   CheckedSequenceFlow,
@@ -33,8 +36,9 @@ export function projectTimerBoundaryEvent(
   CheckedNode,
   { kind: CheckedNodeKind.TimerBoundaryEvent }
 > | undefined {
+  const interruption = readInterruption(element.cancelActivity);
   if (
-    (element.cancelActivity !== undefined && element.cancelActivity !== true) ||
+    interruption === undefined ||
     !hasOnlyOwnKeys(element, [
       "$type",
       "id",
@@ -61,9 +65,28 @@ export function projectTimerBoundaryEvent(
         kind: CheckedNodeKind.TimerBoundaryEvent,
         id,
         attachedToRef,
+        interruption,
         durationLiteral: "PT1S",
         outputFlowId: output.id,
       };
+}
+
+/**
+ * Resolves the parsed `cancelActivity` attribute, or `undefined` when the value is not admissible.
+ *
+ * The parser types the attribute as `xsd:boolean`, so a value that is neither boolean nor absent
+ * never carried an interruption disposition and must not be defaulted into one.
+ */
+function readInterruption(value: unknown): BoundaryInterruption | undefined {
+  switch (value) {
+    case undefined:
+    case true:
+      return BoundaryInterruption.Interrupting;
+    case false:
+      return BoundaryInterruption.NonInterrupting;
+    default:
+      return undefined;
+  }
 }
 
 function hasExactPt1sTimerDefinition(

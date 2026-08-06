@@ -1,4 +1,8 @@
-import { CheckedNodeKind } from "./checked-process-contract.js";
+import {
+  BoundaryInterruption,
+  CheckedNodeKind,
+} from "./checked-process-contract.js";
+import type { CheckedNode } from "./checked-process-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 
 export const SemanticProfileId = Object.freeze({
@@ -26,6 +30,8 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-intermediate-catch-message-draft",
   MessageAddressedReceiveTask:
     "cibseven-2.2.0-message-addressed-receive-task-draft",
+  NonInterruptingBoundaryTimer:
+    "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
   ParallelForkJoin: "parallel-fork-join-draft",
   ServiceTaskEffect: "cibseven-2.2.0-service-task-effect-draft",
   TimerUserTaskComposition:
@@ -52,18 +58,32 @@ export function profileAllowsProgramShape(
 
 export function profileAllowsCheckedProcessShape(
   semanticProfile: string,
-  actualKinds: ReadonlyArray<CheckedNodeKind>,
+  nodes: ReadonlyArray<CheckedNode>,
   definitionScopeCount: number,
 ): boolean {
   const required = requiredCheckedProcessShape(semanticProfile);
   return required !== undefined &&
     definitionScopeCount === required.definitionScopeCount &&
-    sameCardinalities(actualKinds, required.nodeKinds);
+    sameCardinalities(nodes.map(({ kind }) => kind), required.nodeKinds) &&
+    nodes.every((node) =>
+      node.kind !== CheckedNodeKind.TimerBoundaryEvent ||
+      node.interruption === required.boundaryInterruption
+    );
 }
 
+/**
+ * One profile's exact checked-graph capability.
+ *
+ * `boundaryInterruption` is checked against every Timer Boundary Event the graph carries, so the
+ * disposition separates two profiles that pin the same node kinds. Without it a source could compile
+ * `Accepted` under the profile holding the opposite interruption semantics, and only a later
+ * execution or scenario admission would notice — which is the wrong boundary for a fact the checked
+ * graph already records.
+ */
 type RequiredCheckedProcessShape = Readonly<{
   definitionScopeCount: number;
   nodeKinds: ReadonlyArray<CheckedNodeKind>;
+  boundaryInterruption: BoundaryInterruption | undefined;
 }>;
 
 function requiredCheckedProcessShape(
@@ -134,6 +154,8 @@ function requiredCheckedProcessShape(
         CheckedNodeKind.InclusiveGateway,
         end,
       ]);
+    // Both boundary-Timer-on-a-User-Task profiles pin the same node kinds, so the disposition is
+    // what separates them and their admitted sets are disjoint by construction.
     case SemanticProfileId.ActivityBoundaryTimer:
       return rootChecked([
         start,
@@ -143,7 +165,17 @@ function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
         end,
-      ]);
+      ], BoundaryInterruption.Interrupting);
+    case SemanticProfileId.NonInterruptingBoundaryTimer:
+      return rootChecked([
+        start,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.TimerBoundaryEvent,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+      ], BoundaryInterruption.NonInterrupting);
     case SemanticProfileId.EventBasedGatewayMessageTimer:
       return rootChecked([
         start,
@@ -163,68 +195,56 @@ function requiredCheckedProcessShape(
         end,
       ]);
     case SemanticProfileId.EmbeddedSubProcessCompletion:
-      return {
-        definitionScopeCount: 2,
-        nodeKinds: [
-          start,
-          CheckedNodeKind.EmbeddedSubProcess,
-          CheckedNodeKind.UserTask,
-          end,
-          start,
-          CheckedNodeKind.ParallelGateway,
-          CheckedNodeKind.UserTask,
-          CheckedNodeKind.UserTask,
-          end,
-          end,
-        ],
-      };
+      return nestedChecked([
+        start,
+        CheckedNodeKind.EmbeddedSubProcess,
+        CheckedNodeKind.UserTask,
+        end,
+        start,
+        CheckedNodeKind.ParallelGateway,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+      ]);
     case SemanticProfileId.SubProcessBoundaryTimer:
-      return {
-        definitionScopeCount: 2,
-        nodeKinds: [
-          start,
-          CheckedNodeKind.EmbeddedSubProcess,
-          CheckedNodeKind.TimerBoundaryEvent,
-          CheckedNodeKind.UserTask,
-          CheckedNodeKind.UserTask,
-          end,
-          end,
-          start,
-          CheckedNodeKind.UserTask,
-          end,
-        ],
-      };
+      return nestedChecked([
+        start,
+        CheckedNodeKind.EmbeddedSubProcess,
+        CheckedNodeKind.TimerBoundaryEvent,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+        start,
+        CheckedNodeKind.UserTask,
+        end,
+      ], BoundaryInterruption.Interrupting);
     case SemanticProfileId.SubProcessErrorPropagation:
-      return {
-        definitionScopeCount: 2,
-        nodeKinds: [
-          start,
-          CheckedNodeKind.EmbeddedSubProcess,
-          CheckedNodeKind.BoundaryErrorEvent,
-          CheckedNodeKind.UserTask,
-          end,
-          end,
-          start,
-          CheckedNodeKind.ParallelGateway,
-          CheckedNodeKind.UserTask,
-          CheckedNodeKind.UserTask,
-          CheckedNodeKind.ErrorEndEvent,
-          end,
-        ],
-      };
+      return nestedChecked([
+        start,
+        CheckedNodeKind.EmbeddedSubProcess,
+        CheckedNodeKind.BoundaryErrorEvent,
+        CheckedNodeKind.UserTask,
+        end,
+        end,
+        start,
+        CheckedNodeKind.ParallelGateway,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.ErrorEndEvent,
+        end,
+      ]);
     case SemanticProfileId.CalledProcessCallActivity:
-      return {
-        definitionScopeCount: 2,
-        nodeKinds: [
-          start,
-          CheckedNodeKind.CallActivity,
-          CheckedNodeKind.UserTask,
-          end,
-          start,
-          CheckedNodeKind.UserTask,
-          end,
-        ],
-      };
+      return nestedChecked([
+        start,
+        CheckedNodeKind.CallActivity,
+        CheckedNodeKind.UserTask,
+        end,
+        start,
+        CheckedNodeKind.UserTask,
+        end,
+      ]);
     default:
       return undefined;
   }
@@ -328,6 +348,16 @@ function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
+    case SemanticProfileId.NonInterruptingBoundaryTimer:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitMonitoredUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.EventBasedGatewayMessageTimer:
       return rootProgram([
         SemanticOperationKind.Initiate,
@@ -424,8 +454,16 @@ function rootProgram(
 
 function rootChecked(
   nodeKinds: ReadonlyArray<CheckedNodeKind>,
+  boundaryInterruption?: BoundaryInterruption,
 ): RequiredCheckedProcessShape {
-  return { definitionScopeCount: 1, nodeKinds };
+  return { definitionScopeCount: 1, nodeKinds, boundaryInterruption };
+}
+
+function nestedChecked(
+  nodeKinds: ReadonlyArray<CheckedNodeKind>,
+  boundaryInterruption?: BoundaryInterruption,
+): RequiredCheckedProcessShape {
+  return { definitionScopeCount: 2, nodeKinds, boundaryInterruption };
 }
 
 function sameOperationCardinalities(

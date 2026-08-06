@@ -37,6 +37,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN Simple Boolean Exclusive Gateway (`bpmn-2.0.2-simple-boolean-exclusive-gateway-draft`) | 1 | one `initiate`, one `choose`, three `awaitUserTask`, three `reachNoneEnd`, one `completeScope` |
 | BPMN structured Inclusive Gateway (`bpmn-2.0.2-inclusive-gateway-selected-branches-draft`) | 1 | one `initiate`, one `selectMany`, three `awaitUserTask`, one `synchronizeSelected`, one `reachNoneEnd`, one `completeScope` |
 | BPMN interrupting Activity boundary Timer (`bpmn-2.0.2-activity-boundary-timer-draft`) | 1 | one `initiate`, one `awaitBoundedUserTask`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
+| BPMN non-interrupting boundary Timer (`bpmn-2.0.2-non-interrupting-boundary-timer-draft`) | 1 | one `initiate`, one `awaitMonitoredUserTask`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN Event-Based Gateway Message/Timer race (`bpmn-2.0.2-event-based-gateway-message-timer-draft`) | 1 | one `initiate`, one `awaitEventRace`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN Timer/User Task composition (`bpmn-2.0.2-timer-user-task-composition-draft`) | 1 | one `initiate`, one `awaitTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Intermediate Catch Message (`bpmn-2.0.2-intermediate-catch-message-draft`) | 1 | one `initiate`, one `awaitMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |

@@ -1,15 +1,17 @@
 /**
- * Durable readiness scheduling for one interrupting boundary deadline and the wait it bounds.
+ * Durable readiness scheduling for one boundary deadline and the wait it accompanies.
  *
- * One mechanism serves both boundary-deadline host kinds, because what they share is exactly the
+ * One mechanism serves every boundary-deadline host kind, because what they share is exactly the
  * hazard: a deadline racing a completion Update, where an activation carrying both callbacks would
- * otherwise let raw job order pick a winner the profile leaves undefined. What differs per family is
- * which committed state counts as one bounded pair and which identity the refusal carries, and both
- * live in the descriptor below. The identities stay distinct on purpose: a bounded Activity loses one
- * task completion, while a bounded scope loses a whole child region reaching quiescence, so a shared
- * identity would report an unavailable scheduler without saying which semantic outcome is
- * unreachable. Activation-tagged batching and durable deadline ownership are the shared mechanisms
- * and keep their own owners.
+ * otherwise let raw job order pick a winner the profile leaves undefined. Interruption is not what
+ * decides membership — the non-interrupting family faces the same undefined order, between spawning
+ * a branch and withdrawing the deadline. What differs per family is which committed state counts as
+ * one pair and which identity the refusal carries, and both live in the descriptors below. Those
+ * identities stay distinct on purpose: a bounded Activity loses one task completion, a bounded scope
+ * loses a whole child region reaching quiescence, and a monitored Activity loses a handler branch
+ * that never starts, so a shared identity would report an unavailable scheduler without saying which
+ * semantic outcome is unreachable. Activation-tagged batching and durable deadline ownership are the
+ * shared mechanisms and keep their own owners.
  */
 import { StimulusKind } from "@bpmn-lean/semantic-core";
 import type {
@@ -23,6 +25,7 @@ import type {
 import {
   isBoundaryTimerDefinition,
   isBoundedScopeDeadlineDefinition,
+  isMonitoredBoundaryTimerDefinition,
 } from "@bpmn-lean/semantic-core";
 import { ApplicationFailure } from "@temporalio/workflow";
 
@@ -33,6 +36,7 @@ import {
 import {
   bpmnBoundedActivitySchedulerUnavailableFailureType,
   bpmnBoundedScopeSchedulerUnavailableFailureType,
+  bpmnMonitoredActivitySchedulerUnavailableFailureType,
 } from "./contracts.js";
 import { createDurableTimerOwner } from "./durable-timer-owner.js";
 import type { DurableTimer } from "./durable-timer-owner.js";
@@ -93,6 +97,30 @@ export const boundedScopeDeadlineFamily: BoundedDeadlineFamily = Object.freeze({
   identityChangedRefusal:
     "Committed bounded scope changed its durable deadline identity",
 });
+
+/**
+ * The non-interrupting family.
+ *
+ * The coalescing hazard is not weaker for being non-interrupting, and it is the reason this family
+ * uses the same barrier rather than the generic durable-timer path: firing then completing yields
+ * both branches, while completing then firing withdraws the deadline and yields only the normal
+ * branch. The profile defines no portable winner between them, so an activation carrying both
+ * callbacks must fail closed here exactly as it does for the two bounded families.
+ */
+export const monitoredActivityDeadlineFamily: BoundedDeadlineFamily = Object
+  .freeze({
+    ownsDeadline: isMonitoredBoundaryTimerDefinition,
+    schedulerUnavailableFailureType:
+      bpmnMonitoredActivitySchedulerUnavailableFailureType,
+    sharedActivationMessage:
+      "Monitored Activity completion and its non-interrupting deadline shared one Workflow activation with no defined winner",
+    invariantMessage:
+      "Managed monitored Activity is not one task with an exact PT1S non-interrupting boundary deadline",
+    replacedRefusal:
+      "Monitored Activity attempted to replace its live durable deadline",
+    identityChangedRefusal:
+      "Committed monitored Activity changed its durable deadline identity",
+  });
 
 export type BoundedDeadlineScheduler = Readonly<{
   /** True when this family owns the state's committed deadline, so one scheduler can be selected. */

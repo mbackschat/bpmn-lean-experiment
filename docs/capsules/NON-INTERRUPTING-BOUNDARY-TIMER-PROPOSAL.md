@@ -292,20 +292,20 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 
 | Owner | Headroom |
 |---|---:|
-| [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 9 |
-| [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 27 |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 61 |
+| [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 2 |
+| [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 3 |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 52 |
+| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 81 |
-| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 83 |
-| [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 157 |
-| [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 163 |
-| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 183 |
-| [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 266 |
-| [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 386 |
-| [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 404 |
-| [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 422 |
-| [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 456 |
-| [Timer Boundary Event source admission](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 515 |
+| [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 126 |
+| [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 154 |
+| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 176 |
+| [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 244 |
+| [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 359 |
+| [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 392 |
+| [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 404 |
+| [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 416 |
+| [Timer Boundary Event source admission](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 493 |
 
 **One of those owners carries the admission inversion, and without changing it this profile cannot be admitted at all.** [The Timer Boundary Event source reader](../../packages/bpmn-source/src/timer-boundary-event-source.ts) today accepts `cancelActivity` only when it is absent or `true` and returns no checked node otherwise, so the inversion is a change to that predicate rather than a new one beside it. [Checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) parses no `cancelActivity` but owns `ownsBoundaryTimerDeadline` and `boundaryTimersAttachToDeadlineOwners`, both currently documented as interrupting-only, and it is the tightest listed owner after the three below.
 

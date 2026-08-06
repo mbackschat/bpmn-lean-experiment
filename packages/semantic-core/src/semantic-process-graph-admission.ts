@@ -373,6 +373,7 @@ function operationInputs(
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect:
@@ -402,8 +403,10 @@ function operationOutputs(
     case SemanticOperationKind.AwaitEventRace:
       return [operation.message.output, operation.timer.output];
     // Both arms are token-carrying control places: the boundary Sequence Flow receives a token when
-    // the deadline wins, unlike an Event-Based Gateway's configuration flows.
+    // the deadline wins, unlike an Event-Based Gateway's configuration flows. The monitored family
+    // declares the same two outputs, though it can produce both within one run rather than one.
     case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMonitoredUserTask:
       return [operation.task.output, operation.boundaryTimer.output];
     case SemanticOperationKind.EnterScope:
       return [operation.childEntry];

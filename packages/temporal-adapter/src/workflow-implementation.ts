@@ -81,6 +81,7 @@ import {
   boundedActivityDeadlineFamily,
   boundedScopeDeadlineFamily,
   createBoundedDeadlineScheduler,
+  monitoredActivityDeadlineFamily,
 } from "./bounded-deadline-scheduler.js";
 import {
   createEventRaceReadinessScheduler,
@@ -148,8 +149,8 @@ export async function runBpmnProcessWithHostEffects(
     eventRaceActivationDrain,
   );
   // One scheduler per boundary-deadline host kind. Each owns only the deadlines its own family
-  // defines, so at most one ever claims a given committed state and neither can schedule the
-  // other's pair under the wrong refusal identity.
+  // defines, so at most one ever claims a given committed state and none can schedule another
+  // family's pair under the wrong refusal identity.
   const boundedDeadlineSchedulers = [
     createBoundedDeadlineScheduler(
       semanticProcess,
@@ -160,6 +161,11 @@ export async function runBpmnProcessWithHostEffects(
       semanticProcess,
       waitForTimer,
       boundedScopeDeadlineFamily,
+    ),
+    createBoundedDeadlineScheduler(
+      semanticProcess,
+      waitForTimer,
+      monitoredActivityDeadlineFamily,
     ),
   ] as const;
   const boundedDeadlineSchedulerFor = (candidate: RuntimeState) =>

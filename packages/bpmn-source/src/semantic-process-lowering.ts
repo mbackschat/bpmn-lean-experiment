@@ -1,4 +1,5 @@
 import {
+  BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
   SemanticOperationKind,
@@ -146,7 +147,11 @@ function lowerNode(
       if (boundaryTimer !== undefined) {
         return scoped({
           ...base,
-          kind: SemanticOperationKind.AwaitBoundedUserTask,
+          // The disposition selects the operation kind, and the kind is the whole difference: one
+          // family's firing removes the task occurrence and the other's preserves it.
+          kind: boundaryTimer.interruption === BoundaryInterruption.Interrupting
+            ? SemanticOperationKind.AwaitBoundedUserTask
+            : SemanticOperationKind.AwaitMonitoredUserTask,
           input: requireOnly(incoming, node.id, "incoming"),
           task: {
             elementId: node.id,
@@ -465,7 +470,7 @@ function lowerBoundaryTimerArm(
   };
 }
 
-/** The interrupting Timer Boundary Event attached to this Activity, when the profile admitted one. */
+/** The Timer Boundary Event attached to this Activity, when the profile admitted one. */
 function timerBoundaryFor(
   source: CheckedProcess,
   activityId: string,

@@ -409,6 +409,7 @@
             "kind",
             "id",
             "attachedToRef",
+            "interruption",
             "durationLiteral",
             "outputFlowId"
           ],
@@ -421,6 +422,12 @@
             },
             "attachedToRef": {
               "$ref": "#/$defs/nonemptyString"
+            },
+            "interruption": {
+              "enum": [
+                "interrupting",
+                "nonInterrupting"
+              ]
             },
             "durationLiteral": {
               "const": "PT1S"

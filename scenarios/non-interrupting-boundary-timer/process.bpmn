@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_NonInterruptingBoundaryTimer"
+  targetNamespace="https://bpmn-lean.local/tests/non-interrupting-boundary-timer">
+  <bpmn:process id="Process_NonInterruptingBoundaryTimer" name="Monitored task with a non-interrupting deadline" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="MonitoredTask" name="Monitored work">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Normal</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Reminder" name="Reminder" attachedToRef="MonitoredTask" cancelActivity="false">
+      <bpmn:outgoing>Flow_Boundary</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="NormalTask" name="Monitored work finished">
+      <bpmn:incoming>Flow_Normal</bpmn:incoming>
+      <bpmn:outgoing>Flow_Normal_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="HandlerTask" name="Reminder handled">
+      <bpmn:incoming>Flow_Boundary</bpmn:incoming>
+      <bpmn:outgoing>Flow_Boundary_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="NormalEnd">
+      <bpmn:incoming>Flow_Normal_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="HandlerEnd">
+      <bpmn:incoming>Flow_Boundary_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="MonitoredTask"/>
+    <bpmn:sequenceFlow id="Flow_Normal" sourceRef="MonitoredTask" targetRef="NormalTask"/>
+    <bpmn:sequenceFlow id="Flow_Normal_End" sourceRef="NormalTask" targetRef="NormalEnd"/>
+    <bpmn:sequenceFlow id="Flow_Boundary" sourceRef="Reminder" targetRef="HandlerTask"/>
+    <bpmn:sequenceFlow id="Flow_Boundary_End" sourceRef="HandlerTask" targetRef="HandlerEnd"/>
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,9 @@
+# Non-interrupting boundary Timer scenarios
+
+This directory contains one exact BPMN 2.0.2 source for the [non-interrupting boundary Timer capsule](../../docs/capsules/NON-INTERRUPTING-BOUNDARY-TIMER-PROPOSAL.md). One monitored User Task owns one non-interrupting `PT1S` Timer Boundary Event, so firing spawns a concurrent handler branch while the host Activity stays active and independently completable, and each branch reaches its own follow-on User Task and its own None End Event. The two follow-on tasks are what make the spawn observable at the public boundary: an implementation that ended its host on firing would publish one open task where this one publishes two.
+
+`cancelActivity="false"` is written lexically and is the only admitted form here. The XSD and CMOF default the attribute to `true`, so an omitted attribute and a lexical `true` both select the interrupting proposition owned by the [sibling capsule](../../docs/capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) and are rejected by this profile. The two profiles pin the same checked-node multiset and disjoint interruption dispositions, so neither profile's source is admissible to the other and a source cannot acquire the wrong interruption semantics by matching a shape.
+
+The second End Event is normatively motivated rather than structural symmetry: Clause 10.5.6 recommends that the boundary flow be ended with its own End Event. It remains a modelling fact and not a discriminator, because the canonical observation exposes no terminal element identity.
+
+**No answer-free schedule is registered here yet.** The capsule pauses at its semantic checkpoint after the first green Lean and semantic-core result, and its two schedules, differential cases, seeded mutations, and Temporal histories belong to the evidence lanes that follow that review. Target inputs added here must carry no winner annotation and no expected result.

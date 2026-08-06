@@ -90,6 +90,7 @@ const HostOperationClass = {
   ManagedEventRace: "managedEventRace",
   BoundedActivityWait: "boundedActivityWait",
   BoundedScopeWait: "boundedScopeWait",
+  MonitoredActivityWait: "monitoredActivityWait",
 } as const;
 
 type HostOperationClass =
@@ -143,6 +144,17 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
         "The Temporal host admits only one isolated bounded Sub-Process scope with an exact PT1S boundary Timer.",
     },
   },
+  {
+    operationClass: HostOperationClass.MonitoredActivityWait,
+    isAdmissibleIsolatedForm: (operation) =>
+      operation.kind === SemanticOperationKind.AwaitMonitoredUserTask &&
+      operation.boundaryTimer.durationMs === 1_000,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.MonitoredActivitySchedulerUnavailable,
+      evidence:
+        "The Temporal host admits only one isolated monitored User Task with an exact PT1S non-interrupting boundary Timer.",
+    },
+  },
 ];
 
 function classifyHostOperation(
@@ -161,6 +173,12 @@ function classifyHostOperation(
       return HostOperationClass.BoundedActivityWait;
     case SemanticOperationKind.EnterBoundedScope:
       return HostOperationClass.BoundedScopeWait;
+    // Managed rather than a token split, even though firing creates a second live branch: the split
+    // is semantic and has no `duplicate` operation to declare it, so `canSplitTokens` is silent here
+    // by construction. Its silence is not evidence, and the class is assigned from the deadline this
+    // operation owns rather than from that predicate.
+    case SemanticOperationKind.AwaitMonitoredUserTask:
+      return HostOperationClass.MonitoredActivityWait;
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:

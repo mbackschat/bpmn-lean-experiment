@@ -16,6 +16,10 @@ export {
 export {
   isBoundedScopeDeadlineDefinition,
 } from "./semantic-process-bounded-scope-runtime.js";
+export {
+  isMonitoredBoundaryTimerDefinition,
+  isMonitoredTaskDefinition,
+} from "./semantic-process-monitored-task-runtime.js";
 export * from "./semantic-value-contract.js";
 export * from "./checked-process-contract.js";
 export * from "./semantic-process-contract.js";

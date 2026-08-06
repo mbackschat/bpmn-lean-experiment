@@ -1284,6 +1284,9 @@
           "$ref": "#/$defs/awaitBoundedUserTask"
         },
         {
+          "$ref": "#/$defs/awaitMonitoredUserTask"
+        },
+        {
           "$ref": "#/$defs/awaitEffect"
         },
         {
@@ -1380,6 +1383,38 @@
         },
         "kind": {
           "const": "awaitBoundedUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/boundedTaskArm"
+        },
+        "boundaryTimer": {
+          "$ref": "#/$defs/boundaryTimerArm"
+        }
+      }
+    },
+    "awaitMonitoredUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "task",
+        "boundaryTimer"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitMonitoredUserTask"
         },
         "origin": {
           "$ref": "#/$defs/bpmnElementOrigin"

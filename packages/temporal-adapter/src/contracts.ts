@@ -47,6 +47,16 @@ export const bpmnBoundedActivitySchedulerUnavailableFailureType =
  */
 export const bpmnBoundedScopeSchedulerUnavailableFailureType =
   "BpmnBoundedScopeSchedulerUnavailable";
+/**
+ * Distinct from both bounded identities, because the outcome an operator loses is not an end.
+ *
+ * A monitored deadline never terminates anything: what fails to happen is a handler branch that
+ * never starts beside a task that keeps running normally. Sharing an identity with either bounded
+ * family would report the one host failure whose symptom is a *missing* branch as one whose symptom
+ * is a branch that never finished.
+ */
+export const bpmnMonitoredActivitySchedulerUnavailableFailureType =
+  "BpmnMonitoredActivitySchedulerUnavailable";
 export const bpmnSemanticTaskQueue = "bpmn-semantic";
 
 export enum TemporalHostCapabilityResultKind {
@@ -72,6 +82,14 @@ export enum TemporalHostAdmissionFailureCode {
    * code would report an unavailable scheduler without saying which semantic outcome is unreachable.
    */
   BoundedScopeSchedulerUnavailable = "boundedScopeSchedulerUnavailable",
+  /**
+   * Deliberately distinct from both bounded codes.
+   *
+   * Neither bounded family can reach the state this one loses: a deadline that fires while its host
+   * keeps running. Reporting it as a bounded failure would say a race had no scheduler, when what
+   * has no scheduler is the spawn of a concurrent branch.
+   */
+  MonitoredActivitySchedulerUnavailable = "monitoredActivitySchedulerUnavailable",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{
