@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft, pending independent cold proposal review and owner approval.** Nothing here is implemented, and nothing here is a coverage, conformance, or CIB compatibility claim. The selection this capsule rests on is owner-approved and owned by [the breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#priority-decision-after-the-interrupting-sub-process-boundary-timer); approving the selection did not approve the semantic account below. The exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) and is deliberately not restated here.
+**Draft, pending independent cold proposal review and owner approval.** Nothing here is implemented, and nothing here is a coverage, conformance, or CIB compatibility claim. The selection this capsule rests on is a recorded *scheduling* decision owned by [the breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#priority-decision-after-the-interrupting-sub-process-boundary-timer), which states in the same section that it approves no semantic account; approving the selection as a semantic commitment is decision 1 below and has not happened. The exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) and is deliberately not restated here.
 
 ## Independent cold-review receipt
 
@@ -18,7 +18,7 @@ What is the smallest bounded slice in which a boundary Event fires **without** i
 
 ## Selection basis
 
-The [breadth refresh](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#boundary-event-candidate-split) decomposes Boundary Event along three independent dimensions and reports a non-interrupting Timer attached to a User Task at 10 files and 11 occurrences. That is the smallest own count among the candidates weighed, and the selection is explicitly not a prevalence argument.
+The [breadth refresh](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#boundary-event-candidate-split) decomposes Boundary Event along three independent dimensions and reports a non-interrupting Timer attached to a User Task at 10 files and 11 occurrences. That is the smallest own count among the candidates weighed *there*, not the smallest combination the corpus contains, and the selection is explicitly not a prevalence argument.
 
 Two of the three dimensions are already closed at one cell — interrupting, Timer, on a User Task and on an embedded Sub-Process — and the host axis generalized when the Sub-Process capsule replaced both `UserTask`-only attachment predicates with a fail-closed enumerated host allowlist. The interruption axis has no coverage at all. It carries 53 files and 57 occurrences across every trigger and host, every remaining trigger family would otherwise settle non-interruption for itself, and 62 of the 157 Event Sub-Process files start non-interrupting, which is the same mechanism in a different position.
 
@@ -30,13 +30,14 @@ BPMN 2.0.2 is the sole semantic authority for this capsule.
 
 - Clause 10.5.6 owns the behavior directly and unusually explicitly: “For non-interrupting boundary Events, the cancelActivity attribute is set to *false*. Whenever the Event occurs, the associated Activity continues to be active. As a *token* is generated for the Sequence Flow from the boundary Event in parallel to the continuing execution of the Activity, care MUST be taken when this flow is merged into the main flow of the Process – typically it should be ended with its own End Event.”
 - Clause 13.5.3 owns the boundary handling order and its non-interrupting arm: handling first consumes the Event occurrence; the attached Activity is cancelled only “if the cancelActivity attribute is set”, and otherwise “the Activity continues execution (only possible for Message, Signal, Timer, and Conditional Events, not for Error Events)”; execution then follows the Sequence Flow connected to the boundary Event.
-- Clause 10.5 Table 10.91 owns the Boundary Event attributes and Table 10.92 owns the legal `cancelActivity` values per trigger, which admit both `true` and `false` for a Timer.
-- Clause 10.5.5 Table 10.101 owns `TimerEventDefinition.timeDuration`, with Table 10.122 as its XML Schema, already admitted at exactly `PT1S` by the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md). The same table makes the three Timer attributes mutually exclusive and defines `timeCycle` as the recurring form.
+- Clause 10.5 Table 10.91 owns the Boundary Event attributes and Table 10.92 owns the legal `cancelActivity` values per trigger, whose Timer row reads `True/false`. This capsule cites the table numbers rather than a `10.5.x` sub-clause because the local Markdown conversion lost intermediate headings, so the nearest numbered heading it can resolve is not evidence of the owning sub-clause.
+- Clause 10.5.5 Table 10.101, *TimerEventDefinition model associations*, owns `timeDuration`, already admitted at exactly `PT1S` by the [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md). It makes the three Timer attributes mutually exclusive when `isExecutable` is `true`, which this profile satisfies, and requires `timeCycle` to conform to the ISO-8601 recurring-interval format. Clause 10.5.8 Table 10.122 owns the corresponding XML schema.
+- Clause 13.2 owns Process completion, which requires that no token remains within the Process instance and that no Activity of the Process is still active.
 - Clause 13.3.2 owns the Activity lifecycle whose continued active state is the observable difference from interruption.
 
 Three consequences are recorded rather than left implicit.
 
-**Clause 13.5.3's “if the attribute is not set” must be read as “not set to `true`”, and this capsule depends on that reading rather than merely tolerating it.** Read literally as *absent*, the sentence would contradict the machine-readable `cancelActivity` default of `true` that the [interrupting Activity boundary Timer specification](ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis) had to establish for the opposite arm. Under the reading both capsules share, lexical `false` selects the continuing-Activity arm. The sentence that capsule had to defuse is the one that grants this capsule its behavior, so the two accounts stand or fall on one interpretation and neither may restate it independently.
+**Clause 13.5.3's “if the attribute is not set” is read as “not set to `true`”, and this capsule notes that reading without depending on it.** Read literally as *absent*, the sentence would contradict the machine-readable `cancelActivity` default of `true` that the [interrupting Activity boundary Timer specification](ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis) had to establish for the opposite arm. That capsule needs the reading; this one does not, because Clause 10.5.6 grants lexical `false` the continuing-Activity behavior directly and unconditionally. The dependency runs one way, so a refuted reading reopens the sibling's admission of an omitted attribute rather than this capsule's account.
 
 **The two End Events are load-bearing here, where the sibling capsule records them as inert.** Clause 10.5.6 states that the boundary token is generated in parallel with the continuing Activity and that the boundary flow “typically it should be ended with its own End Event”. This profile follows that recommendation, so the second End Event is normatively motivated rather than structural symmetry. It remains a *modelling* fact and not a discriminator: the canonical observation exposes no terminal element identity, so the published follow-on task identities still carry the separating witness.
 
@@ -69,6 +70,8 @@ type AwaitMonitoredUserTaskOperation = OperationBase & DeepReadonly<{
 
 `BoundaryTimerArm` stays byte-identical and shared with `awaitBoundedUserTask` and `enterBoundedScope`. What differs is the operation kind, and that difference is the whole semantic content: the kind is what selects a transition family whose firing preserves its host.
 
+Sharing the shape carries a documentation obligation the implementation must discharge rather than inherit. `BoundaryTimerArm`'s own contract currently reads “the interrupting deadline every bounded-wait operation owns”, the bounded-wait admission module document says the same, and both boundary-attachment predicates in checked-process admission are documented as interrupting-only. All four become false the moment a third family shares the shape, and a comment broader than its evidence is a defect under [the comment rules](../../CLAUDE.md#comments--document-semantic-surplus).
+
 The name is chosen against the existing vocabulary rather than after BPMN's. `awaitBoundedUserTask` says the deadline *bounds* the Activity; `awaitMonitoredUserTask` says it observes one and spawns a handler without bounding it. Neither name mirrors a BPMN surface class, so neither triggers the stop condition on operations that mirror a class without a reusable mechanism.
 
 `awaitBoundedUserTask`, `enterBoundedScope`, and `awaitTimer` remain unchanged and must not acquire non-interrupting behavior.
@@ -100,7 +103,7 @@ None Start → Monitored User Task ──normal──→ Normal User Task → No
 - two distinct None End Events;
 - no other executable extension content.
 
-**The admission inversion against the sibling profile is deliberate and is itself evidence.** That profile rejects `cancelActivity="false"` and admits omission; this one rejects omission and admits only `false`. Neither source is admissible to the other profile, so a source cannot silently acquire the wrong interruption semantics by matching a shape.
+**The admission inversion against the sibling profile is deliberate and is itself evidence.** That profile admits an omitted attribute and lexical `true` while rejecting `false`; this one admits only `false`. The two admitted sets are disjoint, so a source cannot silently acquire the wrong interruption semantics by matching a shape.
 
 The resulting program inventory is one `initiate`, one `awaitMonitoredUserTask`, two `awaitUserTask`, two `reachNoneEnd`, and one root `completeScope`. No standalone `awaitTimer` appears.
 
@@ -132,7 +135,9 @@ Arming on Activity activation is the same recorded project interpretation the si
 
 ### `NBTIMER-SPAWN-01` — the deadline fires without ending its host
 
-Firing the exact boundary Timer occurrence at its exact deadline consumes that Timer occurrence, produces one token on `boundaryTimer.output`, and changes nothing else. The task occurrence, its activation ordinal, every other wait, every variable binding, and every activation counter are preserved exactly. It produces no token on `task.output` and cancels no Activity-local state.
+Firing the exact boundary Timer occurrence at its exact deadline consumes that Timer occurrence, produces one token on `boundaryTimer.output`, and advances logical time to that exact deadline. Nothing else changes: the task occurrence, its activation ordinal, every other wait, every variable binding, and every activation counter are preserved exactly. It produces no token on `task.output` and cancels no Activity-local state.
+
+Logical time is part of the public observation, so its advance is stated here rather than left to the schedule table; the sibling family advances it identically on its deadline arm.
 
 The consumed occurrence does not re-arm, so the deadline fires at most once per activation. Under this profile that is a consequence of the admitted `timeDuration` form rather than a general claim about non-interrupting Timers.
 
@@ -142,11 +147,11 @@ Completing the exact active monitored task occurrence removes that task occurren
 
 This is the case the interrupting family cannot reach, and it is the reason the join is one-sided.
 
-The monitored task is completed by the ordinary completion command, whose stimulus carries `submittedValues`. This profile requires that list to be **empty** and admits no completion patch, exactly as the sibling capsule does, so both routes leave the Process-variable surface empty. A non-empty submission is rejected rather than silently ignored.
+The monitored task is completed by the ordinary completion command, whose stimulus carries `submittedValues`. This profile requires that list to be **empty** for the monitored task and admits no completion patch there, exactly as the sibling capsule does. The rule binds this transition only: the two follow-on tasks complete through the ordinary `awaitUserTask` path, which merges `submittedValues` into Process variables, so their empty submissions are a property of the registered schedules rather than of the profile. A non-empty submission to the monitored task is rejected rather than silently ignored.
 
 ### `NBTIMER-QUIESCE-01` — the enclosing scope completes only after both branches
 
-The root scope completes only when no token and no active Activity remains in it, so neither branch reaching its None End Event completes the Process while the other is live. This rule adds no mechanism: it is the quiescent completion the [ordinary embedded Sub-Process completion specification](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) established, now reached by a scope whose concurrency came from an Event rather than from a Gateway.
+The root scope completes only when no token and no active Activity remains in it, which is Clause 13.2's condition verbatim, so neither branch reaching its None End Event completes the Process while the other is live. This rule adds no mechanism: it is the quiescent completion the [ordinary embedded Sub-Process completion specification](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) established, now reached by a scope whose concurrency came from an Event rather than from a Gateway.
 
 It is stated as a rule because it is the proposition an interrupting implementation would silently satisfy for the wrong reason, and because the branch that ends first differs between the two registered schedules.
 
@@ -177,13 +182,15 @@ Two registered schedules over one definition:
 | Deadline then both branches | exact Timer firing at deadline `1000`, then the handler task, then the monitored task | after firing: **two** open User Tasks, no Timer, logical time `1000`; after the handler task completes: still `running` with the monitored task open | a stale exact firing of the consumed Timer rejects and preserves that state |
 | Completion before the deadline | exact monitored-task completion before `1000`, then the normal follow-on task | after completion: exactly one open User Task and no Timer, logical time `0` | a stale exact Timer firing rejects and preserves that state |
 
+**Only the first schedule separates this family from its sibling, and the pairing must not be read as if both did.** Schedule 2's public trace — one open User Task, no Timer, logical time `0` — is identical under both interruption dispositions, because a completion before the deadline withdraws it either way. Its discriminating power is against the retained-deadline mutation, not against interruption.
+
 The first schedule deliberately completes the **handler** branch first. That is the order in which an implementation completing the Process at the first End Event is publicly wrong, and it is the state `NBTIMER-QUIESCE-01` exists for. The reverse order is covered in the focused semantic-core test rather than as a third registered scenario, because quiescent completion over two concurrent branches in both orders is already closed evidence in the ordinary Sub-Process capsule and a third pipeline case would re-run that mechanism rather than this family's proposition.
 
 The pre-due firing is required as a **witness** and cannot be a registered scenario, for the structural reason the sibling capsule records: the Temporal host derives its firing instant from the wait's own committed deadline, so no scenario can drive that target to an off-deadline instant. It lives in the quantified Lean refusal law plus the focused semantic-core test, checked against both seeded defect directions.
 
 Start closure is exactly two internal steps, `initiate` and `awaitMonitoredUserTask`. The armed state is resumable through its published task interaction. Firing closes through exactly one `awaitUserTask`; each task completion closes through one `reachNoneEnd`; the second completion additionally closes through root `completeScope`. Every newly reachable stable state publishes at least one User Task or Timer, so none is stranded, and the capsule must executable-check that every newly reachable closure stays inside `semanticProcessClosureLimit`.
 
-Required negative content, each detected at the public boundary, and each entry names the form its witness takes:
+Required negative content. Each entry names the form its witness takes and the boundary it is detected at, because those boundaries differ: the first three reach the public observation, the lowering lock is an IL-level fact whose collapsed output is separately rejected by bounded-wait admission, and the source-admission negatives are rejected before any program exists.
 
 - a seeded mutation for an implementation that **cancels the monitored task on firing**, which is the interrupting defect and is detected immediately after firing by the open-task count;
 - a seeded mutation for an implementation that **retains the withdrawn deadline** after completion;
@@ -200,7 +207,7 @@ This preflight is a feasibility and information-preservation review, not evidenc
 
 **The state relation.** The immutable admitted program plus complete core state pairs with one Workflow-local durable Timer handle derived only from the committed boundary Timer occurrence, plus the existing accepted-stimulus and result ledgers. Only the core decides whether a ready stimulus wins, rejects, or leaves state unchanged.
 
-**The deadline must reach the parameterized scheduler, and registering the scenarios is what will expose it if it does not.** [The bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) selects its family through `ownsDeadline`, which enumerates committed operation kinds. A deadline whose operation kind no family claims falls through to the generic bare-durable-timer path that [the Workflow](../../packages/temporal-adapter/src/workflow-implementation.ts) documents as unsound for a boundary deadline, and every gate that runs without a host port stays green while that is true. The Sub-Process capsule hit exactly this. A third `BoundedDeadlineFamily` is therefore required work, not a discovery.
+**The deadline must reach the parameterized scheduler, and registering the scenarios is what will expose it if it does not.** [The bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) selects its family through `ownsDeadline`, which enumerates committed operation kinds. A deadline whose operation kind no family claims falls through to the generic bare-durable-timer path that [the Workflow](../../packages/temporal-adapter/src/workflow-implementation.ts) documents as unsound for a boundary deadline, and every gate that runs without a host port stays green while that is true. That escape is recorded in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) and as a durable lane rule in [PLAN.md](../PLAN.md#exact-resume-point), where registering the scenario is what turned an absent host into a red gate. A third `BoundedDeadlineFamily` is therefore required work, not a discovery.
 
 **Its refusal identity must be distinct.** The family descriptor carries `schedulerUnavailableFailureType`, and this family needs its own rather than reusing `BpmnBoundedActivitySchedulerUnavailable` or `BpmnBoundedScopeSchedulerUnavailable`, because the outcome an operator loses here is a *handler branch that never starts beside a task that keeps running* rather than a task or a region that never ends. Sharing an identity would make the three families' host failures indistinguishable in the one place an operator reads them.
 
@@ -228,7 +235,7 @@ The table states the **planned** lanes per rule. Two lanes count as two only whe
 | `NBTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active; the arming instant is the sibling capsule's recorded project interpretation | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm non-law in both directions |
 | `NBTIMER-SPAWN-01` | Clause 10.5.6's continuing Activity and parallel boundary token; Clause 13.5.3's skipped cancel step | quantified host-preservation law | boundary token only, task wait byte-identical | spawn history across Worker absence | mutation cancelling the monitored task on firing, detected by the open-task count |
 | `NBTIMER-COMPLETE-01` | Clause 13.5.3 normal continuation | quantified withdrawal law over both the live and consumed deadline | one-sided join accepts completion after firing | withdrawal history: Timer cancelled, never fired | mutation retaining the withdrawn deadline |
-| `NBTIMER-QUIESCE-01` | Clause 10.5.6's own-End-Event recommendation; Clause 10.3.5 scope completion | checked non-law that the first End does not complete the Process | quiescent completion over two branches | terminal receipt only after both branches | focused core case completing at the first End Event |
+| `NBTIMER-QUIESCE-01` | Clause 10.5.6's own-End-Event recommendation; Clause 13.2's no-token-and-no-active-Activity completion condition | checked non-law that the first End does not complete the Process | quiescent completion over two branches | terminal receipt only after both branches | focused core case completing at the first End Event |
 | `NBTIMER-REFUSE-01` | exact-occurrence and exact-time refusal | quantified off-deadline and wrong-identity refusal | independent core refusal with both seeded defect directions | no registered schedule can present an off-deadline firing | pre-due firing at `999` and its `1001` mirror; stale firing after either branch |
 | `NBTIMER-OBSERVE-01` | four-kind canonical ordering | projection agreement | two published tasks after firing, one before | canonical Query projects core state only | boundary-Flow identity erasure collapsing both routes to one output |
 
@@ -258,11 +265,12 @@ If implementation discovers a public observation this profile cannot produce wit
 
 ## Product-surface consequence
 
-This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires. One example per registered profile is the oracle's requirement and one suffices here: a single declared plan can answer the handler task and then the monitored task, exercising the spawn arm and both completions. A second example covering the withdrawal arm is admissible because that oracle no longer requires exactly one example per profile.
+This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires. [The oracle](../../packages/temporal-adapter/test/product-example-configs.test.ts) requires at least one example per registered profile with no upper bound, so one suffices and a second is admissible: a single declared plan can answer the handler task and then the monitored task, exercising the spawn arm and both completions, and a second plan answering the monitored task before the deadline would exercise the withdrawal arm.
 
 ## Common-mode risks
 
-- **One interpretation carries both interruption arms.** The reading of Clause 13.5.3's “if the attribute is not set” as “not set to `true`” is what makes omission interrupting in the sibling profile and lexical `false` non-interrupting here. If that reading is wrong, both capsules are wrong together, and no amount of agreement between four targets would show it. The mitigation is that the reading is recorded in both capsules and that Clause 10.5.6 states the non-interrupting behavior independently of that sentence.
+- **The recovery join is unfalsifiable inside this profile, which is the sharpest exposure here.** All four targets recover the family by joining element identity to activation ordinal with no explicit occurrence record, and the profile's own uniqueness admission is what makes that join safe. Nothing this profile admits can falsify it, so the claim is carried rather than checked: the falsifying state is a repeated or Multi-Instance Activity, and both are excluded. A capsule admitting either must add the occurrence record rather than inherit this argument.
+- **The sibling's reading of Clause 13.5.3 does not carry this capsule.** The reading of “if the attribute is not set” as “not set to `true`” is what makes omission interrupting in the sibling profile. Clause 10.5.6 states this capsule's behavior for lexical `false` directly, so a refuted reading reopens that capsule's admission rather than this account.
 - **One assumption shared by all four targets.** Every target derives the deadline from the same committed `durationMs: 1000` and the same arming instant, and the arming instant is a project interpretation rather than a transcribed clause. The pre-due witness and a seeded deadline mutation discriminate it; no normative citation can substitute for them.
 - **Reused refusal rules.** `NBTIMER-REFUSE-01` reuses the existing full-identity refusal implementation, so Lean and TypeScript refusal are one lane and not two wherever both call the same reused predicate.
 - **The barrier premise is inherited, not re-established.** This capsule reuses the sibling's `hasSignals === false` witness and source lock. A defect there fails both capsules together, and this capsule adds no independent separation beyond its distinct typed failure identity.
@@ -280,13 +288,18 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 9 |
 | [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 22 |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 23 |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 61 |
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 83 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 81 |
+| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 180 |
 | [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 155 |
 | [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 161 |
 | [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 386 |
 | [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 422 |
 | [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 453 |
+| [Timer Boundary Event source admission](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 515 |
+
+**One of those owners is the change site without which this profile cannot be admitted at all.** [The Timer Boundary Event source reader](../../packages/bpmn-source/src/timer-boundary-event-source.ts) today accepts `cancelActivity` only when it is absent or `true` and returns no checked node otherwise, so the inverted admission this profile requires is a change to that predicate rather than a new one beside it. [Checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) owns `ownsBoundaryTimerDeadline` and `boundaryTimersAttachToDeadlineOwners`, both currently documented as interrupting-only, and it is the tightest listed owner after the three below.
 
 Three of those owners are close enough that the order of work is constrained, and each condition states when it stops applying rather than being a bare instruction.
 
@@ -306,7 +319,8 @@ These oracles already constrain the planned artifacts; none is new work invented
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | Every registered scenario needs exactly one pipeline case carrying a meaningful seeded semantic mutation, and every registered scenario runs through Temporal. |
 | [product example configs](../../packages/temporal-adapter/test/product-example-configs.test.ts) | Every registered profile has a live example and every example names a registered profile. |
 | [host admission](../../packages/temporal-adapter/test/host-admission.test.ts) | The new managed class must be classified against concurrent host-driven waits and against the other managed classes, which must stay mutually exclusive. |
-| [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) | The new operation must project into the shared wire contracts and their JSON Schemas atomically. |
+| [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) | Every operation and checked-node kind must reach a schema branch. This guard exists because the sibling capsule's operation and node kinds were absent from both schemas while every other gate passed, so it is the oracle for the atomic wire-contract obligation. |
+| [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) | Canonical observation projections and profile registration must stay consistent with the registered artifacts. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) | The new fixture must validate against the pinned normative schema, with `cancelActivity` lexically `false`. |
 | [normative reference resolution](../../scripts/normative-reference-resolution.test.ts) | Every clause and table this capsule's profile and scenarios declare must resolve in the tracked corpus label digest. |
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | `BPMN-NON-INTERRUPTING-BOUNDARY-TIMER-01` must exist as a ledger row because this capsule cites it, and may be cited as a closed reviewed slice only once its disposition is decided. |
@@ -314,7 +328,7 @@ These oracles already constrain the planned artifacts; none is new work invented
 | [source hygiene](../../scripts/source-hygiene.test.ts) | No owner above the hard ceiling and none above the review target without a recorded narrow justification. |
 | [document reviewability](../../scripts/document-reviewability.test.ts) | A new scenario family directory must be linked from its registry README and each scenario document from its family README, and this section must keep naming resolvable guards and owners with recomputed headroom. |
 
-**One Lean cost constraint applies before any full build.** [The interrupting Sub-Process boundary Timer conformance module](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean) costs about 94 seconds to build alone, and every kernel-decided fixture downstream of a dispatcher re-reduces the branch this capsule adds to `fire?`. Build one narrow target before any full `./scripts/lake.sh build` or `./scripts/lake.sh test`, and measure resident memory alongside CPU rather than concluding affordability from CPU.
+**One Lean cost constraint applies before any full build**, and it is stated without a figure because no measurement of it exists in this repository. Every kernel-decided fixture downstream of a dispatcher re-reduces the branch this capsule adds to `fire?`, which is the mechanism [PLAN.md](../PLAN.md#exact-resume-point) records with its literal commands. Build one narrow target and measure it before any full `./scripts/lake.sh build` or `./scripts/lake.sh test`, and measure resident memory alongside CPU rather than concluding affordability from CPU alone.
 
 ## Stop conditions
 
@@ -326,7 +340,7 @@ Stop for owner direction if:
 - the `hasSignals === false` premise does not hold for a `doUpdate`-plus-timer activation in the pinned SDK;
 - a corpus fixture would require admitting `timeCycle`, repeated firing, or a boundary flow merging back into the main flow;
 - a new CMOF fact or CIB observation is required;
-- the reading of Clause 13.5.3 that both interruption arms share is refuted, which reopens the sibling capsule as well as this one.
+- Clause 10.5.6's direct grant of the continuing-Activity behavior to lexical `false` is refuted, which would remove this capsule's normative basis rather than only the sibling's shared reading.
 
 ## Owner decisions required
 
