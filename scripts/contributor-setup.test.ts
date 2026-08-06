@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { glob, mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -257,4 +259,61 @@ test("external evidence consumers fail closed and honor the shared root", async 
   assert.match(cibTests, /wrapCibSevenMavenFailure/u);
   assert.doesNotMatch(cibTests, /externalTargetCarriesTheReviewedEmptyAttributeShape/u);
   assert.doesNotMatch(validator, /well-formedness only/u);
+});
+
+/**
+ * Requires the default lane to pass without any optional external cache.
+ *
+ * The `verify` scope is declared complete for the MIT engine and hosted runs with only the hash-bound
+ * OMG corpus, so a gate that reads an artifact the cache lock marks optional is green on whichever
+ * machine happens to hold it and red everywhere else. That shipped once: the normative-reference
+ * guard read the Markdown conversion of the OMG PDF and failed both hosted platforms while every
+ * local gate passed.
+ *
+ * The probe set is derived from the lock rather than listed, so a file that starts reading an
+ * optional cache tomorrow is covered without editing this guard, and the oracle is the lane's real
+ * behavior rather than a lexical proxy for tolerating absence.
+ */
+test("no default-lane gate requires an optional external cache", async () => {
+  const caches = await readFile(
+    path.join(projectRoot, "scripts/workspace-cache.lock"),
+    "utf8",
+  );
+  const optional = caches
+    .split("\n")
+    .filter((line) => line.startsWith("external-cache\t"))
+    .map((line) => line.split("\t"))
+    .filter(([, , owner]) => owner?.startsWith("optional") === true)
+    .flatMap(([, cachePath]) => (cachePath === undefined ? [] : [path.basename(cachePath)]));
+  assert.ok(optional.length > 0, "the lock declares no optional external cache");
+
+  // This file names those paths to lock the inventory above, and a guard cannot be its own probe
+  // without recursing, so it is excluded by identity rather than by a listed exception.
+  const self = path.relative(projectRoot, fileURLToPath(import.meta.url));
+  const readers: string[] = [];
+  for await (const entry of glob("scripts/*.test.ts", { cwd: projectRoot })) {
+    const source = await readFile(path.join(projectRoot, entry), "utf8");
+    if (entry !== self && optional.some((name) => source.includes(name))) {
+      readers.push(entry);
+    }
+  }
+  // Anti-vacuity: an empty probe set would pass this test while proving nothing about the lane.
+  assert.ok(readers.length > 0, "no default-lane gate mentions an optional external cache");
+
+  const absentRoot = await mkdtemp(path.join(tmpdir(), "bpmn-absent-external-"));
+  // `NODE_TEST_CONTEXT` must not reach the probe. Inherited, the spawned runner believes it is
+  // already a test child, reports over IPC, and exits `0` however many assertions failed — which
+  // made an earlier version of this guard accept a deliberately seeded reacquisition.
+  const { NODE_TEST_CONTEXT: _runnerContext, ...environment } = process.env;
+  const probe = spawnSync(process.execPath, ["--test", ...readers], {
+    cwd: projectRoot,
+    encoding: "utf8",
+    env: { ...environment, BPMN_EXTERNAL_ROOT: absentRoot },
+  });
+
+  assert.equal(
+    probe.status,
+    0,
+    `${readers.join(", ")} require an optional external cache:\n${probe.stdout}${probe.stderr}`,
+  );
 });

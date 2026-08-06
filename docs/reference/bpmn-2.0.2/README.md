@@ -35,7 +35,17 @@ For full clean-machine setup, including pinned Git evidence checkouts and diagno
 
 - [BPMN conformance target](../../BPMN-CONFORMANCE-TARGET.md) — original project interpretation and formalization map;
 - [LOCAL-CORPUS.sha256](LOCAL-CORPUS.sha256) — reproducibility hashes for the 15 official downloaded inputs;
+- [NORMATIVE-LABELS.digest](NORMATIVE-LABELS.digest) — the bare clause and table labels the standard declares, plus the row-qualifier tokens a reference may name;
 - [project sources](../../SOURCES.md) — authoritative URLs and wider source hierarchy.
+
+The label digest exists because the conversion above is optional and disposable while [the reference guard](../../../scripts/normative-reference-resolution.test.ts) runs in the default lane, which is complete on a machine that holds only the hash-bound official inputs. Reading the conversion directly made that guard pass locally and fail every hosted run. The digest carries numbers and identifiers rather than expression, so it stays inside the redistribution boundary below, and it records the conversion's SHA-256 so drift is detectable wherever both exist.
+
+Regenerate it after replacing the conversion, and use `--check` to detect drift without writing:
+
+```sh
+node scripts/update-bpmn-normative-labels.ts
+node scripts/update-bpmn-normative-labels.ts --check
+```
 
 ## Official sources
 

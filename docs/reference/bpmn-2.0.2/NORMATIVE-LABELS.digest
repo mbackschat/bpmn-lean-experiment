@@ -1,0 +1,588 @@
+# Project-authored digest of the reference labels BPMN 2.0.2 declares.
+# Neither the corpus nor its conversion is redistributed; only these labels are tracked.
+# Regenerate with: node scripts/update-bpmn-normative-labels.ts
+source	BPMN-2.0.2.md
+sourceSha256	fcfbcd3a62c377bacc13859f3b9315f52003cb9f773d0a290fe1d8b6c3e755e1
+label	1
+label	1.1
+label	10
+label	10.1
+label	10.10
+label	10.11
+label	10.12
+label	10.2
+label	10.2.1
+label	10.2.1.1
+label	10.2.1.2
+label	10.2.2
+label	10.3
+label	10.3.1
+label	10.3.2
+label	10.3.3
+label	10.3.3.1
+label	10.3.4
+label	10.3.4.1
+label	10.3.5
+label	10.3.6
+label	10.3.7
+label	10.3.8
+label	10.3.9
+label	10.4
+label	10.4.1
+label	10.4.2
+label	10.4.3
+label	10.4.4
+label	10.5
+label	10.5.1
+label	10.5.2
+label	10.5.3
+label	10.5.4
+label	10.5.5
+label	10.5.6
+label	10.5.7
+label	10.5.8
+label	10.6
+label	10.6.1
+label	10.6.2
+label	10.6.3
+label	10.6.4
+label	10.6.5
+label	10.6.6
+label	10.6.7
+label	10.7
+label	10.7.1
+label	10.7.2
+label	10.7.3
+label	10.8
+label	10.9
+label	11
+label	11.1
+label	11.2
+label	11.3
+label	11.4
+label	11.4.1
+label	11.4.2
+label	11.5
+label	11.5.1
+label	11.5.2
+label	11.5.3
+label	11.5.4
+label	11.5.5
+label	11.5.6
+label	11.6
+label	11.6.1
+label	11.6.2
+label	11.6.3
+label	11.7
+label	11.7.1
+label	11.7.2
+label	11.7.3
+label	11.7.4
+label	11.7.5
+label	11.7.6
+label	11.8
+label	11.8.1
+label	11.8.2
+label	11.9
+label	12
+label	12.1
+label	12.1.1
+label	12.1.2
+label	12.1.3
+label	12.2
+label	12.2.1
+label	12.2.2
+label	12.2.3
+label	12.2.3.1
+label	12.2.3.2
+label	12.2.3.3
+label	12.2.3.4
+label	12.2.3.5
+label	12.2.3.6
+label	12.2.3.7
+label	12.2.3.8
+label	12.2.4
+label	12.3
+label	12.3.1
+label	12.3.2
+label	12.3.3
+label	12.4
+label	12.4.1
+label	12.4.2
+label	12.4.3
+label	12.4.4
+label	12.4.5
+label	13
+label	13.1
+label	13.2
+label	13.3
+label	13.3.1
+label	13.3.2
+label	13.3.3
+label	13.3.4
+label	13.3.5
+label	13.3.6
+label	13.3.7
+label	13.4
+label	13.4.1
+label	13.4.2
+label	13.4.3
+label	13.4.4
+label	13.4.5
+label	13.5
+label	13.5.1
+label	13.5.2
+label	13.5.3
+label	13.5.4
+label	13.5.5
+label	13.5.6
+label	14
+label	14.1
+label	14.2
+label	14.2.1
+label	14.2.2
+label	14.2.3
+label	14.2.4
+label	14.2.5
+label	14.3
+label	14.3.1
+label	14.3.2
+label	14.3.3
+label	14.3.4
+label	14.3.5
+label	15
+label	15.1
+label	15.2
+label	15.3
+label	15.3.1
+label	15.3.2
+label	15.4
+label	15.5
+label	2
+label	2.1
+label	2.2
+label	2.2.1
+label	2.2.2
+label	2.2.3
+label	2.2.4
+label	2.2.5
+label	2.2.6
+label	2.2.7
+label	2.2.8
+label	2.3
+label	2.3.1
+label	2.3.2
+label	2.4
+label	2.5
+label	2.5.1
+label	2.5.2
+label	2.5.3
+label	2.5.4
+label	2.5.5
+label	2.6
+label	3
+label	3.1
+label	3.2
+label	3.3
+label	4
+label	5
+label	6
+label	6.1
+label	6.1.1
+label	6.1.2
+label	6.2
+label	6.3
+label	7
+label	7.1
+label	7.2
+label	7.2.1
+label	7.3
+label	7.3.1
+label	7.3.2
+label	7.4
+label	7.5
+label	7.6
+label	7.6.1
+label	7.6.2
+label	7.7
+label	7.8
+label	8
+label	8.1
+label	8.2
+label	8.2.1
+label	8.2.2
+label	8.2.3
+label	8.3
+label	8.3.1
+label	8.3.2
+label	8.3.3
+label	8.3.4
+label	8.3.5
+label	8.3.6
+label	8.4
+label	8.4.1
+label	8.4.10
+label	8.4.11
+label	8.4.12
+label	8.4.13
+label	8.4.14
+label	8.4.2
+label	8.4.3
+label	8.4.4
+label	8.4.5
+label	8.4.6
+label	8.4.7
+label	8.4.8
+label	8.4.9
+label	8.5
+label	8.5.1
+label	8.5.2
+label	8.5.3
+label	8.5.4
+label	9
+label	9.1
+label	9.2
+label	9.2.1
+label	9.3
+label	9.3.1
+label	9.3.2
+label	9.4
+label	9.4.1
+label	9.4.2
+label	9.5
+label	9.5.1
+label	9.5.2
+label	9.5.3
+label	9.5.4
+label	9.5.5
+label	9.5.6
+label	9.5.7
+label	9.5.8
+label	9.6
+label	9.7
+label	9.8
+label	Table 10
+label	Table 10.1
+label	Table 10.10
+label	Table 10.100
+label	Table 10.101
+label	Table 10.102
+label	Table 10.103
+label	Table 10.104
+label	Table 10.105
+label	Table 10.106
+label	Table 10.107
+label	Table 10.108
+label	Table 10.109
+label	Table 10.11
+label	Table 10.110
+label	Table 10.111
+label	Table 10.112
+label	Table 10.113
+label	Table 10.114
+label	Table 10.115
+label	Table 10.116
+label	Table 10.117
+label	Table 10.118
+label	Table 10.119
+label	Table 10.12
+label	Table 10.120
+label	Table 10.121
+label	Table 10.122
+label	Table 10.123
+label	Table 10.124
+label	Table 10.125
+label	Table 10.126
+label	Table 10.127
+label	Table 10.128
+label	Table 10.129
+label	Table 10.13
+label	Table 10.130
+label	Table 10.131
+label	Table 10.132
+label	Table 10.133
+label	Table 10.134
+label	Table 10.135
+label	Table 10.136
+label	Table 10.137
+label	Table 10.138
+label	Table 10.139
+label	Table 10.14
+label	Table 10.140
+label	Table 10.141
+label	Table 10.142
+label	Table 10.15
+label	Table 10.16
+label	Table 10.17
+label	Table 10.18
+label	Table 10.19
+label	Table 10.2
+label	Table 10.20
+label	Table 10.21
+label	Table 10.22
+label	Table 10.23
+label	Table 10.24
+label	Table 10.25
+label	Table 10.26
+label	Table 10.27
+label	Table 10.28
+label	Table 10.29
+label	Table 10.3
+label	Table 10.30
+label	Table 10.31
+label	Table 10.32
+label	Table 10.33
+label	Table 10.34
+label	Table 10.35
+label	Table 10.36
+label	Table 10.37
+label	Table 10.38
+label	Table 10.39
+label	Table 10.4
+label	Table 10.40
+label	Table 10.41
+label	Table 10.42
+label	Table 10.43
+label	Table 10.44
+label	Table 10.45
+label	Table 10.46
+label	Table 10.47
+label	Table 10.48
+label	Table 10.49
+label	Table 10.5
+label	Table 10.50
+label	Table 10.51
+label	Table 10.52
+label	Table 10.53
+label	Table 10.54
+label	Table 10.55
+label	Table 10.56
+label	Table 10.57
+label	Table 10.58
+label	Table 10.59
+label	Table 10.6
+label	Table 10.60
+label	Table 10.61
+label	Table 10.62
+label	Table 10.63
+label	Table 10.64
+label	Table 10.65
+label	Table 10.66
+label	Table 10.67
+label	Table 10.68
+label	Table 10.69
+label	Table 10.7
+label	Table 10.70
+label	Table 10.71
+label	Table 10.72
+label	Table 10.73
+label	Table 10.74
+label	Table 10.75
+label	Table 10.76
+label	Table 10.77
+label	Table 10.78
+label	Table 10.79
+label	Table 10.8
+label	Table 10.80
+label	Table 10.81
+label	Table 10.82
+label	Table 10.83
+label	Table 10.84
+label	Table 10.85
+label	Table 10.86
+label	Table 10.87
+label	Table 10.88
+label	Table 10.89
+label	Table 10.9
+label	Table 10.90
+label	Table 10.91
+label	Table 10.92
+label	Table 10.93
+label	Table 10.94
+label	Table 10.95
+label	Table 10.96
+label	Table 10.97
+label	Table 10.98
+label	Table 10.99
+label	Table 11
+label	Table 11.1
+label	Table 11.10
+label	Table 11.11
+label	Table 11.12
+label	Table 11.13
+label	Table 11.14
+label	Table 11.2
+label	Table 11.3
+label	Table 11.4
+label	Table 11.5
+label	Table 11.6
+label	Table 11.7
+label	Table 11.8
+label	Table 11.9
+label	Table 12
+label	Table 12.1
+label	Table 12.10
+label	Table 12.11
+label	Table 12.12
+label	Table 12.13
+label	Table 12.14
+label	Table 12.15
+label	Table 12.16
+label	Table 12.17
+label	Table 12.18
+label	Table 12.19
+label	Table 12.2
+label	Table 12.20
+label	Table 12.21
+label	Table 12.22
+label	Table 12.23
+label	Table 12.24
+label	Table 12.26
+label	Table 12.27
+label	Table 12.28
+label	Table 12.29
+label	Table 12.3
+label	Table 12.30
+label	Table 12.31
+label	Table 12.32
+label	Table 12.33
+label	Table 12.34
+label	Table 12.35
+label	Table 12.36
+label	Table 12.37
+label	Table 12.38
+label	Table 12.39
+label	Table 12.4
+label	Table 12.40
+label	Table 12.41
+label	Table 12.42
+label	Table 12.43
+label	Table 12.5
+label	Table 12.6
+label	Table 12.7
+label	Table 12.8
+label	Table 12.9
+label	Table 13.1
+label	Table 13.2
+label	Table 13.3
+label	Table 13.4
+label	Table 13.5
+label	Table 14.1
+label	Table 14.2
+label	Table 2.1
+label	Table 2.2
+label	Table 2.3
+label	Table 2.4
+label	Table 2.5
+label	Table 7.1
+label	Table 7.2
+label	Table 7.3
+label	Table 7.4
+label	Table 8
+label	Table 8.1
+label	Table 8.10
+label	Table 8.15
+label	Table 8.17
+label	Table 8.18
+label	Table 8.19
+label	Table 8.2
+label	Table 8.20
+label	Table 8.21
+label	Table 8.22
+label	Table 8.23
+label	Table 8.24
+label	Table 8.25
+label	Table 8.26
+label	Table 8.28
+label	Table 8.29
+label	Table 8.3
+label	Table 8.30
+label	Table 8.31
+label	Table 8.32
+label	Table 8.33
+label	Table 8.34
+label	Table 8.35
+label	Table 8.37
+label	Table 8.38
+label	Table 8.39
+label	Table 8.4
+label	Table 8.40
+label	Table 8.41
+label	Table 8.42
+label	Table 8.43
+label	Table 8.44
+label	Table 8.45
+label	Table 8.46
+label	Table 8.47
+label	Table 8.48
+label	Table 8.49
+label	Table 8.5
+label	Table 8.50
+label	Table 8.51
+label	Table 8.52
+label	Table 8.54
+label	Table 8.6
+label	Table 8.60
+label	Table 8.61
+label	Table 8.62
+label	Table 8.63
+label	Table 8.64
+label	Table 8.65
+label	Table 8.66
+label	Table 8.67
+label	Table 8.68
+label	Table 8.7
+label	Table 8.8
+label	Table 8.9
+label	Table 9
+label	Table 9.1
+label	Table 9.10
+label	Table 9.11
+label	Table 9.12
+label	Table 9.13
+label	Table 9.14
+label	Table 9.15
+label	Table 9.16
+label	Table 9.17
+label	Table 9.18
+label	Table 9.19
+label	Table 9.2
+label	Table 9.20
+label	Table 9.21
+label	Table 9.22
+label	Table 9.23
+label	Table 9.24
+label	Table 9.25
+label	Table 9.26
+label	Table 9.27
+label	Table 9.28
+label	Table 9.29
+label	Table 9.3
+label	Table 9.30
+label	Table 9.4
+label	Table 9.5
+label	Table 9.6
+label	Table 9.7
+label	Table 9.8
+label	Table 9.9
+qualifier	BPM-06
+qualifier	BPMN-2
+qualifier	ISO-8601
+qualifier	RFC-2119
+qualifier	UTF-8
+qualifier	WCP-16
+qualifier	WCP-17
+qualifier	WCP-2
+qualifier	WCP-21
+qualifier	WCP-28
+qualifier	WCP-3
+qualifier	WCP-30
+qualifier	WCP-31
+qualifier	WCP-37
+qualifier	WCP-38
+qualifier	WCP-4
+qualifier	WCP-5
+qualifier	WCP-6
+qualifier	WCP-7
+qualifier	WCP-8
+qualifier	WCP-9

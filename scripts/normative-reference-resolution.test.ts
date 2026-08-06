@@ -12,18 +12,39 @@
  * references that motivated it — `Clause 10.4.3` and `Table 10.87` — do exist, as XPath data usage
  * and Start Event attributes. Agreement between a reference and what an artifact claims of it
  * remains a review obligation.
+ *
+ * The oracle is [the tracked label digest](../docs/reference/bpmn-2.0.2/NORMATIVE-LABELS.digest),
+ * not the Markdown conversion it was extracted from. The conversion is registered as an optional
+ * disposable cache in [the cache lock](workspace-cache.lock), so reading it here made this gate pass
+ * only on a machine that happened to hold it and fail every hosted run of the default `verify`
+ * scope, which is otherwise complete without it. The digest keeps the claim while removing the
+ * dependency; the drift check below is what keeps the two in agreement where both exist.
  */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { glob } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import {
+  extractNormativeLabels,
+  parseDigest,
+  resolvesLabel,
+  resolvesQualifier,
+} from "./bpmn-normative-labels.ts";
+import type { NormativeLabelDigest } from "./bpmn-normative-labels.ts";
+
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ??
   path.resolve(projectRoot, "../oss");
-const corpusPath = path.join(externalRoot, "omg-bpmn-2.0.2/BPMN-2.0.2.md");
+const conversionPath = process.env["BPMN_CORPUS_MARKDOWN_PATH"] ??
+  path.join(externalRoot, "omg-bpmn-2.0.2/BPMN-2.0.2.md");
+const digestPath = path.join(
+  projectRoot,
+  "docs/reference/bpmn-2.0.2/NORMATIVE-LABELS.digest",
+);
 
 /** `Clause 13.5.3`, `Table 10.91`, and the `§`/`BPMN 2.0.2` prefixes all reduce to one kind plus a number. */
 const referencePattern =
@@ -31,25 +52,8 @@ const referencePattern =
 
 type Reference = Readonly<{ source: string; text: string }>;
 
-/**
- * Resolves a reference where the corpus *declares* it, never at an arbitrary mention: a body
- * heading, a bold table caption, or a contents row. Matching anywhere in the body would accept a
- * cross-reference to something that does not exist, which is the failure mode this guard exists for.
- *
- * The contents row is load-bearing rather than a convenience. The tracked corpus is a Markdown
- * conversion of the OMG PDF, and the conversion lost some body headings — `10.5.4 Intermediate
- * Event` and `13.3.3 Task` both exist in BPMN 2.0.2 and appear only in the contents. Resolving on
- * headings alone rejected four correct pre-existing artifacts, so this guard would have been a
- * reason to corrupt them.
- */
-function resolves(corpus: string, kind: string, numeral: string): boolean {
-  const escaped = numeral.replace(/\./gu, "\\.");
-  const label = kind === "Table" ? `Table ${escaped}` : escaped;
-  return [
-    new RegExp(`^#+ *${label}[ .\u2013-]`, "mu"),
-    new RegExp(`^\\*\\*${label}[ \u2013-]`, "mu"),
-    new RegExp(`^\\|${label} `, "mu"),
-  ].some((pattern) => pattern.test(corpus));
+async function trackedDigest(): Promise<NormativeLabelDigest> {
+  return parseDigest(await readFile(digestPath, "utf8"));
 }
 
 async function declaredReferences(): Promise<ReadonlyArray<Reference>> {
@@ -80,7 +84,7 @@ async function declaredReferences(): Promise<ReadonlyArray<Reference>> {
 }
 
 test("resolves every declared normative reference in the pinned BPMN corpus", async () => {
-  const corpus = await readFile(corpusPath, "utf8");
+  const digest = await trackedDigest();
   const references = await declaredReferences();
 
   // Anti-vacuity: a glob that matched nothing, or a pattern that parsed nothing, would otherwise
@@ -101,7 +105,7 @@ test("resolves every declared normative reference in the pinned BPMN corpus", as
       continue;
     }
     checked += 1;
-    if (!resolves(corpus, kind ?? "Clause", numeral)) {
+    if (!resolvesLabel(digest, kind ?? "Clause", numeral)) {
       unresolved.push(`${source}: ${text} does not resolve in the corpus`);
       continue;
     }
@@ -109,8 +113,20 @@ test("resolves every declared normative reference in the pinned BPMN corpus", as
     // row that does not exist: `Table 13.4 WCP-19` resolved on its table number alone while naming
     // a workflow pattern absent from BPMN 2.0.2.
     const qualifier = parsed[3];
-    if (qualifier !== undefined && !corpus.includes(qualifier)) {
-      unresolved.push(`${source}: ${text} names ${qualifier}, absent from the corpus`);
+    if (qualifier === undefined) {
+      continue;
+    }
+    switch (resolvesQualifier(digest, qualifier)) {
+      case "declared":
+        break;
+      case "absent":
+        unresolved.push(`${source}: ${text} names ${qualifier}, absent from the corpus`);
+        break;
+      case "uncovered":
+        unresolved.push(
+          `${source}: ${text} names ${qualifier}, a qualifier shape the digest does not cover`,
+        );
+        break;
     }
   }
   assert.ok(checked > 100, `only ${checked} references were resolvable in shape`);
@@ -119,14 +135,79 @@ test("resolves every declared normative reference in the pinned BPMN corpus", as
 
 /** Locks the detector against the exact references one capsule shipped wrongly. */
 test("rejects a clause and a table the corpus does not declare", async () => {
-  const corpus = await readFile(corpusPath, "utf8");
+  const digest = await trackedDigest();
 
-  assert.equal(resolves(corpus, "Clause", "10.5.6"), true);
-  assert.equal(resolves(corpus, "Table", "10.91"), true);
-  assert.equal(resolves(corpus, "Clause", "99.99.99"), false);
-  assert.equal(resolves(corpus, "Table", "13.4"), true);
+  assert.equal(resolvesLabel(digest, "Clause", "10.5.6"), true);
+  assert.equal(resolvesLabel(digest, "Table", "10.91"), true);
+  assert.equal(resolvesLabel(digest, "Clause", "99.99.99"), false);
+  assert.equal(resolvesLabel(digest, "Table", "13.4"), true);
   // A table number that exists must not vouch for a row that does not; `Table 13.4 WCP-19` named a
   // pattern absent from BPMN 2.0.2, so the trailing qualifier has to be checked as text.
-  assert.equal(corpus.includes("WCP-19"), false);
-  assert.equal(corpus.includes("WCP-16"), true);
+  assert.equal(resolvesQualifier(digest, "WCP-19"), "absent");
+  assert.equal(resolvesQualifier(digest, "WCP-16"), "declared");
+  // A shape outside the extraction rule fails closed rather than resolving by accident.
+  assert.equal(resolvesQualifier(digest, "step two"), "uncovered");
+});
+
+/**
+ * Locks declaration-position semantics, which is where the digest could silently diverge.
+ *
+ * A heading terminates its numeral on a period as well as a space, so it declares every dot-prefix;
+ * a bold caption and a contents row do not. Extraction has to reproduce that or a reference the
+ * corpus does declare would start failing.
+ */
+test("a heading declares its dot-prefixes and other positions do not", () => {
+  const { labels, qualifiers } = extractNormativeLabels(
+    [
+      "### 10.5.6.1 Deep heading",
+      "**Table 10.91 – Boundary Event attributes**",
+      "|13.4 Gateways|page|",
+      "Body prose mentioning 11.2.3 and WCP-16 and Table 12.7.",
+    ].join("\n"),
+  );
+
+  assert.equal(labels.has("10.5.6.1"), true);
+  assert.equal(labels.has("10.5.6"), true);
+  assert.equal(labels.has("10"), true);
+  assert.equal(labels.has("Table 10.91"), true);
+  assert.equal(labels.has("Table 10"), false);
+  assert.equal(labels.has("13.4"), true);
+  assert.equal(labels.has("13"), false);
+  // A number that only appears in body prose is a mention, not a declaration.
+  assert.equal(labels.has("11.2.3"), false);
+  assert.equal(labels.has("Table 12.7"), false);
+  // Qualifier tokens are collected from anywhere, because a table row is body text.
+  assert.equal(qualifiers.has("WCP-16"), true);
+});
+
+/**
+ * Keeps the digest and its source in agreement wherever both exist.
+ *
+ * The conversion is optional, so its absence cannot fail this gate — that absence is exactly what
+ * this change removed from the default lane. Where it is present, a byte difference means the digest
+ * was not regenerated and the tracked oracle has drifted from the standard it claims to describe.
+ */
+test("the tracked digest matches the local conversion when it is present", async (t) => {
+  const digest = await trackedDigest();
+  assert.match(digest.sourceSha256, /^[0-9a-f]{64}$/u);
+  assert.equal(digest.source, "BPMN-2.0.2.md");
+
+  let conversion: string;
+  try {
+    conversion = await readFile(conversionPath, "utf8");
+  } catch {
+    t.diagnostic(
+      `optional BPMN Markdown conversion absent at ${conversionPath}; digest drift not compared`,
+    );
+    return;
+  }
+
+  assert.equal(
+    createHash("sha256").update(conversion).digest("hex"),
+    digest.sourceSha256,
+    "regenerate with node scripts/update-bpmn-normative-labels.ts",
+  );
+  const extracted = extractNormativeLabels(conversion);
+  assert.deepEqual([...extracted.labels].sort(), [...digest.labels].sort());
+  assert.deepEqual([...extracted.qualifiers].sort(), [...digest.qualifiers].sort());
 });
