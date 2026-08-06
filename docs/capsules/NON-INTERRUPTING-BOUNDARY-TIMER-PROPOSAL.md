@@ -2,9 +2,9 @@
 
 ## Status
 
-**Owner-approved on 2026-08-06; not yet implemented.** The owner approved all six decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and its findings were audited closed. Approval authorizes exactly the scope recorded here and nothing beyond it; this document stays a `-PROPOSAL` until its contract is implemented. Nothing here is a coverage, conformance, or CIB compatibility claim, and the exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than being restated here.
+**Owner-approved on 2026-08-06; implemented to its semantic checkpoint.** The owner approved all six decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and its findings were audited closed. Approval authorizes exactly the scope recorded here and nothing beyond it; this document stays a `-PROPOSAL` until its contract is implemented and its evidence lanes are closed. Nothing here is a coverage, conformance, or CIB compatibility claim, and the exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than being restated here.
 
-Implementation must pause at the conditional semantic checkpoint after the first green Lean and semantic-core result, before any artifact, differential, or Temporal lane begins. The selection this capsule rests on was first a scheduling decision owned by [the breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#priority-decision-after-the-interrupting-sub-process-boundary-timer), which approves no semantic account; decision 1 is what made it a semantic commitment.
+Implementation paused at the conditional semantic checkpoint after the first green Lean and semantic-core result, before any artifact, differential, or Temporal lane began. The exact implemented and absent boundary is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) and is not restated here. The selection this capsule rests on was first a scheduling decision owned by [the breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#priority-decision-after-the-interrupting-sub-process-boundary-timer), which approves no semantic account; decision 1 is what made it a semantic commitment.
 
 ## Independent cold-review receipt
 
@@ -298,10 +298,13 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 81 |
 | [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 126 |
+| [Lean monitored-task family](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 145 |
 | [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 154 |
 | [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 176 |
 | [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 244 |
+| [semantic-core monitored-task runtime](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 306 |
 | [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 359 |
+| [Lean conformance locks](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) | 390 |
 | [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 392 |
 | [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 404 |
 | [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 416 |
