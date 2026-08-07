@@ -26,14 +26,6 @@ const documentRegistries = [
   "docs/research",
 ] as const;
 
-function surfaceSection(markdown: string): string {
-  const start = markdown.indexOf(surfaceSectionStart);
-  const end = markdown.indexOf(surfaceSectionEnd, start);
-  assert.notEqual(start, -1);
-  assert.notEqual(end, -1);
-  return markdown.slice(start, end);
-}
-
 function wordCount(value: string): number {
   return value.trim().split(/\s+/u).filter(Boolean).length;
 }
@@ -217,17 +209,35 @@ async function exists(repositoryPath: string): Promise<boolean> {
   }
 }
 
-test("keeps implementation surfaces reviewable outside dense table cells", async () => {
+/**
+ * Keeps the whole implementation map reviewable, not only its surface inventory.
+ *
+ * This bound previously covered `## Implemented and absent surfaces` alone, and the map's shape
+ * followed the guard's boundary exactly rather than the authors' intent: the guarded section held
+ * every line under the ceiling while the unguarded `## Current claim` and `## Nearest unsupported
+ * claim` grew fifteen lines past it, the largest an 851-word paragraph. A partial bound on a
+ * document that must be read whole moves the excess rather than preventing it.
+ *
+ * The word backstop is deliberately loose enough to sit above the current size and tight enough to
+ * bite. It is not the reduction target: `## Implemented and absent surfaces` is still most of this
+ * document and shrinks only by auditing each bullet against the capsule that owns it.
+ */
+const maximumMapWords = 10000;
+
+test("keeps the whole implementation map reviewable outside dense table cells", async () => {
   const implementationMap = await readFile(
     path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"),
     "utf8",
   );
-  const section = surfaceSection(implementationMap);
-  const tableRows = section
-    .split("\n")
-    .filter((line) => line.trimStart().startsWith("|"));
-  const oversizedUnits = section
-    .split("\n")
+
+  // Anti-vacuity: the sections this document is required to carry must still be present, so a
+  // rename cannot silently empty the scan.
+  assert.notEqual(implementationMap.indexOf(surfaceSectionStart), -1);
+  assert.notEqual(implementationMap.indexOf(surfaceSectionEnd), -1);
+
+  const lines = implementationMap.split("\n");
+  const tableRows = lines.filter((line) => line.trimStart().startsWith("|"));
+  const oversizedUnits = lines
     .filter((line) => {
       const trimmed = line.trim();
       return (
@@ -240,6 +250,12 @@ test("keeps implementation surfaces reviewable outside dense table cells", async
 
   assert.deepEqual(tableRows, []);
   assert.deepEqual(oversizedUnits, []);
+
+  const mapWords = wordCount(implementationMap);
+  assert.ok(
+    mapWords <= maximumMapWords,
+    `IMPLEMENTATION-MAP.md is ${mapWords} words against a ${maximumMapWords}-word backstop`,
+  );
 });
 
 test("covers every registered semantic profile in the admission capability table", async () => {
