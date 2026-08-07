@@ -1,7 +1,7 @@
 /**
  * Locks exact source admission and lowering for the non-interrupting boundary Timer profile.
  *
- * The oracle is the [approved capsule](../../../docs/capsules/NON-INTERRUPTING-BOUNDARY-TIMER-PROPOSAL.md):
+ * The oracle is the [approved capsule](../../../docs/capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md):
  * one monitored User Task owns one non-interrupting `PT1S` Timer Boundary Event, so firing spawns a
  * concurrent handler branch rather than ending the host, and both routes lead to a distinct
  * published follow-on User Task.

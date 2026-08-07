@@ -1,8 +1,8 @@
-# Non-interrupting Activity boundary Timer proposal
+# Non-interrupting Activity boundary Timer specification
 
 ## Status
 
-**Owner-approved on 2026-08-06; implemented and evidence-closed, awaiting its closure review.** The owner approved all six decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and its findings were audited closed. Approval authorizes exactly the scope recorded here and nothing beyond it; this document stays a `-PROPOSAL` until its contract is implemented and its evidence lanes are closed. Nothing here is a coverage, conformance, or CIB compatibility claim, and the exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than being restated here.
+**Owner-approved on 2026-08-06; implemented, evidence-closed, and closure-reviewed.** The owner approved all six decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and its findings were audited closed. Approval authorizes exactly the scope recorded here and nothing beyond it. Nothing here is a coverage, conformance, or CIB compatibility claim, and the exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than being restated here.
 
 **Decision 4 was amended, and the owner confirmed the amendment on 2026-08-07.** Closing a parser-coercion defect across five requirement rows made `cancelActivity="0"` admissible beside `false`, widening the admitted set decision 4 records. The owner confirmed that wider set rather than narrowing admission to lexical `false` alone: `0` is a valid `xs:boolean` *false* that the parser coerces correctly, so it names this profile's disposition exactly as `false` does, and refusing it would reject a schema-valid spelling of the very disposition the profile requires. Decision 4's own two rejections, an omitted attribute and lexical `true`, are unchanged, and the two boundary-Timer profiles' admitted sets stay disjoint, so what that decision secured is preserved.
 
@@ -14,7 +14,9 @@ Every evidence lane is closed: source admission and lowering, Lean, the independ
 |---|---|---|---|---|
 | Proposal | `818c661` | `fork-turns-none` | `approve-with-required-edits` | `b98db80` |
 | Semantic checkpoint | `16535cc` | `fork-turns-none` | `approve-with-required-edits` | `2c59d4b` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `0102789` | `fork-turns-none` | `approve-with-required-edits` | `238846c` |
+
+The closure review returned six required findings and four advisories, audited closed in two rounds. Two were material rather than documentary, and both are the same shape: a mechanism believed covered by a gate that could not see it. The Lean checked non-law asserted only which task stayed open and never that the Process was still running, so a quiescence defect completing at the first End Event would have satisfied it, because root completion preserves `waits`. And the fourth managed host class had no negative witness at all, so it could have been unreachable and still passed, since an unclassified operation is admitted as passive. The reviewer's suggested seed for the first could not reach the module, failing earlier in a shared fixture; the conjunct's sensitivity rests instead on `ProcessControl` being a closed three-constructor type, which the reviewer confirmed.
 
 The checkpoint review returned five required findings and three advisories. Its audits ran the two rounds [the bound](../TESTING-SPEC.md#independent-cold-review-gate) allows: round one closed four and left the `cancelActivity` lexeme guard evadable by single-quoting, and round two closed that and found `triggeredByEvent`. Two findings were material rather than documentary. The Lean boundary-attachment allowlist was not disposition-aware, so a non-interrupting deadline on a Sub-Process host passed the structural rule and lowered to an interrupting scope entry, refused only by the profile cardinality table. And the reviewer's advisory about an unwitnessed reader arm turned out to be a live defect: `bpmn-moddle` reduces `xsd:boolean` to `value === "true"` without warning, so `cancelActivity="1"` — schema-valid, meaning *true* — was admitted as non-interrupting.
 
@@ -296,40 +298,11 @@ This capsule reaches the product command through example configuration and the e
 
 Pre-release policy applies: the new operation kind is added atomically across the checked-graph compiler, Semantic Process contract, JSON Schemas, Lean decoder and lowering, semantic core, the adapter's typed contract module and host-capability classifier, differential catalog, and every fixture, with no compatibility reader, format counter, or migration branch. No retained Event History is kept beyond the disposable gate.
 
-### Owners this implementation grows
+### Owners this implementation grew
 
-Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scripts/document-reviewability.test.ts) recomputes every figure, so a row whose owner changes size fails the gate rather than reading as permanent.
+The planning table of per-owner headroom figures is deliberately removed at graduation: those figures were a sequencing input for work now complete, and a retained copy would go stale against the guard that recomputes them. `node scripts/what-binds.ts <path>` reports the current figure for any owner.
 
-| Owner | Headroom |
-|---|---:|
-| [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 2 |
-| [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 50 |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 52 |
-| [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 |
-| [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 82 |
-| [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 126 |
-| [Lean monitored-task family](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 128 |
-| [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 154 |
-| [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 176 |
-| [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 241 |
-| [semantic-core monitored-task runtime](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 306 |
-| [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 359 |
-| [Lean conformance locks](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) | 386 |
-| [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 392 |
-| [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 401 |
-| [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 416 |
-| [Timer Boundary Event source admission](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 493 |
-
-**One of those owners carries the admission inversion, and without changing it this profile cannot be admitted at all.** [The Timer Boundary Event source reader](../../packages/bpmn-source/src/timer-boundary-event-source.ts) today accepts `cancelActivity` only when it is absent or `true` and returns no checked node otherwise, so the inversion is a change to that predicate rather than a new one beside it. [Checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) parses no `cancelActivity` but owns `ownsBoundaryTimerDeadline` and `boundaryTimersAttachToDeadlineOwners`, both currently documented as interrupting-only, and it is the tightest listed owner after the three below.
-
-Three of those owners are close enough that the order of work is constrained, and each condition states when it stops applying rather than being a bare instruction.
-
-- **The Workflow implementation must be extracted before this family's clause is added if that clause exceeds 9 nonblank lines.** Selecting a third deadline family is plausibly one arm of an existing selector, which may fit; adding a branch that does not is what forces the extraction. Measure the intended clause, do not estimate it.
-- **The contract owner was the tightest of these and was split before any semantics were written.** At 577 nonblank lines it held two responsibilities — the checked BPMN graph and the Semantic Process IL — against a measured need of about 24 lines and 23 of headroom. The behaviour-preserving split gives the IL, the checked graph, and the value shapes both carry unchanged one owner each, so this capsule's operation type and interruption disposition are no longer written under a size squeeze.
-- **The runtime dispatcher takes one `case` plus its delegation, against 27.** That fits only if the family's transitions live in their own module, which they must anyway.
-- **The family's three transitions belong in a new `semantic-process-monitored-task-runtime.ts` owner**, not in the sibling's file. The two families share an arm shape and no transition, and the sibling's `boundedPair` requires both waits while this family requires a one-sided join, so merging them would put two invariants behind one helper.
-
-If a measured clause exceeds its owner's headroom, land the extraction as its own behavior-preserving commit before the semantic change, so the new work is not written under a size squeeze.
+Two ordering facts outlived the table because they explain why the code is shaped as it is. The contract owner held two responsibilities at 577 nonblank lines against a measured need of about 24, so [the checked BPMN graph](../../packages/semantic-core/src/checked-process-contract.ts), [the Semantic Process IL](../../packages/semantic-core/src/semantic-process-contract.ts), and [the value shapes both carry](../../packages/semantic-core/src/semantic-value-contract.ts) were split into one owner each before any semantics were written. The family's three transitions went into [their own runtime owner](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) rather than into the shared dispatcher, which took one `case` plus its delegation.
 
 ### Guards and oracles this implementation must change or satisfy
 

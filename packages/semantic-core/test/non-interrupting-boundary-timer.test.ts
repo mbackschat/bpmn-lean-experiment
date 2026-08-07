@@ -1,7 +1,7 @@
 /**
  * Focused semantic-core behavior for the non-interrupting boundary Timer family.
  *
- * The oracle is the [approved capsule](../../../docs/capsules/NON-INTERRUPTING-BOUNDARY-TIMER-PROPOSAL.md).
+ * The oracle is the [approved capsule](../../../docs/capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md).
  * Three of its obligations can only be checked here: the reverse completion order, which the capsule
  * deliberately keeps out of the registered schedules because quiescent completion over two branches
  * is already closed evidence elsewhere; the pre-due firing, which no schedule can present because
