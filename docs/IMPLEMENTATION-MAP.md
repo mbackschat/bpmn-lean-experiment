@@ -590,7 +590,7 @@ The requirement row `BPMN-SUBPROCESS-BOUNDARY-TIMER-01` is `supported` for exact
 
 ## Non-interrupting boundary Timer
 
-The [non-interrupting boundary Timer proposal](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md) is **evidence-closed and awaiting its closure review**. This is the first capsule in which a boundary Event fires without ending its host, so the enclosing scope holds two live branches and its completion must account for both.
+The [non-interrupting boundary Timer specification](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md) is **implemented, evidence-closed, and graduated** on its passed closure review at target `0102789` with correction audit `238846c`. This is the first capsule in which a boundary Event fires without ending its host, so the enclosing scope holds two live branches and its completion must account for both.
 
 **Implemented and green: source and profile.** The `cancelActivity` attribute is resolved once, in [the Timer Boundary Event source reader](../packages/bpmn-source/src/timer-boundary-event-source.ts), into a closed `BoundaryInterruption` value the checked node carries. An omitted attribute and a lexical `true` resolve to `interrupting` from the XSD and CMOF default, and a lexical `false` to `nonInterrupting`.
 
