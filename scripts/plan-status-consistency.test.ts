@@ -47,6 +47,28 @@ function orderedWorkLabels(markdown: string): ReadonlyMap<number, string> {
   return labels;
 }
 
+function orderedWorkSection(markdown: string): string {
+  const start = markdown.indexOf(orderedWorkHeading);
+  if (start < 0) {
+    return "";
+  }
+  const afterHeading = start + orderedWorkHeading.length;
+  const nextHeading = markdown.indexOf("\n## ", afterHeading);
+  return markdown.slice(afterHeading, nextHeading < 0 ? markdown.length : nextHeading);
+}
+
+/** Numbered entries in the section, regardless of whether their label parsed. */
+function orderedWorkEntryCount(markdown: string): number {
+  return [...orderedWorkSection(markdown).matchAll(/^\d+\. /gmu)].length;
+}
+
+/** Ordinals in written order, for the contiguity check. */
+function orderedWorkOrdinals(markdown: string): ReadonlyArray<number> {
+  return [...orderedWorkSection(markdown).matchAll(/^(\d+)\. /gmu)].map(
+    ([, ordinal]) => Number(ordinal),
+  );
+}
+
 /** Resume-point sentences of the form `Item 13 is **blocked on nothing**`. */
 function blockedClaims(markdown: string): ReadonlyMap<number, string> {
   const claims = new Map<number, string>();
@@ -86,10 +108,113 @@ test("keeps every ordered-work status label consistent with its resume-point cla
   // Anti-vacuity covers the label discovery only. A plan with nothing blocked is a legitimate state
   // and produces no resume-point claim, so requiring one would fail the moment the last blocker
   // cleared; the negative test below keeps the comparison itself honest instead.
+  //
+  // This compares the parser against the section's own entry count rather than a minimum, because a
+  // minimum makes the plan's size load-bearing for a check about parsing. The earlier form required
+  // more than five labels and would have failed the subtraction pass that cut the section to three.
   const labels = orderedWorkLabels(markdown);
-  assert.ok(labels.size > 5, `only ${labels.size} ordered-work labels parsed`);
+  assert.equal(
+    labels.size,
+    orderedWorkEntryCount(markdown),
+    "the label parser must see every numbered ordered-work entry",
+  );
 
   assert.deepEqual(disagreements(markdown), []);
+});
+
+/**
+ * Keeps the plan a control document rather than a feature-history board.
+ *
+ * [DOC-DISCIPLINE.md](../docs/DOC-DISCIPLINE.md) says `PLAN.md` owns immediate execution order and is
+ * not a history board, and the plan itself carried a paragraph instructing its resume point to stay
+ * pruned. Both are prose, and both failed: the file reached 19,758 words with a section that had been
+ * pruned once re-accumulating to 2,786. These bounds exist because the third restatement of the same
+ * rule is a guard, not another sentence.
+ *
+ * The word bounds are backstops behind the structural checks, not the mechanism. Compression
+ * satisfies a count while making the document worse, which is why deleting completed entries and
+ * resolving the next-item reference are checked directly.
+ */
+const planWordBackstop = 6000;
+const resumeWordBackstop = 500;
+
+function sectionWords(markdown: string, heading: string): number {
+  const start = markdown.indexOf(heading);
+  assert.notEqual(start, -1, `PLAN.md must contain ${heading}`);
+  const afterHeading = start + heading.length;
+  const nextHeading = markdown.indexOf("\n## ", afterHeading);
+  const body = markdown.slice(afterHeading, nextHeading < 0 ? markdown.length : nextHeading);
+  return body.split(/\s+/u).filter(Boolean).length;
+}
+
+test("keeps the plan sized and shaped as a control document", async () => {
+  const markdown = await readFile(planPath, "utf8");
+
+  const completed = [...orderedWorkSection(markdown).matchAll(/^\d+\. \*\*Completed/gmu)];
+  assert.deepEqual(
+    completed.map(([entry]) => entry),
+    [],
+    "a completed entry belongs to its specification, ledger, or Git, not to ordered work",
+  );
+
+  const ordinals = orderedWorkOrdinals(markdown);
+  assert.deepEqual(
+    ordinals,
+    ordinals.map((_, index) => index + 1),
+    `ordered work must be numbered contiguously from 1, found ${ordinals.join(", ")}`,
+  );
+
+  const resumeWords = sectionWords(markdown, "## Exact resume point");
+  assert.ok(
+    resumeWords <= resumeWordBackstop,
+    `the resume point is ${resumeWords} words against a ${resumeWordBackstop}-word backstop`,
+  );
+
+  const planWords = markdown.split(/\s+/u).filter(Boolean).length;
+  assert.ok(
+    planWords <= planWordBackstop,
+    `PLAN.md is ${planWords} words against a ${planWordBackstop}-word backstop`,
+  );
+});
+
+/** Every ordinal the resume point names as next must resolve to an entry that exists. */
+test("resolves the resume point's next-item reference to a real entry", async () => {
+  const markdown = await readFile(planPath, "utf8");
+  const resume = markdown.slice(markdown.indexOf("## Exact resume point"));
+  const ordinals = new Set(orderedWorkOrdinals(markdown));
+  const dangling = [...resume.matchAll(/ordered-work item (\d+)/gu)]
+    .map(([, ordinal]) => Number(ordinal))
+    .filter((ordinal) => !ordinals.has(ordinal));
+  assert.deepEqual(dangling, [], "the resume point names an ordered-work item that does not exist");
+});
+
+/** Locks the shape checks against the exact states the plan shipped. */
+test("rejects a completed entry, a numbering gap, and a dangling next reference", () => {
+  const shipped = [
+    orderedWorkHeading,
+    "1. **Next — open the admission proposal:** not started.",
+    "",
+    "## Exact resume point",
+    "",
+    "Next action: ordered-work item 1.",
+  ].join("\n");
+  assert.deepEqual(orderedWorkOrdinals(shipped), [1]);
+
+  const withCompleted = shipped.replace(
+    "1. **Next — open",
+    "1. **Completed — closed the capsule:** done.\n2. **Next — open",
+  );
+  assert.equal(
+    [...orderedWorkSection(withCompleted).matchAll(/^\d+\. \*\*Completed/gmu)].length,
+    1,
+  );
+
+  const gapped = shipped.replace("1. **Next", "2. **Next");
+  assert.deepEqual(orderedWorkOrdinals(gapped), [2]);
+
+  const dangling = shipped.replace("ordered-work item 1.", "ordered-work item 9.");
+  const ordinals = new Set(orderedWorkOrdinals(dangling));
+  assert.equal(ordinals.has(9), false);
 });
 
 /** Locks the detector against the exact contradiction the plan shipped, in both directions. */
