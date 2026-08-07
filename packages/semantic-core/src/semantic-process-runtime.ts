@@ -1,12 +1,8 @@
-import {
-  CommandOutcome,
-  EffectExecutionResultKind,
-  StimulusKind,
-} from "./contract.js";
-import type {
-  Stimulus,
-} from "./contract.js";
+import { CommandOutcome } from "./contract.js";
+import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import { admit } from "./semantic-command-admission.js";
+import type { SemanticCommandOutcome } from "./semantic-command-admission.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
@@ -14,10 +10,6 @@ import {
   invokeCalledProcess,
   returnCalledProcess,
 } from "./semantic-process-call-runtime.js";
-import {
-  completeActivityVariableScope,
-  mergeProcessVariableBindings,
-} from "./semantic-process-data.js";
 import {
   choose,
   duplicate,
@@ -27,23 +19,9 @@ import {
 import {
   armBoundedScope,
   completeScopeWithdrawingDeadline,
-  interruptBoundedScope,
-  isBoundedScopeDeadlineDefinition,
 } from "./semantic-process-bounded-scope-runtime.js";
-import {
-  armBoundedUserTask,
-  completeBoundedUserTask,
-  interruptBoundedUserTask,
-  isBoundaryTimerDefinition,
-  isBoundedTaskDefinition,
-} from "./semantic-process-bounded-task-runtime.js";
-import {
-  armMonitoredUserTask,
-  completeMonitoredUserTask,
-  isMonitoredBoundaryTimerDefinition,
-  isMonitoredTaskDefinition,
-  spawnFromMonitoredUserTask,
-} from "./semantic-process-monitored-task-runtime.js";
+import { armBoundedUserTask } from "./semantic-process-bounded-task-runtime.js";
+import { armMonitoredUserTask } from "./semantic-process-monitored-task-runtime.js";
 import {
   throwError,
 } from "./semantic-process-error-runtime.js";
@@ -54,15 +32,8 @@ import {
 import {
   armEventRace,
   eventRaceAssociationsAreValid,
-  isEventRaceMessageDefinition,
-  isEventRaceTimerDefinition,
-  winEventRaceWithMessage,
-  winEventRaceWithTimer,
 } from "./semantic-process-event-race-runtime.js";
-import {
-  createMessageWait,
-  deliverMessage,
-} from "./semantic-process-message.js";
+import { createMessageWait } from "./semantic-process-message.js";
 import {
   commonTokenOwner,
   enterScope,
@@ -72,8 +43,6 @@ import {
   addToken,
   ControlStateKind,
   removeToken,
-  sameOccurrence,
-  setActivationCount,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -84,7 +53,6 @@ import {
   createTimerWait,
   createUserTaskWait,
 } from "./semantic-process-wait-runtime.js";
-import { SemanticProfileId } from "./semantic-process-profile.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export {
@@ -109,19 +77,10 @@ export type {
   CalledProcessOccurrence,
 } from "./semantic-process-state.js";
 
-type SemanticCommandOutcome =
-  | CommandOutcome.Committed
-  | CommandOutcome.Rejected;
-
 export type CommandResult = DeepReadonly<{
   outcome: SemanticCommandOutcome;
   state: RuntimeState;
   internalStepBoundExceeded: boolean;
-}>;
-
-type CommandAdmission = DeepReadonly<{
-  outcome: SemanticCommandOutcome;
-  state: RuntimeState;
 }>;
 
 type ClosureResult = DeepReadonly<{
@@ -134,211 +93,6 @@ export const semanticProcessClosureLimit = 8;
 export function validateClosureLimit(closureLimit: number): void {
   if (!Number.isSafeInteger(closureLimit) || closureLimit < 0) {
     throw new RangeError("closureLimit must be a non-negative safe integer");
-  }
-}
-
-function admit(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  stimulus: Stimulus,
-): CommandAdmission {
-  switch (stimulus.kind) {
-    case StimulusKind.StartProcess: {
-      const entryScopes = program.definitionScopes.filter(
-        ({ parentScopeId, originElementId }) =>
-          parentScopeId === null && originElementId === program.processId,
-      );
-      const rootScope = entryScopes[0];
-      if (
-        state.control.kind === ControlStateKind.NotStarted &&
-        stimulus.processId === program.processId &&
-        entryScopes.length === 1 &&
-        rootScope !== undefined &&
-        (!isCallActivityProgram(program) || stimulus.initialVariables.length === 0)
-      ) {
-        const rootOccurrence = {
-          processInstanceId: stimulus.instanceId,
-          definitionScopeId: rootScope.id,
-          activation: 1,
-        };
-        return {
-          outcome: CommandOutcome.Committed,
-          state: {
-            ...state,
-            control: {
-              kind: ControlStateKind.Running,
-              instanceId: stimulus.instanceId,
-            },
-            initiationPending: true,
-            scopeOccurrences: [{ id: rootOccurrence, parent: null }],
-            scopeActivations: setActivationCount(
-              state.scopeActivations,
-              rootScope.id,
-              1,
-            ),
-            variables: {
-              ...state.variables,
-              process: { bindings: stimulus.initialVariables },
-            },
-          },
-        };
-      }
-      return { outcome: CommandOutcome.Rejected, state };
-    }
-    case StimulusKind.CompleteUserTaskInstance: {
-      if (isBoundedTaskDefinition(program, stimulus.taskId)) {
-        const next = completeBoundedUserTask(program, state, stimulus);
-        return next === null
-          ? { outcome: CommandOutcome.Rejected, state }
-          : { outcome: CommandOutcome.Committed, state: next };
-      }
-      if (isMonitoredTaskDefinition(program, stimulus.taskId)) {
-        const next = completeMonitoredUserTask(program, state, stimulus);
-        return next === null
-          ? { outcome: CommandOutcome.Rejected, state }
-          : { outcome: CommandOutcome.Committed, state: next };
-      }
-      const wait = state.userTaskWaits.find((candidate) =>
-        sameOccurrence(candidate.id, stimulus.taskId)
-      );
-      if (
-        state.control.kind !== ControlStateKind.Running ||
-        wait === undefined ||
-        (isCallActivityProgram(program) && stimulus.submittedValues.length !== 0)
-      ) {
-        return { outcome: CommandOutcome.Rejected, state };
-      }
-      return {
-        outcome: CommandOutcome.Committed,
-        state: {
-          ...state,
-          controlTokens: addToken(
-            state.controlTokens,
-            wait.output,
-            wait.owner,
-          ),
-          userTaskWaits: state.userTaskWaits.filter(
-            (candidate) => candidate !== wait,
-          ),
-          variables: {
-            ...state.variables,
-            process: {
-              bindings: mergeProcessVariableBindings(
-                state.variables.process.bindings,
-                stimulus.submittedValues,
-              ),
-            },
-          },
-        },
-      };
-    }
-    case StimulusKind.DeliverMessage: {
-      const next = isEventRaceMessageDefinition(program, stimulus.subscriptionId)
-        ? winEventRaceWithMessage(program, state, stimulus)
-        : deliverMessage(program, state, stimulus);
-      return next === null
-        ? { outcome: CommandOutcome.Rejected, state }
-        : { outcome: CommandOutcome.Committed, state: next };
-    }
-    case StimulusKind.FireTimer: {
-      if (isEventRaceTimerDefinition(program, stimulus.timerId)) {
-        const next = winEventRaceWithTimer(program, state, stimulus);
-        return next === null
-          ? { outcome: CommandOutcome.Rejected, state }
-          : { outcome: CommandOutcome.Committed, state: next };
-      }
-      if (isBoundaryTimerDefinition(program, stimulus.timerId)) {
-        const next = interruptBoundedUserTask(program, state, stimulus);
-        return next === null
-          ? { outcome: CommandOutcome.Rejected, state }
-          : { outcome: CommandOutcome.Committed, state: next };
-      }
-      if (isMonitoredBoundaryTimerDefinition(program, stimulus.timerId)) {
-        const next = spawnFromMonitoredUserTask(program, state, stimulus);
-        return next === null
-          ? { outcome: CommandOutcome.Rejected, state }
-          : { outcome: CommandOutcome.Committed, state: next };
-      }
-      if (isBoundedScopeDeadlineDefinition(program, stimulus.timerId)) {
-        const next = interruptBoundedScope(program, state, stimulus);
-        return next === null
-          ? { outcome: CommandOutcome.Rejected, state }
-          : { outcome: CommandOutcome.Committed, state: next };
-      }
-      const wait = state.timerWaits.find((candidate) =>
-        sameOccurrence(candidate.id, stimulus.timerId)
-      );
-      if (
-        state.control.kind !== ControlStateKind.Running ||
-        wait === undefined ||
-        stimulus.logicalTimeMs !== wait.deadlineMs
-      ) {
-        return { outcome: CommandOutcome.Rejected, state };
-      }
-      return {
-        outcome: CommandOutcome.Committed,
-        state: {
-          ...state,
-          controlTokens: addToken(
-            state.controlTokens,
-            wait.output,
-            wait.owner,
-          ),
-          timerWaits: state.timerWaits.filter(
-            (candidate) => candidate !== wait,
-          ),
-          logicalTimeMs: wait.deadlineMs,
-        },
-      };
-    }
-    case StimulusKind.CompleteEffect: {
-      const wait = state.effectWaits.find((candidate) =>
-        sameOccurrence(candidate.id, stimulus.effectId)
-      );
-      if (
-        state.control.kind !== ControlStateKind.Running ||
-        wait === undefined
-      ) {
-        return { outcome: CommandOutcome.Rejected, state };
-      }
-      const route =
-        stimulus.result.kind === EffectExecutionResultKind.BpmnError
-          ? wait.bpmnErrorRoute
-          : null;
-      if (
-        stimulus.result.kind === EffectExecutionResultKind.BpmnError &&
-        (route === null || route.code !== stimulus.result.code)
-      ) {
-        return { outcome: CommandOutcome.Rejected, state };
-      }
-      const variables = completeActivityVariableScope(
-        state.variables,
-        wait.id,
-        wait.outputMappings,
-        stimulus.result.localPatch,
-        stimulus.result.kind === EffectExecutionResultKind.BpmnError,
-      );
-      if (variables === null) {
-        return { outcome: CommandOutcome.Rejected, state };
-      }
-      return {
-        outcome: CommandOutcome.Committed,
-        state: {
-          ...state,
-          controlTokens: addToken(
-            state.controlTokens,
-            route?.output ?? wait.output,
-            wait.owner,
-          ),
-          effectWaits: state.effectWaits.filter(
-            (candidate) => candidate !== wait,
-          ),
-          variables,
-        },
-      };
-    }
-    default:
-      return assertNever(stimulus);
   }
 }
 
@@ -604,11 +358,6 @@ export function applyStimulus(
     default:
       return assertNever(admission.outcome);
   }
-}
-
-function isCallActivityProgram(program: SemanticProcessProgram): boolean {
-  return program.identity.semanticProfile ===
-    SemanticProfileId.CalledProcessCallActivity;
 }
 
 function assertNever(value: never): never {
