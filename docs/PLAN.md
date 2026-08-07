@@ -203,6 +203,117 @@ The owner-approved [CreateDocument data and mapping specification](capsules/CREA
 
 **Disposition:** Stage 3b is accepted and frozen. The compositional-admission programme is superseded; later proof stages and its composed profile are not the next work.
 
+## Showcase milestone ladder
+
+The approved [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) makes showcase milestones its acceptance gates and leaves the list to this plan. This is that list.
+
+Each milestone names one capability demonstrable end to end, the engine work it forces, the platform work it adds, and the executable gate that closes it. The order is a dependency order and not a schedule. It is deliberately shorter than the eight-stage horizon in [the competitive scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md#dependency-ordered-roadmap), which is design input; the exit gates below are the binding ones, and a milestone closes only when its gate is green and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) records the exact surface it reached.
+
+Two boundaries hold across the whole ladder. The engine must still build and verify with no platform package present, and the platform must reach the engine only through narrowed public entry points. A milestone that can be demonstrated only by violating either has not been reached.
+
+### M0 — shipped floor
+
+The [runnable Temporal MVP](RUNNABLE-TEMPORAL-MVP-SPEC.md) over the registered profile catalog. No demo is owed; it exists so the later exit gates have a baseline to differ from. Its User Task actor is a host simulation and stays one until M3 replaces it with a real inbox.
+
+### M1 — a third party deploys their own BPMN file
+
+**Demo.** Someone who is not us uploads BPMN bytes we have never seen, receives an honest per-element admission verdict, and starts an instance when the file is admitted.
+
+This is the owner's original acceptance condition and it is currently unreachable for every modeler-produced file. Two admission rules decide that, both verified in source: [the checked-process compiler](../packages/bpmn-source/src/checked-process-compiler.ts) admits only an exact key allowlist, so Diagram Interchange, pools, lanes, and artifacts are rejected rather than ignored, and [root-definition selection](../packages/bpmn-source/src/root-definition-selection.ts) requires exactly one root element. Every file a modeler saves carries DI.
+
+**Engine capsules.** Preserve-only admission, splitting parsed material into executed, preserved, and rejected as [the minimal-engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) recommends; multi-root definitions with explicit executable-root selection; per-element rejection diagnostics carrying element identity and reason.
+
+**Platform increments.** The public HTTP API, upload, content-addressed definition storage keyed by engine-computed digest, version ordinals within a BPMN process identifier, viewer-only diagram rendering, admission diagnostics, and a React client that consumes only the same public API an external adopter has.
+
+**Exit gate.** An externally supplied file that is not a registered fixture is admitted, stored, versioned, rendered, and started; an unsupported one is rejected before Workflow start with its element identity; exact bytes, digest, profile, and version stay bound; and the engine gate passes with the platform tree absent.
+
+### M2 — the file runs its real shape
+
+**Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
+
+**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential and this engine lacks — Message Start Event, Timer Start Event, Terminate End Event, and the configured generic Task.
+
+This is the milestone that must be preceded by the decided-fixture cost review recorded below.
+
+**Platform increments.** Definition scheduling for Timer Start, a published message ingress for Message Start, and instance search.
+
+**Exit gate.** A cyclic model reaches a terminal state under each declared target; Terminate End cancels its containing scope and not the root when nested; the four new elements carry registered answer-free scenarios with seeded mutations; and the Lean gate stays inside its memory bound.
+
+### M3 — real work with real data
+
+**Demo.** A person picks a task from an inbox, fills a form whose fields are not all strings, submits, and the process continues on the value they entered.
+
+**Engine capsules.** The value domain, widening variables beyond the current string-and-null contract; and E2, the admission capability and public projection for User Task assignment and form metadata that [the platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as its second engine prerequisite.
+
+**Platform increments.** The pluggable identity boundary with a fake default, the shared task inbox, claim and release as platform-owned authorization, form projection, and the audit record of who acted.
+
+**Exit gate.** The inbox matches the engine's published open User Tasks exactly; no platform component constructs an occurrence identity; every state-changing action is an authorized engine command; and a non-string value survives the round trip through all declared targets.
+
+### M4 — it survives going wrong
+
+**Demo.** A failing Service Task raises an incident an operator can see, retry, and cancel, and a cancelled scope leaves no orphaned work.
+
+**Engine capsules.** Cancellation beyond the current direct-parent regional case, and incidents as a semantic outcome distinct from Temporal transport retries.
+
+**Platform increments.** The operations console, incident handling, retry and cancellation surfaces, and effect diagnostics.
+
+**Exit gate.** An incident is a published semantic fact rather than an inferred one; cancelling an ancestor scope cancels its descendants with counters preserved; and the platform exposes no retry count that is a Temporal attempt.
+
+### M5 — it can be operated and explained
+
+**Demo.** An operator replays what a finished instance did, sees where a running one stands on the diagram, and exports the history.
+
+**Engine capsules.** E1, the publication of committed transition records and of control-token and scope positions. These are two distinct information requirements and must be specified and tested as two even if one publication serves both, because history needs the sequence and the diagram overlay needs the positions.
+
+**Platform increments.** The read-model projection with monotonic revisions, cursoring, ordering, deduplication, gap detection, reconciliation, and rebuild; semantic and operator history; diagram overlays; frequency and duration views; audit export.
+
+**Exit gate.** History is built only from committed publication, never from Event History or state differencing; the projection rebuilds to the same content from scratch; Worker replacement and platform restart do not corrupt it; and a seeded gap is detected rather than silently skipped.
+
+### One Lean research question per engine milestone
+
+The Lean lane must stay a research lane rather than becoming a proof tax on product work. Each engine milestone therefore carries one named question, declared at capsule start under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane) as proved, checked, or deliberately open. A question that cannot close within its capsule records its unresolved boundary in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md); it does not quietly become a weaker claim.
+
+| Milestone | Question | Why it is the risk |
+|---|---|---|
+| M1 | Non-interference of preserved payload: does admitting material the engine retains but never executes leave the executable subset's semantics unchanged? | Preserve-only admission is the first rule that lets unexecuted content into a checked definition. If preserved material can reach a semantic decision, the whole execute/preserve/reject split is unsound. |
+| M2 | Progress and termination under cycles: what replaces acyclicity as the premise the closure, exhaustion, and stable-state laws rest on? | Acyclicity is currently a structural precondition, not a proof convenience. Removing it invalidates the hypotheses of the existing law set rather than merely widening admission. |
+| M3 | Value-domain survival: does the current law set hold over a widened value domain, or does each law need an explicit value hypothesis? | The laws were written when every value was a string or null. A widened domain either passes through or exposes laws that were quietly domain-specific. |
+| M4 | Ancestor cancellation: does the direct-parent regional cancellation result generalize to an arbitrary ancestor scope with its monotonic counters intact? | The Sub-Process Error capsule proved one level. Generalizing is where a cancellation account usually breaks. |
+| M5 | Trace completeness: is the published transition sequence sufficient to reconstruct the state the engine reached, or only to narrate it? | If it is not, every downstream history and mining claim rests on a projection that cannot be checked against the engine. |
+
+### Engine backlog behind the ladder
+
+Ordered by the milestone that first needs it, not by size. Each is absent today and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns its exact status.
+
+1. Preserve-only admission, multi-root definitions, and per-element rejection diagnostics — M1.
+2. Compositional admission with cycles — M2.
+3. Message Start Event, Timer Start Event, Terminate End Event, and the configured generic Task — M2.
+4. The value domain beyond string and null — M3.
+5. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
+6. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
+7. E1: committed transition records, and committed control-token and scope positions — M5.
+
+E1 and E2 are material engine changes and each takes its own governed cycle. The follow-up extensions in [the extensions research](research/HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md) — multi-instance, Event Sub-Process, and further boundary-event loci — sit behind M5 and are not in this ladder.
+
+### Decided-fixture cost review, scheduled before compositional admission
+
+Run this review before M2 begins, not after its gate turns red.
+
+Every kernel-decided fixture re-reduces the dispatcher branches it passes through, so a change that adds a branch to `fireTimer` or a sibling is re-paid by each such fixture, and the cost grows with the fixture count rather than with the change. Compositional admission with cycles touches admission, which nearly every fixture reduces through. [CLAUDE.md](../CLAUDE.md#code-hygiene-and-module-boundaries) already requires measuring resident memory alongside CPU and building one narrow target before a full build; this repository has twice reverted conversions whose builds had to be killed for exhausting host memory.
+
+The review measures the current Lean gate's peak resident memory and CPU against the thread pin, identifies which decided fixtures dominate, and decides whether M2 lands as-is, behind a fixture restatement, or behind a lane split. It is a measurement, not a design change, and it closes with a recorded number.
+
+### A12 dispositions
+
+A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this repository. Four things in this repository still refer to it and each needs an explicit disposition rather than drifting.
+
+| Subject | Disposition |
+|---|---|
+| [The A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) and its 62-physical, 50-distinct model denominator | Retained as research and as the third coverage denominator. It stays a prioritization input and never orders a milestone by itself. |
+| The `CreateDocument` and boundary-Error capsules, their `2.0.0` profiles, and [the A12 boundary-Error reader](../packages/bpmn-source/src/a12-boundary-error-source.ts) | Retained as implemented first-round vertical slices with their evidence intact. Not extended: the shape is not repeated for further A12 models. |
+| The registered A12 checkouts and the `adoption` doctor scope | Retained read-only under the existing licence boundary. Never a build or runtime dependency, and never inferred from the MIT engine's `verify` gate. |
+| The approved migration product goal and A12-as-acceptance-lane decisions above | Superseded as a driver of this repository's order. The engine may satisfy them, but the ladder above is ordered by BPMN mechanism leverage and platform milestone, and A12 prevalence only breaks ties between candidates of equal value. |
+
 ## BPMN coverage program through and after the reviewer proto-MVP
 
 The boundary-error capsule is closed. The reusable BPMN mechanism-coverage programme remains the long-term route to Process Execution Conformance. Three new breadth increments—Inclusive Gateway, Event-Based Gateway, and Call Activity—are now scheduled into the reviewer proto-MVP below. A12 remains a prioritization and acceptance input, and CIB remains an on-demand overlay.
@@ -363,9 +474,9 @@ Proto-MVP success requires approved and closed Inclusive Gateway, Event-Based Ga
 18. **Completed — refuse an Event Sub-Process admitted through a coerced boolean:** `bpmn-moddle` reduces every `xsd:boolean` attribute to `value === "true"`, which agrees with `xs:boolean` on `true`, `false`, and `0` and inverts `1`. Three readers admit on the coerced value rather than refusing on it: scoped flow-element admission keyed on `triggeredByEvent`, and Event-Based Gateway and Receive Task admission keyed on `instantiate`. So `triggeredByEvent="1"` admitted an Event Sub-Process as an ordinary embedded Sub-Process, and `instantiate="1"` admitted an instantiating gateway and Receive Task as non-instantiating, across five `supported` rows. The compiler now refuses any `Boolean`-typed attribute lexeme the coercion disagrees with, over the attribute set derived from the metamodel manifest rather than enumerated. Refusing only the disagreement is what preserves the Event-Based Gateway specification's admitted `instantiate="0"`; its consequence for the non-interrupting capsule is recorded there and was owner-confirmed on 2026-08-07.
 19. **Completed — align the sibling admitted-set statements with the lexeme rule:** [SUBPROCESS-BOUNDARY-TIMER-SPEC.md](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md), [ACTIVITY-BOUNDARY-TIMER-SPEC.md](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md), and [BOUNDARY-ERROR-SPEC.md](capsules/BOUNDARY-ERROR-SPEC.md) now state their admitted sets by lexeme: every spelling naming *false* is rejected, and `1` is refused before parsing under its own diagnostic. Each was verified by probe before rewording. The boundary-Error statement was reworded only after item 22 made its "lexical `true` tolerated" clause true, because probing refuted that clause rather than confirming it.
 20. **Then — process hardening carried out of the 2026-08-06 instruction-surface review:** these five items exist in no other owner, so losing this entry loses the review that produced them. Guard the capsule-to-requirement-ledger clause-citation pair, which is the first concrete application of the duplicated-fact rule in [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md#writing-and-linking) and would have caught the stale sibling that produced round two of the 2026-08-06 proposal audit; key capsule dispositions to their rule identifiers, which turns the Required-versus-absent contradiction into a comparable pair rather than prose and is the half-day change that converts the highest-count `unguardable` finding into a test, retrofittable one capsule at a time with the guard enforcing only converted ones; widen the bare-`lake` scan from its enumerated set to the executable surfaces, where it finds zero offenders today and so costs nothing to adopt but closes the class permanently; merge the two `unguardable` [process-assessment](PROCESS-ASSESSMENT-LEDGER.md) rows that cite one reusable question, because a shared question understates both instance counts and delays the escalation that converts attention into guards; collapse the publication-statistics restatement in [CLAUDE.md](../CLAUDE.md) to a link, because [TESTING-SPEC.md](TESTING-SPEC.md) owns that detail and the duplication is what carried one wrong generated-block count in both owners until 2026-08-06; and bind the source-hygiene exception map to an owner approval the way [the review-policy guard](../scripts/independent-review-policy.test.ts) binds its grandfather set, which is prevention with no live instance because the map is empty and is therefore last.
-20. **Then — process hardening carried out of the 2026-08-06 instruction-surface review:** these five items exist in no other owner, so losing this entry loses the review that produced them. Guard the capsule-to-requirement-ledger clause-citation pair, which is the first concrete application of the duplicated-fact rule in [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md#writing-and-linking) and would have caught the stale sibling that produced round two of the 2026-08-06 proposal audit; key capsule dispositions to their rule identifiers, which turns the Required-versus-absent contradiction into a comparable pair rather than prose and is the half-day change that converts the highest-count `unguardable` finding into a test, retrofittable one capsule at a time with the guard enforcing only converted ones; widen the bare-`lake` scan from its enumerated set to the executable surfaces, where it finds zero offenders today and so costs nothing to adopt but closes the class permanently; merge the two `unguardable` [process-assessment](PROCESS-ASSESSMENT-LEDGER.md) rows that cite one reusable question, because a shared question understates both instance counts and delays the escalation that converts attention into guards; collapse the publication-statistics restatement in [CLAUDE.md](../CLAUDE.md) to a link, because [TESTING-SPEC.md](TESTING-SPEC.md) owns that detail and the duplication is what carried one wrong generated-block count in both owners until 2026-08-06; and bind the source-hygiene exception map to an owner approval the way [the review-policy guard](../scripts/independent-review-policy.test.ts) binds its grandfather set, which is prevention with no live instance because the map is empty and is therefore last.
-21. **Then — continue the remaining BPMN breadth queue:** continue the exhaustive requirement denominator and select subsequent capsules by reusable Process Execution leverage, using CIB breadth and A12 prevalence only to order equal-value candidates.
+21. **Then — continue the remaining BPMN breadth queue:** continue the exhaustive requirement denominator and select subsequent capsules by reusable Process Execution leverage, using CIB breadth and A12 prevalence only to order equal-value candidates, and [the showcase milestone ladder](#showcase-milestone-ladder) to break the remaining ties.
 22. **Completed — a reader required a property its own allowlist forbade:** [BOUNDARY-ERROR-SPEC.md](capsules/BOUNDARY-ERROR-SPEC.md) states that lexical `cancelActivity="true"` is "tolerated as redundant", and the implementation rejects it, so this is a specification-versus-implementation contradiction rather than imprecise wording. The mechanism is exact. `bpmn-moddle` exposes a defaulted attribute through the descriptor when it is omitted and as an own key when it is written, so [the A12 boundary-Error reader](../packages/bpmn-source/src/a12-boundary-error-source.ts) both requires `cancelActivity` to be `true` and omits it from the `hasOnlyOwnKeys` allowlist that decides admission. Writing the schema default explicitly therefore flips admission while changing no meaning. Its sibling [Sub-Process Error reader](../packages/bpmn-source/src/subprocess-error-source.ts) lists the attribute and tolerates it, so the two Error readers disagree on one attribute and one of them contradicts a closed specification. Probing every registered scenario found 36 instances of the same mechanism across `expressionLanguage`, `isInterrupting`, `cancelActivity`, and `gatewayDirection`; only the boundary-Error one contradicts a written admitted set, because the others never claimed tolerance. The owner decided on 2026-08-07 that an explicitly written schema default is admitted, so the readers were fixed rather than the specification. The root fix is one shared predicate: an own key holding its declared default carries no information and no longer has to be listed, which retires 36 refusals at once instead of extending 14 allowlists. Enumerated defaults stay outside the rule and are the one recorded exclusion, because BPMN 2.0.2's own machine-readable artifacts disagree on the only such literal: `BPMN20.cmof` declares `Gateway-gatewayDirection` as `unspecified` while `Semantic.xsd` declares `Unspecified`, which is both the enumeration literal and the value the parser resolves. Choosing between two normative files is not a coding decision, so the rule covers `Boolean` defaults only and [the resolver](../packages/bpmn-source/src/metamodel-defaults.ts) records why. [The class guard](../packages/bpmn-source/test/metamodel-default-admission.test.ts) derives its cases from the scenario registry and the manifest, so a new scenario, profile, or defaulted property is covered without being listed.
+23. **Next — open M1 of the showcase ladder with preserve-only admission:** the owner approved the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) on 2026-08-07 and the ladder above records its acceptance gates, so M1 is the next product-facing work. Its first engine capsule is preserve-only admission, because no modeler-produced file is admissible without it: every such file carries Diagram Interchange, and the compiler's exact key allowlist rejects rather than ignores it. This is a material admission-capability change and takes the full governed cycle, starting with a proposal that fixes the executed, preserved, and rejected partitions and the diagnostic contract. Its declared Lean question is non-interference of preserved payload. Do not begin implementation before the proposal is approved.
 
 Completed commit-bounded capsule measurements live in the [capsule cost ledger](CAPSULE-COST-LEDGER.md); implemented and absent claims live in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). Git and the owning specifications retain completed implementation history.
 
@@ -406,7 +517,13 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Ordered-work items 15 through 19 and 22 are closed.** The non-interrupting boundary Timer capsule has every evidence lane closed and its cost recorded at `736b9fc..1c41cdd`; its closure review is the remaining stage before it graduates to a specification. Two admission defects it surfaced are closed with it: the parser boolean-coercion class and the explicit-metamodel-default class. `./scripts/verify.sh` is green with a clean tree.
+**Ordered-work items 15 through 19 and 22 are closed, and the non-interrupting boundary Timer capsule has graduated to [its specification](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md) at `b42cf89`.** Its cost is recorded at `736b9fc..1c41cdd`, and the two admission defects it surfaced are closed with it: the parser boolean-coercion class and the explicit-metamodel-default class.
+
+**The product division is settled and the platform proposal is owner-approved.** The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) was approved on 2026-08-07 at `cc448f3` after a `fork-turns-none` cold review and one audited correction round. The showcase milestone ladder it depends on is now recorded above, which also makes the platform-milestone tie-breaker in [PROJECT-DESIGN.md](PROJECT-DESIGN.md) applicable for the first time.
+
+**The next work is item 23: the preserve-only admission proposal that opens M1.** It is a material admission-capability change, so it starts with a governed proposal cycle and no implementation. Nothing about it is started.
+
+**One owner is still nearly full and constrains the next family.** This is unchanged by the ladder and is recorded in the paragraph below.
 
 **One owner is still nearly full and constrains the next family rather than this one.** `semantic-process-runtime.ts` has 2 nonblank lines of headroom, so [CLAUDE.md](../CLAUDE.md#code-hygiene-and-module-boundaries) requires its behavior-preserving extraction to land as its own commit before new semantics are written under that squeeze. `workflow-implementation.ts` is no longer among them: its four wire validators moved to [their own owner](../packages/temporal-adapter/src/workflow-wire-validation.ts) and it now has 50 lines of headroom. `requireCompletedState` deliberately stayed behind, because projecting a terminal observation from a trace is not the wire-validation responsibility the new owner holds and moving it would have produced a two-responsibility module rather than one.
 

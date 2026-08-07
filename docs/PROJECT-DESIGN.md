@@ -113,13 +113,13 @@ Coverage is accounted separately:
 
 1. BPMN coverage counts reviewed Process Execution requirements and reusable standard mechanisms;
 2. CIB coverage counts classified source extensions and behavioral relationships for named profiles;
-3. platform coverage counts closed showcase milestones and their acceptance gates, **pending** the milestone list, which [PLAN.md](PLAN.md) owns and does not yet contain.
+3. platform coverage counts closed showcase milestones and their acceptance gates, against the denominator in [the showcase milestone ladder](PLAN.md#showcase-milestone-ladder), which [PLAN.md](PLAN.md) owns.
 
 No aggregate percentage may combine these denominators, and no public claim may exceed the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The architecture is built so that a conformance claim becomes provable; the claim itself stays bounded until the evidence supports it.
 
 ## CIB Seven 2.2.0 breadth ordering
 
-CIB Seven `2.2.0` is the primary breadth baseline for ordering the near-term BPMN 2.0.2 Process Execution schedule. Choose the next uncovered reusable BPMN mechanism primarily from the executable Process surface evidenced by that release, subject to semantic dependencies, capsule size, and Temporal feasibility. When two candidates are of equal standards value, **the one the BPM platform's next showcase milestone needs wins**, pending the milestone list that [PLAN.md](PLAN.md) owns and does not yet contain; until it exists this tie-breaker cannot be applied. The engine's essential element set and depth are additionally scoped by [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md), with its deferred constructs covered by [the extensions research](research/HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md); neither disposes a requirement, and [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md) still owns dispositions.
+CIB Seven `2.2.0` is the primary breadth baseline for ordering the near-term BPMN 2.0.2 Process Execution schedule. Choose the next uncovered reusable BPMN mechanism primarily from the executable Process surface evidenced by that release, subject to semantic dependencies, capsule size, and Temporal feasibility. When two candidates are of equal standards value, **the one the BPM platform's next showcase milestone needs wins**, read from [the showcase milestone ladder](PLAN.md#showcase-milestone-ladder) that [PLAN.md](PLAN.md) owns. The engine's essential element set and depth are additionally scoped by [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md), with its deferred constructs covered by [the extensions research](research/HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md); neither disposes a requirement, and [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md) still owns dispositions.
 
 This is a scheduling rule, not an authority reversal and not a combined coverage denominator. BPMN 2.0.2 remains normative; every mechanism receives a standards-owned account; CIB-specific interpretations and extensions remain separately classified; and a standards capsule may still omit CIB from its target relation when CIB supplies no independent evidence for that exact proposition.
 
@@ -135,7 +135,7 @@ That simulated actor is host policy. It does not define BPMN User Task meaning a
 
 ## Lean assurance lane
 
-Breadth is how the approach's unknown failure modes are found, not what they are traded for. Nothing further proved about the current bounded topologies reveals whether the account survives cycles, arbitrary graphs, a wider value domain, or ordinary multiple-enabledness. Each engine milestone therefore carries a named research question, **pending** the milestone list that [PLAN.md](PLAN.md) owns and does not yet contain, and each capsule declares the **shape** of its Lean lane at capsule start rather than discovering it from how much effort the lane absorbed.
+Breadth is how the approach's unknown failure modes are found, not what they are traded for. Nothing further proved about the current bounded topologies reveals whether the account survives cycles, arbitrary graphs, a wider value domain, or ordinary multiple-enabledness. Each engine milestone therefore carries one named research question, recorded with [the showcase milestone ladder](PLAN.md#showcase-milestone-ladder) that [PLAN.md](PLAN.md) owns, and each capsule declares the **shape** of its Lean lane at capsule start rather than discovering it from how much effort the lane absorbed.
 
 | Lane shape | When it is required | Recorded as |
 |---|---|---|

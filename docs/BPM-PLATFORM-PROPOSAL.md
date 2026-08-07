@@ -16,7 +16,7 @@ Two failure modes bound the answer. A platform that reconstructs semantic facts 
 
 The platform provides deployment and versioning of BPMN definitions, a task list and task interaction surface, an operations and monitoring console, incident handling, execution history, process mining views, identity, persistence, and one public HTTP API over all of it. It hosts the JUEL evaluator as an Activity Worker when the deferred CIB compatibility lane opens.
 
-It is a product, not a demonstration. Its acceptance gates are showcase milestones rather than a separate artifact; that milestone list is **pending** and [PLAN.md](PLAN.md) owns it.
+It is a product, not a demonstration. Its acceptance gates are showcase milestones rather than a separate artifact, recorded as [the showcase milestone ladder](PLAN.md#showcase-milestone-ladder), which [PLAN.md](PLAN.md) owns.
 
 ## What the platform owns, and what it must not
 
