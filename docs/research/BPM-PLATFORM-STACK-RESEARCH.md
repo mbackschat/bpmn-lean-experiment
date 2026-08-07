@@ -340,7 +340,7 @@ Prefect v2 is the peer precedent.
 
 ## 8. A12 widgets and the downstream reuse question
 
-The A12 widget set was inspected because product 3 is A12's own EUPL-1.2 product built on this MIT platform, and the question was whether the platform should be designed so A12 could substitute their widgets. **A12 material is EUPL-1.2 and never enters this repository**; the inspected clone is at the checkout registered in [SOURCES.md](../SOURCES.md) at `a12/a12-widgets`.
+The A12 widget set was inspected because product 3 is A12's own EUPL-1.2 product built on this MIT platform, and the question was whether the platform should be designed so A12 could substitute their widgets. **No A12 material enters this repository**; the widget set is dual-licensed `EUPL-1.2 OR LicenseRef-commercial`, neither arm of which permits MIT redistribution, and the inspected clone is the checkout registered in [SOURCES.md](../SOURCES.md) at `a12/a12-widgets`.
 
 `mgm-tp/a12-widgets`, version 39.0.2, revision `f924a85`, dual-licensed **EUPL-1.2 OR commercial**, with that SPDX expression in the licence file, all six workspace manifests, and every source-file header.
 

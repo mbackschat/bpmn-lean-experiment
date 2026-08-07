@@ -35,11 +35,11 @@ Four of those exact trees declare source submodules. They are material parts of 
 | [`wasm-spectec/document/core/util/katex`](../../oss/wasm-spectec/document/core/util/katex) | `KaTeX/KaTeX` tag `v0.13.19` at `e751278cff42fada16dba6df331fda52aaa90f73` | `wasm-spectec` |
 | [`spectec/document/core/util/katex`](../../oss/spectec/document/core/util/katex) | `KaTeX/KaTeX` tag `v0.13.19` at `e751278cff42fada16dba6df331fda52aaa90f73` | `spectec` |
 
-The two A12 sibling checkouts are registered with exact revisions below even when they predated this project. A12 Workflows belongs to the explicit `adoption` scope; the full-stack blueprint belongs to optional `research`. Ignore unknown or unregistered repositories and folders; local presence alone never makes a tree a project input.
+The three A12 sibling checkouts are registered with exact revisions below even when they predated this project. A12 Workflows belongs to the explicit `adoption` scope; the widget set and the full-stack blueprint belong to optional `research`. Ignore unknown or unregistered repositories and folders; local presence alone never makes a tree a project input.
 
 ## A12 Workflows product target
 
-The project compatibility target and canonical downstream blueprint are checked out read-only under the shared A12 reference tree:
+The project compatibility target, the canonical downstream blueprint, and A12's own React widget set are checked out read-only under the shared A12 reference tree:
 
 | Local checkout | Repository and inspected revision | License and project role |
 |---|---|---|
@@ -51,7 +51,7 @@ A12 Workflows `release/2025.06` declares CIB Seven `2.0.0`. The local CIB checko
 
 All three A12 repositories remain external research, compatibility, and optional exact-source evidence inputs, EUPL-1.2 for the first two and `EUPL-1.2 OR LicenseRef-commercial` for the widget set, neither arm of which permits MIT redistribution. They must not be linked into this project, vendored, used as build or runtime dependencies, copied into project-authored artifacts, redistributed from this repository, or represented as MIT-licensed material. This project must remain distributable under the root MIT license. A confirmed or potential breach of that boundary blocks affected work until the owner resolves it explicitly.
 
-The default `verify` scope and hosted engine gate do not fetch or inspect either A12 repository. `./scripts/test-a12-adoption.sh` is the separately selected fail-closed lane for the two currently registered A12 Workflows source facts: unchanged `CreateDocument.bpmn` admission and the exact boundary-error empty-attribute/delegate-expression shape. It honors `BPMN_EXTERNAL_ROOT`, requires `a12/a12-workflows` at the pinned pristine commit, and makes no runtime, delegate, or full-model adoption claim.
+The default `verify` scope and hosted engine gate do not fetch or inspect any A12 repository. `./scripts/test-a12-adoption.sh` is the separately selected fail-closed lane for the two currently registered A12 Workflows source facts: unchanged `CreateDocument.bpmn` admission and the exact boundary-error empty-attribute/delegate-expression shape. It honors `BPMN_EXTERNAL_ROOT`, requires `a12/a12-workflows` at the pinned pristine commit, and makes no runtime, delegate, or full-model adoption claim.
 
 ## Project license audit
 

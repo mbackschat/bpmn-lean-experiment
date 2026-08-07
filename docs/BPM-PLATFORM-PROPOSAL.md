@@ -78,7 +78,7 @@ Task rows across all instances, filtered and sorted, from the engine's published
 
 ### Task interaction
 
-Render a form from the variables the engine declares, collect values, and submit them through the same completion command. No form engine of our own. Form metadata is unavailable until E2 lands, so the first form is generated from declared variables alone, and no interpretation of form metadata beyond field identity and type is proposed even afterwards.
+Render a form from the Process variables the engine publishes, currently a closed string/null domain, collect values, and submit them through the same completion command. No form engine of our own. Form metadata is unavailable until E2 lands, so the first form is a projection of the bindings that currently exist over that one value type, and no interpretation of form metadata beyond field identity and type is proposed even afterwards.
 
 ### Operations and monitoring
 
@@ -102,7 +102,7 @@ A pluggable identity boundary with a fake implementation by default. No authenti
 
 The platform subscribes to the engine's committed transition records and projects them into its own store. Task rows, instance rows, history events, and incident state are all projections; none is a second source of truth.
 
-The projection is the reason **the engine must add one thing**, and it is the only engine change this proposal forces. The engine's public contract currently publishes committed *state* at command boundaries, and pure transitions may close to quiescence inside one Workflow Task, so many semantic steps leave no trace. State differencing recovers waiting Activities, because a User Task entering and leaving the open set is a start and an end, but recovers nothing for pass-through nodes: gateways taken, None Events, Sub-Process entry and exit. Definition-scope and runtime-scope identity are not publicly projected at all.
+The projection is the reason for E1. The engine's public contract currently publishes committed *state* at command boundaries, and pure transitions may close to quiescence inside one Workflow Task, so many semantic steps leave no trace. State differencing recovers waiting Activities, because a User Task entering and leaving the open set is a start and an end, but recovers nothing for pass-through nodes: gateways taken, None Events, Sub-Process entry and exit. Definition-scope and runtime-scope identity are not publicly projected at all.
 
 A process map without gateway paths is not process mining. **An engine change is therefore required**, and this proposal does not decide its shape.
 
@@ -174,7 +174,7 @@ Engine paths do not move. `runners/juel/` is the only Java component and remains
 
 ## Acceptance conditions
 
-**The product acceptance test the owner set on 2026-08-07 is that a third party can deploy their own BPMN file.** That is the definition of the reopened MVP and it drives engine scope as much as platform scope: current admission is a per-profile whitelist over exact fixtures, so meeting it requires the engine widening recorded against [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md), whose sequencing [PLAN.md](PLAN.md) owns. No platform surface satisfies it alone.
+**The product acceptance test the owner set on 2026-08-07 is that a third party can deploy their own BPMN file.** That is the definition of the reopened MVP and it drives engine scope as much as platform scope: current admission is a per-profile feature whitelist with several checked-node contracts pinned to exact literals, so meeting it requires the engine widening recorded against [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md), whose sequencing [PLAN.md](PLAN.md) owns. No platform surface satisfies it alone.
 
 A surface is accepted when it has a runnable demonstration under `showcase/`, registered as a gate so a landed milestone cannot silently rot, and when the boundary guards and the cross-product agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) requires are green. Each guard is verified by a planted violation, as this repository verifies every guard.
 
@@ -212,4 +212,4 @@ Reopen this proposal before adding a second Process-state representation, any pl
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The semantic-checkpoint stage is classified as not required because this proposal changes no BPMN meaning, no semantic profile or CIB relationship, no checked-source or Semantic Process representation, no runtime or public observation, no admission or profile capability, no transition family or proof boundary, and no Temporal refinement claim. The one semantic addition it depends on, the committed per-transition record, is proposed separately and carries its own governed cycle. A docs-only follow-up records the immutable proposal target before the review prompt is handed off, because a commit cannot contain its own Git identity.
+The semantic-checkpoint stage is classified as not required because this proposal itself changes no BPMN meaning, no semantic profile or CIB relationship, no checked-source or Semantic Process representation, no runtime or public observation, no admission or profile capability, no transition family or proof boundary, and no Temporal refinement claim. The two engine requirements it records, E1 and E2, are engine work outside its scope and carry their own governed cycles; E2 is an admission and profile capability, which is precisely why it is not proposed here. A docs-only follow-up records the immutable proposal target before the review prompt is handed off, because a commit cannot contain its own Git identity.
