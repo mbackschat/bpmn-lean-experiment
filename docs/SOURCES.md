@@ -304,6 +304,12 @@ The public evidence pattern across Camunda 7, Camunda 8, Flowable, Activiti, jBP
 
 These engines are useful for discovering ambiguity and constructing hostile separating cases. They cannot vote on the standard, override the pinned CIB oracle, or substitute for the Lean and Temporal assurance lanes. Additional large checkouts are deferred until a requirement needs one that CIB, MIWG, or Betsy does not already supply.
 
+## Enterprise process orchestration competitive landscape dossier
+
+Owner-supplied research document received on 2026-08-07 as `process-engine-competitive-landscape-technical-company-dossiers-2026-07-31.md`. Its SHA-256 is `cd011669b06702771da033c6583d6bbf9f6724f38a2521cd4e3116795023e606`, binding the 1,833-line, 23,766-word text researched on 2026-07-31. The owner confirmed that ChatGPT generated the dossier for them and authorized its inclusion as the tracked [enterprise process orchestration competitive landscape research](research/ENTERPRISE-PROCESS-ORCHESTRATION-COMPETITIVE-LANDSCAPE-RESEARCH.md).
+
+The imported document compares enterprise BPM, durable orchestration, automation-suite, and process-intelligence products. It is research input, not a project dependency, implementation claim, product contract, or substitute for current primary-source verification. The project-authored [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records the findings and recommendations this project draws from it, while retaining its own limits and authority boundary.
+
 ## Parallel independent research effort
 
 Colleague-authored review of this project's architecture and feasibility summary, inspected as local read-only documents on 2026-07-29 and 2026-07-30. External authorship; the documents are retained outside this repository and are deliberately neither committed nor summarized here. Their content digests are recorded so that a later citation can be bound to the exact text reviewed:

@@ -4,7 +4,7 @@
 
 **Independently reviewed, awaiting owner approval; not implemented.** It proposes the contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Nothing here is implemented and no dependency is adopted. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
-Sequencing belongs to [PLAN.md](PLAN.md), durable architecture to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md).
+Sequencing belongs to [PLAN.md](PLAN.md), durable architecture to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
 
 ## Product question
 

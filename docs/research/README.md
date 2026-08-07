@@ -16,6 +16,8 @@ Read the smallest relevant document before changing a boundary:
 | Executable BPMN element profile a shippable engine needs, and the execute/preserve/reject admission split | [Minimal but useful BPMN 2.0 execution profile](MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) |
 | Call Activity, multi-instance, Event Sub-Process, and non-interrupting Boundary Events as a follow-up profile | [High-priority BPMN 2.0 execution extensions](HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md) |
 | What Temporal, Camunda 8, and CIB Seven built their operator surfaces from, and the MIT-compatible component-library and data-grid candidate set | [BPM platform technology stack](BPM-PLATFORM-STACK-RESEARCH.md) |
+| Vendor-by-vendor enterprise process-orchestration landscape used as the primary external market input | [Enterprise process orchestration competitive landscape dossier](ENTERPRISE-PROCESS-ORCHESTRATION-COMPETITIVE-LANDSCAPE-RESEARCH.md) |
+| Full competitive scope for product 2, its alignment with the initial platform proposal, and the recommended growth horizon | [BPM platform competitive scope](BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) |
 | Temporal replay, messaging, retries, versioning, and adapter boundaries | [Temporal execution model](TEMPORAL-EXECUTION-RESEARCH.md) |
 | TLA+, behavioral equivalence, model checking, and auxiliary formal tools | [TLA+ and bisimulation research](TLA-AND-BISIMULATION-RESEARCH.md) |
 | CIB Seven and Temporal source instrumentation | [Reference instrumentation](../REFERENCE-INSTRUMENTATION-POLICY.md) |
