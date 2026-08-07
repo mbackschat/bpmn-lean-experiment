@@ -234,8 +234,12 @@ The second condition does not touch the existing Call Activity profile, whose tw
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `95d7160` | `fork-turns-none` | `approve-with-required-edits` | `96bd2e7` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The semantic-checkpoint stage is **required** and not yet reached: this proposal changes an admission and profile capability, which is one of the governed claims in [the cold-review rule](../CLAUDE.md#independent-cold-review). The proposal review must complete and the owner must approve before implementation begins.
+The proposal stage used **two correction rounds**. The context-cold review of target `95d7160` returned `approve-with-required-edits` across seven findings; corrections `c104aad` and `e70742f` were audited and returned nine further required corrections, of which one was blocking. Those landed at `96bd2e7`, which the owner decided on 2026-08-08 not to send for a third audit.
+
+**Three of the seven-plus-nine findings were restrictions this proposal wrote without checking them against existing source**, and each would have broken something already implemented: rejecting a second executable Process would have rejected the graduated Call Activity profile, byte-identical checked-graph equality can never hold because `sourceSha256` is part of the graph, and rejecting preserved-to-executed references would have rejected all Diagram Interchange, which is the construct this proposal exists to admit. A tightening reads as safe and therefore received less verification than a widening would have.
+
+The semantic-checkpoint stage is **required** and not yet reached: this proposal changes an admission and profile capability, which is one of the governed claims in [the cold-review rule](../CLAUDE.md#independent-cold-review). Owner approval is still outstanding, and no implementation begins before it.
