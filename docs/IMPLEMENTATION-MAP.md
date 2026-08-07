@@ -667,10 +667,10 @@ The complete prepared pipeline requires:
 - a rejected Lean scenario document with an injected extra answer field, plus exact equality between the admitted scenario and Lean's decoded echo;
 - exact Lean definition identity and lowering equality, plus rejection of a schema-valid operation-origin mutation;
 - rejection of erased parallel control-place Sequence-Flow provenance; detection of raw Process-status, logical-time, and Process-variable drift; binding of semantic instance identity to the start stimulus; detection of an omitted parallel open task, a dropped live sibling after stale A, a one-millisecond timer-deadline mutation, a substituted Simple Boolean route, a mutated Service Task operation, a mutated CreateDocument final variable, and null-to-string boundary mapping drift;
-- thirty fetched live histories replayed before server shutdown;
+- every fetched live history replayed before server shutdown;
 - clean CIB and Temporal teardown.
 
-The complete pipeline remains subject to the 15-second warm and 45-second cold budgets. Exact latest measurements and commands belong in [PLAN.md](PLAN.md), not in this inventory.
+The warm-pipeline measures are two tiers owned by [TESTING-SPEC.md](TESTING-SPEC.md#default-verification): a reported 15-second soft target and a 40-second hard ceiling, with a separate sub-45-second cold budget. Exact counts and latest measurements belong to the generated pipeline report and [PLAN.md](PLAN.md), not to this inventory; a hand-copied count here drifted from thirty to the run's actual thirty-six without any gate noticing.
 
 ## Nearest unsupported claim
 

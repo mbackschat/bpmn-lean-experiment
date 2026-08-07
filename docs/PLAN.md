@@ -171,7 +171,7 @@ Only decisions that constrain the next work are kept here. A decision fully owne
 | 30 cases | `13cdec8` | 15986.670ms | uncontended, owner-confirmed idle host |
 | 28 cases | `ac2813c` | 13476ms | uncontended, fastest 28-case measurement |
 
-No uncontended measurement exists at 32 or 34 cases. Until one does, judge a new figure against the per-case trend across these two rather than against either alone, and record any contended run as correctness evidence rather than moving a baseline.
+No uncontended measurement exists at 32 or 34 cases. Until one does, judge a new figure against the per-case trend across these two rather than against either alone, and record any contended run as correctness evidence rather than moving a baseline. Two independent 34-case runs on 2026-08-07 measured 20406.710ms and 20036ms, within 2% of each other, which is weak evidence that this catalog genuinely costs about twenty seconds rather than that both runs were contended; treat a figure near twenty seconds as unexplained rather than as a regression until an idle-host run settles it.
 
 **The Lean build's memory bound is a standing constraint, not a run record.** [CLAUDE.md](../CLAUDE.md#verification) owns the thread pin, its measured peaks, and the reason the default is the most conservative value; [the Lean wrapper](../scripts/lake.sh) owns the single call site and [an executable check](../scripts/verification-entrypoint.test.ts) rejects a bare `lake` subcommand in the surfaces it enumerates.
 
