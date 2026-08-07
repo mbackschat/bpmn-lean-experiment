@@ -122,8 +122,7 @@ export function isWhollyPreserved(
 ): boolean {
   if (
     typeof element.$type !== "string" ||
-    !capability.preservedTypes.has(element.$type) ||
-    !carriesNoForeignAttribute(element)
+    !capability.preservedTypes.has(element.$type)
   ) {
     return false;
   }
@@ -156,6 +155,43 @@ export function hasOnlyExecutedOrPreservedKeys(
   );
 }
 
+/**
+ * Whether no element in `definitions`' containment tree carries an unconsumed foreign attribute.
+ *
+ * This is the executed partition's counterpart to the preserved subtree's own attribute rule, and it
+ * closes a hole the exact-key allowlists could not see: because `$attrs` is non-enumerable, a
+ * `camunda:assignee` on an admitted User Task passed every allowlist and then vanished, which is the
+ * silent omission preserve-only admission exists to prevent. The check is one uniform walk rather
+ * than a rule per element type, because the blindness was in the storage and not in any one locus.
+ *
+ * `consumingTypes` names the `$type`s whose projector reads foreign attributes and refuses any it
+ * does not recognize. Those attributes are evidence the compiler acts on, so they are not discarded
+ * content; every other foreign attribute anywhere in the document rejects.
+ */
+export function carriesNoUnconsumedForeignAttribute(
+  definitions: ElementRecord,
+  consumingTypes: ReadonlySet<string>,
+): boolean {
+  const schemaInstance = xmlSchemaInstancePrefixes(definitions);
+  const admits = (element: ElementRecord): boolean =>
+    (typeof element.$type === "string" && consumingTypes.has(element.$type)) ||
+    carriesNoForeignAttribute(element, schemaInstance);
+  const walk = (value: unknown): boolean => {
+    if (Array.isArray(value)) {
+      return value.every(walk);
+    }
+    const element = asElement(value);
+    return (
+      element === undefined ||
+      (admits(element) &&
+        Object.entries(element).every(
+          ([key, child]) => key === "$type" || walk(child),
+        ))
+    );
+  };
+  return walk(definitions);
+}
+
 function isWhollyPreservedValue(
   value: unknown,
   capability: PreservationCapability,
@@ -168,24 +204,83 @@ function isWhollyPreservedValue(
 }
 
 /**
- * Whether `element` carries no foreign attribute at all.
+ * XML Schema instance attributes that carry no BPMN model content.
+ *
+ * `type` is consumed by the parser rather than discarded: it selects the resolved `$type`, so a
+ * `conditionExpression` carrying `xsi:type="bpmn:tFormalExpression"` parses as a `FormalExpression`
+ * and one carrying `tExpression` parses as an `Expression`, which the condition projector then
+ * accepts or refuses on its own terms. An unresolvable value is a parser warning and already blocks
+ * admission. `schemaLocation` and `noNamespaceSchemaLocation` are hints to a validating parser about
+ * where to find a schema and change no element's content.
+ *
+ * `nil` is deliberately absent. It empties an element's content, which is exactly the kind of
+ * meaning that must not pass unexamined.
+ *
+ * Admitting these three is not a convenience: 37% of the 840 files in the pinned MIWG corpus carry
+ * `xsi:schemaLocation` and 30% carry `xsi:type`, so refusing them would refuse most conformant BPMN.
+ */
+const contentFreeSchemaInstanceAttributes: ReadonlySet<string> = new Set([
+  "type",
+  "schemaLocation",
+  "noNamespaceSchemaLocation",
+]);
+
+const xmlSchemaInstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance";
+
+/**
+ * Whether `element` carries no foreign attribute beyond XML infrastructure.
  *
  * Namespace declarations are admitted at any locus: `xmlns` and `xmlns:*` bind a prefix and are not
  * content. Every other `$attrs` entry is foreign content and rejects, which is the point — an
  * unrecognized `camunda:assignee` on an admitted element is exactly the kind of intended behavior
  * that must not be silently discarded.
  *
- * No profile can yet declare a foreign attribute inert. That would take an expanded
- * `namespace#localName` set and the `bpmn:Definitions` prefix bindings to resolve one against, since
- * a raw prefix is bindable to any namespace and matching on it would admit content by spelling. The
- * empty case needs neither, so the machinery lands with the first profile that requires it.
+ * No profile can yet declare a *vendor* attribute inert. That would take an expanded
+ * `namespace#localName` set per profile, and the empty case needs none, so the machinery lands with
+ * the first profile that requires it.
  */
-function carriesNoForeignAttribute(element: ElementRecord): boolean {
+function carriesNoForeignAttribute(
+  element: ElementRecord,
+  schemaInstancePrefixes: ReadonlySet<string>,
+): boolean {
   const attributes = asElement(element.$attrs);
   return (
     attributes === undefined ||
-    Object.keys(attributes).every(
-      (name) => name === "xmlns" || name.startsWith("xmlns:"),
-    )
+    Object.keys(attributes).every((name) => {
+      if (name === "xmlns" || name.startsWith("xmlns:")) {
+        return true;
+      }
+      const separator = name.indexOf(":");
+      return (
+        separator > 0 &&
+        schemaInstancePrefixes.has(name.slice(0, separator)) &&
+        contentFreeSchemaInstanceAttributes.has(name.slice(separator + 1))
+      );
+    })
+  );
+}
+
+/**
+ * Prefixes the document root binds to the XML Schema instance namespace.
+ *
+ * Resolved from `bpmn:Definitions` alone, so a prefix rebound on an inner element is not honored and
+ * its attributes reject. That is the safe direction and matches how every observed modeler writes
+ * the declaration; admitting by prefix spelling instead would let a document bind `xsi` to a vendor
+ * namespace and have its content silently discarded, which is the defect this rule exists to close.
+ */
+function xmlSchemaInstancePrefixes(
+  definitions: ElementRecord,
+): ReadonlySet<string> {
+  const declarations = asElement(definitions.$attrs);
+  if (declarations === undefined) {
+    return new Set();
+  }
+  return new Set(
+    Object.entries(declarations)
+      .filter(
+        ([name, value]) =>
+          name.startsWith("xmlns:") && value === xmlSchemaInstanceNamespace,
+      )
+      .map(([name]) => name.slice("xmlns:".length)),
   );
 }

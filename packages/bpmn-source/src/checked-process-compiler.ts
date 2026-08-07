@@ -31,6 +31,7 @@ import {
   projectCheckedSequenceFlows,
 } from "./checked-element-projection.js";
 import {
+  carriesNoUnconsumedForeignAttribute,
   hasOnlyExecutedOrPreservedKeys,
   preservationCapability,
 } from "./preserved-element-classification.js";
@@ -48,6 +49,16 @@ import {
 } from "./subprocess-error-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
+
+/**
+ * The only node type this compiler's projectors read foreign attributes from.
+ *
+ * The Service Task projector requires exactly the two `camunda` attributes its effect protocol
+ * defines and refuses any other count, so its foreign attributes are consumed rather than discarded.
+ */
+const foreignAttributeConsumers: ReadonlySet<string> = new Set([
+  bpmnTypes.serviceTaskType,
+]);
 
 type CheckedCompilationProjection =
   | Readonly<{
@@ -84,6 +95,11 @@ export function compileCheckedProcess(
   ) {
     return unsupported(
       "The bounded compiler requires one bpmn:Definitions source carrying no import, extension, or notation beyond what the selected profile preserves.",
+    );
+  }
+  if (!carriesNoUnconsumedForeignAttribute(definitions, foreignAttributeConsumers)) {
+    return unsupported(
+      "A foreign attribute the compiler does not consume must be rejected rather than discarded.",
     );
   }
 

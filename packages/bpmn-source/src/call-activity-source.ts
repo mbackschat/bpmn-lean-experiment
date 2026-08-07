@@ -27,6 +27,9 @@ import {
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
+import {
+  carriesNoUnconsumedForeignAttribute,
+} from "./preserved-element-classification.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
@@ -75,6 +78,11 @@ export function compileCallActivityCheckedProcess(
     definitions.targetNamespace.length === 0
   ) {
     return unsupported("Call Activity requires one plain Definitions document with one target namespace.");
+  }
+  // This profile's projectors read no foreign attribute at all, so every one of them is content the
+  // exact-key allowlists cannot see and must reject rather than discard.
+  if (!carriesNoUnconsumedForeignAttribute(definitions, new Set())) {
+    return unsupported("A foreign attribute the compiler does not consume must be rejected rather than discarded.");
   }
   const roots = asElementArray(definitions.rootElements);
   const processes = roots?.filter(({ $type }) => $type === bpmnTypes.processType);
