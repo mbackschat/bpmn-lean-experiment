@@ -1,0 +1,82 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-user-task-preserved-notation-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-user-task-with-retained-unexecuted-notation",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 8.2.1",
+      "Clause 10.2.2",
+      "Clause 10.5.4",
+      "Clause 10.5.5",
+      "Clause 12.2",
+      "Clause 12.3"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion",
+      "retained-diagram-interchange",
+      "retained-collaboration-and-participant",
+      "retained-lane-set",
+      "retained-artifacts",
+      "retained-documentation"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-OP-0001",
+      "CIB-CFG-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "execution-semantics-for-any-retained-construct",
+    "multi-participant-execution",
+    "message-flow-delivery",
+    "lane-based-assignment",
+    "data-objects-data-stores-and-every-data-association",
+    "foreign-content-at-any-locus",
+    "public-projection-of-retained-notation",
+    "per-element-admission-diagnostics",
+    "cib-compatibility-claim",
+    "variables",
+    "expressions",
+    "gateways",
+    "timers",
+    "messages",
+    "boundary-events",
+    "event-subprocesses",
+    "multi-instance",
+    "compensation",
+    "listeners",
+    "history",
+    "vendor-extensions",
+    "a12-adoption-coverage"
+  ]
+}

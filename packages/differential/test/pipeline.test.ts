@@ -175,6 +175,7 @@ test(
         "subprocess-error-propagation-stale-sibling-after-error",
         "intermediate-catch-timer-pt1s",
         "timer-user-task-composition",
+        "user-task-preserved-notation",
         "intermediate-catch-message",
         "message-addressed-receive-task",
         "exclusive-gateway-simple-boolean-first-true",

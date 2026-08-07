@@ -178,6 +178,10 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/non-interrupting-boundary-timer/completion-before-the-deadline.scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/user-task-preserved-notation/scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

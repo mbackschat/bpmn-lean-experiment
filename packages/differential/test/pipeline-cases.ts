@@ -399,6 +399,37 @@ function timerUserTaskCompositionCase(): PipelineCase {
   });
 }
 
+/**
+ * The same executed Process as the sequential User Task case, from a source carrying modeler notation.
+ *
+ * Its seeded mutation is the open task's activation, the same discriminator the executed-only
+ * interaction cases use, and that agreement is the point: preserved notation must leave every
+ * observation the twin produces exactly where the twin produces it, including how a defect in it
+ * shows up.
+ */
+function preservedNotationCase(): PipelineCase {
+  return Object.freeze({
+    id: "user-task-preserved-notation",
+    scenarioRelativePath:
+      "scenarios/user-task-preserved-notation/scenario.json",
+    bpmnRelativePath: "scenarios/user-task-preserved-notation/process.bpmn",
+    workflowIdPrefix: "user-task-preserved-notation",
+    cib: null,
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    replaySelection: PipelineReplaySelection.Primary,
+    injectMutation: mutateOpenTaskActivation,
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[2].openUserTasks[0].id.activation",
+      1,
+      2,
+    ),
+  });
+}
+
 function effectCase(): PipelineCase {
   return Object.freeze({
     id: "service-task-effect-success",
@@ -539,6 +570,7 @@ export const pipelineCases = Object.freeze([
   ...subprocessErrorPipelineCases,
   timerCase(),
   timerUserTaskCompositionCase(),
+  preservedNotationCase(),
   ...messagePipelineCases,
   simpleBooleanGatewayCase(),
   ...inclusiveGatewayPipelineCases,

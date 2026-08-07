@@ -38,7 +38,7 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-timer-user-task-composition-draft",
   UserTask: "cibseven-2.2.0-user-task-process-data-draft",
   UserTaskPreservedNotation:
-    "cibseven-2.2.0-user-task-preserved-notation-draft",
+    "bpmn-2.0.2-user-task-preserved-notation-draft",
 } as const);
 
 /**

@@ -2,10 +2,10 @@
  * Preserve-only admission: material the compiler retains without executing must not change execution.
  *
  * The contract under test is [the preserve-only admission proposal](../../../docs/PRESERVE-ONLY-ADMISSION-PROPOSAL.md).
- * Its oracle is the pair of sources below: `scenarios/user-task-discovery-completion/process.bpmn`
- * carries no notation and is admitted by the executed-only profile today, and the fixture beside this
- * suite is the same Process with a modeler's Diagram Interchange added. The preserve-enabled profile
- * must admit the second and reach the checked graph the first reaches.
+ * Its oracle is the pair of registered sources below: `user-task-discovery-completion` carries no
+ * notation and is admitted by the executed-only profile, and `user-task-preserved-notation` is the
+ * same Process with a modeler's pool, lane, documentation, artifacts, and Diagram Interchange added.
+ * The preserve-enabled profile must admit the second and reach the checked graph the first reaches.
  *
  * Equality is asserted on the execution projection, not on the checked graph, because
  * `CheckedProcessIdentity` carries `sourceSha256` and the two sources are different bytes by
@@ -78,7 +78,7 @@ async function importCompiledClassifier(): Promise<CompiledClassifier> {
 }
 
 const preservedNotationSource = new URL(
-  "./fixtures/preserved-notation-user-task.bpmn",
+  "../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,
 );
 const executedOnlyTwin = new URL(

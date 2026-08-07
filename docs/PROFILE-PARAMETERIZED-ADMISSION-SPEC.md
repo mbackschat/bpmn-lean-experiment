@@ -29,7 +29,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | Profile | Definition scopes | Exact operation multiset |
 |---|---:|---|
 | CIB Seven User Task (`cibseven-2.2.0-user-task-process-data-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
-| CIB Seven User Task with preserved notation (`cibseven-2.2.0-user-task-preserved-notation-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
+| BPMN User Task with preserved notation (`bpmn-2.0.2-user-task-preserved-notation-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Intermediate Catch Timer (`cibseven-2.2.0-intermediate-catch-timer-draft`) | 1 | one `initiate`, one `awaitTimer`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Service Task effect (`cibseven-2.2.0-service-task-effect-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven A12 CreateDocument (`cibseven-2.0.0-a12-create-document-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
