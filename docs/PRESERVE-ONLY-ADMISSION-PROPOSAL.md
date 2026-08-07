@@ -36,7 +36,15 @@ The alternative, threading preserved material through the checked graph as an in
 
 A flat preserved set is unsound, because preserving a container would conceal executable descendants: a preserved `Collaboration` holding an executable element, or a preserved `extensionElements` holding a listener, would admit exactly the silent-omission failure this proposal exists to prevent. The classifier is therefore recursive and context-aware, and takes four inputs beyond the element itself: the selected profile, the containment path, the descendant classification, and the resolution of every QName and IDREF the element carries.
 
-Four rules bound it. **A container is preserved only when its complete descendant set is preserved.** **Unknown foreign content rejects by default at any execution-bearing location**, and is preserved only at locations the profile declares inert. **`mustUnderstand="true"` rejects unless the profile understands it**, which is what that attribute means. **Every QName and IDREF resolves**, or the definition is rejected; a preserved element pointing at an executed one is a rejection, not a preservation.
+Four rules bound it.
+
+**A container is preserved only when its complete descendant set is preserved.**
+
+**Foreign content is preserved only at an explicitly inert QName and locus combination the profile declares**, and rejects everywhere else. The default is rejection, and the inert set is enumerated rather than inferred. **`mustUnderstand="true"` rejects unless the profile understands it**, which is what that attribute means.
+
+**A preserved element may reference an executed one when the profile declares that reference inert.** Such a reference is admitted when its namespace, its referring type, its identity, and its target are all valid. It is rejected when unresolved, wrong-typed, ambiguous, or **execution-affecting**; a reference the engine reads during lowering is not inert regardless of where it sits.
+
+An earlier draft of this rule said the opposite, that any preserved-to-executed reference is a rejection, and that was self-defeating. Diagram Interchange exists to point at executed elements. In the already-admitted A12 fixture every `BPMNShape.bpmnElement` resolves to a declared executed element, so the rule would have rejected a file that compiles today, and `BPMNEdge.bpmnElement`, `Lane.flowNodeRef`, and `Participant.processRef` are the same shape.
 
 The table below is the intended classification, not the algorithm. It is a statement of which constructs the classifier must place where, and each row is subject to the recursive rule above.
 
@@ -47,9 +55,9 @@ The table below is the intended classification, not the algorithm. It is a state
 | Lanes and lane sets | Executable extension elements the profile does not recognize |
 | Message flows between participants | A second executable Process in the same definition |
 | Associations, text annotations, and groups | Any construct whose omission changes execution |
-| Data objects and data store references, as declarations only | |
-| Documentation elements | |
-| Unrecognized extension elements and foreign namespaces | |
+| `dataObject` and `dataStoreReference` declarations carrying only `id`, `name`, and `itemSubjectRef`, and `dataStore` roots carrying only `id` and `name` | Every `dataInputAssociation`, `dataOutputAssociation`, `ioSpecification`, `property`, and `dataState` |
+| Documentation elements | A second executable Process that is **unrelated or unbound** by any profile QName |
+| Foreign content at a profile-declared inert QName and locus | Foreign content anywhere else, and any `mustUnderstand="true"` the profile does not understand |
 
 The discriminator behind the table is one question: would omitting this construct change what the engine executes? If yes it is rejected, never preserved. The discriminator alone does not decide a tree, which is why the classifier and not the table is the contract. Data objects sit on the boundary and are split deliberately: a bare declaration is preserved, while a data association is rejected, because the association is what would carry a value into execution.
 
@@ -59,15 +67,15 @@ The discriminator behind the table is one question: would omitting this construc
 
 Today an unsupported file yields one message about the whole compilation. A third party cannot act on that. But a diagnostic keyed on the BPMN ID cannot be required, and the reason turns out to be a normative disagreement rather than a simple fact.
 
-**BPMN 2.0.2's two machine-readable artifacts disagree on whether `BaseElement.id` is required.** `Semantic.xsd` declares `<xsd:attribute name="id" type="xsd:ID" use="optional"/>`, so an XML instance may omit it. `BPMN20.cmof` declares `BaseElement-id` with **no** explicit `lower` or `upper`, which under CMOF defaults to `1..1` and therefore required; its sibling attributes state `lower="0"` explicitly, so the omission reads as intent rather than oversight.
+**`Semantic.xsd` declares `<xsd:attribute name="id" type="xsd:ID" use="optional"/>`**, so an XML instance may legally omit it. The diagnostic contract follows the XSD, because diagnostics describe instance documents.
 
-This is the same class as the `gatewayDirection` literal already recorded in [the implementation map](IMPLEMENTATION-MAP.md#boolean-attribute-coercion-at-source-admission), where the two artifacts also disagree and the project declined to choose between them in code. [The project's metamodel manifest](../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json) currently records `{"owner": "BaseElement", "name": "id", "lower": 1}`, which faithfully extracts the CMOF default **without recording that the XSD contradicts it**.
-
-The diagnostic contract follows the XSD, because diagnostics describe instance documents and an instance may legally omit the attribute. The manifest question is separate and is listed as an open decision below.
+Verifying that surfaced a separate observation, recorded here only so it is not lost and **explicitly outside this proposal's scope**: `BPMN20.cmof` declares `BaseElement-id` with no explicit `lower` or `upper`, which under CMOF defaults to `1..1`, and [the project's metamodel manifest](../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json) records `lower: 1` accordingly. That manifest predates this proposal and no disposition of it is proposed here; it belongs to a separate metamodel decision. Nothing in this proposal depends on how that resolves, because the nullable diagnostic ID follows the XSD regardless.
 
 Each record carries the **nullable** BPMN ID, the element type, a **deterministic containment identity** that locates the element when the ID is absent, a **stable reason code** rather than prose, the profile capability the element would require, and a defined ordering. Records are deduplicated. The list is deterministic for identical source bytes, so it can be compared and stored.
 
-Complete enumeration is conditional: it applies only once parsing has succeeded **warning-free**, because a parser warning is admission-blocking before classification runs, and a malformed document cannot be exhaustively classified. That case yields one diagnostic about the parse, not a list.
+Complete enumeration of *classification* results is conditional: it applies only once parsing has succeeded **warning-free**, because a parser warning is admission-blocking before classification runs and a malformed document cannot be exhaustively classified.
+
+That case still yields a **list, not a single diagnostic**. Every parser warning is normalized into the same typed record and all of them are retained, because a file with four malformed constructs must tell its author about four. Collapsing them would reintroduce the one-message-per-file failure this decision exists to remove, at exactly the moment the author most needs the detail.
 
 This is an admission-diagnostic contract, not a semantic observation: it exists before Workflow start, it is not part of any Process state, and no rejected element ever reaches the IL.
 
@@ -117,7 +125,7 @@ This holds **conditional on D5's corrected guard actually landing**, including i
 
 This proposal adds **no** semantic transition family, so the preflight is short by content rather than by omission, and its conclusion is that the adapter is untouched.
 
-Admission runs entirely before Workflow start. No durable ingress, wait, timer, effect, cancellation, or lifecycle mechanism is added or changed; the executed partition is byte-identical to what the adapter hosts today for the same executable content. The state relation the adapter preserves is therefore unchanged, because the object it relates is the executed partition alone.
+Admission runs entirely before Workflow start. No durable ingress, wait, timer, effect, cancellation, or lifecycle mechanism is added or changed. The executed partition equals what the adapter hosts today for the same executable content **under the identity-normalized execution projection of D5, not byte-identically**: a preserve-enabled source and its stripped twin carry different bytes, so each program retains its own distinct exact-source digest and the raw structures differ in that field alone. The state relation the adapter preserves is unchanged, because the object it relates is the executed partition.
 
 Two things the preflight must state rather than assume. **Preserved material must not enter the Workflow argument**, or it would enter Event History and become a replay-compatibility surface that the pre-release policy forbids adding before a durable baseline; the admitted definition the Workflow receives stays the executed partition. And **the diagnostic list is not a Workflow input**: rejection happens before start, so a rejected definition never reaches Temporal at all.
 
@@ -125,7 +133,11 @@ The residual risk is size, not semantics. Retaining exact source bytes for a mod
 
 ## Profile versioning
 
-Widening admission changes what a profile admits, so the profiles this touches take a version change rather than an in-place edit, under [the pre-release evolution policy](PROJECT-DESIGN.md#pre-release-evolution-policy). **Decision required from the owner:** whether preserve-only admission is a new profile family alongside the current standards profiles, or a version bump of each existing one. My recommendation is a **new generic profile**, because every existing profile is bound to retained evidence whose source bytes would otherwise all need replacing at once, and because the existing narrow profiles remain the right admission for their own capsules.
+Widening admission changes what a profile admits, so this takes a version change rather than an in-place edit, under [the pre-release evolution policy](PROJECT-DESIGN.md#pre-release-evolution-policy).
+
+**Recommendation: one named preserve-enabled successor to the runnable User Task profile**, not a new profile family and not a bump of every profile. That profile is the product floor the runnable MVP already exercises end to end, so the successor inherits a live example, a registered scenario, and a pipeline case rather than needing new ones. Every other profile stays exactly as it is, so no immutable evidence-bound profile is widened and no retained source bytes are replaced.
+
+The successor's name, and whether later profiles gain preserve-enabled successors one at a time or by a shared capability, are implementation decisions for the approved capsule rather than this proposal.
 
 ## Producers and consumers this changes
 
@@ -138,7 +150,19 @@ Widening admission changes what a profile admits, so the profiles this touches t
 | a new preserved-set classifier | new owner, recursive and profile-aware |
 | profile artifacts, scenarios, and pipeline cases | one atomic registration under the roundtrip guard |
 
-Unchanged and deliberately so: the Semantic Process IL, Lean, the semantic core, the Temporal adapter, and every canonical observation.
+**Consumers** of the compilation result, each of which sees the changed diagnostic type or the successor profile:
+
+| Consumer | Why it is affected |
+|---|---|
+| the Temporal command-line product surface | renders the admission result and must render a list |
+| [the differential pipeline](../packages/differential) | registers the successor profile's case |
+| the Temporal adapter's pre-start admission path | consumes `Accepted \| Rejected`, unchanged in shape |
+| [the BPMN source package tests](../packages/bpmn-source/test) | own the admitted and refused sets |
+| the package registry README | lists the package's public surface |
+
+**Binding guards** beyond those already listed: the pre-release architecture guard, the wire-schema guards for any new diagnostic contract, and the erasable-syntax and harness type gates for directly executed surfaces.
+
+Unchanged and deliberately so: the Semantic Process IL, Lean, the semantic core, the Temporal adapter's hosting behavior, and every canonical observation.
 
 ## Separating negative evidence
 
@@ -153,6 +177,13 @@ Each is a case that must fail before the change and pass after, or the reverse. 
 | A source and its stripped twin | agree on the execution projection |
 | A seeded classifier that leaks one preserved construct into the executed partition | be rejected by the D5 guard |
 | An element with no `id` | produce a diagnostic with a resolvable containment identity |
+| An unrelated, QName-unbound second executable Process | reject |
+| The Call Activity fixture's two Process roots | still be accepted, unchanged |
+| A bare `dataObject` declaration, and a `dataInputAssociation` | be preserved, and rejected, respectively |
+| A file with four parser warnings | produce four normalized diagnostics, not one |
+| Foreign content at an execution-bearing locus | reject, while the same content at a declared inert locus is preserved |
+| A DI reference to a declared executed element, and one to a missing target | be preserved, and rejected, respectively |
+| The stripped twin's closure bound, enabledness, stable-state resumability, and host capability | be **inherited unchanged** by the preserve-enabled source, each asserted explicitly rather than assumed to follow from projection equality |
 
 ## What already binds this work
 
@@ -185,19 +216,19 @@ The natural seam is the preserved-set classifier, and an earlier draft of this p
 
 1. **D2's data-object split.** Preserving a bare declaration while rejecting its association is defensible but is the one place the discriminator needs a judgment call. The alternative is rejecting data objects entirely, which is safer and rejects more real files.
 2. **Whether `preserved` becomes a requirement-ledger disposition.** It is currently not one of the ledger's values, and adding it is a ledger change with its own consequences for coverage accounting.
-3. **Whether preserved material is retained at all after admission**, or only proven inert and discarded. Retaining it is required for diagram rendering in M1's product surface; discarding it is simpler and defers the storage question.
-4. **How the manifest records `BaseElement.id`**, now that the XSD and CMOF are known to disagree. This was found while verifying a review finding and is **not caused by this proposal**; the manifest predates it. The options are to record both artifacts with the project's selected reading, as the `gatewayDirection` case does, or to leave the CMOF-derived value and accept that the manifest does not say the XSD permits omission.
+3. **Whether an additional normalized preserved-subtree contract is added.** Retention of the **exact source bytes is required, not optional**, because the compilation already captures them and M1's diagram rendering reads them. The open question is only whether a second, normalized representation of preserved subtrees is also produced.
 
-My recommendation on all three, refined by the review:
+My recommendation on each, refined by the review:
 
 1. **Data-object split: take it, with the shapes enumerated.** The proposal must name the exact declaration-only shapes admitted, and reject every association, transformation, assignment, and execution-facing reference outside them. An unenumerated split is where the concealment risk of D2 returns.
 2. **Add `preserved` to the ledger, with an exact meaning:** *structurally admitted and retained, carrying no executable meaning.* It counts as **neither** `supported` nor `rejected`. Operational requirements for Data Objects, Message Flows, Collaborations, and their siblings stay separately `unsupported`, so preserving a construct's syntax never reads as implementing its behavior.
-3. **Retain the exact source bytes, and nothing more.** The bytes are already captured and already support storage and diagram rendering, so retention costs no new contract. Do **not** add a normalized preserved-subtree contract until a named engine consumer needs one; that is the generalize-after-one-consumer rule.
-4. **Record both artifacts with a selected reading**, matching how `gatewayDirection` is already handled. A manifest that encodes one side of a normative disagreement silently is the shape that produced the boolean-coercion defect: not wrong on its face, but unable to warn a reader that the other artifact says otherwise.
+3. **Do not add the normalized projection.** The required exact bytes already serve storage and rendering, so a second representation waits for a named engine consumer; that is the generalize-after-one-consumer rule.
 
 ## Reopen conditions
 
-Reopen before preserving any construct that can change execution, before admitting a second executable Process, before a preserved construct reaches the IL or any public observation, or if the non-interference guard cannot be made to fail on a seeded defect.
+Reopen before preserving any construct that can change execution, before admitting a **new, QName-unbound** executable Process, before a preserved construct reaches the IL or any public observation, or if the non-interference guard cannot be made to fail on a seeded defect.
+
+The second condition does not touch the existing Call Activity profile, whose two executable Process roots are bound by QName and are already admitted, evidence-closed, and graduated.
 
 ## Independent cold-review receipt
 
