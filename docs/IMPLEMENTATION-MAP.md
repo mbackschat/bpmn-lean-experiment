@@ -94,6 +94,23 @@ This is not a general BPMN engine, an OMG conformance result, or an immutable pr
 - comment-density, word-count, or declaration-documentation scoring; generated comment stubs
 - Semgrep or tree-sitter dependency
 
+### BPM platform
+
+#### Implemented
+
+- Nothing. No part of product 2 exists.
+
+#### Explicitly absent
+
+- The `platform/`, `runners/juel/`, and `showcase/` trees, and every package the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#package-structure) names
+- deployment store, definition version ordinals, and the admission gateway
+- the transition-record projection, every read model, and cross-instance discovery
+- task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
+- identity, authorization, persistence, and the public HTTP API
+- the platform component kit and every selected UI dependency; `react-aria-components` and the three TanStack packages are owner-selected but not installed, and `bpmn-js` is not approved
+- the executable product-boundary guard, the UI-to-API import guard, and the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates
+- the committed per-transition record the projection depends on, which is an engine change and is proposed separately
+
 ### A12 Workflows downstream adoption
 
 #### Implemented

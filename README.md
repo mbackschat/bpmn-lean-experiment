@@ -2,7 +2,7 @@
 
 Making BPMN execution durable, explainable, and continuously checkable.
 
-This project builds a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is defined independently, checked formally, and compared continuously with CIB Seven. Its primary implementation roadmap is OMG BPMN Process Execution coverage, with CIB Seven `2.2.0` executable breadth ordering the near-term standards schedule. Selected CIB Seven behavior is layered on as versioned compatibility profiles, and evidence-backed A12 Workflows replacement is a downstream adoption goal implemented through bounded adapters rather than product semantics in the core. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture) owns the exact boundaries and separate coverage measures.
+This project builds two MIT products in one repository: a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is defined independently, checked formally, and compared continuously with CIB Seven, and a BPM platform on top of it. The engine's primary implementation roadmap is OMG BPMN Process Execution coverage, with CIB Seven `2.2.0` executable breadth ordering the near-term standards schedule and selected CIB Seven behavior layered on as versioned compatibility profiles. The platform consumes only the engine's published contract, so the assurance underneath it transfers rather than being restated. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division) owns the exact product division, boundaries, and separate coverage measures.
 
 Use the [implementation map](docs/IMPLEMENTATION-MAP.md) for the exact implemented and absent surface, and the [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) to exercise every registered scenario through its declared semantic, compatibility, durability, mutation, and replay lanes.
 
@@ -27,13 +27,13 @@ A direct BPMN-to-Temporal translation risks turning SDK handlers, retries, sched
 The product layers are intentionally one-way:
 
 ```text
-A12 Workflows adoption adapter
+BPM platform
   → selected CIB Seven compatibility profiles
     → vendor-neutral BPMN execution core
       → Temporal durability and effect hosting
 ```
 
-A12 models and APIs help prioritize work and eventually test adoption, but they do not define BPMN semantics. A first target-shaped vertical slice may prove that the layers compose; later coverage grows by reusable BPMN mechanism, with CIB work added only when a selected compatibility question requires it.
+The platform owns deployment, task and operator surfaces, history, and integration; it consumes the engine's published contract and defines no BPMN semantics. A first vertical slice may prove that the layers compose; later coverage grows by reusable BPMN mechanism, with CIB work added only when a selected compatibility question requires it.
 
 ## Architecture
 

@@ -4,7 +4,7 @@ Shared guidance for Claude Code, OpenAI Codex, and human contributors working in
 
 ## Mission
 
-Build a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance. Treat standards coverage as the primary engine roadmap, use the executable BPMN breadth of CIB Seven `2.2.0` to order the near-term standards schedule, keep selected CIB behavior as a classified compatibility overlay, and keep A12 Workflows replacement as a downstream adoption layer. The durable layer boundaries, ordering rule, and coverage measures are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#layered-product-architecture).
+Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance, and a BPM platform on top of it. Treat standards coverage as the primary engine roadmap, use the executable BPMN breadth of CIB Seven `2.2.0` to order the near-term standards schedule, keep selected CIB behavior as a classified compatibility overlay, and let the platform's next showcase milestone break ties between candidates of equal standards value. A12 Workflows replacement is a third product owned by A12 under EUPL-1.2 and is out of scope in this repository. The durable product division, layer boundaries, ordering rule, coverage measures, and Lean assurance-lane rule are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division).
 
 Establish the semantic and hosting result through four components:
 
@@ -13,9 +13,11 @@ Establish the semantic and hosting result through four components:
 3. a pure TypeScript semantic core;
 4. a Temporal durability adapter checked through differential, refinement, and replay testing.
 
-Use the maintained A12 Workflows product surface and its downstream full-stack blueprint to prioritize reusable BPMN mechanisms and necessary CIB overlays. A12 is the ultimate adoption target, but it does not define BPMN meaning and must not turn the engine into a collection of product-specific model paths.
+The engine's essential element set and depth are scoped by [the minimal engine research](docs/research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) and its follow-up [extensions research](docs/research/HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md). Neither disposes a BPMN requirement; [the requirement ledger](docs/BPMN-REQUIREMENT-LEDGER.md) owns dispositions and the owning capsule owns meaning.
 
-Preserve the implemented [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) as the product floor while advancing semantic breadth. Its dummy User Task actor is an explicit host simulation, not a UI, task inbox, form engine, identity layer, or human-resource semantic claim.
+Preserve the implemented [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) as the engine-side product floor while advancing semantic breadth. Its simulated User Task actor is an explicit host simulation and defines no BPMN meaning; the real task inbox, forms, and identity belong to the BPM platform, which reaches them through the same published contract and content-bound commands.
+
+The platform consumes only the engine's published contract: compile, start, observe committed state, submit a command. It takes occurrence identity from a publication and never constructs one, and a fact the engine does not publish is a stop condition routed to an engine requirement, never derived from Temporal Event History, a state difference, or the platform's own store.
 
 The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and active sequencing and decisions belong in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
@@ -65,9 +67,10 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 ## Non-negotiable boundaries
 
-- Preserve the dependency direction **BPMN execution core → selected CIB compatibility overlay → downstream A12 adoption adapter**. Lower layers never import or encode assumptions from a higher layer.
-- Track BPMN requirement coverage, CIB profile coverage, and A12 adoption coverage as three separate denominators. Never combine them into one support percentage or use success in one layer as evidence for another.
-- A12 inventory may prioritize the next standard mechanism or CIB relationship, but A12 bean names, façade APIs, data shapes, deployment assumptions, and license-bound source stay out of the BPMN core, Lean account, Semantic Process IL, and pure TypeScript semantic core.
+- Preserve the dependency direction **BPMN execution core → selected CIB compatibility overlay → BPM platform**. Lower layers never import or encode assumptions from a higher layer, and the platform may consume only the engine's published contract.
+- Track BPMN requirement coverage, CIB profile coverage, and platform milestone coverage as three separate denominators. Never combine them into one support percentage or use success in one layer as evidence for another.
+- Downstream demand may prioritize the next standard mechanism or CIB relationship, but product bean names, façade APIs, data shapes, deployment assumptions, and license-bound source stay out of the BPMN core, Lean account, Semantic Process IL, and pure TypeScript semantic core.
+- Declare each capsule's Lean lane shape at capsule start as proved, checked, or deliberately open under [the assurance-lane rule](docs/PROJECT-DESIGN.md#lean-assurance-lane). A lane that cannot close within its effort bound records its precise unresolved boundary; it never quietly becomes a weaker claim.
 - Do not implement profile-dependent behavior until the relevant interpretation and scope are approved and recorded.
 - Do not formalize a CIB/BPMN mismatch as profile behavior until it is classified as normative agreement, gap resolution, extension, configuration-specific realization, limitation, or evidence-backed deviation in [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md). Keep candidate and confirmed deviations prominent.
 - Never silently choose an oracle release, feature meaning, expression subset, observation boundary, scheduling rule, listener scope, history contract, or external-effect contract.
@@ -116,7 +119,7 @@ Use red/green TDD:
 
 For coverage work, begin from the BPMN requirement and reusable mechanism. Add CIB source admission, probes, profile rules, and retained evidence only when the standard is ambiguous, the selected compatibility profile differs or adds behavior, a real downstream model requires an extension, or the Temporal mapping needs an engine observation. Do not require a CIB extension merely to complete a vendor-neutral BPMN capsule.
 
-Use A12 as a prioritization and later acceptance lane: first ask which standard mechanism its corpus forces, then which CIB overlay is actually required, and only then which A12 adapter binding remains. A target-shaped feasibility fixture may test the full composition once; subsequent A12 models using the same lower-layer contract belong in adoption regression evidence rather than new semantic implementations.
+Use the BPM platform as a prioritization and later acceptance lane: first ask which standard mechanism its next milestone forces, then which CIB overlay is actually required, and only then which platform binding remains. A target-shaped feasibility fixture may test the full composition once; subsequent models using the same lower-layer contract belong in platform regression evidence rather than new semantic implementations.
 
 The Temporal preflight is an early feasibility and information-preservation review, not evidence that the adapter already refines the core. It must distinguish a finite conformance-scenario host from the intended production lifecycle and must send unresolved mappings back to research or profile review before they become implicit adapter policy.
 
@@ -254,9 +257,11 @@ Before measuring a staged line ceiling, anchor the preceding stage to a commit o
 
 ### Dependencies
 
-Keep each component’s dependencies at the smallest approved set and add one only when a concrete capability requires it. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing any Lake, Java, Node, pnpm, Temporal, parser, test, build, or runtime dependency.
+Keep each component’s dependencies at the smallest approved set and add one only when a concrete capability requires it. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing any Lake, Java, Node, pnpm, Temporal, parser, test, build, or runtime dependency. **This applies to the BPM platform exactly as it applies to the engine.** A platform dependency cannot reach the semantic core, but that is not what the rule protects: under [the platform's dependency posture](docs/PROJECT-DESIGN.md#dependency-posture) every resolved package is attack surface, while maintained MIT-compatible work is preferred over reimplementing a solved problem. Weigh a candidate against the whole alternative, including the defects we would own, not against its package count.
 
 Record exact version, role, license, provenance, and removal cost before adoption.
+
+Approval bounds the direct addition; it does not bound what that addition resolves to, and a transitive graph can double on a patch upgrade nobody reviews. Both halves are therefore executable. The footprint guard fails when a product's resolved package count exceeds its recorded budget or when any license in that resolved graph falls outside the permissive set, and a budget rises only in the change that records the approval raising it. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
 
 ## Documentation ownership
 
