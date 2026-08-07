@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft proposal, not implemented and not owner-approved.** It proposes the contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Nothing here is implemented; no dependency is adopted. The independent cold proposal review has not run, and its receipt below records `pending`.
+**Independently reviewed, awaiting owner approval; not implemented.** It proposes the contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Nothing here is implemented and no dependency is adopted. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
 Sequencing belongs to [PLAN.md](PLAN.md), durable architecture to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md).
 
@@ -208,8 +208,10 @@ Reopen this proposal before adding a second Process-state representation, any pl
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `4bfe36d` | `fork-turns-none` | `approve-with-required-edits` | `af66ee3` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal stage used **one correction round**. The cold review of target `4bfe36d` returned thirteen required findings; correction `af66ee3` closed all thirteen and the same reviewer's audit confirmed each. That audit raised six residual defects of its own, three required, of which three were topic sentences and a receipt clause still asserting a claim the correction had removed from the surrounding paragraphs. Those were applied at `0c07ed6` and were not re-audited, on the reviewer's explicit statement that no third round was warranted if applied verbatim. The review's routed sections included the assurance-lane rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#lean-assurance-lane), so this cycle is the one owning that rule's material supersession, as [PLAN.md](PLAN.md#approved-decisions) records.
 
 The semantic-checkpoint stage is classified as not required because this proposal itself changes no BPMN meaning, no semantic profile or CIB relationship, no checked-source or Semantic Process representation, no runtime or public observation, no admission or profile capability, no transition family or proof boundary, and no Temporal refinement claim. The two engine requirements it records, E1 and E2, are engine work outside its scope and carry their own governed cycles; E2 is an admission and profile capability, which is precisely why it is not proposed here. A docs-only follow-up records the immutable proposal target before the review prompt is handed off, because a commit cannot contain its own Git identity.
