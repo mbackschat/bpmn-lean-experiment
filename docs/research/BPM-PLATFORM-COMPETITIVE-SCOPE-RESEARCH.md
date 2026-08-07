@@ -2,7 +2,9 @@
 
 ## Status
 
-**Project-authored research carrying a bounded full-scope recommendation.** It is design input, not product authority and not an implementation claim. [The BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md) owns the proposed first product contract, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns durable architecture and product boundaries, [PLAN.md](../PLAN.md) owns accepted sequencing, and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) owns the exact implemented and absent surface.
+**Project-authored research carrying a bounded full-scope recommendation.** It is design input, not product authority and not an implementation claim. [The owner-approved BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md) owns the first product contract, [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) owns durable architecture and product boundaries, [PLAN.md](../PLAN.md) owns accepted sequencing, and [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) owns the exact implemented and absent surface.
+
+**This document stays research until the approved proposal's surfaces are implemented.** The owner decided on 2026-08-07 that its competitive positioning and full-scope modules are not adopted into any owning document before then, so that the first product is finished rather than widened while it is being built. The trigger is exact and checkable: M5 of [the showcase milestone ladder](../PLAN.md#showcase-milestone-ladder) closing its exit gate, which is where the proposal's deployment, task, operations, incident, history, and mining surfaces are all reached. At that point this document is reconsidered as a whole, and whatever is adopted moves into its proper owner rather than being cited from here.
 
 **Research date:** 7 August 2026
 
