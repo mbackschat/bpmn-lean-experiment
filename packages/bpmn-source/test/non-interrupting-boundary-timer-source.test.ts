@@ -111,9 +111,10 @@ test("keeps both branches distinguishable through distinct follow-on tasks", asy
 /**
  * The capsule's retained hostile controls. An omitted attribute resolves to the XSD and CMOF default
  * `true`, so both omission and lexical `true` select the interrupting proposition this profile
- * excludes; only lexical `false` is admitted here.
+ * excludes. What is admitted is every lexeme naming *false*, which the admitted-spellings cases
+ * below pin as `false` and `0`.
  */
-test("admits only a lexical non-interrupting deadline", async () => {
+test("refuses an omitted or lexically true deadline", async () => {
   const attached = 'attachedToRef="MonitoredTask" cancelActivity="false"';
   const omitted = await compile(source.replace(attached, 'attachedToRef="MonitoredTask"'));
   const interrupting = await compile(

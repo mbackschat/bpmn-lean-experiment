@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-06; implemented to its semantic checkpoint.** The owner approved all six decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and its findings were audited closed. Approval authorizes exactly the scope recorded here and nothing beyond it; this document stays a `-PROPOSAL` until its contract is implemented and its evidence lanes are closed. Nothing here is a coverage, conformance, or CIB compatibility claim, and the exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than being restated here.
+**Owner-approved on 2026-08-06; implemented and evidence-closed, awaiting its closure review.** The owner approved all six decisions below as recommended, after the independent cold proposal review returned `approve-with-required-edits` and its findings were audited closed. Approval authorizes exactly the scope recorded here and nothing beyond it; this document stays a `-PROPOSAL` until its contract is implemented and its evidence lanes are closed. Nothing here is a coverage, conformance, or CIB compatibility claim, and the exact implemented and absent boundary stays in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md) rather than being restated here.
 
 **Decision 4 was amended, and the owner confirmed the amendment on 2026-08-07.** Closing a parser-coercion defect across five requirement rows made `cancelActivity="0"` admissible beside `false`, widening the admitted set decision 4 records. The owner confirmed that wider set rather than narrowing admission to lexical `false` alone: `0` is a valid `xs:boolean` *false* that the parser coerces correctly, so it names this profile's disposition exactly as `false` does, and refusing it would reject a schema-valid spelling of the very disposition the profile requires. Decision 4's own two rejections, an omitted attribute and lexical `true`, are unchanged, and the two boundary-Timer profiles' admitted sets stay disjoint, so what that decision secured is preserved.
 
@@ -183,7 +183,7 @@ Required Lean content, all with exact hypotheses. This list is the single owner 
 - a declarative arming relation and a declarative spawn relation, both distinct from the evaluator, plus a declarative completion relation with both the deadline-live and deadline-consumed constructors;
 - soundness from every evaluator-produced arming, spawn, and completion transition to its relation;
 - a quantified **host-preservation** law: every spawn transition leaves the monitored task wait, its activation ordinal, and every activation counter exactly as they were. This is the law that separates this family from its sibling, whose corresponding transition removes the task;
-- a quantified routing law: the spawn produces the boundary token and no normal token, and completion produces the normal token and no boundary token;
+- a quantified single-token law per transition: the spawn adds exactly one token owned by the deadline's scope and advances logical time to that deadline, and completion adds exactly one token owned by the task's scope and leaves logical time alone. Which place each token lands on is bound by the relation's constructors and carried to the evaluator by the soundness bridges, not restated as a conclusion of these two theorems, so neither may be cited as a routing law on its own;
 - a quantified withdrawal law: completion while the deadline is live removes it, so no later firing of that occurrence can commit;
 - a quantified off-deadline refusal and a quantified wrong-identity state-preservation law, matching the sibling capsule's forms;
 - the nearest **checked non-law**: it is *not* a law that the boundary branch reaching its None End Event completes the Process, because the monitored task may still be active and the scope is therefore not quiescent. This is the proposition an interrupting implementation satisfies vacuously, so the witness must exhibit the two-branch state rather than assert the non-law in prose. A second checked non-law records that reaching logical time `1000` does not always spawn, because an earlier committed completion has already withdrawn the deadline.
@@ -308,13 +308,13 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 82 |
 | [semantic profile registry](../../packages/semantic-core/src/semantic-process-profile.ts) | 126 |
-| [Lean monitored-task family](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 129 |
+| [Lean monitored-task family](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 128 |
 | [semantic-core graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 154 |
 | [semantic-core operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 176 |
 | [Semantic Process IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 241 |
 | [semantic-core monitored-task runtime](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 306 |
 | [bounded deadline scheduler](../../packages/temporal-adapter/src/bounded-deadline-scheduler.ts) | 359 |
-| [Lean conformance locks](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) | 392 |
+| [Lean conformance locks](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) | 386 |
 | [checked BPMN graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 392 |
 | [Temporal host admission](../../packages/temporal-adapter/src/host-admission.ts) | 401 |
 | [bounded wait admission](../../packages/semantic-core/src/bounded-wait-admission.ts) | 416 |

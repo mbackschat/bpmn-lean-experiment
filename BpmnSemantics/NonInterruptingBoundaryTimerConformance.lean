@@ -227,9 +227,15 @@ theorem the_first_end_event_does_not_complete_the_process :
     ((applyStimulus scenarioClosureLimit program bothBranchesLive
         (completionOf "HandlerTask" "complete-handler")).state.waits.map fun wait =>
         wait.task.id.value) = ["NormalTask"] ∧
+      (applyStimulus scenarioClosureLimit program bothBranchesLive
+        (completionOf "HandlerTask" "complete-handler")).state.control =
+        .running instanceId ∧
       ((applyStimulus scenarioClosureLimit program bothBranchesLive
         (completionOf "NormalTask" "complete-normal")).state.waits.map fun wait =>
-        wait.task.id.value) = ["HandlerTask"] := by decide +kernel
+        wait.task.id.value) = ["HandlerTask"] ∧
+      (applyStimulus scenarioClosureLimit program bothBranchesLive
+        (completionOf "NormalTask" "complete-normal")).state.control =
+        .running instanceId := by decide +kernel
 
 /-- The Process completes only after both branches, in either order. -/
 theorem the_process_completes_after_both_branches :

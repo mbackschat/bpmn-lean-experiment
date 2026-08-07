@@ -1,10 +1,11 @@
 /**
- * Host-level assertions shared by both interrupting boundary-deadline families.
+ * Host-level assertions shared by every boundary-deadline family.
  *
- * These read only emitted Workflow commands, so they are generic over which wait the deadline
- * bounds: a bounded Activity's own task or a bounded scope's live child region. The refusal identity
- * is a parameter rather than a constant here precisely because the two families must not share one,
- * and a copied identity would otherwise satisfy every assertion in both.
+ * These read only emitted Workflow commands, so they are generic over which wait the deadline bounds
+ * and over what firing does to it: a bounded Activity's own task, a bounded scope's live child
+ * region, or a monitored task that firing leaves open. The refusal identity is a parameter rather
+ * than a constant here precisely because the families must not share one, and a copied identity
+ * would otherwise satisfy every assertion in all three.
  */
 import assert from "node:assert/strict";
 

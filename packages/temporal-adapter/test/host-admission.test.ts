@@ -410,6 +410,74 @@ test("classifies Call Activity invocation and return as internal closure", async
   );
 });
 
+/**
+ * The fourth managed class must refuse under its own identity, not only be admitted.
+ *
+ * Positive admission alone would be satisfied by a classifier that never reached this class at all,
+ * because an unclassified operation is passive and passive programs are admitted. The two refusals
+ * below are what make the class falsifiable: a second monitored wait reports this family's own code
+ * rather than a sibling's, and pairing it with a managed race crosses the single-scheduler barrier
+ * that each class's own count cannot see.
+ */
+test("rejects a second monitored User Task and a monitored wait beside a race", async () => {
+  const monitored = await compileFixture(
+    "../../../scenarios/non-interrupting-boundary-timer/process.bpmn",
+    "non-interrupting-boundary-timer-host-admission",
+    "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+  );
+  const eventRace = await compileFixture(
+    "../../../scenarios/event-based-gateway-message-timer/process.bpmn",
+    "event-race-beside-monitored-task",
+    "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+  );
+  const wait = monitored.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitMonitoredUserTask,
+  );
+  const race = eventRace.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitEventRace,
+  );
+  assert.ok(wait?.kind === SemanticOperationKind.AwaitMonitoredUserTask);
+  assert.ok(race?.kind === SemanticOperationKind.AwaitEventRace);
+
+  assert.deepEqual(assessTemporalHostCapability(monitored), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...monitored,
+      operations: [
+        ...monitored.operations,
+        { ...wait, id: `${wait.id}:second` },
+      ],
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode
+          .MonitoredActivitySchedulerUnavailable,
+        evidence:
+          "The Temporal host admits only one isolated monitored User Task with an exact PT1S non-interrupting boundary Timer.",
+      },
+    },
+  );
+  // The race is declared first, so it owns the refusal identity when both classes are present. That
+  // is the documented ordering rule rather than an accident of this fixture pair.
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...monitored,
+      operations: [...monitored.operations, race],
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.EventRaceSchedulerUnavailable,
+        evidence:
+          "The Temporal host admits only one isolated operation-addressed Message/PT1S managed race.",
+      },
+    },
+  );
+});
+
 function replaceTaskWithHostWait(
   program: SemanticProcessProgram,
   hostWaitKind:

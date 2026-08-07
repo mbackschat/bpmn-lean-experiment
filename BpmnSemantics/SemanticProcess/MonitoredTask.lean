@@ -384,7 +384,9 @@ theorem monitored_spawn_preserves_host (program : Program)
   cases step with
   | spawn _ _ _ _ _ _ _ _ _ _ _ => exact ⟨rfl, rfl, rfl⟩
 
-/-- A spawn produces the boundary route and nothing on the normal route; a completion produces the normal route and nothing on the boundary route. -/
+/-- A spawn adds exactly one token, owned by the deadline's own scope, and advances logical time to that deadline; a completion adds exactly one token, owned by the task's scope, and leaves logical time alone.
+
+Which place each token lands on is not pinned here. The output is existentially quantified, so these two say *one* token was produced and by which transition, while the boundary and normal places are bound to `operation.boundaryTimer.output` and `operation.task.output` by the relation's own constructors and carried to the evaluator by the soundness bridges above. Reading either as a routing law would overstate it. -/
 theorem monitored_spawn_routes_to_boundary (program : Program)
     (before after : RuntimeState)
     (step : MonitoredSpawnStep program before after) :
