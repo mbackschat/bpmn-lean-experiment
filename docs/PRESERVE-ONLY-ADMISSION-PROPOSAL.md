@@ -57,7 +57,13 @@ The discriminator behind the table is one question: would omitting this construc
 
 **Recommendation: report every rejected element with a typed record whose BPMN ID is nullable.**
 
-Today an unsupported file yields one message about the whole compilation. A third party cannot act on that. But a diagnostic keyed on the BPMN ID cannot be required, because `id` is optional on `BaseElement` and an unidentified element is exactly the kind a modeler leaves behind.
+Today an unsupported file yields one message about the whole compilation. A third party cannot act on that. But a diagnostic keyed on the BPMN ID cannot be required, and the reason turns out to be a normative disagreement rather than a simple fact.
+
+**BPMN 2.0.2's two machine-readable artifacts disagree on whether `BaseElement.id` is required.** `Semantic.xsd` declares `<xsd:attribute name="id" type="xsd:ID" use="optional"/>`, so an XML instance may omit it. `BPMN20.cmof` declares `BaseElement-id` with **no** explicit `lower` or `upper`, which under CMOF defaults to `1..1` and therefore required; its sibling attributes state `lower="0"` explicitly, so the omission reads as intent rather than oversight.
+
+This is the same class as the `gatewayDirection` literal already recorded in [the implementation map](IMPLEMENTATION-MAP.md#boolean-attribute-coercion-at-source-admission), where the two artifacts also disagree and the project declined to choose between them in code. [The project's metamodel manifest](../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json) currently records `{"owner": "BaseElement", "name": "id", "lower": 1}`, which faithfully extracts the CMOF default **without recording that the XSD contradicts it**.
+
+The diagnostic contract follows the XSD, because diagnostics describe instance documents and an instance may legally omit the attribute. The manifest question is separate and is listed as an open decision below.
 
 Each record carries the **nullable** BPMN ID, the element type, a **deterministic containment identity** that locates the element when the ID is absent, a **stable reason code** rather than prose, the profile capability the element would require, and a defined ordering. Records are deduplicated. The list is deterministic for identical source bytes, so it can be compared and stored.
 
@@ -180,12 +186,14 @@ The natural seam is the preserved-set classifier, and an earlier draft of this p
 1. **D2's data-object split.** Preserving a bare declaration while rejecting its association is defensible but is the one place the discriminator needs a judgment call. The alternative is rejecting data objects entirely, which is safer and rejects more real files.
 2. **Whether `preserved` becomes a requirement-ledger disposition.** It is currently not one of the ledger's values, and adding it is a ledger change with its own consequences for coverage accounting.
 3. **Whether preserved material is retained at all after admission**, or only proven inert and discarded. Retaining it is required for diagram rendering in M1's product surface; discarding it is simpler and defers the storage question.
+4. **How the manifest records `BaseElement.id`**, now that the XSD and CMOF are known to disagree. This was found while verifying a review finding and is **not caused by this proposal**; the manifest predates it. The options are to record both artifacts with the project's selected reading, as the `gatewayDirection` case does, or to leave the CMOF-derived value and accept that the manifest does not say the XSD permits omission.
 
 My recommendation on all three, refined by the review:
 
 1. **Data-object split: take it, with the shapes enumerated.** The proposal must name the exact declaration-only shapes admitted, and reject every association, transformation, assignment, and execution-facing reference outside them. An unenumerated split is where the concealment risk of D2 returns.
 2. **Add `preserved` to the ledger, with an exact meaning:** *structurally admitted and retained, carrying no executable meaning.* It counts as **neither** `supported` nor `rejected`. Operational requirements for Data Objects, Message Flows, Collaborations, and their siblings stay separately `unsupported`, so preserving a construct's syntax never reads as implementing its behavior.
 3. **Retain the exact source bytes, and nothing more.** The bytes are already captured and already support storage and diagram rendering, so retention costs no new contract. Do **not** add a normalized preserved-subtree contract until a named engine consumer needs one; that is the generalize-after-one-consumer rule.
+4. **Record both artifacts with a selected reading**, matching how `gatewayDirection` is already handled. A manifest that encodes one side of a normative disagreement silently is the shape that produced the boolean-coercion defect: not wrong on its face, but unable to warn a reader that the other artifact says otherwise.
 
 ## Reopen conditions
 
