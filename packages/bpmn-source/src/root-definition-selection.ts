@@ -18,6 +18,10 @@ import {
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import {
+  isWhollyPreserved,
+  preservationCapability,
+} from "./preserved-element-classification.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -80,14 +84,30 @@ export function selectRootDefinitions(
     case SemanticProfileId.SubProcessErrorPropagation:
       return selectErrorRoots(rootElements, process);
     default:
-      return rootElements.length === 1
-        ? {
-            process,
-            messageArtifacts: undefined,
-            errorArtifact: undefined,
-          }
-        : undefined;
+      return selectEntryProcessRoot(rootElements, process, semanticProfile);
   }
+}
+
+/**
+ * One executable entry Process, with every other root wholly preserved.
+ *
+ * A profile that preserves nothing admits no other root at all, which is the executed-only rule
+ * unchanged. A second *executable* Process is never preserved, because `bpmn:Process` is absent from
+ * every preserved type set; the profiles that genuinely need one bind it by QName and select their
+ * roots elsewhere.
+ */
+function selectEntryProcessRoot(
+  rootElements: ReadonlyArray<ElementRecord>,
+  process: ElementRecord,
+  semanticProfile: string,
+): RootDefinitionSelection | undefined {
+  const capability = preservationCapability(semanticProfile);
+  const remainder = rootElements.filter((element) => element !== process);
+  return remainder.length === 0 ||
+      (capability !== undefined &&
+        remainder.every((element) => isWhollyPreserved(element, capability)))
+    ? { process, messageArtifacts: undefined, errorArtifact: undefined }
+    : undefined;
 }
 
 function selectMessageRoots(

@@ -37,6 +37,8 @@ export const SemanticProfileId = Object.freeze({
   TimerUserTaskComposition:
     "bpmn-2.0.2-timer-user-task-composition-draft",
   UserTask: "cibseven-2.2.0-user-task-process-data-draft",
+  UserTaskPreservedNotation:
+    "cibseven-2.2.0-user-task-preserved-notation-draft",
 } as const);
 
 /**
@@ -92,7 +94,10 @@ function requiredCheckedProcessShape(
   const start = CheckedNodeKind.NoneStartEvent;
   const end = CheckedNodeKind.NoneEndEvent;
   switch (semanticProfile) {
+    // The preserve-enabled successor reaches the same checked shape by construction: preserved
+    // notation never enters the checked graph, so a differing shape here would mean it had.
     case SemanticProfileId.UserTask:
+    case SemanticProfileId.UserTaskPreservedNotation:
       return rootChecked([start, CheckedNodeKind.UserTask, end]);
     case SemanticProfileId.IntermediateCatchTimer:
       return rootChecked([
@@ -260,6 +265,7 @@ function requiredProgramShape(
 ): RequiredProgramShape | undefined {
   switch (semanticProfile) {
     case SemanticProfileId.UserTask:
+    case SemanticProfileId.UserTaskPreservedNotation:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitUserTask,

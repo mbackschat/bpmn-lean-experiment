@@ -29,6 +29,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | Profile | Definition scopes | Exact operation multiset |
 |---|---:|---|
 | CIB Seven User Task (`cibseven-2.2.0-user-task-process-data-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
+| CIB Seven User Task with preserved notation (`cibseven-2.2.0-user-task-preserved-notation-draft`) | 1 | one `initiate`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Intermediate Catch Timer (`cibseven-2.2.0-intermediate-catch-timer-draft`) | 1 | one `initiate`, one `awaitTimer`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven Service Task effect (`cibseven-2.2.0-service-task-effect-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven A12 CreateDocument (`cibseven-2.0.0-a12-create-document-draft`) | 1 | one `initiate`, one `awaitEffect`, one `reachNoneEnd`, one `completeScope` |
@@ -46,6 +47,8 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | CIB Seven embedded Sub-Process Error propagation (`cibseven-2.2.0-subprocess-error-propagation-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `throwError`, three `reachNoneEnd`, two `completeScope` |
 | BPMN called Process Call Activity (`bpmn-2.0.2-called-process-call-activity-draft`) | 2 | one `initiate`, one `invokeProcess`, two `awaitUserTask`, two `reachNoneEnd`, one `returnProcess`, one `completeScope` |
 | BPMN interrupting Sub-Process boundary Timer (`bpmn-2.0.2-subprocess-boundary-timer-draft`) | 2 | one `initiate`, one `enterBoundedScope`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
+
+Two profiles now share one operation multiset, and that is the contract rather than a duplicate row. The preserve-enabled successor to the CIB Seven User Task profile admits Diagram Interchange, pools, lanes, artifacts, and documentation that its predecessor rejects, and executes exactly the same program. A differing multiset would mean preserved notation had reached the executed partition, so agreement between these two rows is what [the preserve-only admission proposal](PRESERVE-ONLY-ADMISSION-PROPOSAL.md) claims and not an omission. Which source each profile admits is decided by the preservation capability, which is disjoint from the operation multiset this table records.
 
 The typed capability table in `packages/semantic-core/src/semantic-process-profile.ts` remains the executable authority. The documentation-reviewability guard derives the registered identifiers from that source and requires this summary to contain exactly one row for every identifier.
 

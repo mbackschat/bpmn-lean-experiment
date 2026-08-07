@@ -31,6 +31,10 @@ import {
   projectCheckedSequenceFlows,
 } from "./checked-element-projection.js";
 import {
+  hasOnlyExecutedOrPreservedKeys,
+  preservationCapability,
+} from "./preserved-element-classification.js";
+import {
   selectRootDefinitions,
 } from "./root-definition-selection.js";
 import {
@@ -60,20 +64,26 @@ export function compileCheckedProcess(
   source: BpmnSourceIdentity,
   semanticProfile: string,
 ): CheckedCompilationProjection {
+  const capability = preservationCapability(semanticProfile);
   const definitions = asElement(rootElement);
   if (
     definitions === undefined ||
     definitions.$type !== bpmnTypes.definitionsType ||
-    !hasOnlyModelledKeys(definitions, [
-      "$type",
-      "id",
-      "targetNamespace",
-      "expressionLanguage",
-      "rootElements",
-    ])
+    !hasOnlyExecutedOrPreservedKeys(
+      definitions,
+      [
+        "$type",
+        "id",
+        "targetNamespace",
+        "expressionLanguage",
+        "rootElements",
+      ],
+      capability?.definitionsKeys ?? new Set(),
+      capability,
+    )
   ) {
     return unsupported(
-      "The bounded compiler requires one plain bpmn:Definitions source without imports, extensions, or diagram interchange.",
+      "The bounded compiler requires one bpmn:Definitions source carrying no import, extension, or notation beyond what the selected profile preserves.",
     );
   }
 
@@ -89,17 +99,16 @@ export function compileCheckedProcess(
 
   const process = rootSelection.process;
   if (
-    !hasOnlyModelledKeys(process, [
-      "$type",
-      "id",
-      "name",
-      "isExecutable",
-      "flowElements",
-    ]) ||
+    !hasOnlyExecutedOrPreservedKeys(
+      process,
+      ["$type", "id", "name", "isExecutable", "flowElements"],
+      capability?.processKeys ?? new Set(),
+      capability,
+    ) ||
     process.isExecutable !== true
   ) {
     return unsupported(
-      "The bounded compiler requires an explicitly executable Process without lanes, artifacts, extensions, or other Process properties.",
+      "The bounded compiler requires an explicitly executable Process carrying no property beyond its flow elements and what the selected profile preserves.",
     );
   }
 
