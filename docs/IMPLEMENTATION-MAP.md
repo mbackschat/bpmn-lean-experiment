@@ -516,7 +516,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 
 - Line-by-line exhaustive Process Execution denominator, arbitrary compositional graph or nested-scope admission, broad Activity/Event/Gateway/scope/data coverage, percentage-complete claim, or conformance claim
 
-The interrupting **Sub-Process** boundary Timer capsule is past its first green implementation checkpoint and is **not** evidence-closed.
+The interrupting **Sub-Process** boundary Timer capsule is **implemented, evidence-closed, and graduated** to [its specification](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md) on its passed closure review. This paragraph read "past its first green implementation checkpoint and **not** evidence-closed" while the same section below recorded the graduation, which is the stale half of a status written twice.
 
 Implemented at the source and IL layer: one new `enterBoundedScope` operation in the Semantic Process contract and its wire schema branch, reusing a now-shared `BoundaryTimerArm` shape; the registered standards-only profile `bpmn-2.0.2-subprocess-boundary-timer-draft` with its exact checked-node and operation multisets in both targets and its admission-specification row; both boundary-attachment validators widened from a `UserTask`-only host predicate to an enumerated deadline-owning allowlist that fails closed; the schema-validated source fixture with its seven-case admission lock; and independent lowering in TypeScript and Lean requiring exact program equality.
 
@@ -558,6 +558,18 @@ The pre-due firing and the post-victory stale refusal are excluded from the regi
 
 The requirement row `BPMN-SUBPROCESS-BOUNDARY-TIMER-01` is `supported` for exactly this bounded slice, and the capsule graduated to [a specification](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md) on the closed closure review. The conditional semantic-checkpoint review required by [the cold-review rule](../CLAUDE.md#independent-cold-review) is complete: the review of `ef4edd4` returned `approve-with-required-edits` and the same reviewer's audit of `3652549` returned `AUDIT: closed`.
 
+## Interrupting Activity boundary Timer
+
+The [interrupting Activity boundary Timer specification](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) is **implemented and evidence-closed**, with its semantic-checkpoint and closure reviews complete and their corrections audited. Its status lives here rather than in the capsule because that specification deliberately delegates implemented and absent scope to this document, after two copied absence lists in it went stale as their lanes landed.
+
+**Implemented and green: source, IL, and artifacts.** Exact `TimerBoundaryEvent` source projection and the `timerBoundaryEvent` checked node with its arity and `PT1S` admission; the checked-graph attachment edge; `AwaitBoundedUserTask` lowering that never emits a standalone `awaitTimer`; the registered `bpmn-2.0.2-activity-boundary-timer-draft` profile with two scenarios, two differential cases with seeded mutations, and two live product examples, one per route.
+
+**Implemented and green: the semantic and host lanes.** Lean carries a declarative two-constructor victory relation with an evaluator-soundness bridge per arm, activation-counter preservation, the separating logical-time law, and a quantified refusal of every firing that is not exactly due. The independent semantic core has its own focused test covering atomic arming, both victories, off-deadline and wrong-identity refusal, and both stale-sibling directions. The host owns the deadline in a cancellation scope, refuses only a completion and deadline sharing one Workflow activation under its own typed identity, survives Worker absence across the due instant, and replays.
+
+**Absent in Lean.** Quantified state preservation for a stale identity after a victory, which depends on a key-uniqueness invariant `RuntimeState` does not enforce; the capsule states the two hypotheses explicitly rather than assuming them.
+
+**Absent in evidence.** Two excluded scenarios with distinct reasons, neither fixing the other: the abandoned Activity's stale completion, whose Temporal lane needs a delivery mode that neither waits for a task the deadline removed nor races the ordering the case depends on, and the pre-due firing, which no target can present because the host derives its firing instant from the wait's own committed deadline. CIB observation of the boundary mechanism is not selected, so no conformance, CIB, or Temporal refinement claim exists for this family. The refusal's typed identity reaches the Workflow result and Event History but **not** a caller awaiting the completion Update.
+
 ## Non-interrupting boundary Timer
 
 The [non-interrupting boundary Timer specification](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md) is **implemented, evidence-closed, and graduated** on its passed closure review at target `0102789` with correction audit `238846c`. It is the only family whose status this inventory records outside the layered sections above, because it is the first boundary Event that fires without ending its host.
@@ -582,7 +594,7 @@ This section is the owner of a cross-cutting admission rule that no single capsu
 
 **Per-scenario requirements are owned by the guarded artifact catalogs and each capsule's rule-to-evidence matrix**, and are deliberately not restated in this inventory. The registered scenarios, their declared target relations, their seeded mutations, and the exact cases the pipeline ran are emitted by the generated pipeline report; [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline) owns what the gate requires.
 
-What this inventory does own is the set of cross-cutting invariants the complete prepared pipeline must satisfy for every case, whatever the catalog currently contains:
+What this inventory does own is the set of cross-cutting invariants the complete prepared pipeline must satisfy over their declared case sets, whatever the catalog currently contains. Each applies where its lane applies: the CIB bullets bind only CIB-backed cases, the host bullets only cases declaring a Temporal target.
 
 - equality between current CIB execution and content-bound retained CIB evidence;
 - the same waiting projection for successful and wrong-activation inputs before completion, and exact state preservation after wrong and stale completion rejection;
@@ -594,7 +606,7 @@ What this inventory does own is the set of cross-cutting invariants the complete
 - a seeded semantic mutation per registered case that produces its required disagreement;
 - every fetched live history replayed before server shutdown, and clean CIB and Temporal teardown.
 
-The warm-pipeline measures are two tiers owned by [TESTING-SPEC.md](TESTING-SPEC.md#default-verification): a reported 15-second soft target and a 40-second hard ceiling, with a separate sub-45-second cold budget. Exact counts and latest measurements belong to the generated report and [PLAN.md](PLAN.md); a hand-copied count here drifted from thirty to the run's actual thirty-six without any gate noticing, which is why counts are no longer restated in this document.
+The warm-pipeline measures are two tiers owned by [TESTING-SPEC.md](TESTING-SPEC.md#default-verification): a reported 15-second soft target and a 40-second hard ceiling, with a separate sub-45-second cold budget. Exact counts and latest measurements belong to the generated report and [PLAN.md](PLAN.md). A hand-copied replay count here once drifted from the run's actual figure without any gate noticing, which is why counts are no longer restated in this document.
 
 ## Nearest unsupported claim
 
