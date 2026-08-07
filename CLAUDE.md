@@ -4,7 +4,7 @@ Shared guidance for Claude Code, OpenAI Codex, and human contributors working in
 
 ## Mission
 
-Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance, and a BPM platform on top of it. Treat standards coverage as the primary engine roadmap, use the executable BPMN breadth of CIB Seven `2.2.0` to order the near-term standards schedule, keep selected CIB behavior as a classified compatibility overlay, and let the platform's next showcase milestone break ties between candidates of equal standards value. A12 Workflows replacement is a third product owned by A12 under EUPL-1.2 and is out of scope in this repository. The durable product division, layer boundaries, ordering rule, coverage measures, and Lean assurance-lane rule are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division).
+Build two MIT products: a Temporal-hosted BPMN 2.0.2 execution engine that ultimately satisfies OMG Process Execution Conformance, and a BPM platform on top of it. Treat standards coverage as the primary engine roadmap, use the executable BPMN breadth of CIB Seven `2.2.0` to order the near-term standards schedule, keep selected CIB behavior as a classified compatibility overlay, and let the platform's next showcase milestone break ties between candidates of equal standards value once [PLAN.md](docs/PLAN.md) records that milestone list, which is pending. A12 Workflows replacement is a third product owned by A12 under EUPL-1.2 and is out of scope in this repository. The durable product division, layer boundaries, ordering rule, coverage measures, and Lean assurance-lane rule are owned by [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division).
 
 Establish the semantic and hosting result through four components:
 
@@ -261,7 +261,7 @@ Keep each component’s dependencies at the smallest approved set and add one on
 
 Record exact version, role, license, provenance, and removal cost before adoption.
 
-Approval bounds the direct addition; it does not bound what that addition resolves to, and a transitive graph can double on a patch upgrade nobody reviews. Both halves are therefore executable. The footprint guard fails when a product's resolved package count exceeds its recorded budget or when any license in that resolved graph falls outside the permissive set, and a budget rises only in the change that records the approval raising it. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
+Approval bounds the direct addition; it does not bound what that addition resolves to, and a transitive graph can double on a patch upgrade nobody reviews. Both halves must therefore become executable. The obligated footprint guard fails when a product's resolved package count exceeds its recorded budget or when any license in that resolved graph falls outside the permissive set, and a budget rises only in the change that records the approval raising it. **Neither that guard nor any budget exists yet**, and [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) records their absence. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
 
 ## Documentation ownership
 

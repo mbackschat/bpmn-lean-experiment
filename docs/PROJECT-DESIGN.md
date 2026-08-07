@@ -27,7 +27,7 @@ The owner divided the work into three products on 2026-08-07.
 | 2 | BPM platform on Temporal | this project | MIT | this one | product 1 | Deployment and versioning, tasklist, task interaction, dashboard, operations and monitoring, history, mining, diagnosis, the JUEL evaluator host, identity, persistence, and the external API |
 | 3 | A12 Workflows replacement | A12 | EUPL-1.2 | **separate, A12-owned** | product 2 | A12 models, delegates, façades, and migration |
 
-Dependency runs one way and so does licensing. Product 3 may build on MIT product 2; **product 2 must never take an EUPL dependency**, or the separation it exists to provide is gone. Product 3 consumes product 2 as a published MIT artifact and never enters this tree: no A12 package, source, fixture, or build step is added here, and the A12 source boundary recorded in [SOURCES.md](SOURCES.md) continues to bind this repository unchanged.
+Dependency runs one way and so does licensing. Product 3 may build on MIT product 2; **product 2 must never take an EUPL dependency**, or the separation it exists to provide is gone. Product 3 consumes product 2 as a published MIT artifact, and **no A12 product code is added here**. A12 remains what it already is in this repository: an external evidence and research input under the separately selected `adoption` lane, alongside the project-authored MIT fixtures and the two profiles that carry its name. The A12 source boundary recorded in [SOURCES.md](SOURCES.md) continues to bind this repository unchanged.
 
 ### One repository for products 1 and 2
 
@@ -66,7 +66,7 @@ The two rules agree more often than they conflict, because fewer packages is not
 
 Together they define what the platform owns: the engine boundary, the projection from committed transition records into read models, deployment and admission gateway behavior, the BPM domain meaning of a task row, an incident, and an operator action, and the composition of all of it. Rendering, parsing, transport, storage engines, expression evaluation, and charting are adopted.
 
-Each candidate is still decided on its own record through the ordinary process: research the alternatives, compare resolved footprint and licenses against what building it would cost, and obtain owner approval before anything enters the tree. Approval alone cannot hold the footprint requirement, because it inspects the direct addition rather than the resolved graph. [The dependency rule](../CLAUDE.md#dependencies) therefore pairs it with an executable per-product budget over resolved package count and a permissive-license check across the whole graph. `SOURCES.md` remains the human-readable audit; the guard is what makes the requirement bind between reviews.
+Each candidate is still decided on its own record through the ordinary process: research the alternatives, compare resolved footprint and licenses against what building it would cost, and obtain owner approval before anything enters the tree. Approval alone cannot hold the footprint requirement, because it inspects the direct addition rather than the resolved graph. [The dependency rule](../CLAUDE.md#dependencies) therefore obligates pairing it with an executable per-product budget over resolved package count and a permissive-license check across the whole graph. **Neither guard nor budget exists yet**, and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) records their absence; until they land, `SOURCES.md` is the only audit and the requirement binds at review rather than between reviews.
 
 Within product 1 the internal layering is unchanged:
 
@@ -88,7 +88,13 @@ Temporal durability and effect infrastructure
 
 ### What the platform may consume
 
-Product 2's entire permitted surface is the engine's published contract: compile exact bytes against a selected profile, start an admitted program, observe committed canonical state, and submit a command. Nothing else crosses. Because the two products share a tree, the platform will link engine packages through the workspace, which is what makes the atomic cross-layer change above possible; the boundary is therefore to be held by the executable guard and each engine package's declared public entry point, not by a distribution step.
+Product 2's permitted surface for **consuming semantic state** is the engine's published contract, in four kinds: compile exact bytes against a selected profile, start an admitted program, observe committed canonical state, and submit a command. Nothing else of that kind crosses.
+
+Those four are a taxonomy of permitted consumption, **not yet the shape of any package boundary**: `packages/temporal-adapter` currently re-exports harness material alongside its client surface, so the narrowness this rule describes has to be established by narrowing each engine package's public entry point. That narrowing is platform-increment work recorded as absent in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and until it lands the guard cannot hold the boundary at the claimed width.
+
+Consumption is not the only direction. The platform additionally **hosts** engine-defined work: it runs the Workflow Worker carrying the admitted program, implements the effect Activity Worker, and will host the pinned JUEL runtime. Hosting an evaluator whose result decides a Sequence Flow is safe only under the existing isolation, where an explicitly selected language profile bounds the evaluator and the semantic core validates the content-bound result before applying the consuming BPMN rule. Hosting is a responsibility, never a fifth way to reach semantic state.
+
+Because the two products share a tree, the platform will link engine packages through the workspace, which is what makes the atomic cross-layer change above possible; the boundary is therefore to be held by the executable guard and those narrowed entry points, not by a distribution step.
 
 Each surface additionally splits into a service, a public HTTP API over it, and a client. **The platform's own UI must consume only that public API and may not import a platform service package.** The reason is evidential rather than stylistic: the UI is the most demanding client the platform has, so a guarded UI passing demonstrates the API is sufficient for an adopter who builds their own front end. Without it, such an adopter discovers the API's gaps only after committing to it, and the platform's claim to be adoptable at the API is untested.
 
@@ -107,7 +113,7 @@ Coverage is accounted separately:
 
 1. BPMN coverage counts reviewed Process Execution requirements and reusable standard mechanisms;
 2. CIB coverage counts classified source extensions and behavioral relationships for named profiles;
-3. platform coverage counts closed showcase milestones and their acceptance gates.
+3. platform coverage counts closed showcase milestones and their acceptance gates, **pending** the milestone list, which [PLAN.md](PLAN.md) owns and does not yet contain.
 
 No aggregate percentage may combine these denominators, and no public claim may exceed the exact profile and evidence recorded in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The architecture is built so that a conformance claim becomes provable; the claim itself stays bounded until the evidence supports it.
 
@@ -129,7 +135,7 @@ That simulated actor is host policy. It does not define BPMN User Task meaning a
 
 ## Lean assurance lane
 
-Breadth is how the approach's unknown failure modes are found, not what they are traded for. Nothing further proved about the current bounded topologies reveals whether the account survives cycles, arbitrary graphs, a wider value domain, or ordinary multiple-enabledness. Each engine milestone therefore carries a named research question, and each capsule declares the **shape** of its Lean lane at capsule start rather than discovering it from how much effort the lane absorbed.
+Breadth is how the approach's unknown failure modes are found, not what they are traded for. Nothing further proved about the current bounded topologies reveals whether the account survives cycles, arbitrary graphs, a wider value domain, or ordinary multiple-enabledness. Each engine milestone therefore carries a named research question, **pending** the milestone list that [PLAN.md](PLAN.md) owns and does not yet contain, and each capsule declares the **shape** of its Lean lane at capsule start rather than discovering it from how much effort the lane absorbed.
 
 | Lane shape | When it is required | Recorded as |
 |---|---|---|
@@ -137,7 +143,7 @@ Breadth is how the approach's unknown failure modes are found, not what they are
 | Checked | The proposition is finite and the risk is a coding slip | A decided fixture or executable guard |
 | Deliberately open | Neither is affordable within the capsule's effort bound | An explicit absence in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) with its reason and reopen trigger |
 
-This is the choice [the targeted preservation gate](PLAN.md#approved-decisions) already permits between "the smallest reusable theorem or executable guard". Making it deliberate is the change; the permission already existed.
+The first two shapes are the choice [the targeted preservation gate](PLAN.md#approved-decisions) already permits between "the smallest reusable theorem or executable guard". **The third is new and widens a proof boundary**: that gate requires every capsule in its scope to close one of those two, and "deliberately open" closes neither, so it changes the minimum assurance a capsule may close with. It is recorded as an owner decision superseding that part of the 2026-07-30 gate rather than presented as a permission that already existed, and it is therefore a material change under [the materiality definition](../CLAUDE.md#independent-cold-review). The reason for keeping it is that some obligations are genuinely unaffordable within a capsule, and an unrecorded gap is worse than a recorded one.
 
 Two outcomes look alike and are not. A Lean lane that cannot close within its effort bound is a cost signal, handled the way the checked-source relation experiment was handled: record the precise unresolved boundary, freeze the experiment, and let the product continue on the executable guard. A Lean lane that **refutes** a proposed account is the payoff the approach exists for. Only the third case genuinely stops work, where a preservation obligation cannot be stated without assuming its own result, and [PLAN.md](PLAN.md#stop-conditions) already owns it as a stop condition.
 

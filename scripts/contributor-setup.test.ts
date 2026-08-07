@@ -40,7 +40,7 @@ test("locks every registered external Git checkout for portable setup", async ()
   ]);
   const locked = decodeLock(lockText);
 
-  assert.equal(locked.length, 17);
+  assert.equal(locked.length, 18);
   assert.deepEqual(
     locked.filter((source) => source.scope === "verify")
       .map((source) => source.relativePath),

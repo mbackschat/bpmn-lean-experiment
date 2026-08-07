@@ -56,9 +56,7 @@ Three findings drove this, and none of them was the first answer.
 
 ### Measured basis
 
-Resolved tree for `react-aria-components` plus all three TanStack packages, measured on 2026-08-07 by installing into an empty project on the pinned Node 24.18.0: **24 packages, 15 MIT, 8 Apache-2.0, 1 0BSD, zero copyleft, zero unknown, zero install scripts.**
-
-The per-package adoption record, with exact versions, roles, and removal costs, is owned by [the BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-the-selected-four) rather than duplicated here, because that is the document in which adoption is proposed.
+The measured resolved tree, its licence distribution, and the per-package adoption record with exact versions, roles, and removal costs are owned by [the BPM platform proposal](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-the-selected-four), because that is the document in which adoption is proposed. They are not restated here.
 
 ### What would change this
 
@@ -68,9 +66,11 @@ If the owned-component cost proves higher in practice than estimated, **shadcn o
 
 ## 4. Method
 
-Findings were gathered on 2026-08-07 from primary sources: product repositories with their `package.json` and build configuration, the npm registry and its downloads endpoint, published package tarballs, the GitHub API, and official documentation, in preference to blog posts. CIB Seven findings come from the pinned local checkout registered in [SOURCES.md](../SOURCES.md). A12 widget findings come from a shallow clone at external sibling `../oss/a12/a12-widgets`.
+Findings were gathered on 2026-08-07 from primary sources: product repositories with their `package.json` and build configuration, the npm registry and its downloads endpoint, published package tarballs, the GitHub API, and official documentation, in preference to blog posts. CIB Seven findings come from the pinned local checkout registered in [SOURCES.md](../SOURCES.md). A12 widget findings come from a shallow clone at the checkout registered in [SOURCES.md](../SOURCES.md) at `a12/a12-widgets`.
 
 Footprint numbers described as measured were obtained by installing into an empty scratch project and counting the entries of the generated lockfile `packages` map, so they are production resolutions of the named direct dependencies and exclude devDependencies. Install-script counts come from the lockfile `hasInstallScript` flag. Licence audits read each resolved package's own manifest rather than the top-level declaration.
+
+**Those measurements used npm, not pnpm**, because `packages` and `hasInstallScript` are `package-lock.json` fields. This repository mandates pnpm, and a pnpm resolution can differ. The figures are therefore comparable to each other, which is what the candidate comparison needed, but **any figure that becomes a budget an executable guard reads must be re-measured under pnpm first**.
 
 Where a fact could not be established from a primary source it is recorded as not determined rather than estimated. Two facts in this document were initially reported wrongly by research lanes and corrected by direct measurement; both corrections are recorded in [section 9](#9-method-findings-for-the-dependency-guard) because they bear on how the dependency guard must work.
 
@@ -340,7 +340,7 @@ Prefect v2 is the peer precedent.
 
 ## 8. A12 widgets and the downstream reuse question
 
-The A12 widget set was inspected because product 3 is A12's own EUPL-1.2 product built on this MIT platform, and the question was whether the platform should be designed so A12 could substitute their widgets. **A12 material is EUPL-1.2 and never enters this repository**; the inspected clone is at external sibling `../oss/a12/a12-widgets`.
+The A12 widget set was inspected because product 3 is A12's own EUPL-1.2 product built on this MIT platform, and the question was whether the platform should be designed so A12 could substitute their widgets. **A12 material is EUPL-1.2 and never enters this repository**; the inspected clone is at the checkout registered in [SOURCES.md](../SOURCES.md) at `a12/a12-widgets`.
 
 `mgm-tp/a12-widgets`, version 39.0.2, revision `f924a85`, dual-licensed **EUPL-1.2 OR commercial**, with that SPDX expression in the licence file, all six workspace manifests, and every source-file header.
 
@@ -390,4 +390,4 @@ Recorded for traceability; the durable owners are [PROJECT-DESIGN.md](../PROJECT
 3. **The styling method** for the platform's own component kit, free per 5.1. CSS Modules costs nothing extra under Vite and has the Dagster precedent.
 4. **Charting**, if hand-rolled SVG proves insufficient. uPlot is dependency-free.
 5. **Long-polling for live views**, on the Temporal pattern of 6.1.
-6. **Whether to register `../oss/a12/a12-widgets`** in `external-sources.lock`. Unregistered trees are ignored by the guards, so nothing is broken either way; registering pins the revision behind the finding that justified dropping reuse level 2.
+6. Resolved. `a12/a12-widgets` is registered in [SOURCES.md](../SOURCES.md) and the external-sources lock at revision `f924a85`, because [SOURCES.md](../SOURCES.md) holds that local presence alone never makes a tree a project input, and the finding drawn from it is now a durable owner decision.

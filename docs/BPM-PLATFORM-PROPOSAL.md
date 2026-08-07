@@ -16,7 +16,7 @@ Two failure modes bound the answer. A platform that reconstructs semantic facts 
 
 The platform provides deployment and versioning of BPMN definitions, a task list and task interaction surface, an operations and monitoring console, incident handling, execution history, process mining views, identity, persistence, and one public HTTP API over all of it. It hosts the JUEL evaluator as an Activity Worker when the deferred CIB compatibility lane opens.
 
-It is a product, not a demonstration. The showcase milestones in [PLAN.md](PLAN.md) are its acceptance gates rather than a separate artifact.
+It is a product, not a demonstration. Its acceptance gates are showcase milestones rather than a separate artifact; that milestone list is **pending** and [PLAN.md](PLAN.md) owns it.
 
 ## What the platform owns, and what it must not
 
@@ -31,15 +31,22 @@ It is a product, not a demonstration. The showcase milestones in [PLAN.md](PLAN.
 
 ## The engine boundary
 
-[PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) owns the permitted surface, the two rules that make the assurance claim transferable, and the guards that hold them. This proposal does not restate them and **adds no operation to that surface**.
+[PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) owns the permitted consumption surface, the two rules that make the assurance claim transferable, the hosting responsibilities that are not consumption, and the guards that must hold them. This proposal does not restate them and **adds no consumption operation**.
 
-What follows from it for this proposal: every surface below is built from those four operations alone. Where a surface appears to need something else, that is recorded here as an engine requirement rather than designed around, and exactly one such requirement exists, in [the read model section](#read-model-and-projection).
+What follows for this proposal: every surface below is built from those four operations alone. Where a surface needs something the engine does not publish, that is recorded here as an engine requirement rather than designed around. **Two such requirements exist**, and both are engine work outside this proposal's scope:
 
-The surface is already exercised end to end: [the runnable MVP driver](RUNNABLE-TEMPORAL-MVP-SPEC.md#interaction-driver) uses only those operations today, which is why this proposal treats them as sufficient for interaction and insufficient for history.
+| # | Requirement | Needed by |
+|---|---|---|
+| E1 | A committed per-transition record in the public contract | [History, mining, and diagnosis](#history-mining-and-diagnosis), and the read model generally |
+| E2 | A profile admission capability for User Task assignment and form metadata, and a public projection carrying it | [Task list](#task-list) and [Task interaction](#task-interaction) |
+
+E2 is new information from the proposal review rather than an assumption: `CheckedNodeKind.UserTask` carries `{id, name}`, the published `OpenUserTask` carries `{id, name, state}`, and no engine package source contains `assignee`, `candidateGroups`, or `formKey`. Those surfaces therefore ship without assignment and form metadata until E2 is separately proposed and approved.
+
+The consumption surface is already exercised: [the runnable MVP driver](RUNNABLE-TEMPORAL-MVP-SPEC.md#interaction-driver) uses only those four kinds today, which is why this proposal treats them as sufficient for interaction and insufficient for history.
 
 ## API-first architecture
 
-Each surface is a service plus a public HTTP API plus a React client. The UI is one client among others and is not privileged.
+Each surface is a service plus a public HTTP API plus a React client. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#what-the-platform-may-consume) owns the rule that the UI consumes only that public API and its evidential rationale; this proposal applies it rather than restating it.
 
 ```text
 engine packages                     (product 1, published contract)
@@ -51,9 +58,7 @@ platform API                        the public HTTP surface
 platform UI                         React SPA
 ```
 
-**The UI consumes only the public HTTP API.** This is enforced rather than intended: the UI package may not import platform service packages. The reason is that the UI is the most demanding client the platform has, so **a guarded UI passing is evidence the API is sufficient** for an adopter building their own front end. Without the guard, an adopter discovers the API's gaps after committing to it.
-
-A consequence worth stating: the UI is optional. An adopter may run the services and API without it.
+A consequence worth stating: the UI is optional. An adopter may run the services and API without it, which is the shape product 3 adopts.
 
 ## Surfaces and their functional scope
 
@@ -67,13 +72,13 @@ Every started instance pins the exact source digest, so definition version pinni
 
 ### Task list
 
-Task rows across all instances, filtered and sorted, with the assignment and form metadata the engine preserves projected alongside them. Claim and release. Completion submits the engine's exact content-bound completion command.
+Task rows across all instances, filtered and sorted, from the engine's published open User Tasks. Claim and release. Completion submits the engine's exact content-bound completion command.
 
-Assignment metadata is **projected profile data, never a precondition on the engine command**. The engine continues to accept any correct completion for an active occurrence; who may submit it is a platform authorization decision. This keeps the User Task rules untouched.
+**Assignment metadata is not available and this surface ships without it until E2 lands.** When it does, it is **projected profile data, never a precondition on the engine command**: the engine continues to accept any correct completion for an active occurrence, and who may submit it is a platform authorization decision. That keeps the User Task rules untouched, and it is already true today, since the completion command takes only the content-bound stimulus.
 
 ### Task interaction
 
-Render a form from the variables the engine declares plus preserved form metadata, collect values, and submit them through the same completion command. No form engine of our own, and no interpretation of form metadata beyond field identity and type.
+Render a form from the variables the engine declares, collect values, and submit them through the same completion command. No form engine of our own. Form metadata is unavailable until E2 lands, so the first form is generated from declared variables alone, and no interpretation of form metadata beyond field identity and type is proposed even afterwards.
 
 ### Operations and monitoring
 
@@ -99,7 +104,11 @@ The platform subscribes to the engine's committed transition records and project
 
 The projection is the reason **the engine must add one thing**, and it is the only engine change this proposal forces. The engine's public contract currently publishes committed *state* at command boundaries, and pure transitions may close to quiescence inside one Workflow Task, so many semantic steps leave no trace. State differencing recovers waiting Activities, because a User Task entering and leaving the open set is a start and an end, but recovers nothing for pass-through nodes: gateways taken, None Events, Sub-Process entry and exit. Definition-scope and runtime-scope identity are not publicly projected at all.
 
-A process map without gateway paths is not process mining. So the platform requires a **committed per-transition record** in the engine's public contract, emitted by the same commit that applies the operation. It must not be reconstructed from Temporal Event History, which the non-negotiable boundaries forbid as a source of BPMN facts. That record is material and is proposed separately; this document depends on it and does not define it.
+A process map without gateway paths is not process mining. **An engine change is therefore required**, and this proposal does not decide its shape.
+
+At least two shapes could serve. A **committed per-transition record** emitted by the same commit that applies each operation is the more direct answer for history and mining. Alternatively, **publishing committed control-token and scope positions in each observed state** would serve the same need less completely while also serving the Operations surface's token overlay, which needs positions that are equally unpublished today. Whichever is chosen must not be reconstructed from Temporal Event History, which the non-negotiable boundaries forbid as a source of BPMN facts.
+
+Requirement E1 is therefore "an engine change that makes transitions and token positions publicly recoverable", and its shape is decided in its own material proposal rather than here.
 
 Cross-instance discovery is the platform's own problem and requires no engine change: the projection builds the index.
 
@@ -165,9 +174,9 @@ Engine paths do not move. `runners/juel/` is the only Java component and remains
 
 ## Acceptance conditions
 
-A surface is accepted when it has a runnable demonstration under `showcase/`, registered as a gate so a landed milestone cannot silently rot, and when the boundary guards and the cross-product agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) requires are green. Each guard is verified by a planted violation, as this repository verifies every guard.
+**The product acceptance test the owner set on 2026-08-07 is that a third party can deploy their own BPMN file.** That is the definition of the reopened MVP and it drives engine scope as much as platform scope: current admission is a per-profile whitelist over exact fixtures, so meeting it requires the engine widening recorded against [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md), whose sequencing [PLAN.md](PLAN.md) owns. No platform surface satisfies it alone.
 
-This proposal adds one acceptance rule of its own: **the UI imports no platform service package**, so that a guarded UI passing is evidence the public API is sufficient for an adopter building their own front end.
+A surface is accepted when it has a runnable demonstration under `showcase/`, registered as a gate so a landed milestone cannot silently rot, and when the boundary guards and the cross-product agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) requires are green. Each guard is verified by a planted violation, as this repository verifies every guard.
 
 **No product lane is an independent semantic evidence lane.** The platform composes the already-evidenced compiler, program, semantic core, Workflow, and client. Nothing here supports a BPMN conformance or CIB compatibility claim.
 
