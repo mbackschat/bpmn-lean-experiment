@@ -55,11 +55,17 @@ The table below is the intended classification, not the algorithm. It is a state
 | Lanes and lane sets | Executable extension elements the profile does not recognize |
 | Message flows between participants | A second executable Process in the same definition |
 | Associations, text annotations, and groups | Any construct whose omission changes execution |
-| `dataObject` and `dataStoreReference` declarations carrying only `id`, `name`, and `itemSubjectRef`, and `dataStore` roots carrying only `id` and `name` | Every `dataInputAssociation`, `dataOutputAssociation`, `ioSpecification`, `property`, and `dataState` |
+| — | **The complete BPMN data family**: `dataObject`, `dataObjectReference`, `dataStore`, `dataStoreReference`, `itemDefinition`, and every `dataInputAssociation`, `dataOutputAssociation`, `ioSpecification`, `property`, and `dataState` |
 | Documentation elements | A second executable Process that is **unrelated or unbound** by any profile QName |
 | Foreign content at a profile-declared inert QName and locus | Foreign content anywhere else, and any `mustUnderstand="true"` the profile does not understand |
 
-The discriminator behind the table is one question: would omitting this construct change what the engine executes? If yes it is rejected, never preserved. The discriminator alone does not decide a tree, which is why the classifier and not the table is the contract. Data objects sit on the boundary and are split deliberately: a bare declaration is preserved, while a data association is rejected, because the association is what would carry a value into execution.
+The discriminator behind the table is one question: would omitting this construct change what the engine executes? If yes it is rejected, never preserved. The discriminator alone does not decide a tree, which is why the classifier and not the table is the contract.
+
+**The owner rejected the complete data family for M1 on 2026-08-08**, overriding an earlier draft that preserved bare `dataObject` and `dataStoreReference` declarations while rejecting their associations. That split was safe only in theory, because its enumerated shapes are not a coherent slice of real modeler output. Measured over the 840 files of the pinned MIWG corpus: 232 files contain a `dataObject` and **217 of those also contain a `dataObjectReference`**, which the split did not admit; 156 contain a `dataStoreReference` and **130 carry `dataStoreRef`**; and 125 `dataObject` files carry `isCollection`. A displayed Data Object is normally a reference to a declaration, and `itemSubjectRef` pulls in an `itemDefinition` root that would itself need preserving and resolving.
+
+So the split would have rejected most real files using these constructs while still paying for classifier and reference-resolution work. Rejecting the family outright gives M1 a smaller closed contract and costs nothing the User Task floor needs.
+
+**Reopen when a named M1 model requires data notation.** At that point preserve one coherent data-notation subgraph — declarations, references, referenced definitions, and their DI links together — while continuing to reject associations, transformations, assignments, and every runtime data semantic.
 
 ### D3 — Typed per-element diagnostics with a deterministic identity
 
@@ -115,7 +121,7 @@ This holds **conditional on D5's corrected guard actually landing**, including i
 
 ## Required, optional, excluded
 
-**Required for M1.** The three-way partition; the preserved set of D2; per-element diagnostics; multi-root admission with explicit executable selection; the non-interference differential guard; the requirement-ledger rows for the preserved constructs, recorded as `preserved` rather than `supported`.
+**Required for M1.** The three-way partition; the preserved set of D2; per-element diagnostics; multi-root admission with explicit executable selection; the non-interference differential guard; retention of the exact source bytes; and one narrowly stated **structural** requirement-ledger row per preserved construct family, which becomes `supported` on its evidence while the corresponding **operational** requirement stays `unsupported`.
 
 **Optional, and not scheduled here.** Rendering preserved DI in a product surface; a preserved-material query API; retaining preserved material through to any public observation.
 
@@ -179,7 +185,7 @@ Each is a case that must fail before the change and pass after, or the reverse. 
 | An element with no `id` | produce a diagnostic with a resolvable containment identity |
 | An unrelated, QName-unbound second executable Process | reject |
 | The Call Activity fixture's two Process roots | still be accepted, unchanged |
-| A bare `dataObject` declaration, and a `dataInputAssociation` | be preserved, and rejected, respectively |
+| A bare `dataObject` declaration, a `dataObjectReference`, and a `dataInputAssociation` | each reject, since M1 rejects the whole data family |
 | A file with four parser warnings | produce four normalized diagnostics, not one |
 | Foreign content at an execution-bearing locus | reject, while the same content at a declared inert locus is preserved |
 | A DI reference to a declared executed element, and one to a missing target | be preserved, and rejected, respectively |
@@ -214,15 +220,19 @@ The natural seam is the preserved-set classifier, and an earlier draft of this p
 
 ## Open decisions for the owner
 
-1. **D2's data-object split.** Preserving a bare declaration while rejecting its association is defensible but is the one place the discriminator needs a judgment call. The alternative is rejecting data objects entirely, which is safer and rejects more real files.
-2. **Whether `preserved` becomes a requirement-ledger disposition.** It is currently not one of the ledger's values, and adding it is a ledger change with its own consequences for coverage accounting.
-3. **Whether an additional normalized preserved-subtree contract is added.** Retention of the **exact source bytes is required, not optional**, because the compilation already captures them and M1's diagram rendering reads them. The open question is only whether a second, normalized representation of preserved subtrees is also produced.
+All three were **decided by the owner on 2026-08-08**, two of them against the recommendation this proposal had made.
 
-My recommendation on each, refined by the review:
+1. **Reject the complete data family for M1**, rather than splitting declarations from associations. The reasoning and the corpus measurement behind it are recorded in D2 above, together with the reopen condition.
+2. **Do not add `preserved` as a requirement-ledger disposition.** Record preservation as a narrowly stated **structural requirement** instead, which the existing vocabulary already handles.
+3. **Do not add a normalized preserved-subtree contract.** The required exact bytes already carry source identity, storage, diagram rendering, and later reparsing under an explicitly selected profile. The classifier may use an internal transient representation without publishing it.
 
-1. **Data-object split: take it, with the shapes enumerated.** The proposal must name the exact declaration-only shapes admitted, and reject every association, transformation, assignment, and execution-facing reference outside them. An unenumerated split is where the concealment risk of D2 returns.
-2. **Add `preserved` to the ledger, with an exact meaning:** *structurally admitted and retained, carrying no executable meaning.* It counts as **neither** `supported` nor `rejected`. Operational requirements for Data Objects, Message Flows, Collaborations, and their siblings stay separately `unsupported`, so preserving a construct's syntax never reads as implementing its behavior.
-3. **Do not add the normalized projection.** The required exact bytes already serve storage and rendering, so a second representation waits for a named engine consumer; that is the generalize-after-one-consumer rule.
+### Why `preserved` is not a disposition
+
+This proposal recommended adding it and that was wrong, in a way worth recording because the error is a category mistake rather than a judgment call.
+
+`preserved` describes **how the source compiler treats an element**. [The ledger's four dispositions](BPMN-REQUIREMENT-LEDGER.md#dispositions) describe **what the project has decided about a requirement**. Those are different dimensions, and the same Data Object can sit in both at once: structurally imported and retained, while operationally unsupported. A vocabulary that has to express both would make a row's disposition depend on whether the row describes syntax or behavior, and it would complicate the existing guard that treats only `supported` and `rejected` as decided outcomes.
+
+The structural form needs no new vocabulary. A requirement such as *"the selected profile imports and retains BPMN DI without exposing it to execution"* becomes `supported` once evidenced, while the Collaboration, Message Flow, and Data Object **operational** requirements stay `unsupported`. That reports the additional coverage honestly without letting structural admission read as executable support. The exact preserved-element inventory belongs to the profile and [the implementation map](IMPLEMENTATION-MAP.md), not to the disposition vocabulary.
 
 ## Reopen conditions
 
