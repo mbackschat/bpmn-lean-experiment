@@ -387,7 +387,7 @@ theorem monitored_spawn_preserves_host (program : Program)
 /-- A spawn adds exactly one token, owned by the deadline's own scope, and advances logical time to that deadline; a completion adds exactly one token, owned by the task's scope, and leaves logical time alone.
 
 Which place each token lands on is not pinned here. The output is existentially quantified, so these two say *one* token was produced and by which transition, while the boundary and normal places are bound to `operation.boundaryTimer.output` and `operation.task.output` by the relation's own constructors and carried to the evaluator by the soundness bridges above. Reading either as a routing law would overstate it. -/
-theorem monitored_spawn_routes_to_boundary (program : Program)
+theorem monitored_spawn_adds_one_owned_token (program : Program)
     (before after : RuntimeState)
     (step : MonitoredSpawnStep program before after) :
     ∃ timer ∈ before.timerWaits, ∃ timerOutput,
@@ -397,7 +397,7 @@ theorem monitored_spawn_routes_to_boundary (program : Program)
   | spawn _ _ timer _ timerOutput _ _ timerLive _ _ _ =>
       exact ⟨timer, timerLive, timerOutput, rfl, rfl⟩
 
-theorem monitored_completion_routes_to_normal (program : Program)
+theorem monitored_completion_adds_one_owned_token (program : Program)
     (before after : RuntimeState)
     (step : MonitoredCompletionStep program before after) :
     ∃ task ∈ before.waits, ∃ taskOutput,

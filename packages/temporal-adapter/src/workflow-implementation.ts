@@ -75,6 +75,12 @@ import {
   effectTransportKey,
 } from "./effect-transport.js";
 import {
+  acceptedStimulus,
+  requireSameCommandStimulus,
+  validateCompleteUserTaskUpdate,
+  validateDeliverMessageSignal,
+} from "./workflow-wire-validation.js";
+import {
   ActivationDrain,
 } from "./activation-tagged-readiness.js";
 import {
@@ -530,62 +536,9 @@ function commandOutcome(
   return results.find((entry) => entry.commandId === commandId)?.outcome;
 }
 
-function validateCompleteUserTaskUpdate(
-  acceptedStimuli: ReadonlyArray<Stimulus>,
-  stimulus: CompleteUserTaskInstanceStimulus,
-): void {
-  const value = stimulus as unknown;
-  if (
-    !isWellFormedStimulus(value) ||
-    value.kind !== StimulusKind.CompleteUserTaskInstance
-  ) {
-    throw new TypeError(
-      "Completion Update must contain one well-formed task-instance stimulus",
-    );
-  }
-  const accepted = acceptedStimulus(
-    acceptedStimuli,
-    stimulusCommandId(value),
-  );
-  if (accepted !== undefined) {
-    requireSameCommandStimulus(accepted, value);
-  }
-}
 
-function validateDeliverMessageSignal(
-  stimulus: DeliverMessageStimulus,
-): void {
-  const value = stimulus as unknown;
-  if (
-    !isWellFormedStimulus(value) ||
-    value.kind !== StimulusKind.DeliverMessage
-  ) {
-    throw new TypeError(
-      "Message Signal must contain one well-formed delivery stimulus",
-    );
-  }
-}
 
-function acceptedStimulus(
-  acceptedStimuli: ReadonlyArray<Stimulus>,
-  commandId: string,
-): Stimulus | undefined {
-  return acceptedStimuli.find(
-    (candidate) => stimulusCommandId(candidate) === commandId,
-  );
-}
 
-function requireSameCommandStimulus(
-  accepted: Stimulus,
-  stimulus: Stimulus,
-): void {
-  if (!sameStimulus(accepted, stimulus)) {
-    throw ApplicationFailure.nonRetryable(
-      `Command ID ${stimulusCommandId(stimulus)} was reused with a different stimulus`,
-      "BpmnCommandIdentityConflict",
-    );
-  }
-}
 
 function requireCompletedState(
   trace: ReadonlyArray<CanonicalObservation>,

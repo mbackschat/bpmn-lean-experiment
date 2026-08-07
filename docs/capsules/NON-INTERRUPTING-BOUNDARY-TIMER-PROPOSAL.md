@@ -303,7 +303,7 @@ Measured with `node scripts/what-binds.ts`; [the reviewability guard](../../scri
 | Owner | Headroom |
 |---|---:|
 | [semantic-core runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 2 |
-| [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 3 |
+| [Temporal Workflow implementation](../../packages/temporal-adapter/src/workflow-implementation.ts) | 50 |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 52 |
 | [checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 |
 | [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 82 |
