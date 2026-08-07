@@ -574,6 +574,8 @@ Case capability should begin as platform-native work management: ad hoc tasks, m
 
 The current engine-facing taxonomy of compile, start, observe committed state, and submit a command is the correct authority boundary. It is sufficient to describe the permitted kinds of semantic consumption but does not yet publish all information the platform needs. The proposal names the first two gaps as E1 and E2 without authorizing a fifth semantic path.
 
+The accepted engine obligation set remains exactly E1 and E2, recorded by [the owner-approved platform proposal](../BPM-PLATFORM-PROPOSAL.md) and scheduled by [the showcase milestone ladder](../PLAN.md#showcase-milestone-ladder). Everything in the list below is a candidate rather than an obligation the engine has taken on. The E1a and E1b split is adopted by that ladder as two distinct information requirements, without those identifiers; the remaining items enter only through a milestone that needs one or a follow-on proposal that governs one.
+
 The platform additionally needs:
 
 - **E1a:** an append-only or cursor-based committed semantic transition publication for history, mining, diagnosis, and complete projection;
