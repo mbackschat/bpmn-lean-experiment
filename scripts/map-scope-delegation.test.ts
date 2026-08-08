@@ -46,6 +46,19 @@ const mapPath = path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md");
 const minimumStatusWords = 100;
 
 /**
+ * Both halves a status section must state, since a scope is what is implemented *and* what is not.
+ *
+ * A length floor alone does not reach this. An audit deleted the whole `Absent` half of one section
+ * and the remainder still cleared 100 words, so the half the delegation exists to carry was the half
+ * no check could see. These markers are the map's own convention for the two halves.
+ *
+ * This is a shape check and nothing more. Whether the section is *accurate* is not machine-decidable
+ * from the repository, and the same audit found three wrong claims inside a section that satisfied
+ * every mechanical rule here; reading it against the capsule remains a review obligation.
+ */
+const statusHalves: ReadonlyArray<string> = ["Implemented", "Absent"];
+
+/**
  * Capsules that link the map for a reason other than delegating their scope to it.
  *
  * Enumerated rather than inferred, so that adding a capsule here is a visible act while forgetting one
@@ -150,7 +163,8 @@ function unansweredDelegations(
       const section = anchor === undefined ? undefined : sections.get(anchor);
       return section === undefined ||
         !section.includes(`capsules/${capsule}`) ||
-        section.split(/\s+/u).filter(Boolean).length < minimumStatusWords;
+        section.split(/\s+/u).filter(Boolean).length < minimumStatusWords ||
+        !statusHalves.every((half) => section.includes(`**${half}`));
     })
     .map(({ capsule }) => capsule);
 }
@@ -228,7 +242,16 @@ test("rejects an unanswered delegation and a section emptied to a mention", () =
 
   assert.deepEqual(
     unansweredDelegations(
-      `## A family\n[A](capsules/A-SPEC.md) is implemented. ${filler}\n`,
+      `## A family\n[A](capsules/A-SPEC.md) **Implemented.** ${filler}\n`,
+      named,
+    ),
+    ["A-SPEC.md"],
+    "a section over the word floor with no absent half must not satisfy its delegation",
+  );
+
+  assert.deepEqual(
+    unansweredDelegations(
+      `## A family\n[A](capsules/A-SPEC.md) **Implemented.** x **Absent.** y ${filler}\n`,
       named,
     ),
     [],
