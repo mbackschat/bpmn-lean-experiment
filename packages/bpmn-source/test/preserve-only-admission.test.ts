@@ -1,7 +1,7 @@
 /**
  * Preserve-only admission: material the compiler retains without executing must not change execution.
  *
- * The contract under test is [the preserve-only admission proposal](../../../docs/PRESERVE-ONLY-ADMISSION-PROPOSAL.md).
+ * The contract under test is [the preserve-only admission specification](../../../docs/PRESERVE-ONLY-ADMISSION-SPEC.md).
  * Its oracle is the pair of registered sources below: `user-task-discovery-completion` carries no
  * notation and is admitted by the executed-only profile, and `user-task-preserved-notation` is the
  * same Process with a modeler's pool, lane, documentation, artifacts, and Diagram Interchange added.

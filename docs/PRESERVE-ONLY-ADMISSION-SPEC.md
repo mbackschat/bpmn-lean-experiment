@@ -1,8 +1,8 @@
-# Preserve-only admission proposal
+# Preserve-only admission specification
 
 ## Status
 
-**Owner-approved on 2026-08-08 after independent cold review, and fully implemented.** It approves the admission capability that opens M1 of [the showcase milestone ladder](PLAN.md#showcase-milestone-ladder): a third party can deploy their own BPMN file. It changes what source is admitted, what the compiler retains, and how a refusal is reported; it changes no runtime transition family, no semantic meaning of any executed construct, and no public observation. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact reached and absent scope, and the five `BPMN-STRUCT-` rows in [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) dispose what retention structurally supports. This document stays a `-PROPOSAL` under [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) until its closure review passes.
+**Owner-approved on 2026-08-08 after independent cold review, and fully implemented.** It approves the admission capability that opens M1 of [the showcase milestone ladder](PLAN.md#showcase-milestone-ladder): a third party can deploy their own BPMN file. It changes what source is admitted, what the compiler retains, and how a refusal is reported; it changes no runtime transition family, no semantic meaning of any executed construct, and no public observation. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact reached and absent scope, and the five `BPMN-STRUCT-` rows in [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) dispose what retention structurally supports. Its closure review returned `approve` on 2026-08-08 after two correction rounds, so it graduated from `-PROPOSAL` to `-SPEC` under [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md).
 
 Admission structure is owned by [the profile-parameterized admission specification](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), which this proposal extends rather than replaces. Requirement dispositions belong to [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md), sequencing to [PLAN.md](PLAN.md), and exact implemented and absent scope to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The external recommendation this responds to is [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md); it disposes no BPMN requirement.
 
@@ -259,7 +259,7 @@ The second condition does not touch the existing Call Activity profile, whose tw
 |---|---|---|---|---|
 | Proposal | `95d7160` | `fork-turns-none` | `approve-with-required-edits` | `96bd2e7` |
 | Semantic checkpoint | `2deb802` | `fork-turns-none` | `approve-with-required-edits` | `9923b02` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `a16319d` | `fork-turns-none` | `approve-with-required-edits` | `1a7924e` |
 
 The proposal stage used **two correction rounds**. The context-cold review of target `95d7160` returned `approve-with-required-edits` across seven findings; corrections `c104aad` and `e70742f` were audited and returned nine further required corrections, of which one was blocking. Those landed at `96bd2e7`, which the owner decided on 2026-08-08 not to send for a third audit.
 

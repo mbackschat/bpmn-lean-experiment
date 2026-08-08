@@ -155,7 +155,7 @@ export function preservationCapability(
  * profile's `Definitions` is therefore still admitted and discarded; its `Process` is covered only
  * incidentally, by the reader's own exact attribute-count equality. Narrowing the exemption needs
  * expanded `namespace#localName` matching resolved against the document's prefix bindings, which
- * [D2](../../../docs/PRESERVE-ONLY-ADMISSION-PROPOSAL.md) defers to the first profile that declares an
+ * [D2](../../../docs/PRESERVE-ONLY-ADMISSION-SPEC.md) defers to the first profile that declares an
  * inert set; matching the raw prefix instead would admit content by spelling.
  * [IMPLEMENTATION-MAP.md](../../../docs/IMPLEMENTATION-MAP.md) records the residual as absent.
  */

@@ -1,6 +1,6 @@
 # User Task with preserved notation scenario
 
-This directory contains one [answer-free standards-profile witness](scenario.json) for [preserve-only admission](../../docs/PRESERVE-ONLY-ADMISSION-PROPOSAL.md). Its executed Process is exactly `None Start Event → User Task → None End Event`, and the source additionally carries a pool, a lane, Process documentation, a text annotation, an association, and complete Diagram Interchange.
+This directory contains one [answer-free standards-profile witness](scenario.json) for [preserve-only admission](../../docs/PRESERVE-ONLY-ADMISSION-SPEC.md). Its executed Process is exactly `None Start Event → User Task → None End Event`, and the source additionally carries a pool, a lane, Process documentation, a text annotation, an association, and complete Diagram Interchange.
 
 None of that notation executes. The source is the deliberate counterpart of [the executed-only twin](../user-task-discovery-completion/process.bpmn): the two carry the same flow elements and different bytes, and the compiler must reach the same checked graph and the same lowered program from both once exact-source identity is normalized away. The twin is written by hand rather than produced by stripping this file with the classifier, so agreement between them is evidence about the classifier and not a restatement of it.
 

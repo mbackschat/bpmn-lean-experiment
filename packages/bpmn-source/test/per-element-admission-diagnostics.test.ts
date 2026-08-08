@@ -2,7 +2,7 @@
  * Per-element admission diagnostics: a rejected source must tell its author which elements failed.
  *
  * The contract under test is D3 of [the preserve-only admission
- * proposal](../../../docs/PRESERVE-ONLY-ADMISSION-PROPOSAL.md). Its oracle is the registered
+ * proposal](../../../docs/PRESERVE-ONLY-ADMISSION-SPEC.md). Its oracle is the registered
  * preserve-enabled fixture perturbed at one point per case, so a diagnostic here is attributable to
  * the named construct rather than to some other difference between two separately authored files.
  *
