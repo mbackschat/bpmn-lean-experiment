@@ -270,13 +270,29 @@ CIB Seven is deliberately absent from every row; see the CIB relationship sectio
 
 ## Required, optional, and excluded
 
-**Required.** The source profile, checked graph and lowering, the one new operation, the five rules with their evidence rows, [the Lean content](#laws-non-laws-and-separating-witnesses) and [the negative content](#laws-non-laws-and-separating-witnesses) exactly as those two lists state them, the independent TypeScript core with its own focused test, the new host capability class with its own typed adapter failure code, one registered answer-free scenario per victory schedule with seeded mutations, the pre-due witness in Lean and the semantic core, and the direct-VM premise witness plus the two victory histories and the Worker-absence history.
+The table is the single owner of evidence dispositions for this capsule. Its stable obligation keys make it impossible to classify the same obligation as both required and absent. The surrounding sections own the detailed contracts and rationale.
 
-**Deferred with a named blocker, not required for closure.** Quantified Lean state preservation for a *stale* identity after a victory. The refusal itself is checked — by fixture in Lean, quantified over wrong identities, independently in the semantic core across both stale directions, and as the follow-up check of both registered schedules. What is deferred is only the quantified form, because refuting a later lookup by key needs a uniqueness invariant `RuntimeState` does not carry; that invariant's shape is settled and its scheduling is coupled to `stableStateResumable`, as recorded in [PLAN.md](../PLAN.md#explicitly-deferred). Closing it here would either assume the invariant silently or pull an unrelated predicate replacement into this capsule.
+### Rule-keyed disposition lock
 
-**Optional.** Time-skipping calibration, as for the Intermediate Catch Timer; the full local-server witness remains the mandatory refinement gate.
+| Obligation key | Disposition | Boundary |
+|---|---|---|
+| `ABTIMER-ARM-01/admission-lowering-and-operation` | `required` | Exact source profile, checked graph, lowering, and the atomic bounded-task operation. |
+| `ABTIMER-ARM-01/lean-and-host-premise` | `required` | Lean arming relation and soundness, host capability class and typed failure, and direct-VM premise witness. |
+| `ABTIMER-COMPLETE-01/victory-evidence` | `required` | Rule row, Lean and core evidence, registered scenario with mutation, and completion history. |
+| `ABTIMER-INTERRUPT-01/victory-evidence` | `required` | Rule row, Lean and core evidence, registered scenario with mutation, interruption history, and Worker-absence history. |
+| `ABTIMER-REFUSE-01/pre-due-and-identity-evidence` | `required` | Wrong-identity and pre-due witnesses in Lean and the semantic core, including both seeded core defect directions. |
+| `ABTIMER-REFUSE-01/quantified-stale-state-preservation` | `deferred` | Quantified Lean preservation after a victory waits for the runtime key-uniqueness invariant. |
+| `ABTIMER-REFUSE-01/pre-due-temporal-scenario` | `excluded` | No admitted adapter delivery can present an off-deadline firing. |
+| `ABTIMER-REFUSE-01/stale-completion-temporal-scenario` | `excluded` | Neither admitted delivery mode preserves the ordering needed by this scenario. |
+| `ABTIMER-OBSERVE-01/projection-evidence` | `required` | Rule row, canonical observation, and distinct published follow-on task identity. |
+| `ABTIMER-INTERRUPT-01/time-skipping-calibration` | `optional` | The full local-server witness remains mandatory. |
+| `ABTIMER-ARM-01/profile-scope-extensions` | `excluded` | All trigger, host, repetition, timer-form, public-cancellation, CIB, and A12 extensions listed below. |
 
-**Excluded.** A registered scenario for the pre-due firing or for the abandoned Activity's stale completion, both absent for stated adapter reasons rather than by preference — the first because no target can present an off-deadline firing, the second because neither admitted delivery mode preserves the ordering it depends on; non-interrupting boundary Timers; boundary Timers on Service Task, Sub-Process, Call Activity, Transaction, or Receive Task hosts; cycle and date timer forms; any duration other than `PT1S`; multiple Boundary Events on one Activity; Message, Error, Escalation, Signal, Conditional, Cancel, and Compensation boundary triggers; repeated or Multi-Instance Activities; boundary Events on a Sub-Process boundary reached by propagation; general Activity cancellation or a public cancel command; incidents; CIB Seven compatibility evidence; and A12 adoption.
+The deferred quantified form needs a uniqueness invariant `RuntimeState` does not carry. Its shape is settled and its scheduling is coupled to `stableStateResumable`, as recorded in [PLAN.md](../PLAN.md#explicitly-deferred). Closing it here would either assume the invariant silently or pull an unrelated predicate replacement into this capsule.
+
+The excluded profile extensions are non-interrupting boundary Timers; boundary Timers on Service Task, Sub-Process, Call Activity, Transaction, or Receive Task hosts; cycle and date timer forms; any duration other than `PT1S`; multiple Boundary Events on one Activity; Message, Error, Escalation, Signal, Conditional, Cancel, and Compensation boundary triggers; repeated or Multi-Instance Activities; boundary Events on a Sub-Process boundary reached by propagation; general Activity cancellation or a public cancel command; incidents; CIB Seven compatibility evidence; and A12 adoption.
+
+The refusal itself is checked by fixture in Lean, quantified over wrong identities, independently in the semantic core across both stale directions, and as the follow-up check of both registered schedules. Only its quantified stale-state form is deferred.
 
 ## CIB relationship
 
