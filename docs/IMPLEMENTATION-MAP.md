@@ -304,34 +304,14 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 #### Implemented
 
 - Distinct pinned CIB Seven `2.2.0` and `2.0.0` embedded runner profiles
-- exact deploy/start/query/complete across the retained Process, task, scope-completion, and Error-propagation fixtures
-- generated-task-to-semantic-occurrence mapping
-- multiple distinct active task projection with semantic sorting and per-element wait multiplicity
-- exact/wrong/sequential-stale, balanced A-then-B/B-then-A, live-sibling stale, exact timer, exact payload-free Service Task success, four ordinary embedded Sub-Process completion/stale schedules, three Sub-Process Error-propagation schedules, exact synchronous CreateDocument, and exact synchronous boundary-error host witnesses
-- controlled epoch clock
-- raw Process-instance count, engine-clock, Process-variable, timer-job due date/executability, effect-job binding/retry, effect-execution, and mapping-execution observations
-- engine-observed pre-due timer eligibility
-- bounded engine-level stale-task rejection probe
-- pinned `2.2.0` Process-start/User Task completion-data phase-zero probe over public runtime/task/history services, covering initial-variable visibility at the first task under `CIB-EXT-0006` plus create/overwrite/preserve merge, present null, continuation/final visibility, no-data preservation, and unknown/stale no-write controls under `CIB-EXT-0005`
-- pinned `2.2.0` exact-source Sub-Process Error-propagation phase-zero probe under `CIB-AGR-0008`, covering Trigger-first and Sibling-first public task sets, recovery-route selection while the Process remains live, and completion only after Recover without a hidden-microstep claim
-- pinned `2.2.0` project-authored direct-Message Receive Task phase-zero probe under `CIB-AGR-0009`, covering the public Message subscription's Receive Task ID/name, nonempty host identities, exact public delivery, subscription removal, and Process completion
-- retained exact-completion evidence projects only names introduced by already committed start or completion commands through history-backed Process-variable queries; future or rejected submitted names cannot influence an earlier/current projection
-- schema-valid duplicate-same-flow Parallel Gateway probe for candidate `CIB-DEV-0001`
-- warning-free exact Service Task bindings, prefix-independent expanded QNames, bean resolution, immediately executable async-before job with no due date, public job-definition/deployed-model projection, independent raw protocol/handler controls, profile-registered raw-binding-to-neutral-operation projection, public retry decrement `3 → 2`, two invocations/one test-local mutation, clean re-execution, and no administrative retry mutation
-- CreateDocument delegate input/local output plus final Process-variable history under packaged `2.0.0`
-- boundary-error phase-zero deployment projection, code/attachment controls, successful mapping, caught code/message routing, caught-path sentinel and target-null output-mapping counterexamples, mapped and mapping-free unmatched controls, empty-name error-variable fact, ordinary boundary User Task/final-null relation, and content-bound evidence under packaged `2.0.0`
-- verifier-reconstructed status, waits, open interactions, Process variables, and logical time from retained raw producer observations, with semantic instance identity bound to the answer-free start stimulus
-- explicit empty `openMessageSubscriptions` in all retained canonical states, with a verifier mutation rejecting any unclaimed Message projection
-- reconstruction reuses the Java projector's ordering, raw-binding translation, activation, lifecycle-state, and empty-argument rules, so it checks raw-to-canonical consistency rather than independently deriving projection semantics
-- meaningful status, logical-time, Process-variable, task, sibling, timer-deadline, raw effect-binding, neutral effect-operation, final-variable, and boundary-null mutations
-- completion-patch raw-variable mutation bound to the final canonical Process-variable projection
-- explicit release-grouped evidence replacement
-- content-bound `CIB-AGR-0007` evidence that the outer continuation remains absent until both child branches complete under either order, with stale-child rejection before and after scope exit
-- content-bound `CIB-AGR-0008` evidence that both Error command orders expose only Recover while running and complete only after Recover, with a raw sibling-retention projection mutation
-- persistent release-specific JSON-lines batches
-- compatible test methods share class-owned embedded engines with per-session zero-state checks, while distinct configurations remain isolated
-- boundary-safe identity-based PVM diagnostic traversal
-- timings and full cleanup
+- exact deploy, start, public query, task or Message delivery, timer control, job execution, and completion probes for every CIB-backed family named in [the current claim](#current-claim)
+- controlled epoch time, stale-command rejection, multiple-task projection, Process-variable mapping, effect retry, scope completion, and direct-parent Error propagation
+- raw Process, task, subscription, timer, job, history, effect, and mapping observations retained as release-specific content-bound evidence
+- verifier reconstruction of canonical status, logical time, variables, waits, interactions, and semantic instance identity from those raw observations
+- reconstruction deliberately reuses the Java projector's ordering and raw-binding translation, so it checks raw-to-canonical consistency rather than independently deriving projection semantics
+- phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message Receive Task, Sub-Process Error propagation, and both A12-shaped host relations
+- meaningful raw-observation, projection, binding, deadline, sibling, mapping, and variable mutations
+- release-grouped evidence replacement, isolated engine configurations, zero-state checks, timings, and full cleanup
 
 #### Explicitly absent
 
@@ -351,62 +331,15 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 #### Implemented
 
 - One semantic-lifetime Workflow receiving the start stimulus and admitted Semantic Process program
-- exact canonical string/null initial Process bindings carried in the explicit start stimulus, installed by the core before the first stable wait, retained in Workflow history, Query state, and the completed receipt, and covered by replay
-- external `ExternalTemporalRuntime` Worker/client lifecycle over a caller-supplied address, Namespace, identity, and Task Queue, with no embedded-server or port-binding responsibility and a live sequential Process witness
-- explicit Process-start Task Queue shared with the selected Worker rather than a hidden production constant
-- typed `started | rejected` production start result after separate semantic and Temporal host-capability checks and before Workflow creation
-- conservative rejection of token-split graphs containing Timer or effect waits as `concurrentHostDrivenWaits`
-- passive admission of direct Message Signal ingress without treating subscriptions as host-driven waits
-- passive admission of the scope-owned child User Task set without treating the child scope as a Child Workflow
-- exhaustive passive admission of `invokeProcess` and `returnProcess` as internal closure without treating the called Process as a Child Workflow
-- collision-resistant SHA-256 Workflow ID derived from semantic Process address in production
-- one shared Workflow-safe canonical typed-tuple encoder over exact scalar strings and non-negative safe integers for Process addresses, stimuli, timer firings, effect transport, and effect completion
-- dependency-free deterministic SHA-256 with padding-boundary, supplementary-plane, multi-block, and native-crypto equality locks
-- fixed literal encodings/digests with distinct domain prefixes
-- content-bound Update/timer/effect command IDs
-- complete User Task Update identity includes every canonical submitted binding and value; exact duplicate delivery coalesces while changed patch content conflicts
-- adapter-rendered effect transport key including committed sorted arguments, with field-variation, under-inclusion, cross-instance, and host-over-inclusion witnesses
-- isolated harness probe stores
-- one non-local effect Activity derived exclusively from committed intent with two-second start-to-close, ten-second schedule-to-close, two attempts, 100-millisecond configured fixed backoff, no heartbeat, and closed success/business-error result
-- payload-free and CreateDocument fail-after-mutation reconciliation
-- typed `BPMN_EFFECT_EXECUTION_EXHAUSTED` and `BPMN_UNHANDLED_BPMN_ERROR` Workflow failures with unchanged last committed state
-- Worker replacement after an unacknowledged mutation
-- exact Activity request/policy/final-attempt/result history checks
-- CreateDocument typed arguments/local patch/final Process mapping
-- boundary-error typed result/null mapping, caller-completed boundary User Task, unmatched-code refusal, Activity-failure separation, replay, and separately bundled Activity-bypass mutation
-- Simple Boolean gateway execution entirely through pure core closure, selected-branch completion/replay, and a separately bundled route-substitution mutation that exposes the wrong branch without adding an evaluator Activity
-- structured Inclusive Gateway execution entirely through pure core closure, exact one/both/default wait sets, both completion orders, Worker replacement after the first completion, accepted-result recovery, four-history replay, zero unrelated host mechanisms, and a separately bundled selection-bypass mutation that drops one true branch
-- one managed operation-addressed Message/exact-`PT1S` Event-Based Gateway race with an activation-tagged readiness accumulator, one cancellable durable Timer, atomic core-owned winner selection and loser withdrawal, Worker replacement in both winner directions, separately activated wrong-ingress Timer continuity, dual-ready typed fail-closed classification, exact Query/history assertions, replay, and barrier, SDK-batching-premise, fixed-priority, and core-bypass mutations
-- bounded Call Activity execution under the caller/root Workflow address with distinct called semantic task identity, called-completion address separation, Worker replacement, accepted-result recovery, caller-only continuation, terminal receipt, exactly three distinct Update pairs with no additional accepted Update for the exact committed retry, zero unrelated host mechanisms, replay, and separately bundled early-return and identity-erasure mutations
-- ordinary embedded Sub-Process execution entirely through core-owned scope state, both child completion orders, sibling survival after the first completion, exact outer continuation, Worker replacement, retained Update result, replay, and zero Signal/Timer/Activity/Child-Workflow/cancellation history
-- direct-parent Sub-Process Error propagation entirely through core-owned scope state and internal `throwError` closure, post-throw Worker replacement, accepted-result plus Recover-only state recovery, stale-sibling refusal, Recover completion, replay, and zero Signal/Timer/Activity/Child-Workflow/cancellation history
-- one semantic loop with start queued before handlers
-- core-owned command policy
-- a typed `semantic`/`processClosed`/`processUnknown` ingress result kept outside semantic outcomes
-- retained-Update-first closure recovery
-- exact completion commits submitted Process variables through the core before Update acknowledgement; final Query state and completed receipt retain the same canonical bindings through replay
-- exact known-Process User Task detail Query over the complete active occurrence and caller-selected committed Process-variable names; absent and unselected names remain absent and Activity-local scope is never exposed
-- one-task dummy form actor that refuses zero, multiple, unexpected, unavailable, or changed tasks, observes the same exact task before and after a configurable nonblocking host delay, and submits configured canonical string/null values only through the production completion Update
-- strict repository command configuration with paths resolved relative to the config file, exact nested fields, canonical input/response bindings, explicit external Temporal address/Namespace/Task Queue/identity, typed JSON product records, and classified exit codes
-- accepted three-second form simulation over the production Worker, Query, Update, and completed receipt plus a maintained parallel-model example that returns typed source admission rejection before connecting
-- separately bundled completion-data bypass writes variables outside the core while omitting the core command result and is rejected by durable Query/Update reconciliation
-- separately bundled scope bypass fabricates the outer continuation before child quiescence and is rejected by the retained Update/state relation
-- validated address-bound completed receipt including variables
-- `REJECT_DUPLICATE`
-- conflicting-identity failure
-- accepted-handler draining
-- explicit ordered, post-terminal, accepted-batch, concurrent, Worker-down-at-timer-due, and Worker-down-at-effect-pending harness schedules
-- unordered one-commit/one-rejection race witness
-- committed-state-derived exact timer duration and firing with no runner delivery
-- durable Timer-to-User-Task composition with ordered host progress, exact core agreement, and live replay
-- payload-free `bpmn-deliver-message` Signal ingress, read-only result Query, ordered durable delivery ledger and completed-receipt recovery
-- malformed Message request refusal before Signal submission, durable well-formed command-identity conflict, wrong/stale semantic refusal, exact duplicate coalescing, Worker absence, both Message/User Task orders, exact Signal payload history and mutation, replay, and cleanup
-- direct-Message Receive Task Query projection, malformed and live wrong-kind refusal, Worker-absence Signal recovery, exact terminal receipt, zero unrelated host events, history-removal mutation, direct-channel-erasure discriminator, and replay through the shared Message Workflow bundle
-- harness-only Query reconciliation with durable Update, timer, Activity, and receipt facts
-- replay and cleanup
-- command-ID-only, Message-Signal-payload, timer-bypass, Activity-bypass, conditional-route-bypass, and child-scope-bypass mutation guards
-- an Error-propagation bypass guard whose fabricated post-cancellation result matches the expected public prefix but retains the pre-throw semantic state, so the next stale sibling command commits and produces a detectably wrong durable suffix
-- optional time-skipping calibration outside default verification
+- typed `started | rejected` production start after separate semantic and host-capability admission, before Workflow creation
+- external Worker and client lifecycle over caller-supplied connection and Task Queue settings, with collision-resistant content-derived Workflow and command identities
+- one core-owned semantic loop with committed-state Query projection, User Task Update ingress, payload-free Message Signal ingress, durable Timer wakeup, bounded effect Activity, and retained result recovery
+- exact duplicate coalescing, changed-content conflict, semantic refusal, process-closed and process-unknown separation, and committed-state-only acknowledgement
+- durable hosting for every closed family named in [the current claim](#current-claim), keeping embedded and called Process work inside one Workflow rather than assigning BPMN meaning to Child Workflows
+- family-parameterized boundary-deadline scheduling with distinct typed shared-activation refusals, plus the managed Event-Based Gateway race and passive Message subscription class
+- Worker replacement, accepted-result recovery, exact Query and history assertions, replay, cleanup, and a separately bundled semantic or host-bypass mutation for each distinct mechanism
+- canonical Process start and completion data, effect transport, public enabled-interaction and task-detail projection, validated terminal receipts, and the repository command's strict external-runtime configuration
+- one live product example per distinct host mechanism, with reused mechanisms checked without a Temporal service and optional time-skipping calibration outside default verification
 
 #### Explicitly absent
 
