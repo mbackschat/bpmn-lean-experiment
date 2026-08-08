@@ -284,7 +284,7 @@ If implementation discovers a public observation this profile cannot produce wit
 
 ## Product-surface consequence
 
-This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires. [The oracle](../../packages/temporal-adapter/test/product-example-configs.test.ts) requires at least one example per registered profile with no upper bound, so one suffices and a second is admissible. That obligation lands with profile registration rather than with the evidence lanes, because the oracle binds as soon as the profile is registered: a single declared plan can answer the handler task and then the monitored task, exercising the spawn arm and both completions, and a second plan answering the monitored task before the deadline would exercise the withdrawal arm.
+This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [Temporal engine runner specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires. [The oracle](../../packages/temporal-adapter/test/product-example-configs.test.ts) requires at least one example per registered profile with no upper bound, so one suffices and a second is admissible. That obligation lands with profile registration rather than with the evidence lanes, because the oracle binds as soon as the profile is registered: a single declared plan can answer the handler task and then the monitored task, exercising the spawn arm and both completions, and a second plan answering the monitored task before the deadline would exercise the withdrawal arm.
 
 ## Common-mode risks
 

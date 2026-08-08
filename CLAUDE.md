@@ -15,7 +15,7 @@ Establish the semantic and hosting result through four components:
 
 The engine's essential element set and depth are scoped by [the minimal engine research](docs/research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) and its follow-up [extensions research](docs/research/HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md). Neither disposes a BPMN requirement; [the requirement ledger](docs/BPMN-REQUIREMENT-LEDGER.md) owns dispositions and the owning capsule owns meaning.
 
-Preserve the implemented [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) as the engine-side product floor while advancing semantic breadth. Its simulated User Task actor is an explicit host simulation and defines no BPMN meaning; the real task inbox, forms, and identity belong to the BPM platform, which reaches them through the same published contract and content-bound commands.
+Preserve the implemented [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) as the engine-side product floor while advancing semantic breadth. Its simulated User Task actor is an explicit host simulation and defines no BPMN meaning; the real task inbox, forms, and identity belong to the BPM platform, which reaches them through the same published contract and content-bound commands.
 
 The platform consumes only the engine's published contract: compile, start, observe committed state, submit a command. It takes occurrence identity from a publication and never constructs one, and a fact the engine does not publish is a stop condition routed to an engine requirement, never derived from Temporal Event History, a state difference, or the platform's own store.
 

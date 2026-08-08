@@ -78,7 +78,7 @@ This capsule adds no runtime-only BPMN operation, occurrence identifier, activat
 
 This is a breaking pre-release start-command shape replacement. Every schema, decoder, encoder, scenario, Lean constructor, TypeScript producer and consumer, Java projector, retained CIB artifact, canonical identity test, Temporal Workflow argument, and differential runner changed atomically. The reviewed meaning received the new profile identity `cibseven-2.2.0-user-task-process-data-draft`; no legacy reader, empty-list default, migration branch, or retained production history was added.
 
-The known eventual consumer is the runnable external-Temporal MVP command and its dummy form actor. Approval of the first durable production baseline still requires explicit history evolution, migration, rollback, and support-window decisions.
+The known consumer is the external-Temporal engine runner and its simulated form actor. Approval of the first durable production baseline still requires explicit history evolution, migration, rollback, and support-window decisions.
 
 ## Closure review
 

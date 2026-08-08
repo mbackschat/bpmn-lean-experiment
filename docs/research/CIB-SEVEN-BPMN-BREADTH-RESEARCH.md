@@ -190,7 +190,7 @@ Event-Based Gateway follows because the existing Message and Timer waits already
 
 Call Activity follows the gateways despite its much larger lexical footprint because it crosses the definition and instance boundaries rather than adding another flow-local transition. `CallActivityTest#testCallSimpleSubProcess` is a compact public-service probe seed, but the first project proposition still has to resolve one `calledElement` QName, create a distinct called semantic Process instance, retain the parent-child link, and resume the caller exactly once after normal called completion. Imports, Global Tasks, data matching/mapping, version or tenant selection, recursion, exceptional propagation, cancellation, and Temporal Child Workflow identity remain separate decisions.
 
-No new CIB relationship is selected by this research update. The [requirement dependency map](../BPMN-REQUIREMENT-LEDGER.md#reviewer-proto-mvp-dependency-map) records the neutral semantic deltas. Each future capsule may register a CIB relationship only together with the required project probe and verifier boundary; the source precedents above establish feasibility, not compatibility evidence.
+No new CIB relationship was selected by this research update. The implemented dispositions now live in the [reviewed requirement rows](../BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements) and owning capsules. A capsule registers a CIB relationship only together with the required project probe and verifier boundary; the source precedents above establish feasibility, not compatibility evidence.
 
 ## Earlier priority decision
 

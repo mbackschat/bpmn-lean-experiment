@@ -1,20 +1,20 @@
-# Runnable Temporal BPMN MVP specification
+# Temporal engine runner specification
 
 ## Status
 
 **Implemented current pre-release product contract; not an immutable release or production-history baseline.** The product surface spans every registered semantic profile through one driver keyed to published enabled interactions. Exact implemented and absent evidence belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md).
 
-## Product question
+## Scope
 
-What is the smallest end-to-end product that lets a user run any admitted BPMN model durably on an ordinary Temporal server while honestly documenting its bounded feature set and avoiding a premature task UI, form renderer, identity system, or global task inbox?
+This specification owns the engine-side product runner that executes any admitted BPMN model durably on an ordinary Temporal server while keeping its bounded feature set explicit and excluding a task UI, form renderer, identity system, and global task inbox.
 
-## Implemented MVP
+## Implemented product surface
 
 The repository ships one command-line-driven runtime that connects to a caller-supplied Temporal address, starts a Worker for the generic BPMN Process Workflow, admits exact BPMN XML before Workflow creation, starts one semantic Process instance, answers the external interactions that instance publishes, and waits until the Process completes or fails infrastructurally.
 
 Product acceptance covers every registered semantic profile. At least one example configuration exists per profile, reusing the registered scenario BPMN source unchanged, and the runtime uses the same source compiler, Semantic Process program, semantic core, production Process Workflow, Update and Signal command boundaries, and Temporal replay-safe code as the maintained evidence path.
 
-A profile may carry more than one example when one declared plan cannot reach both arms of a race. The Event-Based Gateway profile is the first such case: a plan either answers the published Message or declines it so the timer wins, never both, so its two examples mirror the two registered scenarios rather than duplicating one. A separate model-specific Workflow or generated TypeScript file is not an MVP shortcut.
+A profile may carry more than one example when one declared plan cannot reach both arms of a race. The Event-Based Gateway profile is the first such case: a plan either answers the published Message or declines it so the timer wins, never both, so its two examples mirror the two registered scenarios rather than duplicating one. The runner never substitutes a model-specific Workflow or generated TypeScript file for the shared execution path.
 
 The supported subset is explicit. A document outside its named profile returns typed pre-start admission rejection; the runtime never silently ignores an unsupported BPMN construct or Camunda/CIB extension.
 
@@ -29,7 +29,7 @@ One documented non-test command accepts:
 - declared deterministic effect handlers.
 
 ```ts
-type MvpInteractionResponse =
+type EngineRunnerInteractionResponse =
   | Readonly<{
       kind: StimulusKind.CompleteUserTaskInstance;
       elementId: string;
@@ -43,7 +43,7 @@ type MvpInteractionResponse =
       delayMs: number;
     }>;
 
-type MvpEffectHandler = Readonly<{
+type EngineRunnerEffectHandler = Readonly<{
   protocol: string;
   operation: string;
   result: EffectExecutionResult;
@@ -54,9 +54,9 @@ Both discriminators are canonical `StimulusKind` values rather than product-loca
 
 The command connects to an already running Temporal service. It does not start an embedded or ephemeral Temporal server, choose frontend ports, or bind a server port. A connection failure reports the supplied address and remains infrastructure failure. Local demonstrations may run Temporal separately, but port allocation and server lifecycle remain outside the BPMN Worker.
 
-The command reports at least source and profile admission rejection before Workflow creation, the stable semantic Process address after start, each committed canonical state it observed, every interaction it submitted with the typed semantic result, each host wait it observed, the final Process state, and infrastructure failure separately from semantic outcomes.
+The command reports at least source and profile admission rejection before Workflow creation, the stable semantic Process address after start, each committed canonical state it observed, every interaction it submitted with the typed semantic result, each host wait it observed, the final Process state, and infrastructure failure separately from semantic outcomes. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means interaction refusal, and `64` means malformed command configuration.
 
-The initial command may run one Worker and one Process instance in one foreground process. Multi-process deployment, packaging, daemon supervision, authentication, TLS provisioning, Temporal Cloud administration, production retention, and horizontal scaling are not required for this MVP.
+The runner may run one Worker and one Process instance in one foreground process. Multi-process deployment, packaging, daemon supervision, authentication, TLS provisioning, Temporal Cloud administration, production retention, and horizontal scaling are excluded.
 
 ## Interaction driver
 
@@ -86,32 +86,6 @@ The production Worker registers one `executeBpmnEffect` Activity implementation 
 
 Two distinct gates run before any Workflow exists and neither may widen. Source and profile admission runs first, inside compilation, and rejects a document outside its selected profile before any connection. Host capability runs second and rejects a program shape this adapter cannot serve; every registered profile passes it today, so that gate guards future widening rather than a live restriction. A profile that needs a rejected wait-set shape is a stop condition routed to an owner capability decision, never something the driver works around.
 
-## Running the maintained demonstration
-
-Install the repository dependencies, then make an ordinary Temporal service available. The BPMN command never starts a server or binds a server port. For a local demonstration, start Temporal separately in one terminal; the example configurations address `localhost:7233`:
-
-```sh
-temporal server start-dev --headless
-```
-
-If the service uses another address, Namespace, or Task Queue, copy and edit the explicit `temporal` object in the chosen example. `process.instanceId` is semantic identity and must be new for each execution retained by that Temporal Namespace because Workflow ID reuse is deliberately rejected.
-
-Run any per-profile example in another terminal:
-
-```sh
-./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
-```
-
-The command compiles the BPMN file before connecting, then emits typed JSON records for source admission, Process identity, each observed state, the selected form input, the configured delay, the semantic result of each interaction, and the completed receipt. Temporal SDK Worker logs may appear between these product records. Exit code `0` means completed, `1` means infrastructure failure, `2` means source or host admission rejection, `3` means interaction refusal, and `64` means malformed command configuration.
-
-The unsupported example needs no Temporal service and proves pre-connect rejection:
-
-```sh
-./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/unsupported.json
-```
-
-It emits `sourceAdmissionRejected` with the source diagnostics and exits `2`; the command never opens a Temporal connection for that model.
-
 ## Acceptance evidence
 
 Product evidence separates two claims and must not be reported as one.
@@ -133,10 +107,6 @@ Both halves compose the already-evidenced compiler, program, semantic core, Work
 - production release packaging, retained production Event Histories, Workflow versioning support windows, migration, rollback, or availability claims;
 - multiple concurrent Process instances in one command, multi-process deployment, and daemon supervision;
 - Collaboration, Participants, Message Flow, Human Performer and Resource Role coverage by implication.
-
-## Ordering consequence
-
-Uncovered BPMN mechanisms are scheduled primarily by their presence in CIB Seven `2.2.0` executable behavior, under the durable ordering rule in [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Widening the product surface further is not a semantic increment: a new profile reaches the product through its example configuration and the existing driver, not through new product code.
 
 ## Reopen conditions
 

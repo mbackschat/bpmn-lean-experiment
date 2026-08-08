@@ -42,7 +42,7 @@ What follows for this proposal: every surface below is built from those four ope
 
 E2 is new information from the proposal review rather than an assumption: `CheckedNodeKind.UserTask` carries `{id, name}`, the published `OpenUserTask` carries `{id, name, state}`, and no engine package source contains `assignee`, `candidateGroups`, or `formKey`. Those surfaces therefore ship without assignment and form metadata until E2 is separately proposed and approved.
 
-The consumption surface is already exercised: [the runnable MVP driver](RUNNABLE-TEMPORAL-MVP-SPEC.md#interaction-driver) uses only those four kinds today, which is why this proposal treats them as sufficient for interaction and insufficient for history.
+The consumption surface is already exercised: [the engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md#interaction-driver) uses only those four kinds today, which is why this proposal treats them as sufficient for interaction and insufficient for history.
 
 ## API-first architecture
 
@@ -174,7 +174,7 @@ Engine paths do not move. `runners/juel/` is the only Java component and remains
 
 ## Acceptance conditions
 
-**The product acceptance test the owner set on 2026-08-07 is that a third party can deploy their own BPMN file.** That is the definition of the reopened MVP and it drives engine scope as much as platform scope: current admission is a per-profile feature whitelist with several checked-node contracts pinned to exact literals, so meeting it requires the engine widening recorded against [the minimal engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md), whose sequencing [PLAN.md](PLAN.md) owns. No platform surface satisfies it alone.
+**The product acceptance test the owner set on 2026-08-07 is that a third party can deploy their own BPMN file.** This condition defines M1 in the [showcase milestone ladder](PLAN.md#showcase-milestone-ladder) and required admission to accept the selected safe modeler notation without assigning unsupported execution meaning. No platform surface satisfies it alone.
 
 A surface is accepted when it has a runnable demonstration under `showcase/`, registered as a gate so a landed milestone cannot silently rot, and when the boundary guards and the cross-product agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) requires are green. Each guard is verified by a planted violation, as this repository verifies every guard.
 

@@ -153,7 +153,7 @@ The residual risk is size, not semantics. Retaining exact source bytes for a mod
 
 Widening admission changes what a profile admits, so this takes a version change rather than an in-place edit, under [the pre-release evolution policy](PROJECT-DESIGN.md#pre-release-evolution-policy).
 
-**Recommendation: one named preserve-enabled successor to the runnable User Task profile**, not a new profile family and not a bump of every profile. That profile is the product floor the runnable MVP already exercises end to end, so the successor inherits a live example, a registered scenario, and a pipeline case rather than needing new ones. Every other profile stays exactly as it is, so no immutable evidence-bound profile is widened and no retained source bytes are replaced.
+**Recommendation: one named preserve-enabled successor to the product-floor User Task profile**, not a new profile family and not a bump of every profile. The engine runner already exercises that profile end to end, so the successor inherits a live example, a registered scenario, and a pipeline case rather than needing new ones. Every other profile stays exactly as it is, so no immutable evidence-bound profile is widened and no retained source bytes are replaced.
 
 The successor's name, and whether later profiles gain preserve-enabled successors one at a time or by a shared capability, are implementation decisions for the approved capsule rather than this proposal.
 

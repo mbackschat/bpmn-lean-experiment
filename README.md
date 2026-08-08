@@ -6,7 +6,7 @@ This project builds two MIT products in one repository: a Temporal-hosted BPMN 2
 
 Use the [implementation map](docs/IMPLEMENTATION-MAP.md) for the exact implemented and absent surface, and the [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) to exercise every registered scenario through its declared semantic, compatibility, durability, mutation, and replay lanes.
 
-The [runnable Temporal MVP](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) is implemented: one command admits exact BPMN XML, connects its Worker to an existing Temporal service, shows the durable User Task and selected Process input, waits three seconds, submits simulated form values through the real Update, and reports the final Process state. It deliberately introduces no UI, task inbox, or identity system.
+The [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) is implemented: one command admits exact BPMN XML, connects its Worker to an existing Temporal service, answers the interactions published by any registered profile through the production command boundaries, and reports the final Process state. It deliberately introduces no UI, task inbox, or identity system.
 
 Use [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for the live implemented/absent boundary and [PLAN.md](docs/PLAN.md) for the active checkpoint and work order.
 
@@ -171,7 +171,7 @@ LEAN_NUM_THREADS=4 ./scripts/verify.sh
 
 The complete gate matrix and evidence boundaries are in [TESTING-SPEC.md](docs/TESTING-SPEC.md).
 
-## Run the Temporal MVP
+## Run the Temporal engine runner
 
 Running the product surface needs far less than developing it: the full [Quick start](#quick-start) prerequisites above are for the verification gates, while the runtime path is TypeScript only and needs no Lean, Java, or reference checkout.
 
@@ -194,7 +194,7 @@ One example needs no Temporal service at all and demonstrates that an unsupporte
 ./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/unsupported.json
 ```
 
-Every registered semantic profile has at least one example in [examples/temporal-mvp](examples/temporal-mvp); pick any of them. The [MVP specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md#running-the-maintained-demonstration) documents the supported BPMN and data subset, the emitted event records, the exit codes, and the bounded feature set this command does and does not claim.
+Every registered semantic profile has at least one example in [examples/temporal-mvp](examples/temporal-mvp); pick any of them. The [engine runner specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md#public-operating-contract) documents the supported BPMN and data subset, emitted event records, exit codes, and bounded feature set this command does and does not claim.
 
 ## Repository guide
 

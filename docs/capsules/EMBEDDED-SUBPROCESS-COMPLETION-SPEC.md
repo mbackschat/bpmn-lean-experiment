@@ -10,7 +10,7 @@ This specification owns the first normal nested-execution-scope capsule: one ord
 
 May the project implement the smallest reusable execution-scope foundation in which entering one ordinary embedded Sub-Process creates a child scope, two child User Tasks remain owned by it, completing only one branch cannot exit it, completing both branches removes the child occurrence and activates exactly one outer User Task, and Temporal preserves that lifecycle through Worker replacement and replay?
 
-The implemented boundary includes only the source profile, semantic rules, atomic representation replacement, bounded CIB agreement evidence, and evidence boundary below. It does not include arbitrary nesting, Event Sub-Processes, boundary handling, Error propagation, multi-instance, Call Activity, transactions, compensation, child-local data, public scope-tree projection, or a multi-task dummy actor in the runnable MVP.
+The implemented boundary includes only the source profile, semantic rules, atomic representation replacement, bounded CIB agreement evidence, and evidence boundary below. It does not include arbitrary nesting, Event Sub-Processes, boundary handling, Error propagation, multi-instance, Call Activity, transactions, compensation, child-local data, public scope-tree projection, or a multi-task simulated actor in the engine runner.
 
 ## Product claim
 
@@ -224,7 +224,7 @@ Shared fixture construction, common canonical projection, and correlated CIB sou
 
 This capsule is a pre-release breaking replacement of internal definition and runtime contracts. The same change atomically replaces checked-source scope containment and schema validation; source normalization and lowering; Semantic Process definition schemas and TypeScript/Lean decoders; operation and control-place scope ownership; root-specific None-End handling; runtime state, token, and wait ownership; executable closure; declarative Lean relations and laws; affected exhaustive switches and contract guards; profile validation; target scenarios and retained expected results; differential projection; CIB public-service fixtures; Temporal serialization, host-capability checks, trace comparison, bypass mutation, replay tests, and Workflow inputs containing the executable definition; and the owning specifications and status documents.
 
-The public Process observation, User Task occurrence, stimuli, command result, runnable-MVP configuration, and CIB fidelity table remain unchanged.
+The public Process observation, User Task occurrence, stimuli, command result, engine-runner configuration, and CIB fidelity table remain unchanged.
 
 No compatibility reader, migration path, Workflow patch marker, or retained old history is added under the current pre-release policy.
 

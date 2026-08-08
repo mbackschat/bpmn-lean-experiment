@@ -101,7 +101,7 @@ Each surface additionally splits into a service, a public HTTP API over it, and 
 Two rules make the assurance claim transferable, and without both of them it is false:
 
 - **Occurrence identity is taken, never constructed.** The platform answers a published interaction by submitting the identity that interaction carried. No product code assembles a task, subscription, activation, or Call identity.
-- **A missing fact is a stop condition, not a workaround.** When the platform needs something the engine does not publish, it files an engine requirement and stops. It does not derive the fact from Temporal Event History, from a state difference, or from its own store. This extends the rule the runnable MVP already applies to a rejected wait-set shape.
+- **A missing fact is a stop condition, not a workaround.** When the platform needs something the engine does not publish, it files an engine requirement and stops. It does not derive the fact from Temporal Event History, from a state difference, or from its own store. This extends the rule the engine runner already applies to a rejected wait-set shape.
 
 CIB Seven enters product 2 as a *functional* reference only: it answers what capabilities a BPM platform has to have. No CIB screen, interaction pattern, or line of code is derived, so no provenance record is required for it.
 
@@ -127,9 +127,9 @@ The breadth baseline counts executable Process behavior rather than every CIB pr
 
 The [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns standards dispositions. The [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) owns relation classifications. [PLAN.md](PLAN.md) owns the concrete ordered queue.
 
-## Runnable MVP delivery boundary
+## Engine runner delivery boundary
 
-The [runnable Temporal MVP](RUNNABLE-TEMPORAL-MVP-SPEC.md) is the implemented engine-side product floor: an ordinary external-Temporal Worker and command path for a documented admitted subset, plus a simulated actor that leaves the User Task durably waiting on Temporal during a realistic host delay and then submits form input through the real semantic completion boundary. The command owns no Temporal server or port lifecycle, and unsupported source is rejected before it connects.
+The [Temporal engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md) is the implemented engine-side product floor: an ordinary external-Temporal Worker and command path for the registered admitted profiles, plus explicit host simulations that answer published interactions through the real semantic command boundaries. The command owns no Temporal server or port lifecycle, and unsupported source is rejected before it connects.
 
 That simulated actor is host policy. It does not define BPMN User Task meaning and adds no human-resource model. It is also not the product's user surface: real task interaction, forms, identity, authorization, discovery, and a task inbox belong to product 2, which reaches them through the same published contract and the same content-bound commands this actor uses. Completion data is a separately reviewed CIB-profile semantic extension under the [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md).
 
@@ -336,27 +336,6 @@ Before the first immutable release or persisted production history, the owner mu
 5. support windows and removal criteria.
 
 From that point onward, history compatibility and artifact migration become mandatory evidence based on real retained state rather than speculative prototypes.
-
-## MVP conclusion
-
-The bounded `None Start Event → User Task → None End Event` slice demonstrates that the architecture is feasible as a fast loop:
-
-- exact BPMN bytes are admitted once and compiled to project-owned IR;
-- CIB and Lean remain independent semantic references;
-- the production TypeScript transition system stays pure;
-- one generic Temporal Workflow hosts the core through Query and acknowledged Update;
-- CIB, Lean, the core, and Temporal agree for exact completion, wrong activation, stale completion, and both balanced parallel completion orders;
-- the exact Intermediate Catch Timer capsule demonstrates committed-state-derived durable wakeup without giving Temporal ownership of occurrence identity, deadline, eligibility, or logical time;
-- live Event Histories replay before the disposable server shuts down;
-- seeded task-activation, omitted-parallel-task, timer-deadline, durable-timer-bypass, operation-origin, and Sequence-Flow-provenance mutations prove that the observation, definition-binding, adapter-refinement, and comparison boundaries detect the claimed distinctions.
-
-This validates the separation of responsibilities, not scalability to all BPMN. The bounded runtime has no general scope, race, effect, or variable model; the compiler recognizes only the sequential User Task, balanced two-branch parallel, and exact `PT1S` timer topologies; Lean consumes the exact checked graph and Semantic Process program but has no adopted independent checked-source operational relation; and Temporal has not exercised Activities, cancellation, Continue-As-New, or any timer race.
-
-The [parallel fork/join spec](capsules/PARALLEL-FORK-JOIN-SPEC.md) supplies the second distinct topology and representation risk that justifies the bounded Semantic Process IL. Its closure does not generalize the language beyond its named consumers and separating witnesses.
-
-The [Intermediate Catch Timer spec](capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md) supplies the first durable host Command driven by a semantic wait. Its deadline-as-logical-time refinement stutter is valid only for the race-free capsule and must be reopened before any competing input, second timer, cancellation, or physical-lateness observation enters scope.
-
-The production Temporal host follows the [Process lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md): one Workflow receives the admitted Semantic Process program and explicit start, derives its lifetime from semantic state, drains accepted handlers, recovers exact accepted results during retention, and classifies a distinct post-closure command through an adapter-owned lifecycle result. The semantic rejection lane remains separate: the sequential post-terminal case compares only the semantic prefix and `processClosed` adapter classification, while a live parallel sibling keeps the Process addressable for exact stale semantic rejection.
 
 ## Success criteria for every capsule
 

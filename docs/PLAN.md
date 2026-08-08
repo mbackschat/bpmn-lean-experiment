@@ -22,7 +22,7 @@ Two boundaries hold across the whole ladder. The engine must still build and ver
 
 ### M0 — shipped floor
 
-The [runnable Temporal MVP](RUNNABLE-TEMPORAL-MVP-SPEC.md) over the registered profile catalog. No demo is owed; it exists so the later exit gates have a baseline to differ from. Its User Task actor is a host simulation and stays one until M3 replaces it with a real inbox.
+The [Temporal engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md) over the registered profile catalog. No demo is owed; it exists so the later exit gates have a baseline to differ from. Its configured actors and effect handlers are host simulations, and User Task interaction stays simulated until M3 replaces it with a real inbox.
 
 ### M1 — a third party deploys their own BPMN file
 
@@ -196,13 +196,9 @@ If all answers are no, no new CIB profile surface is added. If any answer is yes
 
 One first-round vertical witness is appropriate for a genuinely new host seam such as durable timers, external effects, or typed business faults. Once the seam exists, later models and source variants should reuse it through generic admission, profile configuration, and downstream regression tests. Do not add model-specific IL operations, Lean evaluators, semantic-core branches, or Temporal Workflows for each A12 model.
 
-## Reviewer proto-MVP milestone
-
-**Closed.** Its Inclusive Gateway, Event-Based Gateway, and Call Activity capsules are implemented and graduated, and its exit gate passed over the complete registered catalog. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the resulting claim boundary, [the capsule cost ledger](CAPSULE-COST-LEDGER.md) owns its commit-bounded cost, and [the complete differential/refinement pipeline](TESTING-SPEC.md#complete-differentialrefinement-pipeline) remains the executable demonstration. The showcase ladder supersedes it as the active product milestone list.
-
 ## Explicitly deferred
 
-- assignment, users/groups, authorization, rendered forms, task-list UI, and BPMN data associations; the runnable MVP admits only the explicit dummy actor proposal and implemented selected Process-variable completion patch;
+- assignment, users/groups, authorization, rendered forms, task-list UI, and BPMN data associations; the engine runner provides only configured host simulations and the implemented selected Process-variable completion patch;
 - global task discovery or Search Attributes;
 - timer forms or races beyond the exact Intermediate Catch Timer capsule, Activities and retries beyond the bounded Service Task specification, host/general cancellation, incidents, compensation, and Event Sub-Processes; Message payload, key-based/global correlation, modeled throw, Message Flow, and other Message Event loci remain unimplemented beyond the direct payload-free catch;
 - multi-instance, loops, migration, and Continue-As-New;

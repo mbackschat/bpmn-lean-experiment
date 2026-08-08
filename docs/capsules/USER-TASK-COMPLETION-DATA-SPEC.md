@@ -12,7 +12,7 @@ For the existing exact User Task occurrence, how should an executable CIB Seven 
 
 The BPMN User Task lifecycle and exact occurrence admission remain owned by the [implemented User Task interaction specification](USER-TASK-INTERACTION-SPEC.md). BPMN 2.0.2 does not define `TaskService.complete(taskId, variables)` or a universal form-submission-to-Process-variable rule.
 
-This specification adds the selected CIB Seven `2.2.0` public-service extension [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) over the existing BPMN lifecycle. The [runnable MVP](../RUNNABLE-TEMPORAL-MVP-SPEC.md) is its first concrete host consumer. The dummy actor, delay, CLI, and simulated response configuration are adapter/product facts and do not enter Lean or the semantic core.
+This specification adds the selected CIB Seven `2.2.0` public-service extension [`CIB-EXT-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) over the existing BPMN lifecycle. The [Temporal engine runner](../RUNNABLE-TEMPORAL-MVP-SPEC.md) is its first concrete host consumer. The simulated actor, delay, CLI, and response configuration are adapter/product facts and do not enter Lean or the semantic core.
 
 ## Data contract
 
@@ -38,7 +38,7 @@ interface CompleteUserTaskInstance {
 
 Binding names are nonempty, unique, and canonically ordered by Unicode scalar value. The empty patch remains valid and represents the existing no-data completion. Unknown fields, duplicate names, unsafe encodings, unsupported value variants, and noncanonical order are boundary failures rather than semantic commands.
 
-The exact open-task detail for the MVP pairs the existing `OpenUserTask` with a caller-selected projection of committed Process variables. Field selection is host configuration and does not become task-definition metadata or canonical semantic state. Values are read from the same committed Process scope that the semantic core projects publicly; private Activity-local variables remain invisible.
+The exact engine-runner open-task detail pairs the existing `OpenUserTask` with a caller-selected projection of committed Process variables. Field selection is host configuration and does not become task-definition metadata or canonical semantic state. Values are read from the same committed Process scope that the semantic core projects publicly; private Activity-local variables remain invisible.
 
 ## Stable rules and evidence
 
@@ -79,7 +79,7 @@ That absence of a new operation does not waive the targeted preservation gate. L
 - The Update completes only after the patch and outgoing closure commit or the exact refusal result is recorded.
 - Exact duplicate delivery returns the first result without applying the patch twice. Reuse of one semantic command ID with a different patch must reach the existing identity-conflict boundary rather than alias the first Update.
 - Query may return the committed Process variables and open task for the known Workflow. It does not expose speculative submission values.
-- The MVP dummy delay is separate foreground-actor behavior. The semantic Process remains durably waiting, and the actor eventually invokes the same ordinary completion Update; no BPMN or Temporal timer is added to the Process Workflow.
+- The engine runner's configured delay is separate foreground-actor behavior. The semantic Process remains durably waiting, and the actor eventually invokes the same ordinary completion Update; no BPMN or Temporal timer is added to the Process Workflow.
 - Same-gate Event History contains the content-bound Update acceptance/completion; a retained bypass mutation that writes variables outside the core while omitting the core command result fails Query/Update reconciliation.
 - The pre-release atomic replacement covers TypeScript and Lean stimuli, strict decoders, schemas, scenario fixtures, canonical encoding, Update identity, all runners and projectors, retained CIB evidence, Temporal history assertions, docs, and compile-time closed-union guards. No legacy no-data command reader remains; existing fixtures emit `submittedValues: []`.
 

@@ -285,7 +285,7 @@ If implementation discovers a public observation this profile cannot produce wit
 
 ## Product-surface consequence
 
-This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [runnable Temporal MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires.
+This capsule reaches the product command through example configuration and the existing driver, adding no product code, as the [Temporal engine runner specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) requires.
 
 The driver's precedence rule keeps waiting while a timer wait is open precisely so a host-resolved wait can withdraw an enabled interaction, and that arm is already product-reachable and live through the `event-based-gateway-timer-wins` example, which a separate increment added before this capsule's implementation baseline. This profile adds a second definition where both arms are reachable from declared configuration alone: a plan answering the bounded task exercises Activity victory, and a plan that answers only the boundary follow-on task exercises deadline victory. Both boundary examples are checked for admission and configuration only; neither is a live durable product run, so they claim no product evidence beyond that.
 
