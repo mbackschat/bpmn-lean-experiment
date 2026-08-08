@@ -174,7 +174,7 @@ Only decisions that constrain the next work are kept here. A decision fully owne
 
 ## Last verified baseline
 
-**Latest complete gate: 2026-08-08, exit 0 at `6317cc8`.** All **35** registered cases reached agreement across their declared targets, all 35 seeded semantic mutations produced their required disagreement, and all 18 retained-CIB evidence comparisons agreed. Its 21396.602ms warm total reported the soft target and is **correctness evidence only**, not a baseline: the run shared a host with earlier gates in the same session. The preceding clean-tree run was `9e08b4a` on 2026-08-07 at 34 cases and 20406.710ms, also contended.
+**Latest complete gate: 2026-08-08, exit 0 at `1afadf6`.** All **35** registered cases reached agreement across their declared targets, all 35 seeded semantic mutations produced their required disagreement, and all 18 retained-CIB evidence comparisons agreed. Its 24246.236042ms warm total reported the soft target and is **correctness evidence only**, not a baseline: other programs were using substantial CPU during the run. The preceding complete gate was `6317cc8` at 35 cases and 21396.602ms, also contended.
 
 **Two performance baselines are retained, because a catalog change breaks comparability and one figure cannot span it.**
 
@@ -246,7 +246,7 @@ Stop for owner direction if:
 
 **Blockers: none.** Run `node scripts/what-binds.ts` over the proposal and every planned implementation path before the first edit. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) is below its reviewability backstop; ordered-work item 1 carries the remaining owner audit and it does not gate the classification proposal.
 
-**Last verified command:** `./scripts/verify.sh`, exit 0, at `6317cc8`, with 35 agreements and 35 seeded mutations detected. Its timing is contended and is not a baseline; see [the baselines above](#last-verified-baseline).
+**Last verified command:** `./scripts/verify.sh`, exit 0, at `1afadf6`, with 35 agreements and 35 seeded mutations detected. Its timing is contended and is not a baseline; see [the baselines above](#last-verified-baseline).
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 
