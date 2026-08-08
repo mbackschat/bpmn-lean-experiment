@@ -70,7 +70,13 @@ async function declaredReferences(): Promise<ReadonlyArray<Reference>> {
       references.push({ source: entry, text });
     }
   }
-  for await (const entry of glob("scenarios/*/*.scenario.json", { cwd: projectRoot })) {
+  // Both shapes, because `*.scenario.json` never matches a primary `scenario.json`. Eleven of them
+  // went unchecked under the narrower pattern, which is how one profile shipped two clause numbers
+  // that name event definitions while claiming to cover start and end events.
+  for await (const entry of glob(
+    ["scenarios/*/*.scenario.json", "scenarios/*/scenario.json"],
+    { cwd: projectRoot },
+  )) {
     const scenario = JSON.parse(
       await readFile(path.join(projectRoot, entry), "utf8"),
     ) as Readonly<{
@@ -131,6 +137,80 @@ test("resolves every declared normative reference in the pinned BPMN corpus", as
   }
   assert.ok(checked > 100, `only ${checked} references were resolvable in shape`);
   assert.deepEqual(unresolved, []);
+});
+
+/**
+ * A scenario must not claim normative authority its own profile does not declare.
+ *
+ * The containment direction is the one the repository actually holds, and it is the direction that
+ * matters: the profile is the compatibility authority, so a scenario citing a clause beyond it
+ * asserts coverage nothing approved. The reverse is ordinary and deliberate — a profile cites the
+ * tables and clauses for its whole feature set while each scenario names the subset it exercises,
+ * and requiring equality reported 14 pre-existing scenarios across 7 capsules whose profiles simply
+ * cite more.
+ *
+ * Two limits, neither of which this closes. *Completeness* — whether the cited set covers every
+ * declared feature — needs a feature-to-clause map the artifact schema does not carry and stays a
+ * review obligation. And a clause cited for the wrong subject still resolves; only its existence is
+ * mechanical.
+ *
+ * Executable-oracle profiles declare an engine revision rather than clauses, so a profile with no
+ * `normativeAuthority` is skipped rather than required to match.
+ */
+test("keeps a scenario's normative citations inside its profile's", async () => {
+  const clauses = (references: ReadonlyArray<string>): ReadonlyArray<string> =>
+    [...new Set(references.map((text) => referencePattern.exec(text)?.[2] ?? text))].sort();
+
+  const profileClauses = new Map<string, ReadonlyArray<string>>();
+  for await (const entry of glob("profiles/*/profile.json", { cwd: projectRoot })) {
+    const profile = JSON.parse(
+      await readFile(path.join(projectRoot, entry), "utf8"),
+    ) as Readonly<{
+      id: string;
+      normativeAuthority?: Readonly<{ references: ReadonlyArray<string> }>;
+    }>;
+    if (profile.normativeAuthority !== undefined) {
+      profileClauses.set(profile.id, clauses(profile.normativeAuthority.references));
+    }
+  }
+  assert.ok(profileClauses.size > 5, `only ${profileClauses.size} standards profiles collected`);
+
+  const disagreements: string[] = [];
+  let compared = 0;
+  for await (const entry of glob(
+    ["scenarios/*/*.scenario.json", "scenarios/*/scenario.json"],
+    { cwd: projectRoot },
+  )) {
+    const scenario = JSON.parse(
+      await readFile(path.join(projectRoot, entry), "utf8"),
+    ) as Readonly<{
+      profile: string;
+      provenance: Readonly<{ normativeRefs: ReadonlyArray<string> }>;
+    }>;
+    const declared = profileClauses.get(scenario.profile);
+    if (declared === undefined) {
+      continue;
+    }
+    compared += 1;
+    const beyond = clauses(scenario.provenance.normativeRefs)
+      .filter((clause) => !declared.includes(clause));
+    if (beyond.length > 0) {
+      disagreements.push(
+        `${entry}: cites [${beyond.join(", ")}] beyond profile ${scenario.profile}`,
+      );
+    }
+  }
+  assert.ok(compared > 5, `only ${compared} scenarios were compared against a standards profile`);
+  assert.deepEqual(disagreements, []);
+
+  // Anti-vacuity: the containment check must actually reject, or a scenario could cite anything.
+  const declared = ["13.2", "13.5.1"];
+  assert.deepEqual(
+    clauses(["BPMN 2.0.2 §13.2", "BPMN 2.0.2 §99.99"]).filter(
+      (clause) => !declared.includes(clause),
+    ),
+    ["99.99"],
+  );
 });
 
 /** Locks the detector against the exact references one capsule shipped wrongly. */
