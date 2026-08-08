@@ -43,6 +43,11 @@ import {
 import { carriesDeclaredDefault } from "./metamodel-defaults.js";
 import { asElement } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
+import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
+  type: "json",
+};
+
+const bpmnTypes = metamodelManifest.compilerProjection;
 
 /**
  * One profile's declared preservation capability.
@@ -129,6 +134,45 @@ export function preservationCapability(
       return userTaskPreservedNotation;
     default:
       return undefined;
+  }
+}
+
+/**
+ * The `$type`s whose projector reads foreign attributes, per profile.
+ *
+ * A projector that requires an exact attribute set and refuses any other treats those attributes as
+ * evidence it acts on rather than content it discards, which is what exempts the type. Everything not
+ * named here rejects, so this set is the complete inventory of where a foreign attribute may sit.
+ *
+ * It is keyed by profile because the answer genuinely differs per profile, unlike the reference-target
+ * rule that [the compiler entry point](./compile.ts) therefore owns above the reader dispatch. Each
+ * caller must ask for its own profile's set: reading a shared constant is what left two readers
+ * applying no rule at all while three documents claimed otherwise.
+ *
+ * The two A12 profiles exempt whole `Definitions` and `Process` types rather than the exact vendor
+ * attributes their registered sources carry — `modeler:executionPlatform`, its version sibling, and
+ * `camunda:versionTag`, none of which any projector reads. Narrowing that to exact attributes needs
+ * expanded `namespace#localName` matching resolved against the document's prefix bindings, which
+ * [D2](../../../docs/PRESERVE-ONLY-ADMISSION-PROPOSAL.md) defers to the first profile that declares an
+ * inert set; matching the raw prefix instead would admit content by spelling.
+ * [IMPLEMENTATION-MAP.md](../../../docs/IMPLEMENTATION-MAP.md) records the residual as absent.
+ */
+export function foreignAttributeConsumingTypes(
+  semanticProfile: string,
+): ReadonlySet<string> {
+  switch (semanticProfile) {
+    case SemanticProfileId.CreateDocument:
+      return new Set([
+        bpmnTypes.definitionsType,
+        bpmnTypes.processType,
+        bpmnTypes.serviceTaskType,
+      ]);
+    case SemanticProfileId.BoundaryError:
+      return new Set([bpmnTypes.serviceTaskType]);
+    case SemanticProfileId.CalledProcessCallActivity:
+      return new Set();
+    default:
+      return new Set([bpmnTypes.serviceTaskType]);
   }
 }
 

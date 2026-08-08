@@ -4,6 +4,7 @@ import {
   EffectOperation,
   EffectProtocol,
   MappingExpressionKind,
+  SemanticProfileId,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -27,6 +28,10 @@ import {
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
+import {
+  carriesNoUnconsumedForeignAttribute,
+  foreignAttributeConsumingTypes,
+} from "./preserved-element-classification.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 export const a12BoundaryErrorProfile =
@@ -48,6 +53,15 @@ export function compileA12BoundaryError(
   source: BpmnSourceIdentity,
 ): CheckedCompilationProjection {
   const definitions = asElement(rootElement);
+  // A document-wide rule this reader must ask for by profile. It admits one hand-selected shape,
+  // so an attribute stored in the non-enumerable `$attrs` passes every exact-key allowlist below
+  // and then vanishes; `camunda:asyncBefore` on a Start Event is an execution directive that did.
+  if (definitions !== undefined && !carriesNoUnconsumedForeignAttribute(
+    definitions,
+    foreignAttributeConsumingTypes(SemanticProfileId.BoundaryError),
+  )) {
+    return unsupported("A foreign attribute no projector consumes must be rejected rather than discarded.");
+  }
   if (
     definitions === undefined ||
     definitions.$type !== "bpmn:Definitions" ||

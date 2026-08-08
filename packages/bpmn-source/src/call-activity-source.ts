@@ -1,6 +1,7 @@
 import {
   CheckedNodeKind,
   CheckedProcessKind,
+  SemanticProfileId,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -29,6 +30,7 @@ import {
 import type { ElementRecord } from "./moddle-graph.js";
 import {
   carriesNoUnconsumedForeignAttribute,
+  foreignAttributeConsumingTypes,
 } from "./preserved-element-classification.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
@@ -69,9 +71,13 @@ export function compileCallActivityCheckedProcess(
   ) {
     return unsupported("Call Activity requires one plain Definitions document with one target namespace.");
   }
-  // This profile's projectors read no foreign attribute at all, so every one of them is content the
-  // exact-key allowlists cannot see and must reject rather than discard.
-  if (!carriesNoUnconsumedForeignAttribute(definitions, new Set())) {
+  // A document-wide rule this reader must ask for by profile. This profile's projectors read no
+  // foreign attribute at all, so every one of them is content the exact-key allowlists cannot see and
+  // must reject rather than discard.
+  if (!carriesNoUnconsumedForeignAttribute(
+    definitions,
+    foreignAttributeConsumingTypes(SemanticProfileId.CalledProcessCallActivity),
+  )) {
     return unsupported("A foreign attribute the compiler does not consume must be rejected rather than discarded.");
   }
   const roots = asElementArray(definitions.rootElements);

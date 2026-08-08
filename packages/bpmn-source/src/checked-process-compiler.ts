@@ -43,12 +43,11 @@ import type {
 } from "./admission-diagnostics.js";
 import {
   baseElementRetentionRejections,
+  foreignAttributeConsumingTypes,
   foreignAttributeRejections,
   preservationCapability,
   unadmittedKeyRejections,
 } from "./preserved-element-classification.js";
-import {
-} from "./reference-target-admission.js";
 import {
   selectRootDefinitions,
 } from "./root-definition-selection.js";
@@ -66,16 +65,6 @@ import {
 } from "./subprocess-error-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
-
-/**
- * The only node type this compiler's projectors read foreign attributes from.
- *
- * The Service Task projector requires exactly the two `camunda` attributes its effect protocol
- * defines and refuses any other count, so its foreign attributes are consumed rather than discarded.
- */
-const foreignAttributeConsumers: ReadonlySet<string> = new Set([
-  bpmnTypes.serviceTaskType,
-]);
 
 /**
  * Compiles one admitted `bpmn:Definitions` into the checked graph, or reports why it was refused.
@@ -126,7 +115,7 @@ export function compileCheckedProcess(
     ...foreignAttributeRejections(
       definitions,
       located,
-      foreignAttributeConsumers,
+      foreignAttributeConsumingTypes(semanticProfile),
     ),
     ...baseElementRetentionRejections(located, capability),
   ];

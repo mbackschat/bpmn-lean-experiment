@@ -20,6 +20,9 @@ import { test } from "node:test";
 
 import {
   BpmnCompilationStatus,
+  BpmnSourceDiagnosticCode,
+  a12BoundaryErrorProfile,
+  a12CreateDocumentProfile,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import { SemanticProfileId } from "@bpmn-lean/semantic-core";
@@ -198,4 +201,142 @@ test("refuses a third foreign attribute beside the two the Service Task consumes
   );
 
   assert.equal(status, BpmnCompilationStatus.Rejected);
+});
+
+/**
+ * The rule must reach every profile the compiler dispatches, not only the ones a fix touched.
+ *
+ * It is profile-parameterized, so unlike the reference-target rule it cannot move above the dispatch
+ * and each reader asks for its own consuming set. That makes omission possible, and it happened: the
+ * two A12 readers called the rule nowhere, so `camunda:asyncBefore` on an A12 Start Event was accepted
+ * and discarded, leaving a byte-identical program. `asyncBefore` is the seed below because it is an
+ * asynchronous-continuation directive rather than cosmetic metadata, so discarding it changes what a
+ * host would do.
+ *
+ * The Start Event is the perturbed locus on every path because no profile exempts it and no other rule
+ * can refuse an otherwise valid Start Event carrying one extra attribute. The paired unperturbed
+ * compilation below is what keeps that reasoning honest rather than assumed.
+ */
+const dispatchPaths: ReadonlyArray<
+  Readonly<{ path: string; source: URL; semanticProfile: string; find: string }>
+> = [
+  {
+    path: "the generic compiler",
+    source: userTaskSource,
+    semanticProfile: SemanticProfileId.UserTask,
+    find: '<bpmn:startEvent id="StartEvent_1"',
+  },
+  {
+    path: "the A12 CreateDocument reader",
+    source: new URL(
+      "../../../scenarios/create-document-data/process.bpmn",
+      import.meta.url,
+    ),
+    semanticProfile: a12CreateDocumentProfile,
+    find: '<bpmn:startEvent id="StartEvent_CreateDocument"',
+  },
+  {
+    path: "the A12 boundary-error reader",
+    source: new URL(
+      "../../../scenarios/boundary-error/process.bpmn",
+      import.meta.url,
+    ),
+    semanticProfile: a12BoundaryErrorProfile,
+    find: '<bpmn:startEvent id="StartEvent_None"',
+  },
+  {
+    path: "the Call Activity reader",
+    source: callActivitySource,
+    semanticProfile: SemanticProfileId.CalledProcessCallActivity,
+    find: '<bpmn:startEvent id="CallerStart"',
+  },
+];
+
+for (const { path, source, semanticProfile, find } of dispatchPaths) {
+  test(`refuses an execution-affecting foreign attribute through ${path}`, async () => {
+    const admitted = await readFile(source, "utf8");
+    assert.ok(admitted.includes(find), `the source no longer contains ${find}`);
+
+    const [unperturbed, perturbed] = await Promise.all([
+      compileBpmnToSemanticProcess({
+        bytes: new TextEncoder().encode(admitted),
+        sourceId: "dispatch-path-unperturbed",
+        expectedSha256: undefined,
+        semanticProfile,
+        limits: semanticProcessTestLimits,
+      }),
+      compileBpmnToSemanticProcess({
+        bytes: new TextEncoder().encode(
+          // Two of these sources already bind the prefix, and declaring it twice is a parser warning
+          // that would refuse the file before this rule ran.
+          (admitted.includes(camundaNamespaceDeclaration)
+            ? admitted
+            : admitted.replace(
+              "<bpmn:definitions",
+              `<bpmn:definitions ${camundaNamespaceDeclaration}`,
+            ))
+            .replace(find, `${find} camunda:asyncBefore="true"`),
+        ),
+        sourceId: "dispatch-path-foreign-attribute",
+        expectedSha256: undefined,
+        semanticProfile,
+        limits: semanticProcessTestLimits,
+      }),
+    ]);
+
+    // Anti-vacuity: a path whose own source is refused would reject the perturbation for free.
+    assert.equal(
+      unperturbed.status,
+      BpmnCompilationStatus.Accepted,
+      `the unperturbed source was refused: ${JSON.stringify(unperturbed.diagnostics)}`,
+    );
+    assert.equal(perturbed.status, BpmnCompilationStatus.Rejected);
+    // The readers that admit one hand-selected shape report a document-level refusal, so the attribute
+    // name is available only on the paths that classify. Both must at least name the reason.
+    assert.ok(
+      perturbed.diagnostics.some(({ code, element, evidence }) =>
+        (code === BpmnSourceDiagnosticCode.UnconsumedForeignAttribute &&
+          element?.subject === "camunda:asyncBefore") ||
+        evidence.includes("foreign attribute")
+      ),
+      `the refusal does not name the foreign attribute: ${JSON.stringify(perturbed.diagnostics)}`,
+    );
+  });
+}
+
+/**
+ * The A12 CreateDocument profile keeps admitting the vendor attributes its registered source carries.
+ *
+ * `modeler:executionPlatform`, its version sibling, and `camunda:versionTag` reach no projector, and
+ * the profile exempts their whole `Definitions` and `Process` types rather than those exact names,
+ * because exact-name matching needs expanded-name resolution that no profile declares yet. This case
+ * exists so the exemption is a tested decision rather than an accident of where a count check happens
+ * to bite, and so narrowing it later fails here rather than silently.
+ */
+test("keeps admitting the A12 vendor attributes no projector reads", async () => {
+  const source = new URL(
+    "../../../scenarios/create-document-data/process.bpmn",
+    import.meta.url,
+  );
+  const admitted = await readFile(source, "utf8");
+  for (const attribute of [
+    'modeler:executionPlatform="Camunda Platform"',
+    'camunda:versionTag="1.0"',
+  ]) {
+    assert.ok(admitted.includes(attribute), `the source no longer carries ${attribute}`);
+  }
+
+  const result = await compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(admitted),
+    sourceId: "a12-create-document-vendor-attributes",
+    expectedSha256: undefined,
+    semanticProfile: a12CreateDocumentProfile,
+    limits: semanticProcessTestLimits,
+  });
+
+  assert.equal(
+    result.status,
+    BpmnCompilationStatus.Accepted,
+    `the exempted vendor attributes were refused: ${JSON.stringify(result.diagnostics)}`,
+  );
 });
