@@ -49,8 +49,14 @@ const minimumStatusWords = 100;
  * Capsules that link the map for a reason other than delegating their scope to it.
  *
  * Enumerated rather than inferred, so that adding a capsule here is a visible act while forgetting one
- * is a failing gate. Each links the map to cite a boundary it does not own; none says its own scope is
- * recorded there.
+ * is a failing gate.
+ *
+ * The distinction is narrower than *these do not mention scope*, and stating it loosely once already
+ * produced a false claim in this comment. Four of them do say the map owns their exact evidence
+ * status. What separates them from a delegation is that each still carries its own scope-bearing
+ * section, so a map section going silent costs precision rather than orphaning the capsule, while the
+ * three delegating capsules say they deliberately do not restate and leave the map as sole owner.
+ * A capsule here that later drops its own scope section becomes a delegation and belongs above.
  */
 const nonDelegatingMentions: ReadonlySet<string> = new Set([
   "BOUNDARY-ERROR-SPEC.md",
