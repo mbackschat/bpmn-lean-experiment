@@ -2,15 +2,17 @@
 
 ## Status
 
-Draft product-boundary correction. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Implementation remains blocked until context-cold proposal review and subsequent owner approval of this exact contract.
+Independently approved draft product-boundary correction, awaiting owner approval. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Implementation remains blocked until owner approval of this exact contract.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `8e46a2e` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8e46a2e` | `fork-turns-none` | `approve-with-required-edits` | `4619b74` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal review used two correction rounds. The context-cold review of `8e46a2e` required a profile-owned descriptor allowlist, preservation of the existing non-A12 Service Task profile, separate frozen and current evidence generations, fresh neutral CIB relationships, and complete guard and preservation obligations. Correction `6bbcf42` closed those findings on substance but left the preservation baseline unnamed. Correction `4619b74` bound every legacy oracle and manifest to immutable pre-extraction target `02330ad`, and the same reviewer approved the proposal.
 
 ## Question
 
