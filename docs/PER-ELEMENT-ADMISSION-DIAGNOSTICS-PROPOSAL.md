@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved and implemented; combined semantic-checkpoint and closure review pending.** The review of immutable target `8746bc6` returned `approve-with-required-edits` across four test-contract and guard-inventory findings, and correction audit `ad1a88b` closed all four. The owner approved all four rules together on 2026-08-08. Red/green implementation now closes the two diagnostic-location limits that [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md#d3--typed-per-element-diagnostics-with-a-deterministic-identity) deliberately left for a governed increment. It changes where an existing rejection is classified and the location carried by that rejection. It changes no admitted source set, BPMN meaning, semantic profile meaning, checked graph, Semantic Process program, runtime transition, or Temporal refinement claim.
+**Owner-approved, implemented, and closure-evidenced; combined semantic-checkpoint and closure review pending.** The review of immutable target `8746bc6` returned `approve-with-required-edits` across four test-contract and guard-inventory findings, and correction audit `ad1a88b` closed all four. The owner approved all four rules together on 2026-08-08. Red/green implementation closes the two diagnostic-location limits that [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md#d3--typed-per-element-diagnostics-with-a-deterministic-identity) deliberately left for a governed increment. It changes where an existing rejection is classified and the location carried by that rejection. It changes no admitted source set, BPMN meaning, semantic profile meaning, checked graph, Semantic Process program, runtime transition, or Temporal refinement claim.
 
 [PLAN.md](PLAN.md#exact-resume-point) owns sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md#bpmn-source) owns the exact current absence, and [the BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md#admission-and-security-policy) owns the import stages this proposal preserves.
 
@@ -111,6 +111,16 @@ Admission still completes before Workflow start. The change adds no durable ingr
 
 The state relation is unchanged because accepted checked graphs and programs are unchanged. A rejected source still creates no Workflow, and its diagnostic list is not a Workflow argument. The smallest host witness is therefore the existing pre-start rejection path; no live history can distinguish the proposed diagnostic from the current one, and inventing a Temporal test would confuse deployment admission with runtime refinement.
 
+## Implementation closure evidence
+
+The red matrix reproduced the same current mechanism on all four dispatch paths: each seeded Start Event `extensionElements` property produced a document-level `unsupportedModel` diagnostic with `element: null`. The green implementation moves every top-level projector key literal into one frozen profile-and-type inventory, makes the generic compiler and all three specialized readers classify against that inventory before projection, and returns the exact existing located `unsupportedProperty` record in all four cases. The focused BPMN-source gate passed 275 tests, the source-hygiene gate passed all 30 checks, and the infrastructure gate passed all 191 tests.
+
+The accepted-result oracle is the immutable fixture bound to reviewed pre-change target `8746bc6bbdeb126a79d56c6f510adc4e5f780d98`, not a post-change self-comparison. All four accepted public compilation results remain exactly equal by value, including source identity, ordered diagnostics, checked graph, Semantic Process program, and copied exact bytes. The four representative rejected projections also remain exactly equal: explicit `cancelActivity="false"`, the unprefixed Call Activity `calledElement`, duplicate A12 input mapping, and the generic checked-graph refusal. The inventory guard parses the declared consumer regions, requires the closed profile/type matrix to match them in both directions, and proves its own sensitivity with an in-memory mutation that restores the former Inclusive Gateway private key list.
+
+The finite epistemic denominator is the four current dispatch paths. The implementation closes the own-property classification and location claim for that denominator without changing the accepted source set or any profile, checked graph, program, runtime, public result union, or pre-start host boundary. Nested Event definitions, mapping children, unsupported listed-key values, and topology or cardinality refusals remain outside this location increment and retain their document-level behavior. Lean, CIB, the TypeScript semantic core, and Temporal received no new semantic artifact or evidence. No downstream lane crossed an unreviewed checkpoint, so the single-lane combined semantic-checkpoint and closure review remains eligible.
+
+The complete repository gate passed at `3b75aedc02c58cd073277de1c17baa3fd66e0ae7`: all 35 registered cases agreed, all 35 seeded semantic mutations were detected, all 18 retained-CIB comparisons agreed, and all 37 live histories passed. Its 19925.6515ms warm pipeline total is correctness evidence only because other programs were using substantial CPU. Commit-bounded measurement from owner approval `312684f` through implementation `3b75aed` is `+1076/-102` nonblank code and `+11/-11` documentation; [the cost ledger](CAPSULE-COST-LEDGER.md#measurements) records the comparison consequence.
+
 ## Versioning and lifecycle
 
 No semantic profile ID or compiler identity changes. The accepted source set and every produced semantic artifact remain unchanged, and the diagnostic union already contains the exact code, capability, and element shape this increment uses. Under the [pre-release evolution policy](PROJECT-DESIGN.md#pre-release-evolution-policy), all current diagnostic producers, renderers, tests, and documentation update atomically without retaining a legacy null-location branch for this classification class.
@@ -127,31 +137,31 @@ The three selected-shape consumers are [A12 CreateDocument](../packages/bpmn-sou
 
 The planned documentation paths additionally bind [activity boundary-Timer source](../packages/bpmn-source/test/activity-boundary-timer-source.test.ts), [foreign-attribute admission](../packages/bpmn-source/test/foreign-attribute-admission.test.ts), [non-interrupting boundary-Timer source](../packages/bpmn-source/test/non-interrupting-boundary-timer-source.test.ts), [per-element admission diagnostics](../packages/bpmn-source/test/per-element-admission-diagnostics.test.ts), [preserve-only admission](../packages/bpmn-source/test/preserve-only-admission.test.ts), [Sub-Process boundary-Timer source](../packages/bpmn-source/test/subprocess-boundary-timer-source.test.ts), [the differential pipeline](../packages/differential/test/pipeline.test.ts), [activity boundary-Timer semantics](../packages/semantic-core/test/activity-boundary-timer.test.ts), [non-interrupting boundary-Timer semantics](../packages/semantic-core/test/non-interrupting-boundary-timer.test.ts), [Sub-Process boundary-Timer semantics](../packages/semantic-core/test/subprocess-boundary-timer.test.ts), [the preserved-notation Temporal twin](../packages/temporal-adapter/test/preserved-notation-twin.test.ts), [BPMN corpus policy](../scripts/bpmn-corpus-policy.test.ts), [capsule cost comparison](../scripts/capsule-cost-comparison.test.ts), [CIB observation fidelity](../scripts/cib-observation-fidelity.test.ts), [independent review policy](../scripts/independent-review-policy.test.ts), [map scope delegation](../scripts/map-scope-delegation.test.ts), [normative reference resolution](../scripts/normative-reference-resolution.test.ts), [pinned toolchain](../scripts/pinned-toolchain.test.ts), [plan status consistency](../scripts/plan-status-consistency.test.ts), [publication statistics](../scripts/publication-statistics.test.ts), [requirement-ledger consistency](../scripts/requirement-ledger-consistency.test.ts), [semantic review packets](../scripts/semantic-review-packet.test.ts), [the verification entrypoint](../scripts/verification-entrypoint.test.ts), and [the documentation registry](README.md). The focused gate is `gtimeout 60s env CI=true ./scripts/pnpm.sh run test:bpmn-source`; the complete gate remains `./scripts/verify.sh`, run once at the governed review boundary and treated as correctness-only timing while the host is contended.
 
-| Owner expected to grow | Current nonblank | Headroom to 600 |
+| Implemented owner | Closure nonblank | Headroom to 600 |
 |---|---:|---:|
-| New projected-flow-element key owner | 0 | 600 |
-| `checked-element-projection.ts` | 333 | 267 |
-| `checked-process-compiler.ts` | 358 | 242 |
-| `a12-create-document-source.ts` | 329 | 271 |
-| `a12-boundary-error-source.ts` | 495 | 105 |
-| `call-activity-source.ts` | 334 | 266 |
-| `event-based-gateway-source.ts` | 47 | 553 |
-| `inclusive-gateway-source.ts` | 119 | 481 |
-| `intermediate-catch-message-source.ts` | 66 | 534 |
-| `receive-task-source.ts` | 44 | 556 |
+| `projected-flow-element-keys.ts` | 255 | 345 |
+| `checked-element-projection.ts` | 337 | 263 |
+| `checked-process-compiler.ts` | 375 | 225 |
+| `a12-create-document-source.ts` | 361 | 239 |
+| `a12-boundary-error-source.ts` | 522 | 78 |
+| `call-activity-source.ts` | 370 | 230 |
+| `event-based-gateway-source.ts` | 44 | 556 |
+| `inclusive-gateway-source.ts` | 125 | 475 |
+| `intermediate-catch-message-source.ts` | 68 | 532 |
+| `receive-task-source.ts` | 42 | 558 |
 | `scoped-flow-elements.ts` | 128 | 472 |
-| `simple-boolean-exclusive-gateway-source.ts` | 110 | 490 |
-| `subprocess-error-source.ts` | 143 | 457 |
+| `simple-boolean-exclusive-gateway-source.ts` | 111 | 489 |
+| `subprocess-error-source.ts` | 147 | 453 |
 | `timer-boundary-event-source.ts` | 107 | 493 |
-| `per-element-admission-diagnostics.test.ts` | 355 | 245 |
-| New projected-flow-element key inventory test | 0 | 600 |
-| New immutable baseline projection fixture | 0 | not a hand-written source owner |
+| `per-element-admission-diagnostics.test.ts` | 545 | 55 |
+| `projected-flow-element-keys.test.ts` | 405 | 195 |
+| Immutable baseline projection fixture | not applicable | not a hand-written source owner |
 
-No measured owner requires a preliminary extraction. The narrowest headroom is 105 lines in the boundary-Error reader, while that reader should gain only an import and one pre-projection call as its existing literal keys move out. If the implementation needs more than that bound permits, it stops and extracts a cohesive owner in a separate behavior-preserving commit rather than compressing the reader.
+No implemented source owner exceeds the 600-nonblank target. The public-result test is the narrowest owner at 55 lines of headroom, while the boundary-Error reader retains 78; the change needed no compression or unrelated extraction.
 
 ## Owner decision
 
-**Recommendation: approve `ADMDIAG-FLOWKEY-01`, `ADMDIAG-KEYOWNER-01`, `ADMDIAG-DISPATCH-01`, and `ADMDIAG-BOUNDARY-01` together after the cold proposal review passes.** The four rules are one minimal contract: location without a shared key owner would add a second admission account, while a shared key owner without all four dispatch paths would reproduce the omission this increment exists to close.
+**Approved 2026-08-08: `ADMDIAG-FLOWKEY-01`, `ADMDIAG-KEYOWNER-01`, `ADMDIAG-DISPATCH-01`, and `ADMDIAG-BOUNDARY-01` together.** The four rules are one minimal contract: location without a shared key owner would add a second admission account, while a shared key owner without all four dispatch paths would reproduce the omission this increment exists to close.
 
 ## Reopen conditions
 
@@ -165,4 +175,4 @@ Reopen before locating nested non-flow elements, changing the accepted source se
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal stage used one correction round. The context-cold review of target `8746bc6` returned four required findings about the pre-change result oracle, duplicate-list mutation guard, consumed-key value discriminator, and mechanically complete guard inventory. Correction audit `ad1a88b` closed all four with no new required defect. Implementation remains blocked until the owner approves the reviewed contract.
+The proposal stage used one correction round. The context-cold review of target `8746bc6` returned four required findings about the pre-change result oracle, duplicate-list mutation guard, consumed-key value discriminator, and mechanically complete guard inventory. Correction audit `ad1a88b` closed all four with no new required defect, and the owner then approved the reviewed contract.
