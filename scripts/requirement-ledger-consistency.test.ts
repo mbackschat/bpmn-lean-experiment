@@ -24,6 +24,7 @@ const reviewedRequirementSectionEnd = "## Growth rule";
 const familyMapCellCount = 6;
 const requirementCellCount = 7;
 const closedSliceCell = 5;
+const normativeSourceCell = 1;
 const dispositionCell = 4;
 const familyIdPrefix = "BPMN-MECH-";
 const decidedDispositions: ReadonlySet<string> = new Set([
@@ -58,6 +59,54 @@ function dispositionByRequirementId(
       withoutBackticks(cells[dispositionCell] ?? ""),
     ]),
   );
+}
+
+function normativeSourceByRequirementId(
+  ledger: string,
+): ReadonlyMap<string, string> {
+  return new Map(
+    markdownTableRows(
+      ledger,
+      reviewedRequirementSectionStart,
+      reviewedRequirementSectionEnd,
+      requirementCellCount,
+    ).map((cells) => [
+      withoutBackticks(cells[0] ?? ""),
+      cells[normativeSourceCell]?.trim() ?? "",
+    ]),
+  );
+}
+
+type RequirementCitationLock = Readonly<{
+  requirementId: string;
+  normativeSource: string;
+}>;
+
+function requirementCitationLocks(markdown: string): ReadonlyArray<RequirementCitationLock> {
+  return [...markdown.matchAll(
+    /^- Ledger citation lock for `(BPMN-[A-Z0-9-]+)`: (.+)$/gmu,
+  )].map((match) => ({
+    requirementId: match[1] ?? "",
+    normativeSource: match[2]?.trim() ?? "",
+  }));
+}
+
+function citationLockFindings(
+  locks: ReadonlyArray<RequirementCitationLock>,
+  normativeSources: ReadonlyMap<string, string>,
+): ReadonlyArray<string> {
+  const findings: string[] = [];
+  for (const lock of locks) {
+    const ledgerSource = normativeSources.get(lock.requirementId);
+    if (ledgerSource === undefined) {
+      findings.push(`${lock.requirementId}: requirement is absent from the ledger`);
+    } else if (ledgerSource !== lock.normativeSource) {
+      findings.push(
+        `${lock.requirementId}: capsule cites "${lock.normativeSource}" but ledger cites "${ledgerSource}"`,
+      );
+    }
+  }
+  return findings;
 }
 
 // Contract: a requirement the mechanism-family map cites as a closed reviewed slice must carry a
@@ -146,5 +195,36 @@ test("every requirement a capsule cites exists in the requirement ledger", async
       findings,
     },
     { ledgerRequirementCount: true, capsuleCount: true, findings: [] },
+  );
+});
+
+test("keeps converted capsule and requirement-ledger normative citations identical", async () => {
+  const normativeSources = normativeSourceByRequirementId(await readFile(ledgerPath, "utf8"));
+  const capsules = (await readdir(capsuleRoot)).filter((entry) =>
+    entry.endsWith("-PROPOSAL.md") || entry.endsWith("-SPEC.md")
+  );
+  const locks: RequirementCitationLock[] = [];
+  for (const capsule of capsules) {
+    locks.push(...requirementCitationLocks(await readFile(path.join(capsuleRoot, capsule), "utf8")));
+  }
+
+  assert.deepEqual(
+    {
+      convertedCapsuleCount: locks.length > 0,
+      findings: citationLockFindings(locks, normativeSources),
+    },
+    { convertedCapsuleCount: true, findings: [] },
+  );
+});
+
+test("rejects a converted capsule whose normative citation drifts from the ledger", () => {
+  const locks = requirementCitationLocks(
+    "- Ledger citation lock for `BPMN-EXAMPLE-01`: Clause 13.5.2",
+  );
+  assert.deepEqual(
+    citationLockFindings(locks, new Map([["BPMN-EXAMPLE-01", "Clause 13.5.3"]])),
+    [
+      'BPMN-EXAMPLE-01: capsule cites "Clause 13.5.2" but ledger cites "Clause 13.5.3"',
+    ],
   );
 });

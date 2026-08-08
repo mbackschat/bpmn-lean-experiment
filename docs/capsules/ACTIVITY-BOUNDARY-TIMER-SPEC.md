@@ -44,6 +44,7 @@ Fixture prevalence is a scheduling signal only. It is not evidence that this pro
 
 BPMN 2.0.2 is the sole semantic authority for this capsule.
 
+- Ledger citation lock for `BPMN-BOUNDARY-TIMER-01`: Clause 10.5.6, Clause 13.5.3, and Tables 10.91, 10.92, 10.101, and 10.122, with the Activity lifecycle in Clause 13.3.2
 - Clause 10.5 Table 10.91 owns the Boundary Event attributes, and Table 10.92 owns the legal `cancelActivity` values per trigger. The same two tables are already cited by the [boundary-error specification](BOUNDARY-ERROR-SPEC.md), which is why this capsule cites tables rather than a `10.5.x` sub-clause number.
 - Clause 10.5.6 fixes what interrupting means: “An interrupting boundary Event is defined by a *true* value of its cancelActivity attribute.”
 - The machine-readable artifacts fix the default. `Semantic.xsd` declares `<xsd:attribute name="cancelActivity" type="xsd:boolean" default="true"/>`, and `BPMN20.cmof` declares `BoundaryEvent-cancelActivity` with `default="true"`.
