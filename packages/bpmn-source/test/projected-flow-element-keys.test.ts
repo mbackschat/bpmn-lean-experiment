@@ -133,6 +133,39 @@ test("rejects a restored private list before accepting the inventory and every l
   }
 });
 
+test("rejects a pre-classification inventory consumer outside the closed site table", async () => {
+  const scopedPath = path.join(sourceRoot, "scoped-flow-elements.ts");
+  const original = await readFile(scopedPath, "utf8");
+  const mutation = original.replace(
+    "function isOrdinaryEmbeddedSubProcess(element: ElementRecord): boolean {\n  return ",
+    "function isOrdinaryEmbeddedSubProcess(element: ElementRecord): boolean {\n" +
+      "  return hasOnlyProjectedFlowElementKeys(\n" +
+      "    element,\n" +
+      "    ProjectedFlowElementShape.EmbeddedSubProcess,\n" +
+      "  ) &&\n    ",
+  );
+  assert.notEqual(mutation, original, "the pre-classification mutation matched nothing");
+
+  const api = new API({
+    cwd: projectRoot,
+    fs: {
+      readFile(fileName) {
+        return path.resolve(fileName) === scopedPath ? mutation : undefined;
+      },
+    },
+  });
+  try {
+    const snapshot = api.updateSnapshot({ openProjects: [tsconfig] });
+    assert.throws(
+      () => assertConsumerOwnership(projectSourceFiles(snapshot)),
+      /unregistered inventory consumer/,
+    );
+    snapshot.dispose();
+  } finally {
+    api.close();
+  }
+});
+
 function projectSourceFiles(
   snapshot: ReturnType<API["updateSnapshot"]>,
 ): ReadonlyMap<string, SourceFile> {
@@ -140,16 +173,16 @@ function projectSourceFiles(
     path.resolve(candidate.configFileName) === tsconfig
   );
   assert.ok(project, "the BPMN source TypeScript project must be loaded");
-  const names = new Set([
-    ...consumers.map(({ source }) => source),
-    "projected-flow-element-keys.ts",
-  ]);
-  return new Map([...names].map((source) => {
-    const fileName = path.join(sourceRoot, source);
+  const productionFiles = project.program.getSourceFileNames().flatMap((fileName) => {
+    const source = path.relative(sourceRoot, fileName);
     const file = project.program.getSourceFile(fileName);
-    assert.ok(file, `${source} must be present in the TypeScript program`);
-    return [source, file];
-  }));
+    return source.startsWith(`..${path.sep}`) || path.isAbsolute(source) ||
+        !source.endsWith(".ts") || file === undefined
+      ? []
+      : [[source, file] as const];
+  });
+  assert.ok(productionFiles.length > 0, "the production source set must not be empty");
+  return new Map(productionFiles);
 }
 
 function assertInventoryOwnership(files: ReadonlyMap<string, SourceFile>): void {
@@ -376,6 +409,12 @@ function assertConsumerOwnership(files: ReadonlyMap<string, SourceFile>): void {
       }
     }
   }
+  const unexpectedSites = [...actualSites].filter((site) => !expectedSites.has(site));
+  assert.deepEqual(
+    unexpectedSites,
+    [],
+    `unregistered inventory consumer: ${unexpectedSites.join(", ")}`,
+  );
   assert.deepEqual([...actualSites].sort(), [...expectedSites].sort());
 
   const consumedShapes = new Set(consumers.map(({ shape }) => shape));
