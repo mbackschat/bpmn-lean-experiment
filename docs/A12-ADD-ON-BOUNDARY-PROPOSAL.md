@@ -2,7 +2,7 @@
 
 ## Status
 
-Independently approved draft product-boundary correction, awaiting owner approval. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Implementation remains blocked until owner approval of this exact contract.
+Owner-approved on 2026-08-09; not implemented. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Approval authorizes exactly this independently reviewed contract and no broader A12 compatibility, extension, or packaging work.
 
 ## Independent cold-review receipt
 
