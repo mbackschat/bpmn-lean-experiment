@@ -119,6 +119,8 @@ Every CIB relationship selected by either neutral profile receives a fresh relat
 
 Preserved evidence has two explicitly separate generations.
 
+The immutable pre-extraction target is `02330ad0f980a5fc282cc0aa93600a9632b86c3e`. The frozen export, legacy manifest, original validator and projector, and preservation oracle all bind to that exact commit.
+
 The frozen legacy generation contains the two existing A12 profile artifacts, scenarios, project-authored source fixtures, retained CIB evidence, exact source-admission calibration, Lean fixtures, TypeScript fixtures, Temporal fixtures, and Java probe material under one optional adoption-evidence root. Every byte remains unchanged. A manifest records every original path, new path, and SHA-256. Current profile and scenario registries do not enumerate this generation, and current validators do not accept it. It is a pre-extraction baseline, not a production compatibility reader.
 
 The current adoption generation contains overlay-aware scenarios and evidence using the current schemas, a neutral semantic-profile identity, and exact overlay identity. Current validators accept only this generation. It also continues to read exact A12 source only from the pinned external checkout.
@@ -174,7 +176,7 @@ Excluded:
 
 ## Separating evidence and guards
 
-The first red guard scans every production source file, built-in profile artifact, registered product scenario, product example, and Lean umbrella transitively, including their complete import and catalog dependency closure. Its closed forbidden production-decision inventory is a target-bound manifest generated from the legacy profiles, scenarios, source fixtures, production identifiers, and current catalog registrations. The guard fails if regeneration changes that manifest, so removing a name from a hand-maintained list cannot hide a remaining dependency.
+The first red guard scans every production source file, built-in profile artifact, registered product scenario, product example, and Lean umbrella transitively, including their complete import and catalog dependency closure. Its closed forbidden production-decision inventory is a manifest generated from the legacy profiles, scenarios, source fixtures, production identifiers, and catalog registrations at the immutable pre-extraction target. The guard fails if regeneration changes that manifest, so removing a name from a hand-maintained list cannot hide a remaining dependency.
 
 The manifest includes at least the exact profile IDs, claims, source IDs, and scenario IDs; `urn:bpmn-lean:a12-delegate:v1`; `urn:bpmn-lean:a12:create-document`; `createDocumentDelegate`; `createRelationshipLinkDelegate`; `A12CreateDocument`; `a12CreateDocument`; `A12BoundaryError`; `a12BoundaryError`; `CreateDocument`; `createDocumentDelegateTemplate`; `documentModelName`; `MyDocumentModel`; `myDocumentReference`; `newDocRef`; `CreateRelationshipLinkTask`; `relationshipModel`; `RelationshipModel`; `relationshipLinkId`; `newLinkId`; `LinkLimitReachedError`; `Error_LinkLimitReached`; `BoundaryEvent_LinkLimitReached`; `ErrorEventDefinition_LinkLimitReached`; and `ExpectedUserTaskAfterBPMNError`, together with their exact current XML names and generated operation, scope, and fixture identifiers. Those values are allowed only in the optional adoption-evidence root, research and provenance documentation, and the guard's own adversarial fixtures. Moving one file while leaving another profile switch, probe predicate, fixture, registry entry, or transitive import therefore remains red.
 
@@ -182,7 +184,7 @@ The source-overlay decoder receives adversarial artifacts containing a reader mo
 
 The compilation-dispatch guard seeds an add-on-specific reader into production source and must fail. It also compiles one overlay-selected model carrying both an unsupported foreign attribute and an unsupported executable node, proving that generic multi-finding classification remains intact.
 
-The retained A12 adoption oracle is target-bound to the pre-extraction target. It runs that target's original validator and projector in an isolated Git export, compares frozen source and evidence bytes and digests byte-for-byte, then compares the legacy projections with current adoption projections after one explicit identity translation from the old A12 semantic profile to the new neutral semantic profile plus overlay identity. No field outside that declared identity translation may differ.
+The retained A12 adoption oracle is bound to the immutable pre-extraction target. It runs that target's original validator and projector in an isolated Git export, compares frozen source and evidence bytes and digests byte-for-byte, then compares the legacy projections with current adoption projections after one explicit identity translation from the old A12 semantic profile to the new neutral semantic profile plus overlay identity. No field outside that declared identity translation may differ.
 
 An inert-attribute non-interference pair differs only by one declared inert attribute in its exact BPMN source. The source identity changes and the overlay identity remains equal. After normalizing only source identity, the checked graph and Semantic Process program are equal, and canonical runtime behavior is exactly equal.
 
