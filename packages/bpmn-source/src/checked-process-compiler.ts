@@ -36,6 +36,9 @@ import {
   preservationCapability,
 } from "./preserved-element-classification.js";
 import {
+  referencesResolveToDeclaredType,
+} from "./reference-target-admission.js";
+import {
   selectRootDefinitions,
 } from "./root-definition-selection.js";
 import {
@@ -102,6 +105,11 @@ export function compileCheckedProcess(
       "A foreign attribute the compiler does not consume must be rejected rather than discarded.",
     );
   }
+  if (!referencesResolveToDeclaredType(definitions)) {
+    return unsupported(
+      "Every resolved reference must point at an element of the type its property declares.",
+    );
+  }
 
   const rootElements = asElementArray(definitions.rootElements);
   const rootSelection = rootElements === undefined
@@ -158,6 +166,7 @@ export function compileCheckedProcess(
   const sequenceFlows = projectCheckedSequenceFlows(
     sourceFlows.map(({ element }) => element),
     definitions.expressionLanguage,
+    capability,
   );
   if (sequenceFlows === undefined) {
     return unsupported(
@@ -169,6 +178,7 @@ export function compileCheckedProcess(
     sequenceFlows,
     definitions,
     rootSelection,
+    capability,
   );
   const nodeScopes = projectOwnership(
     sourceNodes,

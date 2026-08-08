@@ -180,6 +180,65 @@ test("lowers the preserved source to the executed-only twin's program", async ()
 });
 
 /**
+ * BPMN declares `documentation` on `BaseElement`, so every executed node is a valid locus for it.
+ *
+ * Retaining it only on `Definitions` and `Process` would be a narrower account than the profile
+ * advertises, and would reject the ordinary case of a modeler documenting a task. The retained text
+ * must reach neither the checked graph nor the program, which the execution projection below asserts
+ * against the same executed-only twin the notation-free comparison uses.
+ */
+const documentedLoci: ReadonlyArray<Readonly<{ name: string; find: string }>> = [
+  { name: "a User Task", find: '<bpmn:userTask id="UserTask_Approve" name="Approve">' },
+  { name: "a Start Event", find: '<bpmn:startEvent id="StartEvent_1">' },
+  {
+    name: "a Sequence Flow",
+    find: '<bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="StartEvent_1" targetRef="UserTask_Approve"/>',
+  },
+];
+
+for (const { name, find } of documentedLoci) {
+  test(`retains documentation on ${name} without executing it`, async () => {
+    const admitted = await readFile(preservedNotationSource, "utf8");
+    assert.ok(admitted.includes(find), `the fixture no longer contains ${find}`);
+    const documented = find.endsWith("/>")
+      ? admitted.replace(
+          find,
+          `${find.slice(0, -2)}><bpmn:documentation>Documented.</bpmn:documentation></bpmn:sequenceFlow>`,
+        )
+      : admitted.replace(find, `${find}<bpmn:documentation>Documented.</bpmn:documentation>`);
+
+    const [preserved, executedOnly] = await Promise.all([
+      compileBpmnToSemanticProcess({
+        bytes: new TextEncoder().encode(documented),
+        sourceId: "preserved-notation-documented",
+        expectedSha256: undefined,
+        semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+        limits: semanticProcessTestLimits,
+      }),
+      compile(
+        executedOnlyTwin,
+        "sequential-user-task-process",
+        SemanticProfileId.UserTask,
+      ),
+    ]);
+
+    assert.equal(
+      preserved.status,
+      BpmnCompilationStatus.Accepted,
+      `documentation was rejected: ${JSON.stringify(preserved.diagnostics)}`,
+    );
+    assert.ok(preserved.checkedProcess !== undefined);
+    assert.ok(executedOnly.checkedProcess !== undefined);
+    const { semanticProfile: _documented, ...documentedExecution } =
+      executionProjection(preserved.checkedProcess);
+    const { semanticProfile: _twin, ...twinExecution } = executionProjection(
+      executedOnly.checkedProcess,
+    );
+    assert.deepEqual(documentedExecution, twinExecution);
+  });
+}
+
+/**
  * The classifier must be sensitive to the exact defect it exists to prevent.
  *
  * A guard that only checks admitted sources cannot distinguish a correct classifier from one whose
@@ -291,6 +350,44 @@ const refusedPerturbations: ReadonlyArray<
     name: "a Diagram Interchange reference with no target",
     find: 'bpmnElement="EndEvent_1"',
     replace: 'bpmnElement="NoSuchElement"',
+  },
+  // A resolvable reference to the wrong kind of element. `bpmn-moddle` resolves an IDREF by identity
+  // alone and reports no warning, so before the reference rule all three of these compiled.
+  {
+    name: "a shape referring to a plane rather than a BPMN element",
+    find: '<bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">',
+    replace: '<bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="BPMNPlane_1">',
+  },
+  {
+    name: "a participant referring to a User Task rather than a Process",
+    find: 'processRef="Process_SequentialUserTask"',
+    replace: 'processRef="UserTask_Approve"',
+  },
+  {
+    name: "a lane referring to a Process rather than a flow node",
+    find: "<bpmn:flowNodeRef>UserTask_Approve</bpmn:flowNodeRef>",
+    replace: "<bpmn:flowNodeRef>Process_SequentialUserTask</bpmn:flowNodeRef>",
+  },
+  // The complete BPMN data family rejects for M1, declarations and associations alike.
+  {
+    name: "a Data Object declaration",
+    find: "<bpmn:textAnnotation",
+    replace:
+      '<bpmn:dataObject id="DataObject_1" name="Request"/><bpmn:textAnnotation',
+  },
+  {
+    name: "a Data Object reference",
+    find: "<bpmn:textAnnotation",
+    replace:
+      '<bpmn:dataObjectReference id="DataObjectReference_1" dataObjectRef="DataObject_1"/>' +
+      '<bpmn:dataObject id="DataObject_1" name="Request"/><bpmn:textAnnotation',
+  },
+  {
+    name: "a data input association on an executed task",
+    find: "<bpmn:incoming>Flow_StartToTask</bpmn:incoming>",
+    replace:
+      "<bpmn:incoming>Flow_StartToTask</bpmn:incoming>" +
+      '<bpmn:dataInputAssociation id="DataInputAssociation_1"/>',
   },
 ];
 

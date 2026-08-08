@@ -8,11 +8,20 @@
     "version": "2.0.2",
     "references": [
       "Clause 8.2.1",
-      "Clause 10.2.2",
-      "Clause 10.5.4",
-      "Clause 10.5.5",
+      "Clause 8.3.2",
+      "Clause 8.4.1",
+      "Clause 8.4.13",
+      "Clause 9.3",
+      "Clause 9.3.1",
+      "Clause 9.3.2",
+      "Clause 10.3.3",
+      "Clause 10.3.3.1",
+      "Clause 10.8",
       "Clause 12.2",
-      "Clause 12.3"
+      "Clause 13.2",
+      "Clause 13.3.2",
+      "Clause 13.5.1",
+      "Clause 13.5.6"
     ]
   },
   "bpmn": {

@@ -42,7 +42,11 @@ Four rules bound it.
 
 **Foreign content is preserved only at an explicitly inert QName and locus combination the profile declares**, and rejects everywhere else. The default is rejection, and the inert set is enumerated rather than inferred. **`mustUnderstand="true"` rejects unless the profile understands it**, which is what that attribute means.
 
+**For M1 that enumerated set is empty**, so the rule reduces to rejecting foreign content at every locus, and `mustUnderstand="true"` rejects along with everything else rather than through a rule of its own. The machinery a non-empty set needs — expanded `namespace#localName` matching resolved against the document's prefix bindings — lands with the first profile that declares one, because matching a raw prefix would admit content by spelling. Two attribute classes are admitted and neither is foreign content: XML namespace declarations, and the XML Schema instance attributes described in D3's implementation note.
+
 **A preserved element may reference an executed one when the profile declares that reference inert.** Such a reference is admitted when its namespace, its referring type, its identity, and its target are all valid. It is rejected when unresolved, wrong-typed, ambiguous, or **execution-affecting**; a reference the engine reads during lowering is not inert regardless of where it sits.
+
+Target-type validity is decided against the parser's own metamodel rather than a project-owned type table, because a second copy of the BPMN and DI hierarchies would be the weaker of the two. It needs its own rule: `bpmn-moddle` resolves an IDREF by identity alone, reports an unresolvable target as a warning that already blocks admission, and never checks that the element it found is the kind the referring property declares.
 
 An earlier draft of this rule said the opposite, that any preserved-to-executed reference is a rejection, and that was self-defeating. Diagram Interchange exists to point at executed elements. In the already-admitted A12 fixture every `BPMNShape.bpmnElement` resolves to a declared executed element, so the rule would have rejected a file that compiles today, and `BPMNEdge.bpmnElement`, `Lane.flowNodeRef`, and `Participant.processRef` are the same shape.
 
@@ -56,7 +60,7 @@ The table below is the intended classification, not the algorithm. It is a state
 | Message flows between participants | A second executable Process in the same definition |
 | Associations, text annotations, and groups | Any construct whose omission changes execution |
 | — | **The complete BPMN data family**: `dataObject`, `dataObjectReference`, `dataStore`, `dataStoreReference`, `itemDefinition`, and every `dataInputAssociation`, `dataOutputAssociation`, `ioSpecification`, `property`, and `dataState` |
-| Documentation elements | A second executable Process that is **unrelated or unbound** by any profile QName |
+| Documentation at any `BaseElement` locus, executed elements included | A second executable Process that is **unrelated or unbound** by any profile QName |
 | Foreign content at a profile-declared inert QName and locus | Foreign content anywhere else, and any `mustUnderstand="true"` the profile does not understand |
 
 The discriminator behind the table is one question: would omitting this construct change what the engine executes? If yes it is rejected, never preserved. The discriminator alone does not decide a tree, which is why the classifier and not the table is the contract.
@@ -84,6 +88,8 @@ Complete enumeration of *classification* results is conditional: it applies only
 That case still yields a **list, not a single diagnostic**. Every parser warning is normalized into the same typed record and all of them are retained, because a file with four malformed constructs must tell its author about four. Collapsing them would reintroduce the one-message-per-file failure this decision exists to remove, at exactly the moment the author most needs the detail.
 
 This is an admission-diagnostic contract, not a semantic observation: it exists before Workflow start, it is not part of any Process state, and no rejected element ever reaches the IL.
+
+**Implementation note: the two attribute classes admitted beside foreign content.** XML namespace declarations bind a prefix and are not content. Three XML Schema instance attributes are admitted for two different reasons, and the distinction matters because calling them all content-free would be false. `xsi:schemaLocation` and `xsi:noNamespaceSchemaLocation` genuinely are content-free: they tell a validating parser where to find a schema. `xsi:type` is **not** — it selects the element type the parser resolves, so a `conditionExpression` carrying `bpmn:tFormalExpression` parses as a `FormalExpression` and one carrying `tExpression` parses as an `Expression`. It is admitted on the same ground as the Service Task's `camunda` attributes: the meaning it carries has already been applied and is visible in the resolved type for every projector to judge. `xsi:nil` is refused, because it empties an element's content. Refusing the admitted three is not an option: 37% of the 840 files in the pinned MIWG corpus carry `xsi:schemaLocation` and 30% carry `xsi:type`.
 
 ### D4 — One executable entry Process for generic profiles, without breaking existing ones
 
@@ -179,16 +185,17 @@ Each is a case that must fail before the change and pass after, or the reverse. 
 | A modeler file with DI and one unsupported executable node | reject, naming that node, not the DI |
 | A preserved container holding an executable descendant | reject, not preserve the container |
 | `mustUnderstand="true"` on unrecognized foreign content | reject |
-| A preserved element whose IDREF resolves into the executed partition | reject |
+| A preserved reference resolving to the wrong target type: a shape to a plane, a participant to a User Task, a lane to a Process | each reject, because the parser resolves an IDREF by identity alone and never checks the referring property's declared type |
 | A source and its stripped twin | agree on the execution projection |
 | A seeded classifier that leaks one preserved construct into the executed partition | be rejected by the D5 guard |
 | An element with no `id` | produce a diagnostic with a resolvable containment identity |
 | An unrelated, QName-unbound second executable Process | reject |
-| The Call Activity fixture's two Process roots | still be accepted, unchanged |
+| The Call Activity fixture's two Process roots | still be accepted; its **valid** shape is unchanged, while its foreign-attribute and reference-target admission is tightened along with every other profile's |
 | A bare `dataObject` declaration, a `dataObjectReference`, and a `dataInputAssociation` | each reject, since M1 rejects the whole data family |
 | A file with four parser warnings | produce four normalized diagnostics, not one |
-| Foreign content at an execution-bearing locus | reject, while the same content at a declared inert locus is preserved |
+| Foreign content at any locus, executed or preserved | reject, because this profile declares no inert QName and locus; the paired preserve case reopens with the first profile that declares one |
 | A DI reference to a declared executed element, and one to a missing target | be preserved, and rejected, respectively |
+| `documentation` on an executed User Task, Start Event, and Sequence Flow | be retained without reaching the checked graph or the program, since BPMN declares it on `BaseElement` |
 | The stripped twin's closure bound, enabledness, stable-state resumability, and host capability | be **inherited unchanged** by the preserve-enabled source, each asserted explicitly rather than assumed to follow from projection equality |
 
 ## What already binds this work

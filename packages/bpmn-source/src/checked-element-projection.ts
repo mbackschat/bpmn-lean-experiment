@@ -49,6 +49,12 @@ import {
 import {
   projectReceiveTask,
 } from "./receive-task-source.js";
+import {
+  executedProjectionView,
+} from "./preserved-element-classification.js";
+import type {
+  PreservationCapability,
+} from "./preserved-element-classification.js";
 import type {
   RootDefinitionSelection,
 } from "./root-definition-selection.js";
@@ -70,8 +76,13 @@ export function projectCheckedNodes(
   flows: ReadonlyArray<CheckedSequenceFlow>,
   definitions: ElementRecord,
   rootSelection: RootDefinitionSelection,
+  capability: PreservationCapability | undefined,
 ): ReadonlyArray<CheckedNode> | undefined {
-  const projected = elements.map((element) => {
+  const projected = elements.map((source) => {
+    const element = executedProjectionView(source, capability);
+    if (element === undefined) {
+      return undefined;
+    }
     const id = readId(element);
     if (id === undefined) {
       return undefined;
@@ -162,9 +173,12 @@ export function projectCheckedNodes(
 export function projectCheckedSequenceFlows(
   flows: ReadonlyArray<ElementRecord>,
   expressionLanguage: unknown,
+  capability: PreservationCapability | undefined,
 ): ReadonlyArray<CheckedSequenceFlow> | undefined {
-  const projected = flows.map((flow) => {
+  const projected = flows.map((declared) => {
+    const flow = executedProjectionView(declared, capability);
     if (
+      flow === undefined ||
       !hasOnlyModelledKeys(flow, [
         "$type",
         "id",

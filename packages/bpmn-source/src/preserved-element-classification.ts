@@ -44,6 +44,15 @@ export type PreservationCapability = Readonly<{
   definitionsKeys: ReadonlySet<string>;
   /** Own keys of the executable `bpmn:Process` this profile preserves beyond its executed shape. */
   processKeys: ReadonlySet<string>;
+  /**
+   * Own keys any executed element may carry and no projector may see.
+   *
+   * BPMN declares `documentation` on `BaseElement`, so a modeler puts it on tasks and events as
+   * readily as on the Process. Restricting retention to the Process would narrow the account the
+   * profile advertises, so these keys are validated as preserved subtrees and then withheld from
+   * projection rather than being taught to every projector individually.
+   */
+  baseElementKeys: ReadonlySet<string>;
 }>;
 
 const diagramInterchangeTypes = [
@@ -95,6 +104,7 @@ const userTaskPreservedNotation: PreservationCapability = Object.freeze({
     "name",
   ]),
   processKeys: new Set(["artifacts", "documentation", "laneSets"]),
+  baseElementKeys: new Set(["documentation"]),
 });
 
 /** The capability of one profile, or `undefined` for a profile that executes or rejects everything. */
@@ -192,6 +202,48 @@ export function carriesNoUnconsumedForeignAttribute(
   return walk(definitions);
 }
 
+/**
+ * `element` as the executed projectors must see it: without the keys this profile only retains.
+ *
+ * Returns `undefined` when a retained key holds content the profile does not preserve, which rejects
+ * exactly as an unrecognized key does. Returns the element itself when it carries no such key, so
+ * the ordinary case allocates nothing and every existing profile is byte-for-byte unaffected.
+ *
+ * The view copies own property *descriptors* rather than spreading. `bpmn-moddle` stores `$attrs`,
+ * `$parent`, and every resolved reference as non-enumerable own properties, and a spread would drop
+ * all of them — silently removing the foreign attributes the Service Task projector consumes and the
+ * `sourceRef` and `targetRef` the Sequence Flow projector resolves.
+ */
+export function executedProjectionView(
+  element: ElementRecord,
+  capability: PreservationCapability | undefined,
+): ElementRecord | undefined {
+  if (capability === undefined) {
+    return element;
+  }
+  const retained = Object.keys(element).filter((key) =>
+    capability.baseElementKeys.has(key)
+  );
+  if (retained.length === 0) {
+    return element;
+  }
+  if (
+    !retained.every((key) =>
+      isWhollyPreservedValue(element[key], capability)
+    )
+  ) {
+    return undefined;
+  }
+  const view = Object.create(
+    Object.getPrototypeOf(element) as object | null,
+    Object.getOwnPropertyDescriptors(element),
+  ) as ElementRecord;
+  for (const key of retained) {
+    delete view[key];
+  }
+  return view;
+}
+
 function isWhollyPreservedValue(
   value: unknown,
   capability: PreservationCapability,
@@ -204,23 +256,30 @@ function isWhollyPreservedValue(
 }
 
 /**
- * XML Schema instance attributes that carry no BPMN model content.
+ * XML Schema instance attributes admitted at any locus, for two distinct reasons.
  *
- * `type` is consumed by the parser rather than discarded: it selects the resolved `$type`, so a
- * `conditionExpression` carrying `xsi:type="bpmn:tFormalExpression"` parses as a `FormalExpression`
- * and one carrying `tExpression` parses as an `Expression`, which the condition projector then
- * accepts or refuses on its own terms. An unresolvable value is a parser warning and already blocks
- * admission. `schemaLocation` and `noNamespaceSchemaLocation` are hints to a validating parser about
- * where to find a schema and change no element's content.
+ * `type` is **parser-consumed and therefore meaning-bearing**, not content-free. It selects the
+ * resolved `$type`: a `conditionExpression` carrying `xsi:type="bpmn:tFormalExpression"` parses as a
+ * `FormalExpression` and one carrying `tExpression` parses as an `Expression`, and the condition
+ * projector then accepts or refuses that on its own terms. It is admitted because the meaning it
+ * carries has already been applied and is visible in `$type` for every projector to judge — the same
+ * ground as the Service Task's consumed `camunda` attributes — not because it says nothing. An
+ * unresolvable value is a parser warning and already blocks admission.
  *
- * `nil` is deliberately absent. It empties an element's content, which is exactly the kind of
- * meaning that must not pass unexamined.
+ * `schemaLocation` and `noNamespaceSchemaLocation` are genuinely content-free: they tell a
+ * validating parser where to find a schema and change no element's content.
+ *
+ * `nil` is deliberately absent from both sets. It empties an element's content, which is exactly the
+ * kind of meaning that must not pass unexamined.
  *
  * Admitting these three is not a convenience: 37% of the 840 files in the pinned MIWG corpus carry
  * `xsi:schemaLocation` and 30% carry `xsi:type`, so refusing them would refuse most conformant BPMN.
  */
-const contentFreeSchemaInstanceAttributes: ReadonlySet<string> = new Set([
+const parserConsumedSchemaInstanceAttributes: ReadonlySet<string> = new Set([
   "type",
+]);
+
+const contentFreeSchemaLocationHints: ReadonlySet<string> = new Set([
   "schemaLocation",
   "noNamespaceSchemaLocation",
 ]);
@@ -251,10 +310,13 @@ function carriesNoForeignAttribute(
         return true;
       }
       const separator = name.indexOf(":");
+      if (separator <= 0 || !schemaInstancePrefixes.has(name.slice(0, separator))) {
+        return false;
+      }
+      const localName = name.slice(separator + 1);
       return (
-        separator > 0 &&
-        schemaInstancePrefixes.has(name.slice(0, separator)) &&
-        contentFreeSchemaInstanceAttributes.has(name.slice(separator + 1))
+        parserConsumedSchemaInstanceAttributes.has(localName) ||
+        contentFreeSchemaLocationHints.has(localName)
       );
     })
   );
