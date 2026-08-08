@@ -34,9 +34,18 @@ import type {
   ElementRecord,
 } from "./moddle-graph.js";
 import {
+  orderedElementDiagnostics,
+} from "./admission-diagnostics.js";
+import {
   carriesNoUnconsumedForeignAttribute,
   foreignAttributeConsumingTypes,
 } from "./preserved-element-classification.js";
+import {
+  FlowElementProjectionProfile,
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+  projectedFlowElementKeyRejections,
+} from "./projected-flow-element-keys.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 export const a12CreateDocumentProfile =
@@ -122,6 +131,21 @@ export function compileA12CreateDocument(
     return unsupported("The A12 profile requires the exact Start → CreateDocument → End topology.");
   }
 
+  const keyRejections = projectedFlowElementKeyRejections(
+    definitions,
+    elements,
+    FlowElementProjectionProfile.A12CreateDocument,
+  );
+  if (keyRejections === undefined) {
+    return unsupported("Every selected A12 CreateDocument flow element requires an exact key inventory entry.");
+  }
+  if (keyRejections.length > 0) {
+    return {
+      checkedProcess: undefined,
+      diagnostics: orderedElementDiagnostics(keyRejections),
+    };
+  }
+
   const start = projectPlainNode(starts[0], CheckedNodeKind.NoneStartEvent);
   const task = projectCreateDocument(tasks[0], definitions);
   const end = projectPlainNode(ends[0], CheckedNodeKind.NoneEndEvent);
@@ -183,7 +207,10 @@ function projectPlainNode(
   const id = value === undefined ? undefined : readId(value);
   return value !== undefined &&
       id !== undefined &&
-      hasOnlyModelledKeys(value, ["$type", "id", "name"])
+      hasOnlyProjectedFlowElementKeys(
+        value,
+        ProjectedFlowElementShape.PlainNode,
+      )
     ? ({ kind, id } as Extract<CheckedNode, { kind: typeof kind }>)
     : undefined;
 }
@@ -194,7 +221,10 @@ function projectCreateDocument(
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ServiceTask }> | undefined {
   if (
     value === undefined ||
-    !hasOnlyModelledKeys(value, ["$type", "id", "name", "extensionElements"])
+    !hasOnlyProjectedFlowElementKeys(
+      value,
+      ProjectedFlowElementShape.A12CreateServiceTask,
+    )
   ) {
     return undefined;
   }
@@ -304,7 +334,10 @@ function projectFlows(
     const id = readId(flow);
     const sourceId = source === undefined ? undefined : readId(source);
     const targetId = target === undefined ? undefined : readId(target);
-    return hasOnlyModelledKeys(flow, ["$type", "id", "name"]) &&
+    return hasOnlyProjectedFlowElementKeys(
+      flow,
+      ProjectedFlowElementShape.A12CreateSequenceFlow,
+    ) &&
         id !== undefined &&
         sourceId !== undefined &&
         targetId !== undefined

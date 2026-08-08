@@ -9,12 +9,15 @@ import type {
 } from "./admission-diagnostics.js";
 import {
   asElementArray,
-  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 /**
  * One flow element with the scope that owns it and the containment path that locates it.
@@ -117,13 +120,10 @@ function collectScope(
 }
 
 function isPlainEmbeddedSubProcess(element: ElementRecord): boolean {
-  return hasOnlyModelledKeys(element, [
-    "$type",
-    "id",
-    "name",
-    "triggeredByEvent",
-    "flowElements",
-  ]) &&
+  return hasOnlyProjectedFlowElementKeys(
+    element,
+    ProjectedFlowElementShape.EmbeddedSubProcess,
+  ) &&
     (element.name === undefined || typeof element.name === "string") &&
     (element.triggeredByEvent === undefined ||
       element.triggeredByEvent === false);

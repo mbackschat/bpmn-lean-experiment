@@ -14,11 +14,14 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 };
 import {
   asElement,
-  hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
 import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -28,7 +31,10 @@ export function projectInclusiveGateway(
   flows: ReadonlyArray<CheckedSequenceFlow>,
   elements: ReadonlyArray<ElementRecord>,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.InclusiveGateway }> | undefined {
-  if (!hasOnlyModelledKeys(element, ["$type", "id", "name", "gatewayDirection", "default"])) {
+  if (!hasOnlyProjectedFlowElementKeys(
+    element,
+    ProjectedFlowElementShape.ExclusiveOrInclusiveGateway,
+  )) {
     return undefined;
   }
   const incoming = flows.filter(({ targetId }) => targetId === id);

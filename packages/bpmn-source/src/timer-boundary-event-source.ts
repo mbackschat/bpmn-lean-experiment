@@ -25,6 +25,10 @@ import {
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 export function projectTimerBoundaryEvent(
   element: ElementRecord,
@@ -39,14 +43,10 @@ export function projectTimerBoundaryEvent(
   const interruption = readInterruption(element.cancelActivity);
   if (
     interruption === undefined ||
-    !hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "attachedToRef",
-      "cancelActivity",
-      "eventDefinitions",
-    ]) ||
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.BoundaryEvent,
+    ) ||
     !hasExactPt1sTimerDefinition(element.eventDefinitions, timerEventDefinitionType)
   ) {
     return undefined;

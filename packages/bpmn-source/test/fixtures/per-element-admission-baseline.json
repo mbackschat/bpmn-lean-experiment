@@ -1,0 +1,1205 @@
+{
+  "kind": "perElementAdmissionBaseline",
+  "sourceTarget": "8746bc6bbdeb126a79d56c6f510adc4e5f780d98",
+  "projections": {
+    "generic-accepted": {
+      "status": "accepted",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "preserved-notation-diagnostics",
+        "sha256": "5b9daa05805d7922afb134a345796930d2872a4e0040d235b764851c711bb072",
+        "byteLength": 3690,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [],
+      "checkedProcess": {
+        "kind": "checkedProcess",
+        "identity": {
+          "semanticProfile": "bpmn-2.0.2-user-task-preserved-notation-draft",
+          "sourceId": "preserved-notation-diagnostics",
+          "sourceSha256": "5b9daa05805d7922afb134a345796930d2872a4e0040d235b764851c711bb072"
+        },
+        "processId": "Process_SequentialUserTask",
+        "definitionScopes": [
+          {
+            "id": "scope:Process_SequentialUserTask",
+            "parentScopeId": null,
+            "originElementId": "Process_SequentialUserTask"
+          }
+        ],
+        "nodeScopes": [
+          {
+            "nodeId": "EndEvent_1",
+            "scopeId": "scope:Process_SequentialUserTask"
+          },
+          {
+            "nodeId": "StartEvent_1",
+            "scopeId": "scope:Process_SequentialUserTask"
+          },
+          {
+            "nodeId": "UserTask_Approve",
+            "scopeId": "scope:Process_SequentialUserTask"
+          }
+        ],
+        "sequenceFlowScopes": [
+          {
+            "sequenceFlowId": "Flow_StartToTask",
+            "scopeId": "scope:Process_SequentialUserTask"
+          },
+          {
+            "sequenceFlowId": "Flow_TaskToEnd",
+            "scopeId": "scope:Process_SequentialUserTask"
+          }
+        ],
+        "nodes": [
+          {
+            "kind": "noneEndEvent",
+            "id": "EndEvent_1"
+          },
+          {
+            "kind": "noneStartEvent",
+            "id": "StartEvent_1"
+          },
+          {
+            "kind": "userTask",
+            "id": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ],
+        "sequenceFlows": [
+          {
+            "id": "Flow_StartToTask",
+            "sourceId": "StartEvent_1",
+            "targetId": "UserTask_Approve",
+            "condition": null
+          },
+          {
+            "id": "Flow_TaskToEnd",
+            "sourceId": "UserTask_Approve",
+            "targetId": "EndEvent_1",
+            "condition": null
+          }
+        ]
+      },
+      "semanticProcess": {
+        "kind": "semanticProcess",
+        "identity": {
+          "compiler": "bpmn-source-semantic-process",
+          "semanticProfile": "bpmn-2.0.2-user-task-preserved-notation-draft",
+          "sourceId": "preserved-notation-diagnostics",
+          "sourceSha256": "5b9daa05805d7922afb134a345796930d2872a4e0040d235b764851c711bb072"
+        },
+        "processId": "Process_SequentialUserTask",
+        "definitionScopes": [
+          {
+            "id": "scope:Process_SequentialUserTask",
+            "parentScopeId": null,
+            "originElementId": "Process_SequentialUserTask"
+          }
+        ],
+        "operationScopes": [
+          {
+            "operationId": "operation:EndEvent_1",
+            "scopeId": "scope:Process_SequentialUserTask"
+          },
+          {
+            "operationId": "operation:StartEvent_1",
+            "scopeId": "scope:Process_SequentialUserTask"
+          },
+          {
+            "operationId": "operation:UserTask_Approve",
+            "scopeId": "scope:Process_SequentialUserTask"
+          },
+          {
+            "operationId": "operation:complete-scope:scope:Process_SequentialUserTask",
+            "scopeId": "scope:Process_SequentialUserTask"
+          }
+        ],
+        "controlPlaceScopes": [
+          {
+            "controlPlaceId": "place:Flow_StartToTask",
+            "scopeId": "scope:Process_SequentialUserTask"
+          },
+          {
+            "controlPlaceId": "place:Flow_TaskToEnd",
+            "scopeId": "scope:Process_SequentialUserTask"
+          }
+        ],
+        "controlPlaces": [
+          {
+            "id": "place:Flow_StartToTask",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_StartToTask"
+            }
+          },
+          {
+            "id": "place:Flow_TaskToEnd",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_TaskToEnd"
+            }
+          }
+        ],
+        "operations": [
+          {
+            "id": "operation:EndEvent_1",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "EndEvent_1"
+            },
+            "kind": "reachNoneEnd",
+            "input": "place:Flow_TaskToEnd"
+          },
+          {
+            "id": "operation:StartEvent_1",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "StartEvent_1"
+            },
+            "kind": "initiate",
+            "output": "place:Flow_StartToTask"
+          },
+          {
+            "id": "operation:UserTask_Approve",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "UserTask_Approve"
+            },
+            "kind": "awaitUserTask",
+            "input": "place:Flow_StartToTask",
+            "output": "place:Flow_TaskToEnd",
+            "task": {
+              "elementId": "UserTask_Approve",
+              "name": "Approve"
+            }
+          },
+          {
+            "id": "operation:complete-scope:scope:Process_SequentialUserTask",
+            "kind": "completeScope",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "Process_SequentialUserTask"
+            },
+            "scopeId": "scope:Process_SequentialUserTask",
+            "parentOutput": null
+          }
+        ]
+      },
+      "exactBytesHex": "3c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d225554462d38223f3e0a3c62706d6e3a646566696e6974696f6e730a2020786d6c6e733a62706d6e3d22687474703a2f2f7777772e6f6d672e6f72672f737065632f42504d4e2f32303130303532342f4d4f44454c220a2020786d6c6e733a62706d6e64693d22687474703a2f2f7777772e6f6d672e6f72672f737065632f42504d4e2f32303130303532342f4449220a2020786d6c6e733a64633d22687474703a2f2f7777772e6f6d672e6f72672f737065632f44442f32303130303532342f4443220a2020786d6c6e733a64693d22687474703a2f2f7777772e6f6d672e6f72672f737065632f44442f32303130303532342f4449220a2020786d6c6e733a7873693d22687474703a2f2f7777772e77332e6f72672f323030312f584d4c536368656d612d696e7374616e6365220a202069643d22446566696e6974696f6e735f53657175656e7469616c557365725461736b220a20207461726765744e616d6573706163653d2268747470733a2f2f62706d6e2d6c65616e2e6c6f63616c2f7363656e6172696f732f73657175656e7469616c2d757365722d7461736b220a20206578706f727465723d2262706d6e2d6c65616e206669787475726520617574686f72220a20206578706f7274657256657273696f6e3d22312e30223e0a20203c62706d6e3a636f6c6c61626f726174696f6e2069643d22436f6c6c61626f726174696f6e5f31223e0a202020203c62706d6e3a7061727469636970616e742069643d225061727469636970616e745f52657669657765727322206e616d653d22526576696577657273222070726f636573735265663d2250726f636573735f53657175656e7469616c557365725461736b222f3e0a20203c2f62706d6e3a636f6c6c61626f726174696f6e3e0a20203c62706d6e3a70726f636573732069643d2250726f636573735f53657175656e7469616c557365725461736b22206e616d653d2253657175656e7469616c2075736572207461736b2220697345786563757461626c653d2274727565223e0a202020203c62706d6e3a646f63756d656e746174696f6e3e417070726f76616c206f66206f6e6520696e636f6d696e6720726571756573742e3c2f62706d6e3a646f63756d656e746174696f6e3e0a202020203c62706d6e3a6c616e655365742069643d224c616e655365745f31223e0a2020202020203c62706d6e3a6c616e652069643d224c616e655f526576696577657222206e616d653d225265766965776572223e0a20202020202020203c62706d6e3a666c6f774e6f64655265663e557365725461736b5f417070726f76653c2f62706d6e3a666c6f774e6f64655265663e0a2020202020203c2f62706d6e3a6c616e653e0a202020203c2f62706d6e3a6c616e655365743e0a202020203c62706d6e3a73746172744576656e742069643d2253746172744576656e745f31223e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f5374617274546f5461736b3c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a73746172744576656e743e0a202020203c62706d6e3a757365725461736b2069643d22557365725461736b5f417070726f766522206e616d653d22417070726f7665223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f5374617274546f5461736b3c2f62706d6e3a696e636f6d696e673e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f5461736b546f456e643c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a757365725461736b3e0a202020203c62706d6e3a656e644576656e742069643d22456e644576656e745f31223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f5461736b546f456e643c2f62706d6e3a696e636f6d696e673e0a202020203c2f62706d6e3a656e644576656e743e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f5374617274546f5461736b2220736f757263655265663d2253746172744576656e745f3122207461726765745265663d22557365725461736b5f417070726f7665222f3e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f5461736b546f456e642220736f757263655265663d22557365725461736b5f417070726f766522207461726765745265663d22456e644576656e745f31222f3e0a202020203c62706d6e3a74657874416e6e6f746174696f6e2069643d2254657874416e6e6f746174696f6e5f31223e0a2020202020203c62706d6e3a746578743e417070726f76652077697468696e206f6e6520776f726b696e67206461792e3c2f62706d6e3a746578743e0a202020203c2f62706d6e3a74657874416e6e6f746174696f6e3e0a202020203c62706d6e3a6173736f63696174696f6e2069643d224173736f63696174696f6e5f312220736f757263655265663d22557365725461736b5f417070726f766522207461726765745265663d2254657874416e6e6f746174696f6e5f31222f3e0a20203c2f62706d6e3a70726f636573733e0a20203c62706d6e64693a42504d4e4469616772616d2069643d2242504d4e4469616772616d5f31223e0a202020203c62706d6e64693a42504d4e506c616e652069643d2242504d4e506c616e655f31222062706d6e456c656d656e743d22436f6c6c61626f726174696f6e5f31223e0a2020202020203c62706d6e64693a42504d4e53686170652069643d225061727469636970616e745f5265766965776572735f6469222062706d6e456c656d656e743d225061727469636970616e745f52657669657765727322206973486f72697a6f6e74616c3d2274727565223e0a20202020202020203c64633a426f756e647320783d223132302220793d223630222077696474683d2234303022206865696768743d22313630222f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e53686170652069643d224c616e655f52657669657765725f6469222062706d6e456c656d656e743d224c616e655f526576696577657222206973486f72697a6f6e74616c3d2274727565223e0a20202020202020203c64633a426f756e647320783d223135302220793d223630222077696474683d2233373022206865696768743d22313630222f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e53686170652069643d2253746172744576656e745f315f6469222062706d6e456c656d656e743d2253746172744576656e745f31223e0a20202020202020203c64633a426f756e647320783d223138322220793d22313232222077696474683d22333622206865696768743d223336222f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e53686170652069643d22557365725461736b5f417070726f76655f6469222062706d6e456c656d656e743d22557365725461736b5f417070726f7665223e0a20202020202020203c64633a426f756e647320783d223237302220793d22313030222077696474683d2231303022206865696768743d223830222f3e0a20202020202020203c62706d6e64693a42504d4e4c6162656c2f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e53686170652069643d22456e644576656e745f315f6469222062706d6e456c656d656e743d22456e644576656e745f31223e0a20202020202020203c64633a426f756e647320783d223432322220793d22313232222077696474683d22333622206865696768743d223336222f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e53686170652069643d2254657874416e6e6f746174696f6e5f315f6469222062706d6e456c656d656e743d2254657874416e6e6f746174696f6e5f31223e0a20202020202020203c64633a426f756e647320783d223237302220793d22323230222077696474683d2231363022206865696768743d223430222f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e456467652069643d22466c6f775f5374617274546f5461736b5f6469222062706d6e456c656d656e743d22466c6f775f5374617274546f5461736b223e0a20202020202020203c64693a776179706f696e7420783d223231382220793d22313430222f3e0a20202020202020203c64693a776179706f696e7420783d223237302220793d22313430222f3e0a2020202020203c2f62706d6e64693a42504d4e456467653e0a2020202020203c62706d6e64693a42504d4e456467652069643d22466c6f775f5461736b546f456e645f6469222062706d6e456c656d656e743d22466c6f775f5461736b546f456e64223e0a20202020202020203c64693a776179706f696e7420783d223337302220793d22313430222f3e0a20202020202020203c64693a776179706f696e7420783d223432322220793d22313430222f3e0a2020202020203c2f62706d6e64693a42504d4e456467653e0a2020202020203c62706d6e64693a42504d4e456467652069643d224173736f63696174696f6e5f315f6469222062706d6e456c656d656e743d224173736f63696174696f6e5f31223e0a20202020202020203c64693a776179706f696e7420783d223332302220793d22313830222f3e0a20202020202020203c64693a776179706f696e7420783d223332302220793d22323230222f3e0a2020202020203c2f62706d6e64693a42504d4e456467653e0a202020203c2f62706d6e64693a42504d4e506c616e653e0a20203c2f62706d6e64693a42504d4e4469616772616d3e0a3c2f62706d6e3a646566696e6974696f6e733e0a"
+    },
+    "create-document-accepted": {
+      "status": "accepted",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "a12-create-document-data",
+        "sha256": "34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13",
+        "byteLength": 2978,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [],
+      "checkedProcess": {
+        "kind": "checkedProcess",
+        "identity": {
+          "semanticProfile": "cibseven-2.0.0-a12-create-document-draft",
+          "sourceId": "a12-create-document-data",
+          "sourceSha256": "34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13"
+        },
+        "processId": "Process_A12CreateDocument",
+        "definitionScopes": [
+          {
+            "id": "scope:Process_A12CreateDocument",
+            "parentScopeId": null,
+            "originElementId": "Process_A12CreateDocument"
+          }
+        ],
+        "nodeScopes": [
+          {
+            "nodeId": "CreateDocument",
+            "scopeId": "scope:Process_A12CreateDocument"
+          },
+          {
+            "nodeId": "EndEvent_CreateDocument",
+            "scopeId": "scope:Process_A12CreateDocument"
+          },
+          {
+            "nodeId": "StartEvent_CreateDocument",
+            "scopeId": "scope:Process_A12CreateDocument"
+          }
+        ],
+        "sequenceFlowScopes": [
+          {
+            "sequenceFlowId": "Flow_CreateToEnd",
+            "scopeId": "scope:Process_A12CreateDocument"
+          },
+          {
+            "sequenceFlowId": "Flow_StartToCreate",
+            "scopeId": "scope:Process_A12CreateDocument"
+          }
+        ],
+        "nodes": [
+          {
+            "kind": "serviceTask",
+            "id": "CreateDocument",
+            "descriptor": {
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:mapped-success-v1"
+            },
+            "bpmnErrorRoute": null,
+            "inputMappings": [
+              {
+                "target": "documentModelName",
+                "expression": {
+                  "kind": "stringLiteral",
+                  "value": "MyDocumentModel"
+                }
+              }
+            ],
+            "outputMappings": [
+              {
+                "target": "myDocumentReference",
+                "expression": {
+                  "kind": "localVariable",
+                  "name": "newDocRef"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "noneEndEvent",
+            "id": "EndEvent_CreateDocument"
+          },
+          {
+            "kind": "noneStartEvent",
+            "id": "StartEvent_CreateDocument"
+          }
+        ],
+        "sequenceFlows": [
+          {
+            "id": "Flow_CreateToEnd",
+            "sourceId": "CreateDocument",
+            "targetId": "EndEvent_CreateDocument",
+            "condition": null
+          },
+          {
+            "id": "Flow_StartToCreate",
+            "sourceId": "StartEvent_CreateDocument",
+            "targetId": "CreateDocument",
+            "condition": null
+          }
+        ]
+      },
+      "semanticProcess": {
+        "kind": "semanticProcess",
+        "identity": {
+          "compiler": "bpmn-source-semantic-process",
+          "semanticProfile": "cibseven-2.0.0-a12-create-document-draft",
+          "sourceId": "a12-create-document-data",
+          "sourceSha256": "34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13"
+        },
+        "processId": "Process_A12CreateDocument",
+        "definitionScopes": [
+          {
+            "id": "scope:Process_A12CreateDocument",
+            "parentScopeId": null,
+            "originElementId": "Process_A12CreateDocument"
+          }
+        ],
+        "operationScopes": [
+          {
+            "operationId": "operation:CreateDocument",
+            "scopeId": "scope:Process_A12CreateDocument"
+          },
+          {
+            "operationId": "operation:EndEvent_CreateDocument",
+            "scopeId": "scope:Process_A12CreateDocument"
+          },
+          {
+            "operationId": "operation:StartEvent_CreateDocument",
+            "scopeId": "scope:Process_A12CreateDocument"
+          },
+          {
+            "operationId": "operation:complete-scope:scope:Process_A12CreateDocument",
+            "scopeId": "scope:Process_A12CreateDocument"
+          }
+        ],
+        "controlPlaceScopes": [
+          {
+            "controlPlaceId": "place:Flow_CreateToEnd",
+            "scopeId": "scope:Process_A12CreateDocument"
+          },
+          {
+            "controlPlaceId": "place:Flow_StartToCreate",
+            "scopeId": "scope:Process_A12CreateDocument"
+          }
+        ],
+        "controlPlaces": [
+          {
+            "id": "place:Flow_CreateToEnd",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_CreateToEnd"
+            }
+          },
+          {
+            "id": "place:Flow_StartToCreate",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_StartToCreate"
+            }
+          }
+        ],
+        "operations": [
+          {
+            "id": "operation:CreateDocument",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CreateDocument"
+            },
+            "kind": "awaitEffect",
+            "input": "place:Flow_StartToCreate",
+            "output": "place:Flow_CreateToEnd",
+            "effect": {
+              "elementId": "CreateDocument",
+              "descriptor": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:mapped-success-v1"
+              },
+              "inputMappings": [
+                {
+                  "target": "documentModelName",
+                  "expression": {
+                    "kind": "stringLiteral",
+                    "value": "MyDocumentModel"
+                  }
+                }
+              ],
+              "outputMappings": [
+                {
+                  "target": "myDocumentReference",
+                  "expression": {
+                    "kind": "localVariable",
+                    "name": "newDocRef"
+                  }
+                }
+              ]
+            },
+            "bpmnErrorRoute": null
+          },
+          {
+            "id": "operation:EndEvent_CreateDocument",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "EndEvent_CreateDocument"
+            },
+            "kind": "reachNoneEnd",
+            "input": "place:Flow_CreateToEnd"
+          },
+          {
+            "id": "operation:StartEvent_CreateDocument",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "StartEvent_CreateDocument"
+            },
+            "kind": "initiate",
+            "output": "place:Flow_StartToCreate"
+          },
+          {
+            "id": "operation:complete-scope:scope:Process_A12CreateDocument",
+            "kind": "completeScope",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "Process_A12CreateDocument"
+            },
+            "scopeId": "scope:Process_A12CreateDocument",
+            "parentOutput": null
+          }
+        ]
+      },
+      "exactBytesHex": "3c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d225554462d38223f3e0a3c62706d6e3a646566696e6974696f6e7320786d6c6e733a62706d6e3d22687474703a2f2f7777772e6f6d672e6f72672f737065632f42504d4e2f32303130303532342f4d4f44454c2220786d6c6e733a62706d6e64693d22687474703a2f2f7777772e6f6d672e6f72672f737065632f42504d4e2f32303130303532342f44492220786d6c6e733a63616d756e64613d22687474703a2f2f63616d756e64612e6f72672f736368656d612f312e302f62706d6e2220786d6c6e733a64633d22687474703a2f2f7777772e6f6d672e6f72672f737065632f44442f32303130303532342f44432220786d6c6e733a64693d22687474703a2f2f7777772e6f6d672e6f72672f737065632f44442f32303130303532342f44492220786d6c6e733a6d6f64656c65723d22687474703a2f2f63616d756e64612e6f72672f736368656d612f6d6f64656c65722f312e30222069643d22446566696e6974696f6e735f413132437265617465446f63756d656e7422207461726765744e616d6573706163653d2275726e3a62706d6e2d6c65616e3a6131323a6372656174652d646f63756d656e7422206578706f727465723d2243616d756e6461204d6f64656c657222206578706f7274657256657273696f6e3d22352e31392e3022206d6f64656c65723a657865637574696f6e506c6174666f726d3d2243616d756e646120506c6174666f726d22206d6f64656c65723a657865637574696f6e506c6174666f726d56657273696f6e3d22372e31392e30223e0a20203c62706d6e3a70726f636573732069643d2250726f636573735f413132437265617465446f63756d656e7422206e616d653d2243726561746520646f63756d656e7420646174612063617073756c652220697345786563757461626c653d2274727565222063616d756e64613a76657273696f6e5461673d22312e30223e0a202020203c62706d6e3a73746172744576656e742069643d2253746172744576656e745f437265617465446f63756d656e74223e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f5374617274546f4372656174653c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a73746172744576656e743e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f5374617274546f4372656174652220736f757263655265663d2253746172744576656e745f437265617465446f63756d656e7422207461726765745265663d22437265617465446f63756d656e7422202f3e0a202020203c62706d6e3a736572766963655461736b2069643d22437265617465446f63756d656e7422206e616d653d2243726561746520646f63756d656e74222063616d756e64613a6d6f64656c657254656d706c6174653d22637265617465446f63756d656e7444656c656761746554656d706c617465222063616d756e64613a6d6f64656c657254656d706c61746556657273696f6e3d2231222063616d756e64613a64656c656761746545787072657373696f6e3d22247b637265617465446f63756d656e7444656c65676174657d223e0a2020202020203c62706d6e3a657874656e73696f6e456c656d656e74733e0a20202020202020203c63616d756e64613a696e7075744f75747075743e0a202020202020202020203c63616d756e64613a696e707574506172616d65746572206e616d653d22646f63756d656e744d6f64656c4e616d65223e4d79446f63756d656e744d6f64656c3c2f63616d756e64613a696e707574506172616d657465723e0a202020202020202020203c63616d756e64613a6f7574707574506172616d65746572206e616d653d226d79446f63756d656e745265666572656e6365223e247b6e6577446f635265667d3c2f63616d756e64613a6f7574707574506172616d657465723e0a20202020202020203c2f63616d756e64613a696e7075744f75747075743e0a2020202020203c2f62706d6e3a657874656e73696f6e456c656d656e74733e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f5374617274546f4372656174653c2f62706d6e3a696e636f6d696e673e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f437265617465546f456e643c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a736572766963655461736b3e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f437265617465546f456e642220736f757263655265663d22437265617465446f63756d656e7422207461726765745265663d22456e644576656e745f437265617465446f63756d656e7422202f3e0a202020203c62706d6e3a656e644576656e742069643d22456e644576656e745f437265617465446f63756d656e74223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f437265617465546f456e643c2f62706d6e3a696e636f6d696e673e0a202020203c2f62706d6e3a656e644576656e743e0a20203c2f62706d6e3a70726f636573733e0a20203c62706d6e64693a42504d4e4469616772616d2069643d224469616772616d5f413132437265617465446f63756d656e74223e0a202020203c62706d6e64693a42504d4e506c616e652069643d22506c616e655f413132437265617465446f63756d656e74222062706d6e456c656d656e743d2250726f636573735f413132437265617465446f63756d656e74223e0a2020202020203c62706d6e64693a42504d4e53686170652069643d2253686170655f5374617274222062706d6e456c656d656e743d2253746172744576656e745f437265617465446f63756d656e74223e0a20202020202020203c64633a426f756e647320783d223130302220793d22313030222077696474683d22333622206865696768743d22333622202f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e53686170652069643d2253686170655f437265617465222062706d6e456c656d656e743d22437265617465446f63756d656e74223e0a20202020202020203c64633a426f756e647320783d223139302220793d223738222077696474683d2231303022206865696768743d22383022202f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e53686170652069643d2253686170655f456e64222062706d6e456c656d656e743d22456e644576656e745f437265617465446f63756d656e74223e0a20202020202020203c64633a426f756e647320783d223334352220793d22313030222077696474683d22333622206865696768743d22333622202f3e0a2020202020203c2f62706d6e64693a42504d4e53686170653e0a2020202020203c62706d6e64693a42504d4e456467652069643d22456467655f5374617274546f437265617465222062706d6e456c656d656e743d22466c6f775f5374617274546f437265617465223e0a20202020202020203c64693a776179706f696e7420783d223133362220793d2231313822202f3e0a20202020202020203c64693a776179706f696e7420783d223139302220793d2231313822202f3e0a2020202020203c2f62706d6e64693a42504d4e456467653e0a2020202020203c62706d6e64693a42504d4e456467652069643d22456467655f437265617465546f456e64222062706d6e456c656d656e743d22466c6f775f437265617465546f456e64223e0a20202020202020203c64693a776179706f696e7420783d223239302220793d2231313822202f3e0a20202020202020203c64693a776179706f696e7420783d223334352220793d2231313822202f3e0a2020202020203c2f62706d6e64693a42504d4e456467653e0a202020203c2f62706d6e64693a42504d4e506c616e653e0a20203c2f62706d6e64693a42504d4e4469616772616d3e0a3c2f62706d6e3a646566696e6974696f6e733e0a"
+    },
+    "boundary-error-accepted": {
+      "status": "accepted",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "a12-boundary-error",
+        "sha256": "68ad931204e62da12494766393b380026addb1e230d5a3a64205e655831f62b6",
+        "byteLength": 2794,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [],
+      "checkedProcess": {
+        "kind": "checkedProcess",
+        "identity": {
+          "semanticProfile": "cibseven-2.0.0-a12-boundary-error-draft",
+          "sourceId": "a12-boundary-error",
+          "sourceSha256": "68ad931204e62da12494766393b380026addb1e230d5a3a64205e655831f62b6"
+        },
+        "processId": "Process_BoundaryError",
+        "definitionScopes": [
+          {
+            "id": "scope:Process_BoundaryError",
+            "parentScopeId": null,
+            "originElementId": "Process_BoundaryError"
+          }
+        ],
+        "nodeScopes": [
+          {
+            "nodeId": "CreateRelationshipLinkTask",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "nodeId": "EndEvent_AfterError",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "nodeId": "EndEvent_Normal",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "nodeId": "ExpectedUserTaskAfterBPMNError",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "nodeId": "StartEvent_None",
+            "scopeId": "scope:Process_BoundaryError"
+          }
+        ],
+        "sequenceFlowScopes": [
+          {
+            "sequenceFlowId": "Flow_ErrorToUserTask",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "sequenceFlowId": "Flow_ServiceToEnd",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "sequenceFlowId": "Flow_StartToService",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "sequenceFlowId": "Flow_UserTaskToEnd",
+            "scopeId": "scope:Process_BoundaryError"
+          }
+        ],
+        "nodes": [
+          {
+            "kind": "serviceTask",
+            "id": "CreateRelationshipLinkTask",
+            "descriptor": {
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1"
+            },
+            "inputMappings": [
+              {
+                "target": "relationshipModel",
+                "expression": {
+                  "kind": "stringLiteral",
+                  "value": "RelationshipModel"
+                }
+              }
+            ],
+            "outputMappings": [
+              {
+                "target": "relationshipLinkId",
+                "expression": {
+                  "kind": "localVariable",
+                  "name": "newLinkId"
+                }
+              }
+            ],
+            "bpmnErrorRoute": {
+              "boundaryEventId": "BoundaryEvent_LinkLimitReached",
+              "boundaryEventName": "Link Limit Reached Boundary",
+              "attachedToRef": "CreateRelationshipLinkTask",
+              "errorDefinitionId": "ErrorEventDefinition_LinkLimitReached",
+              "errorElementId": "Error_LinkLimitReached",
+              "errorName": "Link Limit Reached",
+              "code": "LinkLimitReachedError",
+              "outputFlowId": "Flow_ErrorToUserTask"
+            }
+          },
+          {
+            "kind": "noneEndEvent",
+            "id": "EndEvent_AfterError"
+          },
+          {
+            "kind": "noneEndEvent",
+            "id": "EndEvent_Normal"
+          },
+          {
+            "kind": "userTask",
+            "id": "ExpectedUserTaskAfterBPMNError",
+            "name": "Expected User Task After BPMN Error"
+          },
+          {
+            "kind": "noneStartEvent",
+            "id": "StartEvent_None"
+          }
+        ],
+        "sequenceFlows": [
+          {
+            "id": "Flow_ErrorToUserTask",
+            "sourceId": "BoundaryEvent_LinkLimitReached",
+            "targetId": "ExpectedUserTaskAfterBPMNError",
+            "condition": null
+          },
+          {
+            "id": "Flow_ServiceToEnd",
+            "sourceId": "CreateRelationshipLinkTask",
+            "targetId": "EndEvent_Normal",
+            "condition": null
+          },
+          {
+            "id": "Flow_StartToService",
+            "sourceId": "StartEvent_None",
+            "targetId": "CreateRelationshipLinkTask",
+            "condition": null
+          },
+          {
+            "id": "Flow_UserTaskToEnd",
+            "sourceId": "ExpectedUserTaskAfterBPMNError",
+            "targetId": "EndEvent_AfterError",
+            "condition": null
+          }
+        ]
+      },
+      "semanticProcess": {
+        "kind": "semanticProcess",
+        "identity": {
+          "compiler": "bpmn-source-semantic-process",
+          "semanticProfile": "cibseven-2.0.0-a12-boundary-error-draft",
+          "sourceId": "a12-boundary-error",
+          "sourceSha256": "68ad931204e62da12494766393b380026addb1e230d5a3a64205e655831f62b6"
+        },
+        "processId": "Process_BoundaryError",
+        "definitionScopes": [
+          {
+            "id": "scope:Process_BoundaryError",
+            "parentScopeId": null,
+            "originElementId": "Process_BoundaryError"
+          }
+        ],
+        "operationScopes": [
+          {
+            "operationId": "operation:CreateRelationshipLinkTask",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "operationId": "operation:EndEvent_AfterError",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "operationId": "operation:EndEvent_Normal",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "operationId": "operation:ExpectedUserTaskAfterBPMNError",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "operationId": "operation:StartEvent_None",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "operationId": "operation:complete-scope:scope:Process_BoundaryError",
+            "scopeId": "scope:Process_BoundaryError"
+          }
+        ],
+        "controlPlaceScopes": [
+          {
+            "controlPlaceId": "place:Flow_ErrorToUserTask",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "controlPlaceId": "place:Flow_ServiceToEnd",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "controlPlaceId": "place:Flow_StartToService",
+            "scopeId": "scope:Process_BoundaryError"
+          },
+          {
+            "controlPlaceId": "place:Flow_UserTaskToEnd",
+            "scopeId": "scope:Process_BoundaryError"
+          }
+        ],
+        "controlPlaces": [
+          {
+            "id": "place:Flow_ErrorToUserTask",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_ErrorToUserTask"
+            }
+          },
+          {
+            "id": "place:Flow_ServiceToEnd",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_ServiceToEnd"
+            }
+          },
+          {
+            "id": "place:Flow_StartToService",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_StartToService"
+            }
+          },
+          {
+            "id": "place:Flow_UserTaskToEnd",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_UserTaskToEnd"
+            }
+          }
+        ],
+        "operations": [
+          {
+            "id": "operation:CreateRelationshipLinkTask",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CreateRelationshipLinkTask"
+            },
+            "kind": "awaitEffect",
+            "input": "place:Flow_StartToService",
+            "output": "place:Flow_ServiceToEnd",
+            "effect": {
+              "elementId": "CreateRelationshipLinkTask",
+              "descriptor": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1"
+              },
+              "inputMappings": [
+                {
+                  "target": "relationshipModel",
+                  "expression": {
+                    "kind": "stringLiteral",
+                    "value": "RelationshipModel"
+                  }
+                }
+              ],
+              "outputMappings": [
+                {
+                  "target": "relationshipLinkId",
+                  "expression": {
+                    "kind": "localVariable",
+                    "name": "newLinkId"
+                  }
+                }
+              ]
+            },
+            "bpmnErrorRoute": {
+              "code": "LinkLimitReachedError",
+              "output": "place:Flow_ErrorToUserTask",
+              "origin": {
+                "kind": "bpmnElement",
+                "boundaryEventId": "BoundaryEvent_LinkLimitReached",
+                "errorDefinitionId": "ErrorEventDefinition_LinkLimitReached",
+                "errorElementId": "Error_LinkLimitReached",
+                "sequenceFlowId": "Flow_ErrorToUserTask"
+              }
+            }
+          },
+          {
+            "id": "operation:EndEvent_AfterError",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "EndEvent_AfterError"
+            },
+            "kind": "reachNoneEnd",
+            "input": "place:Flow_UserTaskToEnd"
+          },
+          {
+            "id": "operation:EndEvent_Normal",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "EndEvent_Normal"
+            },
+            "kind": "reachNoneEnd",
+            "input": "place:Flow_ServiceToEnd"
+          },
+          {
+            "id": "operation:ExpectedUserTaskAfterBPMNError",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "ExpectedUserTaskAfterBPMNError"
+            },
+            "kind": "awaitUserTask",
+            "input": "place:Flow_ErrorToUserTask",
+            "output": "place:Flow_UserTaskToEnd",
+            "task": {
+              "elementId": "ExpectedUserTaskAfterBPMNError",
+              "name": "Expected User Task After BPMN Error"
+            }
+          },
+          {
+            "id": "operation:StartEvent_None",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "StartEvent_None"
+            },
+            "kind": "initiate",
+            "output": "place:Flow_StartToService"
+          },
+          {
+            "id": "operation:complete-scope:scope:Process_BoundaryError",
+            "kind": "completeScope",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "Process_BoundaryError"
+            },
+            "scopeId": "scope:Process_BoundaryError",
+            "parentOutput": null
+          }
+        ]
+      },
+      "exactBytesHex": "3c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d225554462d38223f3e0a3c62706d6e3a646566696e6974696f6e730a2020786d6c6e733a62706d6e3d22687474703a2f2f7777772e6f6d672e6f72672f737065632f42504d4e2f32303130303532342f4d4f44454c220a2020786d6c6e733a63616d756e64613d22687474703a2f2f63616d756e64612e6f72672f736368656d612f312e302f62706d6e220a2020786d6c6e733a7873693d22687474703a2f2f7777772e77332e6f72672f323030312f584d4c536368656d612d696e7374616e6365220a202069643d22446566696e6974696f6e735f426f756e646172794572726f72220a20207461726765744e616d6573706163653d2268747470733a2f2f6769746875622e636f6d2f6d6261636b73636861742f62706d6e2d6c65616e2d6578706572696d656e742f626f756e646172792d6572726f72223e0a20203c62706d6e3a6572726f720a2020202069643d224572726f725f4c696e6b4c696d697452656163686564220a202020206e616d653d224c696e6b204c696d69742052656163686564220a202020206572726f72436f64653d224c696e6b4c696d6974526561636865644572726f7222202f3e0a20203c62706d6e3a70726f636573732069643d2250726f636573735f426f756e646172794572726f722220697345786563757461626c653d2274727565223e0a202020203c62706d6e3a73746172744576656e742069643d2253746172744576656e745f4e6f6e65223e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f5374617274546f536572766963653c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a73746172744576656e743e0a202020203c62706d6e3a736572766963655461736b0a20202020202069643d2243726561746552656c6174696f6e736869704c696e6b5461736b220a2020202020206e616d653d224372656174652052656c6174696f6e73686970204c696e6b220a202020202020696d706c656d656e746174696f6e3d2275726e3a62706d6e2d6c65616e3a6131322d64656c65676174653a7631220a20202020202063616d756e64613a64656c656761746545787072657373696f6e3d22237b63726561746552656c6174696f6e736869704c696e6b44656c65676174657d223e0a2020202020203c62706d6e3a657874656e73696f6e456c656d656e74733e0a20202020202020203c63616d756e64613a696e7075744f75747075743e0a202020202020202020203c63616d756e64613a696e707574506172616d65746572206e616d653d2272656c6174696f6e736869704d6f64656c223e52656c6174696f6e736869704d6f64656c3c2f63616d756e64613a696e707574506172616d657465723e0a202020202020202020203c63616d756e64613a6f7574707574506172616d65746572206e616d653d2272656c6174696f6e736869704c696e6b4964223e247b6e65774c696e6b49647d3c2f63616d756e64613a6f7574707574506172616d657465723e0a20202020202020203c2f63616d756e64613a696e7075744f75747075743e0a2020202020203c2f62706d6e3a657874656e73696f6e456c656d656e74733e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f5374617274546f536572766963653c2f62706d6e3a696e636f6d696e673e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f53657276696365546f456e643c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a736572766963655461736b3e0a202020203c62706d6e3a626f756e646172794576656e740a20202020202069643d22426f756e646172794576656e745f4c696e6b4c696d697452656163686564220a2020202020206e616d653d224c696e6b204c696d6974205265616368656420426f756e64617279220a2020202020206174746163686564546f5265663d2243726561746552656c6174696f6e736869704c696e6b5461736b223e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f4572726f72546f557365725461736b3c2f62706d6e3a6f7574676f696e673e0a2020202020203c62706d6e3a6572726f724576656e74446566696e6974696f6e0a202020202020202069643d224572726f724576656e74446566696e6974696f6e5f4c696e6b4c696d697452656163686564220a20202020202020206572726f725265663d224572726f725f4c696e6b4c696d69745265616368656422202f3e0a202020203c2f62706d6e3a626f756e646172794576656e743e0a202020203c62706d6e3a757365725461736b0a20202020202069643d224578706563746564557365725461736b416674657242504d4e4572726f72220a2020202020206e616d653d2245787065637465642055736572205461736b2041667465722042504d4e204572726f72223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f4572726f72546f557365725461736b3c2f62706d6e3a696e636f6d696e673e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f557365725461736b546f456e643c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a757365725461736b3e0a202020203c62706d6e3a656e644576656e742069643d22456e644576656e745f4e6f726d616c223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f53657276696365546f456e643c2f62706d6e3a696e636f6d696e673e0a202020203c2f62706d6e3a656e644576656e743e0a202020203c62706d6e3a656e644576656e742069643d22456e644576656e745f41667465724572726f72223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f557365725461736b546f456e643c2f62706d6e3a696e636f6d696e673e0a202020203c2f62706d6e3a656e644576656e743e0a202020203c62706d6e3a73657175656e6365466c6f770a20202020202069643d22466c6f775f5374617274546f53657276696365220a202020202020736f757263655265663d2253746172744576656e745f4e6f6e65220a2020202020207461726765745265663d2243726561746552656c6174696f6e736869704c696e6b5461736b22202f3e0a202020203c62706d6e3a73657175656e6365466c6f770a20202020202069643d22466c6f775f53657276696365546f456e64220a202020202020736f757263655265663d2243726561746552656c6174696f6e736869704c696e6b5461736b220a2020202020207461726765745265663d22456e644576656e745f4e6f726d616c22202f3e0a202020203c62706d6e3a73657175656e6365466c6f770a20202020202069643d22466c6f775f4572726f72546f557365725461736b220a202020202020736f757263655265663d22426f756e646172794576656e745f4c696e6b4c696d697452656163686564220a2020202020207461726765745265663d224578706563746564557365725461736b416674657242504d4e4572726f7222202f3e0a202020203c62706d6e3a73657175656e6365466c6f770a20202020202069643d22466c6f775f557365725461736b546f456e64220a202020202020736f757263655265663d224578706563746564557365725461736b416674657242504d4e4572726f72220a2020202020207461726765745265663d22456e644576656e745f41667465724572726f7222202f3e0a20203c2f62706d6e3a70726f636573733e0a3c2f62706d6e3a646566696e6974696f6e733e0a"
+    },
+    "call-activity-accepted": {
+      "status": "accepted",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "call-activity-test",
+        "sha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73",
+        "byteLength": 2005,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [],
+      "checkedProcess": {
+        "kind": "checkedProcess",
+        "identity": {
+          "semanticProfile": "bpmn-2.0.2-called-process-call-activity-draft",
+          "sourceId": "call-activity-test",
+          "sourceSha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73"
+        },
+        "processId": "CallerProcess",
+        "definitionScopes": [
+          {
+            "id": "scope:CalledProcess",
+            "parentScopeId": null,
+            "originElementId": "CalledProcess"
+          },
+          {
+            "id": "scope:CallerProcess",
+            "parentScopeId": null,
+            "originElementId": "CallerProcess"
+          }
+        ],
+        "nodeScopes": [
+          {
+            "nodeId": "Call_CalledProcess",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "nodeId": "CalledEnd",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "nodeId": "CalledStart",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "nodeId": "CalledTask",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "nodeId": "CallerEnd",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "nodeId": "CallerStart",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "nodeId": "CallerTask",
+            "scopeId": "scope:CallerProcess"
+          }
+        ],
+        "sequenceFlowScopes": [
+          {
+            "sequenceFlowId": "Flow_Called_Start_Task",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "sequenceFlowId": "Flow_Called_Task_End",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "sequenceFlowId": "Flow_Caller_Call_Task",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "sequenceFlowId": "Flow_Caller_Start_Call",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "sequenceFlowId": "Flow_Caller_Task_End",
+            "scopeId": "scope:CallerProcess"
+          }
+        ],
+        "nodes": [
+          {
+            "kind": "callActivity",
+            "id": "Call_CalledProcess",
+            "calledProcessId": "CalledProcess"
+          },
+          {
+            "kind": "noneEndEvent",
+            "id": "CalledEnd"
+          },
+          {
+            "kind": "noneStartEvent",
+            "id": "CalledStart"
+          },
+          {
+            "kind": "userTask",
+            "id": "CalledTask",
+            "name": "Called task"
+          },
+          {
+            "kind": "noneEndEvent",
+            "id": "CallerEnd"
+          },
+          {
+            "kind": "noneStartEvent",
+            "id": "CallerStart"
+          },
+          {
+            "kind": "userTask",
+            "id": "CallerTask",
+            "name": "Caller task"
+          }
+        ],
+        "sequenceFlows": [
+          {
+            "id": "Flow_Called_Start_Task",
+            "sourceId": "CalledStart",
+            "targetId": "CalledTask",
+            "condition": null
+          },
+          {
+            "id": "Flow_Called_Task_End",
+            "sourceId": "CalledTask",
+            "targetId": "CalledEnd",
+            "condition": null
+          },
+          {
+            "id": "Flow_Caller_Call_Task",
+            "sourceId": "Call_CalledProcess",
+            "targetId": "CallerTask",
+            "condition": null
+          },
+          {
+            "id": "Flow_Caller_Start_Call",
+            "sourceId": "CallerStart",
+            "targetId": "Call_CalledProcess",
+            "condition": null
+          },
+          {
+            "id": "Flow_Caller_Task_End",
+            "sourceId": "CallerTask",
+            "targetId": "CallerEnd",
+            "condition": null
+          }
+        ]
+      },
+      "semanticProcess": {
+        "kind": "semanticProcess",
+        "identity": {
+          "compiler": "bpmn-source-semantic-process",
+          "semanticProfile": "bpmn-2.0.2-called-process-call-activity-draft",
+          "sourceId": "call-activity-test",
+          "sourceSha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73"
+        },
+        "processId": "CallerProcess",
+        "definitionScopes": [
+          {
+            "id": "scope:CalledProcess",
+            "parentScopeId": null,
+            "originElementId": "CalledProcess"
+          },
+          {
+            "id": "scope:CallerProcess",
+            "parentScopeId": null,
+            "originElementId": "CallerProcess"
+          }
+        ],
+        "operationScopes": [
+          {
+            "operationId": "operation:Call_CalledProcess",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "operationId": "operation:CalledEnd",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "operationId": "operation:CalledTask",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "operationId": "operation:CallerEnd",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "operationId": "operation:CallerStart",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "operationId": "operation:CallerTask",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "operationId": "operation:complete-scope:scope:CallerProcess",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "operationId": "operation:return-process:Call_CalledProcess",
+            "scopeId": "scope:CalledProcess"
+          }
+        ],
+        "controlPlaceScopes": [
+          {
+            "controlPlaceId": "place:Flow_Called_Start_Task",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "controlPlaceId": "place:Flow_Called_Task_End",
+            "scopeId": "scope:CalledProcess"
+          },
+          {
+            "controlPlaceId": "place:Flow_Caller_Call_Task",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "controlPlaceId": "place:Flow_Caller_Start_Call",
+            "scopeId": "scope:CallerProcess"
+          },
+          {
+            "controlPlaceId": "place:Flow_Caller_Task_End",
+            "scopeId": "scope:CallerProcess"
+          }
+        ],
+        "controlPlaces": [
+          {
+            "id": "place:Flow_Called_Start_Task",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_Called_Start_Task"
+            }
+          },
+          {
+            "id": "place:Flow_Called_Task_End",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_Called_Task_End"
+            }
+          },
+          {
+            "id": "place:Flow_Caller_Call_Task",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_Caller_Call_Task"
+            }
+          },
+          {
+            "id": "place:Flow_Caller_Start_Call",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_Caller_Start_Call"
+            }
+          },
+          {
+            "id": "place:Flow_Caller_Task_End",
+            "origin": {
+              "kind": "bpmnSequenceFlow",
+              "elementId": "Flow_Caller_Task_End"
+            }
+          }
+        ],
+        "operations": [
+          {
+            "id": "operation:Call_CalledProcess",
+            "kind": "invokeProcess",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "Call_CalledProcess"
+            },
+            "input": "place:Flow_Caller_Start_Call",
+            "calledProcessId": "CalledProcess",
+            "calledRootScopeId": "scope:CalledProcess",
+            "calledEntry": "place:Flow_Called_Start_Task",
+            "returnOperationId": "operation:return-process:Call_CalledProcess"
+          },
+          {
+            "id": "operation:CalledEnd",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CalledEnd"
+            },
+            "kind": "reachNoneEnd",
+            "input": "place:Flow_Called_Task_End"
+          },
+          {
+            "id": "operation:CalledTask",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CalledTask"
+            },
+            "kind": "awaitUserTask",
+            "input": "place:Flow_Called_Start_Task",
+            "output": "place:Flow_Called_Task_End",
+            "task": {
+              "elementId": "CalledTask",
+              "name": "Called task"
+            }
+          },
+          {
+            "id": "operation:CallerEnd",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CallerEnd"
+            },
+            "kind": "reachNoneEnd",
+            "input": "place:Flow_Caller_Task_End"
+          },
+          {
+            "id": "operation:CallerStart",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CallerStart"
+            },
+            "kind": "initiate",
+            "output": "place:Flow_Caller_Start_Call"
+          },
+          {
+            "id": "operation:CallerTask",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CallerTask"
+            },
+            "kind": "awaitUserTask",
+            "input": "place:Flow_Caller_Call_Task",
+            "output": "place:Flow_Caller_Task_End",
+            "task": {
+              "elementId": "CallerTask",
+              "name": "Caller task"
+            }
+          },
+          {
+            "id": "operation:complete-scope:scope:CallerProcess",
+            "kind": "completeScope",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "CallerProcess"
+            },
+            "scopeId": "scope:CallerProcess",
+            "parentOutput": null
+          },
+          {
+            "id": "operation:return-process:Call_CalledProcess",
+            "kind": "returnProcess",
+            "origin": {
+              "kind": "bpmnElement",
+              "elementId": "Call_CalledProcess"
+            },
+            "calledProcessId": "CalledProcess",
+            "calledRootScopeId": "scope:CalledProcess",
+            "callerOutput": "place:Flow_Caller_Call_Task"
+          }
+        ]
+      },
+      "exactBytesHex": "3c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d225554462d38223f3e0a3c62706d6e3a646566696e6974696f6e7320786d6c6e733a62706d6e3d22687474703a2f2f7777772e6f6d672e6f72672f737065632f42504d4e2f32303130303532342f4d4f44454c2220786d6c6e733a746e733d2275726e3a62706d6e2d6c65616e3a746573743a63616c6c2d6163746976697479222069643d22446566696e6974696f6e735f43616c6c416374697669747922207461726765744e616d6573706163653d2275726e3a62706d6e2d6c65616e3a746573743a63616c6c2d6163746976697479223e0a20203c62706d6e3a70726f636573732069643d2243616c6c657250726f636573732220697345786563757461626c653d2274727565223e0a202020203c62706d6e3a73746172744576656e742069643d2243616c6c65725374617274223e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f43616c6c65725f53746172745f43616c6c3c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a73746172744576656e743e0a202020203c62706d6e3a63616c6c41637469766974792069643d2243616c6c5f43616c6c656450726f63657373222063616c6c6564456c656d656e743d22746e733a43616c6c656450726f63657373223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f43616c6c65725f53746172745f43616c6c3c2f62706d6e3a696e636f6d696e673e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f43616c6c65725f43616c6c5f5461736b3c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a63616c6c41637469766974793e0a202020203c62706d6e3a757365725461736b2069643d2243616c6c65725461736b22206e616d653d2243616c6c6572207461736b223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f43616c6c65725f43616c6c5f5461736b3c2f62706d6e3a696e636f6d696e673e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f43616c6c65725f5461736b5f456e643c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a757365725461736b3e0a202020203c62706d6e3a656e644576656e742069643d2243616c6c6572456e64223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f43616c6c65725f5461736b5f456e643c2f62706d6e3a696e636f6d696e673e0a202020203c2f62706d6e3a656e644576656e743e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f43616c6c65725f53746172745f43616c6c2220736f757263655265663d2243616c6c6572537461727422207461726765745265663d2243616c6c5f43616c6c656450726f6365737322202f3e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f43616c6c65725f43616c6c5f5461736b2220736f757263655265663d2243616c6c5f43616c6c656450726f6365737322207461726765745265663d2243616c6c65725461736b22202f3e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f43616c6c65725f5461736b5f456e642220736f757263655265663d2243616c6c65725461736b22207461726765745265663d2243616c6c6572456e6422202f3e0a20203c2f62706d6e3a70726f636573733e0a20203c62706d6e3a70726f636573732069643d2243616c6c656450726f636573732220697345786563757461626c653d2274727565223e0a202020203c62706d6e3a73746172744576656e742069643d2243616c6c65645374617274223e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f43616c6c65645f53746172745f5461736b3c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a73746172744576656e743e0a202020203c62706d6e3a757365725461736b2069643d2243616c6c65645461736b22206e616d653d2243616c6c6564207461736b223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f43616c6c65645f53746172745f5461736b3c2f62706d6e3a696e636f6d696e673e0a2020202020203c62706d6e3a6f7574676f696e673e466c6f775f43616c6c65645f5461736b5f456e643c2f62706d6e3a6f7574676f696e673e0a202020203c2f62706d6e3a757365725461736b3e0a202020203c62706d6e3a656e644576656e742069643d2243616c6c6564456e64223e0a2020202020203c62706d6e3a696e636f6d696e673e466c6f775f43616c6c65645f5461736b5f456e643c2f62706d6e3a696e636f6d696e673e0a202020203c2f62706d6e3a656e644576656e743e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f43616c6c65645f53746172745f5461736b2220736f757263655265663d2243616c6c6564537461727422207461726765745265663d2243616c6c65645461736b22202f3e0a202020203c62706d6e3a73657175656e6365466c6f772069643d22466c6f775f43616c6c65645f5461736b5f456e642220736f757263655265663d2243616c6c65645461736b22207461726765745265663d2243616c6c6564456e6422202f3e0a20203c2f62706d6e3a70726f636573733e0a3c2f62706d6e3a646566696e6974696f6e733e0a"
+    },
+    "boundary-error-cancel-activity-false": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "a12-boundary-error-cancel-activity-false",
+        "sha256": "fa09263d8eb8aa054ae880841cd064f3a19ad2b23f55fba6f793a56193879697",
+        "byteLength": 2817,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unsupportedModel",
+          "element": null,
+          "evidence": "The boundary-error binding, mapping, attachment, Error, or flow is outside the approved profile."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    },
+    "call-activity-unqualified-called-element": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "call-activity-unqualified-called-element",
+        "sha256": "2c10e12c7a840f40bcd5f29c65702e4c47fcc5f5ca2ed7d1c36543dfb13c6e91",
+        "byteLength": 2001,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unsupportedModel",
+          "element": null,
+          "evidence": "The Call Activity QName must resolve to the distinct selected called Process shape."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    },
+    "create-document-extra-input-parameter": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "create-document-extra-input-parameter",
+        "sha256": "6c449bac76298713e17a892db3f0fbed89beea6e3d67ae109d23225fa847de4f",
+        "byteLength": 3045,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unsupportedModel",
+          "element": null,
+          "evidence": "The A12 profile requires the exact CreateDocument binding, mappings, and linear flow."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    },
+    "generic-checked-graph-refusal": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "generic-checked-graph-refusal",
+        "sha256": "a0146219f7d050938efd6c6f686371a45eb9c2d9a39dcfe777dbe7c9a134d41d",
+        "byteLength": 3886,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unsupportedModel",
+          "element": null,
+          "evidence": "The checked graph is outside the selected profile's mechanism, cardinality, graph, or expression capabilities."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    }
+  }
+}

@@ -27,6 +27,10 @@ import {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
 import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -39,13 +43,10 @@ export function projectExclusiveGateway(
   { kind: CheckedNodeKind.ExclusiveGateway }
 > | undefined {
   if (
-    !hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "gatewayDirection",
-      "default",
-    ])
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.ExclusiveOrInclusiveGateway,
+    )
   ) {
     return undefined;
   }

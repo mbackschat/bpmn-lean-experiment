@@ -5,9 +5,6 @@ import type {
   CheckedNode,
 } from "@bpmn-lean/semantic-core";
 
-import {
-  hasOnlyModelledKeys,
-} from "./moddle-graph.js";
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
@@ -17,6 +14,10 @@ import {
 import type {
   MessageRootArtifacts,
 } from "./root-definition-selection.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 /** Projects the exact non-instantiating, payload-free direct-Message slice. */
 export function projectReceiveTask(
@@ -26,13 +27,10 @@ export function projectReceiveTask(
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ReceiveTask }> | undefined {
   if (
     !isDirectMessageRootArtifacts(artifacts) ||
-    !hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "messageRef",
-      "instantiate",
-    ]) ||
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.ReceiveTask,
+    ) ||
     element.messageRef !== artifacts.message ||
     (element.instantiate !== undefined && element.instantiate !== false)
   ) {

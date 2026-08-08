@@ -59,6 +59,10 @@ import type {
   RootDefinitionSelection,
 } from "./root-definition-selection.js";
 import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
+import {
   definitionScopeId,
 } from "./scoped-flow-elements.js";
 import {
@@ -179,12 +183,10 @@ export function projectCheckedSequenceFlows(
     const flow = executedProjectionView(declared, capability);
     if (
       flow === undefined ||
-      !hasOnlyModelledKeys(flow, [
-        "$type",
-        "id",
-        "name",
-        "conditionExpression",
-      ])
+      !hasOnlyProjectedFlowElementKeys(
+        flow,
+        ProjectedFlowElementShape.StandardSequenceFlow,
+      )
     ) {
       return undefined;
     }
@@ -234,12 +236,10 @@ function classifyGateway(
   flows: ReadonlyArray<CheckedSequenceFlow>,
 ): GatewayDirection | undefined {
   if (
-    !hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "gatewayDirection",
-    ])
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.ParallelGateway,
+    )
   ) {
     return undefined;
   }
@@ -266,7 +266,10 @@ function projectServiceTask(
   id: string,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ServiceTask }> | undefined {
   if (
-    !hasOnlyModelledKeys(element, ["$type", "id", "name", "implementation"]) ||
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.GenericServiceTask,
+    ) ||
     element.implementation !== effectProtocol
   ) {
     return undefined;
@@ -296,12 +299,10 @@ function projectServiceTask(
 
 function isExactPt1sTimerEvent(element: ElementRecord): boolean {
   if (
-    !hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "eventDefinitions",
-    ])
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.IntermediateCatchEvent,
+    )
   ) {
     return false;
   }
@@ -330,7 +331,10 @@ function isExactPt1sTimerEvent(element: ElementRecord): boolean {
 }
 
 function isPlainFlowNode(element: ElementRecord): boolean {
-  return hasOnlyModelledKeys(element, ["$type", "id", "name"]);
+  return hasOnlyProjectedFlowElementKeys(
+    element,
+    ProjectedFlowElementShape.PlainNode,
+  );
 }
 
 function readOptionalName(

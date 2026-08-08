@@ -29,9 +29,18 @@ import {
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
 import {
+  orderedElementDiagnostics,
+} from "./admission-diagnostics.js";
+import {
   carriesNoUnconsumedForeignAttribute,
   foreignAttributeConsumingTypes,
 } from "./preserved-element-classification.js";
+import {
+  FlowElementProjectionProfile,
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+  projectedFlowElementKeyRejections,
+} from "./projected-flow-element-keys.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
@@ -96,6 +105,24 @@ export function compileCallActivityCheckedProcess(
   const caller = callers[0];
   if (callers.length !== 1 || caller === undefined) {
     return unsupported("Exactly one Process must have the selected Call Activity caller shape.");
+  }
+  const selectedElements = processElements.flatMap(({ nodes, flows }) => [
+    ...nodes,
+    ...flows,
+  ]);
+  const keyRejections = projectedFlowElementKeyRejections(
+    definitions,
+    selectedElements,
+    FlowElementProjectionProfile.CallActivity,
+  );
+  if (keyRejections === undefined) {
+    return unsupported("Every selected Call Activity flow element requires an exact key inventory entry.");
+  }
+  if (keyRejections.length > 0) {
+    return {
+      checkedProcess: undefined,
+      diagnostics: orderedElementDiagnostics(keyRejections),
+    };
   }
   const call = caller.nodes.find(({ $type }) => $type === bpmnTypes.callActivityType);
   const calledProcessId = call === undefined
@@ -228,7 +255,10 @@ function resolveCalledProcessId(
   processes: ReadonlyArray<ProcessElements>,
   callerProcessId: string,
 ): string | undefined {
-  if (!hasOnlyModelledKeys(call, ["$type", "id", "name", "calledElement"]) || typeof call.calledElement !== "string") {
+  if (!hasOnlyProjectedFlowElementKeys(
+    call,
+    ProjectedFlowElementShape.CallActivity,
+  ) || typeof call.calledElement !== "string") {
     return undefined;
   }
   const parts = call.calledElement.split(":");
@@ -296,7 +326,10 @@ function projectSequenceFlows(
   elements: ReadonlyArray<ElementRecord>,
 ): ReadonlyArray<CheckedSequenceFlow> | undefined {
   const projected = elements.map((flow): CheckedSequenceFlow | undefined => {
-    if (!hasOnlyModelledKeys(flow, ["$type", "id", "name", "conditionExpression"])) {
+    if (!hasOnlyProjectedFlowElementKeys(
+      flow,
+      ProjectedFlowElementShape.StandardSequenceFlow,
+    )) {
       return undefined;
     }
     const id = readId(flow);
@@ -318,7 +351,10 @@ function projectSequenceFlows(
 }
 
 function isPlainNode(element: ElementRecord): boolean {
-  return hasOnlyModelledKeys(element, ["$type", "id", "name"]);
+  return hasOnlyProjectedFlowElementKeys(
+    element,
+    ProjectedFlowElementShape.PlainNode,
+  );
 }
 
 function readOptionalName(element: ElementRecord): string | null | undefined {

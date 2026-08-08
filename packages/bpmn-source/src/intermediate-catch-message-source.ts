@@ -22,6 +22,10 @@ import {
 import type {
   MessageRootArtifacts,
 } from "./root-definition-selection.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -35,12 +39,10 @@ export function projectIntermediateCatchMessage(
 > | undefined {
   if (
     !isOperationMessageRootArtifacts(artifacts) ||
-    !hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "eventDefinitions",
-    ])
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.IntermediateCatchEvent,
+    )
   ) {
     return undefined;
   }

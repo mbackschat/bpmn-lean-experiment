@@ -19,6 +19,10 @@ import {
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const selectedErrorCode = "ScopedFailure";
@@ -29,7 +33,10 @@ export function projectErrorEndEvent(
   errorArtifact: ElementRecord | undefined,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ErrorEndEvent }> | undefined {
   if (
-    !hasOnlyModelledKeys(element, ["$type", "id", "name", "eventDefinitions"])
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.ErrorEndEvent,
+    )
   ) {
     return undefined;
   }
@@ -50,13 +57,10 @@ export function projectBoundaryErrorEvent(
 > | undefined {
   if (
     element.cancelActivity !== true ||
-    !hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "cancelActivity",
-      "eventDefinitions",
-    ])
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.BoundaryEvent,
+    )
   ) {
     return undefined;
   }

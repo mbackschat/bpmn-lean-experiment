@@ -33,6 +33,98 @@ const preservedNotationSource = new URL(
   "../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,
 );
+const createDocumentSource = new URL(
+  "../../../scenarios/create-document-data/process.bpmn",
+  import.meta.url,
+);
+const boundaryErrorSource = new URL(
+  "../../../scenarios/boundary-error/process.bpmn",
+  import.meta.url,
+);
+const callActivitySource = new URL(
+  "./fixtures/call-activity-called-process.bpmn",
+  import.meta.url,
+);
+const admissionBaseline = new URL(
+  "./fixtures/per-element-admission-baseline.json",
+  import.meta.url,
+);
+
+type CompilationCase = Readonly<{
+  id: string;
+  source: URL;
+  sourceId: string;
+  semanticProfile: string;
+  perturb?: (source: string) => string;
+}>;
+
+const baselineCases = [
+  {
+    id: "generic-accepted",
+    source: preservedNotationSource,
+    sourceId: "preserved-notation-diagnostics",
+    semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+  },
+  {
+    id: "create-document-accepted",
+    source: createDocumentSource,
+    sourceId: "a12-create-document-data",
+    semanticProfile: SemanticProfileId.CreateDocument,
+  },
+  {
+    id: "boundary-error-accepted",
+    source: boundaryErrorSource,
+    sourceId: "a12-boundary-error",
+    semanticProfile: SemanticProfileId.BoundaryError,
+  },
+  {
+    id: "call-activity-accepted",
+    source: callActivitySource,
+    sourceId: "call-activity-test",
+    semanticProfile: SemanticProfileId.CalledProcessCallActivity,
+  },
+  {
+    id: "boundary-error-cancel-activity-false",
+    source: boundaryErrorSource,
+    sourceId: "a12-boundary-error-cancel-activity-false",
+    semanticProfile: SemanticProfileId.BoundaryError,
+    perturb: (source: string) => source.replace(
+      'attachedToRef="CreateRelationshipLinkTask"',
+      'attachedToRef="CreateRelationshipLinkTask" cancelActivity="false"',
+    ),
+  },
+  {
+    id: "call-activity-unqualified-called-element",
+    source: callActivitySource,
+    sourceId: "call-activity-unqualified-called-element",
+    semanticProfile: SemanticProfileId.CalledProcessCallActivity,
+    perturb: (source: string) => source.replace(
+      'calledElement="tns:CalledProcess"',
+      'calledElement="CalledProcess"',
+    ),
+  },
+  {
+    id: "create-document-extra-input-parameter",
+    source: createDocumentSource,
+    sourceId: "create-document-extra-input-parameter",
+    semanticProfile: SemanticProfileId.CreateDocument,
+    perturb: (source: string) => source.replace(
+      "</camunda:inputOutput>",
+      '<camunda:inputParameter name="extra">value</camunda:inputParameter></camunda:inputOutput>',
+    ),
+  },
+  {
+    id: "generic-checked-graph-refusal",
+    source: preservedNotationSource,
+    sourceId: "generic-checked-graph-refusal",
+    semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+    perturb: (source: string) => source.replace(
+      "<bpmn:userTask",
+      '<bpmn:startEvent id="StartEvent_2"><bpmn:outgoing>Flow_SecondStart</bpmn:outgoing></bpmn:startEvent>' +
+        '<bpmn:sequenceFlow id="Flow_SecondStart" sourceRef="StartEvent_2" targetRef="UserTask_Approve"/><bpmn:userTask',
+    ),
+  },
+] as const satisfies ReadonlyArray<CompilationCase>;
 
 async function compilePerturbed(
   perturb: (admitted: string) => string,
@@ -60,6 +152,112 @@ async function rejectionDiagnostics(
   );
   return rejected.diagnostics;
 }
+
+async function compileCase(entry: CompilationCase): Promise<BpmnCompilationResult> {
+  const original = await readFile(entry.source, "utf8");
+  const source = entry.perturb === undefined ? original : entry.perturb(original);
+  if (entry.perturb !== undefined) {
+    assert.notEqual(source, original, `baseline perturbation matched nothing: ${entry.id}`);
+  }
+  return compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(source),
+    sourceId: entry.sourceId,
+    expectedSha256: undefined,
+    semanticProfile: entry.semanticProfile,
+    limits: semanticProcessTestLimits,
+  });
+}
+
+function publicProjection(result: BpmnCompilationResult) {
+  return {
+    status: result.status,
+    source: result.source,
+    diagnostics: result.diagnostics,
+    checkedProcess: result.checkedProcess ?? null,
+    semanticProcess: result.semanticProcess ?? null,
+    exactBytesHex: result.status === BpmnCompilationStatus.Accepted
+      ? Array.from(
+          result.copyExactBytes(),
+          (byte) => byte.toString(16).padStart(2, "0"),
+        ).join("")
+      : null,
+  };
+}
+
+function record(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value))
+    : undefined;
+}
+
+test("matches the immutable pre-change result projections", async () => {
+  const baseline = record(JSON.parse(await readFile(admissionBaseline, "utf8")));
+  assert.equal(
+    baseline?.sourceTarget,
+    "8746bc6bbdeb126a79d56c6f510adc4e5f780d98",
+  );
+  const projections = record(baseline?.projections);
+  assert.ok(projections !== undefined);
+  for (const entry of baselineCases) {
+    assert.deepEqual(
+      publicProjection(await compileCase(entry)),
+      projections[entry.id],
+      `${entry.id} changed from the reviewed pre-change result`,
+    );
+  }
+});
+
+const locatedPropertyCases = [
+  {
+    ...baselineCases[0],
+    marker: "<bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>",
+    id: "StartEvent_1",
+    path: "definitions/rootElements[1]/flowElements[0]",
+  },
+  {
+    ...baselineCases[1],
+    marker: "<bpmn:outgoing>Flow_StartToCreate</bpmn:outgoing>",
+    id: "StartEvent_CreateDocument",
+    path: "definitions/rootElements[0]/flowElements[0]",
+  },
+  {
+    ...baselineCases[2],
+    marker: "<bpmn:outgoing>Flow_StartToService</bpmn:outgoing>",
+    id: "StartEvent_None",
+    path: "definitions/rootElements[1]/flowElements[0]",
+  },
+  {
+    ...baselineCases[3],
+    marker: "<bpmn:outgoing>Flow_Caller_Start_Call</bpmn:outgoing>",
+    id: "CallerStart",
+    path: "definitions/rootElements[0]/flowElements[0]",
+  },
+] as const;
+
+test("locates an unsupported own property in every compiler dispatch", async () => {
+  for (const entry of locatedPropertyCases) {
+    const result = await compileCase({
+      ...entry,
+      perturb: (source) => source.replace(
+        entry.marker,
+        `${entry.marker}<bpmn:extensionElements/>`,
+      ),
+    });
+    assert.deepEqual(result.diagnostics, [{
+      code: BpmnSourceDiagnosticCode.UnsupportedProperty,
+      element: {
+        id: entry.id,
+        type: "bpmn:StartEvent",
+        containmentPath: entry.path,
+        subject: "extensionElements",
+        requiredCapability: BpmnAdmissionCapability.PreserveProperty,
+      },
+      evidence: `bpmn:StartEvent at ${entry.path} carries property extensionElements, which the selected profile neither executes nor preserves.`,
+    }], entry.id);
+    assert.equal(result.checkedProcess, undefined);
+    assert.equal(result.semanticProcess, undefined);
+  }
+});
 
 const scriptTask = (id: string) => `<bpmn:scriptTask id="${id}" name="Compute"/>`;
 

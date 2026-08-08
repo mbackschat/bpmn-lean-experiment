@@ -49,6 +49,10 @@ import {
   unadmittedKeyRejections,
 } from "./preserved-element-classification.js";
 import {
+  FlowElementProjectionProfile,
+  projectedFlowElementKeyRejections,
+} from "./projected-flow-element-keys.js";
+import {
   selectRootDefinitions,
 } from "./root-definition-selection.js";
 import type {
@@ -178,6 +182,19 @@ export function compileCheckedProcess(
   const { nodes: sourceNodes, flows: sourceFlows, unexecuted } =
     partitionScopedElements(scoped.elements);
   classification.push(...unexecutedFlowElementRejections(unexecuted));
+  const flowKeyRejections = projectedFlowElementKeyRejections(
+    definitions,
+    [...sourceNodes, ...sourceFlows].map(({ element }) => element),
+    FlowElementProjectionProfile.Generic,
+    capability,
+  );
+  if (flowKeyRejections === undefined) {
+    return unsupported(
+      classification,
+      "Every selected flow element requires an exact key inventory entry.",
+    );
+  }
+  classification.push(...flowKeyRejections);
   if (classification.length > 0) {
     return {
       checkedProcess: undefined,

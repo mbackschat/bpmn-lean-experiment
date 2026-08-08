@@ -10,12 +10,13 @@ import type {
 import {
   declaredGatewayDirectionMatches,
 } from "./gateway-direction-source.js";
-import {
-  hasOnlyModelledKeys,
-} from "./moddle-graph.js";
 import type {
   ElementRecord,
 } from "./moddle-graph.js";
+import {
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+} from "./projected-flow-element-keys.js";
 
 export function projectEventBasedGateway(
   element: ElementRecord,
@@ -24,14 +25,10 @@ export function projectEventBasedGateway(
 ): Extract<CheckedNode, { kind: CheckedNodeKind.EventBasedGateway }> | undefined {
   const incoming = flows.filter(({ targetId }) => targetId === id).length;
   const outgoing = flows.filter(({ sourceId }) => sourceId === id).length;
-  return hasOnlyModelledKeys(element, [
-      "$type",
-      "id",
-      "name",
-      "gatewayDirection",
-      "instantiate",
-      "eventGatewayType",
-    ]) &&
+  return hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.EventBasedGateway,
+    ) &&
       incoming === 1 &&
       outgoing === 2 &&
       declaredGatewayDirectionMatches(

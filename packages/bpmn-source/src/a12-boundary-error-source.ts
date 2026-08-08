@@ -29,9 +29,18 @@ import {
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
 import {
+  orderedElementDiagnostics,
+} from "./admission-diagnostics.js";
+import {
   carriesNoUnconsumedForeignAttribute,
   foreignAttributeConsumingTypes,
 } from "./preserved-element-classification.js";
+import {
+  FlowElementProjectionProfile,
+  ProjectedFlowElementShape,
+  hasOnlyProjectedFlowElementKeys,
+  projectedFlowElementKeyRejections,
+} from "./projected-flow-element-keys.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 export const a12BoundaryErrorProfile =
@@ -136,6 +145,20 @@ function projectProcess(
       "The boundary-error profile requires the exact Start → Service/Boundary → User Task/End topology.",
     );
   }
+  const keyRejections = projectedFlowElementKeyRejections(
+    definitions,
+    elements,
+    FlowElementProjectionProfile.A12BoundaryError,
+  );
+  if (keyRejections === undefined) {
+    return unsupported("Every selected A12 boundary-Error flow element requires an exact key inventory entry.");
+  }
+  if (keyRejections.length > 0) {
+    return {
+      checkedProcess: undefined,
+      diagnostics: orderedElementDiagnostics(keyRejections),
+    };
+  }
   const route = projectBoundaryRoute(boundary, service, error);
   const serviceTask = projectServiceTask(service, definitions, route);
   const checkedStart = projectPlainNode(
@@ -236,13 +259,10 @@ function projectServiceTask(
     route === undefined ||
     id !== "CreateRelationshipLinkTask" ||
     value.implementation !== protocol ||
-    !hasOnlyModelledKeys(value, [
-      "$type",
-      "id",
-      "name",
-      "implementation",
-      "extensionElements",
-    ]) ||
+    !hasOnlyProjectedFlowElementKeys(
+      value,
+      ProjectedFlowElementShape.A12BoundaryServiceTask,
+    ) ||
     attributes?.size !== 1 ||
     attributes.get(`${camundaNamespace}#delegateExpression`) !==
       handlerExpression ||
@@ -292,12 +312,10 @@ function projectBoundaryRoute(
     serviceId !== "CreateRelationshipLinkTask" ||
     readId(attached ?? {}) !== serviceId ||
     boundary.cancelActivity !== true ||
-    !hasOnlyModelledKeys(boundary, [
-      "$type",
-      "id",
-      "name",
-      "eventDefinitions",
-    ]) ||
+    !hasOnlyProjectedFlowElementKeys(
+      boundary,
+      ProjectedFlowElementShape.A12BoundaryEvent,
+    ) ||
     definitions?.length !== 1 ||
     definition?.$type !== "bpmn:ErrorEventDefinition" ||
     readId(definition) !== "ErrorEventDefinition_LinkLimitReached" ||
@@ -387,7 +405,10 @@ function projectPlainNode<K extends
 ): Extract<CheckedNode, { kind: K }> | undefined {
   const id = readId(value);
   return id === expectedId &&
-      hasOnlyModelledKeys(value, ["$type", "id"])
+      hasOnlyProjectedFlowElementKeys(
+        value,
+        ProjectedFlowElementShape.A12BoundaryIdentityNode,
+      )
     ? ({ kind, id } as Extract<CheckedNode, { kind: K }>)
     : undefined;
 }
@@ -410,7 +431,10 @@ function projectUserTask(
   const id = readId(value);
   return id === "ExpectedUserTaskAfterBPMNError" &&
       value.name === "Expected User Task After BPMN Error" &&
-      hasOnlyModelledKeys(value, ["$type", "id", "name"])
+      hasOnlyProjectedFlowElementKeys(
+        value,
+        ProjectedFlowElementShape.PlainNode,
+      )
     ? {
         kind: CheckedNodeKind.UserTask,
         id,
@@ -428,7 +452,10 @@ function projectFlows(
     const id = readId(flow);
     const sourceId = readId(source ?? {});
     const targetId = readId(target ?? {});
-    return hasOnlyModelledKeys(flow, ["$type", "id"]) &&
+    return hasOnlyProjectedFlowElementKeys(
+      flow,
+      ProjectedFlowElementShape.A12BoundarySequenceFlow,
+    ) &&
         id !== undefined &&
         sourceId !== undefined &&
         targetId !== undefined
