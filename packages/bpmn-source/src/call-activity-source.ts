@@ -30,9 +30,6 @@ import type { ElementRecord } from "./moddle-graph.js";
 import {
   carriesNoUnconsumedForeignAttribute,
 } from "./preserved-element-classification.js";
-import {
-  referencesResolveToDeclaredType,
-} from "./reference-target-admission.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
@@ -76,9 +73,6 @@ export function compileCallActivityCheckedProcess(
   // exact-key allowlists cannot see and must reject rather than discard.
   if (!carriesNoUnconsumedForeignAttribute(definitions, new Set())) {
     return unsupported("A foreign attribute the compiler does not consume must be rejected rather than discarded.");
-  }
-  if (!referencesResolveToDeclaredType(definitions)) {
-    return unsupported("Every resolved reference must point at an element of the type its property declares.");
   }
   const roots = asElementArray(definitions.rootElements);
   const processes = roots?.filter(({ $type }) => $type === bpmnTypes.processType);

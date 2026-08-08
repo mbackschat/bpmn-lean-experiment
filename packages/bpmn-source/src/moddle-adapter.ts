@@ -15,6 +15,13 @@ import type { ElementRecord } from "./moddle-graph.js";
 export type ImportedBpmnGraph = Readonly<{
   rootElement: unknown;
   warnings: ReadonlyArray<BpmnSourceDiagnostic>;
+  /**
+   * Every contained element with the containment path that locates it.
+   *
+   * Built here because normalizing a parser warning already needs it, and returned so that a
+   * document-wide admission rule can consume it without walking the tree a second time.
+   */
+  located: ReadonlyMap<ElementRecord, ElementLocus>;
 }>;
 
 export async function importBpmnGraph(
@@ -45,6 +52,7 @@ export async function importBpmnGraph(
     warnings: result.warnings.map((warning) =>
       normalizeWarning(warning, located)
     ),
+    located,
   };
 }
 

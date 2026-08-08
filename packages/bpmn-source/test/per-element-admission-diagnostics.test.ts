@@ -291,11 +291,18 @@ test("orders by containment path with array indices compared as numbers", async 
 });
 
 test("reports the same list for the same bytes, ordered and deduplicated", async () => {
+  // Two different classification rules at two loci. The reference-target rule is deliberately absent
+  // from this fixture: it decides a malformed source rather than a profile boundary, so it blocks
+  // above the dispatch beside the parser warnings and is never collected with classification records.
   const perturb = (admitted: string): string =>
     admitted
       .replace("<bpmn:textAnnotation", `${scriptTask("ScriptTask_2")}<bpmn:textAnnotation`)
       .replace("<bpmn:startEvent", `${scriptTask("ScriptTask_1")}<bpmn:startEvent`)
-      .replace('bpmnElement="EndEvent_1"', 'bpmnElement="BPMNPlane_1"');
+      .replace(
+        '<bpmndi:BPMNShape id="StartEvent_1_di"',
+        '<bpmndi:BPMNShape xmlns:camunda="http://camunda.org/schema/1.0/bpmn"' +
+          ' camunda:candidateGroups="managers" id="StartEvent_1_di"',
+      );
 
   const [first, second] = await Promise.all([
     rejectionDiagnostics(perturb),
@@ -314,9 +321,9 @@ test("reports the same list for the same bytes, ordered and deduplicated", async
     ]),
     [
       [
-        BpmnSourceDiagnosticCode.ReferenceTargetTypeMismatch,
-        "definitions/diagrams[0]/plane/planeElement[4]",
-        "bpmnElement",
+        BpmnSourceDiagnosticCode.UnconsumedForeignAttribute,
+        "definitions/diagrams[0]/plane/planeElement[2]",
+        "camunda:candidateGroups",
       ],
       [
         BpmnSourceDiagnosticCode.UnsupportedElementType,

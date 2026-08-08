@@ -48,7 +48,6 @@ import {
   unadmittedKeyRejections,
 } from "./preserved-element-classification.js";
 import {
-  referenceTargetRejections,
 } from "./reference-target-admission.js";
 import {
   selectRootDefinitions,
@@ -129,7 +128,6 @@ export function compileCheckedProcess(
       located,
       foreignAttributeConsumers,
     ),
-    ...referenceTargetRejections(located),
     ...baseElementRetentionRejections(located, capability),
   ];
 

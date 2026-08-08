@@ -38,6 +38,9 @@ export {
   a12BoundaryErrorProfile,
 } from "./a12-boundary-error-source.js";
 export {
+  a12CreateDocumentProfile,
+} from "./a12-create-document-source.js";
+export {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
 export {

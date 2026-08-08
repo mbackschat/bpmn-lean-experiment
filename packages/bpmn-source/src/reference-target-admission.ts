@@ -9,8 +9,11 @@
  *
  * That matters most for preserved material, where nothing downstream inspects the reference again:
  * an executed reference is caught indirectly by checked-graph validation, while a wrong-typed
- * Diagram Interchange reference would simply be retained. The rule is applied uniformly over the
- * whole parsed document anyway, because the defect is in the resolution and not in any one locus.
+ * Diagram Interchange reference would simply be retained. The rule takes no profile parameter,
+ * because a reference to the wrong kind of element is a malformed source rather than one beyond a
+ * profile and widening a profile would not admit it. [The compiler entry point](./compile.ts) is
+ * therefore its only caller and applies it to every profile above the reader dispatch; installing it
+ * per reader is what let two readers omit it.
  *
  * Conformance is decided by the parser's own metamodel through `$instanceOf` against the property's
  * declared `type`, rather than by a hand-written type table here. A hand-written table would be a
@@ -56,20 +59,6 @@ export function referenceTargetRejections(
         )
       )
   );
-}
-
-/**
- * Whether every reference in `definitions`' containment tree resolves to its declared target type.
- *
- * The profile compilers that admit one hand-selected model shape report a single document-level
- * refusal, so they read the answer rather than the list. It is derived from the same collector so
- * the two can never disagree about the same document.
- */
-export function referencesResolveToDeclaredType(
-  definitions: ElementRecord,
-): boolean {
-  return referenceTargetRejections(locateContainedElements(definitions))
-    .length === 0;
 }
 
 type ReferenceDescriptor = Readonly<{ name: string; type: string }>;

@@ -20,6 +20,12 @@ import {
   compileCheckedProcess,
 } from "./checked-process-compiler.js";
 import {
+  orderedElementDiagnostics,
+} from "./admission-diagnostics.js";
+import {
+  referenceTargetRejections,
+} from "./reference-target-admission.js";
+import {
   a12BoundaryErrorProfile,
   compileA12BoundaryError,
 } from "./a12-boundary-error-source.js";
@@ -138,6 +144,20 @@ export async function compileBpmnToSemanticProcess(
   }
   if (imported.warnings.length > 0) {
     return reject(imported.warnings);
+  }
+
+  // A reference resolving outside the type its property declares is a malformed source rather than
+  // one beyond a profile, so this rule takes no profile parameter and belongs above the dispatch
+  // below. It was previously installed inside each reader, and two of the four never called it: the
+  // A12 CreateDocument profile admitted a `BPMNShape` whose `bpmnElement` resolved to a `BPMNPlane`,
+  // which is exactly the defect the rule was written for. Placing it beside the parser warnings also
+  // matches how a malformation is reported — before classification, which cannot enumerate a
+  // document whose own references do not resolve to their declared kinds.
+  const wrongTypedReferences = orderedElementDiagnostics(
+    referenceTargetRejections(imported.located),
+  );
+  if (wrongTypedReferences.length > 0) {
+    return reject(wrongTypedReferences);
   }
 
   const projection =
