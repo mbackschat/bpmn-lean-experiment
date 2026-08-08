@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft with the required cold proposal-review corrections awaiting audit; not owner-approved and not implemented.** The review of immutable target `8746bc6` returned `approve-with-required-edits` across four test-contract and guard-inventory findings. This proposal closes the two diagnostic-location limits that [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md#d3--typed-per-element-diagnostics-with-a-deterministic-identity) deliberately left for a governed increment. It changes where an existing rejection is classified and the location carried by that rejection. It changes no admitted source set, BPMN meaning, semantic profile meaning, checked graph, Semantic Process program, runtime transition, or Temporal refinement claim.
+**Independently reviewed with all required edits audited closed; awaiting owner approval and not implemented.** The review of immutable target `8746bc6` returned `approve-with-required-edits` across four test-contract and guard-inventory findings, and correction audit `ad1a88b` closed all four. This proposal closes the two diagnostic-location limits that [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md#d3--typed-per-element-diagnostics-with-a-deterministic-identity) deliberately left for a governed increment. It changes where an existing rejection is classified and the location carried by that rejection. It changes no admitted source set, BPMN meaning, semantic profile meaning, checked graph, Semantic Process program, runtime transition, or Temporal refinement claim.
 
 [PLAN.md](PLAN.md#exact-resume-point) owns sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md#bpmn-source) owns the exact current absence, and [the BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md#admission-and-security-policy) owns the import stages this proposal preserves.
 
@@ -161,8 +161,8 @@ Reopen before locating nested non-flow elements, changing the accepted source se
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `8746bc6` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8746bc6` | `fork-turns-none` | `approve-with-required-edits` | `ad1a88b` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-A documentation-only follow-up will record the immutable proposal target before the review prompt is handed off. Implementation remains blocked until the proposal review passes and the owner approves the reviewed contract.
+The proposal stage used one correction round. The context-cold review of target `8746bc6` returned four required findings about the pre-change result oracle, duplicate-list mutation guard, consumed-key value discriminator, and mechanically complete guard inventory. Correction audit `ad1a88b` closed all four with no new required defect. Implementation remains blocked until the owner approves the reviewed contract.
