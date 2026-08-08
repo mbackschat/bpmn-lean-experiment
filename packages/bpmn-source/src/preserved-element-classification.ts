@@ -145,9 +145,10 @@ export function preservationCapability(
  * named here rejects, so this set is the complete inventory of where a foreign attribute may sit.
  *
  * It is keyed by profile because the answer genuinely differs per profile, unlike the reference-target
- * rule that [the compiler entry point](./compile.ts) therefore owns above the reader dispatch. Each
- * caller must ask for its own profile's set: reading a shared constant is what left two readers
- * applying no rule at all while three documents claimed otherwise.
+ * rule that [the compiler entry point](./compile.ts) owns above reader selection. The [dispatch
+ * registry](./compilation-dispatch.ts) requests this set and applies the paired policy before a reader
+ * runs. Generic compilation collects the resulting records with its other classification findings;
+ * selected-shape readers receive only a source that has passed their document-level form.
  *
  * The A12 CreateDocument profile exempts whole `Definitions` and `Process` types rather than the exact
  * vendor attributes its registered source carries — `modeler:executionPlatform`, its version sibling,

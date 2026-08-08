@@ -17,8 +17,8 @@ import {
   readMessage,
 } from "./moddle-adapter.js";
 import {
-  compileCheckedProcess,
-} from "./checked-process-compiler.js";
+  compileDispatchedCheckedProcess,
+} from "./compilation-dispatch.js";
 import {
   orderedElementDiagnostics,
 } from "./admission-diagnostics.js";
@@ -26,23 +26,12 @@ import {
   referenceTargetRejections,
 } from "./reference-target-admission.js";
 import {
-  a12BoundaryErrorProfile,
-  compileA12BoundaryError,
-} from "./a12-boundary-error-source.js";
-import {
-  a12CreateDocumentProfile,
-  compileA12CreateDocument,
-} from "./a12-create-document-source.js";
-import {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
 import {
   SemanticProfileId,
   isWellFormedSemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
-import {
-  compileCallActivityCheckedProcess,
-} from "./call-activity-source.js";
 import {
   callActivityDefinitionBindingValid,
 } from "./call-activity-lowering.js";
@@ -160,22 +149,11 @@ export async function compileBpmnToSemanticProcess(
     return reject(wrongTypedReferences);
   }
 
-  const projection =
-    request.semanticProfile === SemanticProfileId.CalledProcessCallActivity
-      ? compileCallActivityCheckedProcess(
-          imported.rootElement,
-          source(),
-          request.semanticProfile,
-        )
-      : request.semanticProfile === a12BoundaryErrorProfile
-      ? compileA12BoundaryError(imported.rootElement, source())
-      : request.semanticProfile === a12CreateDocumentProfile
-      ? compileA12CreateDocument(imported.rootElement, source())
-      : compileCheckedProcess(
-          imported.rootElement,
-          source(),
-          request.semanticProfile,
-        );
+  const projection = compileDispatchedCheckedProcess(
+    imported.rootElement,
+    source(),
+    request.semanticProfile,
+  );
   if (projection.checkedProcess === undefined) {
     return reject(projection.diagnostics);
   }

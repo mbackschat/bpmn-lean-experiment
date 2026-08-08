@@ -1,0 +1,96 @@
+{
+  "kind": "foreignAttributeDispatchBaseline",
+  "sourceTarget": "0b0456401b8aca470d2d51c9b6c802aa7868f7d2",
+  "projections": {
+    "generic": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "preserved-notation-diagnostics-foreign-attribute",
+        "sha256": "5e0c7dba909812791359d3ebefc751c9f65fb2eb644abde21318df1afb561b0f",
+        "byteLength": 3768,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unconsumedForeignAttribute",
+          "element": {
+            "id": "StartEvent_1",
+            "type": "bpmn:StartEvent",
+            "containmentPath": "definitions/rootElements[1]/flowElements[0]",
+            "subject": "camunda:asyncBefore",
+            "requiredCapability": "consumeForeignAttribute"
+          },
+          "evidence": "bpmn:StartEvent at definitions/rootElements[1]/flowElements[0] carries extension attribute camunda:asyncBefore, which no projector reads; discarding it would remove intended behavior."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    },
+    "a12CreateDocument": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "a12-create-document-data-foreign-attribute",
+        "sha256": "dcd9dd82d7a0d3bb86321702c44e7b07ec876fa292c4ea7c8dc98d615669a23e",
+        "byteLength": 3005,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unsupportedModel",
+          "element": null,
+          "evidence": "A foreign attribute no projector consumes must be rejected rather than discarded."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    },
+    "a12BoundaryError": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "a12-boundary-error-foreign-attribute",
+        "sha256": "ea1ff4f322e80b5a61cf49961e2ac8147a4ef8bd2bb6b61b13109725465aa2f5",
+        "byteLength": 2821,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unsupportedModel",
+          "element": null,
+          "evidence": "A foreign attribute no projector consumes must be rejected rather than discarded."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    },
+    "callActivity": {
+      "status": "rejected",
+      "source": {
+        "kind": "bpmnSource",
+        "id": "call-activity-test-foreign-attribute",
+        "sha256": "b33e3598d46c9ae0b11ecd565c7d9fe88910ded5a7bd0f83a9f65f3615d7b946",
+        "byteLength": 2083,
+        "declaredEncoding": "UTF-8",
+        "decodedAs": "UTF-8"
+      },
+      "diagnostics": [
+        {
+          "code": "unsupportedModel",
+          "element": null,
+          "evidence": "A foreign attribute the compiler does not consume must be rejected rather than discarded."
+        }
+      ],
+      "checkedProcess": null,
+      "semanticProcess": null,
+      "exactBytesHex": null
+    }
+  }
+}

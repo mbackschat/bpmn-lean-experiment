@@ -37,10 +37,6 @@ import {
   orderedElementDiagnostics,
 } from "./admission-diagnostics.js";
 import {
-  carriesNoUnconsumedForeignAttribute,
-  foreignAttributeConsumingTypes,
-} from "./preserved-element-classification.js";
-import {
   FlowElementProjectionProfile,
   ProjectedFlowElementShape,
   hasOnlyProjectedFlowElementKeys,
@@ -67,15 +63,6 @@ export function compileA12CreateDocument(
   source: BpmnSourceIdentity,
 ): CheckedCompilationProjection {
   const definitions = asElement(rootElement);
-  // A document-wide rule this reader must ask for by profile. It admits one hand-selected shape,
-  // so an attribute stored in the non-enumerable `$attrs` passes every exact-key allowlist below
-  // and then vanishes; `camunda:asyncBefore` on a Start Event is an execution directive that did.
-  if (definitions !== undefined && !carriesNoUnconsumedForeignAttribute(
-    definitions,
-    foreignAttributeConsumingTypes(SemanticProfileId.CreateDocument),
-  )) {
-    return unsupported("A foreign attribute no projector consumes must be rejected rather than discarded.");
-  }
   if (
     definitions === undefined ||
     definitions.$type !== bpmnTypes.definitionsType ||

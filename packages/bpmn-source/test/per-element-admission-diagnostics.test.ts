@@ -28,6 +28,10 @@ import type {
 import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
+import {
+  asRecord,
+  publicCompilationProjection,
+} from "./compilation-result-test-support.ts";
 
 const preservedNotationSource = new URL(
   "../../../scenarios/user-task-preserved-notation/process.bpmn",
@@ -172,39 +176,17 @@ async function compileCase(entry: CompilationCase): Promise<BpmnCompilationResul
   });
 }
 
-function publicProjection(result: BpmnCompilationResult) {
-  return {
-    status: result.status,
-    source: result.source,
-    diagnostics: result.diagnostics,
-    checkedProcess: result.checkedProcess ?? null,
-    semanticProcess: result.semanticProcess ?? null,
-    exactBytesHex: result.status === BpmnCompilationStatus.Accepted
-      ? Array.from(
-          result.copyExactBytes(),
-          (byte) => byte.toString(16).padStart(2, "0"),
-        ).join("")
-      : null,
-  };
-}
-
-function record(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? Object.fromEntries(Object.entries(value))
-    : undefined;
-}
-
 test("matches the immutable pre-change result projections", async () => {
-  const baseline = record(JSON.parse(await readFile(admissionBaseline, "utf8")));
+  const baseline = asRecord(JSON.parse(await readFile(admissionBaseline, "utf8")));
   assert.equal(
     baseline?.sourceTarget,
     "8746bc6bbdeb126a79d56c6f510adc4e5f780d98",
   );
-  const projections = record(baseline?.projections);
+  const projections = asRecord(baseline?.projections);
   assert.ok(projections !== undefined);
   for (const entry of baselineCases) {
     assert.deepEqual(
-      publicProjection(await compileCase(entry)),
+      publicCompilationProjection(await compileCase(entry)),
       projections[entry.id],
       `${entry.id} changed from the reviewed pre-change result`,
     );

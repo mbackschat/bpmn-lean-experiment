@@ -26,8 +26,15 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import { SemanticProfileId } from "@bpmn-lean/semantic-core";
+import type {
+  CompilationDispatchId,
+} from "../src/compilation-dispatch.ts";
 
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
+import {
+  asRecord,
+  publicCompilationProjection,
+} from "./compilation-result-test-support.ts";
 
 const camundaNamespaceDeclaration =
   'xmlns:camunda="http://camunda.org/schema/1.0/bpmn"';
@@ -60,6 +67,14 @@ const serviceTaskSource = new URL(
 );
 const callActivitySource = new URL(
   "./fixtures/call-activity-called-process.bpmn",
+  import.meta.url,
+);
+const acceptedBaseline = new URL(
+  "./fixtures/per-element-admission-baseline.json",
+  import.meta.url,
+);
+const rejectedBaseline = new URL(
+  "./fixtures/foreign-attribute-dispatch-baseline.json",
   import.meta.url,
 );
 
@@ -209,103 +224,143 @@ test("refuses a third foreign attribute beside the two the Service Task consumes
 /**
  * The rule must reach every profile the compiler dispatches, not only the ones a fix touched.
  *
- * It is profile-parameterized, so unlike the reference-target rule it cannot move above the dispatch
- * and each reader asks for its own consuming set. That makes omission possible, and it happened: the
- * two A12 readers called the rule nowhere, so `camunda:asyncBefore` on an A12 Start Event was accepted
- * and discarded, leaving a byte-identical program. `asyncBefore` is the seed below because it is an
- * asynchronous-continuation directive rather than cosmetic metadata, so discarding it changes what a
- * host would do.
+ * It is profile-parameterized, so unlike the reference-target rule its outcome cannot be one global
+ * early rejection above dispatch: the generic reader must collect it with every other classification
+ * finding. The registry owns that distinction and applies the selected policy before any reader can
+ * omit it. Before the registry, the two A12 readers called the rule nowhere, so `camunda:asyncBefore`
+ * on an A12 Start Event was accepted and discarded, leaving a byte-identical program.
  *
  * The Start Event is the perturbed locus on every path because no profile exempts it and no other rule
  * can refuse an otherwise valid Start Event carrying one extra attribute. The paired unperturbed
  * compilation below is what keeps that reasoning honest rather than assumed.
  */
-const dispatchPaths: ReadonlyArray<
-  Readonly<{ path: string; source: URL; semanticProfile: string; find: string }>
-> = [
-  {
+type DispatchFixture = Readonly<{
+  path: string;
+  source: URL;
+  sourceId: string;
+  semanticProfile: string;
+  find: string;
+  acceptedProjectionId: string;
+}>;
+
+const dispatchFixtures = {
+  generic: {
     path: "the generic compiler",
-    source: userTaskSource,
-    semanticProfile: SemanticProfileId.UserTask,
+    source: new URL(
+      "../../../scenarios/user-task-preserved-notation/process.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "preserved-notation-diagnostics",
+    semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
     find: '<bpmn:startEvent id="StartEvent_1"',
+    acceptedProjectionId: "generic-accepted",
   },
-  {
+  a12CreateDocument: {
     path: "the A12 CreateDocument reader",
     source: new URL(
       "../../../scenarios/create-document-data/process.bpmn",
       import.meta.url,
     ),
+    sourceId: "a12-create-document-data",
     semanticProfile: a12CreateDocumentProfile,
     find: '<bpmn:startEvent id="StartEvent_CreateDocument"',
+    acceptedProjectionId: "create-document-accepted",
   },
-  {
+  a12BoundaryError: {
     path: "the A12 boundary-error reader",
     source: new URL(
       "../../../scenarios/boundary-error/process.bpmn",
       import.meta.url,
     ),
+    sourceId: "a12-boundary-error",
     semanticProfile: a12BoundaryErrorProfile,
     find: '<bpmn:startEvent id="StartEvent_None"',
+    acceptedProjectionId: "boundary-error-accepted",
   },
-  {
+  callActivity: {
     path: "the Call Activity reader",
     source: callActivitySource,
+    sourceId: "call-activity-test",
     semanticProfile: SemanticProfileId.CalledProcessCallActivity,
     find: '<bpmn:startEvent id="CallerStart"',
+    acceptedProjectionId: "call-activity-accepted",
   },
-];
+} as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
-for (const { path, source, semanticProfile, find } of dispatchPaths) {
-  test(`refuses an execution-affecting foreign attribute through ${path}`, async () => {
-    const admitted = await readFile(source, "utf8");
-    assert.ok(admitted.includes(find), `the source no longer contains ${find}`);
+test("preserves complete results through every registered compilation dispatch", async () => {
+  const registrySpecifier = new URL(
+    "../dist/compilation-dispatch.js",
+    import.meta.url,
+  ).href;
+  const loaded: unknown = await import(registrySpecifier);
+  assert.ok(loaded !== null && typeof loaded === "object");
+  assert.ok("compilationDispatches" in loaded);
+  const dispatches = loaded.compilationDispatches;
+  assert.ok(Array.isArray(dispatches));
+  const dispatchIds = dispatches.map((value) => asRecord(value)?.id);
+  assert.deepEqual(
+    dispatchIds,
+    Object.keys(dispatchFixtures),
+    "the registry and its complete-result fixture map must cover each other in declaration order",
+  );
 
-    const [unperturbed, perturbed] = await Promise.all([
+  const accepted = asRecord(JSON.parse(await readFile(acceptedBaseline, "utf8")));
+  assert.equal(accepted?.sourceTarget, "8746bc6bbdeb126a79d56c6f510adc4e5f780d98");
+  const acceptedProjections = asRecord(accepted?.projections);
+  assert.ok(acceptedProjections !== undefined);
+  const rejected = asRecord(JSON.parse(await readFile(rejectedBaseline, "utf8")));
+  assert.equal(rejected?.sourceTarget, "0b0456401b8aca470d2d51c9b6c802aa7868f7d2");
+  const rejectedProjections = asRecord(rejected?.projections);
+  assert.ok(rejectedProjections !== undefined);
+
+  for (const value of dispatches) {
+    const dispatch = asRecord(value);
+    assert.ok(dispatch !== undefined);
+    const id = dispatch.id;
+    assert.ok(typeof id === "string" && id in dispatchFixtures);
+    const fixture = dispatchFixtures[id as CompilationDispatchId];
+    const admitted = await readFile(fixture.source, "utf8");
+    assert.ok(admitted.includes(fixture.find), `the source no longer contains ${fixture.find}`);
+    const withNamespace = admitted.includes(camundaNamespaceDeclaration)
+      ? admitted
+      : admitted.replace(
+          "<bpmn:definitions",
+          `<bpmn:definitions ${camundaNamespaceDeclaration}`,
+        );
+    const perturbed = withNamespace.replace(
+      fixture.find,
+      `${fixture.find} camunda:asyncBefore="true"`,
+    );
+
+    const [unperturbed, foreignAttribute] = await Promise.all([
       compileBpmnToSemanticProcess({
         bytes: new TextEncoder().encode(admitted),
-        sourceId: "dispatch-path-unperturbed",
+        sourceId: fixture.sourceId,
         expectedSha256: undefined,
-        semanticProfile,
+        semanticProfile: fixture.semanticProfile,
         limits: semanticProcessTestLimits,
       }),
       compileBpmnToSemanticProcess({
-        bytes: new TextEncoder().encode(
-          // Two of these sources already bind the prefix, and declaring it twice is a parser warning
-          // that would refuse the file before this rule ran.
-          (admitted.includes(camundaNamespaceDeclaration)
-            ? admitted
-            : admitted.replace(
-              "<bpmn:definitions",
-              `<bpmn:definitions ${camundaNamespaceDeclaration}`,
-            ))
-            .replace(find, `${find} camunda:asyncBefore="true"`),
-        ),
-        sourceId: "dispatch-path-foreign-attribute",
+        bytes: new TextEncoder().encode(perturbed),
+        sourceId: `${fixture.sourceId}-foreign-attribute`,
         expectedSha256: undefined,
-        semanticProfile,
+        semanticProfile: fixture.semanticProfile,
         limits: semanticProcessTestLimits,
       }),
     ]);
 
-    // Anti-vacuity: a path whose own source is refused would reject the perturbation for free.
-    assert.equal(
-      unperturbed.status,
-      BpmnCompilationStatus.Accepted,
-      `the unperturbed source was refused: ${JSON.stringify(unperturbed.diagnostics)}`,
+    assert.deepEqual(
+      publicCompilationProjection(unperturbed),
+      acceptedProjections[fixture.acceptedProjectionId],
+      `${fixture.path} changed its complete accepted result`,
     );
-    assert.equal(perturbed.status, BpmnCompilationStatus.Rejected);
-    // The readers that admit one hand-selected shape report a document-level refusal, so the attribute
-    // name is available only on the paths that classify. Both must at least name the reason.
-    assert.ok(
-      perturbed.diagnostics.some(({ code, element, evidence }) =>
-        (code === BpmnSourceDiagnosticCode.UnconsumedForeignAttribute &&
-          element?.subject === "camunda:asyncBefore") ||
-        evidence.includes("foreign attribute")
-      ),
-      `the refusal does not name the foreign attribute: ${JSON.stringify(perturbed.diagnostics)}`,
+    assert.deepEqual(
+      publicCompilationProjection(foreignAttribute),
+      rejectedProjections[id],
+      `${fixture.path} changed its complete foreign-attribute result`,
     );
-  });
-}
+  }
+});
 
 /**
  * The A12 CreateDocument profile keeps admitting the vendor attributes its registered source carries.

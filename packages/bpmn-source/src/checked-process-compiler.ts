@@ -23,6 +23,9 @@ import {
   hasOnlyModelledKeys,
   readId,
 } from "./moddle-graph.js";
+import type {
+  ElementRecord,
+} from "./moddle-graph.js";
 import {
   isAdmittedCheckedProcess,
 } from "./checked-process-admission.js";
@@ -40,11 +43,10 @@ import {
 } from "./admission-diagnostics.js";
 import type {
   ElementRejection,
+  ElementLocus,
 } from "./admission-diagnostics.js";
 import {
   baseElementRetentionRejections,
-  foreignAttributeConsumingTypes,
-  foreignAttributeRejections,
   preservationCapability,
   unadmittedKeyRejections,
 } from "./preserved-element-classification.js";
@@ -70,6 +72,11 @@ import {
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
+export type ForeignAttributeClassification = (
+  definitions: ElementRecord,
+  located: ReadonlyMap<ElementRecord, ElementLocus>,
+) => ReadonlyArray<ElementRejection>;
+
 /**
  * Compiles one admitted `bpmn:Definitions` into the checked graph, or reports why it was refused.
  *
@@ -89,6 +96,7 @@ export function compileCheckedProcess(
   rootElement: unknown,
   source: BpmnSourceIdentity,
   semanticProfile: string,
+  classifyForeignAttributes: ForeignAttributeClassification,
 ): CheckedCompilationProjection {
   const capability = preservationCapability(semanticProfile);
   const definitions = asElement(rootElement);
@@ -116,11 +124,7 @@ export function compileCheckedProcess(
       capability?.definitionsKeys ?? new Set(),
       capability,
     ),
-    ...foreignAttributeRejections(
-      definitions,
-      located,
-      foreignAttributeConsumingTypes(semanticProfile),
-    ),
+    ...classifyForeignAttributes(definitions, located),
     ...baseElementRetentionRejections(located, capability),
   ];
 
