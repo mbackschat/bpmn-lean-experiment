@@ -150,14 +150,10 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 
 #### Implemented
 
-- Draft CIB-backed artifacts `cibseven-2.2.0-user-task-process-data-draft`, `parallel-fork-join-draft`, `cibseven-2.2.0-intermediate-catch-timer-draft`, `cibseven-2.2.0-service-task-effect-draft`, `cibseven-2.0.0-a12-create-document-draft`, and `cibseven-2.0.0-a12-boundary-error-draft` pin their oracle revision, environment, selected features, observation boundary, exclusions, and reviewed CIB–BPMN relationship IDs
-- the draft standards profiles `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft`, `bpmn-2.0.2-inclusive-gateway-selected-branches-draft`, `bpmn-2.0.2-event-based-gateway-message-timer-draft`, `bpmn-2.0.2-called-process-call-activity-draft`, `bpmn-2.0.2-timer-user-task-composition-draft`, and `bpmn-2.0.2-intermediate-catch-message-draft` declare BPMN 2.0.2 normative authority and explicitly have no CIB execution target; the Inclusive, Event-Based Gateway, and Call Activity profiles retain only reused User Task relationship metadata
-- draft CIB-backed `cibseven-2.2.0-embedded-subprocess-completion-draft` pins the one-level ordinary completion account and `CIB-AGR-0007`
-- draft CIB-backed `cibseven-2.2.0-subprocess-error-propagation-draft` pins one direct exact-code exceptional child-scope exit under `CIB-AGR-0008` and the stale host-task mapping under `CIB-OP-0001`
-- exact profile definition-scope and operation-kind cardinalities are checked separately from topology-independent graph validation
-- immutable CIB artifact status freezes evidence calibration and does not imply a production deployment/history baseline
-- the boundary profile selects exact-code agreement `CIB-AGR-0005`, deferred-expression/error extension `CIB-EXT-0003`, caught-path mapping extension `CIB-EXT-0004`, synchronous-to-durable operational mapping `CIB-OP-0003`, and pinned unmatched behavior `CIB-CFG-0004`
-- fresh content-bound packaged-engine evidence is release-bound to each CIB profile
+- Every registered profile is a guarded artifact with exact authority, selected features, observation boundary, exclusions, environment, and reviewed CIB relationship IDs where applicable
+- CIB-backed profiles pin exact oracle revisions and content-bound retained evidence; standards-only profiles declare no CIB execution target
+- definition-scope and operation-kind cardinalities are checked per profile, separately from topology-independent graph validation
+- immutable CIB artifact status freezes only evidence calibration, not a production deployment or history baseline
 
 #### Explicitly absent
 
@@ -480,28 +476,15 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 #### Implemented
 
 - complete artifact-catalog coverage with explicit per-case target sets
-- exact-release grouping for every CIB-backed case, explicit standards-only cases, and one raw-only `2.2.0` Service Task fail-once execution
+- exact-release grouping for CIB-backed cases, explicit standards-only cases, and one raw-only Service Task retry execution
 - one generic Lean result emitter
 - one core batch
 - two isolated Temporal executions per registered scenario
-- exact case-specific relations including parallel live-sibling stale rejection, exact timer firing, Timer/User Task composition, Simple Boolean first-true routing, payload-free Service Task success, CreateDocument typed-data success, typed boundary-error routing, and four ordinary embedded Sub-Process completion/stale schedules
-- sequential stale three-way semantic agreement plus exact Temporal completion prefix and separate `processClosed`
-- Simple Boolean exact Lean/core/Temporal agreement with CIB absent
-- structured Inclusive Gateway exact Lean/core/Temporal agreement for one-true, both completion orders, and default with CIB absent
-- Event-Based Gateway exact Lean/core/Temporal agreement for Message-first and Timer-first schedules with CIB absent
-- bounded Call Activity exact Lean/core/Temporal agreement for the called-task, caller-task, and terminal trace with CIB absent
-- Timer/User Task exact Lean/core/Temporal agreement with CIB absent
-- Intermediate Catch Message exact Lean/core/Temporal agreement with CIB absent
-- direct-Message Receive Task exact CIB/Lean/core/Temporal agreement under `CIB-AGR-0009`/`CIB-OP-0005`
-- ordinary embedded Sub-Process exact CIB/Lean/core/Temporal agreement under `CIB-AGR-0007`
-- direct-parent Sub-Process Error-propagation exact CIB/Lean/core/Temporal lifecycle agreement in Trigger-first and Sibling-first plus the stale schedule's recovery prefix under `CIB-AGR-0008`, with stale host-task refusal mapped under `CIB-OP-0001`
-- CreateDocument and boundary-error exact Lean/core/Temporal semantic agreement plus separate CIB synchronous-final host relations
-- retained-CIB comparison only for declared CIB cases
-- Query/Update/durable-timer/Activity evidence
-- definition binding
-- activation, initial-task, live-sibling, timer-deadline, operation-Message ID, direct-Message closed-arm, Signal-payload/history, conditional-route, Inclusive selected-subset/wait-set/default/remaining-wait, Event-race winner/loser/barrier/batching-premise/priority/core-bypass, Call called-identity/early-return, raw effect-binding, neutral effect-operation, final-variable, boundary-null, premature-scope-exit, Error wrong-route/sibling-retention/stale-state, and provenance mutations
-- thirty-history replay
-- isolation, cleanup, timings, and budgets
+- exact case-specific relations across every implemented family, with retained-CIB comparison only where the selected profile declares a CIB target
+- separate synchronous CIB host relations for the two A12-shaped source slices
+- Query, Update, Signal, durable-Timer, Activity, result-recovery, replay, and cleanup evidence for each applicable host mechanism
+- definition, provenance, admission, semantic-state, projection, host-bypass, and evidence mutations, including one required semantic disagreement per registered case
+- isolated target execution, complete fetched-history replay, cleanup, timings, and feedback budgets
 
 #### Explicitly absent
 
