@@ -17,8 +17,8 @@ import {
   BpmnSourceDiagnosticCode,
 } from "./contracts.js";
 import type {
-  BpmnSourceDiagnostic,
   BpmnSourceIdentity,
+  CheckedCompilationProjection,
 } from "./contracts.js";
 import {
   asElement,
@@ -36,16 +36,6 @@ import {
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
-
-type CallActivityProjection =
-  | Readonly<{
-      checkedProcess: CheckedProcess;
-      diagnostic: undefined;
-    }>
-  | Readonly<{
-      checkedProcess: undefined;
-      diagnostic: BpmnSourceDiagnostic;
-    }>;
 
 type ProcessElements = Readonly<{
   processId: string;
@@ -65,7 +55,7 @@ export function compileCallActivityCheckedProcess(
   rootElement: unknown,
   source: BpmnSourceIdentity,
   semanticProfile: string,
-): CallActivityProjection {
+): CheckedCompilationProjection {
   const definitions = asElement(rootElement);
   if (
     definitions === undefined ||
@@ -183,7 +173,7 @@ export function compileCallActivityCheckedProcess(
       nodes: graph.nodes,
       sequenceFlows: graph.flows,
     },
-    diagnostic: undefined,
+    diagnostics: [],
   };
 }
 
@@ -352,9 +342,11 @@ function compareIds(
   return compareCanonicalStrings(left.id, right.id);
 }
 
-function unsupported(evidence: string): CallActivityProjection {
+function unsupported(evidence: string): CheckedCompilationProjection {
   return {
     checkedProcess: undefined,
-    diagnostic: { code: BpmnSourceDiagnosticCode.UnsupportedModel, evidence },
+    diagnostics: [
+      { code: BpmnSourceDiagnosticCode.UnsupportedModel, element: null, evidence },
+    ],
   };
 }

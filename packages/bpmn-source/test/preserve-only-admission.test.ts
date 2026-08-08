@@ -41,14 +41,18 @@ import type {
 } from "../src/preserved-element-classification.ts";
 
 type CompiledClassifier = Readonly<{
-  isWhollyPreserved: (
+  preservedSubtreeRejections: (
     element: ModdleElement,
+    locus: Readonly<{ segments: ReadonlyArray<string | number> }>,
     capability: PreservationCapability,
-  ) => boolean;
+  ) => ReadonlyArray<unknown>;
   preservationCapability: (
     semanticProfile: string,
   ) => PreservationCapability | undefined;
 }>;
+
+/** Any locus: these cases read whether the subtree is preserved, never where a refusal landed. */
+const anyLocus = { segments: ["definitions"] } as const;
 
 /**
  * The classifier as built JavaScript, for the seeded-defect check only.
@@ -67,8 +71,8 @@ async function importCompiledClassifier(): Promise<CompiledClassifier> {
   if (
     loaded === null ||
     typeof loaded !== "object" ||
-    !("isWhollyPreserved" in loaded) ||
-    typeof loaded.isWhollyPreserved !== "function" ||
+    !("preservedSubtreeRejections" in loaded) ||
+    typeof loaded.preservedSubtreeRejections !== "function" ||
     !("preservationCapability" in loaded) ||
     typeof loaded.preservationCapability !== "function"
   ) {
@@ -239,6 +243,77 @@ for (const { name, find } of documentedLoci) {
 }
 
 /**
+ * Preserved types the registered fixture happens not to contain, one case each.
+ *
+ * The fixture carries Diagram Interchange, a Collaboration with one Participant, a Lane Set, an
+ * Association, a Text Annotation, and Documentation, so the admission case above evidences those.
+ * `MessageFlow`, `Group`, `BPMNLabelStyle`, and the `Font` it contains sit in the same preserved set
+ * with nothing behind them, which is a capability the profile asserts rather than one it shows. Each
+ * case asserts both halves of preservation at once: the source is admitted, and it still reaches the
+ * executed-only twin's execution projection, so admission did not come from executing the construct.
+ */
+const admittedPerturbations: ReadonlyArray<
+  Readonly<{ name: string; find: string; replace: string }>
+> = [
+  {
+    name: "a message flow between two participants",
+    find: "</bpmn:collaboration>",
+    replace:
+      '<bpmn:participant id="Participant_Requester" name="Requester"/>' +
+      '<bpmn:messageFlow id="MessageFlow_1" sourceRef="Participant_Requester"' +
+      ' targetRef="Participant_Reviewers"/></bpmn:collaboration>',
+  },
+  {
+    name: "a group artifact",
+    find: "<bpmn:textAnnotation",
+    replace: '<bpmn:group id="Group_1"/><bpmn:textAnnotation',
+  },
+  {
+    name: "a label style carrying a font",
+    find: "</bpmndi:BPMNDiagram>",
+    replace:
+      '<bpmndi:BPMNLabelStyle id="BPMNLabelStyle_1">' +
+      '<dc:Font name="Arial" size="8"/></bpmndi:BPMNLabelStyle></bpmndi:BPMNDiagram>',
+  },
+];
+
+for (const { name, find, replace } of admittedPerturbations) {
+  test(`retains ${name} without executing it`, async () => {
+    const admitted = await readFile(preservedNotationSource, "utf8");
+    assert.ok(admitted.includes(find), `the fixture no longer contains ${find}`);
+
+    const [preserved, executedOnly] = await Promise.all([
+      compileBpmnToSemanticProcess({
+        bytes: new TextEncoder().encode(admitted.replace(find, replace)),
+        sourceId: "preserved-notation-admitted-perturbation",
+        expectedSha256: undefined,
+        semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+        limits: semanticProcessTestLimits,
+      }),
+      compile(
+        executedOnlyTwin,
+        "sequential-user-task-process",
+        SemanticProfileId.UserTask,
+      ),
+    ]);
+
+    assert.equal(
+      preserved.status,
+      BpmnCompilationStatus.Accepted,
+      `${name} was rejected: ${JSON.stringify(preserved.diagnostics)}`,
+    );
+    assert.ok(preserved.checkedProcess !== undefined);
+    assert.ok(executedOnly.checkedProcess !== undefined);
+    const { semanticProfile: _preserved, ...preservedExecution } =
+      executionProjection(preserved.checkedProcess);
+    const { semanticProfile: _twin, ...twinExecution } = executionProjection(
+      executedOnly.checkedProcess,
+    );
+    assert.deepEqual(preservedExecution, twinExecution);
+  });
+}
+
+/**
  * The classifier must be sensitive to the exact defect it exists to prevent.
  *
  * A guard that only checks admitted sources cannot distinguish a correct classifier from one whose
@@ -262,15 +337,17 @@ test("rejects a preserved set seeded with an executable type", async () => {
     "Process_Unrelated",
   );
 
-  const { isWhollyPreserved, preservationCapability } =
+  const { preservedSubtreeRejections, preservationCapability } =
     await importCompiledClassifier();
   const honest = preservationCapability(
     SemanticProfileId.UserTaskPreservedNotation,
   );
   assert.ok(honest !== undefined);
+  const preserved = (capability: PreservationCapability): boolean =>
+    preservedSubtreeRejections(secondProcess, anyLocus, capability).length === 0;
 
   assert.equal(
-    isWhollyPreserved(secondProcess, honest),
+    preserved(honest),
     false,
     "an executable Process must never classify as preserved",
   );
@@ -279,7 +356,7 @@ test("rejects a preserved set seeded with an executable type", async () => {
   // Process still contains a Start Event no capability preserves. A flat preserved set would leak
   // here, which is why the rule is stated over the descendant set rather than over the type.
   assert.equal(
-    isWhollyPreserved(secondProcess, {
+    preserved({
       ...honest,
       preservedTypes: new Set([...honest.preservedTypes, "bpmn:Process"]),
     }),
@@ -288,7 +365,7 @@ test("rejects a preserved set seeded with an executable type", async () => {
   );
 
   assert.equal(
-    isWhollyPreserved(secondProcess, {
+    preserved({
       ...honest,
       preservedTypes: new Set([
         ...honest.preservedTypes,

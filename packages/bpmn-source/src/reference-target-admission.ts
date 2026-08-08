@@ -18,42 +18,61 @@
  * naming convention of those artifacts instead of reading them — that XSD complex types are named
  * `t<ElementName>` — the assumption was wrong for 53 of 184 elements.
  */
+import {
+  locateContainedElements,
+  rejectElement,
+} from "./admission-diagnostics.js";
+import type {
+  ElementLocus,
+  ElementRejection,
+} from "./admission-diagnostics.js";
+import { BpmnSourceDiagnosticCode } from "./contracts.js";
 import { asElement } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
 
 /**
- * Whether every reference in `definitions`' containment tree resolves to its declared target type.
+ * Every reference in the located tree pointing outside the type its property declares.
  *
  * Total and side-effect free. An element the parser did not produce, a property with no declared
  * type, and a reference whose value is absent are all admitted here: this rule owns target-type
  * conformance alone, and reference *presence* is owned by each projector's own required shape.
+ *
+ * No capability is reported, because none would help: a reference to the wrong kind of element is a
+ * malformed source rather than one beyond this profile, and widening the profile would not admit it.
+ */
+export function referenceTargetRejections(
+  located: ReadonlyMap<ElementRecord, ElementLocus>,
+): ReadonlyArray<ElementRejection> {
+  return [...located].flatMap(([element, locus]) =>
+    referenceDescriptors(element)
+      .filter(({ name, type }) => !targetsConform(element[name], type))
+      .map(({ name }) =>
+        rejectElement(
+          element,
+          locus,
+          BpmnSourceDiagnosticCode.ReferenceTargetTypeMismatch,
+          name,
+          null,
+        )
+      )
+  );
+}
+
+/**
+ * Whether every reference in `definitions`' containment tree resolves to its declared target type.
+ *
+ * The profile compilers that admit one hand-selected model shape report a single document-level
+ * refusal, so they read the answer rather than the list. It is derived from the same collector so
+ * the two can never disagree about the same document.
  */
 export function referencesResolveToDeclaredType(
   definitions: ElementRecord,
 ): boolean {
-  const walk = (value: unknown): boolean => {
-    if (Array.isArray(value)) {
-      return value.every(walk);
-    }
-    const element = asElement(value);
-    return (
-      element === undefined ||
-      (referencesConform(element) &&
-        Object.entries(element).every(
-          ([key, child]) => key === "$type" || walk(child),
-        ))
-    );
-  };
-  return walk(definitions);
+  return referenceTargetRejections(locateContainedElements(definitions))
+    .length === 0;
 }
 
 type ReferenceDescriptor = Readonly<{ name: string; type: string }>;
-
-function referencesConform(element: ElementRecord): boolean {
-  return referenceDescriptors(element).every(({ name, type }) =>
-    targetsConform(element[name], type)
-  );
-}
 
 function targetsConform(value: unknown, declaredType: string): boolean {
   if (Array.isArray(value)) {

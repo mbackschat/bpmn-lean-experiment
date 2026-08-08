@@ -19,9 +19,16 @@ import type {
   ElementRecord,
 } from "./moddle-graph.js";
 import {
-  isWhollyPreserved,
   preservationCapability,
+  preservedSubtreeRejections,
 } from "./preserved-element-classification.js";
+import {
+  containedLocus,
+} from "./admission-diagnostics.js";
+import type {
+  ElementLocus,
+  ElementRejection,
+} from "./admission-diagnostics.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -65,26 +72,44 @@ export type RootDefinitionSelection = Readonly<{
   errorArtifact: ElementRecord | undefined;
 }>;
 
+/**
+ * The selected root multiset, or the refusals that prevented one.
+ *
+ * `rejections` is empty on success and may also be empty on failure: a profile whose root multiset
+ * is wrong in a way no single root explains has nothing per-element to report, and its caller states
+ * the document-level refusal.
+ */
+export type RootDefinitionSelectionResult = Readonly<{
+  selection: RootDefinitionSelection | undefined;
+  rejections: ReadonlyArray<ElementRejection>;
+}>;
+
 /** Selects the exact root-definition multiset owned by one reviewed profile. */
 export function selectRootDefinitions(
   rootElements: ReadonlyArray<ElementRecord>,
   semanticProfile: string,
-): RootDefinitionSelection | undefined {
+  rootElementsLocus: ElementLocus,
+): RootDefinitionSelectionResult {
   const processes = elementsOfType(rootElements, bpmnTypes.processType);
   const process = processes[0];
   if (process === undefined || processes.length !== 1) {
-    return undefined;
+    return unselected([]);
   }
   switch (semanticProfile) {
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.EventBasedGatewayMessageTimer:
-      return selectMessageRoots(rootElements, process);
+      return selected(selectMessageRoots(rootElements, process));
     case SemanticProfileId.MessageAddressedReceiveTask:
-      return selectDirectMessageRoots(rootElements, process);
+      return selected(selectDirectMessageRoots(rootElements, process));
     case SemanticProfileId.SubProcessErrorPropagation:
-      return selectErrorRoots(rootElements, process);
+      return selected(selectErrorRoots(rootElements, process));
     default:
-      return selectEntryProcessRoot(rootElements, process, semanticProfile);
+      return selectEntryProcessRoot(
+        rootElements,
+        process,
+        semanticProfile,
+        rootElementsLocus,
+      );
   }
 }
 
@@ -100,14 +125,39 @@ function selectEntryProcessRoot(
   rootElements: ReadonlyArray<ElementRecord>,
   process: ElementRecord,
   semanticProfile: string,
-): RootDefinitionSelection | undefined {
+  rootElementsLocus: ElementLocus,
+): RootDefinitionSelectionResult {
   const capability = preservationCapability(semanticProfile);
-  const remainder = rootElements.filter((element) => element !== process);
-  return remainder.length === 0 ||
-      (capability !== undefined &&
-        remainder.every((element) => isWhollyPreserved(element, capability)))
-    ? { process, messageArtifacts: undefined, errorArtifact: undefined }
-    : undefined;
+  const rejections = rootElements.flatMap((element, index) =>
+    element === process || capability === undefined
+      ? []
+      : preservedSubtreeRejections(
+        element,
+        containedLocus(rootElementsLocus, index),
+        capability,
+      )
+  );
+  const unpreservedRemainder = capability === undefined &&
+    rootElements.some((element) => element !== process);
+  return rejections.length > 0 || unpreservedRemainder
+    ? unselected(rejections)
+    : selected({
+      process,
+      messageArtifacts: undefined,
+      errorArtifact: undefined,
+    });
+}
+
+function selected(
+  selection: RootDefinitionSelection | undefined,
+): RootDefinitionSelectionResult {
+  return { selection, rejections: [] };
+}
+
+function unselected(
+  rejections: ReadonlyArray<ElementRejection>,
+): RootDefinitionSelectionResult {
+  return { selection: undefined, rejections };
 }
 
 function selectMessageRoots(

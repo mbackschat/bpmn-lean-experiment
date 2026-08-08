@@ -156,8 +156,8 @@ export async function compileBpmnToSemanticProcess(
           source(),
           request.semanticProfile,
         );
-  if (projection.diagnostic !== undefined) {
-    return reject([projection.diagnostic]);
+  if (projection.checkedProcess === undefined) {
+    return reject(projection.diagnostics);
   }
   const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
   if (
@@ -249,11 +249,12 @@ function readDeclaredEncoding(bytes: Uint8Array): string | null {
   return declaration?.[1] ?? null;
 }
 
+/** A refusal about the whole document, which locates no element by construction. */
 function diagnostic(
   code: BpmnSourceDiagnosticCode,
   evidence: string,
 ): BpmnSourceDiagnostic {
-  return { code, evidence };
+  return { code, element: null, evidence };
 }
 
 /**

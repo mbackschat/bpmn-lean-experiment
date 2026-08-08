@@ -2,6 +2,12 @@ import type {
   DefinitionScope,
 } from "@bpmn-lean/semantic-core";
 import {
+  containedLocus,
+} from "./admission-diagnostics.js";
+import type {
+  ElementLocus,
+} from "./admission-diagnostics.js";
+import {
   asElementArray,
   hasOnlyModelledKeys,
   readId,
@@ -10,9 +16,16 @@ import type {
   ElementRecord,
 } from "./moddle-graph.js";
 
+/**
+ * One flow element with the scope that owns it and the containment path that locates it.
+ *
+ * The locus travels with the element because a refusal has to name where it happened, and this
+ * flattening is the only place that still knows the path an element was reached by.
+ */
 export type ScopedSourceElement = Readonly<{
   element: ElementRecord;
   scopeId: string;
+  locus: ElementLocus;
 }>;
 
 export type ScopedFlowElements = Readonly<{
@@ -30,6 +43,7 @@ export function collectScopedFlowElements(
   process: ElementRecord,
   processId: string,
   subProcessType: string,
+  processLocus: ElementLocus,
 ): ScopedFlowElements | undefined {
   const rootScopeId = definitionScopeId(processId);
   const flowElements = asElementArray(process.flowElements);
@@ -47,6 +61,7 @@ export function collectScopedFlowElements(
       flowElements,
       rootScopeId,
       subProcessType,
+      containedLocus(processLocus, "flowElements"),
       definitionScopes,
       elements,
     )
@@ -60,11 +75,13 @@ function collectScope(
   flowElements: ReadonlyArray<ElementRecord>,
   scopeId: string,
   subProcessType: string,
+  containerLocus: ElementLocus,
   definitionScopes: DefinitionScope[],
   elements: ScopedSourceElement[],
 ): boolean {
-  for (const element of flowElements) {
-    elements.push({ element, scopeId });
+  for (const [index, element] of flowElements.entries()) {
+    const locus = containedLocus(containerLocus, index);
+    elements.push({ element, scopeId, locus });
     if (element.$type !== subProcessType) {
       continue;
     }
@@ -88,6 +105,7 @@ function collectScope(
         childElements,
         childScopeId,
         subProcessType,
+        containedLocus(locus, "flowElements"),
         definitionScopes,
         elements,
       )

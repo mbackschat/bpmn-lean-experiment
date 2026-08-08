@@ -27,6 +27,19 @@
  */
 import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 
+import {
+  containedLocus,
+  locateContainedElements,
+  rejectElement,
+} from "./admission-diagnostics.js";
+import type {
+  ElementLocus,
+  ElementRejection,
+} from "./admission-diagnostics.js";
+import {
+  BpmnAdmissionCapability,
+  BpmnSourceDiagnosticCode,
+} from "./contracts.js";
 import { carriesDeclaredDefault } from "./metamodel-defaults.js";
 import { asElement } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
@@ -120,94 +133,173 @@ export function preservationCapability(
 }
 
 /**
- * Whether `element` and everything it contains may be retained without being executed.
+ * Every element in `element`'s subtree that no capability preserves; empty means wholly preserved.
  *
- * Total and side-effect free. A value that is neither an element nor an array of elements is a
- * modelled attribute of an already-preserved type and carries no execution meaning, so it is
- * admitted; the closed `preservedTypes` set is what bounds the decision.
+ * A value that is neither an element nor an array of elements is a modelled attribute of an
+ * already-preserved type and carries no execution meaning, so it is admitted; the closed
+ * `preservedTypes` set is what bounds the decision.
+ *
+ * An unpreservable element stops the descent and is reported alone. Its descendants are refused
+ * along with it, but naming them would bury the one construct its author has to remove under the
+ * subtree that construct happens to contain.
  */
-export function isWhollyPreserved(
+export function preservedSubtreeRejections(
   element: ElementRecord,
+  locus: ElementLocus,
   capability: PreservationCapability,
-): boolean {
+): ReadonlyArray<ElementRejection> {
   if (
     typeof element.$type !== "string" ||
     !capability.preservedTypes.has(element.$type)
   ) {
-    return false;
+    return [
+      rejectElement(
+        element,
+        locus,
+        BpmnSourceDiagnosticCode.UnsupportedElementType,
+        null,
+        BpmnAdmissionCapability.PreserveElementType,
+      ),
+    ];
   }
-  return Object.entries(element).every(
-    ([key, value]) =>
-      key === "$type" || isWhollyPreservedValue(value, capability),
+  return Object.entries(element).flatMap(([key, value]) =>
+    key === "$type"
+      ? []
+      : preservedValueRejections(value, containedLocus(locus, key), capability)
   );
 }
 
 /**
- * Whether every own key of `element` is executed, or preserved with a wholly preserved value.
+ * Every own key of `element` that is neither executed nor preserved, and every leak beneath one.
  *
  * With no capability this is exactly the executed-only allowlist, so a profile that preserves
  * nothing keeps its admitted set unchanged.
+ *
+ * A key the profile does preserve is reported at the *contained* element that fails rather than at
+ * the key, because a modeler who wrote a supported container holding one unsupported child needs to
+ * be told about the child.
  */
-export function hasOnlyExecutedOrPreservedKeys(
+export function unadmittedKeyRejections(
   element: ElementRecord,
+  locus: ElementLocus,
   executedKeys: ReadonlyArray<string>,
   preservedKeys: ReadonlySet<string>,
   capability: PreservationCapability | undefined,
-): boolean {
+): ReadonlyArray<ElementRejection> {
   const executed = new Set(executedKeys);
-  return Object.keys(element).every(
-    (key) =>
-      executed.has(key) ||
-      carriesDeclaredDefault(element, key) ||
-      (capability !== undefined &&
-        preservedKeys.has(key) &&
-        isWhollyPreservedValue(element[key], capability)),
-  );
+  return Object.keys(element).flatMap((key) => {
+    if (executed.has(key) || carriesDeclaredDefault(element, key)) {
+      return [];
+    }
+    if (capability === undefined || !preservedKeys.has(key)) {
+      return [
+        rejectElement(
+          element,
+          locus,
+          BpmnSourceDiagnosticCode.UnsupportedProperty,
+          key,
+          BpmnAdmissionCapability.PreserveProperty,
+        ),
+      ];
+    }
+    return preservedValueRejections(
+      element[key],
+      containedLocus(locus, key),
+      capability,
+    );
+  });
 }
 
 /**
- * Whether no element in `definitions`' containment tree carries an unconsumed foreign attribute.
+ * Every element in the document carrying a foreign attribute no projector consumes.
  *
  * This is the executed partition's counterpart to the preserved subtree's own attribute rule, and it
  * closes a hole the exact-key allowlists could not see: because `$attrs` is non-enumerable, a
  * `camunda:assignee` on an admitted User Task passed every allowlist and then vanished, which is the
- * silent omission preserve-only admission exists to prevent. The check is one uniform walk rather
- * than a rule per element type, because the blindness was in the storage and not in any one locus.
+ * silent omission preserve-only admission exists to prevent. The rule is stated once over the
+ * located containment tree rather than as a rule per element type, because the blindness was in the
+ * storage and not in any one locus.
  *
  * `consumingTypes` names the `$type`s whose projector reads foreign attributes and refuses any it
  * does not recognize. Those attributes are evidence the compiler acts on, so they are not discarded
  * content; every other foreign attribute anywhere in the document rejects.
  */
+export function foreignAttributeRejections(
+  definitions: ElementRecord,
+  located: ReadonlyMap<ElementRecord, ElementLocus>,
+  consumingTypes: ReadonlySet<string>,
+): ReadonlyArray<ElementRejection> {
+  const schemaInstance = xmlSchemaInstancePrefixes(definitions);
+  return [...located].flatMap(([element, locus]) =>
+    typeof element.$type === "string" && consumingTypes.has(element.$type)
+      ? []
+      : unconsumedForeignAttributeNames(element, schemaInstance).map((name) =>
+        rejectElement(
+          element,
+          locus,
+          BpmnSourceDiagnosticCode.UnconsumedForeignAttribute,
+          name,
+          BpmnAdmissionCapability.ConsumeForeignAttribute,
+        )
+      )
+  );
+}
+
+/**
+ * Whether no element in `definitions` carries a foreign attribute no projector consumes.
+ *
+ * The profile compilers that admit one hand-selected model shape report a single document-level
+ * refusal, so they read the answer rather than the list. It is derived from the same collector so
+ * the two can never disagree about the same document.
+ */
 export function carriesNoUnconsumedForeignAttribute(
   definitions: ElementRecord,
   consumingTypes: ReadonlySet<string>,
 ): boolean {
-  const schemaInstance = xmlSchemaInstancePrefixes(definitions);
-  const admits = (element: ElementRecord): boolean =>
-    (typeof element.$type === "string" && consumingTypes.has(element.$type)) ||
-    carriesNoForeignAttribute(element, schemaInstance);
-  const walk = (value: unknown): boolean => {
-    if (Array.isArray(value)) {
-      return value.every(walk);
-    }
-    const element = asElement(value);
-    return (
-      element === undefined ||
-      (admits(element) &&
-        Object.entries(element).every(
-          ([key, child]) => key === "$type" || walk(child),
-        ))
-    );
-  };
-  return walk(definitions);
+  return foreignAttributeRejections(
+    definitions,
+    locateContainedElements(definitions),
+    consumingTypes,
+  ).length === 0;
+}
+
+/**
+ * Every element whose retained `BaseElement` key holds content the profile does not preserve.
+ *
+ * BPMN declares `documentation` on `BaseElement`, so a modeler may write it on any element, and it
+ * is withheld from projection rather than taught to every projector. Its *content* still has to be
+ * classified, and this is the only rule that classifies it: the two allowlist loci see the key only
+ * on `bpmn:Definitions` and the executable `bpmn:Process`.
+ *
+ * It is stated here, over the located tree, rather than inside the projection view, because a
+ * refusal has to name where it happened and the projectors hold no locus.
+ */
+export function baseElementRetentionRejections(
+  located: ReadonlyMap<ElementRecord, ElementLocus>,
+  capability: PreservationCapability | undefined,
+): ReadonlyArray<ElementRejection> {
+  if (capability === undefined) {
+    return [];
+  }
+  return [...located].flatMap(([element, locus]) =>
+    retainedBaseElementKeys(element, capability).flatMap((key) =>
+      preservedValueRejections(
+        element[key],
+        containedLocus(locus, key),
+        capability,
+      )
+    )
+  );
 }
 
 /**
  * `element` as the executed projectors must see it: without the keys this profile only retains.
  *
- * Returns `undefined` when a retained key holds content the profile does not preserve, which rejects
- * exactly as an unrecognized key does. Returns the element itself when it carries no such key, so
- * the ordinary case allocates nothing and every existing profile is byte-for-byte unaffected.
+ * A pure projection. Whether the retained content is preservable at all is an admission question,
+ * decided by `baseElementRetentionRejections` before any projector runs; deciding it again here
+ * would be a second answer to one question. Returns the element itself when it carries no retained
+ * key, so the ordinary case allocates nothing and every existing profile is byte-for-byte
+ * unaffected.
  *
  * The view copies own property *descriptors* rather than spreading. `bpmn-moddle` stores `$attrs`,
  * `$parent`, and every resolved reference as non-enumerable own properties, and a spread would drop
@@ -217,22 +309,13 @@ export function carriesNoUnconsumedForeignAttribute(
 export function executedProjectionView(
   element: ElementRecord,
   capability: PreservationCapability | undefined,
-): ElementRecord | undefined {
+): ElementRecord {
   if (capability === undefined) {
     return element;
   }
-  const retained = Object.keys(element).filter((key) =>
-    capability.baseElementKeys.has(key)
-  );
+  const retained = retainedBaseElementKeys(element, capability);
   if (retained.length === 0) {
     return element;
-  }
-  if (
-    !retained.every((key) =>
-      isWhollyPreservedValue(element[key], capability)
-    )
-  ) {
-    return undefined;
   }
   const view = Object.create(
     Object.getPrototypeOf(element) as object | null,
@@ -244,15 +327,29 @@ export function executedProjectionView(
   return view;
 }
 
-function isWhollyPreservedValue(
-  value: unknown,
+function retainedBaseElementKeys(
+  element: ElementRecord,
   capability: PreservationCapability,
-): boolean {
+): ReadonlyArray<string> {
+  return Object.keys(element).filter((key) =>
+    capability.baseElementKeys.has(key)
+  );
+}
+
+function preservedValueRejections(
+  value: unknown,
+  locus: ElementLocus,
+  capability: PreservationCapability,
+): ReadonlyArray<ElementRejection> {
   if (Array.isArray(value)) {
-    return value.every((entry) => isWhollyPreservedValue(entry, capability));
+    return value.flatMap((entry, index) =>
+      preservedValueRejections(entry, containedLocus(locus, index), capability)
+    );
   }
   const element = asElement(value);
-  return element === undefined || isWhollyPreserved(element, capability);
+  return element === undefined
+    ? []
+    : preservedSubtreeRejections(element, locus, capability);
 }
 
 /**
@@ -287,7 +384,7 @@ const contentFreeSchemaLocationHints: ReadonlySet<string> = new Set([
 const xmlSchemaInstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance";
 
 /**
- * Whether `element` carries no foreign attribute beyond XML infrastructure.
+ * The `$attrs` entries of `element` that are foreign content rather than XML infrastructure.
  *
  * Namespace declarations are admitted at any locus: `xmlns` and `xmlns:*` bind a prefix and are not
  * content. Every other `$attrs` entry is foreign content and rejects, which is the point — an
@@ -298,28 +395,31 @@ const xmlSchemaInstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance";
  * `namespace#localName` set per profile, and the empty case needs none, so the machinery lands with
  * the first profile that requires it.
  */
-function carriesNoForeignAttribute(
+function unconsumedForeignAttributeNames(
   element: ElementRecord,
   schemaInstancePrefixes: ReadonlySet<string>,
-): boolean {
+): ReadonlyArray<string> {
   const attributes = asElement(element.$attrs);
-  return (
-    attributes === undefined ||
-    Object.keys(attributes).every((name) => {
-      if (name === "xmlns" || name.startsWith("xmlns:")) {
-        return true;
-      }
-      const separator = name.indexOf(":");
-      if (separator <= 0 || !schemaInstancePrefixes.has(name.slice(0, separator))) {
-        return false;
-      }
-      const localName = name.slice(separator + 1);
-      return (
-        parserConsumedSchemaInstanceAttributes.has(localName) ||
-        contentFreeSchemaLocationHints.has(localName)
-      );
-    })
-  );
+  if (attributes === undefined) {
+    return [];
+  }
+  return Object.keys(attributes).filter((name) => {
+    if (name === "xmlns" || name.startsWith("xmlns:")) {
+      return false;
+    }
+    const separator = name.indexOf(":");
+    if (
+      separator <= 0 ||
+      !schemaInstancePrefixes.has(name.slice(0, separator))
+    ) {
+      return true;
+    }
+    const localName = name.slice(separator + 1);
+    return (
+      !parserConsumedSchemaInstanceAttributes.has(localName) &&
+      !contentFreeSchemaLocationHints.has(localName)
+    );
+  });
 }
 
 /**

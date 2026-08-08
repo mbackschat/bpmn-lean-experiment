@@ -16,6 +16,7 @@ export type {
 } from "@bpmn-lean/semantic-core";
 
 export {
+  BpmnAdmissionCapability,
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
 } from "./contracts.js";
@@ -23,6 +24,7 @@ export type {
   AcceptedBpmnCompilation,
   BpmnCompilationResult,
   BpmnSourceDiagnostic,
+  BpmnSourceElement,
   BpmnSourceIdentity,
   BpmnSourceLimits,
   CompileBpmnToSemanticProcessRequest,

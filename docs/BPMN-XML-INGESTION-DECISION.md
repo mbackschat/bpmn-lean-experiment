@@ -144,7 +144,7 @@ The package does not export raw moddle objects as a public cross-package contrac
 5. **lowering** — the checked graph produced a valid current Semantic Process program;
 6. **execution** — the admitted program was accepted by the semantic core.
 
-Any parser warning blocks static admission until a project rule explicitly classifies that warning as safe for the declared profile. The first implementation uses one stable `parserWarning` diagnostic code with the upstream message as evidence rather than a growing set of message-string special cases.
+Any parser warning blocks static admission until a project rule explicitly classifies that warning as safe for the declared profile. The first implementation uses one stable `parserWarning` diagnostic code with the upstream message as evidence rather than a growing set of message-string special cases. The code and the message stay exactly that; what the record adds is the referring element when the parser named one, so several warnings in one file locate several places rather than reading as one complaint repeated.
 
 The importer accepts bytes plus a required caller-provided byte limit and parser Promise-settlement deadline. It rejects a DTD/DOCTYPE before structural parsing. The published parser probe did not resolve internal or external entities, but it accepted a bare DOCTYPE without warning; the explicit preflight avoids relying on that incidental behavior. Parsing untrusted large models is synchronous inside the library, so the current deadline cannot preempt blocked CPU work and a production upload boundary must eventually isolate parsing in a bounded Worker or process.
 

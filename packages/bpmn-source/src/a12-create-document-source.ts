@@ -19,8 +19,8 @@ import {
   BpmnSourceDiagnosticCode,
 } from "./contracts.js";
 import type {
-  BpmnSourceDiagnostic,
   BpmnSourceIdentity,
+  CheckedCompilationProjection,
 } from "./contracts.js";
 import {
   asElement,
@@ -42,16 +42,6 @@ const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
 const protocol = "urn:bpmn-lean:a12-delegate:v1";
 const handlerExpression = "${createDocumentDelegate}";
 
-type Projection =
-  | Readonly<{
-      checkedProcess: CheckedProcess;
-      diagnostic: undefined;
-    }>
-  | Readonly<{
-      checkedProcess: undefined;
-      diagnostic: BpmnSourceDiagnostic;
-    }>;
-
 /**
  * Projects the one approved A12 CreateDocument source shape.
  *
@@ -61,7 +51,7 @@ type Projection =
 export function compileA12CreateDocument(
   rootElement: unknown,
   source: BpmnSourceIdentity,
-): Projection {
+): CheckedCompilationProjection {
   const definitions = asElement(rootElement);
   if (
     definitions === undefined ||
@@ -168,7 +158,7 @@ export function compileA12CreateDocument(
       nodes: nodes.sort(compareIds),
       sequenceFlows: [...flows].sort(compareIds),
     },
-    diagnostic: undefined,
+    diagnostics: [],
   };
 }
 
@@ -329,12 +319,15 @@ function compareIds(
   return compareCanonicalStrings(left.id, right.id);
 }
 
-function unsupported(evidence: string): Projection {
+function unsupported(evidence: string): CheckedCompilationProjection {
   return {
     checkedProcess: undefined,
-    diagnostic: {
-      code: BpmnSourceDiagnosticCode.UnsupportedModel,
-      evidence,
-    },
+    diagnostics: [
+      {
+        code: BpmnSourceDiagnosticCode.UnsupportedModel,
+        element: null,
+        evidence,
+      },
+    ],
   };
 }

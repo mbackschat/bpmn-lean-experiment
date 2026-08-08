@@ -16,8 +16,8 @@ import {
   BpmnSourceDiagnosticCode,
 } from "./contracts.js";
 import type {
-  BpmnSourceDiagnostic,
   BpmnSourceIdentity,
+  CheckedCompilationProjection,
 } from "./contracts.js";
 import {
   asElement,
@@ -37,16 +37,6 @@ const protocol = "urn:bpmn-lean:a12-delegate:v1";
 const handlerExpression = "#{createRelationshipLinkDelegate}";
 const caughtCode = "LinkLimitReachedError";
 
-type Projection =
-  | Readonly<{
-      checkedProcess: CheckedProcess;
-      diagnostic: undefined;
-    }>
-  | Readonly<{
-      checkedProcess: undefined;
-      diagnostic: BpmnSourceDiagnostic;
-    }>;
-
 /**
  * Admits only the project-authored A12-shaped boundary-error discriminator.
  *
@@ -56,7 +46,7 @@ type Projection =
 export function compileA12BoundaryError(
   rootElement: unknown,
   source: BpmnSourceIdentity,
-): Projection {
+): CheckedCompilationProjection {
   const definitions = asElement(rootElement);
   if (
     definitions === undefined ||
@@ -94,7 +84,7 @@ function projectProcess(
   process: ElementRecord,
   error: ElementRecord,
   source: BpmnSourceIdentity,
-): Projection {
+): CheckedCompilationProjection {
   if (
     !hasOnlyModelledKeys(process, [
       "$type",
@@ -216,7 +206,7 @@ function projectProcess(
       nodes: [...nodes].sort(compareIds),
       sequenceFlows: [...flows].sort(compareIds),
     },
-    diagnostic: undefined,
+    diagnostics: [],
   };
 }
 
@@ -497,12 +487,15 @@ function compareIds(
   return compareCanonicalStrings(left.id, right.id);
 }
 
-function unsupported(evidence: string): Projection {
+function unsupported(evidence: string): CheckedCompilationProjection {
   return {
     checkedProcess: undefined,
-    diagnostic: {
-      code: BpmnSourceDiagnosticCode.UnsupportedModel,
-      evidence,
-    },
+    diagnostics: [
+      {
+        code: BpmnSourceDiagnosticCode.UnsupportedModel,
+        element: null,
+        evidence,
+      },
+    ],
   };
 }
