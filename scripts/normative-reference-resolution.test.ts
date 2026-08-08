@@ -52,6 +52,47 @@ const referencePattern =
 
 type Reference = Readonly<{ source: string; text: string }>;
 
+/**
+ * Whether `declared` covers `identity`, exactly or as the whole of which it names a part.
+ *
+ * An unqualified declaration names a whole clause or table and therefore covers a qualified citation
+ * of one of its rows. A qualified declaration names one row and covers nothing else.
+ */
+function authorizes(
+  declared: ReadonlyArray<string>,
+  identity: string,
+): boolean {
+  if (declared.includes(identity)) {
+    return true;
+  }
+  const parts = identity.split(" ");
+  return parts.length === 3 && declared.includes(`${parts[0]} ${parts[1]}`);
+}
+
+/**
+ * One reference's complete comparable identity: kind, numeral, and any qualifier.
+ *
+ * `§` canonicalizes to `Clause` because that is notation rather than a different authority, while a
+ * `Table` sharing a numeral with a `Clause` stays distinct because those are different subjects. An
+ * unparsable reference keeps its exact text, so it can never compare equal to a parsed one.
+ */
+function referenceIdentities(
+  references: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  return [...new Set(references.map((text) => {
+    const parsed = referencePattern.exec(text);
+    const numeral = parsed?.[2];
+    if (parsed === null || numeral === undefined) {
+      return text;
+    }
+    const kind = parsed[1] ?? "Clause";
+    const qualifier = parsed[3];
+    return qualifier === undefined
+      ? `${kind} ${numeral}`
+      : `${kind} ${numeral} ${qualifier}`;
+  }))].sort();
+}
+
 async function trackedDigest(): Promise<NormativeLabelDigest> {
   return parseDigest(await readFile(digestPath, "utf8"));
 }
@@ -149,6 +190,18 @@ test("resolves every declared normative reference in the pinned BPMN corpus", as
  * and requiring equality reported 14 pre-existing scenarios across 7 capsules whose profiles simply
  * cite more.
  *
+ * Comparison is on the complete parsed identity — kind, numeral, and qualifier — not on the numeral
+ * alone. A first formulation kept only the numeral, so a profile declaring `Table 13.2` authorized a
+ * scenario citing `Clause 13.2`: different subjects that both resolve, which is precisely the pair a
+ * containment check exists to separate. `§` canonicalizes to `Clause`, because scenarios spell in
+ * `§` and profiles in `Clause` and that difference is notation rather than authority.
+ *
+ * A qualifier narrows rather than departs, so an unqualified declaration authorizes its own rows: a
+ * profile declaring `Table 13.3` covers a scenario citing `Table 13.3 WCP-7`, which is how the four
+ * Inclusive Gateway scenarios read and is the ordinary relationship between a profile's feature-wide
+ * table and the row one scenario exercises. A *qualified* declaration authorizes only itself, so
+ * `Table 13.4 WCP-16` still refuses `Table 13.4 WCP-19`.
+ *
  * Two limits, neither of which this closes. *Completeness* — whether the cited set covers every
  * declared feature — needs a feature-to-clause map the artifact schema does not carry and stays a
  * review obligation. And a clause cited for the wrong subject still resolves; only its existence is
@@ -158,9 +211,6 @@ test("resolves every declared normative reference in the pinned BPMN corpus", as
  * `normativeAuthority` is skipped rather than required to match.
  */
 test("keeps a scenario's normative citations inside its profile's", async () => {
-  const clauses = (references: ReadonlyArray<string>): ReadonlyArray<string> =>
-    [...new Set(references.map((text) => referencePattern.exec(text)?.[2] ?? text))].sort();
-
   const profileClauses = new Map<string, ReadonlyArray<string>>();
   for await (const entry of glob("profiles/*/profile.json", { cwd: projectRoot })) {
     const profile = JSON.parse(
@@ -170,7 +220,7 @@ test("keeps a scenario's normative citations inside its profile's", async () => 
       normativeAuthority?: Readonly<{ references: ReadonlyArray<string> }>;
     }>;
     if (profile.normativeAuthority !== undefined) {
-      profileClauses.set(profile.id, clauses(profile.normativeAuthority.references));
+      profileClauses.set(profile.id, referenceIdentities(profile.normativeAuthority.references));
     }
   }
   assert.ok(profileClauses.size > 5, `only ${profileClauses.size} standards profiles collected`);
@@ -192,8 +242,8 @@ test("keeps a scenario's normative citations inside its profile's", async () => 
       continue;
     }
     compared += 1;
-    const beyond = clauses(scenario.provenance.normativeRefs)
-      .filter((clause) => !declared.includes(clause));
+    const beyond = referenceIdentities(scenario.provenance.normativeRefs)
+      .filter((identity) => !authorizes(declared, identity));
     if (beyond.length > 0) {
       disagreements.push(
         `${entry}: cites [${beyond.join(", ")}] beyond profile ${scenario.profile}`,
@@ -203,14 +253,31 @@ test("keeps a scenario's normative citations inside its profile's", async () => 
   assert.ok(compared > 5, `only ${compared} scenarios were compared against a standards profile`);
   assert.deepEqual(disagreements, []);
 
-  // Anti-vacuity: the containment check must actually reject, or a scenario could cite anything.
-  const declared = ["13.2", "13.5.1"];
-  assert.deepEqual(
-    clauses(["BPMN 2.0.2 §13.2", "BPMN 2.0.2 §99.99"]).filter(
-      (clause) => !declared.includes(clause),
-    ),
-    ["99.99"],
-  );
+});
+
+/** Locks the containment check against the exact conflations its first formulation admitted. */
+test("separates a Table from a Clause and a table row from its siblings", () => {
+  // `§` and `Clause` are the same authority written two ways, and must compare equal.
+  assert.deepEqual(referenceIdentities(["BPMN 2.0.2 §13.2"]), referenceIdentities(["Clause 13.2"]));
+
+  // A Table and a Clause sharing a number are different subjects, and both resolve in the corpus.
+  const tableDeclared = referenceIdentities(["Table 13.2"]);
+  assert.equal(authorizes(tableDeclared, "Clause 13.2"), false);
+  assert.equal(authorizes(tableDeclared, "Table 13.2"), true);
+
+  // A declared row must not vouch for a sibling row of the same table.
+  const rowDeclared = referenceIdentities(["Table 13.4 WCP-16"]);
+  assert.equal(authorizes(rowDeclared, "Table 13.4 WCP-19"), false);
+  assert.equal(authorizes(rowDeclared, "Table 13.4 WCP-16"), true);
+  // ...but a declared whole table does vouch for its rows, which is how every existing profile reads.
+  const tableWide = referenceIdentities(["Table 13.4"]);
+  assert.equal(authorizes(tableWide, "Table 13.4 WCP-19"), true);
+  assert.equal(authorizes(tableWide, "Clause 13.4 WCP-19"), false);
+  // A whole-table declaration still does not reach a different table.
+  assert.equal(authorizes(tableWide, "Table 13.5 WCP-19"), false);
+
+  // An unparsable reference keeps its own text rather than collapsing into any other.
+  assert.deepEqual(referenceIdentities(["not a reference"]), ["not a reference"]);
 });
 
 /** Locks the detector against the exact references one capsule shipped wrongly. */
