@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -27,6 +29,55 @@ const checkedSourceFrontierConformancePath = fileURLToPath(
     import.meta.url,
   ),
 );
+const documentedInstructionSurfaces = [
+  "CLAUDE.md",
+  "README.md",
+  "docs/TESTING-SPEC.md",
+  "docs/experiments/README.md",
+  "docs/experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md",
+  "docs/experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md",
+] as const;
+const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\b/u;
+
+type CommandSurface = Readonly<{
+  relativePath: string;
+  source: string;
+}>;
+
+function worktreePaths(): ReadonlyArray<string> {
+  return execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard"],
+    { encoding: "utf8" },
+  ).split("\n").filter((relativePath) =>
+    relativePath.length > 0 && existsSync(relativePath)
+  );
+}
+
+function executableSurfacePaths(
+  paths: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  return paths.filter((relativePath) =>
+    (relativePath.startsWith("scripts/") && !relativePath.endsWith(".test.ts")) ||
+    relativePath.startsWith(".github/workflows/") ||
+    relativePath === "package.json" ||
+    relativePath.endsWith("/package.json") ||
+    /(?:^|\/)(?:Dockerfile|Makefile|mvnw)$/u.test(relativePath) ||
+    /\.(?:bash|sh|zsh)$/u.test(relativePath)
+  );
+}
+
+function bareLeanCommandFindings(
+  surfaces: ReadonlyArray<CommandSurface>,
+): ReadonlyArray<string> {
+  return surfaces.flatMap(({ relativePath, source }) =>
+    source
+      .split("\n")
+      .map((line, index) => ({ line, number: index + 1 }))
+      .filter(({ line }) => bareLeanCommand.test(line))
+      .map(({ line, number }) => `${relativePath}:${number}: ${line.trim()}`)
+  );
+}
 
 async function readNonemptyLines(path: string): Promise<readonly string[]> {
   const source = await readFile(path, "utf8");
@@ -152,42 +203,45 @@ test("one wrapper owns the Lean thread pin", async () => {
  * this guard, because the commands that stayed unpinned longest were the *documented* ones, copied
  * from a gate table and run verbatim.
  *
- * The scan covers the instruction surfaces only. `docs/PLAN.md` and the ledgers are excluded because
- * there the command's *unpinned-ness is the measured fact* — "a clean `lake build` peaks at 7978 MB"
- * becomes false when rewritten to the pinned wrapper. Where a quoted command merely identifies a
- * build target, the wrapper prefix changes no recorded result and the scan applies. Subcommands are
- * required, so `lake --version` probes and prose naming the tool itself do not match.
+ * Executable command surfaces are discovered from the complete tracked-and-pending worktree rather
+ * than kept in an allowlist. The maintained instruction documents stay explicit because a command
+ * in historical prose is not mechanically distinguishable from one meant to be copied. Subcommands
+ * are required, so `lake --version` probes and prose naming the tool itself do not match.
  */
 test("no documented or scripted Lean command bypasses the wrapper", async () => {
-  const instructionSurfaces = [
-    "scripts/verify.sh",
-    "scripts/test-cibseven-oracle.sh",
-    "package.json",
-    "CLAUDE.md",
-    "README.md",
-    "docs/TESTING-SPEC.md",
-    "docs/experiments/README.md",
-    "docs/experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md",
-    "docs/experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md",
-  ] as const;
-  const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\b/u;
-
-  for (const relativePath of instructionSurfaces) {
-    const source = await readFile(
+  const relativePaths = [
+    ...new Set([
+      ...executableSurfacePaths(worktreePaths()),
+      ...documentedInstructionSurfaces,
+    ]),
+  ].sort();
+  const surfaces = await Promise.all(relativePaths.map(async (relativePath) => ({
+    relativePath,
+    source: await readFile(
       fileURLToPath(new URL(`../${relativePath}`, import.meta.url)),
       "utf8",
-    );
-    const offenders = source
-      .split("\n")
-      .map((line, index) => ({ line, number: index + 1 }))
-      .filter(({ line }) => bareLeanCommand.test(line));
-    assert.deepEqual(
-      offenders,
-      [],
-      `${relativePath} must invoke Lean through ./scripts/lake.sh, which pins build parallelism: ` +
-        offenders.map(({ number, line }) => `${number}: ${line.trim()}`).join(" | "),
-    );
-  }
+    ),
+  })));
+
+  assert.deepEqual(
+    bareLeanCommandFindings(surfaces),
+    [],
+    "every executable and documented command surface must invoke Lean through ./scripts/lake.sh, which pins build parallelism",
+  );
+});
+
+test("rejects a bare Lean command in a newly added executable surface", () => {
+  const command = ["lake", "build"].join(" ");
+  assert.deepEqual(
+    executableSurfacePaths(["scripts/new-gate.sh", "docs/historical-note.md"]),
+    ["scripts/new-gate.sh"],
+  );
+  assert.deepEqual(
+    bareLeanCommandFindings([
+      { relativePath: "scripts/new-gate.sh", source: `#!/bin/sh\n${command}\n` },
+    ]),
+    ["scripts/new-gate.sh:2: lake build"],
+  );
 });
 
 /**
