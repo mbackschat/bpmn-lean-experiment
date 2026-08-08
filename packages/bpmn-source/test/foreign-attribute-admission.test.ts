@@ -136,10 +136,13 @@ test("keeps admitting the Service Task attributes its projector consumes", async
 /**
  * The XML Schema instance attributes are admitted deliberately, so each boundary gets a witness.
  *
- * `schemaLocation` and `type` carry no BPMN content and appear in 37% and 30% of the pinned MIWG
- * corpus respectively, so refusing them would refuse most conformant BPMN. `nil` empties an element
- * and is refused. The prefix is resolved against the document's own binding rather than matched by
- * spelling, so a document that binds `xsi` elsewhere gets no free pass.
+ * They are admitted for two different reasons, and calling them all content-free would be false.
+ * `schemaLocation` genuinely is: it tells a validating parser where to find a schema. `type` is not,
+ * because it selects the element type the parser resolves, and is admitted instead on the ground that
+ * the meaning it carries has already been applied and is visible in the resolved type. They appear in
+ * 37% and 30% of the pinned MIWG corpus respectively, so refusing them would refuse most conformant
+ * BPMN. `nil` empties an element and is refused. The prefix is resolved against the document's own
+ * binding rather than matched by spelling, so a document that binds `xsi` elsewhere gets no free pass.
  */
 test("admits a content-free XML Schema instance attribute", async () => {
   const xml = await readFile(userTaskSource, "utf8");
