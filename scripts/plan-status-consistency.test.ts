@@ -20,9 +20,58 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const planPath = path.join(projectRoot, "docs/PLAN.md");
+const implementationMapPath = path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md");
 const orderedWorkHeading = "## Ordered work";
 const blockedLabelPrefix = "Blocked";
 const unblockedClaim = "nothing";
+const milestoneIds = ["M0", "M1", "M2", "M3", "M4", "M5"] as const;
+const milestoneStatusValues = ["closed", "in progress", "not started"] as const;
+
+type MilestoneStatus = (typeof milestoneStatusValues)[number];
+
+function milestoneStatuses(markdown: string): ReadonlyMap<string, MilestoneStatus> {
+  const statuses = new Map<string, MilestoneStatus>();
+  for (const milestoneId of milestoneIds) {
+    const heading = new RegExp(`^### ${milestoneId} (?:\\u2014|-) .+$`, "mu");
+    const headingMatch = heading.exec(markdown);
+    if (headingMatch === null) {
+      continue;
+    }
+    const bodyStart = headingMatch.index + headingMatch[0].length;
+    const nextHeading = markdown.indexOf("\n### ", bodyStart);
+    const body = markdown.slice(bodyStart, nextHeading < 0 ? markdown.length : nextHeading);
+    const statusMatch = /^\*\*Status: (closed|in progress|not started)\.\*\*/mu.exec(body);
+    if (statusMatch?.[1] !== undefined) {
+      statuses.set(milestoneId, statusMatch[1] as MilestoneStatus);
+    }
+  }
+  return statuses;
+}
+
+function platformImplementationIsAbsent(implementationMap: string): boolean {
+  const platformStart = implementationMap.indexOf("### BPM platform");
+  if (platformStart < 0) {
+    return false;
+  }
+  const nextSection = implementationMap.indexOf("\n### ", platformStart + 1);
+  const platformSection = implementationMap.slice(
+    platformStart,
+    nextSection < 0 ? implementationMap.length : nextSection,
+  );
+  return platformSection.includes("- Nothing. No part of product 2 exists.");
+}
+
+function milestoneContradictions(
+  plan: string,
+  implementationMap: string,
+): ReadonlyArray<string> {
+  const statuses = milestoneStatuses(plan);
+  const findings: string[] = [];
+  if (platformImplementationIsAbsent(implementationMap) && statuses.get("M1") === "closed") {
+    findings.push("M1 is closed while the BPM platform implementation is absent");
+  }
+  return findings;
+}
 
 /** The status word an ordered-work item leads with, before its em-dashed subject or closing colon. */
 function orderedWorkLabels(markdown: string): ReadonlyMap<number, string> {
@@ -120,6 +169,70 @@ test("keeps every ordered-work status label consistent with its resume-point cla
   );
 
   assert.deepEqual(disagreements(markdown), []);
+});
+
+test("keeps showcase milestone status consistent with the implementation boundary", async () => {
+  const [plan, implementationMap] = await Promise.all([
+    readFile(planPath, "utf8"),
+    readFile(implementationMapPath, "utf8"),
+  ]);
+  const statuses = milestoneStatuses(plan);
+
+  assert.deepEqual(
+    [...statuses.keys()],
+    milestoneIds,
+    "every showcase milestone must carry one explicit status",
+  );
+  assert.deepEqual(milestoneContradictions(plan, implementationMap), []);
+});
+
+test("rejects closing M1 while the BPM platform implementation is absent", () => {
+  const plan = [
+    "### M0 - shipped floor",
+    "",
+    "**Status: closed.**",
+    "",
+    "### M1 - third-party deployment",
+    "",
+    "**Status: closed.**",
+    "",
+    "### M2 - cycles",
+    "",
+    "**Status: not started.**",
+    "",
+    "### M3 - data",
+    "",
+    "**Status: not started.**",
+    "",
+    "### M4 - incidents",
+    "",
+    "**Status: not started.**",
+    "",
+    "### M5 - history",
+    "",
+    "**Status: not started.**",
+  ].join("\n");
+  const implementationMap = [
+    "### BPM platform",
+    "",
+    "#### Implemented",
+    "",
+    "- Nothing. No part of product 2 exists.",
+    "",
+    "### A12 Workflows downstream adoption",
+  ].join("\n");
+
+  assert.deepEqual(milestoneContradictions(plan, implementationMap), [
+    "M1 is closed while the BPM platform implementation is absent",
+  ]);
+  const inProgress = plan.replace(
+    "### M1 - third-party deployment\n\n**Status: closed.**",
+    "### M1 - third-party deployment\n\n**Status: in progress.**",
+  );
+  assert.deepEqual(
+    milestoneContradictions(inProgress, implementationMap),
+    [],
+  );
 });
 
 /**
