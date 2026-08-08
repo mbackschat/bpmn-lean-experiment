@@ -84,15 +84,19 @@ type SourceOverlayIdentity = DeepReadonly<{
 }>;
 ```
 
-The engine calculates the SHA-256 over the exact overlay artifact bytes before decoding. The selected engine profile owns the complete allowed descriptor set, mapping grammar, checked-node kinds, operation kinds, topology/cardinality capability, semantic rules, and host contract. An overlay binding whose descriptor is not already allowed by that engine profile rejects before checked-graph construction.
+The engine accepts an overlay only when the compile request names a registered overlay by exact ID and SHA-256 and supplies the exact matching bytes. It rejects an ID, digest, or `semanticProfile` mismatch before structural projection. The engine enforces a 65,536-byte limit before calculating SHA-256 and before decoding.
 
-`effectBindings` is the existing raw-binding-to-neutral-descriptor concept removed from semantic-profile artifacts and placed at its source-configuration owner. `inertAttributes` is the closed expanded-name policy previously planned only for the CreateDocument reader. Both are source admission facts, not semantic behavior.
+`effectBindings` remains in engine semantic-profile artifacts. It owns both the built-in engine source bindings and the exact closed set of allowed neutral effect descriptors for that profile. An overlay supplies alternate source bindings only. Every overlay descriptor must exactly equal a descriptor already present in the selected profile's `effectBindings`; a descriptor allowed only by another profile rejects. This preserves the existing non-A12 payload-free Service Task profile, source fixture, scenario, and evidence byte-for-byte and gives it no overlay or successor identity.
 
-The overlay schema has `additionalProperties: false`, canonical ordering, nonempty scalar-string constraints, unique expanded-name/locus pairs, unique source bindings, and a fixed maximum number of entries. It contains no function, module path, executable expression, regular expression, wildcard namespace, wildcard element type, default allow rule, or arbitrary property bag.
+`inertAttributes` is the closed expanded-name policy previously planned only for the CreateDocument reader. Both overlay fields are source admission facts, not semantic behavior. An overlay cannot select a checked-node kind, Semantic Process operation, transition, result shape, host behavior, or descriptor outside the selected profile.
+
+The overlay schema has `additionalProperties: false`; at most 64 `effectBindings`; at most 64 `inertAttributes`; nonempty scalar strings of at most 1,024 Unicode scalar values; and `id` and `semanticProfile` strings of at most 256 Unicode scalar values. Duplicate JSON object keys and unpaired surrogates reject at the shared wire boundary. Duplicate source bindings reject even when their descriptors differ, and duplicate expanded-name/locus pairs reject.
+
+Canonical order uses the exact, unnormalized Unicode-scalar sequence as the comparator. Effect bindings sort by `source.implementation`, with `null` before strings, then `source.delegateExpression`, `descriptor.protocol`, and `descriptor.operation`. Inert attributes sort by `elementType`, `expandedName.namespaceUri`, and `expandedName.localName`. The schema contains no function, module path, executable expression, regular expression, wildcard namespace, wildcard element type, default allow rule, or arbitrary property bag.
 
 ## Identity and compilation contract
 
-Compilation selects exactly one engine-owned `semanticProfile` and zero or one `sourceOverlay`. Exact BPMN bytes, semantic-profile identity, overlay identity and digest, and compiler identity jointly determine the admitted definition.
+Compilation selects exactly one engine-owned `semanticProfile` and zero or one registered `sourceOverlay`. `sourceOverlay.semanticProfile` must exactly equal the selected profile. Exact BPMN bytes, semantic-profile identity, overlay identity and digest, and compiler identity jointly determine the admitted definition.
 
 Checked graphs and Semantic Process programs add `sourceOverlay: SourceOverlayIdentity | null` beside the existing source/profile identity. Canonical result provenance and effect-transport identity preserve the same value. Lean, the semantic core, and Temporal retain and compare this identity but never branch on the overlay ID.
 
@@ -107,15 +111,19 @@ The exact current semantic behavior moves to two product-neutral CIB Seven `2.0.
 - a bounded mapped-success Service Task profile with one literal string input, one Activity-local string result, and one simple local-variable output mapping;
 - a bounded mapped-boundary-Error Service Task profile with the existing string/null patch, caught-path output mapping, exact-code interrupting route, and trailing User Task.
 
-Their project-authored fixtures use neutral element IDs, mapping names, values, Error code, and effect-handler tokens. No production fixture, profile ID, capability key, diagnostic, Lean namespace, semantic-core test subject, Temporal source branch, or example plan contains `A12`, `CreateDocument`, `createDocumentDelegate`, `createRelationshipLinkDelegate`, `RelationshipModel`, `LinkLimitReachedError`, or another A12 business literal.
+Their project-authored fixtures use neutral element IDs, mapping names, values, Error code, effect-handler tokens, and built-in source bindings. Their built-in `effectBindings` own the descriptors that an optional overlay may reference. No production fixture, profile ID, capability key, diagnostic, Lean namespace, semantic-core test subject, Temporal source branch, or example plan contains `A12`, `CreateDocument`, `createDocumentDelegate`, `createRelationshipLinkDelegate`, `RelationshipModel`, `LinkLimitReachedError`, or another A12 business literal.
 
-The replacement profiles require new relationship-register entries when their generic source/host claims are broader than the existing exact A12 entries. The existing A12-specific relationship entries and immutable evidence remain retained as adoption evidence and are not relabeled as generic proof.
+Every CIB relationship selected by either neutral profile receives a fresh relationship-register entry and fresh evidence at the neutral claim boundary. Neither neutral profile selects an existing exact A12 relationship ID. The existing A12-specific relationship entries and immutable evidence remain retained as adoption evidence and are not relabeled as generic proof. The existing non-A12 payload-free Service Task profile keeps its current relationship IDs and evidence unchanged.
 
 ## Preserved A12 evidence
 
-The two existing A12 profile artifacts, scenarios, project-authored source fixtures, retained CIB evidence, exact source-admission calibration, Lean fixtures, TypeScript fixtures, Temporal fixtures, and Java probe material are moved under one explicit optional adoption-evidence root. Their bytes remain unchanged wherever immutability or content binding is already claimed; a manifest records every original path, new path, and SHA-256.
+Preserved evidence has two explicitly separate generations.
 
-The optional `adoption` gate runs that retained material through the public overlay boundary and compares its neutral checked graph, Semantic Process operations, canonical observations, and CIB host projections with the pre-extraction baselines after applying only the declared identity split. It also continues to read exact A12 source only from the pinned external checkout.
+The frozen legacy generation contains the two existing A12 profile artifacts, scenarios, project-authored source fixtures, retained CIB evidence, exact source-admission calibration, Lean fixtures, TypeScript fixtures, Temporal fixtures, and Java probe material under one optional adoption-evidence root. Every byte remains unchanged. A manifest records every original path, new path, and SHA-256. Current profile and scenario registries do not enumerate this generation, and current validators do not accept it. It is a pre-extraction baseline, not a production compatibility reader.
+
+The current adoption generation contains overlay-aware scenarios and evidence using the current schemas, a neutral semantic-profile identity, and exact overlay identity. Current validators accept only this generation. It also continues to read exact A12 source only from the pinned external checkout.
+
+The optional `adoption` gate validates and projects the frozen generation with the exact pre-extraction target's original tooling in an isolated Git export, validates the current generation with current tooling, and compares their neutral checked graphs, Semantic Process operations, canonical observations, and CIB host projections after applying one explicit translation from the legacy semantic-profile identity to the neutral semantic-profile plus overlay identity. It does not add a parallel legacy reader to production or current validation code.
 
 No production package exports the retained A12 overlay artifacts. No product-1 profile or scenario registry enumerates them. The complete MIT product gate runs without an A12 checkout or A12 overlay while still running the product-boundary guard that proves the production roots do not depend on the optional evidence root.
 
@@ -127,7 +135,7 @@ This repository does not implement the production A12 add-on, handlers, façades
 |---|---|---|---|
 | May select existing engine semantic mechanisms | Required | Required through the overlay contract | Required |
 | May add a semantic mechanism or operation | No | No | No |
-| May supply exact source binding tokens | Built-in neutral fixture only | Yes, optional evidence only | Yes |
+| May supply exact source binding tokens | Built-in profile binding only | Yes, optional alternate binding only | Yes, alternate binding only |
 | May supply inert expanded-name attributes | Built-in neutral fixture only | Yes, through the overlay | Yes |
 | May inject a reader, lowerer, validator, or Workflow | No | No | No |
 | May contain A12 business literals | No | Yes | Yes |
@@ -141,7 +149,7 @@ Required:
 
 - remove A12-specific identities and business literals from all product-1 production decision paths;
 - preserve the implemented mapping and boundary-Error semantic mechanisms under product-neutral profiles;
-- preserve existing A12 artifacts and evidence under the optional adoption boundary;
+- preserve the frozen legacy A12 generation byte-for-byte and create a distinct current overlay-aware adoption generation;
 - replace exact A12 readers with generic engine-owned source projection plus the closed data-only overlay;
 - content-bind overlay identity through checked source, Semantic Process, transport, and evidence provenance;
 - retain parser-warning, reference-target, foreign-content, per-element diagnostic, checked-graph, lowering, and profile-capability enforcement for every overlay-selected compilation;
@@ -162,17 +170,23 @@ Excluded:
 - an executable plug-in API, arbitrary compiler callback, user-supplied JavaScript, dynamic module loading, or code generation;
 - overlay-defined BPMN meaning, checked-graph shapes, operation kinds, transitions, canonical observations, retry policy, Temporal orchestration, or proof claims;
 - general JUEL, arbitrary Camunda extensions, arbitrary mappings, arbitrary Service Task bindings, or broader A12 compatibility;
-- compatibility aliases or parallel readers for the old semantic-profile identities after the atomic pre-release replacement.
+- compatibility aliases or parallel production readers for the frozen legacy generation after the atomic pre-release replacement.
 
 ## Separating evidence and guards
 
-The first red guard scans every production source file, built-in profile artifact, registered product scenario, product example, and Lean umbrella transitively. It fails on the closed legacy identity and business-literal inventory now found in those surfaces. Moving one file while leaving another profile switch, probe predicate, fixture, or registry entry therefore remains red.
+The first red guard scans every production source file, built-in profile artifact, registered product scenario, product example, and Lean umbrella transitively, including their complete import and catalog dependency closure. Its closed forbidden production-decision inventory is a target-bound manifest generated from the legacy profiles, scenarios, source fixtures, production identifiers, and current catalog registrations. The guard fails if regeneration changes that manifest, so removing a name from a hand-maintained list cannot hide a remaining dependency.
 
-The source-overlay decoder receives adversarial artifacts containing a reader module path, an extra operation descriptor, a wildcard attribute, a duplicate expanded name, an unregistered descriptor, an unknown property, and an oversized entry set. Every mutation rejects before structural projection.
+The manifest includes at least the exact profile IDs, claims, source IDs, and scenario IDs; `urn:bpmn-lean:a12-delegate:v1`; `urn:bpmn-lean:a12:create-document`; `createDocumentDelegate`; `createRelationshipLinkDelegate`; `A12CreateDocument`; `a12CreateDocument`; `A12BoundaryError`; `a12BoundaryError`; `CreateDocument`; `createDocumentDelegateTemplate`; `documentModelName`; `MyDocumentModel`; `myDocumentReference`; `newDocRef`; `CreateRelationshipLinkTask`; `relationshipModel`; `RelationshipModel`; `relationshipLinkId`; `newLinkId`; `LinkLimitReachedError`; `Error_LinkLimitReached`; `BoundaryEvent_LinkLimitReached`; `ErrorEventDefinition_LinkLimitReached`; and `ExpectedUserTaskAfterBPMNError`, together with their exact current XML names and generated operation, scope, and fixture identifiers. Those values are allowed only in the optional adoption-evidence root, research and provenance documentation, and the guard's own adversarial fixtures. Moving one file while leaving another profile switch, probe predicate, fixture, registry entry, or transitive import therefore remains red.
+
+The source-overlay decoder receives adversarial artifacts containing a reader module path, an extra operation descriptor, a wildcard attribute, a duplicate expanded name, duplicate source bindings that point to different descriptors, a descriptor registered only by another profile, an overlay/profile mismatch, an unknown property, an overlong scalar, an oversized byte payload, and an oversized entry set. Every mutation rejects before structural projection.
 
 The compilation-dispatch guard seeds an add-on-specific reader into production source and must fail. It also compiles one overlay-selected model carrying both an unsupported foreign attribute and an unsupported executable node, proving that generic multi-finding classification remains intact.
 
-The retained A12 adoption oracle is target-bound to pre-extraction artifacts. It compares exact source bytes and retained raw evidence byte-for-byte, then compares checked graphs, programs, and canonical results after one explicit identity translation from the old A12 semantic profile to the new neutral semantic profile plus overlay identity. No field outside that declared identity translation may differ.
+The retained A12 adoption oracle is target-bound to the pre-extraction target. It runs that target's original validator and projector in an isolated Git export, compares frozen source and evidence bytes and digests byte-for-byte, then compares the legacy projections with current adoption projections after one explicit identity translation from the old A12 semantic profile to the new neutral semantic profile plus overlay identity. No field outside that declared identity translation may differ.
+
+An inert-attribute non-interference pair differs only by one declared inert attribute in its exact BPMN source. The source identity changes and the overlay identity remains equal. After normalizing only source identity, the checked graph and Semantic Process program are equal, and canonical runtime behavior is exactly equal.
+
+The preservation gate also asserts unchanged command closure, unchanged multiple-enabled-state facts, and unchanged stable-wait facts for both neutral programs. Program-shape equality locks the absence of a new concurrent or multiple-enabled state. The Lean lane is `checked`, not proved: exact decoder, lowering, identity, and finite non-interference projections are checked, while no semantic transition family or new proof claim is introduced.
 
 The product-only oracle builds and runs the default catalog with the adoption root made unavailable. A seeded import from any product package, Lean umbrella, profile registry, scenario registry, or example registry to that root must fail.
 
@@ -192,7 +206,7 @@ The smallest refinement witness runs a neutral mapped-success fixture and a neut
 
 ## Versioning and review consequences
 
-The old A12 semantic-profile IDs remain immutable evidence identities but leave the built-in semantic-profile registry. The two new product-neutral profiles receive new IDs because their source surface and claim boundary differ. Existing public checked-process, Semantic Process, scenario, evidence, transport, and report artifacts are replaced atomically with the overlay-identity shape; no alias maps an old A12 profile ID to a new profile.
+The old A12 semantic-profile IDs remain immutable identities only inside the frozen legacy evidence generation and leave the built-in semantic-profile registry. The two new product-neutral profiles receive new IDs because their source surface and claim boundary differ. Current public checked-process, Semantic Process, scenario, evidence, transport, and report artifacts use the overlay-identity shape atomically; no alias maps an old A12 profile ID to a new profile, and no current validator accepts the frozen legacy schemas. The existing non-A12 payload-free Service Task profile and its artifacts keep their current identity and bytes.
 
 This changes semantic profile identity, source admission, shared wire identity, default catalog membership, and the product boundary. It therefore requires context-cold proposal review, a semantic checkpoint review after the first complete green cross-language replacement, and cold closure review unless the approved checkpoint reviewer qualifies for guarded warm continuity.
 
