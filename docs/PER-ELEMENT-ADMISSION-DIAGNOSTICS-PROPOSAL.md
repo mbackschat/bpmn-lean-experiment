@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved; corrected implementation green and ordinary semantic-checkpoint review pending.** The review of immutable proposal target `8746bc6` returned `approve-with-required-edits` across four test-contract and guard-inventory findings, and correction audit `ad1a88b` closed all four. The owner approved all four rules together on 2026-08-08. Combined checkpoint-and-closure target `106f063` was rejected because embedded Sub-Process key admission still ran before classification and because the first green implementation commit was not a fully closed combined target. The corrected implementation removes that pre-classification key gate and follows the ordinary checkpoint-then-closure lifecycle. It changes no admitted source set, BPMN meaning, semantic profile meaning, checked graph, Semantic Process program, runtime transition, or Temporal refinement claim.
+**Owner-approved and semantic-checkpoint approved; separate closure pending.** The review of immutable proposal target `8746bc6` returned `approve-with-required-edits` across four test-contract and guard-inventory findings, and correction audit `ad1a88b` closed all four. The owner approved all four rules together on 2026-08-08. Combined checkpoint-and-closure target `106f063` was rejected because embedded Sub-Process key admission still ran before classification and because the first green implementation commit was not a fully closed combined target. Ordinary semantic-checkpoint target `d2ad977` returned `approve-with-required-edits` for one incomplete closed-site guard, and correction audit `dfec90a` closed it by scanning every production source and seeding the pre-classification regression. It changes no admitted source set, BPMN meaning, semantic profile meaning, checked graph, Semantic Process program, runtime transition, or Temporal refinement claim.
 
 [PLAN.md](PLAN.md#exact-resume-point) owns sequencing, [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md#bpmn-source) owns the exact current absence, and [the BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md#admission-and-security-policy) owns the import stages this proposal preserves.
 
@@ -172,7 +172,7 @@ Reopen before locating nested non-flow elements, changing the accepted source se
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `8746bc6` | `fork-turns-none` | `approve-with-required-edits` | `ad1a88b` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `d2ad977` | `fork-turns-none` | `approve-with-required-edits` | `dfec90a` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal stage used one correction round. The context-cold review of target `8746bc6` returned four required findings about the pre-change result oracle, duplicate-list mutation guard, consumed-key value discriminator, and mechanically complete guard inventory. Correction audit `ad1a88b` closed all four with no new required defect, and the owner then approved the reviewed contract.
+The proposal stage used one correction round. The context-cold review of target `8746bc6` returned four required findings about the pre-change result oracle, duplicate-list mutation guard, consumed-key value discriminator, and mechanically complete guard inventory. Correction audit `ad1a88b` closed all four with no new required defect, and the owner then approved the reviewed contract. The semantic checkpoint also used one correction round: review target `d2ad977` found that the guard's file selection omitted the exact pre-classification source it claimed to police, and correction audit `dfec90a` closed that finding with no new required defect.
