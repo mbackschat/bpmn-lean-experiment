@@ -8,7 +8,7 @@ No sentence in this document is a coverage, conformance, or CIB compatibility cl
 
 This paragraph previously carried a per-lane inventory of what Lean and the evidence lanes did and did not yet contain. It is deleted rather than re-synchronized, which is the correction [the process-assessment ledger](../PROCESS-ASSESSMENT-LEDGER.md#findings) already records for this mechanism: three landed lanes had made that copy false while the owner one line below stayed correct. The owner is the only place that inventory belongs.
 
-Implemented and absent scope is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md#current-claim) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
+Implemented and absent scope is owned by [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
 
 ## Independent cold-review receipt
 

@@ -258,45 +258,6 @@ test("keeps the whole implementation map reviewable outside dense table cells", 
   );
 });
 
-/**
- * A capsule that delegates its scope to the implementation map must appear there.
- *
- * Two boundary-Timer specifications say their implemented and absent scope is recorded in
- * `IMPLEMENTATION-MAP.md` and deliberately not restated, because copied absence lists in them had
- * gone stale. That delegation is only sound while the map carries the content. Pruning the map's
- * per-capsule paragraphs broke it for one of them, and nothing failed: the `#current-claim` anchor
- * still resolved, so the link guard saw a valid reference to a section that no longer said anything
- * about that family.
- *
- * This checks the direction the anchor cannot. A specification that does not delegate is not
- * required to be linked from the map, because its own document owns its meaning.
- */
-test("links every capsule that delegates its scope back to the implementation map", async () => {
-  const capsuleDirectory = path.join(projectRoot, "docs/capsules");
-  const capsules = (await readdir(capsuleDirectory)).filter((name) =>
-    name.endsWith("-SPEC.md"),
-  );
-  const implementationMap = await readFile(
-    path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"),
-    "utf8",
-  );
-
-  const delegating: string[] = [];
-  for (const capsule of capsules) {
-    const document = await readFile(path.join(capsuleDirectory, capsule), "utf8");
-    if (/recorded in \[IMPLEMENTATION-MAP\.md\]/u.test(document)) {
-      delegating.push(capsule);
-    }
-  }
-  assert.ok(delegating.length > 0, "no capsule delegates its scope; the check would be vacuous");
-
-  assert.deepEqual(
-    delegating.filter((capsule) => !implementationMap.includes(capsule)),
-    [],
-    "a capsule delegating its scope to the map is not linked from the map",
-  );
-});
-
 test("covers every registered semantic profile in the admission capability table", async () => {
   const admissionSpecification = await readFile(
     path.join(projectRoot, "docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md"),

@@ -1,0 +1,191 @@
+/**
+ * A capsule that says the implementation map owns its scope must have a section there that does.
+ *
+ * Three specifications delegate their implemented and absent scope to
+ * [the map](../docs/IMPLEMENTATION-MAP.md) rather than restating it, because copied absence lists in
+ * them had gone stale. The delegation is only sound while the map carries the content, and the
+ * `#current-claim` anchor keeps resolving after the content behind it is gone, so the link guard
+ * cannot see the failure.
+ *
+ * This replaces a formulation that missed the class twice over. It detected delegation by the exact
+ * phrase `recorded in [IMPLEMENTATION-MAP.md]`, so it saw one of the three while its own comment said
+ * two; the other two write *owned by* and *stays in*. And it accepted the capsule filename occurring
+ * anywhere in the map, which both undetected filenames already do under `Nearest unsupported claim`,
+ * so their whole status sections could have been deleted with the gate green.
+ *
+ * Three changes follow from that. Delegation is detected by the claim rather than the verb — a line
+ * that links the map and says the scope is not *restated* — because the claim is what creates the
+ * obligation and a synonym for it is a different sentence, not a different phrasing. The capsule must
+ * name the exact section it delegates to, since all three pointed at `#current-claim`, which owns
+ * nothing about any of them and resolves anyway. And that section must link back to the capsule and
+ * carry real content, so passing requires the status to exist rather than the filename to appear
+ * somewhere — without the anchor the 7800-word surfaces section satisfies any capsule it mentions.
+ */
+import assert from "node:assert/strict";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const capsuleDirectory = path.join(projectRoot, "docs/capsules");
+const mapPath = path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md");
+
+/**
+ * Words below which a section states a heading rather than a scope.
+ *
+ * A floor rather than a target: the three current sections run from 167 to 350 words, and the point
+ * is to reject a section emptied to a sentence, not to prescribe how long a status should be.
+ */
+const minimumStatusWords = 100;
+
+/** One capsule's delegation: the file that makes it and the map anchor it names as its owner. */
+type Delegation = Readonly<{ capsule: string; anchor: string | undefined }>;
+
+/**
+ * The map anchor a delegating line names, or `undefined` when it names none.
+ *
+ * A line delegates when it points at the map and says the scope is not *restated*. That claim is what
+ * creates the obligation; the verb carrying it is incidental and has already varied three ways.
+ */
+function delegatedAnchor(line: string): string | undefined {
+  if (!line.includes("IMPLEMENTATION-MAP.md") || !line.includes("restated")) {
+    return undefined;
+  }
+  return /IMPLEMENTATION-MAP\.md#([a-z0-9-]+)/u.exec(line)?.[1] ?? "";
+}
+
+function delegations(
+  documents: ReadonlyMap<string, string>,
+): ReadonlyArray<Delegation> {
+  return [...documents]
+    .flatMap(([capsule, markdown]) => {
+      const anchors = markdown.split("\n").map(delegatedAnchor).filter((
+        anchor,
+      ): anchor is string => anchor !== undefined);
+      return anchors.length === 0
+        ? []
+        : [{ capsule, anchor: anchors.find((anchor) => anchor !== "") }];
+    })
+    .sort((left, right) => left.capsule < right.capsule ? -1 : 1);
+}
+
+/** GitHub's heading anchor: lowercase, punctuation dropped, spaces hyphenated. */
+function headingAnchor(heading: string): string {
+  return heading
+    .replace(/^##\s+/u, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 -]/gu, "")
+    .trim()
+    .replace(/\s+/gu, "-");
+}
+
+/** Each level-two section of the map, as one string per section including its heading. */
+function secondLevelSections(map: string): ReadonlyArray<string> {
+  const lines = map.split("\n");
+  const starts = lines.flatMap((line, index) =>
+    line.startsWith("## ") ? [index] : []
+  );
+  return starts.map((start, order) =>
+    lines.slice(start, starts[order + 1] ?? lines.length).join("\n")
+  );
+}
+
+/** Capsules whose named map section is missing, silent about them, or emptied to a mention. */
+function unansweredDelegations(
+  map: string,
+  delegated: ReadonlyArray<Delegation>,
+): ReadonlyArray<string> {
+  const sections = new Map(
+    secondLevelSections(map).map((
+      section,
+    ) => [headingAnchor(section.split("\n")[0] ?? ""), section]),
+  );
+  return delegated
+    .filter(({ capsule, anchor }) => {
+      const section = anchor === undefined ? undefined : sections.get(anchor);
+      return section === undefined ||
+        !section.includes(`capsules/${capsule}`) ||
+        section.split(/\s+/u).filter(Boolean).length < minimumStatusWords;
+    })
+    .map(({ capsule }) => capsule);
+}
+
+test("answers every delegating capsule with its own implementation-map section", async () => {
+  const names = (await readdir(capsuleDirectory)).filter((name) =>
+    name.endsWith("-SPEC.md")
+  );
+  const documents = new Map(
+    await Promise.all(
+      names.map(async (name): Promise<[string, string]> => [
+        name,
+        await readFile(path.join(capsuleDirectory, name), "utf8"),
+      ]),
+    ),
+  );
+  const delegated = delegations(documents);
+
+  assert.deepEqual(
+    {
+      // A capsule set that delegates nothing would satisfy the finding list alone.
+      delegatingCount: delegated.length > 0,
+      // A delegation naming no section cannot be answered, so it is reported by name.
+      anchorless: delegated.filter(({ anchor }) => anchor === undefined).map((
+        { capsule },
+      ) => capsule),
+      unanswered: unansweredDelegations(await readFile(mapPath, "utf8"), delegated),
+    },
+    { delegatingCount: true, anchorless: [], unanswered: [] },
+  );
+});
+
+/**
+ * The detector and the answer check must each reject what they exist to reject.
+ *
+ * Both defects this guard replaces passed a green gate, so a live-corpus assertion alone would not
+ * show that this formulation is any better. These cases are the two failures stated directly.
+ */
+test("rejects an unanswered delegation and a section emptied to a mention", () => {
+  const filler = "word ".repeat(minimumStatusWords);
+  const delegates =
+    "Scope is owned by [the map](../IMPLEMENTATION-MAP.md#a-family) and not restated here.";
+
+  assert.deepEqual(
+    delegations(
+      new Map([
+        // The verb differs from every phrasing in the live corpus; the claim does not.
+        ["A-SPEC.md", delegates],
+        ["B-SPEC.md", "Scope lives in [IMPLEMENTATION-MAP.md](../IMPLEMENTATION-MAP.md)."],
+      ]),
+    ),
+    [{ capsule: "A-SPEC.md", anchor: "a-family" }],
+    "delegation must be detected by the not-restated claim rather than by one verb",
+  );
+
+  const named: ReadonlyArray<Delegation> = [
+    { capsule: "A-SPEC.md", anchor: "a-family" },
+  ];
+  assert.deepEqual(
+    unansweredDelegations(
+      `## Nearest unsupported claim\nSee [A](capsules/A-SPEC.md) for what stays open. ${filler}\n`,
+      named,
+    ),
+    ["A-SPEC.md"],
+    "a mention outside the named section must not satisfy its delegation",
+  );
+
+  assert.deepEqual(
+    unansweredDelegations(`## A family\n[A](capsules/A-SPEC.md) is implemented.\n`, named),
+    ["A-SPEC.md"],
+    "the named section emptied to a mention must not satisfy its delegation",
+  );
+
+  assert.deepEqual(
+    unansweredDelegations(
+      `## A family\n[A](capsules/A-SPEC.md) is implemented. ${filler}\n`,
+      named,
+    ),
+    [],
+    "a substantive named section must satisfy it, or the checks above are vacuous",
+  );
+});
