@@ -20,7 +20,9 @@ import {
 } from "./source-measure.ts";
 import {
   assessSourceHygiene,
+  baselineReviewedLargeFileApprovals,
   reviewedLargeFiles,
+  sourceHygieneApprovalFindings,
 } from "./source-hygiene-policy.ts";
 const leanUmbrellaModules = [
   "BpmnSemantics.lean",
@@ -241,6 +243,27 @@ test("the source-hygiene policy rejects every regression class", () => {
     "clean.ts: no longer exceeds the review target",
     "over.lean: cannot exempt the hard ceiling",
   ]);
+});
+
+test("rejects a large-source exception absent from owner approval", () => {
+  assert.deepEqual(
+    sourceHygieneApprovalFindings(
+      new Map([["large.ts", "one cohesive boundary"]]),
+      new Map(),
+    ),
+    ["large.ts: exception lacks owner approval"],
+  );
+});
+
+test("binds large-source exceptions to the owner-approved baseline", () => {
+  assert.deepEqual(
+    sourceHygieneApprovalFindings(
+      reviewedLargeFiles,
+      baselineReviewedLargeFileApprovals(),
+    ),
+    [],
+    "agents may not add or change reviewed-large-file exceptions without owner approval",
+  );
 });
 
 test("source enumeration includes non-ignored files before commit", () => {
