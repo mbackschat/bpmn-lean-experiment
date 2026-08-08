@@ -34,7 +34,7 @@ const consumers = [
   { source: "checked-element-projection.ts", anchor: "projectServiceTask", elementName: "element", shape: "GenericServiceTask" },
   { source: "checked-element-projection.ts", anchor: "isExactPt1sTimerEvent", elementName: "element", shape: "IntermediateCatchEvent" },
   { source: "checked-element-projection.ts", anchor: "isPlainFlowNode", elementName: "element", shape: "PlainNode" },
-  { source: "scoped-flow-elements.ts", anchor: "isPlainEmbeddedSubProcess", elementName: "element", shape: "EmbeddedSubProcess" },
+  { source: "checked-element-projection.ts", anchor: "isProjectableEmbeddedSubProcess", elementName: "element", shape: "EmbeddedSubProcess" },
   { source: "event-based-gateway-source.ts", anchor: "projectEventBasedGateway", elementName: "element", shape: "EventBasedGateway" },
   { source: "inclusive-gateway-source.ts", anchor: "projectInclusiveGateway", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
   { source: "intermediate-catch-message-source.ts", anchor: "projectIntermediateCatchMessage", elementName: "element", shape: "IntermediateCatchEvent" },

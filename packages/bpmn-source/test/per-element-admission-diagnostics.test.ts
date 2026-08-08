@@ -45,6 +45,10 @@ const callActivitySource = new URL(
   "./fixtures/call-activity-called-process.bpmn",
   import.meta.url,
 );
+const embeddedSubProcessSource = new URL(
+  "../../../scenarios/embedded-subprocess-completion/process.bpmn",
+  import.meta.url,
+);
 const admissionBaseline = new URL(
   "./fixtures/per-element-admission-baseline.json",
   import.meta.url,
@@ -257,6 +261,36 @@ test("locates an unsupported own property in every compiler dispatch", async () 
     assert.equal(result.checkedProcess, undefined);
     assert.equal(result.semanticProcess, undefined);
   }
+});
+
+test("classifies an embedded Sub-Process property before its shape gate", async () => {
+  const original = await readFile(embeddedSubProcessSource, "utf8");
+  const source = original.replace(
+    '<bpmn:subProcess id="SubProcess_Work">',
+    '<bpmn:subProcess id="SubProcess_Work"><bpmn:extensionElements/>',
+  );
+  assert.notEqual(source, original);
+  const result = await compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(source),
+    sourceId: "embedded-subprocess-property-diagnostics",
+    expectedSha256: undefined,
+    semanticProfile: "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    limits: semanticProcessTestLimits,
+  });
+
+  assert.deepEqual(result.diagnostics, [{
+    code: BpmnSourceDiagnosticCode.UnsupportedProperty,
+    element: {
+      id: "SubProcess_Work",
+      type: "bpmn:SubProcess",
+      containmentPath: "definitions/rootElements[0]/flowElements[1]",
+      subject: "extensionElements",
+      requiredCapability: BpmnAdmissionCapability.PreserveProperty,
+    },
+    evidence: "bpmn:SubProcess at definitions/rootElements[0]/flowElements[1] carries property extensionElements, which the selected profile neither executes nor preserves.",
+  }]);
+  assert.equal(result.checkedProcess, undefined);
+  assert.equal(result.semanticProcess, undefined);
 });
 
 const scriptTask = (id: string) => `<bpmn:scriptTask id="${id}" name="Compute"/>`;

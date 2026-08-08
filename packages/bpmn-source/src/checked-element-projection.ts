@@ -97,11 +97,13 @@ export function projectCheckedNodes(
           ? { kind: CheckedNodeKind.NoneStartEvent, id }
           : undefined;
       case bpmnTypes.subProcessType:
-        return {
-          kind: CheckedNodeKind.EmbeddedSubProcess,
-          id,
-          childScopeId: definitionScopeId(id),
-        };
+        return isProjectableEmbeddedSubProcess(element)
+          ? {
+              kind: CheckedNodeKind.EmbeddedSubProcess,
+              id,
+              childScopeId: definitionScopeId(id),
+            }
+          : undefined;
       case bpmnTypes.boundaryEventType:
         return projectTimerBoundaryEvent(
           element,
@@ -334,6 +336,13 @@ function isPlainFlowNode(element: ElementRecord): boolean {
   return hasOnlyProjectedFlowElementKeys(
     element,
     ProjectedFlowElementShape.PlainNode,
+  );
+}
+
+function isProjectableEmbeddedSubProcess(element: ElementRecord): boolean {
+  return hasOnlyProjectedFlowElementKeys(
+    element,
+    ProjectedFlowElementShape.EmbeddedSubProcess,
   );
 }
 
