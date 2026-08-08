@@ -149,9 +149,11 @@ export function preservationCapability(
  * caller must ask for its own profile's set: reading a shared constant is what left two readers
  * applying no rule at all while three documents claimed otherwise.
  *
- * The two A12 profiles exempt whole `Definitions` and `Process` types rather than the exact vendor
- * attributes their registered sources carry — `modeler:executionPlatform`, its version sibling, and
- * `camunda:versionTag`, none of which any projector reads. Narrowing that to exact attributes needs
+ * The A12 CreateDocument profile exempts whole `Definitions` and `Process` types rather than the exact
+ * vendor attributes its registered source carries — `modeler:executionPlatform`, its version sibling,
+ * and `camunda:versionTag`, none of which any projector reads. An unconsumed foreign attribute on that
+ * profile's `Definitions` is therefore still admitted and discarded; its `Process` is covered only
+ * incidentally, by the reader's own exact attribute-count equality. Narrowing the exemption needs
  * expanded `namespace#localName` matching resolved against the document's prefix bindings, which
  * [D2](../../../docs/PRESERVE-ONLY-ADMISSION-PROPOSAL.md) defers to the first profile that declares an
  * inert set; matching the raw prefix instead would admit content by spelling.

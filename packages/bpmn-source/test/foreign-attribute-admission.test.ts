@@ -340,3 +340,40 @@ test("keeps admitting the A12 vendor attributes no projector reads", async () =>
     `the exempted vendor attributes were refused: ${JSON.stringify(result.diagnostics)}`,
   );
 });
+
+/**
+ * The cost of that exemption, pinned in the direction that loses information.
+ *
+ * Exempting the whole `Definitions` type admits every foreign attribute there, not only the two
+ * `modeler:*` names the registered source carries, so an execution directive at that one locus is
+ * still accepted and discarded. This case asserts that acceptance deliberately: the residual is
+ * recorded in [the implementation map](../../../docs/IMPLEMENTATION-MAP.md) rather than hidden, and
+ * narrowing the exemption to expanded `namespace#localName` matching must fail here rather than
+ * silently, because a green suite would otherwise be the only evidence that the locus was ever open.
+ */
+test("still discards a foreign attribute on the exempted A12 Definitions locus", async () => {
+  const source = new URL(
+    "../../../scenarios/create-document-data/process.bpmn",
+    import.meta.url,
+  );
+  const admitted = await readFile(source, "utf8");
+  const perturbed = admitted.replace(
+    "<bpmn:definitions",
+    '<bpmn:definitions camunda:asyncBefore="true"',
+  );
+  assert.notEqual(perturbed, admitted, "the perturbation matched nothing");
+
+  const result = await compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(perturbed),
+    sourceId: "a12-create-document-definitions-locus",
+    expectedSha256: undefined,
+    semanticProfile: a12CreateDocumentProfile,
+    limits: semanticProcessTestLimits,
+  });
+
+  assert.equal(
+    result.status,
+    BpmnCompilationStatus.Accepted,
+    "this locus is a recorded exemption; a rejection here means the residual closed and the map, the classifier docstring, and this case all need correcting together",
+  );
+});
