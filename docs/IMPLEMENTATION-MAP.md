@@ -259,36 +259,13 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - Project-owned strict JSON parser with duplicate-key, unpaired-surrogate, and safe-integer rejection
 - strict checked-graph, Semantic Process, and external scenario decoders with exact-key and closed-variant rejection
 - executable JSON edge-case and Unicode scalar-order locks
-- separate checked-process admission, Semantic Process structural validation, and cross-artifact binding owners; a narrow shared definition-artifact invariant owner contains only nonempty identity, lowercase SHA-256, and canonical string-order predicates, while the existing checked/program graph modules retain topology, ownership, producer/consumer, reachability, co-reachability, and acyclicity
-- canonical lowerer with definition-identity and Sequence-Flow-origin preservation laws
-- exact per-artifact lowering equality before evaluation
-- generic scope-owned flow-identified token-multiplicity runtime with root and child definition-scope occurrences
-- declarative `OperationStep`/`ProgramStep` plus `EffectCompletionStep`, executable operation/effect transitions, and evaluator-produced-operation soundness
-- semantic task, Message-subscription, timer, and effect occurrences owned by complete scope occurrence
-- kind-grouped canonical active-wait projection sorted as User Task, Message, Timer, then effect and by Unicode element ID within each kind, locked by a synthetic four-kind fixture with reverse-ordered same-kind waits
-- bounded closure for one enabled operation or the exact disjoint two-task activation pair, with every other multiple-enabled state rejected
-- User Task exact-completion and quantified mismatch laws
-- completion-data create/replace/preserve/null witness, data-independent enabledness check, bounded post-patch closure, and quantified complete scoped-variable preservation on mismatch
-- parallel laws and duplicate-left/no-right non-law
-- independent `PT1S` normalization and exact lowering
-- exact timer firing trace
-- quantified full timer mismatch refusal and early-firing non-law
-- exact Message reference-chain lowering, start subscription trace, exact channel/identity delivery, full mismatch/pre-activation/stale state preservation, reverse User Task/Message progress, and four-kind projection laws
-- exact direct-Message Receive Task lowering, two-step start subscription, exact delivery soundness specialization, two-step Process completion, wrong-kind/wrong-Message/pre-activation/stale refusal, and exact subscription/interaction projection
-- exact Service Task lowering and success trace
-- exact start-prefix projection of one structured effect intent
-- quantified full effect-identity mismatch rejection with state preservation
-- exact CreateDocument literal arguments, successful mapping trace, output-only Process target theorem, quantified invalid-patch refusal, missing/extra/duplicate examples, and direct-local-patch-to-Process-scope non-law
-- boundary-error exact lowering/trace, declarative business-error soundness, exact null mapping, message noninterference, quantified identity/code/patch refusal, and normal-success non-law
-- independent Simple Boolean parser/evaluator, checked-body-to-typed-expression lowering, declaration-ordered `choose` relation/evaluator soundness, second-true and all-false/default witnesses, `first_true_ignores_tail`, and `selected_output_owned`
-- exact structured Inclusive Gateway checked admission and branch-local lowering; declarative/executable `selectMany` and `synchronizeSelected` soundness; one-true, both-true, and default witnesses; bound-three exhaustion; data-dependent independent activation-order equality; both completion orders; selected-subset readiness/consumption; missing-record and quiescence non-laws; and owner-interruption cleanup
-- exact Event-Based Gateway checked admission and configuration-flow lowering; declarative/executable atomic arming and two-constructor winner soundness; exact member ownership, both winner/withdrawal traces, wrong/stale state preservation, two-step arming and bound-one exhaustion, hidden-state non-projection, incomplete/erased-association non-laws, quiescence blocking, and owner-interruption cleanup
-- ordinary embedded Sub-Process exact lowering, entry/two-child-wait prefix, both completion orders, sibling survival, quiescent child completion, outer continuation, root completion, generic nonquiescent-completion refusal, and stranded-child non-resumability
-- direct-parent Error exact lowering, declarative/executable `throwError` soundness, both child-command orders, regional subtree cancellation, monotonic counter preservation, unreachable normal output, stale-sibling refusal, root-work preservation, and global-cancellation non-law
-- generic catalog-driven result emitter that consumes and echoes the same admitted scenario documents
-- strict JSON role owners for answer-free scenarios, combined checked-process/program definitions with shared semantic-element decoders, and independently validated cross-artifact definition input, assembled through an enforced import-only umbrella
-- saturation-certified executable path completeness and declarative acyclicity
-- experiment-only split direct checked-node account, general operation-prefix order theorem, two-segment enabled-transition correspondence checkpoint, executable structured parser, declarative graph-derived tail and whole-process decomposition, tail-parser soundness, unique Start/End, complete node/Flow coverage, decomposition uniqueness up to branch exchange, positive reachability soundness, graph-derived single-token exact and two-token permutation enabled-list localization, and renamed public divergence
+- separate checked-process admission, Semantic Process validation, cross-artifact binding, canonical lowering, and exact lowering-equality owners
+- generic scope-owned token, occurrence, wait, selected-branch, called-Process, and scoped-variable runtime with canonical public projection
+- declarative `OperationStep`/`ProgramStep` and `EffectCompletionStep`, executable transitions, and evaluator soundness at each closed capsule's declared proof boundary
+- independent decoding, lowering, execution traces, refusal or preservation facts, and non-laws for every closed family named in [the current claim](#current-claim); the three boundary-Timer proof boundaries remain explicit in their sections below
+- bounded internal closure for one enabled operation or the exact admitted two-task pair, rejecting every other multiple-enabled shape
+- one catalog-driven result emitter that consumes and echoes answer-free scenarios, with strict role decoders and independent cross-artifact validation
+- the separately gated checked-source experiment with bounded structural, decomposition, reachability, and enabled-frontier results
 
 #### Explicitly absent
 
@@ -308,32 +285,14 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 #### Implemented
 
 - Dependency-free Semantic Process contracts
-- shared safe-string admission and Unicode scalar-value comparator
-- profile-registered opaque effect protocol/operation identities with no Camunda namespace, A12 bean, or target-model discriminator
-- topology-independent scoped structural program validation plus exact profile definition-scope/operation-kind cardinality for the sequential, balanced two-branch, exact timer, Timer/User Task composition, operation-addressed Message catch, direct-Message Receive Task, exact Message/Timer Event-Based Gateway race, payload-free effect, CreateDocument, boundary-error, Simple Boolean conditional-choice, structured Inclusive Gateway, ordinary embedded Sub-Process, and bounded Call Activity surfaces
-- pure enum-based execution of `initiate`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, per-incoming-flow `synchronize`, declaration-ordered `choose`, all-true/default `selectMany`, selected-subset `synchronizeSelected`, `reachNoneEnd`, and `completeScope`
-- operation-ID-stable internal closure independent of program collection order
-- explicit scope occurrence ownership on flow-identified token multiplicity and sorted semantic task/Message-subscription/timer/effect occurrences
-- active waits sorted by the contract’s semantic kind rank and then element ID, guarded against cross-kind identifier order
-- parallel completion-order, excess-token, and non-law witnesses
-- exact timer wait, deadline, firing, full mismatch, stale refusal, and `openTimers` projection
-- exact closed-union Message wait, resolved operation/direct channel, one-consumption delivery, full identity/channel/pre-activation/stale refusal, reverse mechanism order, `openMessageSubscriptions`, and delivery-interaction projection, including the direct-Message Receive Task completion fixture
-- exact effect wait, structured protocol/operation/argument intent, matching completion, full mismatch and stale refusal, and separate `openEffects` projection with no caller interaction
-- closed string/null mapping evaluator, exact success/error local-patch validation, Process output mapping, canonical variables, and direct-patch ownership discriminator
-- exact-code business-error route with atomic patch → mapping → cleanup → boundary behavior, normal-route abandonment, message noninterference, and state-preserving refusal
-- independent five-form Simple Boolean parser/evaluator with present/null/absent discrimination, first-true tail irrelevance, second-true/default routing, exact three-step closure, and condition-origin/cardinality rejection
-- independent Inclusive Gateway evaluation with same-binding all-candidate selection, branch-local selected-input tracking, one/both/default traces, exact four-step closure and bound-three exhaustion, both activation and completion orders, hidden-state non-projection, first-arrival/missing-record refusal, quiescence blocking, and interruption cleanup
-- independent Event-Based Gateway atomic arming, complete Message/Timer association, both winner directions, complete loser withdrawal, wrong/stale/incomplete-association refusal, exact two-step closure and bound-one exhaustion, existing-surface projection, quiescence blocking, and interruption cleanup
-- ordinary embedded Sub-Process entry, independent child waits, both completion orders, exact owned quiescence, one outer continuation, root completion, premature-completion refusal, and stranded-child non-resumability
-- exact called-Process invocation/return with one hidden identity association, UTF-8-length-prefixed called instance, called-owner task identity, caller continuation only after called quiescence, exact 3/3/2 closure bounds, unique-record/root refusal, hidden-state non-projection, and parentless-subtree cleanup
-- exact `throwError` validation and evaluation with direct-parent handler agreement, child-subtree cancellation across every runtime owner kind, monotonic counter and root-work preservation, both child-command orders, unreachable normal output, stale-sibling refusal, and stable-prefix resumability
-- pure effect-transport material projection from admitted definition fields plus one committed `openEffects` entry without hashing or host identity
-- adapter-facing current task/Message/timer projection, exact structural stimulus validation including safe integers and scalar strings, command identity, and same-stimulus comparison
-- atomic exact-task Process-variable merge before outgoing closure, including create, replacement, unrelated-binding preservation, explicit null, and state-preserving refusal
-- exact Process-start variable installation before internal closure, with canonical string/null bindings, fresh Process scope, no Activity-local scope, and state-preserving refusal
-- incremental deploy/advance and full scenario evaluation
-- executable internal-enabled-count and stable-state-resumability checks, including a stranded-token negative witness
-- malformed topology rejection
+- shared safe-string admission, Unicode scalar ordering, and deeply immutable profile, program, runtime, stimulus, and result data
+- topology-independent structural validation plus exact profile definition-scope and operation-kind cardinality
+- pure exhaustive execution of the closed Semantic Process operation union, with operation-ID-stable internal closure independent of program collection order
+- explicit scope-occurrence ownership over token multiplicity, child and called instances, selected branches, and canonical task, Message, timer, effect, and variable projections
+- independent evaluation, exact refusal, hidden-state non-projection, and bounded closure for every closed family named in [the current claim](#current-claim), including both data mappings and both Error routes
+- exact Process-start installation and User Task completion merge over canonical string/null bindings
+- adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
+- executable enabled-count and stable-state-resumability checks, with malformed-topology and stranded-state witnesses
 
 #### Explicitly absent
 
