@@ -20,6 +20,12 @@
  * nothing about any of them and resolves anyway. And that section must link back to the capsule and
  * carry real content, so passing requires the status to exist rather than the filename to appear
  * somewhere — without the anchor the 7800-word surfaces section satisfies any capsule it mentions.
+ *
+ * A lexical residual survives all three: `restated` is still a word someone could replace with *not
+ * duplicated here*, which would drop that capsule from the detected set silently. That is the failure
+ * this guard exists to prevent, so it is closed by direction rather than by matching more synonyms.
+ * Every capsule linking the map must be either detected as delegating or listed below as not, so a
+ * new phrasing fails as an unclassified mention instead of passing as a non-delegation.
  */
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
@@ -38,6 +44,38 @@ const mapPath = path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md");
  * is to reject a section emptied to a sentence, not to prescribe how long a status should be.
  */
 const minimumStatusWords = 100;
+
+/**
+ * Capsules that link the map for a reason other than delegating their scope to it.
+ *
+ * Enumerated rather than inferred, so that adding a capsule here is a visible act while forgetting one
+ * is a failing gate. Each links the map to cite a boundary it does not own; none says its own scope is
+ * recorded there.
+ */
+const nonDelegatingMentions: ReadonlySet<string> = new Set([
+  "BOUNDARY-ERROR-SPEC.md",
+  "CREATE-DOCUMENT-DATA-SPEC.md",
+  "SCOPED-DATA-SPEC.md",
+  "SERVICE-TASK-EFFECT-SPEC.md",
+  "SUBPROCESS-ERROR-PROPAGATION-SPEC.md",
+  "USER-TASK-COMPLETION-DATA-SPEC.md",
+]);
+
+/** Capsules that link the map, claim no delegation, and are not recorded as doing so deliberately. */
+function unclassifiedMentions(
+  documents: ReadonlyMap<string, string>,
+  delegated: ReadonlyArray<Delegation>,
+): ReadonlyArray<string> {
+  const delegating = new Set(delegated.map(({ capsule }) => capsule));
+  return [...documents]
+    .filter(([capsule, markdown]) =>
+      markdown.includes("IMPLEMENTATION-MAP.md") &&
+      !delegating.has(capsule) &&
+      !nonDelegatingMentions.has(capsule)
+    )
+    .map(([capsule]) => capsule)
+    .sort();
+}
 
 /** One capsule's delegation: the file that makes it and the map anchor it names as its owner. */
 type Delegation = Readonly<{ capsule: string; anchor: string | undefined }>;
@@ -134,8 +172,10 @@ test("answers every delegating capsule with its own implementation-map section",
         { capsule },
       ) => capsule),
       unanswered: unansweredDelegations(await readFile(mapPath, "utf8"), delegated),
+      // A reworded delegation lands here rather than vanishing from the detected set.
+      unclassified: unclassifiedMentions(documents, delegated),
     },
-    { delegatingCount: true, anchorless: [], unanswered: [] },
+    { delegatingCount: true, anchorless: [], unanswered: [], unclassified: [] },
   );
 });
 
@@ -187,5 +227,14 @@ test("rejects an unanswered delegation and a section emptied to a mention", () =
     ),
     [],
     "a substantive named section must satisfy it, or the checks above are vacuous",
+  );
+
+  assert.deepEqual(
+    unclassifiedMentions(
+      new Map([["C-SPEC.md", "Scope is not duplicated here; see [the map](../IMPLEMENTATION-MAP.md#c)."]]),
+      [],
+    ),
+    ["C-SPEC.md"],
+    "a reworded delegation must fail as unclassified rather than pass as a non-delegation",
   );
 });
