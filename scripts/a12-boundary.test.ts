@@ -111,6 +111,30 @@ test("rejects legacy A12 profile and business decisions across product roots", (
   );
 });
 
+test("rejects retained business values and script-owned catalog decisions", () => {
+  assert.deepEqual(
+    assessA12Boundary([
+      {
+        path: "packages/semantic-core/src/hidden.ts",
+        bytes: Buffer.from('const result = "Document:42";'),
+      },
+      {
+        path: "scripts/contract-artifacts.ts",
+        bytes: Buffer.from('import "./contract-artifact-cases.js";'),
+      },
+      {
+        path: "scripts/contract-artifact-cases.ts",
+        bytes: Buffer.from('const subject = "A12BoundaryError";'),
+      },
+    ]),
+    [
+      "packages/semantic-core/src/hidden.ts: legacy A12 product decision Document:42",
+      "scripts/contract-artifact-cases.ts: legacy A12 product decision A12",
+      "scripts/contract-artifact-cases.ts: legacy A12 product decision A12BoundaryError",
+    ],
+  );
+});
+
 test("binds the single legacy decision inventory to the immutable baseline", async () => {
   const inventory = JSON.parse(
     await readFile(
@@ -134,6 +158,7 @@ test("binds the single legacy decision inventory to the immutable baseline", asy
     inventory.decisions,
     await deriveLegacyProductDecisions(projectRoot),
   );
+  assert.ok(inventory.decisions.includes("Document:42"));
 });
 
 test("keeps tracked and pending repository material inside the A12 boundary", async () => {

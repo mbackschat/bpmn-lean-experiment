@@ -475,6 +475,32 @@ export function verifyDefinitionReferences(
           `operation ${operation.id} effect descriptor differs from its checked BPMN origin`,
         );
       }
+      const checkedRoute = checkedNode.bpmnErrorRoute;
+      const routeOutput = checkedRoute === null
+        ? undefined
+        : semanticProcess.controlPlaces.find(
+          ({ origin }) => origin.elementId === checkedRoute.outputFlowId,
+        );
+      const expectedRoute = checkedRoute === null
+        ? null
+        : routeOutput === undefined
+        ? undefined
+        : {
+            code: checkedRoute.code,
+            output: routeOutput.id,
+            origin: {
+              kind: "bpmnElement",
+              boundaryEventId: checkedRoute.boundaryEventId,
+              errorDefinitionId: checkedRoute.errorDefinitionId,
+              errorElementId: checkedRoute.errorElementId,
+              sequenceFlowId: checkedRoute.outputFlowId,
+            },
+          };
+      if (!isDeepStrictEqual(operation.bpmnErrorRoute, expectedRoute)) {
+        throw new Error(
+          `operation ${operation.id} BPMN Error route differs from its checked BPMN origin`,
+        );
+      }
     }
     if (operation.kind === "choose") {
       const origins = [

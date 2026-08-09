@@ -61,6 +61,9 @@
     { "originalPath": "scenarios/create-document-data/cibseven-evidence.json", "frozenPath": "adoption/a12/legacy/source-tree/scenarios/create-document-data/cibseven-evidence.json", "sha256": "a1c32b2f969561c991395c3de92b7741cdb17c10fe99857c79a16f9c45f8c748" },
     { "originalPath": "scenarios/create-document-data/process.bpmn", "frozenPath": "adoption/a12/legacy/source-tree/scenarios/create-document-data/process.bpmn", "sha256": "34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13" },
     { "originalPath": "scenarios/create-document-data/scenario.json", "frozenPath": "adoption/a12/legacy/source-tree/scenarios/create-document-data/scenario.json", "sha256": "7ce3b1b63db53d1804931b1070fde18be45fac5d8f7125c972584ad46b933990" },
-    { "originalPath": "scripts/contract-artifact-cases.ts", "frozenPath": "adoption/a12/legacy/source-tree/scripts/contract-artifact-cases.ts", "sha256": "d1ec112f9d0bb410b54351976e41d6be12620334209c2e93ba1d0927c5563c37" }
+    { "originalPath": "scripts/contract-artifact-cases.ts", "frozenPath": "adoption/a12/legacy/source-tree/scripts/contract-artifact-cases.ts", "sha256": "d1ec112f9d0bb410b54351976e41d6be12620334209c2e93ba1d0927c5563c37" },
+    { "originalPath": "scripts/contract-artifact-projections.test.ts", "frozenPath": "adoption/a12/legacy/source-tree/scripts/contract-artifact-projections.test.ts", "sha256": "bd25b1c9dd6d4765692770f38b7efb14f28e734645b94b0a8b0abc9a3cb698a1" },
+    { "originalPath": "scripts/contract-cib-evidence-projection.ts", "frozenPath": "adoption/a12/legacy/source-tree/scripts/contract-cib-evidence-projection.ts", "sha256": "a0893b58ff52f72700596f13203045bcd8142e5ccc4dabc9f8211e28129f7ea7" },
+    { "originalPath": "scripts/contract-effect-projection.ts", "frozenPath": "adoption/a12/legacy/source-tree/scripts/contract-effect-projection.ts", "sha256": "0407c2c9364bad16390a5d846bf95051299a9ae5a8577efda9cda759a331e044" }
   ]
 }

@@ -8,6 +8,27 @@ const legacyTarget = "02330ad0f980a5fc282cc0aa93600a9632b86c3e";
 const legacyManifestPath = "adoption/a12/legacy/manifest.json";
 const legacyInventoryPath =
   "adoption/a12/legacy/product-decision-inventory.json";
+const legacyAdoptionEntryRoots = [
+  "scripts/contract-artifact-projections.test.ts",
+] as const;
+const legacyEvidenceRoots = [
+  "BpmnSemantics/",
+  "examples/temporal-mvp/",
+  "packages/bpmn-source/",
+  "packages/differential/",
+  "packages/semantic-core/",
+  "packages/temporal-adapter/",
+  "profiles/",
+  "runners/cibseven/",
+  "scenarios/",
+  "scripts/contract-",
+] as const;
+const contextualLegacyDecisions = new Set([
+  "A12",
+  "A12-shaped",
+  "Camunda/A12",
+  "a12-adoption-coverage",
+]);
 
 type LegacyManifest = Readonly<{
   kind: "a12LegacyBaselineManifest";
@@ -139,8 +160,21 @@ async function verifyLegacyDependencyClosure(
     manifest.entries.map(({ originalPath }) => originalPath),
   );
   const visited = new Set<string>();
-  const pending = [...declared];
   const cache = new Map<string, string>();
+  const required = new Set<string>(legacyAdoptionEntryRoots);
+  for (const relativePath of baselinePaths) {
+    if (
+      legacyEvidenceRoots.some((root) => relativePath.startsWith(root)) &&
+      isLegacySpecific(
+        relativePath,
+        legacySource(projectRoot, relativePath, cache),
+        inventory.decisions,
+      )
+    ) {
+      required.add(relativePath);
+    }
+  }
+  const pending = [...required];
 
   while (pending.length > 0) {
     const relativePath = pending.pop();
@@ -156,19 +190,22 @@ async function verifyLegacyDependencyClosure(
       projectRoot,
       cache,
     )) {
-      if (!visited.has(dependency)) {
+      if (
+        !visited.has(dependency) &&
+        (required.has(dependency) || isLegacySpecific(
+          dependency,
+          legacySource(projectRoot, dependency, cache),
+          inventory.decisions,
+        ))
+      ) {
+        required.add(dependency);
         pending.push(dependency);
       }
     }
   }
 
-  const missing = [...visited].filter((relativePath) =>
-    !declared.has(relativePath) &&
-    isLegacySpecific(relativePath, legacySource(
-      projectRoot,
-      relativePath,
-      cache,
-    ), inventory.decisions)
+  const missing = [...required].filter((relativePath) =>
+    !declared.has(relativePath)
   ).sort();
   assert.deepEqual(
     missing,
@@ -268,7 +305,9 @@ function isLegacySpecific(
   return (
     /(?:^|\/)(?:a12|create-document|boundary-error)/iu.test(relativePath) ||
     /CibSeven(?:CreateDocument|BoundaryError)/u.test(relativePath) ||
-    decisions.some((decision) => source.includes(decision))
+    decisions.some((decision) =>
+      !contextualLegacyDecisions.has(decision) && source.includes(decision)
+    )
   );
 }
 

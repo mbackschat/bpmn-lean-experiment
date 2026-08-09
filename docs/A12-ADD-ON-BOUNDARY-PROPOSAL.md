@@ -2,17 +2,17 @@
 
 ## Status
 
-Owner-approved on 2026-08-09 after independent review of the material preservation correction. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Approval authorizes the exact revised payload-free Service Task guarantee below and no legacy or mixed-schema reader. The rejected checkpoint findings are corrected in implementation and await a new context-cold semantic checkpoint.
+Owner-approved on 2026-08-09 after independent review of the material preservation correction. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Approval authorizes the exact revised payload-free Service Task guarantee below and no legacy or mixed-schema reader. Context-cold checkpoint `aa83b2f` required four corrections; their root mechanisms are green and await the same reviewer's warm audit.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `a44689e` | `fork-turns-none` | `approve-with-required-edits` | `8ae9b66` |
-| Semantic checkpoint | `59bcefc` | `fork-turns-none` | `reject` | `not-required` |
+| Semantic checkpoint | `aa83b2f` | `fork-turns-none` | `reject` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The original proposal review used two correction rounds. The context-cold review of `8e46a2e` required a profile-owned descriptor allowlist, preservation of the existing non-A12 Service Task profile and BPMN source, separate frozen and current evidence generations, fresh neutral CIB relationships, and complete guard and preservation obligations. Correction `6bbcf42` closed those findings on substance but left the preservation baseline unnamed. Correction `4619b74` bound every legacy oracle and manifest to immutable pre-extraction target `02330ad`, and the same reviewer approved that proposal version. Semantic-checkpoint target `59bcefc` was rejected because the shared Semantic Process schema retained A12 constants, the frozen dependency closure was incomplete, and the proposal's four-artifact byte-preservation guarantee conflicted with the mandatory wire replacement. Context-cold review of material correction `a44689e` required the owner-decision section to name the revised guarantee, and warm audit `8ae9b66` approved that correction. The first two checkpoint findings implement the previously selected contract; the third is the reviewed owner decision below.
+The original proposal review used two correction rounds. The context-cold review of `8e46a2e` required a profile-owned descriptor allowlist, preservation of the existing non-A12 Service Task profile and BPMN source, separate frozen and current evidence generations, fresh neutral CIB relationships, and complete guard and preservation obligations. Correction `6bbcf42` closed those findings on substance but left the preservation baseline unnamed. Correction `4619b74` bound every legacy oracle and manifest to immutable pre-extraction target `02330ad`, and the same reviewer approved that proposal version. Semantic-checkpoint target `59bcefc` was rejected because the shared Semantic Process schema retained A12 constants, the frozen dependency closure was incomplete, and the proposal's four-artifact byte-preservation guarantee conflicted with the mandatory wire replacement. Context-cold review of material correction `a44689e` required the owner-decision section to name the revised guarantee, and warm audit `8ae9b66` approved that correction. Replacement checkpoint `aa83b2f` then found an incomplete scalar/catalog inventory, manifest-seeded rather than fixed-root dependency closure, accepted checked-to-IL BPMN Error route drift, and contradictory status text. The current correction closes those four root mechanisms and awaits warm audit. The revised owner decision below remains unchanged.
 
 ## Question
 

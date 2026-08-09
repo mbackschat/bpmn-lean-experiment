@@ -30,6 +30,7 @@
     "CreateRelationshipLinkTask",
     "Definitions_A12CreateDocument",
     "Diagram_A12CreateDocument",
+    "Document:42",
     "EndEvent_CreateDocument",
     "ErrorEventDefinition_LinkLimitReached",
     "Error_LinkLimitReached",

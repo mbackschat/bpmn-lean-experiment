@@ -55,7 +55,10 @@ const productDecisionRoots = [
   "scenarios/",
 ];
 
-const productDecisionFiles = new Set(["BpmnSemantics.lean"]);
+const productDecisionEntryFiles = new Set([
+  "BpmnSemantics.lean",
+  "scripts/contract-artifacts.ts",
+]);
 
 const optionalAdoptionRoots = [
   "adoption/a12/",
@@ -66,6 +69,25 @@ const legacyProductDecisionInventoryPath =
   "adoption/a12/legacy/product-decision-inventory.json";
 const legacySourceTarget =
   "02330ad0f980a5fc282cc0aa93600a9632b86c3e";
+const legacyProductRoots = [
+  "BpmnSemantics.lean",
+  "BpmnSemantics",
+  "contracts",
+  "examples",
+  "packages",
+  "profiles",
+  "runners/cibseven",
+  "scenarios",
+] as const;
+const legacyCatalogEntryFiles = ["scripts/contract-artifacts.ts"] as const;
+const legacyBusinessValueFiles = [
+  "examples/temporal-mvp/boundary-error.json",
+  "examples/temporal-mvp/create-document-data.json",
+  "scenarios/boundary-error/cibseven-evidence.json",
+  "scenarios/boundary-error/scenario.json",
+  "scenarios/create-document-data/cibseven-evidence.json",
+  "scenarios/create-document-data/scenario.json",
+] as const;
 const legacyDecisionMarker = [
   "A12",
   "a12",
@@ -202,9 +224,12 @@ function isLowerSemanticFile(relativePath: string): boolean {
   return lowerSemanticRoots.some((root) => relativePath.startsWith(root));
 }
 
-function isProductDecisionFile(relativePath: string): boolean {
+function isProductDecisionFile(
+  relativePath: string,
+  entryClosure: ReadonlySet<string>,
+): boolean {
   return (
-    productDecisionFiles.has(relativePath) ||
+    entryClosure.has(relativePath) ||
     productDecisionRoots.some((root) => relativePath.startsWith(root))
   ) &&
     !optionalAdoptionRoots.some((root) => relativePath.startsWith(root));
@@ -218,6 +243,7 @@ export function assessA12Boundary(
   files: ReadonlyArray<BoundaryFile>,
 ): ReadonlyArray<string> {
   const violations: string[] = [];
+  const productEntryClosure = currentProductEntryClosure(files);
 
   for (const file of files) {
     const source = Buffer.from(file.bytes).toString("utf8");
@@ -254,7 +280,7 @@ export function assessA12Boundary(
         }
       }
     }
-    if (isProductDecisionFile(file.path)) {
+    if (isProductDecisionFile(file.path, productEntryClosure)) {
       if (source.includes("adoption/a12")) {
         violations.push(
           `${file.path}: product dependency on the optional A12 adoption root`,
@@ -296,10 +322,9 @@ export async function verifyLegacyProductDecisionInventory(
 export function deriveLegacyProductDecisions(
   projectRoot: string,
 ): Promise<ReadonlyArray<string>> {
-  return new Promise((resolve, reject) => {
-    execFile(
-        "git",
-      [
+  return deriveLegacyDecisionInputs(projectRoot).then(
+    ({ catalogPaths, businessValues }) =>
+      execGit(projectRoot, [
         "grep",
         "-h",
         "-I",
@@ -307,33 +332,184 @@ export function deriveLegacyProductDecisions(
         legacyDecisionMarker,
         legacySourceTarget,
         "--",
-        "BpmnSemantics.lean",
-        "BpmnSemantics",
-        "contracts",
-        "examples",
-        "packages",
-        "profiles",
-        "runners/cibseven",
-        "scenarios",
-      ],
-      { cwd: projectRoot, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
-      (error, stdout) => {
-        if (error === null) {
-          const matches = stdout.match(legacyDecisionToken) ?? [];
-          resolve([
-            ...new Set(matches.map((value) =>
+        ...legacyProductRoots,
+        ...catalogPaths,
+      ]).then((stdout) => {
+        const matches = stdout.match(legacyDecisionToken) ?? [];
+        return [
+          ...new Set([
+            ...matches.map((value) =>
               value.replace(/^\.\.\.(?=[A-Za-z])/u, "").replace(/:+$/u, "")
-            )),
-          ].sort());
-          return;
-        }
-        reject(
-          new Error(
-            `cannot derive ${legacyProductDecisionInventoryPath} at ${legacySourceTarget}`,
-            { cause: error },
-          ),
-        );
-      },
+            ),
+            ...businessValues,
+          ]),
+        ].sort();
+      }),
+  ).catch((error: unknown) => {
+    throw new Error(
+      `cannot derive ${legacyProductDecisionInventoryPath} at ${legacySourceTarget}`,
+      { cause: error },
+    );
+  });
+}
+
+async function deriveLegacyDecisionInputs(
+  projectRoot: string,
+): Promise<Readonly<{
+  catalogPaths: ReadonlyArray<string>;
+  businessValues: ReadonlyArray<string>;
+}>> {
+  const baselinePaths = new Set(
+    (await execGit(projectRoot, [
+      "ls-tree",
+      "-r",
+      "--name-only",
+      legacySourceTarget,
+    ])).split("\n").filter(Boolean),
+  );
+  const catalogPaths = await deriveLegacyImportClosure(
+    projectRoot,
+    baselinePaths,
+  );
+  const businessValues = new Set<string>();
+  for (const relativePath of legacyBusinessValueFiles) {
+    const value = JSON.parse(await legacyFile(projectRoot, relativePath));
+    collectTypedStringValues(value, businessValues);
+  }
+  return { catalogPaths, businessValues: [...businessValues].sort() };
+}
+
+async function deriveLegacyImportClosure(
+  projectRoot: string,
+  baselinePaths: ReadonlySet<string>,
+): Promise<ReadonlyArray<string>> {
+  const visited = new Set<string>();
+  const pending: string[] = [...legacyCatalogEntryFiles];
+  while (pending.length > 0) {
+    const relativePath = pending.pop();
+    if (relativePath === undefined || visited.has(relativePath)) {
+      continue;
+    }
+    visited.add(relativePath);
+    const source = await legacyFile(projectRoot, relativePath);
+    for (const match of source.matchAll(
+      /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)["']([^"']+)["']/gu,
+    )) {
+      const specifier = match[1];
+      if (specifier === undefined || !specifier.startsWith(".")) {
+        continue;
+      }
+      const resolved = resolveRelativeModule(
+        relativePath,
+        specifier,
+        baselinePaths,
+      );
+      if (resolved !== null && !visited.has(resolved)) {
+        pending.push(resolved);
+      }
+    }
+  }
+  return [...visited].sort();
+}
+
+function collectTypedStringValues(
+  value: unknown,
+  found: Set<string>,
+): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectTypedStringValues(item, found);
+    }
+    return;
+  }
+  if (typeof value !== "object" || value === null) {
+    return;
+  }
+  const record = value as Readonly<Record<string, unknown>>;
+  if (record["kind"] === "string" && typeof record["value"] === "string") {
+    found.add(record["value"]);
+  }
+  for (const item of Object.values(record)) {
+    collectTypedStringValues(item, found);
+  }
+}
+
+function currentProductEntryClosure(
+  files: ReadonlyArray<BoundaryFile>,
+): ReadonlySet<string> {
+  const byPath = new Map(files.map((file) => [file.path, file]));
+  const visited = new Set<string>();
+  const pending = [...productDecisionEntryFiles];
+  while (pending.length > 0) {
+    const relativePath = pending.pop();
+    if (relativePath === undefined || visited.has(relativePath)) {
+      continue;
+    }
+    visited.add(relativePath);
+    const file = byPath.get(relativePath);
+    if (file === undefined || !relativePath.endsWith(".ts")) {
+      continue;
+    }
+    const source = Buffer.from(file.bytes).toString("utf8");
+    for (const match of source.matchAll(
+      /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)["']([^"']+)["']/gu,
+    )) {
+      const specifier = match[1];
+      if (specifier === undefined || !specifier.startsWith(".")) {
+        continue;
+      }
+      const resolved = resolveRelativeModule(
+        relativePath,
+        specifier,
+        new Set(byPath.keys()),
+      );
+      if (resolved !== null && !visited.has(resolved)) {
+        pending.push(resolved);
+      }
+    }
+  }
+  return visited;
+}
+
+function resolveRelativeModule(
+  ownerPath: string,
+  specifier: string,
+  availablePaths: ReadonlySet<string>,
+): string | null {
+  const joined = path.posix.normalize(
+    path.posix.join(path.posix.dirname(ownerPath), specifier),
+  );
+  const candidates = [
+    joined,
+    joined.replace(/\.js$/u, ".ts"),
+    `${joined}.ts`,
+    `${joined}.tsx`,
+    `${joined}.json`,
+    `${joined}/index.ts`,
+  ];
+  return candidates.find((candidate) => availablePaths.has(candidate)) ?? null;
+}
+
+function legacyFile(
+  projectRoot: string,
+  relativePath: string,
+): Promise<string> {
+  return execGit(projectRoot, [
+    "show",
+    `${legacySourceTarget}:${relativePath}`,
+  ]);
+}
+
+function execGit(
+  projectRoot: string,
+  args: ReadonlyArray<string>,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      "git",
+      args,
+      { cwd: projectRoot, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+      (error, stdout) => error === null ? resolve(stdout) : reject(error),
     );
   });
 }
