@@ -262,7 +262,7 @@ Keep each component’s dependencies at the smallest approved set and add one on
 
 Record exact version, role, license, provenance, and removal cost before adoption.
 
-Approval bounds the direct addition; it does not bound what that addition resolves to, and a transitive graph can double on a patch upgrade nobody reviews. Both halves must therefore become executable. The obligated footprint guard fails when a product's resolved package count exceeds its recorded budget or when any license in that resolved graph falls outside the permissive set, and a budget rises only in the change that records the approval raising it. **Neither that guard nor any budget exists yet**, and [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) records their absence. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
+Approval bounds the direct addition; it does not bound what that addition resolves to, and a transitive graph can double on a patch upgrade nobody reviews. Both halves must therefore become executable. The obligated footprint guard fails when a product's resolved package count exceeds its recorded budget or when any license in that resolved graph falls outside the permissive set, and a budget rises only in the change that records the approval raising it. The BPM platform's exact budget and permissive-license allowlist live in [`platform/dependency-policy.json`](platform/dependency-policy.json), and its platform-only gate traverses the installed reachable production graph. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
 
 ## Documentation ownership
 
@@ -378,6 +378,8 @@ Complete implemented M1 platform-package gate:
 ```sh
 ./scripts/pnpm.sh run test:platform-m1
 ```
+
+This platform-only gate uses `tsconfig.platform-harness.json`; the default engine harness excludes `platform/` and `*.platform-test.ts`, so complete engine verification remains independent of platform package builds.
 
 Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:
 

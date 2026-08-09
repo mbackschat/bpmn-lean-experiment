@@ -81,7 +81,8 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - `@bpmn-lean/platform-contracts` with closed deeply immutable M1 definition transport types, strict unknown decoders, opaque engine diagnostics, and safe versioned route construction
 - `@bpmn-lean/platform-definitions`, which snapshots deployment inputs before its first await, persists only admitted exact source, allocates durable process-local version ordinals through SQLite `BEGIN IMMEDIATE`, lists current and historical versions, and fails explicitly when metadata references missing content
 - An executable product-boundary guard that discovers tracked and pending source plus package manifests, resolves package aliases and subpaths to owners, fails closed on malformed or duplicate identities, and carries planted violations for every guarded dependency class
-- A composed M1 platform-package gate run in CI before the platform-independent engine gate
+- An executable platform dependency policy that traverses the installed reachable production graph through workspace, direct, transitive, optional, and required-peer edges; fails closed on unresolved or contradictory identities; and holds the current exact five-package external footprint to the MIT license allowlist
+- A separate strict no-emit platform harness and generated-output import guard, with planted clean-checkout counterexamples, so the composed M1 gate runs in CI before the platform-independent engine gate without making `verify.sh` build the platform tree
 
 #### Explicitly absent
 
@@ -91,7 +92,6 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - identity and authorization
 - the platform component kit and every selected UI dependency; `react-aria-components` and the three TanStack packages are owner-selected but not installed, and `bpmn-js` is not approved
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
-- the executable dependency-footprint guard, the permissive-licence check over the resolved graph, and any recorded per-product package budget that [the dependency rule](../CLAUDE.md#dependencies) obligates; approval currently binds at review only
 - Narrowed start, observe, and submit-command engine entry points. Compilation is narrowed; `packages/temporal-adapter` still re-exports harness material alongside its client surface and is not a permitted platform dependency
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata

@@ -1,0 +1,42 @@
+{
+  "extends": "./tsconfig.harness.json",
+  "compilerOptions": {
+    "paths": {
+      "@bpmn-lean/bpmn-source": [
+        "./packages/bpmn-source/src/index.ts"
+      ],
+      "@bpmn-lean/differential": [
+        "./packages/differential/src/index.ts"
+      ],
+      "@bpmn-lean/engine-api": [
+        "./packages/engine-api/src/index.ts"
+      ],
+      "@bpmn-lean/platform-engine-gateway": [
+        "./platform/foundation/engine-gateway/src/index.ts"
+      ],
+      "@bpmn-lean/platform-artifact-store": [
+        "./platform/foundation/artifact-store/src/index.ts"
+      ],
+      "@bpmn-lean/platform-contracts": [
+        "./platform/contracts/src/index.ts"
+      ],
+      "@bpmn-lean/platform-definitions": [
+        "./platform/modules/definitions/src/index.ts"
+      ],
+      "@bpmn-lean/semantic-core": [
+        "./packages/semantic-core/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-adapter": [
+        "./packages/temporal-adapter/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "packages/bpmn-source/src/bpmn-moddle.d.ts",
+    "platform/contracts/test/*.ts",
+    "platform/foundation/engine-gateway/test/*.ts",
+    "platform/modules/definitions/test/*.ts",
+    "scripts/*.platform-test.ts"
+  ],
+  "exclude": []
+}

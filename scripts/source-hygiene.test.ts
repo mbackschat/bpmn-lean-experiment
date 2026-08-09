@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import {
   execFileSync,
-  spawnSync,
 } from "node:child_process";
 import {
   existsSync,
@@ -24,6 +23,11 @@ import {
   reviewedLargeFiles,
   sourceHygieneApprovalFindings,
 } from "./source-hygiene-policy.ts";
+import {
+  erasableSyntaxDiagnostics,
+  generatedOutputImports,
+} from "./harness-source-policy.ts";
+
 const leanUmbrellaModules = [
   "BpmnSemantics.lean",
   "BpmnSemantics/SemanticProcess.lean",
@@ -107,31 +111,6 @@ function shippedTypeScriptFiles(): string[] {
 }
 
 /**
- * Specifiers TypeScript resolves: `from` clauses, side-effect imports, and
- * literal dynamic imports.
- *
- * `new URL("../dist/workflows.js", import.meta.url)` is deliberately outside
- * this pattern. A runtime bundler path is not a resolved module specifier, so
- * it places no requirement on the type gate.
- */
-const resolvedSpecifierPattern =
-  /(?:\bfrom\s*|\bimport\s*\(?\s*)["']([^"']+)["']/gu;
-
-/**
- * Lines that can carry an import statement.
- *
- * A line whose first nonblank character opens a string literal is quoted
- * fixture text — policy tests and generators contain import syntax as data, and
- * a text scanner cannot otherwise separate the two. Real statements begin with
- * `import`, `export`, or the closing brace of a multi-line clause.
- */
-function importBearingLines(source: string): string[] {
-  return source
-    .split(/\r?\n/u)
-    .filter((line) => !/^\s*["'`]/u.test(line));
-}
-
-/**
  * `Array.prototype.join` with a separator, which no composite identity may use.
  *
  * `path.join` is a different API and stays admissible, as does an empty separator: that is pure
@@ -156,64 +135,6 @@ function separatorJoins(path: string, source: string): string[] {
     .flatMap((line, index) =>
       separatorJoinPattern.test(line) ? [`${path}:${index + 1}`] : []
     );
-}
-
-function isProjectBuildOutput(specifier: string): boolean {
-  const projectOwned =
-    specifier.startsWith(".") || specifier.startsWith("@bpmn-lean/");
-  return projectOwned && /(?:^|\/)dist\//u.test(specifier);
-}
-
-/**
- * Reports resolved specifiers that reach into project build output.
- *
- * The harness type gate maps `@bpmn-lean/*` to package sources so it needs no
- * prior build. A `dist/` specifier reintroduces an undeclared generated input:
- * it type-checks against whatever declarations an earlier build happened to
- * leave behind, and a clean checkout cannot resolve it at all. A published
- * dependency's own `dist` directory stays admissible.
- */
-function generatedOutputImports(path: string, source: string): string[] {
-  return importBearingLines(source)
-    .flatMap((line) => [...line.matchAll(resolvedSpecifierPattern)])
-    .flatMap(([, specifier]) => (specifier === undefined ? [] : [specifier]))
-    .filter(isProjectBuildOutput)
-    .map((specifier) => `${path}: ${specifier}`);
-}
-
-function erasableSyntaxDiagnostics(
-  paths: ReadonlyArray<string>,
-  environment: NodeJS.ProcessEnv = process.env,
-): string[] {
-  const result = spawnSync(
-    "./node_modules/.bin/tsc",
-    [
-      "--noEmit",
-      "--noResolve",
-      "--erasableSyntaxOnly",
-      "--pretty",
-      "false",
-      "--skipLibCheck",
-      "--target",
-      "ESNext",
-      "--module",
-      "NodeNext",
-      "--moduleResolution",
-      "NodeNext",
-      ...paths,
-    ],
-    {
-      encoding: "utf8",
-      env: environment,
-      maxBuffer: 4 * 1024 * 1024,
-    },
-  );
-  if (result.error !== undefined) {
-    throw result.error;
-  }
-  return `${result.stdout}${result.stderr}`
-    .split(/\r?\n/u)
-    .filter((line) => line.includes("error TS1294:"));
 }
 
 test("the source-hygiene policy rejects every regression class", () => {
