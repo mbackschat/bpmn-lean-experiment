@@ -18,6 +18,12 @@
       "@bpmn-lean/differential": [
         "./packages/differential/src/index.ts"
       ],
+      "@bpmn-lean/engine-api": [
+        "./packages/engine-api/src/index.ts"
+      ],
+      "@bpmn-lean/platform-engine-gateway": [
+        "./platform/foundation/engine-gateway/src/index.ts"
+      ],
       "@bpmn-lean/semantic-core": [
         "./packages/semantic-core/src/index.ts"
       ],
@@ -38,10 +44,12 @@
     "packages/bpmn-source/src/bpmn-moddle.d.ts",
     "packages/bpmn-source/test/*.ts",
     "packages/differential/test/*.ts",
+    "packages/engine-api/test/*.ts",
     "packages/semantic-core/test/*.ts",
     "packages/temporal-adapter/calibration/*.ts",
     "packages/temporal-adapter/cli/*.ts",
     "packages/temporal-adapter/test/*.ts",
+    "platform/foundation/engine-gateway/test/*.ts",
     "scripts/*.ts"
   ]
 }

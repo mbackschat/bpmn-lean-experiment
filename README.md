@@ -11,8 +11,8 @@ This project builds two MIT products in one repository: a Temporal-hosted BPMN 2
 | Surface | Status |
 |---|---|
 | BPMN execution engine | Implemented, runnable product floor over a bounded semantic profile catalog |
-| BPM platform | Architecture and guarded scaffold only; no product capability |
-| Active work | M1 platform implementation, beginning at the narrow engine gateway and definition-deployment boundary |
+| BPM platform | M1 foundations in progress: narrow compilation gateway and exact content-addressed artifact storage implemented |
+| Active work | Definition deployment/versioning, followed by the public HTTP API and M1 client |
 | A12 Workflows | Separate downstream product outside this repository; reusable neutral mechanisms and an optional evidence handoff are preserved without placing A12 decisions in core |
 
 Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. It deliberately has no UI, task inbox, deployment store, or identity system. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
@@ -178,6 +178,7 @@ Useful focused gates:
 ./scripts/test-cibseven-oracle.sh
 ./scripts/pnpm.sh run test:temporal
 ./scripts/pnpm.sh run test:pipeline
+./scripts/pnpm.sh run test:platform-foundation
 node --test scripts/platform-product-boundary.test.ts
 ```
 

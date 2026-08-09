@@ -1,5 +1,11 @@
 packages:
   - packages/*
+  - platform/*
+  - platform/apps/*
+  - platform/foundation/*
+  - platform/modules/*
+  - platform/workers/*
+  - showcase/*
 enableGlobalVirtualStore: false
 allowBuilds:
   '@swc/core': false

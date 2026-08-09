@@ -40,6 +40,15 @@ importers:
         specifier: workspace:*
         version: link:../temporal-adapter
 
+  packages/engine-api:
+    dependencies:
+      '@bpmn-lean/bpmn-source':
+        specifier: workspace:*
+        version: link:../bpmn-source
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../semantic-core
+
   packages/semantic-core: {}
 
   packages/temporal-adapter:
@@ -63,6 +72,14 @@ importers:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
         version: link:../bpmn-source
+
+  platform/foundation/artifact-store: {}
+
+  platform/foundation/engine-gateway:
+    dependencies:
+      '@bpmn-lean/engine-api':
+        specifier: workspace:*
+        version: link:../../../packages/engine-api
 
 packages:
 

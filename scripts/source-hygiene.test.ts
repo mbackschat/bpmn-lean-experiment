@@ -93,7 +93,7 @@ function directTypeScriptHarnessFiles(): string[] {
 }
 
 /**
- * Shipped TypeScript: the package and runner `src` trees, excluding build output.
+ * Shipped TypeScript: package, runner, and platform-package `src` trees, excluding build output.
  *
  * Narrower than the size measurement, which covers every hand-written file. Tests and scripts build
  * report text and fixture lines by joining on separators, which is not an identity claim, so the
@@ -102,7 +102,7 @@ function directTypeScriptHarnessFiles(): string[] {
 function shippedTypeScriptFiles(): string[] {
   return worktreeSourceFiles().filter((path) =>
     path.endsWith(".ts") &&
-    /^(?:packages|runners)\/[^/]+\/src\//u.test(path)
+    /^(?:(?:packages|runners)\/[^/]+|platform\/(?:apps|foundation|modules|workers)\/[^/]+|platform\/(?:contracts|ui-kit))\/src\//u.test(path)
   );
 }
 

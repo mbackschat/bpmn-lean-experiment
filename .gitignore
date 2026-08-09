@@ -5,6 +5,9 @@ node_modules/
 /.pnpm-store
 /dist
 /packages/*/dist
+/platform/*/dist
+/platform/*/*/dist
+/showcase/*/dist
 /coverage
 **/target/
 .DS_Store

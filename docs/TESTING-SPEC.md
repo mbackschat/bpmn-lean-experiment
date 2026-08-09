@@ -77,6 +77,7 @@ git diff --check
 | Directly executed TypeScript harness or utility | `./scripts/pnpm.sh run check:harness-types` plus its applicable runtime gate |
 | Source ownership, module boundary, or structural refactor | `./scripts/pnpm.sh run check:source-hygiene` plus the narrow language gate |
 | Product boundary or platform package dependency direction | `node --test scripts/platform-product-boundary.test.ts` plus the owning package gate |
+| M1 engine gateway or platform foundation storage | `./scripts/pnpm.sh run test:platform-foundation` |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` (strict harness types plus runtime tests) |
 | Provisional representation experiment | `./scripts/lake.sh build checkSemanticRepresentationSpike && ./scripts/lake.sh exe checkSemanticRepresentationSpike` |
 | Checked-source relation experiment | `./scripts/lake.sh build checkCheckedSourceRelationExperiment && ./scripts/lake.sh exe checkCheckedSourceRelationExperiment` |
