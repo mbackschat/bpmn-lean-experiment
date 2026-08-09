@@ -2,9 +2,9 @@
 
 ## Status
 
-**Owner-approved on 2026-08-07; not implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. It stays a proposal rather than a specification because nothing here is implemented and no dependency is adopted; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for an implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
+**Owner-approved on 2026-08-07; product surfaces not implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Tracked architecture scaffolds and boundary guards do not implement a product surface, so this stays a proposal and no dependency is adopted; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for an implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
-Sequencing belongs to [PLAN.md](PLAN.md), durable architecture to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
+Sequencing belongs to [PLAN.md](PLAN.md), durable product and semantic boundaries to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture to [ARCHITECTURE.md](ARCHITECTURE.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
 
 ## Product question
 
@@ -146,23 +146,11 @@ Measured on 2026-08-07 by installing into an empty project on the pinned Node 24
 | `@tanstack/react-virtual` | 3.14.9 | MIT | Row virtualization | Low. One component, large lists only |
 | `@tanstack/react-query` | 5.101.4 | MIT | Server-state caching and refetch | Medium. Replaceable at the cost of re-solving cache invalidation |
 
-## Package structure
+## Implementation architecture
 
-```text
-platform/
-  deployment/   content-addressed store, version ordinals, admission gateway
-  projection/   subscribes to committed transition records, builds read models
-  tasklist/     task read model, claim and release, completion
-  operations/   instance and incident read models, operator actions
-  identity/     pluggable, fake by default
-  api/          the public HTTP surface over the above
-  ui-kit/       platform-owned components over the primitives
-  ui/           React SPA, consumes api over HTTP only
-runners/juel/   JVM Activity Worker, pinned JUEL runtime, never a semantic path
-showcase/       milestone demonstrations, which are the acceptance gates
-```
+[ARCHITECTURE.md](ARCHITECTURE.md) owns the modular-monolith package layout, dependency graph, composition roots, domain modules, production Worker placement, and architecture decision register. This proposal owns the product surfaces and acceptance contract rather than a second copy of that tree.
 
-Engine paths do not move. `runners/juel/` is the only Java component and remains an Activity Worker.
+The local consequence is that every surface still has a service, a public HTTP API, and a React client; the server composes logical modules without turning them into premature microservices; the web application uses HTTP only; and the deferred JUEL evaluator remains a production Activity Worker outside the external-oracle runner tree.
 
 ## Non-functional requirements
 

@@ -19,7 +19,7 @@ Preserve the implemented [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPE
 
 The platform consumes only the engine's published contract: compile, start, observe committed state, submit a command. It takes occurrence identity from a publication and never constructs one, and a fact the engine does not publish is a stop condition routed to an engine requirement, never derived from Temporal Event History, a state difference, or the platform's own store.
 
-The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), and active sequencing and decisions belong in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
+The exact current implementation and evidence boundary belongs in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), concrete repository and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), and active sequencing and decisions in [PLAN.md](docs/PLAN.md); code under `BpmnSemantics/Experiments/` remains provisional and separately gated.
 
 The preserved architecture handoff uses “reducer” for the TypeScript component. Current project terminology calls that same boundary the **semantic core** and its public transition operation `applyStimulus`; this is a naming clarification, not an authority or responsibility change.
 
@@ -43,6 +43,7 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 | Change | Required context |
 |---|---|
 | Documentation filename, role, lifecycle, placement, graduation, or archive | [Documentation discipline](docs/DOC-DISCIPLINE.md) |
+| Repository layout, package ownership, modular-monolith boundary, composition root, or deployment shape | [ARCHITECTURE.md](docs/ARCHITECTURE.md), [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#one-repository-for-products-1-and-2), and the applicable product proposal |
 | Mission, authority, compatibility, or assurance | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), and the applicable release/evidence gate in [TESTING-SPEC.md](docs/TESTING-SPEC.md) |
 | BPMN import, conformance, CIB relationship, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), the applicable [semantic capsule](docs/capsules/README.md), and applicable normative sources |
 | Source model, normalization, checked BPMN graph, Semantic Process IL, scope, runtime identity, token/activation state, or command closure | [Semantic Process IL](docs/SEMANTIC-PROCESS-IL-SPEC.md), [semantic representations research](docs/research/SEMANTIC-REPRESENTATIONS-RESEARCH.md), and relevant [experiments](docs/experiments/README.md) |
@@ -239,7 +240,7 @@ After the technical gate is green but before marking a milestone or semantic cap
 
 Answer the same self-assessment questions at each session handoff, not only at a capsule boundary. A finding that already has a row gets its instance count incremented rather than a second near-duplicate row, because that count is what the escalation rule reads: a mechanism seen twice has already refuted the prose meant to prevent it and requires an executable guard. Assume your own fresh prose does not bind you.
 
-Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](docs/PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable architecture in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
+Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](docs/PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), concrete package and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 
 ### Architecture experiments
 
@@ -271,6 +272,7 @@ Use one owner for each fact and link to it elsewhere:
 |---|---|
 | Document roles, suffix contracts, lifecycle, placement, and same-change triggers | [DOC-DISCIPLINE.md](docs/DOC-DISCIPLINE.md) |
 | Mission, authority, and approved durable boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
+| Concrete repository layout, module ownership, dependency direction, and deployment shape | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Semantic Process IL contract, exact proof boundary, maintained obligations, and growth rules | [SEMANTIC-PROCESS-IL-SPEC.md](docs/SEMANTIC-PROCESS-IL-SPEC.md) |
 | Reviewed BPMN Process Execution requirements and dispositions | [BPMN-REQUIREMENT-LEDGER.md](docs/BPMN-REQUIREMENT-LEDGER.md) |
 | Downstream A12 model, delegate, façade, blueprint, and migration-adoption denominator | [A12-WORKFLOWS-COMPATIBILITY-LEDGER.md](docs/research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) |

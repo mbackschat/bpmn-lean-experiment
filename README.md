@@ -2,13 +2,39 @@
 
 Making BPMN execution durable, explainable, and continuously checkable.
 
-This project builds two MIT products in one repository: a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is defined independently, checked formally, and compared continuously with CIB Seven, and a BPM platform on top of it. The engine's primary implementation roadmap is OMG BPMN Process Execution coverage, with CIB Seven `2.2.0` executable breadth ordering the near-term standards schedule and selected CIB Seven behavior layered on as versioned compatibility profiles. The platform consumes only the engine's published contract, so the assurance underneath it transfers rather than being restated. [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division) owns the exact product division, boundaries, and separate coverage measures.
+This project builds two MIT products in one repository: a Temporal-hosted BPMN 2.0.2 execution engine whose behavior is independently defined and checked, and an API-first BPM platform on top of it. The engine roadmap follows OMG Process Execution requirements, while CIB Seven `2.2.0` orders near-term standards work and supplies a pinned oracle only for declared compatibility profiles. The platform consumes the engine's published contract and never becomes a second authority for BPMN meaning.
 
-Use the [implementation map](docs/IMPLEMENTATION-MAP.md) for the exact implemented and absent surface, and the [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) to exercise every registered scenario through its declared semantic, compatibility, durability, mutation, and replay lanes.
+[PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#product-division) owns the product vision and semantic boundaries. [ARCHITECTURE.md](docs/ARCHITECTURE.md) owns the concrete modular-monolith layout and dependency direction. [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) owns exact implemented and absent surfaces, and [PLAN.md](docs/PLAN.md) owns current sequencing.
 
-The [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) is implemented: one command admits exact BPMN XML, connects its Worker to an existing Temporal service, answers the interactions published by any registered profile through the production command boundaries, and reports the final Process state. It deliberately introduces no UI, task inbox, or identity system.
+## Current state
 
-Use [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) for the live implemented/absent boundary and [PLAN.md](docs/PLAN.md) for the active checkpoint and work order.
+| Surface | Status |
+|---|---|
+| BPMN execution engine | Implemented, runnable product floor over a bounded semantic profile catalog |
+| BPM platform | Architecture and guarded scaffold only; no product capability |
+| Active work | M1 platform implementation, beginning at the narrow engine gateway and definition-deployment boundary |
+| A12 Workflows | Separate downstream product outside this repository; reusable neutral mechanisms and an optional evidence handoff are preserved without placing A12 decisions in core |
+
+Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. It deliberately has no UI, task inbox, deployment store, or identity system. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
+
+## Vision and milestone plan
+
+The near-term goal is a usable BPM platform whose public API and UI inherit the engine's checked semantics without reconstructing semantic facts. Product 2 begins as a modular monolith with business-capability modules, a small server composition root, a React web client that uses HTTP only, and independently deployed Workers. The dependency direction is executable: server to modules, modules to narrowly scoped foundation packages, and only the engine gateway to narrow engine entry points.
+
+The showcase ladder is a dependency order, not a delivery schedule. [PLAN.md](docs/PLAN.md#showcase-milestone-ladder) owns the complete exit gates.
+
+| Milestone | Status | Demonstration |
+|---|---|---|
+| M0 | Closed | Run the registered engine profile catalog through the Temporal runner |
+| M1 | In progress | A third party uploads an unseen BPMN file, receives honest admission diagnostics, stores and versions it, views the diagram, and starts an admitted instance |
+| M2 | Not started | Execute a cyclic model with real Message or Timer starts and the remaining selected base elements |
+| M3 | Not started | Use a real task inbox and form with values beyond string and null |
+| M4 | Not started | Diagnose, retry, and cancel failed work without confusing BPMN incidents with Temporal retries |
+| M5 | Not started | Rebuild and explain committed execution history, diagram position, and operational views |
+
+M1 is the first proper platform MVP demonstration. It includes a minimal React client for upload, admission results, definition versions, diagram viewing, and instance start. It does not include the real task inbox or form interaction, which arrive at M3 after the engine publishes the required metadata and wider value domain.
+
+Beyond M5, the architecture leaves explicit seams for Work, Operate, Connect, Lifecycle, Intelligence, Agents, and Administration capabilities without creating empty production packages today. These are a growth horizon, not hidden M1 scope. See [the business-module map](docs/ARCHITECTURE.md#business-modules) and [competitive scope research](docs/research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md#dependency-ordered-roadmap).
 
 A new machine does not need a prearranged external-source tree. The [contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md) and repository-owned setup/doctor scripts provision and verify every exact external input required by the selected work scope; missing material fails the selected lane rather than reducing it. The default `verify` scope is complete for the MIT engine and never requires A12's EUPL source; downstream exact-source evidence is a separate, explicitly selected `adoption` scope.
 
@@ -33,7 +59,7 @@ BPM platform
       → Temporal durability and effect hosting
 ```
 
-The platform owns deployment, task and operator surfaces, history, and integration; it consumes the engine's published contract and defines no BPMN semantics. A first vertical slice may prove that the layers compose; later coverage grows by reusable BPMN mechanism, with CIB work added only when a selected compatibility question requires it.
+The platform owns deployment, task and operator surfaces, history, and integration; it consumes the engine's published contract and defines no BPMN semantics. A first vertical slice may prove that the layers compose; later coverage grows by reusable BPMN mechanism, with CIB work added only when a selected compatibility question requires it. [ARCHITECTURE.md](docs/ARCHITECTURE.md) owns the concrete modular-monolith layout and dependency direction.
 
 ## Architecture
 
@@ -65,7 +91,7 @@ CIB contributes twice where a compatibility profile declares it: first as classi
 The strongest parts of the approach are:
 
 - explicit separation of exact BPMN source, checked source graph, Semantic Process program, semantic runtime state, and Temporal hosting;
-- Lean as an executable semantic reference with reusable laws—not merely a model checker;
+- Lean as an executable semantic reference with reusable laws, not merely a model checker;
 - an independently implemented TypeScript semantic core;
 - CIB Seven as a pinned compatibility oracle, without copying its implementation;
 - differential testing plus Temporal refinement and replay testing;
@@ -152,6 +178,7 @@ Useful focused gates:
 ./scripts/test-cibseven-oracle.sh
 ./scripts/pnpm.sh run test:temporal
 ./scripts/pnpm.sh run test:pipeline
+node --test scripts/platform-product-boundary.test.ts
 ```
 
 When a task explicitly needs the optional A12 exact-source evidence, provision and run it separately with `./scripts/setup-external-sources.sh adoption` followed by `./scripts/test-a12-adoption.sh`.
@@ -203,10 +230,12 @@ BpmnSemantics/       Lean semantic definitions, laws, conformance witnesses, and
 contracts/           Current language-neutral JSON Schemas
 docs/                Architecture, capsules, research, experiments, testing, provenance, and plan
 packages/            BPMN source boundary, TypeScript semantic core, comparator, and Temporal adapter
+platform/            Product 2 modular-monolith ownership tree and future production packages
 profiles/            Reviewed semantic-profile artifacts
 runners/             Pinned external semantic-oracle runners
 scenarios/           Answer-free BPMN scenarios and separate content-bound evidence
 scripts/             Maintained verification and infrastructure guards
+showcase/            Product 2 milestone acceptance gates, never reusable production code
 ```
 
 | Need | Read |
@@ -214,6 +243,7 @@ scripts/             Maintained verification and infrastructure guards
 | Inspect and run the complete implemented catalog | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) and the [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) |
 | Prepare a clean machine or coding agent | [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md) |
 | Understand mission, authority, Lean, and interpreter decisions | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
+| Understand package layout, module ownership, and deployment shape | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | See exact current support and gaps | [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) |
 | Resume the next work | [PLAN.md](docs/PLAN.md) |
 | Review the active semantic meaning and admission | [Capsule registry](docs/capsules/README.md), [Profile-parameterized admission spec](docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [Exclusive Gateway condition spec](docs/capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md), and [Semantic Process IL spec](docs/SEMANTIC-PROCESS-IL-SPEC.md) |

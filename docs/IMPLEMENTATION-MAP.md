@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 ## Current claim
 
-**Two products, one implemented.** The BPMN execution engine executes a bounded but broad slice of BPMN 2.0.2 across twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) is an owner-approved contract with nothing implemented; its absences are recorded under [BPM platform](#bpm-platform) below.
+**Two products, one behaviorally implemented.** The BPMN execution engine executes a bounded but broad slice of BPMN 2.0.2 across twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has an owner-approved contract, a tracked modular-monolith ownership scaffold, and an executable product-boundary guard, but no product capability; its absences are recorded under [BPM platform](#bpm-platform) below.
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting. Each capsule owns its own meaning and exclusions; this document owns only their status.
 
@@ -74,19 +74,23 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 
 #### Implemented
 
-- Nothing. No part of product 2 exists.
+- The concrete modular-monolith architecture and decision register in [ARCHITECTURE.md](ARCHITECTURE.md)
+- Tracked ownership scaffolds for the server and web composition roots, public contracts, engine gateway, artifact store, definitions module, UI kit, production Workers, and the M1 showcase
+- An executable product-boundary guard with planted violations for source outside an approved platform owner, forbidden internal platform dependencies including web-to-service imports, product-1 imports into `platform/`, platform deep imports into engine internals, public engine imports outside the engine gateway, platform Temporal Event History imports, production imports of showcase evidence, and production JUEL placement under `runners/`
+- No product behavior; the implemented items above constrain where and how the first capability lands
 
 #### Explicitly absent
 
-- The `platform/`, `runners/juel/`, and `showcase/` trees, and every package the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#package-structure) names
+- Every production platform package and executable showcase; the tracked directories contain ownership documentation only
 - deployment store, definition version ordinals, and the admission gateway
 - the transition-record projection, every read model, and cross-instance discovery
 - task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity, authorization, persistence, and the public HTTP API
 - the platform component kit and every selected UI dependency; `react-aria-components` and the three TanStack packages are owner-selected but not installed, and `bpmn-js` is not approved
-- the executable product-boundary guard, the UI-to-API import guard, and the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates
+- the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
 - the executable dependency-footprint guard, the permissive-licence check over the resolved graph, and any recorded per-product package budget that [the dependency rule](../CLAUDE.md#dependencies) obligates; approval currently binds at review only
 - narrowed public entry points on the engine packages. `packages/temporal-adapter` re-exports harness material alongside its client surface, so the four-operation consumption boundary is a taxonomy that no package shape yet enforces
+- the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata
 
 ### A12 Workflows downstream adoption

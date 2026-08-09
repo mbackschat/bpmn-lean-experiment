@@ -19,6 +19,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const readmePath = path.join(projectRoot, "README.md");
 const planPath = path.join(projectRoot, "docs/PLAN.md");
 const implementationMapPath = path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md");
 const orderedWorkHeading = "## Ordered work";
@@ -48,7 +49,19 @@ function milestoneStatuses(markdown: string): ReadonlyMap<string, MilestoneStatu
   return statuses;
 }
 
-function platformImplementationIsAbsent(implementationMap: string): boolean {
+function readmeMilestoneStatuses(markdown: string): ReadonlyMap<string, MilestoneStatus> {
+  const statuses = new Map<string, MilestoneStatus>();
+  for (const [, milestoneId, status] of markdown.matchAll(
+    /^\| (M[0-5]) \| (Closed|In progress|Not started) \|/gmu,
+  )) {
+    if (milestoneId !== undefined && status !== undefined) {
+      statuses.set(milestoneId, status.toLowerCase() as MilestoneStatus);
+    }
+  }
+  return statuses;
+}
+
+function platformProductCapabilityIsAbsent(implementationMap: string): boolean {
   const platformStart = implementationMap.indexOf("### BPM platform");
   if (platformStart < 0) {
     return false;
@@ -58,7 +71,13 @@ function platformImplementationIsAbsent(implementationMap: string): boolean {
     platformStart,
     nextSection < 0 ? implementationMap.length : nextSection,
   );
-  return platformSection.includes("- Nothing. No part of product 2 exists.");
+  return platformSection.includes("- No product behavior;");
+}
+
+function readmeSaysPlatformProductCapabilityIsAbsent(readme: string): boolean {
+  return readme.includes(
+    "| BPM platform | Architecture and guarded scaffold only; no product capability |",
+  );
 }
 
 function milestoneContradictions(
@@ -67,7 +86,10 @@ function milestoneContradictions(
 ): ReadonlyArray<string> {
   const statuses = milestoneStatuses(plan);
   const findings: string[] = [];
-  if (platformImplementationIsAbsent(implementationMap) && statuses.get("M1") === "closed") {
+  if (
+    platformProductCapabilityIsAbsent(implementationMap) &&
+    statuses.get("M1") === "closed"
+  ) {
     findings.push("M1 is closed while the BPM platform implementation is absent");
   }
   return findings;
@@ -186,7 +208,33 @@ test("keeps showcase milestone status consistent with the implementation boundar
   assert.deepEqual(milestoneContradictions(plan, implementationMap), []);
 });
 
-test("rejects closing M1 while the BPM platform implementation is absent", () => {
+test("keeps the root README status summary aligned with its owners", async () => {
+  const [readme, plan, implementationMap] = await Promise.all([
+    readFile(readmePath, "utf8"),
+    readFile(planPath, "utf8"),
+    readFile(implementationMapPath, "utf8"),
+  ]);
+  const planStatuses = milestoneStatuses(plan);
+  const readmeStatuses = readmeMilestoneStatuses(readme);
+
+  assert.deepEqual(
+    [...readmeStatuses.keys()],
+    milestoneIds,
+    "the root README must summarize every showcase milestone",
+  );
+  assert.deepEqual(
+    [...readmeStatuses],
+    [...planStatuses],
+    "the root README milestone summary must match PLAN.md",
+  );
+  assert.equal(
+    readmeSaysPlatformProductCapabilityIsAbsent(readme),
+    platformProductCapabilityIsAbsent(implementationMap),
+    "the root README platform summary must match IMPLEMENTATION-MAP.md",
+  );
+});
+
+test("rejects closing M1 while BPM platform product capability is absent", () => {
   const plan = [
     "### M0 - shipped floor",
     "",
@@ -217,7 +265,7 @@ test("rejects closing M1 while the BPM platform implementation is absent", () =>
     "",
     "#### Implemented",
     "",
-    "- Nothing. No part of product 2 exists.",
+    "- No product behavior; architecture scaffolds are constraints only.",
     "",
     "### A12 Workflows downstream adoption",
   ].join("\n");

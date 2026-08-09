@@ -1,10 +1,10 @@
 # Plan
 
-This document owns the current checkpoint, ordered next work, unresolved decisions, and exact resume point. It is not a feature-history board: durable architecture belongs in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), exact supported and absent surfaces in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), test procedure in [TESTING-SPEC.md](TESTING-SPEC.md), semantic meaning in the owning [capsule](capsules/README.md), commit-bounded cost in [CAPSULE-COST-LEDGER.md](CAPSULE-COST-LEDGER.md), and process findings in [PROCESS-ASSESSMENT-LEDGER.md](PROCESS-ASSESSMENT-LEDGER.md). A completed item is deleted from here once its content has an owner; Git retains the history. [The plan-shape guard](../scripts/plan-status-consistency.test.ts) enforces that.
+This document owns the current checkpoint, ordered next work, unresolved decisions, and exact resume point. It is not a feature-history board: durable product and semantic boundaries belong in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete repository and deployment architecture in [ARCHITECTURE.md](ARCHITECTURE.md), exact supported and absent surfaces in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), test procedure in [TESTING-SPEC.md](TESTING-SPEC.md), semantic meaning in the owning [capsule](capsules/README.md), commit-bounded cost in [CAPSULE-COST-LEDGER.md](CAPSULE-COST-LEDGER.md), and process findings in [PROCESS-ASSESSMENT-LEDGER.md](PROCESS-ASSESSMENT-LEDGER.md). A completed item is deleted from here once its content has an owner; Git retains the history. [The plan-shape guard](../scripts/plan-status-consistency.test.ts) enforces that.
 
 ## Current checkpoint
 
-**Two MIT products are now separated.** The BPMN execution engine is implemented across twenty-plus closed semantic capsules; the [BPM platform](BPM-PLATFORM-PROPOSAL.md) is owner-approved as a contract and entirely unimplemented. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division) owns the division and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact implemented and absent boundary for both.
+**Two MIT products are now separated.** The BPMN execution engine is implemented across twenty-plus closed semantic capsules; the [BPM platform](BPM-PLATFORM-PROPOSAL.md) is owner-approved as a contract, has its [modular-monolith architecture](ARCHITECTURE.md) and guarded ownership scaffold, and has no product capability yet. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division) owns the division and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact implemented and absent boundary for both.
 
 **The engine executes a bounded but broad slice.** Exact BPMN bytes admit through a checked project-owned graph to the Semantic Process IL, which Lean and an independently written TypeScript semantic core each evaluate, and which Temporal hosts durably. Closed families include Parallel fork/join, Exclusive Gateway with a project-owned Boolean expression language, Inclusive and Event-Based Gateways, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, User Task completion data, and three boundary-Timer loci including the non-interrupting one. Each capsule owns its own meaning, laws, and exclusions.
 
@@ -242,7 +242,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: implement ordered-work item 1, the open M1 platform increments.** Start with the narrowed public HTTP API and content-addressed definition upload/store boundary required by the M1 exit gate. The A12 product boundary is closed, its stable contract is active, and its proposal is archived.
+**Next action: implement ordered-work item 1, the open M1 platform increments.** Use the ownership paths and dependency direction in [ARCHITECTURE.md](ARCHITECTURE.md), starting with the narrowed engine gateway, public HTTP API, definitions module, and content-addressed artifact-store boundary required by the M1 exit gate. The A12 product boundary is closed, its stable contract is active, and its proposal is archived.
 
 **Blockers: none.** The earlier aggregate-timeout configuration was corrected without changing any test or implementation.
 

@@ -9,6 +9,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | Add, rename, graduate, archive, or classify a document | [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) |
 | Change or review the implemented Lean comment discipline and anti-boilerplate guardrails | [CLAUDE.md](../CLAUDE.md#comments--document-semantic-surplus), [TESTING-SPEC.md](TESTING-SPEC.md#default-verification), and the [archived proposal rationale](archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md) |
 | Understand the product division, BPMN core, CIB overlay, and platform boundary | [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division), [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md#layering-and-coverage-accounting), and [PLAN.md](PLAN.md) |
+| Change or review repository layout, modular-monolith modules, dependency direction, composition roots, or deployment shape | [ARCHITECTURE.md](ARCHITECTURE.md), [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2), and the [platform tree guide](../platform/README.md) |
 | Review the implemented boundary that keeps A12-specific production decisions outside the MIT products | [A12 add-on boundary specification](A12-ADD-ON-BOUNDARY-SPEC.md), [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division), and [PLAN.md](PLAN.md) |
 | Review the BPM platform's initial contract and broader competitive growth horizon | [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md), [competitive landscape dossier](research/ENTERPRISE-PROCESS-ORCHESTRATION-COMPETITIVE-LANDSCAPE-RESEARCH.md), [competitive scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md), and [platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md) |
 | Review compositional BPMN source admission and lowering | [Profile-parameterized admission specification](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), [archived compositional BPMN admission proposal](archived/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md), [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [Semantic Process IL specification](SEMANTIC-PROCESS-IL-SPEC.md), and [checked-source experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) |
@@ -115,6 +116,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 | [experiments/TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md](experiments/TEMPORAL-PRODUCTION-LIFECYCLE-EXPERIMENT.md) | Adapter contributors and owner; executable Worker-restart, retained-Update-result, closed-command, Workflow-ID-reuse, replay, and identity-separation discriminator |
 | [experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) | Semantic architects and owner; direct checked-graph token-game account, fixture-coincidental positional-lowering discriminator, and precise unresolved correspondence boundary |
 | [PROJECT-DESIGN.md](PROJECT-DESIGN.md) | Contributors and stakeholders; durable mission, BPMN-core/CIB-overlay/A12-adoption layering, authority and assurance roles, Lean value and limits, interpreter architecture, pre-release evolution policy, engine-runner boundary, and capsule success criteria |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Platform and engine contributors; concrete repository layout, modular-monolith shape, module and foundation ownership, dependency direction, deployment composition, Worker placement, and architecture decision register |
 | [archived/MILESTONE-0-FAST-PIPELINE-PROPOSAL.md](archived/MILESTONE-0-FAST-PIPELINE-PROPOSAL.md) | Archived first walking-skeleton proposal; historical scope, contracts, budgets, work packages, and decisions whose current consequences live elsewhere |
 | [archived/README.md](archived/README.md) | Contributors and researchers; registry and authority boundary for resolved, superseded, or parked documentation |
 | [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) | Maintainers and reviewers; exact live implementation, proof, and evidence status |
@@ -127,12 +129,13 @@ This is the sole documentation registry for the project. It identifies the purpo
 
 The [profile artifact root](../profiles/README.md) and [scenario artifact root](../scenarios/README.md) explain artifact lifecycle, the draft profile boundary, and the calibrated neutral scenario.
 
-When a fact is useful elsewhere, link to its owner and add only the local consequence. Exact current status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](PLAN.md), durable project boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), and provenance in [SOURCES.md](SOURCES.md).
+When a fact is useful elsewhere, link to its owner and add only the local consequence. Exact current status belongs in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](PLAN.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture in [ARCHITECTURE.md](ARCHITECTURE.md), and provenance in [SOURCES.md](SOURCES.md).
 
 ## Placement rules
 
 - Apply [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) before adding, naming, graduating, moving, archiving, or deleting a document.
 - Put stable mission, authority, and approved boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md).
+- Put concrete repository layout, package ownership, dependency direction, composition roots, deployment shape, and architecture decisions in [ARCHITECTURE.md](ARCHITECTURE.md).
 - Put reviewed BPMN Process Execution requirement dispositions in [BPMN-REQUIREMENT-LEDGER.md](BPMN-REQUIREMENT-LEDGER.md).
 - Put every reviewed CIB agreement, operational detail, interpretation, extension, configuration dependency, limitation, or deviation relative to BPMN in [CIB-BPMN-RELATION-REGISTER.md](CIB-BPMN-RELATION-REGISTER.md).
 - Put exact downstream A12 model, delegate, façade, blueprint, and migration-adoption coverage in [research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md).

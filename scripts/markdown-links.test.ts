@@ -280,6 +280,7 @@ test("keeps maintained documentation indexed and role-named", async () => {
   assert.deepEqual(unindexedFiles, []);
 
   const reservedSingletons = new Set([
+    "ARCHITECTURE.md",
     "DOC-DISCIPLINE.md",
     "PLAN.md",
     "PROJECT-DESIGN.md",
@@ -337,6 +338,7 @@ test("documents the exact suffixless singleton exceptions", async () => {
     .map((match) => match[1])
     .sort();
   assert.deepEqual(documented, [
+    "ARCHITECTURE.md",
     "DOC-DISCIPLINE.md",
     "PLAN.md",
     "PROJECT-DESIGN.md",

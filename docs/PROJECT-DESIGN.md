@@ -6,7 +6,7 @@ Build a Temporal-hosted BPMN 2.0.2 execution engine that imports Process diagram
 
 CIB Seven compatibility is a versioned overlay on that BPMN engine. It selects and classifies CIB interpretations, extensions, configuration-specific realizations, limitations, and evidenced deviations without allowing CIB host mechanisms to define the vendor-neutral BPMN core.
 
-The distinguishing claim is that the BPMN meaning underneath the platform is machine-checked in Lean rather than asserted, and that the platform inherits that assurance because it consumes the engine's published contract instead of reconstructing semantic facts. [The product division](#product-division) states the boundary that claim depends on, and [the assurance-lane rule](#lean-assurance-lane) states how the Lean investment is allocated as breadth grows.
+The distinguishing claim is that the BPMN meaning underneath the platform is machine-checked in Lean rather than asserted, and that the platform inherits that assurance because it consumes the engine's published contract instead of reconstructing semantic facts. [The product division](#product-division) states the boundary that claim depends on, [the assurance-lane rule](#lean-assurance-lane) states how the Lean investment is allocated as breadth grows, and [ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete repository and modular-monolith realization of those decisions.
 
 The project pursues these goals through four assurance and execution components:
 
@@ -35,22 +35,21 @@ Products 1 and 2 share this repository. A change to a published observation ripp
 
 Product 3 is separate for the opposite reason: it is another organization's product under a reciprocal license, so its boundary is a distribution boundary rather than a change-coordination one.
 
-The engine keeps its existing paths and the platform is added as a sibling tree, so no guard search term, documentation link, or registry entry moves:
+The engine keeps its existing paths and the platform is added as a sibling tree:
 
 ```text
-packages/            product 1, published:  bpmn-source, semantic-core, temporal-adapter, differential
-BpmnSemantics/       product 1, Lean
-runners/cibseven/    product 1, oracle
-profiles/ scenarios/ contracts/   product 1
+packages/                         product 1 TypeScript engine packages
+BpmnSemantics/                    product 1 Lean reference
+profiles/ scenarios/ contracts/   product 1 semantic artifacts
+runners/                          product 1 external-oracle adapters
 
-platform/            product 2
-runners/juel/        product 2, JVM Activity Worker
-showcase/            product 2, milestone demonstrations that are also its exit gates
+platform/                         product 2 modular monolith and production Workers
+showcase/                         product 2 milestone acceptance gates
 ```
 
-**No part of the platform tree exists yet**; [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns that boundary. The rules below are obligations on the first platform increment, not descriptions of a present mechanism.
+[ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete application, contract, foundation, business-module, UI, Worker, and showcase layout. [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) records which of those locations and mechanisms exist. This document does not duplicate the package tree because it owns the product boundary and rationale rather than implementation structure.
 
-Because the repository wall is gone, the boundary must be executable instead. An owned guard must fail when an engine tree references `platform/` or `runners/juel/`; when a platform package deep-imports an engine internal path instead of its public entry point; and when a platform package imports Temporal Event History APIs at all, because deriving a BPMN fact from Event History is the precise forbidden move and banning the import makes it checkable rather than aspirational. The engine's complete gate must additionally keep passing without building any platform package, which is what demonstrates that the engine remains self-contained.
+Because the repository wall is gone, the boundary must be executable instead. An owned guard must fail when a product-1 tree references `platform/`; when a platform package deep-imports an engine internal path instead of its public entry point; when a platform package imports Temporal Event History APIs at all; and when a production JUEL Worker appears under the external-oracle `runners/` tree. The engine's complete gate must additionally keep passing without building any platform package, which is what demonstrates that the engine remains self-contained.
 
 Sharing the tree also makes one check possible that separate repositories would not: for every registered scenario, the platform's projected task set must equal the engine's published open User Tasks, and its projected history must be complete with respect to the engine's committed transition records. That turns "the platform reconstructs no semantic fact" from a rule into a test.
 
@@ -96,7 +95,7 @@ Consumption is not the only direction. The platform additionally **hosts** engin
 
 Because the two products share a tree, the platform will link engine packages through the workspace, which is what makes the atomic cross-layer change above possible; the boundary is therefore to be held by the executable guard and those narrowed entry points, not by a distribution step.
 
-Each surface additionally splits into a service, a public HTTP API over it, and a client. **The platform's own UI must consume only that public API and may not import a platform service package.** The reason is evidential rather than stylistic: the UI is the most demanding client the platform has, so a guarded UI passing demonstrates the API is sufficient for an adopter who builds their own front end. Without it, such an adopter discovers the API's gaps only after committing to it, and the platform's claim to be adoptable at the API is untested.
+Each surface additionally splits into a service, a public HTTP API over it, and a client. [ARCHITECTURE.md](ARCHITECTURE.md#product-2-dependency-direction) owns the package realization. **The platform's own UI must consume only that public API and may not import a platform service package.** The reason is evidential rather than stylistic: the UI is the most demanding client the platform has, so a guarded UI passing demonstrates the API is sufficient for an adopter who builds their own front end. Without it, such an adopter discovers the API's gaps only after committing to it, and the platform's claim to be adoptable at the API is untested.
 
 Two rules make the assurance claim transferable, and without both of them it is false:
 

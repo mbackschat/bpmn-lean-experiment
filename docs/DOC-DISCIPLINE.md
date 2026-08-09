@@ -52,6 +52,7 @@ An approved proposal remains a proposal until its contract is implemented. “Ap
 The following names identify repository-wide owners and do not require another suffix:
 
 - `README.md` — navigation and project front door;
+- `ARCHITECTURE.md` — concrete repository layout, package dependency direction, deployment shape, and architecture decision register;
 - `PROJECT-DESIGN.md` — the durable architectural argument and decision model;
 - `PLAN.md` — current ordered work, blockers, and exact resume point;
 - `CAPSULE-COST-LEDGER.md` — retained commit-bounded capsule and enabling-increment measurements;
@@ -67,6 +68,7 @@ Directory `README.md` files are registries or local entry points, not independen
 The executable filename guard permits exactly these suffixless names under `docs/`; the longer list above also names singleton owners whose filenames already satisfy the role grammar or live at repository root:
 
 - `README.md`;
+- `ARCHITECTURE.md`;
 - `PROJECT-DESIGN.md`;
 - `PLAN.md`;
 - `SOURCES.md`;
@@ -110,7 +112,8 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 
 | Information | Owner role |
 |---|---|
-| Project mission, authority, and durable architecture | `PROJECT-DESIGN.md` |
+| Project mission, authority, and durable product or semantic boundaries | `PROJECT-DESIGN.md` |
+| Concrete repository layout, module ownership, dependency direction, and deployment shape | `ARCHITECTURE.md` |
 | Implemented semantic feature contract | capsule `-SPEC.md` |
 | Approved but unimplemented semantic feature | capsule `-PROPOSAL.md` |
 | Checked graph and Semantic Process IL before implementation | `SEMANTIC-PROCESS-IL-SPEC.md` |
@@ -132,7 +135,7 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 
 - Adding, renaming, moving, graduating, archiving, or deleting a document requires updating [the documentation registry](README.md), every inbound relative link, `CLAUDE.md` routing when applicable, and the repository link guard in the same change.
 - A semantic implementation changes its capsule spec or graduates its proposal in the same change.
-- A structural architecture change updates [PROJECT-DESIGN.md](PROJECT-DESIGN.md) without adding roadmap or transient status there.
+- A structural implementation-architecture change updates [ARCHITECTURE.md](ARCHITECTURE.md); a change to the mission, authority, or durable product and semantic boundaries additionally updates [PROJECT-DESIGN.md](PROJECT-DESIGN.md). Neither receives roadmap or transient status.
 - A new external finding updates its owning research document and [SOURCES.md](SOURCES.md) when provenance changes.
 - A new experiment records its question, competing accounts, separating witness, result, and disposition; an experiment never becomes semantic authority merely by passing.
 - A changed gate updates [TESTING-SPEC.md](TESTING-SPEC.md); the last verified command and exact next action update [PLAN.md](PLAN.md).
@@ -149,7 +152,7 @@ Match a document's length to the substance its owner actually holds. Do not pad 
 
 Use regular relative Markdown links for project documents. Do not duplicate an owned fact merely to avoid a link.
 
-When a fact genuinely must appear in two owners, the change that creates the second copy adds an executable check that fails when the copies disagree. A claim written about a referent without reading that referent is the mechanism behind both rejected closure targets recorded in this repository, and a copy nobody compares is the same defect waiting on a reader who does not check.
+When a fact genuinely must appear in two owners, the change that creates the second copy adds an executable check that fails when the copies disagree. A claim written about a referent without reading that referent is the mechanism behind both rejected closure targets recorded in this repository, and a copy nobody compares is the same defect waiting on a reader who does not check. Project boundaries belong in [PROJECT-DESIGN.md](PROJECT-DESIGN.md); their concrete package realization belongs in [ARCHITECTURE.md](ARCHITECTURE.md), which links to those boundaries instead of restating their rationale.
 
 Write documents as current contracts or arguments, not changelogs. Preserve historical rationale only where it remains useful; keep volatile disposition in [PLAN.md](PLAN.md), a `-GAPS` document, or an archived proposal.
 
