@@ -4,7 +4,7 @@ This document owns the current checkpoint, ordered next work, unresolved decisio
 
 ## Current checkpoint
 
-**Two MIT products are now separated.** The BPMN execution engine is implemented across twenty-plus closed semantic capsules; the [BPM platform](BPM-PLATFORM-PROPOSAL.md) is owner-approved as a contract and has its [modular-monolith architecture](ARCHITECTURE.md), guarded package dependency direction, narrow compilation gateway, exact content-addressed artifact store, public definition contract, and durable definitions module. It has no HTTP or end-to-end product capability yet. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division) owns the division and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact implemented and absent boundary for both.
+**Two MIT products are now separated.** The BPMN execution engine is implemented across twenty-plus closed semantic capsules; the [BPM platform](BPM-PLATFORM-PROPOSAL.md) is owner-approved as a contract and has its [modular-monolith architecture](ARCHITECTURE.md), guarded package dependency direction, narrow compilation gateway, exact content-addressed artifact store, public definition contract, durable definitions module, public definition HTTP routes, and Node server composition root. It has no complete end-to-end product capability yet. [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division) owns the division and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns the exact implemented and absent boundary for both.
 
 **The engine executes a bounded but broad slice.** Exact BPMN bytes admit through a checked project-owned graph to the Semantic Process IL, which Lean and an independently written TypeScript semantic core each evaluate, and which Temporal hosts durably. Closed families include Parallel fork/join, Exclusive Gateway with a project-owned Boolean expression language, Inclusive and Event-Based Gateways, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, User Task completion data, and three boundary-Timer loci including the non-interrupting one. Each capsule owns its own meaning, laws, and exclusions.
 
@@ -30,11 +30,11 @@ The [Temporal engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md) over the registered 
 
 ### M1 — a third party deploys their own BPMN file
 
-**Status: in progress.** The engine admission slice, narrow compilation gateway, exact artifact byte store, strict public definition contract, and durable per-process versioning workflow are implemented. The public API, diagram rendering, start boundary, and React client are absent, so the milestone has not reached its exit gate.
+**Status: in progress.** The engine admission slice, narrow compilation gateway, exact artifact byte store, strict public definition contract, durable per-process versioning workflow, public definition API, and server composition are implemented. Diagram rendering, the start boundary, and the React client are absent, so the milestone has not reached its exit gate.
 
 **Demo.** Someone who is not us uploads BPMN bytes we have never seen, receives an honest per-element admission verdict, and starts an instance when the file is admitted.
 
-This is the owner's original acceptance condition. Its engine admission prerequisite is now closed: the preserve-enabled profile admits the selected modeler notation without executing it and reports each refused element. Product 2 now compiles exact uploaded bytes without receiving private engine representations, stores exact digest-bound bytes without replacement, and assigns durable monotonic versions within each process ID. The complete condition remains unreachable because rendering, the public API, start, and the client are not composed.
+This is the owner's original acceptance condition. Its engine admission prerequisite is now closed: the preserve-enabled profile admits the selected modeler notation without executing it and reports each refused element. Product 2 now receives exact uploaded bytes through its public API, compiles them without receiving private engine representations, stores exact digest-bound bytes without replacement, assigns durable monotonic versions within each process ID, and returns public diagnostics and exact source. The complete condition remains unreachable because rendering, start, and the client are not composed.
 
 **Engine capsules.** Preserve-only admission, splitting parsed material into executed, preserved, and rejected as [the minimal-engine research](research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md) recommends; multi-root definitions with explicit executable-root selection; per-element rejection diagnostics carrying element identity and reason.
 
@@ -140,7 +140,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **In progress: complete the open M1 platform increments.** Expose the implemented definition deployment, listing, diagnostics, and source retrieval through the public HTTP API, then add the start boundary, viewer-only diagram rendering, and the React client. Close M1 only when its registered showcase exit gate proves an externally supplied file is admitted, stored, versioned, rendered, and started while an unsupported file is rejected before Workflow start with its element identity.
+1. **In progress: complete the open M1 platform increments.** The public definition API now exposes deployment, listing, diagnostics, and exact source retrieval. Add the start boundary, viewer-only diagram rendering, and the React client. Close M1 only when its registered showcase exit gate proves an externally supplied file is admitted, stored, versioned, rendered, and started while an unsupported file is rejected before Workflow start with its element identity.
 2. **Then: continue the remaining BPMN breadth queue.** After M1 closes, continue the exhaustive requirement denominator and select subsequent capsules by reusable Process Execution leverage, using CIB breadth and A12 prevalence only to order equal-value candidates, and [the showcase milestone ladder](#showcase-milestone-ladder) to break the remaining ties.
 
 ## Approved decisions
