@@ -13,4 +13,8 @@ Run the API and web client in separate terminals:
 ./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1
 ```
 
-The development server proxies `/api` to `http://127.0.0.1:3000`. Build and test the distribution with `./scripts/pnpm.sh run test:platform-web`. See [the architecture](../../../docs/ARCHITECTURE.md#user-interface) and [the platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md#api-first-architecture) for the durable boundary.
+The development server proxies `/api` to `http://127.0.0.1:3000`; `PLATFORM_API_ORIGIN` may select another local API origin for isolated automation. Build and test the distribution with `./scripts/pnpm.sh run test:platform-web`.
+
+The required browser acceptance is headless Chromium through development-only Playwright. Install its pinned browser once with `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec playwright install chromium`, then run `./scripts/pnpm.sh run test:platform-web:e2e`. The test starts isolated API and Vite servers, creates exact BPMN bytes at runtime, and verifies admission, versioning, rendering, attribution, and rejection without using a registered scenario fixture. CI installs Chromium with its Linux host libraries and runs the same command; Playwright and its browser are absent from the production dependency graph and static distribution.
+
+See [the architecture](../../../docs/ARCHITECTURE.md#user-interface) and [the platform proposal](../../../docs/BPM-PLATFORM-PROPOSAL.md#api-first-architecture) for the durable boundary.

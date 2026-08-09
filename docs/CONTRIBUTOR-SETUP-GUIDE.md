@@ -21,6 +21,15 @@ nvm use
 
 The setup script is intentionally narrower than a machine package installer. Install the prerequisites listed in the top-level [README](../README.md) with the operating system's normal package manager, then let the script provision only content whose exact identity this repository owns.
 
+M1 browser acceptance additionally needs the development-only Chromium revision pinned by Playwright. It is not a production or engine prerequisite. Install it after the frozen workspace install, then run the required browser gate:
+
+```sh
+./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec playwright install chromium
+./scripts/pnpm.sh run test:platform-web:e2e
+```
+
+Hosted Linux CI uses `playwright install --with-deps chromium` to provision both that browser revision and its image-specific shared libraries before running the same acceptance command. The Playwright packages, browser binary, and host libraries do not enter the static web distribution or reachable production package graph.
+
 Tokei-backed README statistics are a maintainer-only publication aid. Tokei is available only on the maintainer's machine and is not required by contributor setup, hooks, normal builds, tests, or CI.
 
 ## Provisioning scopes

@@ -47,6 +47,7 @@
     "test:platform-m1": "pnpm test:platform-policy && pnpm test:platform-foundation && pnpm --filter @bpmn-lean/platform-contracts test && pnpm --filter @bpmn-lean/platform-definitions test && pnpm test:platform-server && pnpm test:platform-web",
     "test:platform-policy": "pnpm check:platform-harness-types && node --test --test-concurrency=1 scripts/*.platform-test.ts",
     "test:platform-server": "pnpm build:platform-server && node --test --test-concurrency=1 platform/apps/server/test/*.test.ts",
+    "test:platform-web:e2e": "pnpm --filter @bpmn-lean/platform-web test:e2e",
     "test:platform-web": "pnpm --filter @bpmn-lean/platform-web test",
     "test:platform-engine-gateway": "pnpm build:platform-engine-gateway && node --test --test-concurrency=1 packages/engine-api/test/*.test.ts platform/foundation/engine-gateway/test/*.test.ts",
     "test:semantic-core": "tsc -p packages/semantic-core/tsconfig.json && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",

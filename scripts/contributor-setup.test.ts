@@ -109,6 +109,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     guide,
     readme,
     packageManifest,
+    webPackageManifest,
     caches,
     mavenWrapperProperties,
   ] =
@@ -124,6 +125,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       readFile(path.join(projectRoot, "docs/CONTRIBUTOR-SETUP-GUIDE.md"), "utf8"),
       readFile(path.join(projectRoot, "README.md"), "utf8"),
       readFile(path.join(projectRoot, "package.json"), "utf8"),
+      readFile(path.join(projectRoot, "platform/apps/web/package.json"), "utf8"),
       readFile(path.join(projectRoot, "scripts/workspace-cache.lock"), "utf8"),
       readFile(path.join(projectRoot, "runners/cibseven/.mvn/wrapper/maven-wrapper.properties"), "utf8"),
     ]);
@@ -164,6 +166,9 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(packageManifest, /"test:a12-adoption"/u);
   assert.match(corpusFetch, /mktemp -d "\$corpus_parent\/\.bpmn-corpus-fetch\.XXXXXX"/u);
   assert.match(workflow, /setup-external-sources\.sh verify/u);
+  assert.match(workflow, /playwright install --with-deps chromium/u);
+  assert.match(workflow, /test:platform-web:e2e/u);
+  assert.match(workflow, /if: runner\.os == 'Linux'/u);
   // The corpus cache path is written as an expression, so the relative-segment guard below can
   // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
   // actions/cache requires; without it the expansion reintroduces the segment the guard rejects.
@@ -172,6 +177,16 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(guide, /doctor\.sh research/u);
   assert.match(guide, /workspace meta-repository/u);
   assert.match(readme, /CONTRIBUTOR-SETUP-GUIDE\.md/u);
+  assert.match(readme, /test:platform-web:e2e/u);
+  assert.match(guide, /playwright install chromium/u);
+  assert.match(guide, /test:platform-web:e2e/u);
+  assert.match(packageManifest, /"test:platform-web:e2e"/u);
+  const webManifest = JSON.parse(webPackageManifest) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  assert.equal(webManifest.dependencies?.["@playwright/test"], undefined);
+  assert.equal(webManifest.devDependencies?.["@playwright/test"], "1.62.1");
   assert.match(
     mavenWrapperProperties,
     /^distributionSha256Sum=2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a$/mu,
@@ -202,6 +217,8 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(caches, /^cache\t\.cache\/temporal-cli\tTemporal CLI v1\.8\.1$/mu);
   assert.match(caches, /^cache\t\.cache\/temporal-test-server\tTemporal SDK 1\.21\.0 test server$/mu);
   assert.match(caches, /^external-cache\t\$MAVEN_USER_HOME\/repository\tMaven artifact repository$/mu);
+  assert.match(caches, /^external-cache\t\$PLAYWRIGHT_BROWSERS_PATH\tPlaywright 1\.62\.1 Chromium test browser$/mu);
+  assert.match(doctor, /\$PLAYWRIGHT_BROWSERS_PATH\) material_path="\$playwright_browsers_path"/u);
   assert.deepEqual(
     caches.split("\n")
       .filter((line) => line.length > 0 && !line.startsWith("#"))
@@ -222,6 +239,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       "packages/temporal-adapter/dist",
       "$MAVEN_USER_HOME/repository",
       "$MAVEN_USER_HOME/wrapper/dists",
+      "$PLAYWRIGHT_BROWSERS_PATH",
       "$BPMN_EXTERNAL_ROOT/omg-bpmn-2.0.2/BPMN-2.0.2.md",
       "$BPMN_EXTERNAL_ROOT/omg-bpmn-2.0.2/BPMN-2_0_2_images",
     ],

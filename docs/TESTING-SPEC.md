@@ -79,6 +79,7 @@ git diff --check
 | Product boundary or platform package dependency direction | `node --test scripts/platform-product-boundary.test.ts` plus the owning package gate |
 | M1 engine gateway or platform foundation storage | `./scripts/pnpm.sh run test:platform-foundation` |
 | M1 public definition contract, deployment/versioning module, HTTP route, server composition, resolved dependency policy, or platform harness | `./scripts/pnpm.sh run test:platform-m1` |
+| M1 browser upload, versioning, exact-source rendering, attribution, or rejection acceptance | `./scripts/pnpm.sh run test:platform-web:e2e` after installing the pinned Playwright Chromium |
 | Scripts, documentation fragments, and pre-release architecture guards | `./scripts/pnpm.sh run test:infrastructure` (strict harness types plus runtime tests) |
 | Provisional representation experiment | `./scripts/lake.sh build checkSemanticRepresentationSpike && ./scripts/lake.sh exe checkSemanticRepresentationSpike` |
 | Checked-source relation experiment | `./scripts/lake.sh build checkCheckedSourceRelationExperiment && ./scripts/lake.sh exe checkCheckedSourceRelationExperiment` |
@@ -428,7 +429,7 @@ The warm soft target is 15 seconds after prepared builds and the hard ceiling is
 
 ## Continuous integration
 
-[The verification workflow](../.github/workflows/verify.yml) runs `./scripts/verify.sh` on `ubuntu-latest` and `macos-latest` with the repository-pinned Node and pnpm versions, Java 21, and the Lean toolchain selected by `lean-toolchain`. It installs the frozen pnpm lockfile and relies on the Maven wrapper and Temporal test environment for their pinned artifacts.
+[The verification workflow](../.github/workflows/verify.yml) runs `./scripts/verify.sh` on `ubuntu-latest` and `macos-latest` with the repository-pinned Node and pnpm versions, Java 21, and the Lean toolchain selected by `lean-toolchain`. It installs the frozen pnpm lockfile and relies on the Maven wrapper and Temporal test environment for their pinned artifacts. The Linux matrix leg also installs Playwright's pinned Chromium and its host libraries, then runs the required M1 browser acceptance. One required Chromium leg provides the same browser-product evidence without downloading the large test-only binary twice; the stable `verify-complete` result still fails if that leg fails.
 
 The prepared-pipeline warm ceiling remains a hard assertion on both CI operating systems, and the 15-second soft target remains reported rather than asserted. Dependency installation and compilation occur before the prepared pipeline measurement, so runner provisioning does not consume that budget. The 45-second cold budget remains a measured local `test:pipeline` assertion and is not reported as zero in prepared CI mode. If a hosted runner repeatedly exceeds the warm budget, treat that as evidence to classify runner variance or optimize the gate; changing, suppressing, or conditionally weakening either budget requires an explicit owner decision.
 

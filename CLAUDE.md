@@ -381,6 +381,12 @@ Complete implemented M1 platform-package gate:
 
 This platform-only gate uses `tsconfig.platform-harness.json`; the default engine harness excludes `platform/` and `*.platform-test.ts`, so complete engine verification remains independent of platform package builds.
 
+Required M1 headless-browser acceptance after installing Playwright's pinned Chromium:
+
+```sh
+./scripts/pnpm.sh run test:platform-web:e2e
+```
+
 Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:
 
 ```sh

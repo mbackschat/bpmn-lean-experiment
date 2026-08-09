@@ -87,11 +87,12 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - The HTTP-only `@bpmn-lean/platform-web` React 19.2.8 definition workspace, with exact upload, strict public response decoding, accepted and rejected diagnostics, catalog and version browsing, digest/length/ETag-verified exact-source retrieval, and no server/module/foundation import
 - The owner-approved `bpmn-js` 18.22.1 viewer-only adapter, whose exact non-standard license text is hash-bound to its package identity, copied into the static distribution, and accompanied by an unchanged visible bpmn.io attribution link
 - Development-only Vite 7.3.6 and React declaration packages for the static build and strict type gate; no build tool enters the reachable production graph
+- Development-only Playwright 1.62.1 browser acceptance over its pinned headless Chromium, creating unseen exact BPMN bytes at runtime and checking admitted version 1, changed version 2, exact-source `bpmn-js` rendering and attribution, plus located rejection without version advancement; CI provisions and runs this required lane on Linux without adding any production dependency
 - A separate strict no-emit platform harness and generated-output import guard, with planted clean-checkout counterexamples, so the composed M1 gate runs in CI before the platform-independent engine gate without making `verify.sh` build the platform tree
 
 #### Explicitly absent
 
-- The narrowed start boundary, executable M1 showcase, and required headless-browser acceptance gate
+- The narrowed start boundary and executable M1 showcase
 - the transition-record projection, every read model, and cross-instance discovery
 - task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity and authorization

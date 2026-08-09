@@ -17,6 +17,13 @@ project_root=$(CDPATH= cd "$script_dir/.." && pwd)
 eval "$("$script_dir/pinned-toolchain.sh")"
 external_root=${BPMN_EXTERNAL_ROOT:-"$project_root/../oss"}
 maven_user_home=${MAVEN_USER_HOME:-"$HOME/.m2"}
+if test -n "${PLAYWRIGHT_BROWSERS_PATH:-}"; then
+  playwright_browsers_path=$PLAYWRIGHT_BROWSERS_PATH
+elif test "$(uname -s)" = "Darwin"; then
+  playwright_browsers_path="$HOME/Library/Caches/ms-playwright"
+else
+  playwright_browsers_path="$HOME/.cache/ms-playwright"
+fi
 cache_lock="$script_dir/workspace-cache.lock"
 doctor_failed=0
 
@@ -110,6 +117,7 @@ while IFS="	" read -r material_role declared_path material_owner; do
   esac
   case "$declared_path" in
     \$MAVEN_USER_HOME/*) material_path="$maven_user_home/${declared_path#\$MAVEN_USER_HOME/}" ;;
+    \$PLAYWRIGHT_BROWSERS_PATH) material_path="$playwright_browsers_path" ;;
     \$BPMN_EXTERNAL_ROOT/*) material_path="$external_root/${declared_path#\$BPMN_EXTERNAL_ROOT/}" ;;
     *) material_path="$project_root/$declared_path" ;;
   esac

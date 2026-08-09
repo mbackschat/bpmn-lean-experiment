@@ -1,5 +1,6 @@
 /.lake
 /.cache
+/.data/
 /.uv-cache
 node_modules/
 /.pnpm-store
@@ -9,6 +10,8 @@ node_modules/
 /platform/*/*/dist
 /showcase/*/dist
 /coverage
+**/playwright-report/
+**/test-results/
 **/target/
 .DS_Store
 .env

@@ -134,6 +134,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Charting | Hand-rolled SVG first; a dependency-free library if that proves insufficient | **Open decision** |
 | Live updates | HTTP long-polling on the Temporal pattern, no WebSockets or server-sent events | Proposed |
 | HTTP surface | Fetch-compatible module routes behind the built-in Node HTTP server; deployment uses one bounded raw XML body | Implemented for M1 without an external dependency |
+| Browser acceptance | Playwright 1.62.1 with its pinned Chromium | Owner-approved and implemented 2026-08-09 as development/CI-only evidence |
 
 ### Approval record for the selected four
 
@@ -157,6 +158,10 @@ The two React runtime roots add exactly three MIT identities to that graph: Reac
 The owner approved `bpmn-js` 18.22.1 on 2026-08-09 after comparing it with the Apache-2.0 `bpmn-visualization` alternative. The platform accepts the bpmn.io license condition: the supplied watermark remains unchanged, fully visible, linked to bpmn.io, and unobstructed. The exact dependency license is retained under the web application and hash-bound to the package identity by the executable dependency policy.
 
 The real pnpm workspace resolution for the implemented web application contains exactly 23 reachable production package identities: 20 MIT, 1 Apache-2.0, 1 ISC, and `bpmn-js` under the approved `LicenseRef-bpmn.io` text. The renderer is confined to the web viewer adapter, consumes exact source returned by the public API, and has no authority over admission or BPMN meaning. Removal cost is medium: replace that adapter and its overlay integration without changing the server, engine, source identity, or public contract.
+
+### Approval record for Playwright
+
+The owner approved the exact development-only browser-test set on 2026-08-09: direct `@playwright/test@1.62.1`, transitive `playwright@1.62.1` and `playwright-core@1.62.1`, optional macOS `fsevents@2.3.2`, and the Chromium revision selected by that Playwright release. The packages, browser binary, and Linux host libraries are test inputs only. They do not enter the static web distribution or the platform's reachable production dependency graph. CI runs one required Chromium acceptance leg that exercises a runtime-created third-party source through upload, admission, durable versions, exact-source diagram rendering, bpmn.io attribution, and located rejection.
 
 ## Implementation architecture
 

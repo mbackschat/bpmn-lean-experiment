@@ -14,5 +14,6 @@ cache	packages/semantic-core/dist	packages/semantic-core/tsconfig.json
 cache	packages/temporal-adapter/dist	packages/temporal-adapter/tsconfig.json
 external-cache	$MAVEN_USER_HOME/repository	Maven artifact repository
 external-cache	$MAVEN_USER_HOME/wrapper/dists	Maven wrapper distributions
+external-cache	$PLAYWRIGHT_BROWSERS_PATH	Playwright 1.62.1 Chromium test browser
 external-cache	$BPMN_EXTERNAL_ROOT/omg-bpmn-2.0.2/BPMN-2.0.2.md	optional generated BPMN Markdown conversion
 external-cache	$BPMN_EXTERNAL_ROOT/omg-bpmn-2.0.2/BPMN-2_0_2_images	optional generated BPMN figure extraction
