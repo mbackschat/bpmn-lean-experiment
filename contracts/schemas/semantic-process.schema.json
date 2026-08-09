@@ -775,7 +775,7 @@
       ],
       "properties": {
         "code": {
-          "const": "LinkLimitReachedError"
+          "$ref": "#/$defs/nonemptyString"
         },
         "output": {
           "$ref": "#/$defs/nonemptyString"
@@ -795,16 +795,16 @@
               "const": "bpmnElement"
             },
             "boundaryEventId": {
-              "const": "BoundaryEvent_LinkLimitReached"
+              "$ref": "#/$defs/nonemptyString"
             },
             "errorDefinitionId": {
-              "const": "ErrorEventDefinition_LinkLimitReached"
+              "$ref": "#/$defs/nonemptyString"
             },
             "errorElementId": {
-              "const": "Error_LinkLimitReached"
+              "$ref": "#/$defs/nonemptyString"
             },
             "sequenceFlowId": {
-              "const": "Flow_ErrorToUserTask"
+              "$ref": "#/$defs/nonemptyString"
             }
           }
         }

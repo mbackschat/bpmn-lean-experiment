@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   BpmnCompilationStatus,
@@ -14,10 +15,13 @@ import type {
   CheckedNode,
   SemanticOperation,
 } from "@bpmn-lean/semantic-core";
+import { verifyDefinitionArtifacts } from "../../../scripts/contract-artifacts.ts";
 import {
   compileSemanticProcessFixture,
   semanticProcessTestLimits as limits,
 } from "./semantic-process-compilation-test-support.ts";
+
+const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 function compileFixture(
   relativePath: string,
@@ -402,6 +406,12 @@ test("retains and lowers the exact mapped-boundary-Error route", async () => {
         sequenceFlowId: "Flow_ErrorToReviewMappedError",
       },
     },
+  );
+  await assert.doesNotReject(
+    verifyDefinitionArtifacts(projectRoot, {
+      checkedProcess: result.checkedProcess,
+      semanticProcess: result.semanticProcess,
+    }),
   );
 });
 

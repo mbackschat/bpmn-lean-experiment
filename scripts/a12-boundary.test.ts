@@ -14,6 +14,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
   assessA12Boundary,
+  deriveLegacyProductDecisions,
   externalCreateDocumentSha256,
   repositoryBoundaryFiles,
   verifyLegacyProductDecisionInventory,
@@ -71,6 +72,14 @@ test("rejects legacy A12 profile and business decisions across product roots", (
   assert.deepEqual(
     assessA12Boundary([
       {
+        path: "BpmnSemantics.lean",
+        bytes: Buffer.from('def profile := "A12BoundaryError"'),
+      },
+      {
+        path: "contracts/schemas/semantic-process.schema.json",
+        bytes: Buffer.from('{"const":"Error_LinkLimitReached"}'),
+      },
+      {
         path: "profiles/legacy/profile.json",
         bytes: Buffer.from(
           '{"id":"cibseven-2.0.0-a12-create-document-draft"}',
@@ -81,6 +90,10 @@ test("rejects legacy A12 profile and business decisions across product roots", (
         bytes: Buffer.from('const task = "CreateDocument";'),
       },
       {
+        path: "packages/bpmn-source/src/legacy-locus.ts",
+        bytes: Buffer.from('const locus = "a12-create-document-definitions-locus";'),
+      },
+      {
         path: "adoption/a12/legacy/profile.json",
         bytes: Buffer.from(
           '{"id":"cibseven-2.0.0-a12-create-document-draft"}',
@@ -88,9 +101,38 @@ test("rejects legacy A12 profile and business decisions across product roots", (
       },
     ]),
     [
+      "BpmnSemantics.lean: legacy A12 product decision A12",
+      "BpmnSemantics.lean: legacy A12 product decision A12BoundaryError",
+      "contracts/schemas/semantic-process.schema.json: legacy A12 product decision Error_LinkLimitReached",
+      "packages/bpmn-source/src/legacy-locus.ts: legacy A12 product decision a12-create-document-definitions-locus",
       "packages/bpmn-source/src/reader.ts: legacy A12 product decision CreateDocument",
       "profiles/legacy/profile.json: legacy A12 product decision cibseven-2.0.0-a12-create-document-draft",
     ],
+  );
+});
+
+test("binds the single legacy decision inventory to the immutable baseline", async () => {
+  const inventory = JSON.parse(
+    await readFile(
+      path.join(
+        projectRoot,
+        "adoption/a12/legacy/product-decision-inventory.json",
+      ),
+      "utf8",
+    ),
+  ) as { readonly sourceTarget: string; readonly decisions: ReadonlyArray<string> };
+  const source = await readFile(
+    path.join(projectRoot, "scripts/a12-boundary.ts"),
+    "utf8",
+  );
+
+  assert.doesNotMatch(
+    source,
+    /export const legacyProductDecisions\s*=\s*\[/u,
+  );
+  assert.deepEqual(
+    inventory.decisions,
+    await deriveLegacyProductDecisions(projectRoot),
   );
 });
 
@@ -119,6 +161,7 @@ test("rejects an add-on reader or adoption-root import in product compilation di
       },
     ]),
     [
+      "packages/bpmn-source/src/compilation-dispatch.ts: legacy A12 product decision A12",
       "packages/bpmn-source/src/compilation-dispatch.ts: legacy A12 product decision A12BoundaryError",
       "packages/semantic-core/src/index.ts: product dependency on the optional A12 adoption root",
     ],

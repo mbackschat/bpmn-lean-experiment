@@ -75,7 +75,6 @@
     "portable-physical-simultaneity-order",
     "coalesced-message-and-timer-readiness",
     "general-cancellation",
-    "a12-adoption-coverage",
     "bpmn-process-execution-conformance",
     "production-history-compatibility"
   ]

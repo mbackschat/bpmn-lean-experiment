@@ -65,7 +65,6 @@
     "mixed-exclusive-gateway",
     "branch-tail-merge",
     "loops",
-    "parallel-interaction",
-    "a12-adoption-coverage"
+    "parallel-interaction"
   ]
 }

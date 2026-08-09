@@ -77,7 +77,6 @@
     "gateways",
     "variables",
     "expressions",
-    "vendor-extensions",
-    "a12-adoption-coverage"
+    "vendor-extensions"
   ]
 }

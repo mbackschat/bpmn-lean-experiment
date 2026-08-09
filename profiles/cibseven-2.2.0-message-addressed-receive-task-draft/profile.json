@@ -75,7 +75,6 @@
     "multi-instance",
     "subprocesses",
     "cancellation",
-    "concurrent-commands",
-    "a12-adoption-coverage"
+    "concurrent-commands"
   ]
 }

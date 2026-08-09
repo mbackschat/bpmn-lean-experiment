@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { lstat, readFile, readlink } from "node:fs/promises";
-import { isDeepStrictEqual } from "node:util";
 import path from "node:path";
 
 export const externalCreateDocumentSha256 =
@@ -48,6 +47,7 @@ const lowerSemanticRoots = [
 
 const productDecisionRoots = [
   "BpmnSemantics/",
+  "contracts/",
   "examples/",
   "packages/",
   "profiles/",
@@ -55,49 +55,94 @@ const productDecisionRoots = [
   "scenarios/",
 ];
 
+const productDecisionFiles = new Set(["BpmnSemantics.lean"]);
+
 const optionalAdoptionRoots = [
   "adoption/a12/",
   "packages/bpmn-source/calibration/",
-];
-
-/** Exact legacy decisions that may survive only as optional adoption evidence. */
-export const legacyProductDecisions = [
-  ["cibseven-2.0.0-a12-create-", "document-draft"].join(""),
-  ["cibseven-2.0.0-a12-boundary-", "error-draft"].join(""),
-  ["a12-create-document-string-success-", "calibration-only"].join(""),
-  ["a12-boundary-error-exact-catch-", "calibration-only"].join(""),
-  ["urn:bpmn-lean:a12-delegate:", "v1"].join(""),
-  ["urn:bpmn-lean:a12:create-", "document"].join(""),
-  ["create", "DocumentDelegate"].join(""),
-  ["createRelationship", "LinkDelegate"].join(""),
-  ["A12Create", "Document"].join(""),
-  ["a12Create", "Document"].join(""),
-  ["A12Boundary", "Error"].join(""),
-  ["a12Boundary", "Error"].join(""),
-  ["Create", "Document"].join(""),
-  ["createDocumentDelegate", "Template"].join(""),
-  ["documentModel", "Name"].join(""),
-  ["MyDocument", "Model"].join(""),
-  ["myDocument", "Reference"].join(""),
-  ["newDoc", "Ref"].join(""),
-  ["CreateRelationship", "LinkTask"].join(""),
-  ["relationship", "Model"].join(""),
-  ["Relationship", "Model"].join(""),
-  ["relationship", "LinkId"].join(""),
-  ["newLink", "Id"].join(""),
-  ["LinkLimitReached", "Error"].join(""),
-  ["Error_LinkLimit", "Reached"].join(""),
-  ["BoundaryEvent_LinkLimit", "Reached"].join(""),
-  ["ErrorEventDefinition_LinkLimit", "Reached"].join(""),
-  ["ExpectedUserTaskAfterBPMN", "Error"].join(""),
-  ["scenarios/create-document-", "data"].join(""),
-  ["scenarios/boundary-", "error"].join(""),
 ];
 
 const legacyProductDecisionInventoryPath =
   "adoption/a12/legacy/product-decision-inventory.json";
 const legacySourceTarget =
   "02330ad0f980a5fc282cc0aa93600a9632b86c3e";
+const legacyDecisionMarker = [
+  "A12",
+  "a12",
+  "CreateDocument",
+  "createDocument",
+  "CreateRelationship",
+  "createRelationship",
+  "LinkLimitReached",
+  "linkLimitReached",
+  "documentModel",
+  "MyDocument",
+  "myDocument",
+  "newDoc",
+  "RelationshipModel",
+  "relationshipModel",
+  "relationshipLink",
+  "newLink",
+  "ExpectedUserTaskAfterBPMNError",
+  "scenarios/create-document-data",
+  "scenarios/boundary-error",
+].join("|");
+const legacyDecisionToken = new RegExp(
+  [
+    "(?<![A-Za-z0-9])(?:[A-Za-z0-9_:/.-]*(?:A12|CreateDocument|createDocument|CreateRelationship|createRelationship|LinkLimitReached|linkLimitReached|documentModelName|MyDocumentModel|myDocumentReference|newDocRef|RelationshipModel|relationshipModel|relationshipLinkId|newLinkId|ExpectedUserTaskAfterBPMNError)[A-Za-z0-9_:/.-]*)(?![A-Za-z0-9])",
+    "(?<![A-Za-z0-9])(?:(?:a12|[A-Za-z0-9_:/.-]*[.:/_-]a12)[A-Za-z0-9_:/.-]*)(?![A-Za-z0-9])",
+    "scenarios/(?:create-document-data|boundary-error)",
+  ].join("|"),
+  "gu",
+);
+
+type LegacyProductDecisionInventory = Readonly<{
+  kind: "a12LegacyProductDecisionInventory";
+  sourceTarget: string;
+  decisions: ReadonlyArray<string>;
+}>;
+
+function parseLegacyProductDecisionInventory(
+  source: string,
+): LegacyProductDecisionInventory {
+  const value = JSON.parse(source) as unknown;
+  const decisions =
+    typeof value === "object" &&
+      value !== null &&
+      "decisions" in value &&
+      Array.isArray(value.decisions)
+      ? value.decisions
+      : null;
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("kind" in value) ||
+    value.kind !== "a12LegacyProductDecisionInventory" ||
+    !("sourceTarget" in value) ||
+    value.sourceTarget !== legacySourceTarget ||
+    decisions === null ||
+    decisions.some(
+      (decision) => typeof decision !== "string" || decision.length === 0,
+    ) ||
+    new Set(decisions).size !== decisions.length ||
+    decisions.some(
+      (decision, index) => index > 0 && decisions[index - 1] >= decision,
+    )
+  ) {
+    throw new TypeError(
+      `${legacyProductDecisionInventoryPath} is not the canonical immutable decision inventory`,
+    );
+  }
+  return value as LegacyProductDecisionInventory;
+}
+
+const legacyProductDecisionInventory = parseLegacyProductDecisionInventory(
+  await readFile(
+    new URL("../adoption/a12/legacy/product-decision-inventory.json", import.meta.url),
+    "utf8",
+  ),
+);
+const legacyProductDecisions = legacyProductDecisionInventory.decisions;
 
 const downstreamBeanIdentities = [
   "createDocumentDelegate",
@@ -158,7 +203,10 @@ function isLowerSemanticFile(relativePath: string): boolean {
 }
 
 function isProductDecisionFile(relativePath: string): boolean {
-  return productDecisionRoots.some((root) => relativePath.startsWith(root)) &&
+  return (
+    productDecisionFiles.has(relativePath) ||
+    productDecisionRoots.some((root) => relativePath.startsWith(root))
+  ) &&
     !optionalAdoptionRoots.some((root) => relativePath.startsWith(root));
 }
 
@@ -228,22 +276,66 @@ export function assessA12Boundary(
 export async function verifyLegacyProductDecisionInventory(
   projectRoot: string,
 ): Promise<void> {
-  const inventory = JSON.parse(
+  const inventory = parseLegacyProductDecisionInventory(
     await readFile(
       path.join(projectRoot, legacyProductDecisionInventoryPath),
       "utf8",
     ),
-  ) as unknown;
-  const expected = {
-    kind: "a12LegacyProductDecisionInventory",
-    sourceTarget: legacySourceTarget,
-    decisions: [...legacyProductDecisions].sort(),
-  };
-  if (!isDeepStrictEqual(inventory, expected)) {
+  );
+  const derived = await deriveLegacyProductDecisions(projectRoot);
+  if (
+    inventory.decisions.length !== derived.length ||
+    inventory.decisions.some((decision, index) => decision !== derived[index])
+  ) {
     throw new Error(
-      `${legacyProductDecisionInventoryPath} does not match the immutable pre-extraction decision inventory`,
+      `${legacyProductDecisionInventoryPath} differs from the inventory derived at ${legacySourceTarget}`,
     );
   }
+}
+
+export function deriveLegacyProductDecisions(
+  projectRoot: string,
+): Promise<ReadonlyArray<string>> {
+  return new Promise((resolve, reject) => {
+    execFile(
+        "git",
+      [
+        "grep",
+        "-h",
+        "-I",
+        "-E",
+        legacyDecisionMarker,
+        legacySourceTarget,
+        "--",
+        "BpmnSemantics.lean",
+        "BpmnSemantics",
+        "contracts",
+        "examples",
+        "packages",
+        "profiles",
+        "runners/cibseven",
+        "scenarios",
+      ],
+      { cwd: projectRoot, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+      (error, stdout) => {
+        if (error === null) {
+          const matches = stdout.match(legacyDecisionToken) ?? [];
+          resolve([
+            ...new Set(matches.map((value) =>
+              value.replace(/^\.\.\.(?=[A-Za-z])/u, "").replace(/:+$/u, "")
+            )),
+          ].sort());
+          return;
+        }
+        reject(
+          new Error(
+            `cannot derive ${legacyProductDecisionInventoryPath} at ${legacySourceTarget}`,
+            { cause: error },
+          ),
+        );
+      },
+    );
+  });
 }
 
 function repositoryPaths(projectRoot: string): Promise<ReadonlyArray<string>> {

@@ -26,7 +26,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | Permitted operational details | 7 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 1 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 8 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Selected CIB extensions | 9 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
 | Configuration-specific realizations | 7 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 0 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 

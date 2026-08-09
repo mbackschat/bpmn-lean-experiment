@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -16,6 +16,7 @@ import type {
 } from "../packages/semantic-core/src/index.ts";
 
 import { parseStrictJson } from "./strict-json.ts";
+import { verifyA12LegacyManifest } from "./a12-preservation.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const legacyExportRoot = process.argv[2];
@@ -60,7 +61,7 @@ const adoptionCases = [
   },
 ] as const;
 
-await verifyLegacyManifest();
+await verifyA12LegacyManifest(projectRoot);
 await verifyGeneratedCurrentEvidence();
 const validate = await currentValidators();
 const currentCompiler = await loadCompiler(projectRoot);
@@ -235,55 +236,6 @@ type IdentityTranslation = Readonly<{
   sourceOverlay: Exclude<Scenario["bpmn"]["sourceOverlay"], null>;
 }>;
 
-async function verifyLegacyManifest(): Promise<void> {
-  const manifestDocument = await readJson<{
-    readonly kind: string;
-    readonly sourceTarget: string;
-    readonly entries: ReadonlyArray<{
-      readonly originalPath: string;
-      readonly frozenPath: string;
-      readonly sha256: string;
-    }>;
-  }>("adoption/a12/legacy/manifest.json");
-  const manifest = manifestDocument.value;
-  assert.equal(manifest.kind, "a12LegacyBaselineManifest");
-  assert.equal(manifest.sourceTarget, legacyTarget);
-  execFileSync(
-    "git",
-    ["merge-base", "--is-ancestor", legacyTarget, "HEAD"],
-    { cwd: projectRoot, stdio: "ignore" },
-  );
-  const originalPaths = manifest.entries.map(({ originalPath }) => originalPath);
-  const frozenPaths = manifest.entries.map(({ frozenPath }) => frozenPath);
-  assert.equal(new Set(originalPaths).size, originalPaths.length);
-  assert.equal(new Set(frozenPaths).size, frozenPaths.length);
-  assert.deepEqual(originalPaths, [...originalPaths].sort());
-
-  for (const entry of manifest.entries) {
-    assert.equal(
-      entry.frozenPath,
-      `adoption/a12/legacy/source-tree/${entry.originalPath}`,
-    );
-    const [frozenBytes, targetBytes] = await Promise.all([
-      readRelative(entry.frozenPath),
-      Promise.resolve(execFileSync(
-        "git",
-        ["show", `${legacyTarget}:${entry.originalPath}`],
-        { cwd: projectRoot, maxBuffer: 16 * 1024 * 1024 },
-      )),
-    ]);
-    assert.equal(sha256(frozenBytes), entry.sha256);
-    assert.ok(
-      frozenBytes.equals(targetBytes),
-      `${entry.frozenPath} differs from ${legacyTarget}:${entry.originalPath}`,
-    );
-  }
-  assert.deepEqual(
-    await recursiveFiles(path.join(projectRoot, "adoption/a12/legacy/source-tree")),
-    [...frozenPaths].sort(),
-  );
-}
-
 async function verifyGeneratedCurrentEvidence(): Promise<void> {
   execFileSync(
     process.execPath,
@@ -410,22 +362,6 @@ async function readJson<Value>(relativePath: string): Promise<JsonDocument<Value
 
 function readRelative(relativePath: string): Promise<Buffer> {
   return readFile(path.join(projectRoot, relativePath));
-}
-
-async function recursiveFiles(root: string): Promise<ReadonlyArray<string>> {
-  const found: string[] = [];
-  async function visit(directory: string): Promise<void> {
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      const absolute = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        await visit(absolute);
-      } else if (entry.isFile()) {
-        found.push(path.relative(projectRoot, absolute).split(path.sep).join("/"));
-      }
-    }
-  }
-  await visit(root);
-  return found.sort();
 }
 
 function sha256(bytes: Uint8Array): string {

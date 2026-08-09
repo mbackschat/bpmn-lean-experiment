@@ -73,7 +73,6 @@
     "multi-instance",
     "event-subprocesses",
     "general-cancellation",
-    "a12-adoption-coverage",
     "bpmn-process-execution-conformance",
     "production-history-compatibility"
   ]

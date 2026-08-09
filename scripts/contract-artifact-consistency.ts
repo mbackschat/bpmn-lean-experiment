@@ -219,15 +219,21 @@ export function verifyDefinitionReferences(
     "checked process sequence flows",
     checkedProcess.sequenceFlows,
   );
+  const flowSourceIds = new Set(nodeIds);
+  for (const node of checkedProcess.nodes) {
+    if (node.kind === "serviceTask" && node.bpmnErrorRoute !== null) {
+      flowSourceIds.add(node.bpmnErrorRoute.boundaryEventId);
+    }
+  }
   const definitionOriginIds = new Set(
     checkedProcess.definitionScopes.map(({ originElementId }) =>
       originElementId
     ),
   );
   for (const flow of checkedProcess.sequenceFlows) {
-    if (!nodeIds.has(flow.sourceId)) {
+    if (!flowSourceIds.has(flow.sourceId)) {
       throw new Error(
-        `checked process flow ${flow.id} references unknown source node ${flow.sourceId}`,
+        `checked process flow ${flow.id} references unknown source locus ${flow.sourceId}`,
       );
     }
     if (!nodeIds.has(flow.targetId)) {
@@ -261,6 +267,23 @@ export function verifyDefinitionReferences(
           );
         }
         break;
+      case "serviceTask": {
+        const route = node.bpmnErrorRoute;
+        if (route !== null) {
+          const outputFlow = checkedProcess.sequenceFlows.find(
+            ({ id }) => id === route.outputFlowId,
+          );
+          if (
+            route.attachedToRef !== node.id ||
+            outputFlow?.sourceId !== route.boundaryEventId
+          ) {
+            throw new Error(
+              `checked Service Task ${node.id} has an inconsistent BPMN Error route`,
+            );
+          }
+        }
+        break;
+      }
       default:
         break;
     }

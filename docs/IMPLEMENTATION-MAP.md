@@ -20,7 +20,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 
 **Layering.** [The BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) is the primary engine-coverage view; [the CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) owns classified profile additions; [the A12 ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns downstream adoption. The three denominators never combine. There is no A12 adapter package, Java Worker, facade bridge, Java semantic core, or JUEL dependency in this repository; [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution) owns the reopen trigger for a second core.
 
-**Open A12-boundary checkpoint defects.** The neutral mapped-boundary compiler output is not yet accepted by the shared Semantic Process schema because that schema retains five legacy A12 route constants. The product-decision scan omits `contracts/` and the root Lean umbrella, its frozen decision inventory is not independently derived from immutable baseline `02330ad`, and the frozen export omits two direct retained-evidence dependencies. The owner-approved preservation guarantee keeps the payload-free Service Task profile and BPMN bytes unchanged, permits only `sourceOverlay: null` in its scenario, and permits only the corresponding evidence-digest rebinding. Until the open mechanisms are fixed, the A12 product boundary is implemented in part but not evidence-closed.
+**A12 product boundary.** The corrected implementation contains no A12-specific production decision. The neutral mapped-boundary compiler output passes the shared schemas and cross-artifact verifier, the product scan covers `contracts/` and the root Lean umbrella, and its sole forbidden-decision inventory is validated against immutable baseline `02330ad`. The frozen manifest verifies exact baseline bytes and derives the complete A12-specific import and catalog dependency closure. A separate preservation oracle keeps the payload-free Service Task profile and BPMN bytes exact, permits only `sourceOverlay: null` in its scenario, and permits only the corresponding evidence-digest rebinding. The replacement semantic checkpoint remains pending.
 
 **This is not** a general BPMN engine, an OMG conformance result, or a production CIB deployment or history compatibility baseline. Individual evidence-bound calibration profile artifacts may already be immutable under the narrower [profile-registry definition](../profiles/README.md).
 
@@ -96,10 +96,10 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - namespace-aware element/extension/expression census
 - production delegate, listener, plugin, REST/JMS façade, and downstream-template inventory
 - bounded CIB Seven `2.0.0`/`2.2.0` assessment
-- a frozen legacy generation at immutable target `02330ad0f980a5fc282cc0aa93600a9632b86c3e`, manifest-bound outside product registries but currently missing two direct retained-evidence dependencies
+- a frozen legacy generation at immutable target `02330ad0f980a5fc282cc0aa93600a9632b86c3e`, manifest-bound outside product registries with its A12-specific import and catalog dependency closure derived from that target
 - distinct current overlay-aware adoption scenarios, project-authored fixtures, overlay artifacts, and CIB evidence accepted by current schemas but absent from every product catalog
 - optional exact external `CreateDocument.bpmn` static compilation through the product-neutral mapped-success profile and current data-only overlay, plus exact external boundary-Error source-shape calibration
-- a preservation oracle that executes the immutable baseline tooling in an isolated export and compares its currently selected legacy/current checked graphs, Semantic Process programs, runtime results, and CIB evidence bodies outside the approved profile/overlay identity translation
+- a preservation oracle that executes the immutable baseline tooling in an isolated export and compares its selected legacy/current checked graphs, Semantic Process programs, runtime results, and CIB evidence bodies outside the approved profile/overlay identity translation, plus a separate byte oracle for the payload-free Service Task's exact bounded wire-only changes
 - two completed target-shaped legacy feasibility slices retained as adoption evidence rather than product implementation
 
 #### Explicitly absent
@@ -114,7 +114,6 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - materialized Workflows-enabled full-stack template integration
 - per-model semantic implementations
 - any A12 runtime or license dependency in the MIT engine
-- complete frozen dependency closure and an approved exact payload-free Service Task preservation oracle
 
 ### Wire contracts
 
@@ -153,7 +152,6 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - value kinds beyond string/null or general variable domain
 - wider or decimal numeric domain
 - identifier normalization or locale-sensitive ordering
-- shared-schema admission of the compiler-produced neutral mapped-boundary Semantic Process program; five legacy A12 route constants still reject it
 
 ### Semantic profile
 
