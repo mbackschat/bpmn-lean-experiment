@@ -24,8 +24,23 @@
       "@bpmn-lean/semantic-core": [
         "./packages/semantic-core/src/index.ts"
       ],
-      "@bpmn-lean/temporal-adapter": [
-        "./packages/temporal-adapter/src/index.ts"
+      "@bpmn-lean/temporal-client": [
+        "./packages/temporal-adapter/client/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-protocol": [
+        "./packages/temporal-adapter/protocol/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-runner": [
+        "./packages/temporal-adapter/runner/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-testkit": [
+        "./packages/temporal-adapter/testkit/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-worker": [
+        "./packages/temporal-adapter/worker/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-workflow": [
+        "./packages/temporal-adapter/workflow/src/index.ts"
       ]
     },
     "skipLibCheck": true,
@@ -43,9 +58,9 @@
     "packages/differential/test/*.ts",
     "packages/engine-api/test/*.ts",
     "packages/semantic-core/test/*.ts",
-    "packages/temporal-adapter/calibration/*.ts",
-    "packages/temporal-adapter/cli/*.ts",
-    "packages/temporal-adapter/test/*.ts",
+    "packages/temporal-adapter/runner/cli/*.ts",
+    "packages/temporal-adapter/testkit/calibration/*.ts",
+    "packages/temporal-adapter/testkit/test/*.ts",
     "scripts/*.ts"
   ],
   "exclude": [

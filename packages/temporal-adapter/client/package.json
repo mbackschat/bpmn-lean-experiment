@@ -1,0 +1,19 @@
+{
+  "name": "@bpmn-lean/temporal-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@bpmn-lean/semantic-core": "workspace:*",
+    "@bpmn-lean/temporal-protocol": "workspace:*",
+    "@temporalio/client": "1.21.0"
+  }
+}

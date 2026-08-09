@@ -12,7 +12,7 @@ import type {
 import {
   ProcessCommandResultKind,
   EffectExecutionSchedule,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 
 import {
   ComparisonKind,

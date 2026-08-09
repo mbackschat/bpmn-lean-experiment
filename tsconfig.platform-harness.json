@@ -29,8 +29,11 @@
       "@bpmn-lean/semantic-core": [
         "./packages/semantic-core/src/index.ts"
       ],
-      "@bpmn-lean/temporal-adapter": [
-        "./packages/temporal-adapter/src/index.ts"
+      "@bpmn-lean/temporal-client": [
+        "./packages/temporal-adapter/client/src/index.ts"
+      ],
+      "@bpmn-lean/temporal-protocol": [
+        "./packages/temporal-adapter/protocol/src/index.ts"
       ]
     }
   },

@@ -6,6 +6,15 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+const temporalSourceRoots = [
+  "packages/temporal-adapter/client/src",
+  "packages/temporal-adapter/protocol/src",
+  "packages/temporal-adapter/runner/src",
+  "packages/temporal-adapter/testkit/src",
+  "packages/temporal-adapter/worker/src",
+  "packages/temporal-adapter/workflow/src",
+];
+
 const activeSourceRoots = [
   "BpmnSemantics",
   "packages/bpmn-source/src",
@@ -14,8 +23,8 @@ const activeSourceRoots = [
   "packages/differential/test",
   "packages/semantic-core/src",
   "packages/semantic-core/test",
-  "packages/temporal-adapter/src",
-  "packages/temporal-adapter/test",
+  ...temporalSourceRoots,
+  "packages/temporal-adapter/testkit/test",
   "runners/cibseven/src",
 ];
 
@@ -69,19 +78,19 @@ const prohibitedSourceFragments = [
 
 const permittedRetiredSourceLines = new Map<string, ReadonlySet<string>>([
   [
-    "packages/temporal-adapter/src/runner.ts",
+    "packages/temporal-adapter/testkit/src/runner.ts",
     new Set([
       'handle.terminate("conformance scenario input exhausted"),',
     ]),
   ],
   [
-    "packages/temporal-adapter/src/bypass-mutation.ts",
+    "packages/temporal-adapter/testkit/src/bypass-mutation.ts",
     new Set([
       "handle.terminate(`retained ${configuration.description}`),",
     ]),
   ],
   [
-    "packages/temporal-adapter/test/call-activity-temporal.test.ts",
+    "packages/temporal-adapter/testkit/test/call-activity-temporal.test.ts",
     new Set([
       'await earlyHandle.terminate("Call early-return mutation observed");',
       'await erasedHandle.terminate("Call identity-erasure mutation observed");',
@@ -204,13 +213,13 @@ test("starts every cached ephemeral server through the owner that creates its ca
   // gate that passes only where an earlier run left the cache behind.
   const executableMarker = ["cached", "-download"].join("");
   const owner = path.join(
-    "packages/temporal-adapter/src",
+    "packages/temporal-adapter/testkit/src",
     "ephemeral-server.ts",
   );
   const scanRoots = [
     ...activeSourceRoots,
     "packages/bpmn-source/calibration",
-    "packages/temporal-adapter/calibration",
+    "packages/temporal-adapter/testkit/calibration",
     "scripts",
   ];
   const files = (await Promise.all(scanRoots.map(sourceFiles))).flat();
@@ -240,7 +249,7 @@ test("starts every cached ephemeral server through the owner that creates its ca
 });
 
 test("keeps pre-release Temporal replay evidence disposable", async () => {
-  const temporalTestFiles = await sourceFiles("packages/temporal-adapter/test");
+  const temporalTestFiles = await sourceFiles("packages/temporal-adapter/testkit/test");
   assert.deepEqual(
     temporalTestFiles.filter((relativePath) =>
       relativePath.endsWith([".history", ".json"].join("")),
@@ -248,9 +257,9 @@ test("keeps pre-release Temporal replay evidence disposable", async () => {
     [],
   );
 
-  const temporalSources = await sourceFiles(
-    "packages/temporal-adapter/src",
-  );
+  const temporalSources = (
+    await Promise.all(temporalSourceRoots.map(sourceFiles))
+  ).flat();
   const patchedWorkflowSources: string[] = [];
   for (const relativePath of temporalSources) {
     const source = await readFile(

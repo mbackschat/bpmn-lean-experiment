@@ -231,7 +231,7 @@ The distinct typed failure identity separates the two capsules' *failures*; only
 
 Conflating them would make it undecidable whether the coalesced history is evidence of correct behavior or of a stop condition firing, so each obligation is attached to its own history below. If obligation 2 cannot be met, the correct outcome is to route it back to profile review rather than to let the adapter invent a winner.
 
-**Host capability.** `awaitBoundedUserTask` is neither passive, an ordinary token split, nor an uncoordinated host-driven wait. The exhaustive operation-kind classifier in [`host-admission.ts`](../../packages/temporal-adapter/src/host-admission.ts) adds one class, admits exactly one such operation with no token split, no other host-driven wait, and no managed event race, and continues rejecting every other composition before Workflow start. A mutation omitting the new operation from the classifier must fail that guard, and the classifier's `never` check must force the new kind to be handled.
+**Host capability.** `awaitBoundedUserTask` is neither passive, an ordinary token split, nor an uncoordinated host-driven wait. The exhaustive operation-kind classifier in [`host-admission.ts`](../../packages/temporal-adapter/protocol/src/host-admission.ts) adds one class, admits exactly one such operation with no token split, no other host-driven wait, and no managed event race, and continues rejecting every other composition before Workflow start. A mutation omitting the new operation from the classifier must fail that guard, and the classifier's `never` check must force the new kind to be handled.
 
 **Smallest executable refinement witness.** One direct-VM activation premise witness plus the disposable histories below, replayed in the same gate. The coalesced row is a preflight design obligation that no history satisfies: a real server decides activation composition and will not reliably coalesce a completion Update with a timer callback, so the only way to compose that activation is the direct-VM harness, which produces commands rather than a replayable server history. Its two obligations are met by two lanes sharing no instrument — the direct VM reads the emitted commands, and a real-service probe Workflow carrying no BPMN meaning establishes that an accepted Update on a failed Workflow is answered rather than stranded. The row is retained as the obligation it states, and its evidence is those two lanes rather than a third history.
 
@@ -322,7 +322,7 @@ Pre-release policy applies: the new operation kind is added atomically across th
 
 This capsule crossed three module-size extraction boundaries rather than one, and each landed as a separate behavior-preserving commit rather than as work done under a size squeeze inside a semantic change.
 
-- The adapter runner: nine forwarding probe methods moved to [mutation probes](../../packages/temporal-adapter/src/mutation-probes.ts) behind a narrow host contract at `d14570b`.
+- The adapter runner: nine forwarding probe methods moved to [mutation probes](../../packages/temporal-adapter/testkit/src/mutation-probes.ts) behind a narrow host contract at `d14570b`.
 - The semantic core runtime: [control-flow token transitions](../../packages/semantic-core/src/semantic-process-control-flow-runtime.ts) became their own owner.
 - The Lean definition decoder: the former combined owner split into [shared element decoders](../../BpmnSemantics/SemanticProcessJson/Elements.lean), [checked-process decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean), and [the program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean).
 - [Checked-graph lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) absorbed the bounded-task clause and was left below the extraction threshold, which the next family cleared.
@@ -337,11 +337,11 @@ These oracles already constrain the planned artifacts; none of them is new work 
 
 | Guard | Requirement it already places on this capsule |
 |---|---|
-| [product example configs](../../packages/temporal-adapter/test/product-example-configs.test.ts) | Every registered profile has a live example and every example names a registered profile. Two examples over one definition are admissible; a profile with none is not. |
+| [product example configs](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | Every registered profile has a live example and every example names a registered profile. Two examples over one definition are admissible; a profile with none is not. |
 | [document reviewability](../../scripts/document-reviewability.test.ts) | A new scenario family directory must be linked from its registry README, each scenario document from its family README, and this section must keep naming resolvable guards and owners. |
 | [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts) | Every added profile, scenario, and retained-evidence artifact must be registered in the same change, with no unreferenced profile and no unregistered artifact. |
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | Every registered scenario needs exactly one pipeline case carrying a meaningful seeded semantic mutation. |
-| [host admission](../../packages/temporal-adapter/test/host-admission.test.ts) | The bounded Activity wait must be classified against concurrent host-driven waits, including the race-plus-bounded shape that must stay rejected. |
+| [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | The bounded Activity wait must be classified against concurrent host-driven waits, including the race-plus-bounded shape that must stay rejected. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) | The new fixture must validate against the pinned normative schema, with `cancelActivity` omitted rather than asserted. |
 | [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) | The new operation must project into the shared wire contracts and their JSON Schemas atomically. |
 | [source hygiene](../../scripts/source-hygiene.test.ts) | No owner above the hard ceiling and none above the review target without a recorded narrow justification. |

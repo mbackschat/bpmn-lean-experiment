@@ -28,12 +28,12 @@ import {
 } from "@bpmn-lean/differential";
 import {
   TemporalScenarioRunner,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 import type {
   TemporalScenarioBatchItem,
   TemporalScenarioExecution,
   TemporalScenarioExecutionOptions,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 
 export {

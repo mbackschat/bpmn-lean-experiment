@@ -318,7 +318,7 @@ test("the build-output policy separates static specifiers from runtime paths", (
         "  sequencing,",
         '} from "../dist/sequencing.js";',
         'export { law } from "./dist/law.js";',
-        'import "@bpmn-lean/temporal-adapter/dist/side-effect.js";',
+        'import "@bpmn-lean/temporal-client/dist/side-effect.js";',
         'const late = await import("./dist/late.js");',
         'import { Ajv2020 } from "ajv/dist/2020.js";',
         'const bundle = new URL("../dist/workflows.js", import.meta.url);',
@@ -329,7 +329,7 @@ test("the build-output policy separates static specifiers from runtime paths", (
       "probe.test.ts: ../dist/helper.js",
       "probe.test.ts: ../dist/sequencing.js",
       "probe.test.ts: ./dist/law.js",
-      "probe.test.ts: @bpmn-lean/temporal-adapter/dist/side-effect.js",
+      "probe.test.ts: @bpmn-lean/temporal-client/dist/side-effect.js",
       "probe.test.ts: ./dist/late.js",
     ],
   );

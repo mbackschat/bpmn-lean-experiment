@@ -1,0 +1,21 @@
+{
+  "name": "@bpmn-lean/temporal-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@bpmn-lean/bpmn-source": "workspace:*",
+    "@bpmn-lean/semantic-core": "workspace:*",
+    "@bpmn-lean/temporal-client": "workspace:*",
+    "@bpmn-lean/temporal-protocol": "workspace:*",
+    "@bpmn-lean/temporal-worker": "workspace:*"
+  }
+}

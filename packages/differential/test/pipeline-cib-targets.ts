@@ -6,7 +6,7 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 
 import type { Scenario } from "@bpmn-lean/semantic-core";
-import { EffectExecutionSchedule } from "@bpmn-lean/temporal-adapter";
+import { EffectExecutionSchedule } from "@bpmn-lean/temporal-testkit";
 import {
   reportCibSevenMavenElapsed,
   resolveCibSevenMavenTimeoutMs,

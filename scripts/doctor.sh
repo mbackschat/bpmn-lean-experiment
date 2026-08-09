@@ -75,7 +75,12 @@ for owner_path in \
   packages/bpmn-source/package.json \
   packages/differential/package.json \
   packages/semantic-core/package.json \
-  packages/temporal-adapter/package.json \
+  packages/temporal-adapter/client/package.json \
+  packages/temporal-adapter/protocol/package.json \
+  packages/temporal-adapter/runner/package.json \
+  packages/temporal-adapter/testkit/package.json \
+  packages/temporal-adapter/worker/package.json \
+  packages/temporal-adapter/workflow/package.json \
   lean-toolchain \
   lakefile.toml \
   lake-manifest.json \

@@ -22,7 +22,7 @@ import type {
 import {
   ProcessCommandResultKind,
   TemporalScenarioRunner,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 
 import {
   hostInteractionExpectations,

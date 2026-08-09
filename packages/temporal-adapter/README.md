@@ -1,6 +1,17 @@
-# Temporal adapter
+# Temporal adapter subsystem
 
-`@bpmn-lean/temporal-adapter` durably hosts the pure [TypeScript semantic core](../semantic-core/README.md). Temporal records message delivery and Workflow decisions; the core remains the owner of BPMN-visible state transitions and canonical observations.
+`packages/temporal-adapter/` is a package container, not a production package. Its workspace packages durably host the pure [TypeScript semantic core](../semantic-core/README.md) while keeping Temporal client, Workflow, Worker, product runner, and test-only dependencies in their actual execution environments. [ARCHITECTURE.md](../../docs/ARCHITECTURE.md#temporal-adapter-subsystem) owns the package boundary and dependency direction.
+
+| Package | Responsibility | Temporal SDK ownership |
+|---|---|---|
+| `@bpmn-lean/temporal-protocol` | Project-owned hosting contracts, identities, admission, transport, and lifecycle results | None |
+| `@bpmn-lean/temporal-client` | Concrete Workflow start, Query, Update, Signal, and client connection boundary | `@temporalio/client` |
+| `@bpmn-lean/temporal-workflow` | Deterministic Workflow implementation and Workflow-owned scheduling | `@temporalio/workflow` |
+| `@bpmn-lean/temporal-worker` | Worker connection and Workflow bundling | `@temporalio/worker` |
+| `@bpmn-lean/temporal-runner` | Product 1 command and host interaction driver | No direct SDK dependency |
+| `@bpmn-lean/temporal-testkit` | Ephemeral servers, differential runners, mutations, probes, and replay evidence | Client, testing, Worker, and Workflow SDK packages |
+
+There is no `@bpmn-lean/temporal-adapter` umbrella export. Product 2 may reach `@bpmn-lean/temporal-client` only through `platform/foundation/engine-gateway`; it cannot reach Worker, Workflow, runner, or testkit packages. Temporal records delivery and Workflow decisions, while the semantic core remains the owner of BPMN-visible state transitions and canonical observations.
 
 `ExternalTemporalRuntime.connect` is the product-facing Worker boundary. It connects one Worker and Workflow client to a caller-managed Temporal address, Namespace, and Task Queue; it never starts an embedded server or binds a server port. `startBpmnProcess` receives that same explicit Task Queue, so the client and Worker cannot drift through hidden defaults. The connection requires explicit effect Activities and registers them with the Worker; the engine runner supplies a deterministic handler registry for effect-bearing profiles.
 

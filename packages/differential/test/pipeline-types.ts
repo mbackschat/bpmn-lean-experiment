@@ -21,10 +21,10 @@ import {
   EffectExecutionSchedule,
   TemporalCompletionDelivery,
   TemporalExecutionSchedule,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 import type {
   TemporalScenarioExecution,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 
 export const TemporalCaseRelation = Object.freeze({
   ExactSemantic: "exactSemantic",

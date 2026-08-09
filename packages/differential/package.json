@@ -16,6 +16,6 @@
   },
   "devDependencies": {
     "@bpmn-lean/bpmn-source": "workspace:*",
-    "@bpmn-lean/temporal-adapter": "workspace:*"
+    "@bpmn-lean/temporal-testkit": "workspace:*"
   }
 }

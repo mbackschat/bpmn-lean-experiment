@@ -8,7 +8,7 @@ import {
 import {
   TemporalCompletionDelivery,
   TemporalExecutionSchedule,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 
 import {
   CibCaseRelation,

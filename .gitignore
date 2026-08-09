@@ -5,7 +5,8 @@
 node_modules/
 /.pnpm-store
 /dist
-/packages/*/dist
+/packages/**/dist
+/packages/.cache
 /platform/*/dist
 /platform/*/*/dist
 /showcase/*/dist

@@ -46,6 +46,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - compiler-backed rejection of non-erasable syntax in direct harness roots
 - Java 21 with explicit, environment-first portable home resolution
 - Temporal SDK 1.21.0 and CLI v1.8.1
+- The Temporal adapter subsystem split into independently built protocol, client, Workflow, Worker, runner, and testkit workspace packages, with no production umbrella export and an executable guard over exact internal and SDK dependency direction
 - MIT licensing for project-authored material
 - shared `CLAUDE.md`/`AGENTS.md`
 - role-named proposal/specification documents and their governed lifecycle
@@ -98,7 +99,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - identity and authorization
 - the platform component kit, routing, and the owner-selected `react-aria-components` and three TanStack packages; the M1 definition workspace uses plain CSS and no client state or routing dependency
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
-- Narrowed start, observe, and submit-command engine entry points. Compilation is narrowed; `packages/temporal-adapter` still re-exports harness material alongside its client surface and is not a permitted platform dependency
+- The platform-owned definition-version start boundary and its engine-gateway projection. The concrete `@bpmn-lean/temporal-client` package is isolated from Worker and test infrastructure, but no Product 2 package imports it yet
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata
 

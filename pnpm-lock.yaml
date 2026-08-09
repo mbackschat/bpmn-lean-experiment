@@ -36,9 +36,9 @@ importers:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
         version: link:../bpmn-source
-      '@bpmn-lean/temporal-adapter':
+      '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
-        version: link:../temporal-adapter
+        version: link:../temporal-adapter/testkit
 
   packages/engine-api:
     dependencies:
@@ -51,11 +51,65 @@ importers:
 
   packages/semantic-core: {}
 
-  packages/temporal-adapter:
+  packages/temporal-adapter/client:
     dependencies:
       '@bpmn-lean/semantic-core':
         specifier: workspace:*
-        version: link:../semantic-core
+        version: link:../../semantic-core
+      '@bpmn-lean/temporal-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@temporalio/client':
+        specifier: 1.21.0
+        version: 1.21.0
+
+  packages/temporal-adapter/protocol:
+    dependencies:
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../../semantic-core
+
+  packages/temporal-adapter/runner:
+    dependencies:
+      '@bpmn-lean/bpmn-source':
+        specifier: workspace:*
+        version: link:../../bpmn-source
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../../semantic-core
+      '@bpmn-lean/temporal-client':
+        specifier: workspace:*
+        version: link:../client
+      '@bpmn-lean/temporal-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@bpmn-lean/temporal-worker':
+        specifier: workspace:*
+        version: link:../worker
+
+  packages/temporal-adapter/testkit:
+    dependencies:
+      '@bpmn-lean/bpmn-source':
+        specifier: workspace:*
+        version: link:../../bpmn-source
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../../semantic-core
+      '@bpmn-lean/temporal-client':
+        specifier: workspace:*
+        version: link:../client
+      '@bpmn-lean/temporal-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@bpmn-lean/temporal-runner':
+        specifier: workspace:*
+        version: link:../runner
+      '@bpmn-lean/temporal-worker':
+        specifier: workspace:*
+        version: link:../worker
+      '@bpmn-lean/temporal-workflow':
+        specifier: workspace:*
+        version: link:../workflow
       '@temporalio/client':
         specifier: 1.21.0
         version: 1.21.0
@@ -68,10 +122,36 @@ importers:
       '@temporalio/workflow':
         specifier: 1.21.0
         version: 1.21.0
-    devDependencies:
-      '@bpmn-lean/bpmn-source':
+
+  packages/temporal-adapter/worker:
+    dependencies:
+      '@bpmn-lean/semantic-core':
         specifier: workspace:*
-        version: link:../bpmn-source
+        version: link:../../semantic-core
+      '@bpmn-lean/temporal-client':
+        specifier: workspace:*
+        version: link:../client
+      '@bpmn-lean/temporal-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@bpmn-lean/temporal-workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@temporalio/worker':
+        specifier: 1.21.0
+        version: 1.21.0(esbuild@0.28.2)(postcss@8.5.26)(tslib@2.8.1)
+
+  packages/temporal-adapter/workflow:
+    dependencies:
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../../semantic-core
+      '@bpmn-lean/temporal-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@temporalio/workflow':
+        specifier: 1.21.0
+        version: 1.21.0
 
   platform/apps/server:
     dependencies:
@@ -762,9 +842,6 @@ packages:
   '@types/node@24.13.3':
     resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
 
-  '@types/node@26.1.1':
-    resolution: {integrity: sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==}
-
   '@types/react-dom@19.2.4':
     resolution: {integrity: sha512-Bsc+QHgp+P/F02XDzNCY9jnZNCUuLki36KT7VKrTXXLdHf+vHMNZnW1rVu5DNW/rCK+fya3DATySbLM4yhtKUw==}
     peerDependencies:
@@ -1433,9 +1510,6 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
-  undici-types@8.3.0:
-    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
-
   unionfs@4.6.0:
     resolution: {integrity: sha512-fJAy3gTHjFi5S3TP5EGdjs/OUMFFvI/ady3T8qVuZfkv8Qi8prV/Q8BuFEgODJslhZTT2z2qdD2lGdee9qjEnA==}
 
@@ -2051,10 +2125,6 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
-  '@types/node@26.1.1':
-    dependencies:
-      undici-types: 8.3.0
-
   '@types/react-dom@19.2.4(@types/react@19.2.18)':
     dependencies:
       '@types/react': 19.2.18
@@ -2415,7 +2485,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 26.1.1
+      '@types/node': 24.13.3
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -2526,7 +2596,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.2
-      '@types/node': 26.1.1
+      '@types/node': 24.13.3
       long: 5.3.2
 
   react-dom@19.2.8(react@19.2.8):
@@ -2676,8 +2746,6 @@ snapshots:
       '@typescript/typescript-win32-x64': 7.0.2
 
   undici-types@7.18.2: {}
-
-  undici-types@8.3.0: {}
 
   unionfs@4.6.0:
     dependencies:

@@ -11,7 +11,12 @@ cache	runners/cibseven/target	runners/cibseven/pom.xml
 cache	packages/bpmn-source/dist	packages/bpmn-source/tsconfig.json
 cache	packages/differential/dist	packages/differential/tsconfig.json
 cache	packages/semantic-core/dist	packages/semantic-core/tsconfig.json
-cache	packages/temporal-adapter/dist	packages/temporal-adapter/tsconfig.json
+cache	packages/temporal-adapter/client/dist	packages/temporal-adapter/client/tsconfig.json
+cache	packages/temporal-adapter/protocol/dist	packages/temporal-adapter/protocol/tsconfig.json
+cache	packages/temporal-adapter/runner/dist	packages/temporal-adapter/runner/tsconfig.json
+cache	packages/temporal-adapter/testkit/dist	packages/temporal-adapter/testkit/tsconfig.json
+cache	packages/temporal-adapter/worker/dist	packages/temporal-adapter/worker/tsconfig.json
+cache	packages/temporal-adapter/workflow/dist	packages/temporal-adapter/workflow/tsconfig.json
 external-cache	$MAVEN_USER_HOME/repository	Maven artifact repository
 external-cache	$MAVEN_USER_HOME/wrapper/dists	Maven wrapper distributions
 external-cache	$PLAYWRIGHT_BROWSERS_PATH	Playwright 1.62.1 Chromium test browser

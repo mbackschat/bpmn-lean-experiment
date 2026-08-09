@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import {
   EffectExecutionSchedule,
   TemporalScenarioRunner,
-} from "@bpmn-lean/temporal-adapter";
+} from "@bpmn-lean/temporal-testkit";
 
 import {
   cibTiming,

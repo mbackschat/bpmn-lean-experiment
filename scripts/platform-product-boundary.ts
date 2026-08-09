@@ -235,6 +235,11 @@ function typeScriptModuleSpecifiers(tokens: ReadonlyArray<Token>): string[] {
   return specifiers;
 }
 
+/** Extracts executable TypeScript module references while ignoring comments and literal fixtures. */
+export function typeScriptModuleSpecifiersFromSource(source: string): ReadonlyArray<string> {
+  return typeScriptModuleSpecifiers(moduleTokens(source));
+}
+
 function javaModuleSpecifiers(tokens: ReadonlyArray<Token>): string[] {
   const specifiers: string[] = [];
   for (let index = 0; index < tokens.length; index += 1) {

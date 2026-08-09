@@ -43,7 +43,7 @@ test("reports the guard that constrains a not-yet-existing artifact through its 
     "examples/temporal-mvp/activity-boundary-timer-deadline-wins.json",
     [
       {
-        path: "packages/temporal-adapter/test/product-example-configs.test.ts",
+        path: "packages/temporal-adapter/testkit/test/product-example-configs.test.ts",
         text: 'const exampleRoot = "examples/temporal-mvp";',
       },
       {
@@ -56,7 +56,7 @@ test("reports the guard that constrains a not-yet-existing artifact through its 
   assert.deepEqual(bindings, [
     {
       kind: BindingKind.Guard,
-      path: "packages/temporal-adapter/test/product-example-configs.test.ts",
+      path: "packages/temporal-adapter/testkit/test/product-example-configs.test.ts",
       matchedTerm: "examples/temporal-mvp",
     },
   ]);
@@ -207,7 +207,7 @@ test("the live corpus binds a new artifact in each historically missed tree", as
   );
   assert.equal(
     exampleGuards.includes(
-      "packages/temporal-adapter/test/product-example-configs.test.ts",
+      "packages/temporal-adapter/testkit/test/product-example-configs.test.ts",
     ),
     true,
     "the product-example oracle must be discoverable from a new example path",
