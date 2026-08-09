@@ -2,7 +2,7 @@
 
 ## Status
 
-Independently reviewed material correction awaiting owner approval. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. The prior approval does not authorize the revised payload-free Service Task preservation guarantee below; implementation remains paused until the owner approves this reviewed correction.
+Owner-approved on 2026-08-09 after independent review of the material preservation correction. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Approval authorizes the exact revised payload-free Service Task guarantee below and no legacy or mixed-schema reader.
 
 ## Independent cold-review receipt
 
