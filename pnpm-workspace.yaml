@@ -9,6 +9,7 @@ packages:
 enableGlobalVirtualStore: false
 allowBuilds:
   '@swc/core': false
+  esbuild: false
   protobufjs: false
 minimumReleaseAgeExclude:
   - '@temporalio/activity@1.21.0'

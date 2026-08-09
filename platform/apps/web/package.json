@@ -4,7 +4,21 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "scripts": {
+    "prebuild": "pnpm --filter @bpmn-lean/platform-contracts build",
+    "build": "tsc -p tsconfig.json && vite build",
+    "type-test": "tsc -p tsconfig.test.json",
+    "test": "pnpm run build && pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts"
+  },
   "dependencies": {
-    "bpmn-js": "18.22.1"
+    "@bpmn-lean/platform-contracts": "workspace:*",
+    "bpmn-js": "18.22.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "vite": "7.3.6"
   }
 }

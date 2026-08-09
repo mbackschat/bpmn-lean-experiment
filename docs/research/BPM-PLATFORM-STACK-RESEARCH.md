@@ -2,7 +2,7 @@
 
 ## Status
 
-**Project-authored research carrying one bounded recommendation.** The recommendation alone adopts no dependency. Each adoption requires owner approval and the resolved-graph checks in [the platform's dependency posture](../PROJECT-DESIGN.md#dependency-posture); `bpmn-js` 18.22.1 received that approval on 2026-08-09, as [the proposal's adoption record](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-bpmn-js) records. Owner decisions taken during this research are listed in [Decisions taken](#10-decisions-taken) and remain owned by [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) and [PLAN.md](../PLAN.md), not by this document.
+**Project-authored research carrying one bounded recommendation.** The recommendation alone adopts no dependency. Each adoption requires owner approval and the resolved-graph checks in [the platform's dependency posture](../PROJECT-DESIGN.md#dependency-posture); `bpmn-js` 18.22.1 and the exact React/Vite M1 set received that approval on 2026-08-09, as [the proposal's adoption records](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-react-and-vite) record. Owner decisions taken during this research are listed in [Decisions taken](#10-decisions-taken) and remain owned by [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) and [PLAN.md](../PLAN.md), not by this document.
 
 Reviewers can read sections 1 to 3 for the conclusion and sections 4 onward for the evidence behind it.
 
@@ -385,6 +385,7 @@ Recorded for traceability; the durable owners are [PROJECT-DESIGN.md](../PROJECT
 7. **React 19** as the UI framework, on R6.
 8. **`react-aria-components` plus TanStack Table, Virtual, and Query** as the selection, per [the recommendation](#3-recommendation).
 9. **`bpmn-js` 18.22.1** for viewer-only diagram rendering, with its exact bpmn.io license notice retained and its required watermark left unchanged, visible, linked, and unobstructed. Owner-approved 2026-08-09 after comparison with `bpmn-visualization`.
+10. **React 19.2.8 and React DOM 19.2.8 with development-only Vite 7.3.6**, plus exact React declaration packages, for the M1 static client. Owner-approved 2026-08-09; no server-side meta-framework or component-kit dependency is introduced by this decision.
 
 ## 11. Remaining open decisions
 

@@ -11,11 +11,11 @@ This project builds two MIT products in one repository: a Temporal-hosted BPMN 2
 | Surface | Status |
 |---|---|
 | BPMN execution engine | Implemented, runnable product floor over a bounded semantic profile catalog |
-| BPM platform | M1 deployment API implemented: exact admission, content storage, durable versioning, exact-source reads, and executable dependency limits |
-| Active work | M1 viewer client and narrowed start boundary |
+| BPM platform | M1 definition workspace implemented: exact upload, admission diagnostics, content storage, durable versioning, exact-source reads, and licensed diagram viewing |
+| Active work | M1 narrowed start boundary, headless browser acceptance, and executable showcase |
 | A12 Workflows | Separate downstream product outside this repository; reusable neutral mechanisms and an optional evidence handoff are preserved without placing A12 decisions in core |
 
-Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. Product 2 exposes deployment, admission diagnostics, definition lists, version lists, and exact admitted source through a bounded HTTP API backed by filesystem content storage and SQLite metadata. Its M1 gate independently enforces clean-checkout type safety, package boundaries, the exact resolved dependency budget, and permissive licenses. It still has no UI, public start endpoint, task inbox, or identity system. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
+Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. Product 2 exposes deployment, admission diagnostics, definition lists, version lists, and exact admitted source through a bounded HTTP API backed by filesystem content storage and SQLite metadata. Its React definition workspace uses that API to upload BPMN, display accepted or rejected diagnostics, browse versions, and render exact admitted source through the licensed viewer-only `bpmn-js` adapter. The M1 gate independently enforces clean-checkout type safety, package boundaries, the exact resolved production dependency budget, and approved licenses. The public start endpoint, task inbox, and identity system remain absent. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
 
 ## Vision and milestone plan
 
@@ -182,7 +182,7 @@ Useful focused gates:
 node --test scripts/platform-product-boundary.test.ts
 ```
 
-Run the local platform definition server with `./scripts/pnpm.sh run platform:serve`. It defaults to `http://127.0.0.1:3000` and stores local data under ignored `.data/platform/`.
+Run the local platform definition server with `./scripts/pnpm.sh run platform:serve`. It defaults to `http://127.0.0.1:3000` and stores local data under ignored `.data/platform/`. In a second terminal, run `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1` and open the printed local URL for the M1 definition workspace.
 
 When a task explicitly needs the optional A12 exact-source evidence, provision and run it separately with `./scripts/setup-external-sources.sh adoption` followed by `./scripts/test-a12-adoption.sh`.
 

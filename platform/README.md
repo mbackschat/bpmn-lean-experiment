@@ -2,7 +2,7 @@
 
 This tree contains product 2, the MIT BPM platform. [The implementation architecture](../docs/ARCHITECTURE.md) owns its modular-monolith layout and dependency direction; [the platform proposal](../docs/BPM-PLATFORM-PROPOSAL.md) owns product scope; [the implementation map](../docs/IMPLEMENTATION-MAP.md#bpm-platform) owns exact current status.
 
-Directories here are ownership boundaries, not deployment-service claims. The M1 engine gateway, artifact store, public contracts, definition deployment module, public definition routes, and Node server composition root are implemented; the web application and later modules remain tracked scaffolds whose absent behavior is recorded in the [implementation map](../docs/IMPLEMENTATION-MAP.md#bpm-platform). [`dependency-policy.json`](dependency-policy.json) owns the platform's exact reachable external-package budget and license allowlist.
+Directories here are ownership boundaries, not deployment-service claims. The M1 engine gateway, artifact store, public contracts, definition deployment module, public definition routes, Node server composition root, and HTTP-only definition workspace are implemented; the start boundary, executable showcase, and later modules remain open as recorded in the [implementation map](../docs/IMPLEMENTATION-MAP.md#bpm-platform). [`dependency-policy.json`](dependency-policy.json) owns the platform's exact reachable external-package budget and license allowlist.
 
 - [Applications](apps/README.md) are deployable composition roots.
 - [Contracts](contracts/README.md) own public transport shapes.

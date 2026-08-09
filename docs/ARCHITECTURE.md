@@ -132,6 +132,7 @@ The UI may share public contract types or a generated public client. It may not 
 | ARC-007 | Instantiate directories only when active work needs them | Prevents an aspirational tree from being mistaken for implemented surface | A build or packaging tool requires an explicit generated workspace manifest |
 | ARC-008 | Use Fetch-compatible module routes behind a Node HTTP adapter with no external transport library; deploy exact BPMN as a bounded raw XML body | Keeps route ownership with the domain module, preserves exact source bytes, and avoids adopting or hand-writing multipart machinery for a single-file M1 request | A required public operation needs multipart fields, resumable transfer, or another transport contract |
 | ARC-009 | Confine `bpmn-js` to a viewer-only web adapter and retain its required visible bpmn.io watermark and exact license notice | Uses the mature BPMN DI renderer without granting browser parsing semantic authority or misrepresenting its license as MIT | Reopen if the renderer is replaced or the upstream license changes |
+| ARC-010 | Build the static web client with React 19.2.8, React DOM 19.2.8, and development-only Vite 7.3.6, using plain CSS for the M1 workspace and no server-side meta-framework | Fits the HTTP-only static-client boundary, keeps build tooling out of production, and avoids selecting a component system before M1 needs one | Reopen when an accepted surface requires routing, a shared accessible component layer, or build behavior the current static composition cannot supply |
 
 ## Verification
 

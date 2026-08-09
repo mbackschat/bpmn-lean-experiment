@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-07; M1 definition deployment is partially implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. The public definition deployment API and its modular-monolith server exist, while the M1 web and start surfaces and the later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
+**Owner-approved on 2026-08-07; M1 definition deployment is partially implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. The public definition deployment API, modular-monolith server, and HTTP-only React definition workspace exist, while the M1 start surface, executable showcase, and later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
 Sequencing belongs to [PLAN.md](PLAN.md), durable product and semantic boundaries to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture to [ARCHITECTURE.md](ARCHITECTURE.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
 
@@ -122,7 +122,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 
 | Component | Selection | Approval state |
 |---|---|---|
-| UI framework | React 19 with plain Vite, single-page, no meta-framework | Selected, no dependency approval outstanding beyond React itself |
+| UI framework | React 19.2.8 and React DOM 19.2.8 with development-only Vite 7.3.6, single-page, no meta-framework | Owner-approved and implemented 2026-08-09; approval record below |
 | Behavior and accessibility primitives | `react-aria-components` 1.20.0, Apache-2.0 | Owner-selected 2026-08-07; approval record below |
 | Table logic | `@tanstack/react-table` 9.0.1, MIT | Owner-selected 2026-08-07 |
 | Virtualization | `@tanstack/react-virtual` 3.14.9, MIT | Owner-selected 2026-08-07 |
@@ -146,11 +146,17 @@ Measured on 2026-08-07 by installing into an empty project on the pinned Node 24
 | `@tanstack/react-virtual` | 3.14.9 | MIT | Row virtualization | Low. One component, large lists only |
 | `@tanstack/react-query` | 5.101.4 | MIT | Server-state caching and refetch | Medium. Replaceable at the cost of re-solving cache invalidation |
 
+### Approval record for React and Vite
+
+The owner approved the exact M1 web set on 2026-08-09: runtime `react@19.2.8` and `react-dom@19.2.8`, plus development-only `vite@7.3.6`, `@types/react@19.2.18`, and `@types/react-dom@19.2.4`. Vite and both declaration packages are build and type-check inputs only. They do not enter the static distribution or the platform's reachable production dependency graph.
+
+The two React runtime roots add exactly three MIT identities to that graph: React, React DOM, and `scheduler@0.27.0`. The package manager denies `esbuild`'s install script; the locked optional native binary and the clean production build prove that the script is not required. The M1 workspace deliberately uses plain CSS and no component framework, router, state library, or server-side meta-framework.
+
 ### Approval record for `bpmn-js`
 
-The owner approved `bpmn-js` 18.22.1 on 2026-08-09 after comparing it with the Apache-2.0 `bpmn-visualization` alternative. The platform accepts the bpmn.io license condition: the supplied watermark remains unchanged, fully visible, linked to `https://bpmn.io`, and unobstructed. The exact dependency license is retained under the web application and hash-bound to the package identity by the executable dependency policy.
+The owner approved `bpmn-js` 18.22.1 on 2026-08-09 after comparing it with the Apache-2.0 `bpmn-visualization` alternative. The platform accepts the bpmn.io license condition: the supplied watermark remains unchanged, fully visible, linked to bpmn.io, and unobstructed. The exact dependency license is retained under the web application and hash-bound to the package identity by the executable dependency policy.
 
-The real pnpm workspace resolution raises the exact platform-reachable production graph from 5 to 20 external package identities: 17 MIT, 1 Apache-2.0, 1 ISC, and `bpmn-js` under the approved `LicenseRef-bpmn.io` text. No React or build dependency is included in that figure. The renderer is confined to the future web viewer adapter, consumes exact source returned by the public API, and has no authority over admission or BPMN meaning. Removal cost is medium: replace that adapter and its overlay integration without changing the server, engine, source identity, or public contract.
+The real pnpm workspace resolution for the implemented web application contains exactly 23 reachable production package identities: 20 MIT, 1 Apache-2.0, 1 ISC, and `bpmn-js` under the approved `LicenseRef-bpmn.io` text. The renderer is confined to the web viewer adapter, consumes exact source returned by the public API, and has no authority over admission or BPMN meaning. Removal cost is medium: replace that adapter and its overlay integration without changing the server, engine, source identity, or public contract.
 
 ## Implementation architecture
 

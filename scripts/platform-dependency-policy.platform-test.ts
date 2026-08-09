@@ -469,7 +469,10 @@ test("keeps the live reachable platform graph at its exact approved footprint", 
     "object-refs@0.4.0",
     "path-intersection@4.1.0",
     "preact@10.29.8",
+    "react-dom@19.2.8",
+    "react@19.2.8",
     "saxen@11.1.0",
+    "scheduler@0.27.0",
     "tiny-svg@4.1.4",
   ]);
 });
