@@ -126,6 +126,7 @@ async function admits(xml: string, semanticProfile: string): Promise<boolean> {
     sourceId: "metamodel-default-admission",
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits,
   });
   return result.status === BpmnCompilationStatus.Accepted;

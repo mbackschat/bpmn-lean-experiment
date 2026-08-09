@@ -47,6 +47,7 @@ const boundedProgram = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-activity-boundary-timer-draft",
     sourceId: "activity-boundary-timer",
+    sourceOverlay: null,
     sourceSha256,
   },
   processId: "Process_ActivityBoundaryTimer",

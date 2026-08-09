@@ -193,8 +193,8 @@ test(
         "non-interrupting-boundary-timer-completion-before-the-deadline",
         "called-process-call-activity",
         "service-task-effect-success",
-        "a12-create-document-data",
-        "a12-boundary-error-caught",
+        "mapped-success-service-task",
+        "mapped-boundary-error-service-task-caught",
       ],
     );
     const { report, evidence } = await runPipelineCases(pipelineCases);
@@ -225,12 +225,13 @@ test(
       );
       const isPostTerminal =
         caseReport.scenario.id === "user-task-stale-completion";
-      const isSynchronousCreateDocument =
-        caseReport.scenario.id === "a12-create-document-data";
+      const isSynchronousMappedSuccess =
+        caseReport.scenario.id === "mapped-success-service-task";
       const isSynchronousBoundaryError =
-        caseReport.scenario.id === "a12-boundary-error-caught";
+        caseReport.scenario.id ===
+          "mapped-boundary-error-service-task-caught";
       const isSynchronousCibHost =
-        isSynchronousCreateDocument ||
+        isSynchronousMappedSuccess ||
         isSynchronousBoundaryError;
       const hasCib = pipelineCase.cib !== null;
       assert.equal(

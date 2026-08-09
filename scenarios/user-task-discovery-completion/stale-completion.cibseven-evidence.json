@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-stale-completion",
-    "sha256": "2fd97f44390bd17ccad889bf8c8de3ba7ccebe942d48748855c067fd5920563f"
+    "sha256": "e42a60a7039dd69fbe3e9f6219dee1b4cd356b81a298b82176bf6a6c1243e39e"
   },
   "profile": {
     "id": "cibseven-2.2.0-user-task-process-data-draft",

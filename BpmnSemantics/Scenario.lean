@@ -23,11 +23,17 @@ structure ProfileId where
   value : String
   deriving Repr, DecidableEq
 
+structure SourceOverlayIdentity where
+  id : SemanticId
+  sha256 : String
+  deriving Repr, DecidableEq
+
 /-- Content-addressed identity of a BPMN resource. -/
 structure ResourceIdentity where
   id : SemanticId
   relativePath : String
   sha256 : String
+  sourceOverlay : Option SourceOverlayIdentity := none
   deriving Repr, DecidableEq
 
 /-- Stable semantic identity shared by all externally completed wait occurrences. -/

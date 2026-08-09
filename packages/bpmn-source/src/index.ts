@@ -29,17 +29,18 @@ export type {
   BpmnSourceLimits,
   CompileBpmnToSemanticProcessRequest,
   RejectedBpmnCompilation,
+  SourceOverlaySelection,
 } from "./contracts.js";
 export {
   booleanAttributeNames,
   compileBpmnToSemanticProcess,
 } from "./compile.js";
 export {
-  a12BoundaryErrorProfile,
-} from "./a12-boundary-error-source.js";
+  mappedBoundaryErrorServiceTaskProfile,
+} from "./mapped-boundary-error-service-task-source.js";
 export {
-  a12CreateDocumentProfile,
-} from "./a12-create-document-source.js";
+  mappedSuccessServiceTaskProfile,
+} from "./mapped-success-service-task-source.js";
 export {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";

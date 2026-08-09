@@ -33,6 +33,7 @@ function compile(bytes: string) {
     sourceId: "activity-boundary-timer-test",
     expectedSha256: undefined,
     semanticProfile: profile,
+    sourceOverlay: null,
     limits,
   });
 }

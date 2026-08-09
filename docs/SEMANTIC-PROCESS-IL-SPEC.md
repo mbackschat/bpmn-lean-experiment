@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free Service Task effect, CreateDocument data, interrupting boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, and bounded called-Process Call Activity capsules.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, and bounded called-Process Call Activity capsules.
 
 The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
@@ -66,6 +66,7 @@ type CheckedProcess = DeepReadonly<{
   identity: {
     semanticProfile: string;
     sourceId: string;
+    sourceOverlay: SourceOverlayIdentity | null;
     sourceSha256: string;
   };
   processId: string;
@@ -74,6 +75,11 @@ type CheckedProcess = DeepReadonly<{
   sequenceFlowScopes: SequenceFlowScopeOwnership[];
   nodes: CheckedNode[];
   sequenceFlows: CheckedSequenceFlow[];
+}>;
+
+type SourceOverlayIdentity = DeepReadonly<{
+  id: string;
+  sha256: string;
 }>;
 
 type DefinitionScope = DeepReadonly<{
@@ -258,7 +264,7 @@ type SequenceFlowScopeOwnership = DeepReadonly<{
 
 `CheckedProcess` means that parsing, supported-element admission, reference resolution, gateway-direction classification, profile membership, and bounded structural checks have succeeded. A rejected document does not produce this artifact.
 
-The source/profile boundary validates each admitted Camunda binding and maps it to a registered neutral `protocol`/`operation` descriptor before producing the checked graph. Exact namespaces, lexical source tokens, and downstream A12 bean identities remain in source/profile evidence and do not enter the checked graph. Mapping names and literal bodies remain ordinary source-derived data because the checked graph and Lean lowering need them for the generic typed mapping mechanism; they are not lower-layer admission discriminators.
+The source/profile boundary validates each admitted Camunda binding and maps it to a registered neutral `protocol`/`operation` descriptor before producing the checked graph. Exact namespaces and lexical source tokens do not enter the checked graph. A nullable content-bound source-overlay identity records when alternate source bindings or exact inert attributes contributed to admission, but Lean, the semantic core, and Temporal never branch on its ID. Mapping names and literal bodies remain ordinary source-derived data because the checked graph and Lean lowering need them for the generic typed mapping mechanism; they are not lower-layer admission discriminators.
 
 ### Semantic Process program
 
@@ -271,6 +277,7 @@ type SemanticProcessProgram = DeepReadonly<{
     compiler: "bpmn-source-semantic-process";
     semanticProfile: string;
     sourceId: string;
+    sourceOverlay: SourceOverlayIdentity | null;
     sourceSha256: string;
   };
   processId: string;
@@ -546,8 +553,8 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
 | exact payload-free direct-Message Receive Task | `awaitMessage` with Receive Task identity and the resolved direct Message arm; no Interface or Operation is synthesized |
 | exact payload-free Service Task source shape | `awaitEffect` with the registered neutral Activity/probe descriptor and empty mappings |
-| exact A12-shaped CreateDocument source shape and mappings | `awaitEffect` with the registered neutral Activity/mapped-success descriptor, normalized literal input, and local-reference output mapping |
-| exact A12-shaped interrupting boundary Error source shape | `awaitEffect` with the registered neutral Activity/mapped-boundary-error descriptor, normalized mapping pair, and one committed `bpmnErrorRoute` |
+| bounded mapped-success Service Task source shape | `awaitEffect` with the registered neutral Activity/mapped-success descriptor, one literal input, and one local-reference output mapping |
+| bounded mapped-boundary-Error Service Task source shape | `awaitEffect` with the registered neutral Activity/mapped-boundary-error descriptor, one literal/local-reference mapping pair, and one committed `bpmnErrorRoute` |
 | exact-code Error End Event with one direct enclosing Sub-Process boundary Error | `throwError` with the throwing Error identity and the checked, resolved interrupting handler |
 | explicit Sub-Process boundary Error Event | no independent operation; its checked attachment, matching Error, and outgoing parent flow are retained in the resolved `throwError.handler` |
 | diverging Parallel Gateway | `duplicate` |
@@ -560,7 +567,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | every embedded definition scope and the entry root | one synthetic `completeScope`; child completion emits the Sub-Process outgoing token and entry-root completion marks the aggregate Process complete |
 | called Process root | no `completeScope`; its unique `reachNoneEnd` has a virtual structural edge to the paired `returnProcess` |
 
-Operation identifiers are deterministically derived from the source element identity without erasing the `origin`. Control-place identifiers are deterministically derived from Sequence Flow identity. The compiler identity, profile identity, exact source identity, and exact source digest are copied into the program identity.
+Operation identifiers are deterministically derived from the source element identity without erasing the `origin`. Control-place identifiers are deterministically derived from Sequence Flow identity. The compiler identity, profile identity, exact source identity, nullable source-overlay identity, and exact source digest are copied into the program identity.
 
 For the structured Inclusive region, lowering follows each split Sequence Flow through its sole direct User Task to the exact input Sequence Flow of the paired join. That branch-local input becomes `expectedJoinInput`; the split BPMN element ID becomes `selectionKey`. Checked-definition binding requires each mapping and key to equal this structural derivation, so merely permuting the three expected-input values while retaining the same set is a standalone-program-valid shape but not a valid checked-definition binding.
 
@@ -617,11 +624,11 @@ The semantic evaluator receives one explicit stimulus at a time and does not def
 
 `awaitEffect` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token, evaluates the admitted pure input mappings, and commits one effect occurrence containing full identity, descriptor, immutable arguments, output mappings, and the output control place.
 
-The payload-free Service Task has empty mappings and accepts only the empty successful result. The CreateDocument slice evaluates one string literal into Activity-local argument `documentModelName`. A matching successful `completeEffect` accepts only the exact typed local patch required by the active operation. It applies the operation's output mapping to Process scope, removes the effect wait and Activity-local state, adds one normal output token, and resumes closure. A malformed patch or mismatched occurrence rejects with exact state preservation.
+The payload-free Service Task has empty mappings and accepts only the empty successful result. The mapped-success slice evaluates one admitted string literal into the one source-named Activity-local argument. A matching successful `completeEffect` accepts only the exact typed local patch required by the active operation. It applies the operation's source-named output mapping to Process scope, removes the effect wait and Activity-local state, adds one normal output token, and resumes closure. A malformed patch or mismatched occurrence rejects with exact state preservation.
 
-The boundary-error slice extends the same operation with one immutable exact-code Error route and extends variable values with a closed `string`/`null` union. A matching `bpmnError` result carries a validated Activity-local patch and optional non-empty message. Under the selected CIB-specific profile, the evaluator atomically installs the patch, applies the program-owned output mapping, removes the effect wait and Activity-local state, abandons the normal output, adds the boundary-route token, and resumes closure. An occurrence mismatch, non-matching Error code, or malformed patch rejects with exact state preservation. The Error route stays definition-only; code and message do not enter canonical state.
+The mapped-boundary-Error slice extends the same operation with one immutable exact-code Error route and extends variable values with a closed `string`/`null` union. A matching `bpmnError` result carries a validated Activity-local patch and optional non-empty message. Under the selected CIB-specific profile, the evaluator atomically installs the patch, applies the program-owned output mapping, removes the effect wait and Activity-local state, abandons the normal output, adds the boundary-route token, and resumes closure. An occurrence mismatch, non-matching Error code, or malformed patch rejects with exact state preservation. The Error route stays definition-only; code and message do not enter canonical state.
 
-The Worker never receives mutable Process state and never selects Process output names. Descriptor, arguments, result, output mapping, Error route, Process scope, and occurrence-owned Activity-local scope remain separate contracts. The exact bounded rules and host relations belong to the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md), [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md), [boundary-error spec](capsules/BOUNDARY-ERROR-SPEC.md), and [scoped runtime data spec](capsules/SCOPED-DATA-SPEC.md).
+The Worker never receives mutable Process state and never selects Process output names. Descriptor, arguments, result, output mapping, Error route, Process scope, and occurrence-owned Activity-local scope remain separate contracts. The exact bounded mechanisms and their provenance belong to the [Service Task effect spec](capsules/SERVICE-TASK-EFFECT-SPEC.md), the retained [CreateDocument data spec](capsules/CREATE-DOCUMENT-DATA-SPEC.md), the retained [boundary-error spec](capsules/BOUNDARY-ERROR-SPEC.md), the [A12 product-boundary proposal](A12-ADD-ON-BOUNDARY-PROPOSAL.md), and the [scoped runtime data spec](capsules/SCOPED-DATA-SPEC.md). Current engine profiles and fixtures are product-neutral; A12 source bindings are optional adoption evidence supplied only through the data-only overlay.
 
 ### Parallel duplication
 
@@ -779,8 +786,8 @@ The maintained implementation supports exactly:
 - one finite acyclic linear composition containing exactly one exact `PT1S` Intermediate Catch Timer Event and one User Task under the profile-parameterized admission specification;
 - one directly addressed payload-free Intermediate Catch Message Event plus one User Task in either finite acyclic linear order under the profile-parameterized admission specification;
 - one exact Service Task binding under its single-token success-only effect capsule;
-- one exact A12-shaped CreateDocument Service Task with one literal string input and one local-reference output mapping;
-- one exact A12-shaped Service Task with the same bounded mapping mechanism and one attached exact-code interrupting Error route;
+- one bounded mapped-success Service Task with arbitrary exact source identities, one literal string input, and one local-reference output mapping;
+- one bounded mapped-boundary-Error Service Task with arbitrary exact source identities, the same mapping forms, and one attached exact-code interrupting Error route;
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;
 - one divergent Exclusive Gateway with exactly two Simple Boolean v1 conditions and one conditionless default under process-level Sequence Flow declaration order;
 - one structured Inclusive Gateway region with one two-condition-plus-default split, three direct User Task branches, one paired selected-input join, and one None End Event under Simple Boolean v1;
@@ -794,7 +801,7 @@ The maintained implementation supports exactly:
 - semantic task, Message-subscription, timer, and effect occurrence identity, hidden occurrence-owned Inclusive selected-branch and Event-Based Gateway race records, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
 - the canonical observation boundary including `openMessageSubscriptions`, `openTimers`, effect arguments in `openEffects`, and Process `variables`.
 
-The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
+The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/User Task composition, Intermediate Catch Message, payload-free Service Task, mapped-success Service Task, mapped-boundary-Error Service Task, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, and Sub-Process Error-propagation fixtures must all lower through the same operation language and execute through the same generic semantic transition mechanism.
 
 ## Excluded surface
 
@@ -805,7 +812,7 @@ The following remain unsupported:
 - other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, boundary Events beyond the exact Task-attached and Sub-Process-attached Error slices, catch-all or unmatched Errors, handler search beyond one direct parent, Error payloads, Intermediate Throw Errors, signals as BPMN semantics, escalation, cancellation Events, compensation, and terminate semantics;
 - arbitrary Sub-Process nesting, Call Activities outside the exact two-Process empty-data normal-return slice, external/deployed called definitions, Global Tasks, recursion, repeated/concurrent calls, transactions, event Sub-Processes, and exceptional scope cancellation or event propagation beyond the exact direct-parent Error slice;
 - converging or mixed data-based Exclusive Gateways, missing-default or non-binary Exclusive routing, Inclusive Gateways outside the exact paired structured region, general Inclusive reachability, complex gateways, and Event-Based Gateways outside the exact non-instantiating Message/`PT1S` Timer profile;
-- loops, multi-instance activities, condition consumers beyond the admitted Exclusive and Inclusive Gateway profiles, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond the two exact pairs;
+- loops, multi-instance activities, condition consumers beyond the admitted Exclusive and Inclusive Gateway profiles, general expressions, non-string/non-null data, general variables or scopes, and mappings beyond one literal-string input plus one simple Activity-local-variable output per mapped Service Task;
 - XPath, JUEL, FEEL, script parsing or evaluation, conditional-evaluation receipts, and every expression runtime beyond Simple Boolean v1;
 - host-side external-effect execution and effect mechanisms beyond the approved success and typed boundary-error capsules;
 - generated TypeScript as semantic authority;
@@ -817,14 +824,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, CreateDocument, boundary-error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, and bounded Call Activity exact-source fixtures lower deterministically;
+- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, and bounded Call Activity exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, CreateDocument data/mapping, boundary-error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, and bounded called-Process invocation/return separating witnesses;
+- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, and bounded called-Process invocation/return separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

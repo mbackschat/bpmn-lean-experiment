@@ -1,6 +1,7 @@
 import type { DeepReadonly } from "../src/deep-readonly.js";
 import type { RuntimeState } from "../src/semantic-process-state.js";
 import type { SemanticOperation } from "../src/semantic-process-contract.js";
+import type { SourceOverlayIdentity } from "../src/source-overlay-identity.js";
 import { SemanticOperationKind } from "../src/semantic-process-contract.js";
 
 type MutableContract = {
@@ -17,6 +18,7 @@ type MutableContract = {
 };
 
 declare const contract: DeepReadonly<MutableContract>;
+declare const sourceOverlay: SourceOverlayIdentity;
 
 // @ts-expect-error top-level contract fields are immutable
 contract.status = "ready";
@@ -28,6 +30,10 @@ contract.nested.list.push({ id: "next" });
 contract.nested.list[0].id = "changed";
 // @ts-expect-error tuples retain their positions and become deeply immutable
 contract.nested.tuple[0].enabled = false;
+// @ts-expect-error source-overlay identity is immutable
+sourceOverlay.id = "changed";
+// @ts-expect-error source-overlay digest is immutable
+sourceOverlay.sha256 = "0".repeat(64);
 
 if (contract.choice.kind === "withPayload") {
   // @ts-expect-error discriminated-union payloads are deeply immutable

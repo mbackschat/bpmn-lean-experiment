@@ -70,10 +70,10 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private static final Date LOGICAL_EPOCH = new Date(0);
   private static final Object PROCESS_GLOBAL_CLOCK_LOCK = new Object();
-  private static final String CREATE_DOCUMENT_PROFILE =
-      "cibseven-2.0.0-a12-create-document-draft";
-  private static final String BOUNDARY_ERROR_PROFILE =
-      "cibseven-2.0.0-a12-boundary-error-draft";
+  private static final String MAPPED_SUCCESS_PROFILE =
+      "cibseven-2.0.0-mapped-success-service-task-draft";
+  private static final String MAPPED_BOUNDARY_ERROR_PROFILE =
+      "cibseven-2.0.0-mapped-boundary-error-service-task-draft";
   private static final String H2_VERSION = "2.3.232";
   private static final EnumSet<ObservationKind> SUPPORTED_OBSERVATIONS =
       EnumSet.of(
@@ -95,8 +95,8 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
   private final CibSevenScenarioCommandExecutor commandExecutor;
   private final CibSevenScenarioStateProjector stateProjector;
   private final CibSevenEffectProbe effectProbe;
-  private final CibSevenCreateDocumentProbe createDocumentProbe;
-  private final CibSevenBoundaryErrorProbe boundaryErrorProbe;
+  private final CibSevenMappedSuccessProbe mappedSuccessProbe;
+  private final CibSevenMappedBoundaryErrorProbe mappedBoundaryErrorProbe;
   private final long startupNanos;
   private boolean closed;
 
@@ -104,16 +104,16 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       ProcessEngine processEngine,
       ProcessEngineConfigurationImpl configuration,
       CibSevenEffectProbe effectProbe,
-      CibSevenCreateDocumentProbe createDocumentProbe,
-      CibSevenBoundaryErrorProbe boundaryErrorProbe,
+      CibSevenMappedSuccessProbe mappedSuccessProbe,
+      CibSevenMappedBoundaryErrorProbe mappedBoundaryErrorProbe,
       long startupNanos) {
     this.processEngine = processEngine;
     this.release = CibSevenRelease.current();
     this.configuration = configuration;
     this.pvmProjector = new PvmDefinitionProjector();
     this.effectProbe = effectProbe;
-    this.createDocumentProbe = createDocumentProbe;
-    this.boundaryErrorProbe = boundaryErrorProbe;
+    this.mappedSuccessProbe = mappedSuccessProbe;
+    this.mappedBoundaryErrorProbe = mappedBoundaryErrorProbe;
     var userTaskProjector = new CibSevenUserTaskProjector();
     var effectProjector = new CibSevenEffectProjector();
     var messageGateway = new CibSevenMessageSubscriptionGateway(processEngine);
@@ -146,23 +146,23 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     engineConfiguration.setHistoryTimeToLive("P180D");
     engineConfiguration.setEnforceHistoryTimeToLive(true);
     var effectProbe = new CibSevenEffectProbe();
-    var createDocumentProbe = new CibSevenCreateDocumentProbe();
-    var boundaryErrorProbe = new CibSevenBoundaryErrorProbe();
+    var mappedSuccessProbe = new CibSevenMappedSuccessProbe();
+    var mappedBoundaryErrorProbe = new CibSevenMappedBoundaryErrorProbe();
     engineConfiguration.setBeans(
         Map.of(
             CibSevenEffectProjector.SOURCE_HANDLER_BEAN,
             effectProbe,
-            CibSevenCreateDocumentProbe.HANDLER_BEAN,
-            createDocumentProbe,
-            CibSevenBoundaryErrorProbe.HANDLER_BEAN,
-            boundaryErrorProbe));
+            CibSevenMappedSuccessProbe.HANDLER_BEAN,
+            mappedSuccessProbe,
+            CibSevenMappedBoundaryErrorProbe.HANDLER_BEAN,
+            mappedBoundaryErrorProbe));
     var engine = engineConfiguration.buildProcessEngine();
     return new CibSevenScenarioRunner(
         engine,
         engineConfiguration,
         effectProbe,
-        createDocumentProbe,
-        boundaryErrorProbe,
+        mappedSuccessProbe,
+        mappedBoundaryErrorProbe,
         positiveElapsedSince(startedAt));
   }
 
@@ -178,9 +178,9 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
       throws IOException {
     synchronized (PROCESS_GLOBAL_CLOCK_LOCK) {
       effectProbe.beginExecution(effectSchedule);
-      createDocumentProbe.beginExecution();
-      if (BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
-        boundaryErrorProbe.beginExecution(scenario);
+      mappedSuccessProbe.beginExecution();
+      if (MAPPED_BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
+        mappedBoundaryErrorProbe.beginExecution(scenario);
       }
       return runWithProcessGlobalClock(scenario, projectRoot, effectSchedule);
     }
@@ -269,10 +269,14 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
                 .map(VariableBinding::name)
                 .forEach(committedProcessVariableNames::add);
             trace.add(new CommandObservation(start.commandId(), COMMITTED));
-            if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
-              mappingExecutions.add(createDocumentProbe.snapshot(start.commandId()));
-            } else if (BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
-              mappingExecutions.add(boundaryErrorProbe.snapshot(start.commandId()));
+            if (MAPPED_SUCCESS_PROFILE.equals(scenario.profile())) {
+              mappingExecutions.add(mappedSuccessProbe.snapshot(start.commandId()));
+              committedProcessVariableNames.add(
+                  CibSevenMappedSuccessProbe.PROCESS_OUTPUT_NAME);
+            } else if (MAPPED_BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
+              mappingExecutions.add(mappedBoundaryErrorProbe.snapshot(start.commandId()));
+              committedProcessVariableNames.add(
+                  CibSevenMappedBoundaryErrorProbe.PROCESS_OUTPUT_NAME);
             }
 
             var projectionStartedAt = System.nanoTime();
@@ -388,14 +392,14 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             // harness compensates explicitly through CibCaseRelation.SynchronousFinalState and
             // CibCaseRelation.SynchronousBoundaryError; this break leaves completeEffect a no-op in
             // the CIB trace and continues with the scenario's next stimulus.
-            if (CREATE_DOCUMENT_PROFILE.equals(scenario.profile())) {
-              requireSynchronousCreateDocumentCompletion(engineInstanceId);
-              createDocumentProbe.requireSuccessfulExecution();
+            if (MAPPED_SUCCESS_PROFILE.equals(scenario.profile())) {
+              requireSynchronousMappedSuccessCompletion(engineInstanceId);
+              mappedSuccessProbe.requireSuccessfulExecution();
               break;
             }
-            if (BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
-              requireSynchronousBoundaryErrorCatch(engineInstanceId);
-              boundaryErrorProbe.requireCaughtExecution();
+            if (MAPPED_BOUNDARY_ERROR_PROFILE.equals(scenario.profile())) {
+              requireSynchronousMappedBoundaryErrorCatch(engineInstanceId);
+              mappedBoundaryErrorProbe.requireCaughtExecution();
               break;
             }
             var completeStartedAt = System.nanoTime();
@@ -515,7 +519,7 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     return (StartProcessStimulus) scenario.stimuli().getFirst();
   }
 
-  private void requireSynchronousCreateDocumentCompletion(String engineInstanceId) {
+  private void requireSynchronousMappedSuccessCompletion(String engineInstanceId) {
     if (processEngine
             .getRuntimeService()
             .createProcessInstanceQuery()
@@ -523,21 +527,21 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
             .count()
         != 0) {
       throw new IllegalStateException(
-          "CIB CreateDocument did not complete in the synchronous start command");
+          "CIB mapped-success Service Task did not complete in the synchronous start command");
     }
   }
 
-  private void requireSynchronousBoundaryErrorCatch(String engineInstanceId) {
+  private void requireSynchronousMappedBoundaryErrorCatch(String engineInstanceId) {
     var tasks =
         processEngine
             .getTaskService()
             .createTaskQuery()
             .processInstanceId(engineInstanceId)
-            .taskDefinitionKey("ExpectedUserTaskAfterBPMNError")
+            .taskDefinitionKey("ReviewMappedError")
             .list();
     if (tasks.size() != 1) {
       throw new IllegalStateException(
-          "CIB boundary Error did not synchronously reach its User Task");
+          "CIB mapped boundary Error did not synchronously reach its User Task");
     }
   }
 

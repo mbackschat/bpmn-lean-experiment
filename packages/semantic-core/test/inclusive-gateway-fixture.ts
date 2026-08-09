@@ -34,6 +34,7 @@ export const inclusiveProgram = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
     sourceId: "inclusive-gateway-selected-branches",
+    sourceOverlay: null,
     sourceSha256: "8".repeat(64),
   },
   processId: "Process_Inclusive",

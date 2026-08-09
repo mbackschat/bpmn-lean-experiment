@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "embedded-subprocess-completion-stale-a-after-scope",
-    "sha256": "a4307f82532406bce609c9a62f528e1ff51038a7f5ee63e00a99e4d0b801e88b"
+    "sha256": "d6e230b57c925b40121d086854da12275ee2f6448033aa778d30823d77aab404"
   },
   "profile": {
     "id": "cibseven-2.2.0-embedded-subprocess-completion-draft",

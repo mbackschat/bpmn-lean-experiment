@@ -40,6 +40,7 @@ async function compile(
     sourceId: "message-addressed-receive-task-process",
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits,
   });
 }

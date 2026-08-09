@@ -1,0 +1,96 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.0.0-mapped-success-service-task-draft",
+  "status": "immutable",
+  "claim": "mapped-success-service-task-string-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.0.0",
+    "revision": "57ed69550f1c9c2619b9711d8877418bb084a371"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "service-task",
+      "string-variable",
+      "literal-input-mapping",
+      "local-variable-output-mapping",
+      "successful-effect-result",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "camunda-delegate-expression-exact-bean-token",
+      "camunda-input-output-bounded-mapped-success"
+    ],
+    "relationships": [
+      "CIB-EXT-0007",
+      "CIB-OP-0006",
+      "CIB-CFG-0006"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "effectBindings": [
+    {
+      "source": {
+        "implementation": null,
+        "delegateExpression": "${mappedSuccessHandler}"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:mapped-success-v1"
+      }
+    }
+  ],
+  "excluded": [
+    "non-string-values",
+    "general-variables",
+    "general-juel",
+    "arbitrary-beans",
+    "java-class-loading",
+    "delegate-execution-compatibility",
+    "field-injection",
+    "general-data-associations",
+    "bpmn-operation",
+    "messages",
+    "service-faults",
+    "bpmn-errors",
+    "boundary-events",
+    "incidents-as-semantic-outcomes",
+    "retry-exhaustion-semantics",
+    "rollback-equivalence",
+    "compensation",
+    "cancellation",
+    "multiple-effects",
+    "effect-races",
+    "external-tasks",
+    "scripts",
+    "listeners"
+  ]
+}

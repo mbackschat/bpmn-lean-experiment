@@ -39,8 +39,8 @@ const serviceTaskProbeUrl = new URL(
   "../../../scenarios/service-task-effect/process.bpmn",
   import.meta.url,
 );
-const createDocumentUrl = new URL(
-  "../../../scenarios/create-document-data/process.bpmn",
+const mappedSuccessUrl = new URL(
+  "../../../scenarios/mapped-success-service-task/process.bpmn",
   import.meta.url,
 );
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -65,6 +65,7 @@ function compile(
     sourceId: scenario.bpmn.id,
     expectedSha256: scenario.bpmn.sha256,
     semanticProfile: scenario.profile,
+    sourceOverlay: null,
     limits,
     ...overrides,
   });
@@ -93,6 +94,7 @@ test("retains exact source identity and compiles checked and semantic definition
       semanticProfile: "cibseven-2.2.0-user-task-process-data-draft",
       sourceId: "sequential-user-task-process",
       sourceSha256: "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
+      sourceOverlay: null,
     },
     processId: "Process_SequentialUserTask",
     definitionScopes: [{
@@ -301,6 +303,7 @@ test("admits the exact Service Task source and foreign attributes without parser
     sourceId: "service-task-effect-phase-zero-probe",
     expectedSha256: undefined,
     semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
+    sourceOverlay: null,
     limits,
   });
 
@@ -338,13 +341,14 @@ test("admits the exact Service Task source and foreign attributes without parser
   assert.equal(foreignAttributes["camunda:asyncBefore"], "true");
 });
 
-test("admits the A12 CreateDocument source shape without rewriting metadata or mappings", async () => {
-  const sourceBytes = await readFile(createDocumentUrl);
+test("admits the neutral mapped-success source shape without rewriting mappings", async () => {
+  const sourceBytes = await readFile(mappedSuccessUrl);
   const result = await compileBpmnToSemanticProcess({
     bytes: sourceBytes,
-    sourceId: "a12-create-document-data",
+    sourceId: "mapped-success-service-task",
     expectedSha256: undefined,
-    semanticProfile: "cibseven-2.0.0-a12-create-document-draft",
+    semanticProfile: "cibseven-2.0.0-mapped-success-service-task-draft",
+    sourceOverlay: null,
     limits,
   });
 
@@ -357,7 +361,7 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
     ),
     {
       kind: CheckedNodeKind.ServiceTask,
-      id: "CreateDocument",
+      id: "MappedSuccessTask",
       descriptor: {
         protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
         operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
@@ -365,19 +369,19 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
       bpmnErrorRoute: null,
       inputMappings: [
         {
-          target: "documentModelName",
+          target: "requestValue",
           expression: {
             kind: "stringLiteral",
-            value: "MyDocumentModel",
+            value: "example-input",
           },
         },
       ],
       outputMappings: [
         {
-          target: "myDocumentReference",
+          target: "resultValue",
           expression: {
             kind: "localVariable",
-            name: "newDocRef",
+            name: "result",
           },
         },
       ],
@@ -388,35 +392,35 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
       ({ kind }) => kind === SemanticOperationKind.AwaitEffect,
     ),
     {
-      id: "operation:CreateDocument",
+      id: "operation:MappedSuccessTask",
       kind: SemanticOperationKind.AwaitEffect,
       origin: {
         kind: "bpmnElement",
-        elementId: "CreateDocument",
+        elementId: "MappedSuccessTask",
       },
-      input: "place:Flow_StartToCreate",
-      output: "place:Flow_CreateToEnd",
+      input: "place:Flow_StartToMappedSuccess",
+      output: "place:Flow_MappedSuccessToEnd",
       effect: {
-        elementId: "CreateDocument",
+        elementId: "MappedSuccessTask",
         descriptor: {
           protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
           operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
         },
         inputMappings: [
           {
-            target: "documentModelName",
+            target: "requestValue",
             expression: {
               kind: "stringLiteral",
-              value: "MyDocumentModel",
+              value: "example-input",
             },
           },
         ],
         outputMappings: [
           {
-            target: "myDocumentReference",
+            target: "resultValue",
             expression: {
               kind: "localVariable",
-              name: "newDocRef",
+              name: "result",
             },
           },
         ],
@@ -426,20 +430,18 @@ test("admits the A12 CreateDocument source shape without rewriting metadata or m
   );
 });
 
-test("rejects executable drift outside the exact A12 CreateDocument profile", async () => {
-  const source = await readFile(createDocumentUrl, "utf8");
+test("rejects executable drift outside the exact mapped-success profile", async () => {
+  const source = await readFile(mappedSuccessUrl, "utf8");
   const mutations = [
     source.replace(
-      "${createDocumentDelegate}",
-      "${createDocumentDelegate.execute()}",
+      "${mappedSuccessHandler}",
+      "${mappedSuccessHandler.execute()}",
     ),
     source.replace(
-      'camunda:delegateExpression="${createDocumentDelegate}"',
-      'camunda:delegateExpression="${createDocumentDelegate}" camunda:class="example.Hostile"',
+      'camunda:delegateExpression="${mappedSuccessHandler}"',
+      'camunda:delegateExpression="${mappedSuccessHandler}" camunda:class="example.Hostile"',
     ),
-    source.replace('name="documentModelName"', 'name="otherInput"'),
-    source.replace(">MyDocumentModel<", ">OtherModel<"),
-    source.replace("${newDocRef}", "${result.newDocRef}"),
+    source.replace("${result}", "${result.value}"),
     source.replace(
       "</camunda:inputOutput>",
       '<camunda:inputParameter name="extra">value</camunda:inputParameter></camunda:inputOutput>',
@@ -449,9 +451,10 @@ test("rejects executable drift outside the exact A12 CreateDocument profile", as
   for (const mutation of mutations) {
     const result = await compileBpmnToSemanticProcess({
       bytes: new TextEncoder().encode(mutation),
-      sourceId: "a12-create-document-data",
+      sourceId: "mapped-success-service-task",
       expectedSha256: undefined,
-      semanticProfile: "cibseven-2.0.0-a12-create-document-draft",
+      semanticProfile: "cibseven-2.0.0-mapped-success-service-task-draft",
+      sourceOverlay: null,
       limits,
     });
     assert.equal(result.status, BpmnCompilationStatus.Rejected);
@@ -461,6 +464,7 @@ test("rejects executable drift outside the exact A12 CreateDocument profile", as
 test("enforces the caller-provided byte limit before parsing", async () => {
   const result = await compile(canonicalBytes, {
     expectedSha256: undefined,
+    sourceOverlay: null,
     limits: {
       ...limits,
       maxBytes: canonicalBytes.byteLength - 1,

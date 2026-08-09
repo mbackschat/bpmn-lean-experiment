@@ -43,6 +43,7 @@ const program = {
     semanticProfile:
       "cibseven-2.2.0-subprocess-error-propagation-draft",
     sourceId: "subprocess-error-propagation-process",
+    sourceOverlay: null,
     sourceSha256:
       "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2",
   },

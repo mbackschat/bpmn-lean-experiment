@@ -50,6 +50,7 @@ const monitoredProgram = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
     sourceId: "non-interrupting-boundary-timer",
+    sourceOverlay: null,
     sourceSha256,
   },
   processId: "Process_NonInterruptingBoundaryTimer",

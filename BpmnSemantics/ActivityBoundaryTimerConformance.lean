@@ -134,7 +134,8 @@ def taskWinsScenario : Scenario :=
       { id := ⟨"activity-boundary-timer"⟩
         relativePath := "scenarios/activity-boundary-timer/process.bpmn"
         sha256 :=
-          "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e" }
+          "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e"
+        sourceOverlay := none }
     stimuli :=
       [ .startProcess startCommandId ⟨"Process_ActivityBoundaryTimer"⟩
           instanceId []

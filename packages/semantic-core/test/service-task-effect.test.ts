@@ -17,9 +17,11 @@ import {
   WaitKind,
   applyStimulus,
   initialState,
+  isWellFormedSemanticProcessProgram,
   projectEffectTransportMaterial,
   projectOpenEffects,
   runScenario,
+  supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteEffectStimulus,
@@ -50,6 +52,7 @@ const effectProgram = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
     sourceId: "service-task-effect-process",
+    sourceOverlay: null,
     sourceSha256:
       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   },
@@ -109,6 +112,18 @@ const complete = Object.freeze({
   },
 } as const) satisfies CompleteEffectStimulus;
 
+const overlayProgram = {
+  ...effectProgram,
+  identity: {
+    ...effectProgram.identity,
+    sourceOverlay: {
+      id: "mapped-service-task-adoption",
+      sha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    },
+  },
+} as unknown as SemanticProcessProgram;
+
 const effectScenario: Scenario = {
   kind: ScenarioDocumentKind.Scenario,
   id: "service-task-effect-success",
@@ -117,6 +132,7 @@ const effectScenario: Scenario = {
     id: effectProgram.identity.sourceId,
     relativePath: "scenarios/service-task-effect/process.bpmn",
     sha256: effectProgram.identity.sourceSha256,
+    sourceOverlay: null,
   },
   stimuli: [start, complete],
   observations: [
@@ -254,11 +270,155 @@ test("projects transport material only from admitted definition and committed in
         semanticProfile: effectProgram.identity.semanticProfile,
         sourceId: effectProgram.identity.sourceId,
         sourceSha256: effectProgram.identity.sourceSha256,
+        sourceOverlay: null,
         processId: effectProgram.processId,
       },
       occurrence: effectId,
       descriptor,
       arguments: [],
     },
+  );
+});
+
+test("admits an exact source-overlay identity", () => {
+  assert.equal(isWellFormedSemanticProcessProgram(effectProgram), true);
+  assert.equal(isWellFormedSemanticProcessProgram(overlayProgram), true);
+
+  const overlayScenario = {
+    ...effectScenario,
+    bpmn: {
+      ...effectScenario.bpmn,
+      sourceOverlay: overlayProgram.identity.sourceOverlay,
+    },
+  };
+  const overlayIdentity = overlayScenario.bpmn.sourceOverlay;
+  if (overlayIdentity === null) {
+    throw new Error("overlay fixture omitted its exact identity");
+  }
+  assert.equal(
+    supportsSemanticProcessScenario(overlayScenario, overlayProgram),
+    true,
+  );
+  assert.equal(
+    supportsSemanticProcessScenario(
+      {
+        ...overlayScenario,
+        bpmn: {
+          ...overlayScenario.bpmn,
+          sourceOverlay: {
+            id: overlayIdentity.id,
+            sha256: "b".repeat(64),
+          },
+        },
+      },
+      overlayProgram,
+    ),
+    false,
+  );
+});
+
+test("rejects missing, extra, malformed, and noncanonical source-overlay identity data", () => {
+  const { sourceOverlay: _omitted, ...missingOverlay } = effectProgram.identity;
+  const malformedIdentities: ReadonlyArray<unknown> = [
+    missingOverlay,
+    { ...effectProgram.identity, sourceOverlay: undefined },
+    {
+      ...effectProgram.identity,
+      sourceOverlay: {
+        id: "",
+        sha256: "a".repeat(64),
+      },
+    },
+    {
+      ...effectProgram.identity,
+      sourceOverlay: {
+        id: "bad\ud800id",
+        sha256: "a".repeat(64),
+      },
+    },
+    {
+      ...effectProgram.identity,
+      sourceOverlay: {
+        id: "mapped-service-task-adoption",
+        sha256: "A".repeat(64),
+      },
+    },
+    {
+      ...effectProgram.identity,
+      sourceOverlay: {
+        id: "mapped-service-task-adoption",
+        sha256: "a".repeat(63),
+      },
+    },
+    {
+      ...effectProgram.identity,
+      sourceOverlay: {
+        id: "mapped-service-task-adoption",
+        sha256: "a".repeat(64),
+        extra: true,
+      },
+    },
+    { ...effectProgram.identity, extra: true },
+  ];
+
+  for (const identity of malformedIdentities) {
+    assert.equal(
+      isWellFormedSemanticProcessProgram({ ...effectProgram, identity }),
+      false,
+    );
+  }
+
+  const { sourceOverlay: _omittedScenario, ...missingScenarioOverlay } =
+    effectScenario.bpmn;
+  const malformedScenarioResources: ReadonlyArray<unknown> = [
+    missingScenarioOverlay,
+    { ...effectScenario.bpmn, sourceOverlay: undefined },
+    {
+      ...effectScenario.bpmn,
+      sourceOverlay: {
+        id: "mapped-service-task-adoption",
+        sha256: "A".repeat(64),
+      },
+    },
+    {
+      ...effectScenario.bpmn,
+      sourceOverlay: null,
+      extra: true,
+    },
+  ];
+  for (const bpmn of malformedScenarioResources) {
+    assert.equal(
+      supportsSemanticProcessScenario(
+        { ...effectScenario, bpmn } as unknown as Scenario,
+        effectProgram,
+      ),
+      false,
+    );
+  }
+});
+
+test("binds the source-overlay digest into effect transport material", () => {
+  const waiting = applyStimulus(effectProgram, initialState, start).state;
+  const [openEffect] = projectOpenEffects(waiting);
+  assert.ok(openEffect !== undefined, "the waiting state must expose one effect");
+
+  const changedDigestProgram = {
+    ...overlayProgram,
+    identity: {
+      ...overlayProgram.identity,
+      sourceOverlay: {
+        ...overlayProgram.identity.sourceOverlay,
+        sha256:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      },
+    },
+  } as SemanticProcessProgram;
+  assert.notDeepEqual(
+    projectEffectTransportMaterial(overlayProgram, openEffect),
+    projectEffectTransportMaterial(changedDigestProgram, openEffect),
+  );
+  assert.deepEqual(
+    applyStimulus(overlayProgram, initialState, start),
+    applyStimulus(changedDigestProgram, initialState, start),
   );
 });

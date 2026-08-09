@@ -258,7 +258,8 @@ test("external evidence consumers fail closed and honor the shared root", async 
   assert.doesNotMatch(miwg, /BPMN_MIWG_IMPORT skipped/u);
   assert.match(cibGate, /check-external-sources\.sh" verify/u);
   assert.doesNotMatch(cibGate, /runner_a12_model/u);
-  assert.match(cibTests, /!CibSevenBoundaryErrorPhaseZeroProbeTest/u);
+  assert.match(cibTests, /!CibSevenMappedSuccessScenarioRunnerTest/u);
+  assert.match(cibTests, /!CibSevenMappedBoundaryErrorScenarioRunnerTest/u);
   assert.match(cibTests, /resolveCibSevenMavenTimeoutMs/u);
   assert.match(cibTests, /wrapCibSevenMavenFailure/u);
   assert.doesNotMatch(cibTests, /externalTargetCarriesTheReviewedEmptyAttributeShape/u);

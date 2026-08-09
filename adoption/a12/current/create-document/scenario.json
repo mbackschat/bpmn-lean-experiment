@@ -1,0 +1,69 @@
+{
+  "kind": "scenario",
+  "id": "a12-create-document-data",
+  "profile": "cibseven-2.0.0-mapped-success-service-task-draft",
+  "bpmn": {
+    "id": "a12-create-document-data",
+    "relativePath": "adoption/a12/current/create-document/process.bpmn",
+    "sha256": "34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13",
+    "sourceOverlay": {
+      "id": "a12-create-document-release-2025.06",
+      "sha256": "9a5d43f86368d93b18e23234a6b9681b80a48ba6d449873b357d6d90f2b7dd62"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-create-document",
+      "processId": "Process_A12CreateDocument",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:f596120e7c23b39e80a25da929e64ee8c5a311a0f8281a132833d6afd33f4c88",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CreateDocument",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "newDocRef",
+            "value": {
+              "kind": "string",
+              "value": "Document:42"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.1",
+      "BPMN 2.0.2 §10.3.4",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "cibRefs": [
+      "CIB-EXT-0007",
+      "CIB-OP-0006",
+      "CIB-CFG-0006"
+    ]
+  }
+}

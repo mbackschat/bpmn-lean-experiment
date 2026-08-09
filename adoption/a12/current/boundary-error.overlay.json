@@ -1,0 +1,18 @@
+{
+  "kind": "bpmnSourceOverlay",
+  "id": "a12-boundary-error-release-2025.06",
+  "semanticProfile": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+  "effectBindings": [
+    {
+      "source": {
+        "implementation": "urn:bpmn-lean:a12-delegate:v1",
+        "delegateExpression": "#{createRelationshipLinkDelegate}"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1"
+      }
+    }
+  ],
+  "inertAttributes": []
+}

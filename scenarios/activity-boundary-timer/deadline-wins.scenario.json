@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "activity-boundary-timer",
     "relativePath": "scenarios/activity-boundary-timer/process.bpmn",
-    "sha256": "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e"
+    "sha256": "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

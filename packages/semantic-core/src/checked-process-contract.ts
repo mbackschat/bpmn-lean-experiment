@@ -7,6 +7,7 @@
  * The Semantic Process IL lowered from it is owned by `semantic-process-contract.ts`.
  */
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -60,6 +61,7 @@ export type CheckedProcessIdentity = DeepReadonly<{
   semanticProfile: string;
   sourceId: string;
   sourceSha256: string;
+  sourceOverlay: SourceOverlayIdentity | null;
 }>;
 
 export type CheckedBpmnErrorRoute = DeepReadonly<{

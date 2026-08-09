@@ -25,6 +25,7 @@ export async function compileSemanticProcessFixture(
     sourceId,
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
   if (result.status !== BpmnCompilationStatus.Accepted) {

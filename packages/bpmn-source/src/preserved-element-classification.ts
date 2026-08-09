@@ -41,7 +41,10 @@ import {
   BpmnSourceDiagnosticCode,
 } from "./contracts.js";
 import { carriesDeclaredDefault } from "./metamodel-defaults.js";
-import { asElement } from "./moddle-graph.js";
+import {
+  asElement,
+  readNamespaceUriForPrefix,
+} from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
   type: "json",
@@ -103,8 +106,7 @@ const artifactTypes = [
  * The preserve-enabled successor to the runnable User Task profile.
  *
  * `name` on `bpmn:Definitions` is preserved for the same reason `documentation` is: BPMN gives it no
- * execution meaning at all. `exporter` and `exporterVersion` follow the already-admitted A12
- * CreateDocument reader, which retains both.
+ * execution meaning at all. `exporter` and `exporterVersion` retain modeler provenance.
  */
 const userTaskPreservedNotation: PreservationCapability = Object.freeze({
   preservedTypes: new Set([
@@ -150,28 +152,13 @@ export function preservationCapability(
  * runs. Generic compilation collects the resulting records with its other classification findings;
  * selected-shape readers receive only a source that has passed their document-level form.
  *
- * The A12 CreateDocument profile exempts whole `Definitions` and `Process` types rather than the exact
- * vendor attributes its registered source carries — `modeler:executionPlatform`, its version sibling,
- * and `camunda:versionTag`, none of which any projector reads. An unconsumed foreign attribute on that
- * profile's `Definitions` is therefore still admitted and discarded; its `Process` is covered only
- * incidentally, by the reader's own exact attribute-count equality. Narrowing the exemption needs
- * expanded `namespace#localName` matching resolved against the document's prefix bindings, which
- * [D2](../../../docs/PRESERVE-ONLY-ADMISSION-SPEC.md) defers to the first profile that declares an
- * inert set; matching the raw prefix instead would admit content by spelling.
- * [IMPLEMENTATION-MAP.md](../../../docs/IMPLEMENTATION-MAP.md) records the residual as absent.
+ * Mapped-source readers use the separate exact expanded-name collector below. This legacy type-level
+ * policy remains only for readers whose projector consumes and validates its complete foreign set.
  */
 export function foreignAttributeConsumingTypes(
   semanticProfile: string,
 ): ReadonlySet<string> {
   switch (semanticProfile) {
-    case SemanticProfileId.CreateDocument:
-      return new Set([
-        bpmnTypes.definitionsType,
-        bpmnTypes.processType,
-        bpmnTypes.serviceTaskType,
-      ]);
-    case SemanticProfileId.BoundaryError:
-      return new Set([bpmnTypes.serviceTaskType]);
     case SemanticProfileId.CalledProcessCallActivity:
       return new Set();
     default:
@@ -290,6 +277,55 @@ export function foreignAttributeRejections(
         )
       )
   );
+}
+
+/**
+ * Collects foreign attributes against exact expanded-name admission rather than exempting a type.
+ *
+ * Selected mapped-source readers use this form because an overlay may declare one attribute inert at
+ * one exact element type. A whole-type exemption would turn that bounded declaration into permission
+ * for every vendor attribute the parser retains on the same element.
+ */
+export function exactForeignAttributeRejections(
+  definitions: ElementRecord,
+  located: ReadonlyMap<ElementRecord, ElementLocus>,
+  admits: (
+    elementType: unknown,
+    namespaceUri: string,
+    localName: string,
+  ) => boolean,
+): ReadonlyArray<ElementRejection> {
+  const schemaInstance = xmlSchemaInstancePrefixes(definitions);
+  return [...located].flatMap(([element, locus]) => {
+    const attributes = asElement(element.$attrs);
+    if (attributes === undefined) {
+      return [];
+    }
+    return Object.keys(attributes).flatMap((name) => {
+      if (isXmlInfrastructureAttribute(name, schemaInstance)) {
+        return [];
+      }
+      const separator = name.indexOf(":");
+      const prefix = separator <= 0 ? undefined : name.slice(0, separator);
+      const localName = separator <= 0 ? undefined : name.slice(separator + 1);
+      const namespaceUri = prefix === undefined
+        ? undefined
+        : readNamespaceUriForPrefix(element, definitions, prefix);
+      return typeof namespaceUri === "string" &&
+          localName !== undefined &&
+          admits(element.$type, namespaceUri, localName)
+        ? []
+        : [
+            rejectElement(
+              element,
+              locus,
+              BpmnSourceDiagnosticCode.UnconsumedForeignAttribute,
+              name,
+              BpmnAdmissionCapability.ConsumeForeignAttribute,
+            ),
+          ];
+    });
+  });
 }
 
 /**
@@ -467,6 +503,25 @@ function unconsumedForeignAttributeNames(
       !contentFreeSchemaLocationHints.has(localName)
     );
   });
+}
+
+function isXmlInfrastructureAttribute(
+  name: string,
+  schemaInstancePrefixes: ReadonlySet<string>,
+): boolean {
+  if (name === "xmlns" || name.startsWith("xmlns:")) {
+    return true;
+  }
+  const separator = name.indexOf(":");
+  if (
+    separator <= 0 ||
+    !schemaInstancePrefixes.has(name.slice(0, separator))
+  ) {
+    return false;
+  }
+  const localName = name.slice(separator + 1);
+  return parserConsumedSchemaInstanceAttributes.has(localName) ||
+    contentFreeSchemaLocationHints.has(localName);
 }
 
 /**

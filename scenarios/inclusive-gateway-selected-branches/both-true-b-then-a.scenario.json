@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "inclusive-gateway-test",
     "relativePath": "scenarios/inclusive-gateway-selected-branches/process.bpmn",
-    "sha256": "9a662129585d4bf89973c8f1eb2851023345a43bba31a9d51683d918ca4de9f1"
+    "sha256": "9a662129585d4bf89973c8f1eb2851023345a43bba31a9d51683d918ca4de9f1",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

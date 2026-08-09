@@ -42,6 +42,7 @@ structure TaskOccurrenceId where
 structure SourceIdentity where
   semanticProfile : ProfileId
   sourceId : SemanticId
+  sourceOverlay : Option SourceOverlayIdentity := none
   sourceSha256 : String
   deriving Repr, DecidableEq
 
@@ -195,6 +196,7 @@ structure ProgramIdentity where
   compiler : CompilerId
   semanticProfile : ProfileId
   sourceId : SemanticId
+  sourceOverlay : Option SourceOverlayIdentity := none
   sourceSha256 : String
   deriving Repr, DecidableEq
 

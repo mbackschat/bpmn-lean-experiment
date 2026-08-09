@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-fork-join-b-then-a",
-    "sha256": "a1edc4506594361234d668d7c18fd1b34c5a1c2c2185c50427229916f6db81d1"
+    "sha256": "c0bcb0c9cf673a4bbbb6f2a50abb3e2012f924b88bc9fb51d56a3b086f50fb57"
   },
   "profile": {
     "id": "parallel-fork-join-draft",

@@ -6,10 +6,6 @@
  * exists to reject that. The rule takes no profile parameter: a reference to the wrong kind of element
  * is a malformed source rather than one beyond a profile, and widening a profile would not admit it.
  *
- * It was nonetheless installed per source reader, and two of the four readers never called it. The A12
- * CreateDocument profile admitted a `BPMNShape` whose `bpmnElement` resolved to a `BPMNPlane` — the
- * exact defect the rule was written for, in the other profile that retains Diagram Interchange.
- *
  * Each case asserts the diagnostic **code**, not merely rejection. Two of these seeds would also fail
  * a structural rule, so a status-only assertion would pass without the rule running at all and could
  * not distinguish a document-wide rule from a per-reader one.
@@ -21,8 +17,8 @@ import { test } from "node:test";
 import {
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
-  a12BoundaryErrorProfile,
-  a12CreateDocumentProfile,
+  mappedBoundaryErrorServiceTaskProfile,
+  mappedSuccessServiceTaskProfile,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import { SemanticProfileId } from "@bpmn-lean/semantic-core";
@@ -52,26 +48,26 @@ const dispatchPaths: ReadonlyArray<
     subject: "bpmnElement",
   },
   {
-    path: "the A12 CreateDocument reader",
+    path: "the mapped-success reader",
     source: new URL(
-      "../../../scenarios/create-document-data/process.bpmn",
+      "../../../scenarios/mapped-success-service-task/process.bpmn",
       import.meta.url,
     ),
-    semanticProfile: a12CreateDocumentProfile,
-    find: 'bpmnElement="StartEvent_CreateDocument"',
-    replace: 'bpmnElement="Plane_A12CreateDocument"',
-    subject: "bpmnElement",
+    semanticProfile: mappedSuccessServiceTaskProfile,
+    find: 'sourceRef="StartEvent_MappedSuccess"',
+    replace: 'sourceRef="Process_MappedSuccess"',
+    subject: "sourceRef",
   },
   {
     // A Sequence Flow is not an Activity, which is what `attachedToRef` declares.
-    path: "the A12 boundary-error reader",
+    path: "the mapped-boundary-Error reader",
     source: new URL(
-      "../../../scenarios/boundary-error/process.bpmn",
+      "../../../scenarios/mapped-boundary-error-service-task/process.bpmn",
       import.meta.url,
     ),
-    semanticProfile: a12BoundaryErrorProfile,
-    find: 'attachedToRef="CreateRelationshipLinkTask"',
-    replace: 'attachedToRef="Flow_StartToService"',
+    semanticProfile: mappedBoundaryErrorServiceTaskProfile,
+    find: 'attachedToRef="MappedBoundaryEffectTask"',
+    replace: 'attachedToRef="Flow_StartToMappedBoundaryEffect"',
     subject: "attachedToRef",
   },
   {
@@ -98,6 +94,7 @@ for (const { path, source, semanticProfile, find, replace, subject } of dispatch
       sourceId: "wrong-typed-reference",
       expectedSha256: undefined,
       semanticProfile,
+      sourceOverlay: null,
       limits: semanticProcessTestLimits,
     });
 
@@ -122,6 +119,7 @@ test("keeps every unperturbed dispatch path admitting its own source", async () 
         sourceId: "unperturbed-dispatch-path",
         expectedSha256: undefined,
         semanticProfile,
+        sourceOverlay: null,
         limits: semanticProcessTestLimits,
       })
     ),

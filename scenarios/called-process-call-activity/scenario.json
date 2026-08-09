@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "called-process-call-activity",
     "relativePath": "scenarios/called-process-call-activity/process.bpmn",
-    "sha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73"
+    "sha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

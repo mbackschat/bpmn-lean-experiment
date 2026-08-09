@@ -1,0 +1,54 @@
+{
+  "kind": "bpmnSourceOverlay",
+  "id": "a12-create-document-release-2025.06",
+  "semanticProfile": "cibseven-2.0.0-mapped-success-service-task-draft",
+  "effectBindings": [
+    {
+      "source": {
+        "implementation": null,
+        "delegateExpression": "${createDocumentDelegate}"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:mapped-success-v1"
+      }
+    }
+  ],
+  "inertAttributes": [
+    {
+      "elementType": "bpmn:Definitions",
+      "expandedName": {
+        "namespaceUri": "http://camunda.org/schema/modeler/1.0",
+        "localName": "executionPlatform"
+      }
+    },
+    {
+      "elementType": "bpmn:Definitions",
+      "expandedName": {
+        "namespaceUri": "http://camunda.org/schema/modeler/1.0",
+        "localName": "executionPlatformVersion"
+      }
+    },
+    {
+      "elementType": "bpmn:Process",
+      "expandedName": {
+        "namespaceUri": "http://camunda.org/schema/1.0/bpmn",
+        "localName": "versionTag"
+      }
+    },
+    {
+      "elementType": "bpmn:ServiceTask",
+      "expandedName": {
+        "namespaceUri": "http://camunda.org/schema/1.0/bpmn",
+        "localName": "modelerTemplate"
+      }
+    },
+    {
+      "elementType": "bpmn:ServiceTask",
+      "expandedName": {
+        "namespaceUri": "http://camunda.org/schema/1.0/bpmn",
+        "localName": "modelerTemplateVersion"
+      }
+    }
+  ]
+}

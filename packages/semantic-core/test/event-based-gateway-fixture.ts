@@ -23,6 +23,7 @@ export const eventRaceProgram: SemanticProcessProgram = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-event-based-gateway-message-timer-draft",
     sourceId: "event-race",
+    sourceOverlay: null,
     sourceSha256: "9".repeat(64),
   },
   processId: "Process_EventRace",

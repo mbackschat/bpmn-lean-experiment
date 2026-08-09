@@ -38,6 +38,7 @@ async function compileFixture(
     expectedSha256: undefined,
     semanticProfile:
       "bpmn-2.0.2-intermediate-catch-message-draft",
+    sourceOverlay: null,
     limits,
   });
   if (result.status !== BpmnCompilationStatus.Accepted) {
@@ -141,6 +142,7 @@ test("derives Message channel identity from references rather than fixture const
     expectedSha256: undefined,
     semanticProfile:
       "bpmn-2.0.2-intermediate-catch-message-draft",
+    sourceOverlay: null,
     limits,
   });
 
@@ -202,6 +204,7 @@ test("rejects incomplete, inconsistent, payload-bearing, or additional Message c
       expectedSha256: undefined,
       semanticProfile:
         "bpmn-2.0.2-intermediate-catch-message-draft",
+      sourceOverlay: null,
       limits,
     });
     assert.equal(result.status, BpmnCompilationStatus.Rejected);

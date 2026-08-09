@@ -43,6 +43,7 @@ const program = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: profile,
     sourceId: "message-addressed-receive-task-process",
+    sourceOverlay: null,
     sourceSha256:
       "4444444444444444444444444444444444444444444444444444444444444444",
   },

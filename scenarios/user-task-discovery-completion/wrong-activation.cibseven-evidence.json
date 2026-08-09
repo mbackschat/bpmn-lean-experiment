@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-wrong-activation",
-    "sha256": "e251f32f0e52deb41f911e1b490105828972d8bcc314c52accfe03f3946cb903"
+    "sha256": "3ef891d166f894967e5a7dc15a7822521a37211c57a8dbcd54d532307577d923"
   },
   "profile": {
     "id": "cibseven-2.2.0-user-task-process-data-draft",

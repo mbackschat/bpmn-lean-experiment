@@ -59,15 +59,15 @@ export const artifactCases = Object.freeze([
   }),
   Object.freeze({
     scenarioRelativePath:
-      "scenarios/create-document-data/scenario.json",
+      "scenarios/mapped-success-service-task/scenario.json",
     evidenceRelativePath:
-      "scenarios/create-document-data/cibseven-evidence.json",
+      "scenarios/mapped-success-service-task/cibseven-evidence.json",
   }),
   Object.freeze({
     scenarioRelativePath:
-      "scenarios/boundary-error/scenario.json",
+      "scenarios/mapped-boundary-error-service-task/scenario.json",
     evidenceRelativePath:
-      "scenarios/boundary-error/cibseven-evidence.json",
+      "scenarios/mapped-boundary-error-service-task/cibseven-evidence.json",
   }),
   Object.freeze({
     scenarioRelativePath:

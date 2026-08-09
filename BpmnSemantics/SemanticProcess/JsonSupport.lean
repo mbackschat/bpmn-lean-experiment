@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import BpmnSemantics.StrictJson
 import Lean.Data.Json
 
@@ -66,17 +67,32 @@ def decodeOptionalString : Json → Except String (Option String)
   | .str value => pure (some value)
   | _ => throw "string or null expected"
 
+def decodeSourceOverlayIdentity : Json →
+    Except String (Option SourceOverlayIdentity)
+  | .null => pure none
+  | json => do
+      requireObjectShape json ["id", "sha256"]
+      let id ← stringField json "id"
+      let sha256 ← stringField json "sha256"
+      if SemanticProcess.nonempty id &&
+          SemanticProcess.lowercaseHexSha256 sha256 then
+        pure (some { id := ⟨id⟩, sha256 })
+      else
+        throw "invalid source overlay identity"
+
 def decodeStringArray (json : Json) :
     Except String (List String) :=
   decodeArray Json.getStr? json
 
 def decodeResourceIdentity (json : Json) :
     Except String ResourceIdentity := do
-  requireObjectShape json ["id", "relativePath", "sha256"]
+  requireObjectShape json ["id", "relativePath", "sha256", "sourceOverlay"]
   pure
     { id := ⟨← stringField json "id"⟩
       relativePath := ← stringField json "relativePath"
-      sha256 := ← stringField json "sha256" }
+      sha256 := ← stringField json "sha256"
+      sourceOverlay :=
+        ← decodeSourceOverlayIdentity (← field json "sourceOverlay") }
 
 def decodeOccurrenceId (json : Json) :
     Except String OccurrenceId := do

@@ -8,6 +8,7 @@ import type {
   CheckedNode,
   CheckedProcess,
   CheckedSequenceFlow,
+  SourceOverlayIdentity,
 } from "@bpmn-lean/semantic-core";
 
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
@@ -59,6 +60,7 @@ export function compileCallActivityCheckedProcess(
   rootElement: unknown,
   source: BpmnSourceIdentity,
   semanticProfile: string,
+  sourceOverlay: SourceOverlayIdentity | null,
 ): CheckedCompilationProjection {
   const definitions = asElement(rootElement);
   if (
@@ -179,6 +181,7 @@ export function compileCallActivityCheckedProcess(
         semanticProfile,
         sourceId: source.id,
         sourceSha256: source.sha256,
+        sourceOverlay,
       },
       processId: caller.processId,
       definitionScopes,

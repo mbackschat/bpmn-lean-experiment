@@ -41,6 +41,7 @@ async function compileFixture(
     bytes: await readFile(new URL(relativePath, import.meta.url)),
     sourceId,
     expectedSha256: undefined,
+    sourceOverlay: null,
     semanticProfile,
     limits,
   });

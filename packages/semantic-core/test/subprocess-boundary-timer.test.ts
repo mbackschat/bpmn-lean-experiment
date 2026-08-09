@@ -58,6 +58,7 @@ const boundedScopeProgram = {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-subprocess-boundary-timer-draft",
     sourceId: "subprocess-boundary-timer",
+    sourceOverlay: null,
     sourceSha256:
       "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e",
   },

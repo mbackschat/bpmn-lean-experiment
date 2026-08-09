@@ -10,6 +10,7 @@
  * The program is immutable; runtime state lives in `semantic-process-state.ts`.
  */
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
   DefinitionScope,
@@ -61,6 +62,7 @@ export type SemanticProcessIdentity = DeepReadonly<{
   semanticProfile: string;
   sourceId: string;
   sourceSha256: string;
+  sourceOverlay: SourceOverlayIdentity | null;
 }>;
 
 export type BpmnElementOrigin = DeepReadonly<{

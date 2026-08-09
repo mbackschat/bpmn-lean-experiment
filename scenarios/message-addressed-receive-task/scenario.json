@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "message-addressed-receive-task-process",
     "relativePath": "scenarios/message-addressed-receive-task/process.bpmn",
-    "sha256": "2793f384239ccc0cc4fd9a6d558b53f97c8a3ec724083cf1702d684861397b2a"
+    "sha256": "2793f384239ccc0cc4fd9a6d558b53f97c8a3ec724083cf1702d684861397b2a",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

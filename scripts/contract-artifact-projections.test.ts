@@ -162,9 +162,9 @@ test("binds status, logical time, and variables to raw state queries", async () 
   const mapping = cloneArtifactSet(
     required(
       artifactSets.find(
-        ({ scenario }) => scenario.id === "a12-create-document-data",
+        ({ scenario }) => scenario.id === "mapped-success-service-task",
       ),
-      "CreateDocument artifact set",
+      "mapped-success artifact set",
     ),
   );
   const rawVariable = requiredAt(
@@ -508,13 +508,13 @@ test("detects a Service Task effect-binding projection mutation", async () => {
   );
 });
 
-test("binds the synchronous CreateDocument mapping facts to final Process data", async () => {
+test("binds the mapped-success mapping facts to final Process data", async () => {
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
   const createDocument = required(
     artifactSets.find(
-      ({ scenario }) => scenario.id === "a12-create-document-data",
+      ({ scenario }) => scenario.id === "mapped-success-service-task",
     ),
-    "CreateDocument artifact set",
+    "mapped-success artifact set",
   );
   const mutated = cloneArtifactSet(createDocument);
   const mapping = requiredAt(
@@ -531,13 +531,13 @@ test("binds the synchronous CreateDocument mapping facts to final Process data",
     "mapping local patch",
   );
   if (localPatch.value.kind !== "string") {
-    throw new Error("CreateDocument local patch must be a string");
+    throw new Error("mapped-success local patch must be a string");
   }
-  localPatch.value.value = "Document:wrong";
+  localPatch.value.value = "wrong-result";
 
   assert.throws(
     () => verifyArtifactSet(mutated),
-    /does not establish the exact CreateDocument contract/,
+    /does not establish the mapped-success contract/,
   );
 });
 
@@ -545,15 +545,16 @@ test("binds the caught boundary Error local null to mapped Process data", async 
   const artifactSets = await readAndVerifyArtifactSets(projectRoot);
   const createDocument = required(
     artifactSets.find(
-      ({ scenario }) => scenario.id === "a12-create-document-data",
+      ({ scenario }) => scenario.id === "mapped-success-service-task",
     ),
-    "CreateDocument artifact set",
+    "mapped-success artifact set",
   );
   const boundaryError = required(
     artifactSets.find(
-      ({ scenario }) => scenario.id === "a12-boundary-error-caught",
+      ({ scenario }) =>
+        scenario.id === "mapped-boundary-error-service-task-caught",
     ),
-    "boundary-error artifact set",
+    "mapped-boundary-error artifact set",
   );
   const mutated = cloneArtifactSet(boundaryError);
   const mapping = requiredAt(
@@ -567,22 +568,22 @@ test("binds the caught boundary Error local null to mapped Process data", async 
   const stringValue = requiredAt(
     required(
       createDocument.evidence.producerObservations.mappingExecutions,
-      "CreateDocument mapping executions",
+      "mapped-success mapping executions",
     ),
     0,
-    "CreateDocument mapping execution",
+    "mapped-success mapping execution",
   ).localPatch[0]?.value;
   if (stringValue?.kind !== "string") {
-    throw new Error("CreateDocument local patch must be a string");
+    throw new Error("mapped-success local patch must be a string");
   }
   mapping.localPatch[0] = {
-    name: "newLinkId",
+    name: "result",
     value: structuredClone(stringValue),
   };
 
   assert.throws(
     () => verifyArtifactSet(mutated),
-    /does not establish the exact boundary-error contract/,
+    /does not establish the mapped-boundary-error contract/,
   );
 });
 

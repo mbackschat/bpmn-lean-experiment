@@ -76,7 +76,8 @@ def scenario : Scenario :=
       { id := ⟨"intermediate-catch-timer-pt1s-process"⟩
         relativePath := "scenarios/intermediate-catch-timer/process.bpmn"
         sha256 :=
-          "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5" }
+          "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5"
+        sourceOverlay := none }
     stimuli :=
       [ .startProcess
           ⟨"start-process"⟩

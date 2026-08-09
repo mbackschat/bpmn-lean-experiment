@@ -469,6 +469,7 @@ export async function loadAndCompileCases(
             bytes,
             sourceId: scenario.bpmn.id,
             expectedSha256: scenario.bpmn.sha256,
+            sourceOverlay: null,
             semanticProfile: scenario.profile,
             limits: {
               maxBytes: 1024 * 1024,

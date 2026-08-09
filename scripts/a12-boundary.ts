@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { lstat, readFile, readlink } from "node:fs/promises";
+import { isDeepStrictEqual } from "node:util";
 import path from "node:path";
 
 export const externalCreateDocumentSha256 =
@@ -44,6 +45,59 @@ const lowerSemanticRoots = [
   "packages/semantic-core/",
   "packages/temporal-adapter/",
 ];
+
+const productDecisionRoots = [
+  "BpmnSemantics/",
+  "examples/",
+  "packages/",
+  "profiles/",
+  "runners/cibseven/",
+  "scenarios/",
+];
+
+const optionalAdoptionRoots = [
+  "adoption/a12/",
+  "packages/bpmn-source/calibration/",
+];
+
+/** Exact legacy decisions that may survive only as optional adoption evidence. */
+export const legacyProductDecisions = [
+  ["cibseven-2.0.0-a12-create-", "document-draft"].join(""),
+  ["cibseven-2.0.0-a12-boundary-", "error-draft"].join(""),
+  ["a12-create-document-string-success-", "calibration-only"].join(""),
+  ["a12-boundary-error-exact-catch-", "calibration-only"].join(""),
+  ["urn:bpmn-lean:a12-delegate:", "v1"].join(""),
+  ["urn:bpmn-lean:a12:create-", "document"].join(""),
+  ["create", "DocumentDelegate"].join(""),
+  ["createRelationship", "LinkDelegate"].join(""),
+  ["A12Create", "Document"].join(""),
+  ["a12Create", "Document"].join(""),
+  ["A12Boundary", "Error"].join(""),
+  ["a12Boundary", "Error"].join(""),
+  ["Create", "Document"].join(""),
+  ["createDocumentDelegate", "Template"].join(""),
+  ["documentModel", "Name"].join(""),
+  ["MyDocument", "Model"].join(""),
+  ["myDocument", "Reference"].join(""),
+  ["newDoc", "Ref"].join(""),
+  ["CreateRelationship", "LinkTask"].join(""),
+  ["relationship", "Model"].join(""),
+  ["Relationship", "Model"].join(""),
+  ["relationship", "LinkId"].join(""),
+  ["newLink", "Id"].join(""),
+  ["LinkLimitReached", "Error"].join(""),
+  ["Error_LinkLimit", "Reached"].join(""),
+  ["BoundaryEvent_LinkLimit", "Reached"].join(""),
+  ["ErrorEventDefinition_LinkLimit", "Reached"].join(""),
+  ["ExpectedUserTaskAfterBPMN", "Error"].join(""),
+  ["scenarios/create-document-", "data"].join(""),
+  ["scenarios/boundary-", "error"].join(""),
+];
+
+const legacyProductDecisionInventoryPath =
+  "adoption/a12/legacy/product-decision-inventory.json";
+const legacySourceTarget =
+  "02330ad0f980a5fc282cc0aa93600a9632b86c3e";
 
 const downstreamBeanIdentities = [
   "createDocumentDelegate",
@@ -103,6 +157,11 @@ function isLowerSemanticFile(relativePath: string): boolean {
   return lowerSemanticRoots.some((root) => relativePath.startsWith(root));
 }
 
+function isProductDecisionFile(relativePath: string): boolean {
+  return productDecisionRoots.some((root) => relativePath.startsWith(root)) &&
+    !optionalAdoptionRoots.some((root) => relativePath.startsWith(root));
+}
+
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
@@ -147,9 +206,44 @@ export function assessA12Boundary(
         }
       }
     }
+    if (isProductDecisionFile(file.path)) {
+      if (source.includes("adoption/a12")) {
+        violations.push(
+          `${file.path}: product dependency on the optional A12 adoption root`,
+        );
+      }
+      for (const decision of legacyProductDecisions) {
+        if (source.includes(decision)) {
+          violations.push(
+            `${file.path}: legacy A12 product decision ${decision}`,
+          );
+        }
+      }
+    }
   }
 
   return violations.sort();
+}
+
+export async function verifyLegacyProductDecisionInventory(
+  projectRoot: string,
+): Promise<void> {
+  const inventory = JSON.parse(
+    await readFile(
+      path.join(projectRoot, legacyProductDecisionInventoryPath),
+      "utf8",
+    ),
+  ) as unknown;
+  const expected = {
+    kind: "a12LegacyProductDecisionInventory",
+    sourceTarget: legacySourceTarget,
+    decisions: [...legacyProductDecisions].sort(),
+  };
+  if (!isDeepStrictEqual(inventory, expected)) {
+    throw new Error(
+      `${legacyProductDecisionInventoryPath} does not match the immutable pre-extraction decision inventory`,
+    );
+  }
 }
 
 function repositoryPaths(projectRoot: string): Promise<ReadonlyArray<string>> {

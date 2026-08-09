@@ -71,6 +71,7 @@ async function program(
     bytes: await readFile(source),
     sourceId,
     expectedSha256: undefined,
+    sourceOverlay: null,
     semanticProfile,
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   });

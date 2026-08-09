@@ -25,6 +25,7 @@ export const callActivityProgram = {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "bpmn-2.0.2-called-process-call-activity-draft",
     sourceId: "call-activity-runtime-test",
+    sourceOverlay: null,
     sourceSha256: "c".repeat(64),
   },
   processId: callerProcessId,

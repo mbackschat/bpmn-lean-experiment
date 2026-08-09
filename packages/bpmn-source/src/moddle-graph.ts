@@ -56,8 +56,7 @@ export function readForeignAttributes(
   definitions: ElementRecord,
 ): ReadonlyMap<string, string> | undefined {
   const rawAttributes = asElement(element.$attrs);
-  const namespaceAttributes = asElement(definitions.$attrs);
-  if (rawAttributes === undefined || namespaceAttributes === undefined) {
+  if (rawAttributes === undefined) {
     return undefined;
   }
   const expanded = new Map<string, string>();
@@ -72,7 +71,7 @@ export function readForeignAttributes(
     }
     const prefix = qualifiedName.slice(0, separator);
     const localName = qualifiedName.slice(separator + 1);
-    const namespace = namespaceAttributes[`xmlns:${prefix}`];
+    const namespace = readNamespaceUriForPrefix(element, definitions, prefix);
     if (typeof namespace !== "string") {
       return undefined;
     }
@@ -83,4 +82,23 @@ export function readForeignAttributes(
     expanded.set(expandedName, value);
   }
   return expanded;
+}
+
+/** Resolves one lexical prefix against the element's inherited namespace declarations. */
+export function readNamespaceUriForPrefix(
+  element: ElementRecord,
+  definitions: ElementRecord,
+  prefix: string,
+): unknown {
+  const visited = new Set<ElementRecord>();
+  let current: ElementRecord | undefined = element;
+  while (current !== undefined && !visited.has(current)) {
+    visited.add(current);
+    const namespace = asElement(current.$attrs)?.[`xmlns:${prefix}`];
+    if (namespace !== undefined) {
+      return namespace;
+    }
+    current = asElement(current.$parent);
+  }
+  return asElement(definitions.$attrs)?.[`xmlns:${prefix}`];
 }

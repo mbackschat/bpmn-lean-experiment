@@ -1,0 +1,184 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "a12-boundary-error-caught",
+    "sha256": "d8ccbd3473777f88d01633fc8e8490a9e4157ea6cd6653f45b5d1f97619fcd79"
+  },
+  "profile": {
+    "id": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+    "sha256": "e7756064f3790f5935f45466d41c3625a7fa6b2388ae1d5d84ab59b638589e4d"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.0.0",
+    "engineRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-boundary-user-task",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "tasks": [
+          {
+            "elementId": "ExpectedUserTaskAfterBPMNError",
+            "name": "Expected User Task After BPMN Error"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-boundary-user-task",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-boundary-user-task",
+        "jobs": []
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-boundary-error",
+        "handler": "createRelationshipLinkDelegate",
+        "arguments": [
+          {
+            "name": "relationshipModel",
+            "value": {
+              "kind": "string",
+              "value": "RelationshipModel"
+            }
+          }
+        ],
+        "localPatch": [
+          {
+            "name": "newLinkId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-boundary-error",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ExpectedUserTaskAfterBPMNError",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ExpectedUserTaskAfterBPMNError",
+              "activation": 1
+            },
+            "name": "Expected User Task After BPMN Error",
+            "state": "active"
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ExpectedUserTaskAfterBPMNError",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-boundary-user-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "relationshipLinkId",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

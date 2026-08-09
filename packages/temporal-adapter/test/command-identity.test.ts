@@ -120,29 +120,29 @@ test("content-binds the typed BPMN Error command without coercing null", () => {
   const stimulus = {
     kind: StimulusKind.CompleteEffect,
     commandId:
-      "complete-effect-sha256:49ddf71a5f8e23b59c039a65bd64a2ed16232c31a47790b2273e1b05c3c971d5",
+      "complete-effect-sha256:937f7a5c5565cde928afe3526bc64fc80c1ddb34281a0e8a259ae5ac6af2ec2e",
     effectId: {
       processInstanceId: "Instance_1",
-      elementId: "CreateRelationshipLinkTask",
+      elementId: "MappedBoundaryEffectTask",
       activation: 1,
     },
     result: {
       kind: EffectExecutionResultKind.BpmnError,
-      code: "LinkLimitReachedError",
-      message: "Link limit reached",
+      code: "MappedBusinessError",
+      message: "mapped business error",
       localPatch: [{
-        name: "newLinkId",
+        name: "result",
         value: { kind: VariableValueKind.Null },
       }],
     },
   } as const satisfies Stimulus;
   assert.equal(
     canonicalStimulusEncoding(stimulus),
-    '["completeEffect","complete-effect-sha256:49ddf71a5f8e23b59c039a65bd64a2ed16232c31a47790b2273e1b05c3c971d5",["Instance_1","CreateRelationshipLinkTask",1],["bpmnError","LinkLimitReachedError",["some","Link limit reached"],[["newLinkId",["null"]]]]]',
+    '["completeEffect","complete-effect-sha256:937f7a5c5565cde928afe3526bc64fc80c1ddb34281a0e8a259ae5ac6af2ec2e",["Instance_1","MappedBoundaryEffectTask",1],["bpmnError","MappedBusinessError",["some","mapped business error"],[["result",["null"]]]]]',
   );
   assert.equal(
     contentBoundUpdateId(stimulus),
-    "bpmn-command-sha256:01a0ceb7728092785d29d40533f67a3a200f95705793e95cce03947ee4d8e3ac",
+    "bpmn-command-sha256:27f8841bf325124b1bac5e6cbea9611affb9e6c9b835f83115a7a61bbd3c60d9",
   );
 });
 

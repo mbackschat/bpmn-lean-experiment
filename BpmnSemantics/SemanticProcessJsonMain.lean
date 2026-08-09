@@ -220,11 +220,20 @@ private def observationKindJson : ObservationKind → Json
   | .enabledInteractions => toJson "enabledInteractions"
   | .logicalTime => toJson "logicalTime"
 
+private def sourceOverlayIdentityJson : Option SourceOverlayIdentity → Json
+  | none => .null
+  | some identity =>
+      Json.mkObj
+        [ ("id", toJson identity.id.value)
+        , ("sha256", toJson identity.sha256) ]
+
 private def resourceIdentityJson (resource : ResourceIdentity) : Json :=
   Json.mkObj
     [ ("id", toJson resource.id.value)
     , ("relativePath", toJson resource.relativePath)
-    , ("sha256", toJson resource.sha256) ]
+    , ("sha256", toJson resource.sha256)
+    , ("sourceOverlay",
+        sourceOverlayIdentityJson resource.sourceOverlay) ]
 
 private def scenarioProvenanceJson (provenance : ScenarioProvenance) : Json :=
   Json.mkObj
@@ -294,6 +303,8 @@ private def definitionForScenario (inputs : List DefinitionInput)
   if input.checkedProcess.identity.semanticProfile ≠ scenario.profile ||
       input.checkedProcess.identity.sourceId ≠ scenario.bpmn.id ||
       input.checkedProcess.identity.sourceSha256 ≠ scenario.bpmn.sha256 ||
+      input.checkedProcess.identity.sourceOverlay ≠
+        scenario.bpmn.sourceOverlay ||
       input.checkedProcess.processId ≠
         match scenario.stimuli.head? with
         | some (.startProcess _ processId _ _) => ⟨processId.value⟩

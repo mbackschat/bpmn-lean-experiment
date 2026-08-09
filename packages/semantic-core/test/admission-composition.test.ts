@@ -37,6 +37,7 @@ const program = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: compositionProfile,
     sourceId: "timer-user-task-composition-process",
+    sourceOverlay: null,
     sourceSha256:
       "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
   },

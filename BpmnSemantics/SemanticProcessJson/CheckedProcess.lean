@@ -15,10 +15,12 @@ open Lean
 private def decodeSourceIdentity (json : Json) :
     Except String SourceIdentity := do
   requireObjectShape json
-    ["semanticProfile", "sourceId", "sourceSha256"]
+    ["semanticProfile", "sourceId", "sourceOverlay", "sourceSha256"]
   pure
     { semanticProfile := ⟨← stringField json "semanticProfile"⟩
       sourceId := ⟨← stringField json "sourceId"⟩
+      sourceOverlay :=
+        ← decodeSourceOverlayIdentity (← field json "sourceOverlay")
       sourceSha256 := ← stringField json "sourceSha256" }
 
 private def decodeCheckedBpmnErrorRoute (json : Json) :

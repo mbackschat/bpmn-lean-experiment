@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcessContract
 
 /-! # Semantic Process bounded data mappings
 
-This module owns the string-only mapping mechanisms admitted by the CreateDocument capsule. It deliberately implements only the empty payload-free effect and the exact one-literal-input/one-local-output shape.
+This module owns the string-only mapping mechanisms admitted by mapped Service Task profiles. It deliberately implements only the empty payload-free effect and the exact one-literal-input/one-local-output shape.
 -/
 
 namespace BpmnSemantics.SemanticProcess

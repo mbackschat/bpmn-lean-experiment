@@ -10,7 +10,8 @@ private def parallelBpmn : ResourceIdentity :=
   { id := ⟨"parallel-two-user-tasks-process"⟩
     relativePath := "scenarios/parallel-fork-join/process.bpmn"
     sha256 :=
-      "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6" }
+      "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6"
+    sourceOverlay := none }
 
 private def parallelObservations : List ObservationKind :=
   [ .deployment

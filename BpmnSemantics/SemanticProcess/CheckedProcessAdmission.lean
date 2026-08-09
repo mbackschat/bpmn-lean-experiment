@@ -284,6 +284,7 @@ def checkedBoundaryTimerAttachmentValid (source : CheckedProcess) : Bool :=
 def checkedWellFormed (source : CheckedProcess) : Bool :=
   nonempty source.identity.semanticProfile.value &&
     nonempty source.identity.sourceId.value &&
+    sourceOverlayIdentityValid source.identity.sourceOverlay &&
     lowercaseHexSha256 source.identity.sourceSha256 &&
     nonempty source.processId.value &&
     checkedDefinitionScopesValid source &&

@@ -32,8 +32,8 @@ const noPreservedKeys: ReadonlySet<string> = new Set();
 
 export const FlowElementProjectionProfile = Object.freeze({
   Generic: "generic",
-  A12CreateDocument: "a12CreateDocument",
-  A12BoundaryError: "a12BoundaryError",
+  MappedSuccessServiceTask: "mappedSuccessServiceTask",
+  MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
 } as const);
 
@@ -52,12 +52,12 @@ export const ProjectedFlowElementShape = Object.freeze({
   ReceiveTask: "receiveTask",
   ErrorEndEvent: "errorEndEvent",
   BoundaryEvent: "boundaryEvent",
-  A12CreateServiceTask: "a12CreateServiceTask",
-  A12CreateSequenceFlow: "a12CreateSequenceFlow",
-  A12BoundaryIdentityNode: "a12BoundaryIdentityNode",
-  A12BoundaryServiceTask: "a12BoundaryServiceTask",
-  A12BoundaryEvent: "a12BoundaryEvent",
-  A12BoundarySequenceFlow: "a12BoundarySequenceFlow",
+  MappedSuccessServiceTask: "mappedSuccessServiceTask",
+  MappedSuccessSequenceFlow: "mappedSuccessSequenceFlow",
+  MappedBoundaryIdentityNode: "mappedBoundaryIdentityNode",
+  MappedBoundaryServiceTask: "mappedBoundaryServiceTask",
+  MappedBoundaryEvent: "mappedBoundaryEvent",
+  MappedBoundarySequenceFlow: "mappedBoundarySequenceFlow",
   CallActivity: "callActivity",
 } as const);
 
@@ -98,22 +98,22 @@ export const projectedFlowElementKeys = Object.freeze({
   [ProjectedFlowElementShape.BoundaryEvent]: Object.freeze([
     "$type", "id", "name", "attachedToRef", "cancelActivity", "eventDefinitions",
   ]),
-  [ProjectedFlowElementShape.A12CreateServiceTask]: Object.freeze([
+  [ProjectedFlowElementShape.MappedSuccessServiceTask]: Object.freeze([
     "$type", "id", "name", "extensionElements",
   ]),
-  [ProjectedFlowElementShape.A12CreateSequenceFlow]: Object.freeze([
+  [ProjectedFlowElementShape.MappedSuccessSequenceFlow]: Object.freeze([
     "$type", "id", "name", "sourceRef", "targetRef",
   ]),
-  [ProjectedFlowElementShape.A12BoundaryIdentityNode]: Object.freeze([
+  [ProjectedFlowElementShape.MappedBoundaryIdentityNode]: Object.freeze([
     "$type", "id",
   ]),
-  [ProjectedFlowElementShape.A12BoundaryServiceTask]: Object.freeze([
+  [ProjectedFlowElementShape.MappedBoundaryServiceTask]: Object.freeze([
     "$type", "id", "name", "implementation", "extensionElements",
   ]),
-  [ProjectedFlowElementShape.A12BoundaryEvent]: Object.freeze([
+  [ProjectedFlowElementShape.MappedBoundaryEvent]: Object.freeze([
     "$type", "id", "name", "attachedToRef", "cancelActivity", "eventDefinitions",
   ]),
-  [ProjectedFlowElementShape.A12BoundarySequenceFlow]: Object.freeze([
+  [ProjectedFlowElementShape.MappedBoundarySequenceFlow]: Object.freeze([
     "$type", "id", "sourceRef", "targetRef",
   ]),
   [ProjectedFlowElementShape.CallActivity]: Object.freeze([
@@ -169,10 +169,10 @@ export function projectedFlowElementShapes(
   switch (profile) {
     case FlowElementProjectionProfile.Generic:
       return genericShapes(type);
-    case FlowElementProjectionProfile.A12CreateDocument:
-      return a12CreateShapes(type);
-    case FlowElementProjectionProfile.A12BoundaryError:
-      return a12BoundaryShapes(type);
+    case FlowElementProjectionProfile.MappedSuccessServiceTask:
+      return mappedSuccessShapes(type);
+    case FlowElementProjectionProfile.MappedBoundaryErrorServiceTask:
+      return mappedBoundaryShapes(type);
     case FlowElementProjectionProfile.CallActivity:
       return callActivityShapes(type);
   }
@@ -214,7 +214,7 @@ function genericShapes(
   }
 }
 
-function a12CreateShapes(
+function mappedSuccessShapes(
   type: unknown,
 ): ReadonlyArray<ProjectedFlowElementShape> | undefined {
   switch (type) {
@@ -222,29 +222,29 @@ function a12CreateShapes(
     case bpmnTypes.endEventType:
       return [ProjectedFlowElementShape.PlainNode];
     case bpmnTypes.serviceTaskType:
-      return [ProjectedFlowElementShape.A12CreateServiceTask];
+      return [ProjectedFlowElementShape.MappedSuccessServiceTask];
     case bpmnTypes.sequenceFlowType:
-      return [ProjectedFlowElementShape.A12CreateSequenceFlow];
+      return [ProjectedFlowElementShape.MappedSuccessSequenceFlow];
     default:
       return undefined;
   }
 }
 
-function a12BoundaryShapes(
+function mappedBoundaryShapes(
   type: unknown,
 ): ReadonlyArray<ProjectedFlowElementShape> | undefined {
   switch (type) {
     case bpmnTypes.startEventType:
     case bpmnTypes.endEventType:
-      return [ProjectedFlowElementShape.A12BoundaryIdentityNode];
+      return [ProjectedFlowElementShape.MappedBoundaryIdentityNode];
     case bpmnTypes.userTaskType:
       return [ProjectedFlowElementShape.PlainNode];
     case bpmnTypes.serviceTaskType:
-      return [ProjectedFlowElementShape.A12BoundaryServiceTask];
+      return [ProjectedFlowElementShape.MappedBoundaryServiceTask];
     case bpmnTypes.boundaryEventType:
-      return [ProjectedFlowElementShape.A12BoundaryEvent];
+      return [ProjectedFlowElementShape.MappedBoundaryEvent];
     case bpmnTypes.sequenceFlowType:
-      return [ProjectedFlowElementShape.A12BoundarySequenceFlow];
+      return [ProjectedFlowElementShape.MappedBoundarySequenceFlow];
     default:
       return undefined;
   }

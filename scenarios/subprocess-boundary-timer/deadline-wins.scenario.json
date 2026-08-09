@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "subprocess-boundary-timer",
     "relativePath": "scenarios/subprocess-boundary-timer/process.bpmn",
-    "sha256": "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e"
+    "sha256": "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

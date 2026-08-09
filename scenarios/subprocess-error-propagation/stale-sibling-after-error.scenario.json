@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "subprocess-error-propagation-process",
     "relativePath": "scenarios/subprocess-error-propagation/process.bpmn",
-    "sha256": "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2"
+    "sha256": "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

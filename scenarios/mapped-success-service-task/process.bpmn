@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_MappedSuccess"
+  targetNamespace="urn:bpmn-lean:mapped-success-service-task">
+  <bpmn:process id="Process_MappedSuccess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_MappedSuccess">
+      <bpmn:outgoing>Flow_StartToMappedSuccess</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask
+      id="MappedSuccessTask"
+      name="Mapped Success Task"
+      camunda:delegateExpression="${mappedSuccessHandler}">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="requestValue">example-input</camunda:inputParameter>
+          <camunda:outputParameter name="resultValue">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToMappedSuccess</bpmn:incoming>
+      <bpmn:outgoing>Flow_MappedSuccessToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_MappedSuccess">
+      <bpmn:incoming>Flow_MappedSuccessToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow
+      id="Flow_StartToMappedSuccess"
+      sourceRef="StartEvent_MappedSuccess"
+      targetRef="MappedSuccessTask" />
+    <bpmn:sequenceFlow
+      id="Flow_MappedSuccessToEnd"
+      sourceRef="MappedSuccessTask"
+      targetRef="EndEvent_MappedSuccess" />
+  </bpmn:process>
+</bpmn:definitions>

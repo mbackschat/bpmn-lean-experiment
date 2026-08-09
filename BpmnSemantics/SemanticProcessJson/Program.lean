@@ -15,12 +15,15 @@ open Lean
 private def decodeProgramIdentity (json : Json) :
     Except String ProgramIdentity := do
   requireObjectShape json
-    ["compiler", "semanticProfile", "sourceId", "sourceSha256"]
+    ["compiler", "semanticProfile", "sourceId", "sourceOverlay",
+      "sourceSha256"]
   expectStringField json "compiler" "bpmn-source-semantic-process"
   pure
     { compiler := .bpmnSourceSemanticProcess
       semanticProfile := ⟨← stringField json "semanticProfile"⟩
       sourceId := ⟨← stringField json "sourceId"⟩
+      sourceOverlay :=
+        ← decodeSourceOverlayIdentity (← field json "sourceOverlay")
       sourceSha256 := ← stringField json "sourceSha256" }
 
 private def decodeSequenceFlowOrigin (json : Json) :

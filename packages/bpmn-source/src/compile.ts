@@ -35,12 +35,22 @@ import {
 import {
   callActivityDefinitionBindingValid,
 } from "./call-activity-lowering.js";
+import {
+  admitSourceOverlay,
+} from "./source-overlay.js";
 
 export async function compileBpmnToSemanticProcess(
   request: CompileBpmnToSemanticProcessRequest,
 ): Promise<BpmnCompilationResult> {
   validateRequest(request);
   const exactBytes = Uint8Array.from(request.bytes);
+  const sourceOverlaySelection = request.sourceOverlay === null
+    ? null
+    : {
+        id: request.sourceOverlay.id,
+        sha256: request.sourceOverlay.sha256,
+        bytes: Uint8Array.from(request.sourceOverlay.bytes),
+      };
   const sha256 = await computeSha256(exactBytes);
   const declaredEncoding = readDeclaredEncoding(exactBytes);
   let decodedAs: "UTF-8" | null = null;
@@ -79,6 +89,18 @@ export async function compileBpmnToSemanticProcess(
       diagnostic(
         BpmnSourceDiagnosticCode.UnsupportedEncoding,
         `Declared encoding ${declaredEncoding} is not supported by the first ingestion capsule.`,
+      ),
+    ]);
+  }
+
+  const sourceOverlayAdmission = sourceOverlaySelection === null
+    ? { overlay: null, rejection: null }
+    : await admitSourceOverlay(sourceOverlaySelection);
+  if (sourceOverlayAdmission.rejection !== null) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.InvalidSourceOverlay,
+        sourceOverlayAdmission.rejection,
       ),
     ]);
   }
@@ -135,13 +157,9 @@ export async function compileBpmnToSemanticProcess(
     return reject(imported.warnings);
   }
 
-  // A reference resolving outside the type its property declares is a malformed source rather than
-  // one beyond a profile, so this rule takes no profile parameter and belongs above the dispatch
-  // below. It was previously installed inside each reader, and two of the four never called it: the
-  // A12 CreateDocument profile admitted a `BPMNShape` whose `bpmnElement` resolved to a `BPMNPlane`,
-  // which is exactly the defect the rule was written for. Placing it beside the parser warnings also
-  // matches how a malformation is reported — before classification, which cannot enumerate a
-  // document whose own references do not resolve to their declared kinds.
+  // A reference resolving outside the type its property declares is malformed source rather than
+  // material beyond a profile. Keeping this above dispatch ensures every selected reader applies the
+  // same rule before classification and cannot silently project a wrongly typed resolved reference.
   const wrongTypedReferences = orderedElementDiagnostics(
     referenceTargetRejections(imported.located),
   );
@@ -153,6 +171,7 @@ export async function compileBpmnToSemanticProcess(
     imported.rootElement,
     source(),
     request.semanticProfile,
+    sourceOverlayAdmission.overlay,
   );
   if (projection.checkedProcess === undefined) {
     return reject(projection.diagnostics);
@@ -203,6 +222,15 @@ function validateRequest(
     request.semanticProfile.length === 0
   ) {
     throw new TypeError("semanticProfile must not be empty");
+  }
+  if (!(request.sourceOverlay === null ||
+    typeof request.sourceOverlay === "object" &&
+    request.sourceOverlay !== null &&
+    typeof request.sourceOverlay.id === "string" &&
+    request.sourceOverlay.id.length > 0 &&
+    typeof request.sourceOverlay.sha256 === "string" &&
+    request.sourceOverlay.bytes instanceof Uint8Array)) {
+    throw new TypeError("sourceOverlay must be null or an exact overlay selection");
   }
   if (typeof request.limits !== "object" || request.limits === null) {
     throw new TypeError("limits must be an object");

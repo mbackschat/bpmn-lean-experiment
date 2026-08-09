@@ -43,6 +43,7 @@ const timerProgram = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "cibseven-2.2.0-intermediate-catch-timer-draft",
     sourceId: "intermediate-catch-timer-pt1s-process",
+    sourceOverlay: null,
     sourceSha256,
   },
   processId: "Process_IntermediateCatchTimer",
@@ -103,6 +104,7 @@ const timerScenario: Scenario = {
     id: timerProgram.identity.sourceId,
     relativePath: "scenarios/intermediate-catch-timer/process.bpmn",
     sha256: sourceSha256,
+    sourceOverlay: null,
   },
   stimuli: [start, exactFire],
   observations: [

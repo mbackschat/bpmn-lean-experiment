@@ -1,0 +1,112 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "a12-create-document-data",
+    "sha256": "91c8d5215682c3fb381106d6d9ca1697aa200e5f2458f8af34cff245e1fc91cb"
+  },
+  "profile": {
+    "id": "cibseven-2.0.0-mapped-success-service-task-draft",
+    "sha256": "9c9997f75b4822d47943616cbdf10a14626cffa4c903467f77fe3219a55daea3"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.0.0",
+    "engineRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-create-document",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "myDocumentReference",
+            "value": "Document:42"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-create-document",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-create-document",
+        "jobs": []
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-create-document",
+        "handler": "createDocumentDelegate",
+        "arguments": [
+          {
+            "name": "documentModelName",
+            "value": {
+              "kind": "string",
+              "value": "MyDocumentModel"
+            }
+          }
+        ],
+        "localPatch": [
+          {
+            "name": "newDocRef",
+            "value": {
+              "kind": "string",
+              "value": "Document:42"
+            }
+          }
+        ],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-create-document",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "myDocumentReference",
+            "value": {
+              "kind": "string",
+              "value": "Document:42"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

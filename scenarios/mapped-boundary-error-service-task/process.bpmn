@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_MappedBoundaryError"
+  targetNamespace="urn:bpmn-lean:mapped-boundary-error-service-task">
+  <bpmn:error
+    id="Error_MappedBusinessError"
+    name="Mapped Business Error"
+    errorCode="MappedBusinessError" />
+  <bpmn:process id="Process_MappedBoundaryError" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_MappedBoundaryError">
+      <bpmn:outgoing>Flow_StartToMappedBoundaryEffect</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask
+      id="MappedBoundaryEffectTask"
+      name="Mapped Boundary Effect Task"
+      implementation="urn:bpmn-lean:effect-binding:mapped-boundary-error:v1"
+      camunda:delegateExpression="#{mappedBoundaryErrorHandler}">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="requestValue">example-input</camunda:inputParameter>
+          <camunda:outputParameter name="resultValue">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToMappedBoundaryEffect</bpmn:incoming>
+      <bpmn:outgoing>Flow_MappedBoundaryEffectToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent
+      id="BoundaryEvent_MappedBusinessError"
+      name="Mapped Business Error Boundary"
+      attachedToRef="MappedBoundaryEffectTask">
+      <bpmn:outgoing>Flow_ErrorToReviewMappedError</bpmn:outgoing>
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_MappedBusinessError"
+        errorRef="Error_MappedBusinessError" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ReviewMappedError" name="Review Mapped Error">
+      <bpmn:incoming>Flow_ErrorToReviewMappedError</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewMappedErrorToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Normal">
+      <bpmn:incoming>Flow_MappedBoundaryEffectToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_AfterMappedError">
+      <bpmn:incoming>Flow_ReviewMappedErrorToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow
+      id="Flow_StartToMappedBoundaryEffect"
+      sourceRef="StartEvent_MappedBoundaryError"
+      targetRef="MappedBoundaryEffectTask" />
+    <bpmn:sequenceFlow
+      id="Flow_MappedBoundaryEffectToEnd"
+      sourceRef="MappedBoundaryEffectTask"
+      targetRef="EndEvent_Normal" />
+    <bpmn:sequenceFlow
+      id="Flow_ErrorToReviewMappedError"
+      sourceRef="BoundaryEvent_MappedBusinessError"
+      targetRef="ReviewMappedError" />
+    <bpmn:sequenceFlow
+      id="Flow_ReviewMappedErrorToEnd"
+      sourceRef="ReviewMappedError"
+      targetRef="EndEvent_AfterMappedError" />
+  </bpmn:process>
+</bpmn:definitions>

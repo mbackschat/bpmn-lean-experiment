@@ -84,13 +84,41 @@
       "required": [
         "id",
         "relativePath",
-        "sha256"
+        "sha256",
+        "sourceOverlay"
       ],
       "properties": {
         "id": {
           "$ref": "#/$defs/nonEmptyString"
         },
         "relativePath": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sourceOverlay": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sourceOverlayIdentity"
+            }
+          ]
+        }
+      }
+    },
+    "sourceOverlayIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
           "$ref": "#/$defs/nonEmptyString"
         },
         "sha256": {

@@ -286,12 +286,16 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
  * operations, so `decide +kernel` fails to elaborate rather than running slowly. `parseRejected
  * "{\"id\":1,\"id\":1}" = true` and `parseSimpleBooleanExpression "stringEquals(route,\"review\")"`
  * both report that their `Decidable` instance "did not reduce to `isTrue` or `isFalse`".
- * `native_decide` decides them because compiled code walks the string. Removing these two requires
+ * `native_decide` decides them because compiled code walks the string. Removing these two rows requires
  * restating the propositions over a non-`String` representation, which is a semantic change to what
  * the fixtures lock, not a tactic swap.
+ *
+ * Exact null, present, missing, and malformed source-overlay JSON shapes are grouped into one
+ * decision per wire owner. Grouping keeps the compiler-trusted boundary at the three parsers that
+ * own the contract instead of creating one site per example.
  */
 const recordedNativeDecideSites = Object.freeze([
-  Object.freeze({ path: "BpmnSemantics/SemanticProcessJsonConformance.lean", sites: 15 }),
+  Object.freeze({ path: "BpmnSemantics/SemanticProcessJsonConformance.lean", sites: 18 }),
   Object.freeze({
     path: "BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean",
     sites: 1,

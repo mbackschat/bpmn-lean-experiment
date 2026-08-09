@@ -56,7 +56,7 @@ const liveMechanisms = [
     mechanism: "product effect Activity returning its declared success arm",
   },
   {
-    example: "boundary-error",
+    example: "mapped-boundary-error-service-task",
     mechanism: "product effect Activity returning its declared bpmnError arm",
   },
   {

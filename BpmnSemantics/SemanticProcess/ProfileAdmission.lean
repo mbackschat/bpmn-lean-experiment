@@ -128,9 +128,10 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
     some (1, { starts := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
-      profile = "cibseven-2.0.0-a12-create-document-draft" then
+      profile = "cibseven-2.0.0-mapped-success-service-task-draft" then
     some (1, { starts := 1, effects := 1, ends := 1 })
-  else if profile = "cibseven-2.0.0-a12-boundary-error-draft" then
+  else if profile =
+      "cibseven-2.0.0-mapped-boundary-error-service-task-draft" then
     some (1,
       { starts := 1, userTasks := 1, effects := 1, ends := 2 })
   else if profile = "parallel-fork-join-draft" then
@@ -192,9 +193,10 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, timers := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-service-task-effect-draft" ||
-      profile = "cibseven-2.0.0-a12-create-document-draft" then
+      profile = "cibseven-2.0.0-mapped-success-service-task-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, effects := 1, ends := 1 })
-  else if profile = "cibseven-2.0.0-a12-boundary-error-draft" then
+  else if profile =
+      "cibseven-2.0.0-mapped-boundary-error-service-task-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, effects := 1, ends := 2 })
   else if profile = "parallel-fork-join-draft" then

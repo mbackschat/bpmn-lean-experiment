@@ -46,6 +46,7 @@ const program = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: messageProfile,
     sourceId: "intermediate-catch-message-process",
+    sourceOverlay: null,
     sourceSha256:
       "2222222222222222222222222222222222222222222222222222222222222222",
   },

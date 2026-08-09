@@ -31,11 +31,11 @@ export function runBpmnProcessEffectBypassMutation(
       ...(request.operation === EffectOperation.MappedBoundaryError
         ? {
             kind: EffectExecutionResultKind.BpmnError,
-            code: "LinkLimitReachedError",
-            message: "Link limit reached",
+            code: "MappedBusinessError",
+            message: "mapped business error",
             localPatch: [
               {
-                name: "newLinkId",
+                name: "result",
                 value: { kind: VariableValueKind.Null },
               },
             ],
@@ -46,10 +46,10 @@ export function runBpmnProcessEffectBypassMutation(
               request.operation === EffectOperation.MappedSuccess
                 ? [
                     {
-                      name: "newDocRef",
+                      name: "result",
                       value: {
                         kind: VariableValueKind.String,
-                        value: "Document:42",
+                        value: "example-result",
                       },
                     },
                   ]

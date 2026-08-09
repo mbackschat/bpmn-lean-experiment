@@ -61,6 +61,7 @@ test("closed Workflow retains accepted command result without accepting a new co
     bytes: await readFile(bpmnUrl),
     sourceId: scenario.bpmn.id,
     expectedSha256: scenario.bpmn.sha256,
+    sourceOverlay: null,
     semanticProfile: scenario.profile,
     limits: {
       maxBytes: 1024 * 1024,

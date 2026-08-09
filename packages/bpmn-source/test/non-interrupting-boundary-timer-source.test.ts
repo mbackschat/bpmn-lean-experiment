@@ -42,6 +42,7 @@ function compile(bytes: string, semanticProfile: string = profile) {
     sourceId: "non-interrupting-boundary-timer-test",
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits,
   });
 }

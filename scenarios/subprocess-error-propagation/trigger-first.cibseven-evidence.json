@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "subprocess-error-propagation-trigger-first",
-    "sha256": "e132d508752c201aeaec3673bf990a8e4bf5cc7fcefac243f710c1a6135f0750"
+    "sha256": "1c6c9dd75c3a0fccc7c5903c150ba09ef0011fc08f05b9aeec55071f712e256f"
   },
   "profile": {
     "id": "cibseven-2.2.0-subprocess-error-propagation-draft",

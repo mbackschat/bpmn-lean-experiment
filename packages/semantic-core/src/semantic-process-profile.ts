@@ -8,10 +8,12 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 export const SemanticProfileId = Object.freeze({
   ActivityBoundaryTimer:
     "bpmn-2.0.2-activity-boundary-timer-draft",
-  BoundaryError: "cibseven-2.0.0-a12-boundary-error-draft",
+  MappedBoundaryErrorServiceTask:
+    "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
   CalledProcessCallActivity:
     "bpmn-2.0.2-called-process-call-activity-draft",
-  CreateDocument: "cibseven-2.0.0-a12-create-document-draft",
+  MappedSuccessServiceTask:
+    "cibseven-2.0.0-mapped-success-service-task-draft",
   EmbeddedSubProcessCompletion:
     "cibseven-2.2.0-embedded-subprocess-completion-draft",
   SubProcessBoundaryTimer:
@@ -119,9 +121,9 @@ function requiredCheckedProcessShape(
         end,
       ]);
     case SemanticProfileId.ServiceTaskEffect:
-    case SemanticProfileId.CreateDocument:
+    case SemanticProfileId.MappedSuccessServiceTask:
       return rootChecked([start, CheckedNodeKind.ServiceTask, end]);
-    case SemanticProfileId.BoundaryError:
+    case SemanticProfileId.MappedBoundaryErrorServiceTask:
       return rootChecked([
         start,
         CheckedNodeKind.ServiceTask,
@@ -295,14 +297,14 @@ function requiredProgramShape(
         SemanticOperationKind.CompleteScope,
       ]);
     case SemanticProfileId.ServiceTaskEffect:
-    case SemanticProfileId.CreateDocument:
+    case SemanticProfileId.MappedSuccessServiceTask:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitEffect,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
-    case SemanticProfileId.BoundaryError:
+    case SemanticProfileId.MappedBoundaryErrorServiceTask:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitEffect,

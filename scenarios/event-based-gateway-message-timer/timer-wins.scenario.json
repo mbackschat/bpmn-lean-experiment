@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "event-based-gateway-message-timer",
     "relativePath": "scenarios/event-based-gateway-message-timer/process.bpmn",
-    "sha256": "3e7ca1e205c8b2adcb8a60e13edc9326bab1d45ede9fbc1c0809e96a701b0039"
+    "sha256": "3e7ca1e205c8b2adcb8a60e13edc9326bab1d45ede9fbc1c0809e96a701b0039",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

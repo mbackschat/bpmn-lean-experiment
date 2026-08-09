@@ -76,6 +76,7 @@ test("projects the two existing public wait surfaces without exposing the race r
       id: eventRaceProgram.identity.sourceId,
       relativePath: "test-only/event-race.bpmn",
       sha256: eventRaceProgram.identity.sourceSha256,
+      sourceOverlay: null,
     },
     stimuli: [eventRaceStart],
     observations: Object.values(ObservationRequestKind),

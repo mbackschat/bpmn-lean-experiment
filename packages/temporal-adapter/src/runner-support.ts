@@ -28,6 +28,7 @@ import {
   StimulusKind,
   advanceScenario,
   initialState,
+  isSourceOverlayIdentityOrNull,
   projectEffectTransportMaterial,
   projectOpenEffects,
 } from "@bpmn-lean/semantic-core";
@@ -450,6 +451,7 @@ export function isCompletedProcessReceipt(
       "semanticProfile",
       "sourceId",
       "sourceSha256",
+      "sourceOverlay",
     ]) &&
     definition.compiler ===
       SemanticProcessCompilerId.BpmnSourceSemanticProcess &&
@@ -457,6 +459,7 @@ export function isCompletedProcessReceipt(
     isNonEmptyString(definition.sourceId) &&
     typeof definition.sourceSha256 === "string" &&
     /^[a-f0-9]{64}$/u.test(definition.sourceSha256) &&
+    isSourceOverlayIdentityOrNull(definition.sourceOverlay) &&
     isNonEmptyString(value.processId) &&
     isNonEmptyString(value.processInstanceId) &&
     isRecord(finalState) &&

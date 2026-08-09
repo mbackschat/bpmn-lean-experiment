@@ -57,6 +57,7 @@ function choiceProgram(
       semanticProfile:
         "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
       sourceId: "simple-boolean-choice",
+      sourceOverlay: null,
       sourceSha256: "1".repeat(64),
     },
     processId: "Process_Choice",

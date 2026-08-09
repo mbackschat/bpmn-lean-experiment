@@ -164,11 +164,26 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record BpmnResource(String id, String relativePath, String sha256) {
+  public record BpmnResource(
+      String id,
+      String relativePath,
+      String sha256,
+      SourceOverlayIdentity sourceOverlay) {
     public BpmnResource {
       Objects.requireNonNull(id, "id");
       Objects.requireNonNull(relativePath, "relativePath");
       Objects.requireNonNull(sha256, "sha256");
+    }
+  }
+
+  public record SourceOverlayIdentity(String id, String sha256) {
+    public SourceOverlayIdentity {
+      Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(sha256, "sha256");
+      if (id.isEmpty() || !sha256.matches("[0-9a-f]{64}")) {
+        throw new IllegalArgumentException(
+            "source overlay identity requires a nonempty id and lowercase SHA-256");
+      }
     }
   }
 

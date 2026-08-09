@@ -56,6 +56,7 @@ export function semanticProcessFor(
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
       semanticProfile: scenario.profile,
       sourceId: scenario.bpmn.id,
+      sourceOverlay: scenario.bpmn.sourceOverlay,
       sourceSha256: scenario.bpmn.sha256,
     },
     processId: "Process_SequentialUserTask",

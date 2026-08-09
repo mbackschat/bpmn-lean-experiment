@@ -1,0 +1,79 @@
+{
+  "kind": "scenario",
+  "id": "mapped-boundary-error-service-task-caught",
+  "profile": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+  "bpmn": {
+    "id": "mapped-boundary-error-service-task",
+    "relativePath": "scenarios/mapped-boundary-error-service-task/process.bpmn",
+    "sha256": "0102c7af3c934157dc235485e956f49ec166c16ea2d503bb2ab5a14ad1714386",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-mapped-boundary-error",
+      "processId": "Process_MappedBoundaryError",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:937f7a5c5565cde928afe3526bc64fc80c1ddb34281a0e8a259ae5ac6af2ec2e",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "MappedBoundaryEffectTask",
+        "activation": 1
+      },
+      "result": {
+        "kind": "bpmnError",
+        "code": "MappedBusinessError",
+        "message": "mapped business error",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-mapped-error-review",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewMappedError",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.1",
+      "BPMN 2.0.2 §10.4.3",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "cibRefs": [
+      "CIB-AGR-0010",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-OP-0007",
+      "CIB-CFG-0007"
+    ]
+  }
+}

@@ -21,4 +21,9 @@ def lowercaseHexSha256 (value : String) : Bool :=
     value.toList.all fun character =>
       "0123456789abcdef".toList.contains character
 
+def sourceOverlayIdentityValid : Option SourceOverlayIdentity → Bool
+  | none => true
+  | some identity =>
+      nonempty identity.id.value && lowercaseHexSha256 identity.sha256
+
 end BpmnSemantics.SemanticProcess

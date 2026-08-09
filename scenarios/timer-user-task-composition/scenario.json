@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "timer-user-task-composition-process",
     "relativePath": "scenarios/timer-user-task-composition/process.bpmn",
-    "sha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2"
+    "sha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

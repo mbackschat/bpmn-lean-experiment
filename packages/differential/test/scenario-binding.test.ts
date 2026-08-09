@@ -26,6 +26,7 @@ const admittedScenario: Scenario = {
     relativePath: "scenarios/user-task-discovery-completion/process.bpmn",
     sha256:
       "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d",
+    sourceOverlay: null,
   },
   stimuli: [
     {

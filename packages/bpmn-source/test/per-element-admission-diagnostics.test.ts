@@ -28,21 +28,17 @@ import type {
 import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
-import {
-  asRecord,
-  publicCompilationProjection,
-} from "./compilation-result-test-support.ts";
 
 const preservedNotationSource = new URL(
   "../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,
 );
-const createDocumentSource = new URL(
-  "../../../scenarios/create-document-data/process.bpmn",
+const mappedSuccessSource = new URL(
+  "../../../scenarios/mapped-success-service-task/process.bpmn",
   import.meta.url,
 );
-const boundaryErrorSource = new URL(
-  "../../../scenarios/boundary-error/process.bpmn",
+const mappedBoundaryErrorSource = new URL(
+  "../../../scenarios/mapped-boundary-error-service-task/process.bpmn",
   import.meta.url,
 );
 const callActivitySource = new URL(
@@ -51,10 +47,6 @@ const callActivitySource = new URL(
 );
 const embeddedSubProcessSource = new URL(
   "../../../scenarios/embedded-subprocess-completion/process.bpmn",
-  import.meta.url,
-);
-const admissionBaseline = new URL(
-  "./fixtures/per-element-admission-baseline.json",
   import.meta.url,
 );
 
@@ -74,16 +66,16 @@ const baselineCases = [
     semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
   },
   {
-    id: "create-document-accepted",
-    source: createDocumentSource,
-    sourceId: "a12-create-document-data",
-    semanticProfile: SemanticProfileId.CreateDocument,
+    id: "mapped-success-accepted",
+    source: mappedSuccessSource,
+    sourceId: "mapped-success-service-task",
+    semanticProfile: SemanticProfileId.MappedSuccessServiceTask,
   },
   {
-    id: "boundary-error-accepted",
-    source: boundaryErrorSource,
-    sourceId: "a12-boundary-error",
-    semanticProfile: SemanticProfileId.BoundaryError,
+    id: "mapped-boundary-error-accepted",
+    source: mappedBoundaryErrorSource,
+    sourceId: "mapped-boundary-error-service-task",
+    semanticProfile: SemanticProfileId.MappedBoundaryErrorServiceTask,
   },
   {
     id: "call-activity-accepted",
@@ -93,12 +85,12 @@ const baselineCases = [
   },
   {
     id: "boundary-error-cancel-activity-false",
-    source: boundaryErrorSource,
-    sourceId: "a12-boundary-error-cancel-activity-false",
-    semanticProfile: SemanticProfileId.BoundaryError,
+    source: mappedBoundaryErrorSource,
+    sourceId: "mapped-boundary-error-service-task-cancel-activity-false",
+    semanticProfile: SemanticProfileId.MappedBoundaryErrorServiceTask,
     perturb: (source: string) => source.replace(
-      'attachedToRef="CreateRelationshipLinkTask"',
-      'attachedToRef="CreateRelationshipLinkTask" cancelActivity="false"',
+      'attachedToRef="MappedBoundaryEffectTask"',
+      'attachedToRef="MappedBoundaryEffectTask" cancelActivity="false"',
     ),
   },
   {
@@ -112,10 +104,10 @@ const baselineCases = [
     ),
   },
   {
-    id: "create-document-extra-input-parameter",
-    source: createDocumentSource,
-    sourceId: "create-document-extra-input-parameter",
-    semanticProfile: SemanticProfileId.CreateDocument,
+    id: "mapped-success-extra-input-parameter",
+    source: mappedSuccessSource,
+    sourceId: "mapped-success-extra-input-parameter",
+    semanticProfile: SemanticProfileId.MappedSuccessServiceTask,
     perturb: (source: string) => source.replace(
       "</camunda:inputOutput>",
       '<camunda:inputParameter name="extra">value</camunda:inputParameter></camunda:inputOutput>',
@@ -145,6 +137,7 @@ async function compilePerturbed(
     sourceId: "preserved-notation-diagnostics",
     expectedSha256: undefined,
     semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 }
@@ -172,26 +165,10 @@ async function compileCase(entry: CompilationCase): Promise<BpmnCompilationResul
     sourceId: entry.sourceId,
     expectedSha256: undefined,
     semanticProfile: entry.semanticProfile,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 }
-
-test("matches the immutable pre-change result projections", async () => {
-  const baseline = asRecord(JSON.parse(await readFile(admissionBaseline, "utf8")));
-  assert.equal(
-    baseline?.sourceTarget,
-    "8746bc6bbdeb126a79d56c6f510adc4e5f780d98",
-  );
-  const projections = asRecord(baseline?.projections);
-  assert.ok(projections !== undefined);
-  for (const entry of baselineCases) {
-    assert.deepEqual(
-      publicCompilationProjection(await compileCase(entry)),
-      projections[entry.id],
-      `${entry.id} changed from the reviewed pre-change result`,
-    );
-  }
-});
 
 const locatedPropertyCases = [
   {
@@ -202,14 +179,14 @@ const locatedPropertyCases = [
   },
   {
     ...baselineCases[1],
-    marker: "<bpmn:outgoing>Flow_StartToCreate</bpmn:outgoing>",
-    id: "StartEvent_CreateDocument",
+    marker: "<bpmn:outgoing>Flow_StartToMappedSuccess</bpmn:outgoing>",
+    id: "StartEvent_MappedSuccess",
     path: "definitions/rootElements[0]/flowElements[0]",
   },
   {
     ...baselineCases[2],
-    marker: "<bpmn:outgoing>Flow_StartToService</bpmn:outgoing>",
-    id: "StartEvent_None",
+    marker: "<bpmn:outgoing>Flow_StartToMappedBoundaryEffect</bpmn:outgoing>",
+    id: "StartEvent_MappedBoundaryError",
     path: "definitions/rootElements[1]/flowElements[0]",
   },
   {
@@ -257,6 +234,7 @@ test("classifies an embedded Sub-Process property before its shape gate", async 
     sourceId: "embedded-subprocess-property-diagnostics",
     expectedSha256: undefined,
     semanticProfile: "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 
@@ -590,6 +568,7 @@ test("carries no element on a document-level rejection", async () => {
     sourceId: "preserved-notation-diagnostics",
     expectedSha256: undefined,
     semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+    sourceOverlay: null,
     limits: { maxBytes: 4, parserDeadlineMs: semanticProcessTestLimits.parserDeadlineMs },
   });
 

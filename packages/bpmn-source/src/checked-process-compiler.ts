@@ -4,6 +4,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedProcess,
+  SourceOverlayIdentity,
 } from "@bpmn-lean/semantic-core";
 
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
@@ -97,6 +98,7 @@ export function compileCheckedProcess(
   source: BpmnSourceIdentity,
   semanticProfile: string,
   classifyForeignAttributes: ForeignAttributeClassification,
+  sourceOverlay: SourceOverlayIdentity | null,
 ): CheckedCompilationProjection {
   const capability = preservationCapability(semanticProfile);
   const definitions = asElement(rootElement);
@@ -284,6 +286,7 @@ export function compileCheckedProcess(
         semanticProfile,
         sourceId: source.id,
         sourceSha256: source.sha256,
+        sourceOverlay,
       },
       processId,
       definitionScopes: [...scoped.definitionScopes].sort(compareIds),

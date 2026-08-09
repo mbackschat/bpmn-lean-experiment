@@ -1,0 +1,66 @@
+{
+  "kind": "scenario",
+  "id": "mapped-success-service-task",
+  "profile": "cibseven-2.0.0-mapped-success-service-task-draft",
+  "bpmn": {
+    "id": "mapped-success-service-task",
+    "relativePath": "scenarios/mapped-success-service-task/process.bpmn",
+    "sha256": "3b5bcd5167f4d48753f8efede35f47484bddf9c278cc8fe2f4dc87549da26b4a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-mapped-success",
+      "processId": "Process_MappedSuccess",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:800f7d60cbcbc6663c0d4aed7ccacb643951d3075836188b96083ee2cba1c22a",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "MappedSuccessTask",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "example-result"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.1",
+      "BPMN 2.0.2 §10.3.4",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "cibRefs": [
+      "CIB-EXT-0007",
+      "CIB-OP-0006",
+      "CIB-CFG-0006"
+    ]
+  }
+}

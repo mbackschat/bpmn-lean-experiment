@@ -52,6 +52,7 @@ const material: EffectTransportMaterial = Object.freeze({
     sourceId: "service-task-effect-process",
     sourceSha256:
       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    sourceOverlay: null,
     processId: "Process_ServiceTaskEffect",
   },
   occurrence: {
@@ -65,17 +66,18 @@ const material: EffectTransportMaterial = Object.freeze({
   },
   arguments: [],
 });
-const createDocumentMaterial: EffectTransportMaterial = Object.freeze({
+const mappedSuccessMaterial: EffectTransportMaterial = Object.freeze({
   definition: {
-    semanticProfile: "cibseven-2.0.0-a12-create-document-draft",
-    sourceId: "a12-create-document-data",
+    semanticProfile: "cibseven-2.0.0-mapped-success-service-task-draft",
+    sourceId: "mapped-success-service-task",
     sourceSha256:
-      "34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13",
-    processId: "Process_A12CreateDocument",
+      "3b5bcd5167f4d48753f8efede35f47484bddf9c278cc8fe2f4dc87549da26b4a",
+    sourceOverlay: null,
+    processId: "Process_MappedSuccess",
   },
   occurrence: {
     processInstanceId: "Instance_1",
-    elementId: "CreateDocument",
+    elementId: "MappedSuccessTask",
     activation: 1,
   },
   descriptor: {
@@ -84,26 +86,26 @@ const createDocumentMaterial: EffectTransportMaterial = Object.freeze({
   },
   arguments: [
     {
-      name: "documentModelName",
-      value: { kind: VariableValueKind.String, value: "MyDocumentModel" },
+      name: "requestValue",
+      value: { kind: VariableValueKind.String, value: "example-input" },
     },
   ],
 });
-const createDocumentResult = Object.freeze({
+const mappedSuccessResult = Object.freeze({
   kind: EffectExecutionResultKind.Success,
   localPatch: [
     {
-      name: "newDocRef",
-      value: { kind: VariableValueKind.String, value: "Document:42" },
+      name: "result",
+      value: { kind: VariableValueKind.String, value: "example-result" },
     },
   ],
 } as const) satisfies EffectExecutionResult;
 const boundaryErrorResult = Object.freeze({
   kind: EffectExecutionResultKind.BpmnError,
-  code: "LinkLimitReachedError",
-  message: "Link limit reached",
+  code: "MappedBusinessError",
+  message: "mapped business error",
   localPatch: [{
-    name: "newLinkId",
+    name: "result",
     value: { kind: VariableValueKind.Null },
   }],
 } as const) satisfies EffectExecutionResult;
@@ -115,11 +117,11 @@ test("encodes and digests the complete committed effect intent", () => {
   } as const satisfies EffectExecutionResult;
   assert.equal(
     canonicalEffectTransportEncoding(material),
-    '["effectTransport",["cibseven-2.2.0-service-task-effect-draft","service-task-effect-process","0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","Process_ServiceTaskEffect"],["Instance_1","ServiceTask_Record",1],["urn:bpmn-lean:effect-protocol:activity-v1","urn:bpmn-lean:effect-operation:probe-v1"],[]]',
+    '["effectTransport",["cibseven-2.2.0-service-task-effect-draft","service-task-effect-process","0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",["none"],"Process_ServiceTaskEffect"],["Instance_1","ServiceTask_Record",1],["urn:bpmn-lean:effect-protocol:activity-v1","urn:bpmn-lean:effect-operation:probe-v1"],[]]',
   );
   assert.equal(
     effectTransportKey(material),
-    "effect-transport-sha256:ddf0be90e3c504ba65452cc6961647f9e6e041cbaac08a707b006e42bf9cacf7",
+    "effect-transport-sha256:6a0d33e4736128bd026bb67edd3965fda477f87d8b8b26fae085ac92e3ff88a8",
   );
   assert.equal(
     canonicalCompleteEffectEncoding(material.occurrence, result),
@@ -141,55 +143,55 @@ test("encodes and digests the complete committed effect intent", () => {
   );
 });
 
-test("content-binds CreateDocument arguments and typed result bytes", () => {
+test("content-binds mapped-success arguments and typed result bytes", () => {
   assert.equal(
-    canonicalEffectTransportEncoding(createDocumentMaterial),
-    '["effectTransport",["cibseven-2.0.0-a12-create-document-draft","a12-create-document-data","34b2b2e6592e04d0d5821099b4deca9ddb84b12fb349ce16abee656a79849b13","Process_A12CreateDocument"],["Instance_1","CreateDocument",1],["urn:bpmn-lean:effect-protocol:activity-v1","urn:bpmn-lean:effect-operation:mapped-success-v1"],[["documentModelName",["string","MyDocumentModel"]]]]',
+    canonicalEffectTransportEncoding(mappedSuccessMaterial),
+    '["effectTransport",["cibseven-2.0.0-mapped-success-service-task-draft","mapped-success-service-task","3b5bcd5167f4d48753f8efede35f47484bddf9c278cc8fe2f4dc87549da26b4a",["none"],"Process_MappedSuccess"],["Instance_1","MappedSuccessTask",1],["urn:bpmn-lean:effect-protocol:activity-v1","urn:bpmn-lean:effect-operation:mapped-success-v1"],[["requestValue",["string","example-input"]]]]',
   );
   assert.equal(
-    effectTransportKey(createDocumentMaterial),
-    "effect-transport-sha256:0c53e91ee1ad870c4a37f45d216157ac47045080885cd444b7d1612b205ffbfd",
+    effectTransportKey(mappedSuccessMaterial),
+    "effect-transport-sha256:a912114769a249d963940223231dace25c9985397f63a90972ac1d64da31f384",
   );
   assert.equal(
     canonicalCompleteEffectEncoding(
-      createDocumentMaterial.occurrence,
-      createDocumentResult,
+      mappedSuccessMaterial.occurrence,
+      mappedSuccessResult,
     ),
-    '["completeEffect",["Instance_1","CreateDocument",1],["success",[["newDocRef",["string","Document:42"]]]]]',
+    '["completeEffect",["Instance_1","MappedSuccessTask",1],["success",[["result",["string","example-result"]]]]]',
   );
   assert.equal(
     completeEffectCommandId(
-      createDocumentMaterial.occurrence,
-      createDocumentResult,
+      mappedSuccessMaterial.occurrence,
+      mappedSuccessResult,
     ),
-    "complete-effect-sha256:f596120e7c23b39e80a25da929e64ee8c5a311a0f8281a132833d6afd33f4c88",
+    "complete-effect-sha256:800f7d60cbcbc6663c0d4aed7ccacb643951d3075836188b96083ee2cba1c22a",
   );
 });
 
 test("domain-separates the exact typed BPMN Error result", () => {
   const occurrence: EffectOccurrenceId = {
     processInstanceId: "Instance_1",
-    elementId: "CreateRelationshipLinkTask",
+    elementId: "MappedBoundaryEffectTask",
     activation: 1,
   };
   assert.equal(
     canonicalCompleteEffectEncoding(occurrence, boundaryErrorResult),
-    '["completeEffect",["Instance_1","CreateRelationshipLinkTask",1],["bpmnError","LinkLimitReachedError",["some","Link limit reached"],[["newLinkId",["null"]]]]]',
+    '["completeEffect",["Instance_1","MappedBoundaryEffectTask",1],["bpmnError","MappedBusinessError",["some","mapped business error"],[["result",["null"]]]]]',
   );
   assert.equal(
     completeEffectCommandId(occurrence, boundaryErrorResult),
-    "complete-effect-sha256:49ddf71a5f8e23b59c039a65bd64a2ed16232c31a47790b2273e1b05c3c971d5",
+    "complete-effect-sha256:937f7a5c5565cde928afe3526bc64fc80c1ddb34281a0e8a259ae5ac6af2ec2e",
   );
 
   const variants: ReadonlyArray<EffectExecutionResult> = [
-    { ...boundaryErrorResult, code: "RelationshipLinkageError" },
+    { ...boundaryErrorResult, code: "UnmatchedMappedBusinessError" },
     { ...boundaryErrorResult, message: null },
     { ...boundaryErrorResult, message: "" },
     { ...boundaryErrorResult, localPatch: [] },
     {
       ...boundaryErrorResult,
       localPatch: [{
-        name: "newLinkId",
+        name: "result",
         value: { kind: VariableValueKind.String, value: "" },
       }],
     },
@@ -204,25 +206,25 @@ test("domain-separates the exact typed BPMN Error result", () => {
 
 test("argument and result omission mutations collapse discriminating pairs", () => {
   const otherArguments: EffectTransportMaterial = {
-    ...createDocumentMaterial,
+    ...mappedSuccessMaterial,
     arguments: [
       {
-        name: "documentModelName",
+        name: "requestValue",
         value: {
           kind: VariableValueKind.String,
-          value: "OtherDocumentModel",
+          value: "other-input",
         },
       },
     ],
   };
   assert.notEqual(
-    effectTransportKey(createDocumentMaterial),
+    effectTransportKey(mappedSuccessMaterial),
     effectTransportKey(otherArguments),
   );
   assert.throws(
     () =>
       requireDistinctTransportKeys(
-        createDocumentMaterial,
+        mappedSuccessMaterial,
         otherArguments,
         effectTransportKeyWithoutArguments,
         "arguments",
@@ -234,21 +236,21 @@ test("argument and result omission mutations collapse discriminating pairs", () 
     kind: EffectExecutionResultKind.Success,
     localPatch: [
       {
-        name: "newDocRef",
+        name: "result",
         value: {
           kind: VariableValueKind.String,
-          value: "Document:other",
+          value: "other-result",
         },
       },
     ],
   };
   assert.notEqual(
     completeEffectCommandId(
-      createDocumentMaterial.occurrence,
-      createDocumentResult,
+      mappedSuccessMaterial.occurrence,
+      mappedSuccessResult,
     ),
     completeEffectCommandId(
-      createDocumentMaterial.occurrence,
+      mappedSuccessMaterial.occurrence,
       otherResult,
     ),
   );
@@ -256,11 +258,11 @@ test("argument and result omission mutations collapse discriminating pairs", () 
     () =>
       requireDistinctTransportKeys(
         {
-          effectId: createDocumentMaterial.occurrence,
-          result: createDocumentResult,
+          effectId: mappedSuccessMaterial.occurrence,
+          result: mappedSuccessResult,
         },
         {
-          effectId: createDocumentMaterial.occurrence,
+          effectId: mappedSuccessMaterial.occurrence,
           result: otherResult,
         },
         completeEffectCommandIdWithoutResult,
@@ -293,6 +295,20 @@ const identityMutations: ReadonlyArray<IdentityMutation> = [
     mutate: (base) => ({
       ...base,
       definition: { ...base.definition, sourceSha256: "f".repeat(64) },
+    }),
+  },
+  {
+    group: "definition",
+    field: "sourceOverlay",
+    mutate: (base) => ({
+      ...base,
+      definition: {
+        ...base.definition,
+        sourceOverlay: {
+          id: "alternate-source-binding",
+          sha256: "b".repeat(64),
+        },
+      },
     }),
   },
   {
@@ -355,7 +371,8 @@ const identityMutations: ReadonlyArray<IdentityMutation> = [
 const droppedFieldDiscriminators: ReadonlyArray<IdentityMutation> =
   identityMutations.filter(
     ({ group, field }) =>
-      (group === "definition" && field === "processId") ||
+      (group === "definition" &&
+        (field === "processId" || field === "sourceOverlay")) ||
       group === "occurrence",
   );
 

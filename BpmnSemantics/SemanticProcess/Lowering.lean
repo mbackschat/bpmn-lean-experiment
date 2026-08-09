@@ -437,6 +437,7 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := source.identity.semanticProfile
         sourceId := source.identity.sourceId
+        sourceOverlay := source.identity.sourceOverlay
         sourceSha256 := source.identity.sourceSha256 }
     processId := source.processId
     definitionScopes := source.definitionScopes
@@ -465,6 +466,11 @@ theorem lower_preserves_definition_identity (source : CheckedProcess) :
       (lowerCheckedProcess source).identity.sourceSha256 =
         source.identity.sourceSha256 ∧
       (lowerCheckedProcess source).processId = source.processId := by
+  simp [lowerCheckedProcess]
+
+theorem lower_preserves_source_overlay_identity (source : CheckedProcess) :
+    (lowerCheckedProcess source).identity.sourceOverlay =
+      source.identity.sourceOverlay := by
   simp [lowerCheckedProcess]
 
 theorem lower_preserves_sequence_flow_origins (source : CheckedProcess) :

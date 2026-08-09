@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "user-task-preserved-notation-process",
     "relativePath": "scenarios/user-task-preserved-notation/process.bpmn",
-    "sha256": "5b9daa05805d7922afb134a345796930d2872a4e0040d235b764851c711bb072"
+    "sha256": "5b9daa05805d7922afb134a345796930d2872a4e0040d235b764851c711bb072",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

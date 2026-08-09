@@ -35,6 +35,7 @@ function compile(bytes: string) {
     sourceId: "call-activity-test",
     expectedSha256: undefined,
     semanticProfile: profile,
+    sourceOverlay: null,
     limits,
   });
 }

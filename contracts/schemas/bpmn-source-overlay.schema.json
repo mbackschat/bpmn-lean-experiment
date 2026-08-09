@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/bpmn-source-overlay.schema.json",
+  "title": "BPMN source overlay",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "semanticProfile",
+    "effectBindings",
+    "inertAttributes"
+  ],
+  "properties": {
+    "kind": {
+      "const": "bpmnSourceOverlay"
+    },
+    "id": {
+      "$ref": "#/$defs/identityString"
+    },
+    "semanticProfile": {
+      "$ref": "#/$defs/identityString"
+    },
+    "effectBindings": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/effectBinding"
+      }
+    },
+    "inertAttributes": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/inertAttribute"
+      }
+    }
+  },
+  "$defs": {
+    "scalarString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "identityString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "effectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "descriptor"
+      ],
+      "properties": {
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "implementation",
+            "delegateExpression"
+          ],
+          "properties": {
+            "implementation": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/scalarString"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "delegateExpression": {
+              "$ref": "#/$defs/scalarString"
+            }
+          }
+        },
+        "descriptor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "operation"
+          ],
+          "properties": {
+            "protocol": {
+              "$ref": "#/$defs/scalarString"
+            },
+            "operation": {
+              "$ref": "#/$defs/scalarString"
+            }
+          }
+        }
+      }
+    },
+    "inertAttribute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementType",
+        "expandedName"
+      ],
+      "properties": {
+        "elementType": {
+          "$ref": "#/$defs/scalarString"
+        },
+        "expandedName": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "namespaceUri",
+            "localName"
+          ],
+          "properties": {
+            "namespaceUri": {
+              "$ref": "#/$defs/scalarString"
+            },
+            "localName": {
+              "$ref": "#/$defs/scalarString"
+            }
+          }
+        }
+      }
+    }
+  }
+}

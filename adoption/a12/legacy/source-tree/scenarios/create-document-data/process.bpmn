@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_A12CreateDocument" targetNamespace="urn:bpmn-lean:a12:create-document" exporter="Camunda Modeler" exporterVersion="5.19.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.19.0">
+  <bpmn:process id="Process_A12CreateDocument" name="Create document data capsule" isExecutable="true" camunda:versionTag="1.0">
+    <bpmn:startEvent id="StartEvent_CreateDocument">
+      <bpmn:outgoing>Flow_StartToCreate</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_StartToCreate" sourceRef="StartEvent_CreateDocument" targetRef="CreateDocument" />
+    <bpmn:serviceTask id="CreateDocument" name="Create document" camunda:modelerTemplate="createDocumentDelegateTemplate" camunda:modelerTemplateVersion="1" camunda:delegateExpression="${createDocumentDelegate}">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="documentModelName">MyDocumentModel</camunda:inputParameter>
+          <camunda:outputParameter name="myDocumentReference">${newDocRef}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToCreate</bpmn:incoming>
+      <bpmn:outgoing>Flow_CreateToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_CreateToEnd" sourceRef="CreateDocument" targetRef="EndEvent_CreateDocument" />
+    <bpmn:endEvent id="EndEvent_CreateDocument">
+      <bpmn:incoming>Flow_CreateToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_A12CreateDocument">
+    <bpmndi:BPMNPlane id="Plane_A12CreateDocument" bpmnElement="Process_A12CreateDocument">
+      <bpmndi:BPMNShape id="Shape_Start" bpmnElement="StartEvent_CreateDocument">
+        <dc:Bounds x="100" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Create" bpmnElement="CreateDocument">
+        <dc:Bounds x="190" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End" bpmnElement="EndEvent_CreateDocument">
+        <dc:Bounds x="345" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_StartToCreate" bpmnElement="Flow_StartToCreate">
+        <di:waypoint x="136" y="118" />
+        <di:waypoint x="190" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_CreateToEnd" bpmnElement="Flow_CreateToEnd">
+        <di:waypoint x="290" y="118" />
+        <di:waypoint x="345" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

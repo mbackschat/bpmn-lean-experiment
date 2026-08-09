@@ -37,7 +37,8 @@ def contractScenario : Scenario :=
     bpmn :=
       { id := ⟨"sequential-user-task-process"⟩
         relativePath := "scenarios/user-task-discovery-completion/process.bpmn"
-        sha256 := "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
+        sha256 := "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d"
+        sourceOverlay := none }
     stimuli :=
       [ .startProcess ⟨"start-process"⟩ ⟨"Process_SequentialUserTask"⟩ ⟨"Instance_1"⟩
           [ { name := "requestTitle", value := .string "Review invoice 42" } ]

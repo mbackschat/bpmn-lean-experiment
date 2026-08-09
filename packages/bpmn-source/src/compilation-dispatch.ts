@@ -3,20 +3,19 @@ import {
 } from "@bpmn-lean/semantic-core";
 
 import {
-  compileA12BoundaryError,
-} from "./a12-boundary-error-source.js";
+  locateContainedElements,
+  orderedElementDiagnostics,
+} from "./admission-diagnostics.js";
 import {
-  compileA12CreateDocument,
-} from "./a12-create-document-source.js";
+  compileMappedServiceTaskSource,
+} from "./mapped-service-task-source-admission.js";
 import {
   compileCallActivityCheckedProcess,
 } from "./call-activity-source.js";
 import {
   compileCheckedProcess,
 } from "./checked-process-compiler.js";
-import {
-  BpmnSourceDiagnosticCode,
-} from "./contracts.js";
+import { BpmnSourceDiagnosticCode } from "./contracts.js";
 import type {
   BpmnSourceIdentity,
   CheckedCompilationProjection,
@@ -25,88 +24,76 @@ import {
   asElement,
 } from "./moddle-graph.js";
 import {
-  carriesNoUnconsumedForeignAttribute,
   foreignAttributeConsumingTypes,
   foreignAttributeRejections,
 } from "./preserved-element-classification.js";
+import type { AdmittedSourceOverlay } from "./source-overlay.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
-  A12CreateDocument: "a12CreateDocument",
-  A12BoundaryError: "a12BoundaryError",
+  MappedSuccessServiceTask: "mappedSuccessServiceTask",
+  MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
 } as const);
 
 export type CompilationDispatchId =
   typeof CompilationDispatchId[keyof typeof CompilationDispatchId];
 
-const ForeignAttributePolicyKind = Object.freeze({
-  CollectWithClassification: "collectWithClassification",
-  RejectBeforeSelectedShape: "rejectBeforeSelectedShape",
-} as const);
+type SelectedReader = (
+  rootElement: unknown,
+  source: BpmnSourceIdentity,
+  overlay: AdmittedSourceOverlay | null,
+) => CheckedCompilationProjection;
 
 type CompilationDispatch =
   | Readonly<{
     id: typeof CompilationDispatchId.Generic;
     semanticProfile: null;
-    foreignAttributePolicy:
-      typeof ForeignAttributePolicyKind.CollectWithClassification;
     reader: typeof compileCheckedProcess;
   }>
   | Readonly<{
     id: Exclude<CompilationDispatchId, typeof CompilationDispatchId.Generic>;
     semanticProfile: string;
-    foreignAttributePolicy:
-      typeof ForeignAttributePolicyKind.RejectBeforeSelectedShape;
-    rejectionEvidence: string;
-    reader: (
-      rootElement: unknown,
-      source: BpmnSourceIdentity,
-    ) => CheckedCompilationProjection;
+    reader: SelectedReader;
   }>;
 
 const genericDispatch = {
   id: CompilationDispatchId.Generic,
   semanticProfile: null,
-  foreignAttributePolicy: ForeignAttributePolicyKind.CollectWithClassification,
   reader: compileCheckedProcess,
 } as const satisfies CompilationDispatch;
 
-/** The complete source-reader denominator; tests derive one adversarial case from every entry. */
+/** The complete engine-owned source-reader denominator. */
 export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
   Object.freeze([
     genericDispatch,
     {
-      id: CompilationDispatchId.A12CreateDocument,
-      semanticProfile: SemanticProfileId.CreateDocument,
-      foreignAttributePolicy:
-        ForeignAttributePolicyKind.RejectBeforeSelectedShape,
-      rejectionEvidence:
-        "A foreign attribute no projector consumes must be rejected rather than discarded.",
-      reader: compileA12CreateDocument,
+      id: CompilationDispatchId.MappedSuccessServiceTask,
+      semanticProfile: SemanticProfileId.MappedSuccessServiceTask,
+      reader: (rootElement, source, overlay) => compileMappedServiceTaskSource(
+        rootElement,
+        source,
+        SemanticProfileId.MappedSuccessServiceTask,
+        overlay,
+      ),
     },
     {
-      id: CompilationDispatchId.A12BoundaryError,
-      semanticProfile: SemanticProfileId.BoundaryError,
-      foreignAttributePolicy:
-        ForeignAttributePolicyKind.RejectBeforeSelectedShape,
-      rejectionEvidence:
-        "A foreign attribute no projector consumes must be rejected rather than discarded.",
-      reader: compileA12BoundaryError,
+      id: CompilationDispatchId.MappedBoundaryErrorServiceTask,
+      semanticProfile: SemanticProfileId.MappedBoundaryErrorServiceTask,
+      reader: (rootElement, source, overlay) => compileMappedServiceTaskSource(
+        rootElement,
+        source,
+        SemanticProfileId.MappedBoundaryErrorServiceTask,
+        overlay,
+      ),
     },
     {
       id: CompilationDispatchId.CallActivity,
       semanticProfile: SemanticProfileId.CalledProcessCallActivity,
-      foreignAttributePolicy:
-        ForeignAttributePolicyKind.RejectBeforeSelectedShape,
-      rejectionEvidence:
-        "A foreign attribute the compiler does not consume must be rejected rather than discarded.",
-      reader: (rootElement, source) =>
-        compileCallActivityCheckedProcess(
-          rootElement,
-          source,
-          SemanticProfileId.CalledProcessCallActivity,
-        ),
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileCallActivityWithClassification(rootElement, source)
+          : unsupported("The Call Activity profile does not admit a source overlay."),
     },
   ]);
 
@@ -114,13 +101,16 @@ export function compileDispatchedCheckedProcess(
   rootElement: unknown,
   source: BpmnSourceIdentity,
   semanticProfile: string,
+  overlay: AdmittedSourceOverlay | null,
 ): CheckedCompilationProjection {
   const dispatch = compilationDispatches.find(
     (entry) => entry.semanticProfile === semanticProfile,
   ) ?? genericDispatch;
-
-  switch (dispatch.foreignAttributePolicy) {
-    case ForeignAttributePolicyKind.CollectWithClassification:
+  switch (dispatch.id) {
+    case CompilationDispatchId.Generic:
+      if (overlay !== null) {
+        return unsupported("The selected profile does not admit a source overlay.");
+      }
       return dispatch.reader(
         rootElement,
         source,
@@ -131,35 +121,57 @@ export function compileDispatchedCheckedProcess(
             located,
             foreignAttributeConsumingTypes(semanticProfile),
           ),
+        null,
       );
-    case ForeignAttributePolicyKind.RejectBeforeSelectedShape: {
-      const definitions = asElement(rootElement);
-      if (
-        definitions !== undefined &&
-        !carriesNoUnconsumedForeignAttribute(
-          definitions,
-          foreignAttributeConsumingTypes(semanticProfile),
-        )
-      ) {
-        return unsupported(dispatch.rejectionEvidence);
-      }
-      return dispatch.reader(rootElement, source);
-    }
+    case CompilationDispatchId.MappedSuccessServiceTask:
+    case CompilationDispatchId.MappedBoundaryErrorServiceTask:
+    case CompilationDispatchId.CallActivity:
+      return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);
   }
 }
 
+function compileCallActivityWithClassification(
+  rootElement: unknown,
+  source: BpmnSourceIdentity,
+): CheckedCompilationProjection {
+  const projection = compileCallActivityCheckedProcess(
+    rootElement,
+    source,
+    SemanticProfileId.CalledProcessCallActivity,
+    null,
+  );
+  const definitions = asElement(rootElement);
+  if (definitions === undefined) {
+    return projection;
+  }
+  const classification = foreignAttributeRejections(
+    definitions,
+    locateContainedElements(definitions),
+    new Set(),
+  );
+  return classification.length === 0
+    ? projection
+    : {
+        checkedProcess: undefined,
+        diagnostics: [
+          ...orderedElementDiagnostics(classification),
+          ...(projection.checkedProcess === undefined
+            ? projection.diagnostics.filter(({ element }) => element === null)
+            : []),
+        ],
+      };
+}
+
 function unsupported(evidence: string): CheckedCompilationProjection {
   return {
     checkedProcess: undefined,
-    diagnostics: [
-      {
-        code: BpmnSourceDiagnosticCode.UnsupportedModel,
-        element: null,
-        evidence,
-      },
-    ],
+    diagnostics: [{
+      code: BpmnSourceDiagnosticCode.UnsupportedModel,
+      element: null,
+      evidence,
+    }],
   };
 }
 

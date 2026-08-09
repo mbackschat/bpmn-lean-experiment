@@ -100,6 +100,7 @@ async function compile(
     sourceId,
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 }
@@ -217,6 +218,7 @@ for (const { name, find } of documentedLoci) {
         sourceId: "preserved-notation-documented",
         expectedSha256: undefined,
         semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+        sourceOverlay: null,
         limits: semanticProcessTestLimits,
       }),
       compile(
@@ -288,6 +290,7 @@ for (const { name, find, replace } of admittedPerturbations) {
         sourceId: "preserved-notation-admitted-perturbation",
         expectedSha256: undefined,
         semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+        sourceOverlay: null,
         limits: semanticProcessTestLimits,
       }),
       compile(
@@ -478,6 +481,7 @@ for (const { name, find, replace } of refusedPerturbations) {
       sourceId: "preserved-notation-perturbation",
       expectedSha256: undefined,
       semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
+      sourceOverlay: null,
       limits: semanticProcessTestLimits,
     });
 

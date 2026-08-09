@@ -9,7 +9,7 @@ sequential_bpmn_path="$project_root/scenarios/user-task-discovery-completion/pro
 parallel_bpmn_path="$project_root/scenarios/parallel-fork-join/process.bpmn"
 timer_bpmn_path="$project_root/scenarios/intermediate-catch-timer/process.bpmn"
 service_task_bpmn_path="$project_root/scenarios/service-task-effect/process.bpmn"
-boundary_error_bpmn_path="$project_root/scenarios/boundary-error/process.bpmn"
+mapped_boundary_error_bpmn_path="$project_root/scenarios/mapped-boundary-error-service-task/process.bpmn"
 embedded_subprocess_bpmn_path="$project_root/scenarios/embedded-subprocess-completion/process.bpmn"
 subprocess_error_probe_path="$project_root/scenarios/subprocess-error-propagation/process.bpmn"
 parallel_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenParallelGatewayProbeTest.duplicateSameFlow.bpmn"
@@ -24,7 +24,7 @@ test -f "$maven_settings"
   "$parallel_bpmn_path" \
   "$timer_bpmn_path" \
   "$service_task_bpmn_path" \
-  "$boundary_error_bpmn_path" \
+  "$mapped_boundary_error_bpmn_path" \
   "$embedded_subprocess_bpmn_path" \
   "$subprocess_error_probe_path" \
   "$parallel_probe_path" \

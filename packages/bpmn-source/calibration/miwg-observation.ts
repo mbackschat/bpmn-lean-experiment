@@ -67,6 +67,7 @@ for (const modelName of modelNames) {
     bytes,
     sourceId: `miwg-${modelName}`,
     expectedSha256: undefined,
+    sourceOverlay: null,
     semanticProfile: "miwg-interchange-observation-only",
     limits: {
       maxBytes: 10 * 1024 * 1024,

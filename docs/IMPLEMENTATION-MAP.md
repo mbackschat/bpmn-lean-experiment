@@ -8,7 +8,9 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting. Each capsule owns its own meaning and exclusions; this document owns only their status.
 
-**What it does not do.** One generic standards profile admits the complete selected notation set and no other does. `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them, under [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md); every other standards profile rejects them through an exact key allowlist, while the A12 CreateDocument reader admits Diagram Interchange and exporter metadata only inside its one hand-selected shape. Retained notation reaches no public observation and has no query surface. Refusals about the document or the checked graph name no element. The whole BPMN data family rejects everywhere. Admission is acyclic. Variables are string or null. There is no cancellation beyond the direct-parent regional case, no incidents, and no published transition record or token position.
+**What it does not do.** One generic standards profile admits the complete selected notation set and no other does. `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them, under [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md); every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume one data-only source overlay, but it can name only an existing profile-owned effect descriptor and exact inert expanded-name loci; it adds no engine operation or source reader.
+
+Retained notation reaches no public observation and has no query surface. Refusals about the document or the checked graph name no element. The whole BPMN data family rejects everywhere. Admission is acyclic. Variables are string or null. There is no cancellation beyond the direct-parent regional case, no incidents, and no published transition record or token position.
 
 **The evidence model, and its one shared-origin qualifier.** Registered answer-free scenarios run through Lean, the TypeScript core, Temporal, and selected pinned CIB Seven lanes; every case carries a seeded semantic mutation that must produce a disagreement, and retained CIB observations are content-bound. Neutral inputs stay physically separate from expected results.
 
@@ -42,13 +44,13 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - Temporal SDK 1.21.0 and CLI v1.8.1
 - MIT licensing for project-authored material
 - shared `CLAUDE.md`/`AGENTS.md`
-- A12-aligned document roles and proposal/spec lifecycle
+- role-named proposal/specification documents and their governed lifecycle
 - enforced documentation index, filename-role, and local-link guards
 - enforced directory-independent cold-review receipts for active material proposals and post-policy specifications under `docs/`, with Status-section approval detection, object-database and `HEAD`-ancestry validation, an immutable-baseline grandfather set, prospective same-model/same-effort `fork-turns-none` isolation, exact same-reviewer warm correction and guarded closure continuity, one equal-target combined checkpoint/closure mode for genuinely single-lane atomic closure, stage-specific focus, static-findings-first gate deferral, deterministic neutral review packets, historical receipt preservation, and graduation blocking
 - executable Status, suffixless-singleton, registry, file-link, and heading-anchor documentation discipline; the supplied architecture handoff's current release/readiness obligations have active owners while the original brief and two residual proposals are archived provenance
 - the non-redistributed OMG BPMN 2.0.2 corpus at external sibling `../oss/omg-bpmn-2.0.2`, with overrideable XSD/CMOF consumer paths, official-source-only atomic fetch, a 15-file tracked hash manifest, and an offline verifier; the optional Markdown/image conversion remains a non-authoritative cache
 - portable external-input setup through a 14-repository/four-submodule canonical-remote/commit/tag/gitlink lock plus the per-file OMG digest manifest, separate `verify`/`adoption`/`research`/`all` provisioning scopes, a read-only doctor that hashes every dependency owner and inventories every registered cache root, A12-free CI provisioning, custom-root support, and fail-closed CMOF, MIWG, breadth, and selected adoption lanes; no contributor machine is presumed to contain `../oss`
-- enforced A12 boundary checks for source-license headers, dependency coordinates, exact external fixture bytes, external-checkout links, lower-layer bean identities, and the project-authored CreateDocument fixture provenance, plus an explicit optional exact-source adoption gate outside complete MIT engine verification
+- enforced A12 boundary checks over the complete product-source and built-in-artifact inventories, optional-root imports, source-license headers, dependency coordinates, exact external fixture bytes, external-checkout links, and the frozen legacy product-decision manifest, plus an explicit optional exact-source adoption gate outside complete MIT engine verification
 - enforced implementation-surface reviewability through per-surface implemented/absent sections and a 120-word review-unit ceiling
 - commit-bounded nonblank code/document capsule-cost measurement with a parser self-test and explicit unknown treatment for missing historical baselines
 - dependency-free source-hygiene enforcement over tracked and pending Lean/TypeScript/JavaScript/Java source with a 600-nonblank-line review target, 1000-line hard ceiling, exact import-only Lean umbrellas, allowlist-free rejection of every hand-written `.js`/`.cjs`/`.mjs` module, required Lean module-document placement, descriptive public names for maintained non-experimental conformance facts, one composed Lean assessment shared by the live scan and explicit sparse-valid anti-boilerplate fixture, literal-aware diagnostics, and no current reviewed exceptions
@@ -91,14 +93,16 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - namespace-aware element/extension/expression census
 - production delegate, listener, plugin, REST/JMS façade, and downstream-template inventory
 - bounded CIB Seven `2.0.0`/`2.2.0` assessment
-- distinct immutable `cibseven-2.0.0-a12-create-document-draft` and `cibseven-2.0.0-a12-boundary-error-draft` profiles
-- exact admission of the registered maintained `CreateDocument.bpmn` bytes when the checkout is available
-- mandatory project-authored equivalent fixtures
-- two completed target-shaped vertical feasibility slices proving lower-layer composition
+- exact frozen legacy generation at immutable target `02330ad0f980a5fc282cc0aa93600a9632b86c3e`, with every original path and SHA-256 manifest-bound outside product registries
+- distinct current overlay-aware adoption scenarios, project-authored fixtures, overlay artifacts, and CIB evidence accepted by current schemas but absent from every product catalog
+- optional exact external `CreateDocument.bpmn` static compilation through the product-neutral mapped-success profile and current data-only overlay, plus exact external boundary-Error source-shape calibration
+- a preservation oracle that executes the immutable baseline tooling in an isolated export and compares legacy/current checked graphs, Semantic Process programs, runtime results, and CIB evidence bodies outside the approved profile/overlay identity translation
+- two completed target-shaped legacy feasibility slices retained as adoption evidence rather than product implementation
 
 #### Explicitly absent
 
 - A12 adoption adapter/package
+- production A12 add-on, overlay registry, handlers, migration, or distribution
 - closed exact-external-source end-to-end execution evidence and an A12 Java delegate
 - Java delegate Worker bridge
 - Java JUEL evaluator Worker
@@ -112,10 +116,10 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 
 #### Implemented
 
-- One current structural schema per semantic profile, scenario, canonical result, CIB evidence, checked BPMN graph, and Semantic Process program
+- One current structural schema per semantic profile, source overlay, scenario, canonical result, CIB evidence, checked BPMN graph, and Semantic Process program
 - stable document kinds
-- semantic profile/source/compiler identity
-- exact scenario/profile content binding
+- semantic profile/source/compiler identity plus required nullable source-overlay identity in scenarios, checked graphs, Semantic Process programs, effect transport, and completed-process receipts
+- exact scenario/profile/source-overlay content binding
 - a guarded catalog of answer-free target scenarios with CIB evidence required only by declared CIB target sets
 - produced checked-process and Semantic Process artifacts
 - nullable checked conditions, one typed Simple Boolean expression union, and declaration-ordered `choose` candidates
@@ -214,9 +218,9 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - `choose` carries exactly two declaration-ordered typed Simple Boolean candidates and one distinct default
 - `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
 - `awaitEventRace` carries one named operation-addressed Message arm and one named exact-`PT1S` Timer arm with their configuration-flow origins, catch identities, and distinct winner outputs; its configuration Flows are not control places
-- `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across empty, CreateDocument, and boundary-error contracts
+- `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across payload-free, mapped-success, and mapped-boundary-Error contracts
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
-- independent sequential, bounded-parallel, exact-timer, Timer/User Task composition, operation-addressed Intermediate Catch Message and direct-Message Receive Task subscriptions, payload-free effect, CreateDocument data, boundary-error, Simple Boolean conditional evaluation, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, and bounded called-Process invocation/return
+- independent sequential, bounded-parallel, exact-timer, Timer/User Task composition, operation-addressed Intermediate Catch Message and direct-Message Receive Task subscriptions, payload-free effect, mapped-success Service Task, mapped-boundary-Error Service Task, Simple Boolean conditional evaluation, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, and bounded called-Process invocation/return
 - generic Lean relation/evaluator including choice, effect-completion, and operation-step soundness, laws, and non-laws
 - separately gated frozen checked-source experiment
 
@@ -233,17 +237,17 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - UTF-8/security preflight
 - private `bpmn-moddle@10.0.0` import
 - warning/reference-loss rejection
-- bounded compilers for the sequential User Task, balanced parallel, exact `PT1S` timer, profile-parameterized finite acyclic Timer/User Task composition, operation-addressed payload-free Intermediate Catch Message in both Message/User Task orders, one direct-Message payload-free Receive Task, one exact operation-addressed Message-versus-`PT1S` Event-Based Gateway configuration, payload-free Service Task, exact A12 CreateDocument shape, exact A12-shaped boundary Error, exact two-condition-plus-default Simple Boolean Exclusive Gateway, one structured two-condition-plus-default Inclusive Gateway split/direct-User-Task/join region, one-level ordinary embedded Sub-Process completion, one direct exact-code Sub-Process Error-propagation shape, and one exact namespace-qualified in-document called Process
+- bounded compilers for the sequential User Task, balanced parallel, exact `PT1S` timer, profile-parameterized finite acyclic Timer/User Task composition, operation-addressed payload-free Intermediate Catch Message in both Message/User Task orders, one direct-Message payload-free Receive Task, one exact operation-addressed Message-versus-`PT1S` Event-Based Gateway configuration, payload-free Service Task, bounded mapped-success and mapped-boundary-Error Service Task shapes, exact two-condition-plus-default Simple Boolean Exclusive Gateway, one structured two-condition-plus-default Inclusive Gateway split/direct-User-Task/join region, one-level ordinary embedded Sub-Process completion, one direct exact-code Sub-Process Error-propagation shape, and one exact namespace-qualified in-document called Process
 - reusable checked-source scope ownership, reference, arity, scope-local reachability, co-reachability, and acyclicity validation separated from profile mechanism/cardinality capability
 - explicit expression-language admission, strict five-form parsing, exact checked-body retention, and process-level Sequence Flow declaration order independent of gateway reference order
-- exact source/profile admission preserves raw CIB bindings as evidence and maps them to registered neutral effect identities while checked graphs retain generic conditions, mappings, route/reference metadata, resolved Message channels, and names
+- exact source/profile admission maps built-in or overlay-supplied source bindings to profile-owned neutral effect descriptors while checked graphs retain only generic conditions, mappings, route/reference metadata, resolved Message channels, names, and source-overlay identity
 - BPMNDI/modeler metadata remains outside semantics
 - one preserve-enabled profile classifies parsed material three ways through [a closed recursive classifier](../packages/bpmn-source/src/preserved-element-classification.ts): a container is preserved only when every descendant is, references are excluded from the walk so a preserved shape may point at an executed element, and the source reaches its twin's checked graph and program once exact-source identity is normalized away
-- one closed [compilation dispatch registry](../packages/bpmn-source/src/compilation-dispatch.ts) pairs the generic fallback and three selected-shape profiles with their reader and foreign-attribute policy; the dispatcher makes policy application mandatory, preserves generic multi-finding classification, and has a registry-derived complete-result oracle for every accepted and adversarial path
+- one closed [compilation dispatch registry](../packages/bpmn-source/src/compilation-dispatch.ts) pairs the generic fallback, two product-neutral mapped Service Task profiles, and the Call Activity profile with their engine-owned readers and mandatory admission policies; a registry-derived complete-result oracle covers every accepted and adversarial path
 - every foreign attribute rejects on every dispatch path unless its profile exempts that element's type; every resolved reference must point at its property's declared type
 - classification refusals in the generic compiler and all three selected-shape readers name their element through [one locating owner](../packages/bpmn-source/src/admission-diagnostics.ts): nullable `id`, `$type`, containment path, named property or attribute, and the missing capability; unsupported own properties on selected executed flow elements are classified before projection through [one closed profile/type key inventory](../packages/bpmn-source/src/projected-flow-element-keys.ts), collected across loci, deduplicated, and ordered by path numerically. Parser warnings keep that record in parse order
 - `xsi:type` is admitted as **parser-consumed**, selecting the resolved element type every projector then judges; `xsi:schemaLocation` and `xsi:noNamespaceSchemaLocation` are content-free schema hints. Each requires a prefix resolved from the document's own binding, and `xsi:nil` rejects because it empties content
-- registered CreateDocument checkout and project-authored fixtures pass
+- the optional adoption gate compiles the exact external CreateDocument source through a data-only overlay and compares both current adoption fixtures with the frozen baseline generation
 - wrong sigils, method/property expressions, implicit XPath, wrong or per-expression language, invalid Simple Boolean syntax, conditional default, unsupported executable attributes/elements, altered parameters/mappings, false interruption, attachment/code drift, missing/catch-all/nonmatching/extra/non-direct Error handlers, Event Sub-Processes, and cross-scope Sequence Flows reject
 - malformed, unprefixed, extra-colon, unknown-prefix, foreign-namespace, unresolved, self, and non-Process Call targets reject; declaration permutation is canonical and the called binding follows the QName rather than a fixture constant
 
@@ -251,7 +255,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 
 - General BPMN compiler, arbitrary graph admission or scope nesting, general FormalExpression/JUEL/XPath, other Exclusive Gateway topology/cardinality, Service Task/data/error bindings beyond the approved exact shapes, catch-all/multi-handler/ancestor Error search, timer forms beyond exact `PT1S`, addressless/operation-addressed/instantiating/data-bearing Receive Task, Message payload/key/global correlation/throw/flow or other Message Event loci, external/imported/deployed Call targets, Global Tasks, Call data/mapping/version/tenant/recursion/repetition, synchronous parser CPU isolation, non-UTF-8 decoder, source locations, general extension semantics, DI-preserving export, complete CMOF binding, deployment store
 - An element on refusals over the document or checked graph, on unsupported values of consumed keys, or on nested event-definition and mapping-child failures that have no separately reviewed inventory. Those remain `unsupportedModel` records with `element: null`. Preserved material is retained only in the exact source bytes, with no query surface or public projection
-- The whole BPMN data family, and foreign content at any locus a profile declares inert. The foreign-attribute rule reaches every dispatch path, but A12 CreateDocument exempts its `Definitions` and `Process` types wholesale, so one unconsumed attribute on that `Definitions` is still discarded
+- The whole BPMN data family, and foreign content at every undeclared locus. A mapped Service Task overlay may declare only exact inert expanded-name/element-type pairs; unconsumed attributes, wildcards, and whole-type exemptions reject
 
 ### Lean
 
@@ -310,7 +314,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - raw Process, task, subscription, timer, job, history, effect, and mapping observations retained as release-specific content-bound evidence
 - verifier reconstruction of canonical status, logical time, variables, waits, interactions, and semantic instance identity from those raw observations
 - reconstruction deliberately reuses the Java projector's ordering and raw-binding translation, so it checks raw-to-canonical consistency rather than independently deriving projection semantics
-- phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message Receive Task, Sub-Process Error propagation, and both A12-shaped host relations
+- phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message Receive Task, Sub-Process Error propagation, and both product-neutral mapped Service Task host relations
 - meaningful raw-observation, projection, binding, deadline, sibling, mapping, and variable mutations
 - release-grouped evidence replacement, isolated engine configurations, zero-state checks, timings, and full cleanup
 
@@ -374,7 +378,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - one core batch
 - two isolated Temporal executions per registered scenario
 - exact case-specific relations across every implemented family, with retained-CIB comparison only where the selected profile declares a CIB target
-- separate synchronous CIB host relations for the two A12-shaped source slices
+- separate synchronous CIB host relations for the two product-neutral mapped Service Task slices
 - Query, Update, Signal, durable-Timer, Activity, result-recovery, replay, and cleanup evidence for each applicable host mechanism
 - definition, provenance, admission, semantic-state, projection, host-bypass, and evidence mutations, including one required semantic disagreement per registered case
 - isolated target execution, complete fetched-history replay, cleanup, timings, and feedback budgets
@@ -468,7 +472,7 @@ One nearest boundary per family. The owning capsule holds the full exclusion set
 - **Expressions:** conditional routing beyond the exact Simple Boolean profile. JUEL remains demand-driven, deferred, and separately classified.
 - **Unsupported across families:** arbitrary serial composition, arbitrary graph progress, repeated or nested scope activation, Message payload, key, and global correlation, loops, multi-instance, compensation, and general Event semantics.
 
-**A12 adoption.** The exact `2.0.0` target-profile projector admits one of 50 distinct exact-byte A12 Workflows models unchanged at the static source and lowering boundary, while the closed exact-model product count remains **zero**, because no external EUPL-1.2 model and Java delegate have executed through a bounded adoption adapter. This is an A12 adoption gap, not the primary BPMN coverage measure. The active Simple Boolean language matches none of the retained A12 JUEL sources and claims zero adoption coverage.
+**A12 adoption.** The optional adoption lane admits the exact external `CreateDocument.bpmn` bytes through the product-neutral mapped-success profile plus a content-bound data-only overlay. It also preserves the complete pre-extraction generation at immutable target `02330ad` and proves the two current project-authored adoption projections equal that generation outside the approved profile/overlay identity translation. The closed exact-model product count remains **zero** because no external EUPL-1.2 model and Java delegate have executed through an A12-owned add-on. This is an optional adoption-evidence result, not the primary BPMN coverage measure or product-1 implementation. The active Simple Boolean language matches none of the retained A12 JUEL sources and claims zero adoption coverage.
 
 **Closed prerequisite.** Cross-language wire hardening: schemas cap every current integer at `9007199254740991`, canonical identifiers use exact Unicode scalar-value ordering with no normalization, and strict byte readers reject duplicate decoded keys and unpaired surrogates.
 

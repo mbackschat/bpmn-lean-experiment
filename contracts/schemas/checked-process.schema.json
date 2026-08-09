@@ -70,6 +70,7 @@
       "additionalProperties": false,
       "required": [
         "semanticProfile",
+        "sourceOverlay",
         "sourceId",
         "sourceSha256"
       ],
@@ -77,10 +78,37 @@
         "semanticProfile": {
           "$ref": "#/$defs/nonemptyString"
         },
+        "sourceOverlay": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sourceOverlayIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "sourceId": {
           "$ref": "#/$defs/nonemptyString"
         },
         "sourceSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "sourceOverlayIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         }

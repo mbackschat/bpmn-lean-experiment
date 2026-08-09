@@ -36,6 +36,10 @@ import {
   compareCanonicalStrings,
   isWellFormedWireString,
 } from "./wire.js";
+import {
+  isSourceOverlayIdentityOrNull,
+  sameSourceOverlayIdentity,
+} from "./source-overlay-identity.js";
 
 const supportedObservations = Object.freeze([
   ObservationRequestKind.Deployment,
@@ -64,7 +68,11 @@ export function supportsSemanticProcessScenario(
     ) &&
     program.identity.semanticProfile === scenario.profile &&
     program.identity.sourceId === scenario.bpmn.id &&
-    program.identity.sourceSha256 === scenario.bpmn.sha256
+    program.identity.sourceSha256 === scenario.bpmn.sha256 &&
+    sameSourceOverlayIdentity(
+      program.identity.sourceOverlay,
+      scenario.bpmn.sourceOverlay,
+    )
   );
 }
 
@@ -125,12 +133,14 @@ export function isWellFormedSemanticProcessProgram(
       "semanticProfile",
       "sourceId",
       "sourceSha256",
+      "sourceOverlay",
     ]) ||
     identity.compiler !==
       SemanticProcessCompilerId.BpmnSourceSemanticProcess ||
     !isNonEmptyString(identity.semanticProfile) ||
     !isNonEmptyString(identity.sourceId) ||
     !isSha256(identity.sourceSha256) ||
+    !isSourceOverlayIdentityOrNull(identity.sourceOverlay) ||
     !isNonEmptyString(value.processId) ||
     definitionScopes === undefined ||
     definitionScopes.length === 0 ||
@@ -241,9 +251,11 @@ function isSupportedScenario(value: unknown): value is Scenario {
     isNonEmptyString(value.id) &&
     isNonEmptyString(value.profile) &&
     bpmn !== undefined &&
+    hasOnlyKeys(bpmn, ["id", "relativePath", "sha256", "sourceOverlay"]) &&
     isNonEmptyString(bpmn.id) &&
     isNonEmptyString(bpmn.relativePath) &&
     isSha256(bpmn.sha256) &&
+    isSourceOverlayIdentityOrNull(bpmn.sourceOverlay) &&
     stimuli !== undefined &&
     stimuli.length >= 1 &&
     stimuli.every(isWellFormedStimulus) &&

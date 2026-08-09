@@ -18,6 +18,7 @@ export enum BpmnSourceDiagnosticCode {
   ParserFailure = "parserFailure",
   ParserWarning = "parserWarning",
   SourceIdentityMismatch = "sourceIdentityMismatch",
+  InvalidSourceOverlay = "invalidSourceOverlay",
   UnsupportedModel = "unsupportedModel",
   /** A parsed element the selected profile neither executes nor preserves. */
   UnsupportedElementType = "unsupportedElementType",
@@ -124,8 +125,15 @@ export type BpmnSourceLimits = DeepReadonly<{
   parserDeadlineMs: number;
 }>;
 
+/** Exact registered overlay identity and bytes selected for one compilation. */
+export type SourceOverlaySelection = Readonly<{
+  id: string;
+  sha256: string;
+  bytes: Uint8Array;
+}>;
+
 /**
- * Compilation snapshots `bytes` before asynchronous parsing.
+ * Compilation snapshots BPMN and selected overlay `bytes` before asynchronous work.
  *
  * This contract is intentionally shallow: TypeScript cannot make a
  * `Uint8Array` deeply immutable because its mutation methods remain callable.
@@ -135,6 +143,7 @@ export type CompileBpmnToSemanticProcessRequest = Readonly<{
   sourceId: string;
   expectedSha256: string | undefined;
   semanticProfile: string;
+  sourceOverlay: SourceOverlaySelection | null;
   limits: BpmnSourceLimits;
 }>;
 

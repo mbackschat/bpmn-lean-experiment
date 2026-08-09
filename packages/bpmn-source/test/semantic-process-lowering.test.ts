@@ -220,6 +220,7 @@ test("admits timer and User Task composition only through its selected profile",
       sourceId: "timer-user-task-composition-process",
       expectedSha256: undefined,
       semanticProfile,
+      sourceOverlay: null,
       limits,
     });
     assert.equal(rejected.status, BpmnCompilationStatus.Rejected);
@@ -257,6 +258,7 @@ test("derives the reverse linear order from graph facts instead of a named model
     sourceId: "reverse-timer-user-task-composition",
     expectedSha256: undefined,
     semanticProfile: "bpmn-2.0.2-timer-user-task-composition-draft",
+    sourceOverlay: null,
     limits,
   });
 
@@ -292,6 +294,7 @@ test("rejects an existing exact source under a capability-incompatible profile",
     expectedSha256: undefined,
     semanticProfile:
       "cibseven-2.2.0-intermediate-catch-timer-draft",
+    sourceOverlay: null,
     limits,
   });
 
@@ -357,31 +360,31 @@ test("keeps the exact Service Task binding outside the neutral checked graph", a
   );
 });
 
-test("retains and lowers the exact A12 boundary-error route", async () => {
+test("retains and lowers the exact mapped-boundary-Error route", async () => {
   const result = await compileFixture(
-    "../../../scenarios/boundary-error/process.bpmn",
-    "a12-boundary-error",
-    "cibseven-2.0.0-a12-boundary-error-draft",
+    "../../../scenarios/mapped-boundary-error-service-task/process.bpmn",
+    "mapped-boundary-error-service-task",
+    "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
   );
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
   const task = serviceTaskNode(
     result.checkedProcess.nodes,
-    "CreateRelationshipLinkTask",
+    "MappedBoundaryEffectTask",
   );
   assert.deepEqual(task.descriptor, {
     protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
     operation: "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1",
   });
   assert.deepEqual(task.bpmnErrorRoute, {
-    boundaryEventId: "BoundaryEvent_LinkLimitReached",
-    boundaryEventName: "Link Limit Reached Boundary",
-    attachedToRef: "CreateRelationshipLinkTask",
-    errorDefinitionId: "ErrorEventDefinition_LinkLimitReached",
-    errorElementId: "Error_LinkLimitReached",
-    errorName: "Link Limit Reached",
-    code: "LinkLimitReachedError",
-    outputFlowId: "Flow_ErrorToUserTask",
+    boundaryEventId: "BoundaryEvent_MappedBusinessError",
+    boundaryEventName: "Mapped Business Error Boundary",
+    attachedToRef: "MappedBoundaryEffectTask",
+    errorDefinitionId: "ErrorEventDefinition_MappedBusinessError",
+    errorElementId: "Error_MappedBusinessError",
+    errorName: "Mapped Business Error",
+    code: "MappedBusinessError",
+    outputFlowId: "Flow_ErrorToReviewMappedError",
   });
   assert.deepEqual(
     operationOfKind(
@@ -389,14 +392,14 @@ test("retains and lowers the exact A12 boundary-error route", async () => {
       SemanticOperationKind.AwaitEffect,
     ).bpmnErrorRoute,
     {
-      code: "LinkLimitReachedError",
-      output: "place:Flow_ErrorToUserTask",
+      code: "MappedBusinessError",
+      output: "place:Flow_ErrorToReviewMappedError",
       origin: {
         kind: "bpmnElement",
-        boundaryEventId: "BoundaryEvent_LinkLimitReached",
-        errorDefinitionId: "ErrorEventDefinition_LinkLimitReached",
-        errorElementId: "Error_LinkLimitReached",
-        sequenceFlowId: "Flow_ErrorToUserTask",
+        boundaryEventId: "BoundaryEvent_MappedBusinessError",
+        errorDefinitionId: "ErrorEventDefinition_MappedBusinessError",
+        errorElementId: "Error_MappedBusinessError",
+        sequenceFlowId: "Flow_ErrorToReviewMappedError",
       },
     },
   );
@@ -405,41 +408,41 @@ test("retains and lowers the exact A12 boundary-error route", async () => {
 test("rejects executable drift outside the exact boundary-error profile", async () => {
   const bytes = await readFile(
     new URL(
-      "../../../scenarios/boundary-error/process.bpmn",
+      "../../../scenarios/mapped-boundary-error-service-task/process.bpmn",
       import.meta.url,
     ),
   );
   const xml = new TextDecoder().decode(bytes);
   const mutations = [
     xml.replace(
-      "#{createRelationshipLinkDelegate}",
-      "${createRelationshipLinkDelegate}",
+      "#{mappedBoundaryErrorHandler}",
+      "${mappedBoundaryErrorHandler}",
     ),
     xml.replace(
-      "#{createRelationshipLinkDelegate}",
-      "#{createRelationshipLinkDelegate.execute()}",
+      "#{mappedBoundaryErrorHandler}",
+      "#{mappedBoundaryErrorHandler.execute()}",
     ),
     xml.replace(
-      "#{createRelationshipLinkDelegate}",
-      "#{createRelationshipLinkDelegate.property}",
+      "#{mappedBoundaryErrorHandler}",
+      "#{mappedBoundaryErrorHandler.property}",
     ),
     xml.replace(
-      'camunda:delegateExpression="#{createRelationshipLinkDelegate}"',
-      'camunda:delegateExpression="#{createRelationshipLinkDelegate}" camunda:class="example.Hostile"',
+      'camunda:delegateExpression="#{mappedBoundaryErrorHandler}"',
+      'camunda:delegateExpression="#{mappedBoundaryErrorHandler}" camunda:class="example.Hostile"',
     ),
     xml.replace(
       "</bpmn:extensionElements>",
       "<camunda:properties /></bpmn:extensionElements>",
     ),
     xml.replace(
-      'attachedToRef="CreateRelationshipLinkTask"',
-      'attachedToRef="ExpectedUserTaskAfterBPMNError"',
+      'attachedToRef="MappedBoundaryEffectTask"',
+      'attachedToRef="ReviewMappedError"',
     ),
     xml.replace(
-      'attachedToRef="CreateRelationshipLinkTask"',
-      'attachedToRef="CreateRelationshipLinkTask" cancelActivity="false"',
+      'attachedToRef="MappedBoundaryEffectTask"',
+      'attachedToRef="MappedBoundaryEffectTask" cancelActivity="false"',
     ),
-    xml.replace("LinkLimitReachedError", "UnexpectedError"),
+    xml.replace("MappedBusinessError", "UnexpectedError"),
     xml.replace(
       "http://camunda.org/schema/1.0/bpmn",
       "https://example.invalid/camunda",
@@ -452,7 +455,8 @@ test("rejects executable drift outside the exact boundary-error profile", async 
       bytes: new TextEncoder().encode(source),
       sourceId: `boundary-error-hostile-${index}`,
       expectedSha256: undefined,
-      semanticProfile: "cibseven-2.0.0-a12-boundary-error-draft",
+      semanticProfile: "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+      sourceOverlay: null,
       limits,
     });
     assert.equal(
@@ -522,6 +526,7 @@ test("rejects every incomplete or altered Service Task binding", async () => {
       sourceId: "invalid-service-task",
       expectedSha256: undefined,
       semanticProfile: "cibseven-2.2.0-service-task-effect-draft",
+      sourceOverlay: null,
       limits,
     });
 
@@ -548,6 +553,7 @@ test("rejects Parallel Gateway directions that contradict arity or XSD lexical f
       sourceId: "invalid-parallel-direction",
       expectedSha256: undefined,
       semanticProfile: "parallel-fork-join-draft",
+      sourceOverlay: null,
       limits,
     });
 
@@ -578,6 +584,7 @@ test("rejects timer forms outside the exact PT1S literal profile", async () => {
       sourceId: "invalid-timer",
       expectedSha256: undefined,
       semanticProfile: "cibseven-2.2.0-intermediate-catch-timer-draft",
+      sourceOverlay: null,
       limits,
     });
 

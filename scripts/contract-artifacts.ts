@@ -253,6 +253,7 @@ async function createValidator(projectRoot: string): Promise<Ajv2020> {
     "scenario.schema.json",
     "canonical-result.schema.json",
     "semantic-profile.schema.json",
+    "bpmn-source-overlay.schema.json",
     "cibseven-evidence.schema.json",
     "checked-process.schema.json",
     "semantic-process.schema.json",
@@ -343,6 +344,7 @@ export async function verifyDefinitionArtifacts(
   };
   const programIdentity = {
     semanticProfile: semanticProcess.identity.semanticProfile,
+    sourceOverlay: semanticProcess.identity.sourceOverlay,
     sourceId: semanticProcess.identity.sourceId,
     sourceSha256: semanticProcess.identity.sourceSha256,
     processId: semanticProcess.processId,

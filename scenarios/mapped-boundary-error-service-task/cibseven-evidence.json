@@ -1,0 +1,184 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mapped-boundary-error-service-task-caught",
+    "sha256": "c89c095aeb3e5be95b7f50f2caab40ec2fd70f981a91e1ef5522582603ebc8ee"
+  },
+  "profile": {
+    "id": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+    "sha256": "e7756064f3790f5935f45466d41c3625a7fa6b2388ae1d5d84ab59b638589e4d"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.0.0",
+    "engineRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-mapped-boundary-error",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultValue",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-mapped-error-review",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultValue",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-mapped-boundary-error",
+        "tasks": [
+          {
+            "elementId": "ReviewMappedError",
+            "name": "Review Mapped Error"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-mapped-error-review",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-mapped-boundary-error",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-mapped-error-review",
+        "jobs": []
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-mapped-boundary-error",
+        "handler": "mappedBoundaryErrorHandler",
+        "arguments": [
+          {
+            "name": "requestValue",
+            "value": {
+              "kind": "string",
+              "value": "example-input"
+            }
+          }
+        ],
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "invocations": 1
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-mapped-boundary-error",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ReviewMappedError",
+            "kind": "userTask",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewMappedError",
+              "activation": 1
+            },
+            "name": "Review Mapped Error",
+            "state": "active"
+          }
+        ],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "resultValue",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [
+          {
+            "kind": "completeUserTaskInstance",
+            "taskId": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewMappedError",
+              "activation": 1
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-mapped-error-review",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "variables": [
+          {
+            "name": "resultValue",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Status
 
-Owner-approved on 2026-08-09; not implemented. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Approval authorizes exactly this independently reviewed contract and no broader A12 compatibility, extension, or packaging work.
+Owner-approved on 2026-08-09; the complete cross-language replacement has reached its first green implementation checkpoint and awaits the mandatory semantic-checkpoint review. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Approval authorizes exactly this independently reviewed contract and no broader A12 compatibility, extension, or packaging work.
 
 ## Independent cold-review receipt
 

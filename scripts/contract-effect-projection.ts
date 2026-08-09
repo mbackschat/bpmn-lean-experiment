@@ -62,16 +62,16 @@ function neutralEffectDescriptor(job: EffectJob): EffectDescriptor {
         };
       }
       break;
-    case "createDocumentDelegate":
-      if (job.protocol === "urn:bpmn-lean:a12-delegate:v1") {
+    case "mappedSuccessHandler":
+      if (job.protocol === "urn:bpmn-lean:mapped-service-task:v1") {
         return {
           protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
           operation: "urn:bpmn-lean:effect-operation:mapped-success-v1",
         };
       }
       break;
-    case "createRelationshipLinkDelegate":
-      if (job.protocol === "urn:bpmn-lean:a12-delegate:v1") {
+    case "mappedBoundaryErrorHandler":
+      if (job.protocol === "urn:bpmn-lean:mapped-service-task:v1") {
         return {
           protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
           operation:

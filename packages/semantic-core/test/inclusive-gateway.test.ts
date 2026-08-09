@@ -91,6 +91,7 @@ test("projects selected User Tasks without exposing the hidden branch record", (
       id: inclusiveProgram.identity.sourceId,
       relativePath: "test-only/inclusive.bpmn",
       sha256: inclusiveProgram.identity.sourceSha256,
+      sourceOverlay: null,
     },
     stimuli: [inclusiveStart([present("takeA"), present("takeB")])],
     observations: Object.values(ObservationRequestKind),

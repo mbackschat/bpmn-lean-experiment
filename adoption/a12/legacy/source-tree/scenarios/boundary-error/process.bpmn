@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_BoundaryError"
+  targetNamespace="https://github.com/mbackschat/bpmn-lean-experiment/boundary-error">
+  <bpmn:error
+    id="Error_LinkLimitReached"
+    name="Link Limit Reached"
+    errorCode="LinkLimitReachedError" />
+  <bpmn:process id="Process_BoundaryError" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_None">
+      <bpmn:outgoing>Flow_StartToService</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask
+      id="CreateRelationshipLinkTask"
+      name="Create Relationship Link"
+      implementation="urn:bpmn-lean:a12-delegate:v1"
+      camunda:delegateExpression="#{createRelationshipLinkDelegate}">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="relationshipModel">RelationshipModel</camunda:inputParameter>
+          <camunda:outputParameter name="relationshipLinkId">${newLinkId}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToService</bpmn:incoming>
+      <bpmn:outgoing>Flow_ServiceToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent
+      id="BoundaryEvent_LinkLimitReached"
+      name="Link Limit Reached Boundary"
+      attachedToRef="CreateRelationshipLinkTask">
+      <bpmn:outgoing>Flow_ErrorToUserTask</bpmn:outgoing>
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_LinkLimitReached"
+        errorRef="Error_LinkLimitReached" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask
+      id="ExpectedUserTaskAfterBPMNError"
+      name="Expected User Task After BPMN Error">
+      <bpmn:incoming>Flow_ErrorToUserTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_UserTaskToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Normal">
+      <bpmn:incoming>Flow_ServiceToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_AfterError">
+      <bpmn:incoming>Flow_UserTaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow
+      id="Flow_StartToService"
+      sourceRef="StartEvent_None"
+      targetRef="CreateRelationshipLinkTask" />
+    <bpmn:sequenceFlow
+      id="Flow_ServiceToEnd"
+      sourceRef="CreateRelationshipLinkTask"
+      targetRef="EndEvent_Normal" />
+    <bpmn:sequenceFlow
+      id="Flow_ErrorToUserTask"
+      sourceRef="BoundaryEvent_LinkLimitReached"
+      targetRef="ExpectedUserTaskAfterBPMNError" />
+    <bpmn:sequenceFlow
+      id="Flow_UserTaskToEnd"
+      sourceRef="ExpectedUserTaskAfterBPMNError"
+      targetRef="EndEvent_AfterError" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -216,18 +216,16 @@ async function replaceEvidence() {
       sources,
       ({ profile }) => profile.value.oracle.version,
     );
-    const results = (
-      await Promise.all(
-        [...sourcesByVersion.entries()].map(
-          ([engineVersion, versionSources]) =>
-            runCibBatch(
-              versionSources.map(({ scenario }) => scenario.value),
-              temporaryDirectory,
-              engineVersion,
-            ),
+    const results: CibRunnerResult[] = [];
+    for (const [engineVersion, versionSources] of sourcesByVersion) {
+      results.push(
+        ...await runCibBatch(
+          versionSources.map(({ scenario }) => scenario.value),
+          temporaryDirectory,
+          engineVersion,
         ),
-      )
-    ).flat();
+      );
+    }
     const byScenario = new Map<string, CibRunnerResult>(
       results.map(
         (result) => [result.scenarioId, result] as const,

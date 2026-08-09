@@ -163,26 +163,25 @@ export class EffectProbeActivityRegistry {
 function requireEffectRequest(
   request: EffectRequest,
 ): void {
-  if (
-    request.protocol !== EffectProtocol.Activity ||
-    request.operation !== EffectOperation.Probe ||
-    request.arguments.length !== 0
-  ) {
-    const isCreateDocument =
-      request.protocol === EffectProtocol.Activity &&
-      request.operation === EffectOperation.MappedSuccess &&
-      hasCreateDocumentArguments(request.arguments);
-    if (!isCreateDocument) {
-      const isBoundaryError =
-        request.protocol === EffectProtocol.Activity &&
-        request.operation === EffectOperation.MappedBoundaryError &&
-        hasBoundaryErrorArguments(request.arguments);
-      if (!isBoundaryError) {
-        throw new TypeError(
-          "Effect request must contain one admitted protocol, operation, and argument contract",
-        );
-      }
-    }
+  if (request.protocol !== EffectProtocol.Activity) {
+    throw new TypeError(
+      "Effect request must contain one admitted protocol, operation, and argument contract",
+    );
+  }
+  switch (request.operation) {
+    case EffectOperation.Probe:
+      requireArguments(request.arguments.length === 0);
+      break;
+    case EffectOperation.MappedSuccess:
+      requireArguments(hasMappedSuccessArguments(request.arguments));
+      break;
+    case EffectOperation.MappedBoundaryError:
+      requireArguments(hasMappedBoundaryErrorArguments(request.arguments));
+      break;
+    default:
+      throw new TypeError(
+        "Effect request must contain one admitted protocol, operation, and argument contract",
+      );
   }
   if (
     !/^effect-transport-sha256:[0-9a-f]{64}$/u.test(
@@ -203,10 +202,10 @@ function effectResultFor(
       kind: EffectExecutionResultKind.Success,
       localPatch: [
         {
-          name: "newDocRef",
+          name: "result",
           value: {
             kind: VariableValueKind.String,
-            value: "Document:42",
+            value: "example-result",
           },
         },
       ],
@@ -215,11 +214,11 @@ function effectResultFor(
   if (request.operation === EffectOperation.MappedBoundaryError) {
     return {
       kind: EffectExecutionResultKind.BpmnError,
-      code: "LinkLimitReachedError",
-      message: "Link limit reached",
+      code: "MappedBusinessError",
+      message: "mapped business error",
       localPatch: [
         {
-          name: "newLinkId",
+          name: "result",
           value: {
             kind: VariableValueKind.Null,
           },
@@ -233,22 +232,30 @@ function effectResultFor(
   };
 }
 
-function hasBoundaryErrorArguments(
+function hasMappedBoundaryErrorArguments(
   arguments_: ReadonlyArray<VariableBinding>,
 ): boolean {
   return arguments_.length === 1 &&
-    arguments_[0]?.name === "relationshipModel" &&
+    arguments_[0]?.name === "requestValue" &&
     arguments_[0]?.value.kind === VariableValueKind.String &&
-    arguments_[0]?.value.value === "RelationshipModel";
+    arguments_[0]?.value.value === "example-input";
 }
 
-function hasCreateDocumentArguments(
+function hasMappedSuccessArguments(
   arguments_: ReadonlyArray<VariableBinding>,
 ): boolean {
   return arguments_.length === 1 &&
-    arguments_[0]?.name === "documentModelName" &&
+    arguments_[0]?.name === "requestValue" &&
     arguments_[0]?.value.kind === VariableValueKind.String &&
-    arguments_[0]?.value.value === "MyDocumentModel";
+    arguments_[0]?.value.value === "example-input";
+}
+
+function requireArguments(condition: boolean): void {
+  if (!condition) {
+    throw new TypeError(
+      "Effect request must contain one admitted protocol, operation, and argument contract",
+    );
+  }
 }
 
 function assertNever(value: never): never {

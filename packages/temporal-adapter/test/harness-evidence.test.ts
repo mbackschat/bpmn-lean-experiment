@@ -96,6 +96,7 @@ const receipt: CompletedProcessReceipt = {
     sourceId: "source",
     sourceSha256:
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    sourceOverlay: null,
   },
   processId: "Process_1",
   processInstanceId: "Instance_1",
@@ -115,6 +116,31 @@ test("requires canonical Process variables in a completed receipt", () => {
     finalState: finalStateWithoutVariables,
   };
   assert.equal(isCompletedProcessReceipt(withoutVariables), false);
+});
+
+test("requires the exact optional source-overlay identity in a completed receipt", () => {
+  const withOverlay = {
+    ...receipt,
+    definition: {
+      ...receipt.definition,
+      sourceOverlay: {
+        id: "overlay",
+        sha256:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      },
+    },
+  };
+  assert.equal(isCompletedProcessReceipt(withOverlay), true);
+  assert.equal(isCompletedProcessReceipt({
+    ...withOverlay,
+    definition: {
+      ...withOverlay.definition,
+      sourceOverlay: {
+        ...withOverlay.definition.sourceOverlay,
+        module: "./reader.js",
+      },
+    },
+  }), false);
 });
 
 test("reconciles Query command outcomes and terminal state with durable history", () => {

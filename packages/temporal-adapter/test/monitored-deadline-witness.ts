@@ -188,6 +188,7 @@ async function compileMonitoredProgram(): Promise<SemanticProcessProgram> {
     bytes: await readFile(fixtureUrl),
     sourceId: "non-interrupting-boundary-timer-deadline-witness",
     expectedSha256: undefined,
+    sourceOverlay: null,
     semanticProfile: "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   });

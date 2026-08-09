@@ -310,59 +310,59 @@ function verifyMappingExecution(
     (observation) => observation.kind === "state",
   );
   switch (execution.handler) {
-    case "createDocumentDelegate":
+    case "mappedSuccessHandler":
       if (
-        execution.afterCommandId !== "start-create-document" ||
+        execution.afterCommandId !== "start-mapped-success" ||
         !isDeepStrictEqual(execution.arguments, [
           {
-            name: "documentModelName",
-            value: { kind: "string", value: "MyDocumentModel" },
+            name: "requestValue",
+            value: { kind: "string", value: "example-input" },
           },
         ]) ||
         !isDeepStrictEqual(execution.localPatch, [
           {
-            name: "newDocRef",
-            value: { kind: "string", value: "Document:42" },
+            name: "result",
+            value: { kind: "string", value: "example-result" },
           },
         ]) ||
         finalState?.kind !== "state" ||
         !isDeepStrictEqual(finalState.variables, [
           {
-            name: "myDocumentReference",
-            value: { kind: "string", value: "Document:42" },
+            name: "resultValue",
+            value: { kind: "string", value: "example-result" },
           },
         ])
       ) {
         throw new Error(
-          "retained CIB mapping evidence does not establish the exact CreateDocument contract",
+          "retained CIB mapping evidence does not establish the mapped-success contract",
         );
       }
       return;
-    case "createRelationshipLinkDelegate":
+    case "mappedBoundaryErrorHandler":
       if (
-        execution.afterCommandId !== "start-boundary-error" ||
+        execution.afterCommandId !== "start-mapped-boundary-error" ||
         !isDeepStrictEqual(execution.arguments, [
           {
-            name: "relationshipModel",
-            value: { kind: "string", value: "RelationshipModel" },
+            name: "requestValue",
+            value: { kind: "string", value: "example-input" },
           },
         ]) ||
         !isDeepStrictEqual(execution.localPatch, [
           {
-            name: "newLinkId",
+            name: "result",
             value: { kind: "null" },
           },
         ]) ||
         finalState?.kind !== "state" ||
         !isDeepStrictEqual(finalState.variables, [
           {
-            name: "relationshipLinkId",
+            name: "resultValue",
             value: { kind: "null" },
           },
         ])
       ) {
         throw new Error(
-          "retained CIB mapping evidence does not establish the exact boundary-error contract",
+          "retained CIB mapping evidence does not establish the mapped-boundary-error contract",
         );
       }
       return;

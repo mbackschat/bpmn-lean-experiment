@@ -134,6 +134,7 @@ export function parallelDefinitionArtifacts(): MutableDefinitionArtifacts {
     sourceId: "parallel-two-user-tasks.bpmn",
     sourceSha256:
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    sourceOverlay: null,
   };
   return {
     checkedProcess: {
@@ -286,6 +287,7 @@ export function serviceTaskDefinitionArtifacts(): MutableDefinitionArtifacts {
     sourceId: "service-task-effect-phase-zero-probe",
     sourceSha256:
       "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d",
+    sourceOverlay: null,
   };
   const descriptor = {
     protocol: "urn:bpmn-lean:effect-protocol:activity-v1",

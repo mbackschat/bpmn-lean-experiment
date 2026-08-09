@@ -220,7 +220,7 @@ function mutateFinalProcessVariable(
     binding?.value.kind !== "string"
   ) {
     throw new Error(
-      "CreateDocument calibration requires one final string variable",
+      "Mapped-success calibration requires one final string variable",
     );
   }
   binding.value.value = `${binding.value.value}-mutated`;
@@ -234,11 +234,11 @@ function mutateBoundaryErrorProcessVariable(
       observation.kind === CanonicalObservationKind.State &&
       observation.openUserTasks.some(
         ({ id }) =>
-          id.elementId === "ExpectedUserTaskAfterBPMNError",
+          id.elementId === "ReviewMappedError",
       ),
   );
   const binding = routedState?.variables.find(
-    ({ name }) => name === "relationshipLinkId",
+    ({ name }) => name === "resultValue",
   );
   if (binding?.value.kind !== "null") {
     throw new Error(
@@ -461,15 +461,15 @@ function effectCase(): PipelineCase {
   });
 }
 
-function createDocumentCase(): PipelineCase {
+function mappedSuccessCase(): PipelineCase {
   return Object.freeze({
-    id: "a12-create-document-data",
+    id: "mapped-success-service-task",
     scenarioRelativePath:
-      "scenarios/create-document-data/scenario.json",
-    bpmnRelativePath: "scenarios/create-document-data/process.bpmn",
-    workflowIdPrefix: "a12-create-document-data",
+      "scenarios/mapped-success-service-task/scenario.json",
+    bpmnRelativePath: "scenarios/mapped-success-service-task/process.bpmn",
+    workflowIdPrefix: "mapped-success-service-task",
     cib: cibConfiguration(
-        "scenarios/create-document-data/cibseven-evidence.json",
+        "scenarios/mapped-success-service-task/cibseven-evidence.json",
       "2.0.0",
       CibCaseRelation.SynchronousFinalState,
     ),
@@ -485,21 +485,21 @@ function createDocumentCase(): PipelineCase {
     injectMutation: mutateFinalProcessVariable,
     expectedInjectedDisagreement: observationValueDisagreement(
       "trace[4].variables[0].value.value",
-      "Document:42",
-      "Document:42-mutated",
+      "example-result",
+      "example-result-mutated",
     ),
   });
 }
 
 function boundaryErrorCase(): PipelineCase {
   return Object.freeze({
-    id: "a12-boundary-error-caught",
+    id: "mapped-boundary-error-service-task-caught",
     scenarioRelativePath:
-      "scenarios/boundary-error/scenario.json",
-    bpmnRelativePath: "scenarios/boundary-error/process.bpmn",
-    workflowIdPrefix: "a12-boundary-error-caught",
+      "scenarios/mapped-boundary-error-service-task/scenario.json",
+    bpmnRelativePath: "scenarios/mapped-boundary-error-service-task/process.bpmn",
+    workflowIdPrefix: "mapped-boundary-error-service-task-caught",
     cib: cibConfiguration(
-        "scenarios/boundary-error/cibseven-evidence.json",
+        "scenarios/mapped-boundary-error-service-task/cibseven-evidence.json",
       "2.0.0",
       CibCaseRelation.SynchronousBoundaryError,
     ),
@@ -580,6 +580,6 @@ export const pipelineCases = Object.freeze([
   ...nonInterruptingBoundaryTimerPipelineCases,
   ...callActivityPipelineCases,
   effectCase(),
-  createDocumentCase(),
+  mappedSuccessCase(),
   boundaryErrorCase(),
 ]);

@@ -75,6 +75,7 @@ async function compile(source: string) {
     sourceId: "simple-boolean-choice",
     expectedSha256: undefined,
     semanticProfile: profile,
+    sourceOverlay: null,
     limits,
   });
 }
@@ -207,6 +208,7 @@ test("compiles the content-bound standards-profile scenario", async () => {
     expectedSha256:
       "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
     semanticProfile: profile,
+    sourceOverlay: null,
     limits,
   });
 

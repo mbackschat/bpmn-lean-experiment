@@ -27,6 +27,7 @@ export const parallelProgram = rootScopedProgram({
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
     semanticProfile: "parallel-fork-join-draft",
     sourceId: "parallel-two-user-tasks-process",
+    sourceOverlay: null,
     sourceSha256,
   },
   processId: "Process_ParallelForkJoin",
@@ -86,6 +87,7 @@ export const parallelScenario: Scenario = {
     id: parallelProgram.identity.sourceId,
     relativePath: "scenarios/parallel-fork-join/process.bpmn",
     sha256: sourceSha256,
+    sourceOverlay: null,
   },
   stimuli: [
     startStimulus(),

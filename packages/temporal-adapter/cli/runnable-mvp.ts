@@ -162,6 +162,7 @@ export async function runRunnableTemporalMvp(
     bytes: await readFile(config.bpmn.file),
     sourceId: config.bpmn.sourceId,
     expectedSha256: undefined,
+    sourceOverlay: null,
     semanticProfile: config.bpmn.semanticProfile,
     limits: config.bpmn.limits,
   });

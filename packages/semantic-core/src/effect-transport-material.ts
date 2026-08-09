@@ -6,6 +6,7 @@ import type {
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { EffectDescriptor } from "./semantic-value-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
+import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 
 /**
  * Definition fields that remain stable across compiler-only changes.
@@ -16,6 +17,7 @@ export type EffectDefinitionKey = DeepReadonly<{
   semanticProfile: string;
   sourceId: string;
   sourceSha256: string;
+  sourceOverlay: SourceOverlayIdentity | null;
   processId: string;
 }>;
 
@@ -40,6 +42,7 @@ export function projectEffectTransportMaterial(
       semanticProfile: program.identity.semanticProfile,
       sourceId: program.identity.sourceId,
       sourceSha256: program.identity.sourceSha256,
+      sourceOverlay: program.identity.sourceOverlay,
       processId: program.processId,
     },
     occurrence: effect.id,

@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "non-interrupting-boundary-timer",
     "relativePath": "scenarios/non-interrupting-boundary-timer/process.bpmn",
-    "sha256": "032948b26d8c177d722036267cca71b2399fe947aeebb180900108fea3267b2f"
+    "sha256": "032948b26d8c177d722036267cca71b2399fe947aeebb180900108fea3267b2f",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

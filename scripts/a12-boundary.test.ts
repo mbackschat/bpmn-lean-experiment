@@ -16,6 +16,7 @@ import {
   assessA12Boundary,
   externalCreateDocumentSha256,
   repositoryBoundaryFiles,
+  verifyLegacyProductDecisionInventory,
 } from "./a12-boundary.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -61,14 +62,66 @@ test("rejects downstream A12 bean identities in lower semantic layers", () => {
     ]),
     [
       "packages/semantic-core/src/effect.ts: downstream A12 bean identity createDocumentDelegate",
+      "packages/semantic-core/src/effect.ts: legacy A12 product decision createDocumentDelegate",
+    ],
+  );
+});
+
+test("rejects legacy A12 profile and business decisions across product roots", () => {
+  assert.deepEqual(
+    assessA12Boundary([
+      {
+        path: "profiles/legacy/profile.json",
+        bytes: Buffer.from(
+          '{"id":"cibseven-2.0.0-a12-create-document-draft"}',
+        ),
+      },
+      {
+        path: "packages/bpmn-source/src/reader.ts",
+        bytes: Buffer.from('const task = "CreateDocument";'),
+      },
+      {
+        path: "adoption/a12/legacy/profile.json",
+        bytes: Buffer.from(
+          '{"id":"cibseven-2.0.0-a12-create-document-draft"}',
+        ),
+      },
+    ]),
+    [
+      "packages/bpmn-source/src/reader.ts: legacy A12 product decision CreateDocument",
+      "profiles/legacy/profile.json: legacy A12 product decision cibseven-2.0.0-a12-create-document-draft",
     ],
   );
 });
 
 test("keeps tracked and pending repository material inside the A12 boundary", async () => {
+  await verifyLegacyProductDecisionInventory(projectRoot);
   assert.deepEqual(
     assessA12Boundary(await repositoryBoundaryFiles(projectRoot)),
     [],
+  );
+});
+
+test("rejects an add-on reader or adoption-root import in product compilation dispatch", () => {
+  assert.deepEqual(
+    assessA12Boundary([
+      {
+        path: "packages/bpmn-source/src/compilation-dispatch.ts",
+        bytes: Buffer.from(
+          'import { A12BoundaryErrorReader } from "./a12-reader.js";',
+        ),
+      },
+      {
+        path: "packages/semantic-core/src/index.ts",
+        bytes: Buffer.from(
+          'export * from "../../../adoption/a12/current/plugin.js";',
+        ),
+      },
+    ]),
+    [
+      "packages/bpmn-source/src/compilation-dispatch.ts: legacy A12 product decision A12BoundaryError",
+      "packages/semantic-core/src/index.ts: product dependency on the optional A12 adoption root",
+    ],
   );
 });
 
@@ -92,18 +145,18 @@ test("excludes tracked paths deleted from the worktree", async () => {
   }
 });
 
-test("binds the CreateDocument scenario to a distinct project-authored fixture", async () => {
+test("binds retained CreateDocument evidence to a distinct project-authored fixture", async () => {
   const fixturePath = path.join(
     projectRoot,
-    "scenarios/create-document-data/process.bpmn",
+    "adoption/a12/current/create-document/process.bpmn",
   );
   const scenarioPath = path.join(
     projectRoot,
-    "scenarios/create-document-data/scenario.json",
+    "adoption/a12/current/create-document/scenario.json",
   );
   const readmePath = path.join(
     projectRoot,
-    "scenarios/create-document-data/README.md",
+    "adoption/a12/current/README.md",
   );
   const fixture = await readFile(fixturePath);
   const scenario = JSON.parse(await readFile(scenarioPath, "utf8")) as {
@@ -114,6 +167,6 @@ test("binds the CreateDocument scenario to a distinct project-authored fixture",
 
   assert.equal(fixtureSha256, scenario.bpmn.sha256);
   assert.notEqual(fixtureSha256, externalCreateDocumentSha256);
-  assert.match(provenance, /project-authored MIT-licensed model/u);
-  assert.match(provenance, /not a copy or redistribution/u);
+  assert.match(provenance, /project-authored A12-shaped fixtures/u);
+  assert.match(provenance, /not copies? of that EUPL-1\.2 source/u);
 });

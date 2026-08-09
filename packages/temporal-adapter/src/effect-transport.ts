@@ -28,6 +28,13 @@ export function canonicalEffectTransportEncoding(
       material.definition.semanticProfile,
       material.definition.sourceId,
       material.definition.sourceSha256,
+      material.definition.sourceOverlay === null
+        ? ["none"]
+        : [
+            "some",
+            material.definition.sourceOverlay.id,
+            material.definition.sourceOverlay.sha256,
+          ],
       material.definition.processId,
     ],
     [

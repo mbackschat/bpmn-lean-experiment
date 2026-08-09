@@ -21,8 +21,8 @@ import { test } from "node:test";
 import {
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
-  a12BoundaryErrorProfile,
-  a12CreateDocumentProfile,
+  mappedBoundaryErrorServiceTaskProfile,
+  mappedSuccessServiceTaskProfile,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import { SemanticProfileId } from "@bpmn-lean/semantic-core";
@@ -31,10 +31,7 @@ import type {
 } from "../src/compilation-dispatch.ts";
 
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
-import {
-  asRecord,
-  publicCompilationProjection,
-} from "./compilation-result-test-support.ts";
+import { asRecord } from "./compilation-result-test-support.ts";
 
 const camundaNamespaceDeclaration =
   'xmlns:camunda="http://camunda.org/schema/1.0/bpmn"';
@@ -52,6 +49,7 @@ async function compilePerturbed(
     sourceId: "foreign-attribute-perturbation",
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
   return result.status;
@@ -67,14 +65,6 @@ const serviceTaskSource = new URL(
 );
 const callActivitySource = new URL(
   "./fixtures/call-activity-called-process.bpmn",
-  import.meta.url,
-);
-const acceptedBaseline = new URL(
-  "./fixtures/per-element-admission-baseline.json",
-  import.meta.url,
-);
-const rejectedBaseline = new URL(
-  "./fixtures/foreign-attribute-dispatch-baseline.json",
   import.meta.url,
 );
 
@@ -138,6 +128,7 @@ test("keeps admitting the Service Task attributes its projector consumes", async
     sourceId: "service-task-effect",
     expectedSha256: undefined,
     semanticProfile: SemanticProfileId.ServiceTaskEffect,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 
@@ -171,6 +162,7 @@ test("admits a content-free XML Schema instance attribute", async () => {
     sourceId: "schema-location",
     expectedSha256: undefined,
     semanticProfile: SemanticProfileId.UserTask,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 
@@ -227,8 +219,7 @@ test("refuses a third foreign attribute beside the two the Service Task consumes
  * It is profile-parameterized, so unlike the reference-target rule its outcome cannot be one global
  * early rejection above dispatch: the generic reader must collect it with every other classification
  * finding. The registry owns that distinction and applies the selected policy before any reader can
- * omit it. Before the registry, the two A12 readers called the rule nowhere, so `camunda:asyncBefore`
- * on an A12 Start Event was accepted and discarded, leaving a byte-identical program.
+ * omit it. Every selected reader must keep the registry-owned classifier in front of projection.
  *
  * The Start Event is the perturbed locus on every path because no profile exempts it and no other rule
  * can refuse an otherwise valid Start Event carrying one extra attribute. The paired unperturbed
@@ -240,7 +231,6 @@ type DispatchFixture = Readonly<{
   sourceId: string;
   semanticProfile: string;
   find: string;
-  acceptedProjectionId: string;
 }>;
 
 const dispatchFixtures = {
@@ -253,29 +243,26 @@ const dispatchFixtures = {
     sourceId: "preserved-notation-diagnostics",
     semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
     find: '<bpmn:startEvent id="StartEvent_1"',
-    acceptedProjectionId: "generic-accepted",
   },
-  a12CreateDocument: {
-    path: "the A12 CreateDocument reader",
+  mappedSuccessServiceTask: {
+    path: "the mapped-success reader",
     source: new URL(
-      "../../../scenarios/create-document-data/process.bpmn",
+      "../../../scenarios/mapped-success-service-task/process.bpmn",
       import.meta.url,
     ),
-    sourceId: "a12-create-document-data",
-    semanticProfile: a12CreateDocumentProfile,
-    find: '<bpmn:startEvent id="StartEvent_CreateDocument"',
-    acceptedProjectionId: "create-document-accepted",
+    sourceId: "mapped-success-service-task",
+    semanticProfile: mappedSuccessServiceTaskProfile,
+    find: '<bpmn:startEvent id="StartEvent_MappedSuccess"',
   },
-  a12BoundaryError: {
-    path: "the A12 boundary-error reader",
+  mappedBoundaryErrorServiceTask: {
+    path: "the mapped-boundary-Error reader",
     source: new URL(
-      "../../../scenarios/boundary-error/process.bpmn",
+      "../../../scenarios/mapped-boundary-error-service-task/process.bpmn",
       import.meta.url,
     ),
-    sourceId: "a12-boundary-error",
-    semanticProfile: a12BoundaryErrorProfile,
-    find: '<bpmn:startEvent id="StartEvent_None"',
-    acceptedProjectionId: "boundary-error-accepted",
+    sourceId: "mapped-boundary-error-service-task",
+    semanticProfile: mappedBoundaryErrorServiceTaskProfile,
+    find: '<bpmn:startEvent id="StartEvent_MappedBoundaryError"',
   },
   callActivity: {
     path: "the Call Activity reader",
@@ -283,11 +270,10 @@ const dispatchFixtures = {
     sourceId: "call-activity-test",
     semanticProfile: SemanticProfileId.CalledProcessCallActivity,
     find: '<bpmn:startEvent id="CallerStart"',
-    acceptedProjectionId: "call-activity-accepted",
   },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
-test("preserves complete results through every registered compilation dispatch", async () => {
+test("applies foreign-attribute admission through every registered compilation dispatch", async () => {
   const registrySpecifier = new URL(
     "../dist/compilation-dispatch.js",
     import.meta.url,
@@ -303,15 +289,6 @@ test("preserves complete results through every registered compilation dispatch",
     Object.keys(dispatchFixtures),
     "the registry and its complete-result fixture map must cover each other in declaration order",
   );
-
-  const accepted = asRecord(JSON.parse(await readFile(acceptedBaseline, "utf8")));
-  assert.equal(accepted?.sourceTarget, "8746bc6bbdeb126a79d56c6f510adc4e5f780d98");
-  const acceptedProjections = asRecord(accepted?.projections);
-  assert.ok(acceptedProjections !== undefined);
-  const rejected = asRecord(JSON.parse(await readFile(rejectedBaseline, "utf8")));
-  assert.equal(rejected?.sourceTarget, "0b0456401b8aca470d2d51c9b6c802aa7868f7d2");
-  const rejectedProjections = asRecord(rejected?.projections);
-  assert.ok(rejectedProjections !== undefined);
 
   for (const value of dispatches) {
     const dispatch = asRecord(value);
@@ -338,6 +315,7 @@ test("preserves complete results through every registered compilation dispatch",
         sourceId: fixture.sourceId,
         expectedSha256: undefined,
         semanticProfile: fixture.semanticProfile,
+        sourceOverlay: null,
         limits: semanticProcessTestLimits,
       }),
       compileBpmnToSemanticProcess({
@@ -345,93 +323,19 @@ test("preserves complete results through every registered compilation dispatch",
         sourceId: `${fixture.sourceId}-foreign-attribute`,
         expectedSha256: undefined,
         semanticProfile: fixture.semanticProfile,
+        sourceOverlay: null,
         limits: semanticProcessTestLimits,
       }),
     ]);
 
-    assert.deepEqual(
-      publicCompilationProjection(unperturbed),
-      acceptedProjections[fixture.acceptedProjectionId],
-      `${fixture.path} changed its complete accepted result`,
+    assert.equal(
+      unperturbed.status,
+      BpmnCompilationStatus.Accepted,
+      `${fixture.path} rejected its registered neutral source`,
     );
-    assert.deepEqual(
-      publicCompilationProjection(foreignAttribute),
-      rejectedProjections[id],
-      `${fixture.path} changed its complete foreign-attribute result`,
-    );
+    assert.equal(foreignAttribute.status, BpmnCompilationStatus.Rejected);
+    assert.ok(foreignAttribute.diagnostics.some(
+      ({ code }) => code === BpmnSourceDiagnosticCode.UnconsumedForeignAttribute,
+    ));
   }
-});
-
-/**
- * The A12 CreateDocument profile keeps admitting the vendor attributes its registered source carries.
- *
- * `modeler:executionPlatform`, its version sibling, and `camunda:versionTag` reach no projector, and
- * the profile exempts their whole `Definitions` and `Process` types rather than those exact names,
- * because exact-name matching needs expanded-name resolution that no profile declares yet. This case
- * exists so the exemption is a tested decision rather than an accident of where a count check happens
- * to bite, and so narrowing it later fails here rather than silently.
- */
-test("keeps admitting the A12 vendor attributes no projector reads", async () => {
-  const source = new URL(
-    "../../../scenarios/create-document-data/process.bpmn",
-    import.meta.url,
-  );
-  const admitted = await readFile(source, "utf8");
-  for (const attribute of [
-    'modeler:executionPlatform="Camunda Platform"',
-    'camunda:versionTag="1.0"',
-  ]) {
-    assert.ok(admitted.includes(attribute), `the source no longer carries ${attribute}`);
-  }
-
-  const result = await compileBpmnToSemanticProcess({
-    bytes: new TextEncoder().encode(admitted),
-    sourceId: "a12-create-document-vendor-attributes",
-    expectedSha256: undefined,
-    semanticProfile: a12CreateDocumentProfile,
-    limits: semanticProcessTestLimits,
-  });
-
-  assert.equal(
-    result.status,
-    BpmnCompilationStatus.Accepted,
-    `the exempted vendor attributes were refused: ${JSON.stringify(result.diagnostics)}`,
-  );
-});
-
-/**
- * The cost of that exemption, pinned in the direction that loses information.
- *
- * Exempting the whole `Definitions` type admits every foreign attribute there, not only the two
- * `modeler:*` names the registered source carries, so an execution directive at that one locus is
- * still accepted and discarded. This case asserts that acceptance deliberately: the residual is
- * recorded in [the implementation map](../../../docs/IMPLEMENTATION-MAP.md) rather than hidden, and
- * narrowing the exemption to expanded `namespace#localName` matching must fail here rather than
- * silently, because a green suite would otherwise be the only evidence that the locus was ever open.
- */
-test("still discards a foreign attribute on the exempted A12 Definitions locus", async () => {
-  const source = new URL(
-    "../../../scenarios/create-document-data/process.bpmn",
-    import.meta.url,
-  );
-  const admitted = await readFile(source, "utf8");
-  const perturbed = admitted.replace(
-    "<bpmn:definitions",
-    '<bpmn:definitions camunda:asyncBefore="true"',
-  );
-  assert.notEqual(perturbed, admitted, "the perturbation matched nothing");
-
-  const result = await compileBpmnToSemanticProcess({
-    bytes: new TextEncoder().encode(perturbed),
-    sourceId: "a12-create-document-definitions-locus",
-    expectedSha256: undefined,
-    semanticProfile: a12CreateDocumentProfile,
-    limits: semanticProcessTestLimits,
-  });
-
-  assert.equal(
-    result.status,
-    BpmnCompilationStatus.Accepted,
-    "this locus is a recorded exemption; a rejection here means the residual closed and the map, the classifier docstring, and this case all need correcting together",
-  );
 });

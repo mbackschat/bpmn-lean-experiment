@@ -15,6 +15,7 @@ This separation avoids routing every consumer through document-version switches 
 | Artifact | Identity and responsibility |
 |---|---|
 | Semantic profile | Stable `kind`; versioned semantic `id`; exactly one normative authority or pinned executable oracle/configuration; selected feature surface, observation boundary, CIB–BPMN relationship references, and optional exact-source-binding-to-neutral-effect registrations |
+| BPMN source overlay | Stable `kind`; exact ID and byte digest; one selected semantic profile; alternate source bindings restricted to that profile's existing descriptors; exact inert expanded-name declarations; no executable extension |
 | Scenario | Stable `kind`; answer-free model/profile identity, explicit start, User Task completion, timer firing, Message delivery, and effect-result stimuli, requested observations, and provenance |
 | Canonical result | Outcome plus canonical observation trace including semantic task, Message subscription, timer, and effect occurrences and canonical Process variables; no target-specific host data |
 | CIB evidence | Stable `kind`; content digests for exact profile and scenario bytes; pinned producer and projection identity; raw runtime/history state-query, task, timer, effect, and mapping observations plus canonical result |
@@ -43,6 +44,7 @@ Portable assertions are verifier-side claims over canonical results or relations
 ## Schemas
 
 - [semantic-profile.schema.json](schemas/semantic-profile.schema.json) validates current draft profiles with exactly one normative or executable-oracle authority.
+- [bpmn-source-overlay.schema.json](schemas/bpmn-source-overlay.schema.json) validates the closed data-only source overlay shape; byte limits, strict JSON decoding, canonical order, uniqueness, profile equality, and descriptor membership are enforced by the source boundary.
 - [scenario.schema.json](schemas/scenario.schema.json) validates every registered answer-free target scenario. The registered scenarios and their capsule families are owned by the artifact registry and differential catalog, and this document deliberately does not restate that inventory: a copied list drifts silently, and the guarded catalogs already reject an unregistered scenario.
 - [canonical-result.schema.json](schemas/canonical-result.schema.json) validates the current canonical outcome and trace.
 - [cibseven-evidence.schema.json](schemas/cibseven-evidence.schema.json) validates the content-bound retained CIB evidence envelope.

@@ -277,6 +277,7 @@ private def inclusiveOperationsPaired (operations : List SemanticOperation) : Bo
 def programWellFormed (program : Program) : Bool :=
   nonempty program.identity.semanticProfile.value &&
     nonempty program.identity.sourceId.value &&
+    sourceOverlayIdentityValid program.identity.sourceOverlay &&
     lowercaseHexSha256 program.identity.sourceSha256 &&
     nonempty program.processId.value &&
     !program.definitionScopes.isEmpty &&

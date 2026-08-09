@@ -29,7 +29,7 @@ import {
 } from "./effect-scenario-execution.js";
 import {
   runUnhandledBpmnError,
-} from "./boundary-error-scenario-execution.js";
+} from "./mapped-boundary-error-scenario-execution.js";
 import type {
   BpmnProcessWorkflow,
   TemporalBranchBypassMutationExecution,

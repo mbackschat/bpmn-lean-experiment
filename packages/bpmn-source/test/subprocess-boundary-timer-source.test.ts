@@ -40,6 +40,7 @@ function compile(bytes: string) {
     sourceId: "subprocess-boundary-timer-test",
     expectedSha256: undefined,
     semanticProfile: profile,
+    sourceOverlay: null,
     limits,
   });
 }

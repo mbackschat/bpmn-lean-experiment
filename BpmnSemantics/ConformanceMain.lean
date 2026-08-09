@@ -1,6 +1,6 @@
 import BpmnSemantics.ActivityBoundaryTimerConformance
 import BpmnSemantics.Conformance
-import BpmnSemantics.BoundaryErrorConformance
+import BpmnSemantics.MappedBoundaryErrorConformance
 import BpmnSemantics.CallActivityConformance
 import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.EventBasedGatewayConformance

@@ -178,9 +178,7 @@ final class CibSevenScenarioStateProjector {
   private List<ProcessVariableSnapshot> observeProcessVariables(
       String engineInstanceId,
       Iterable<String> committedCompletionVariableNames) {
-    var observableNames =
-        new LinkedHashSet<>(
-            List.of("myDocumentReference", "relationshipLinkId"));
+    var observableNames = new LinkedHashSet<String>();
     committedCompletionVariableNames.forEach(observableNames::add);
     return observableNames.stream()
         .flatMap(

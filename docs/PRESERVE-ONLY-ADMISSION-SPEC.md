@@ -12,7 +12,7 @@ What is the smallest admission change that lets a file a modeler actually saved 
 
 The gap is in the **generic** profile, not the whole repository. [The generic compiler](../packages/bpmn-source/src/checked-process-compiler.ts) admits `bpmn:Definitions` with only `$type`, `id`, `targetNamespace`, `expressionLanguage`, and `rootElements`, and a `bpmn:Process` with only `$type`, `id`, `name`, `isExecutable`, and `flowElements`. Every modeler writes Diagram Interchange, so a modeler file is rejected at the first allowlist under every standards profile.
 
-**One profile already does a narrow version of what this proposes**, and the proposal is a generalization rather than a new idea. [The A12 CreateDocument reader](../packages/bpmn-source/src/a12-create-document-source.ts) admits `diagrams`, `exporter`, and `exporterVersion`, and its registered fixture carries eight DI elements. It retains that material in the exact source bytes while refusing any unrecognized executable node, attribute, or extension. That is the execute/preserve/reject split applied to one hand-selected shape; what is missing is a profile-parameterized form of it.
+**One profile already did a narrow version of what this proposes**, and the proposal is a generalization rather than a new idea. [The frozen A12 CreateDocument reader at the implementation baseline](../adoption/a12/legacy/source-tree/packages/bpmn-source/src/a12-create-document-source.ts) admits `diagrams`, `exporter`, and `exporterVersion`, and its registered fixture carries eight DI elements. It retains that material in the exact source bytes while refusing any unrecognized executable node, attribute, or extension. That is the execute/preserve/reject split applied to one hand-selected shape; what is missing is a profile-parameterized form of it.
 
 Two failure modes bound the answer. **Silently ignoring** an unsupported executable construct produces a Process that deploys successfully and omits intended business behavior, which is the failure the external research names as decisive. **Admitting preserved material into the executed representation** makes every existing law's hypotheses quietly weaker, because a term the semantics never inspects still travels through the structures the theorems quantify over.
 
@@ -231,7 +231,7 @@ Measured, not estimated:
 | [compile.ts](../packages/bpmn-source/src/compile.ts) | 316 | 284 |
 | [root-definition selection](../packages/bpmn-source/src/root-definition-selection.ts) | 190 | 410 |
 | [contracts.ts](../packages/bpmn-source/src/contracts.ts) | 70 | 530 |
-| [the A12 CreateDocument reader](../packages/bpmn-source/src/a12-create-document-source.ts) | 321 | 279 |
+| [the frozen A12 CreateDocument reader at the implementation baseline](../adoption/a12/legacy/source-tree/packages/bpmn-source/src/a12-create-document-source.ts) | 321 | 279 |
 | [the Call Activity reader](../packages/bpmn-source/src/call-activity-source.ts) | 327 | 273 |
 
 The compiler's 82 lines will not hold the classification calls, the partition assembly, and the diagnostic list. **The extraction lands as its own behavior-preserving commit before any semantics**, under [the code-hygiene rule](../CLAUDE.md#code-hygiene-and-module-boundaries).

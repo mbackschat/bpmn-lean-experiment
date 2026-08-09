@@ -319,6 +319,7 @@ async function compileProgram(
     bytes: await readFile(url),
     sourceId,
     expectedSha256: undefined,
+    sourceOverlay: null,
     semanticProfile: "bpmn-2.0.2-intermediate-catch-message-draft",
     limits: {
       maxBytes: 1024 * 1024,

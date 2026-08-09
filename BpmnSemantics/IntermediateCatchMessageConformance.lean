@@ -109,7 +109,8 @@ def scenario : Scenario :=
     bpmn :=
       { id := sourceIdentity.sourceId
         relativePath := "scenarios/intermediate-catch-message/process.bpmn"
-        sha256 := sourceIdentity.sourceSha256 }
+        sha256 := sourceIdentity.sourceSha256
+        sourceOverlay := none }
     stimuli := [startStimulus, exactDelivery, exactCompletion]
     observations
     provenance :=

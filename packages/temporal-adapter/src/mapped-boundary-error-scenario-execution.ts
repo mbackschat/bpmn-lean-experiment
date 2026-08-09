@@ -91,8 +91,8 @@ export async function runUnhandledBpmnError(
       }
       returnedResult = {
         ...admittedResult,
-        code: "RelationshipLinkageError",
-        message: "Relationship linkage failed",
+        code: "UnmatchedMappedBusinessError",
+        message: "unmatched mapped business error",
       };
       return returnedResult;
     },

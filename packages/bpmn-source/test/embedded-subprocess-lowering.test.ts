@@ -138,6 +138,7 @@ test("embedded scope lowering is independent of child and flow declaration order
     sourceId: "embedded-subprocess-completion-permuted",
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 
@@ -178,6 +179,7 @@ test("rejects event scope and cross-scope flow variants", async () => {
       sourceId: "embedded-subprocess-negative",
       expectedSha256: undefined,
       semanticProfile,
+      sourceOverlay: null,
       limits: semanticProcessTestLimits,
     });
     assert.equal(result.status, BpmnCompilationStatus.Rejected);

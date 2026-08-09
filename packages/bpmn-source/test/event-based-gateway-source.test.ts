@@ -33,6 +33,7 @@ function compile(bytes: string) {
     sourceId: "event-race-test",
     expectedSha256: undefined,
     semanticProfile: profile,
+    sourceOverlay: null,
     limits,
   });
 }

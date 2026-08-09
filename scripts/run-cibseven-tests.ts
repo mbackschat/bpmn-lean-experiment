@@ -58,17 +58,10 @@ async function runTests(
   process.stderr.write(result.stderr);
 }
 
-const boundaryErrorSemanticMethods = [
-  "derivesTheExactProfileAndMapsSuccessfulOutput",
-  "recordsThatCaughtErrorsStillApplyTheOutputMapping",
-  "recordsTheTargetShapedNullLocalWriteAndOutputMapping",
-  "recordsOutputMappingFailureAfterTheDefaultUnhandledPath",
-  "isolatesDefaultUnhandledBehaviorWithoutAnOutputMapping",
-  "preservesAndExecutesAnExplicitEmptyErrorCodeVariable",
-] as const;
-
-await runTests("2.2.0", ["-Dtest=*Test,!CibSevenBoundaryErrorPhaseZeroProbeTest"]);
+await runTests("2.2.0", [
+  "-Dtest=*Test,!CibSevenMappedSuccessScenarioRunnerTest,!CibSevenMappedBoundaryErrorScenarioRunnerTest",
+]);
 await runTests("2.0.0", [
   "-Dcibseven.version=2.0.0",
-  `-Dtest=CibSevenBoundaryErrorPhaseZeroProbeTest#${boundaryErrorSemanticMethods.join("+")},CibSevenBoundaryErrorScenarioRunnerTest,CibSevenExclusiveGatewayJuelProbeTest,CibSevenIsolatedJuelRuntimeProbeTest`,
+  "-Dtest=CibSevenMappedSuccessScenarioRunnerTest,CibSevenMappedBoundaryErrorScenarioRunnerTest,CibSevenExclusiveGatewayJuelProbeTest,CibSevenIsolatedJuelRuntimeProbeTest",
 ]);

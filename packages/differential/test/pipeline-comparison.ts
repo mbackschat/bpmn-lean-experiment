@@ -435,7 +435,7 @@ function projectSynchronousBoundaryErrorHostResult(
       observation.kind === CanonicalObservationKind.State &&
       observation.openUserTasks.some(
         ({ id }) =>
-          id.elementId === "ExpectedUserTaskAfterBPMNError",
+          id.elementId === "ReviewMappedError",
       ),
   );
   const boundaryState = semanticResult.trace[boundaryStateIndex];

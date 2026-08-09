@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "simple-boolean-exclusive-gateway-process",
     "relativePath": "scenarios/exclusive-gateway-simple-boolean/process.bpmn",
-    "sha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b"
+    "sha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

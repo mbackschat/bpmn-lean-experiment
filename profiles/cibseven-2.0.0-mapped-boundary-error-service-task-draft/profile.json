@@ -1,0 +1,100 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+  "status": "immutable",
+  "claim": "mapped-boundary-error-service-task-exact-catch-calibration-only",
+  "oracle": {
+    "name": "CIB Seven",
+    "version": "2.0.0",
+    "revision": "57ed69550f1c9c2619b9711d8877418bb084a371"
+  },
+  "environment": {
+    "java": "21",
+    "database": "H2 2.3.232",
+    "automaticJobExecutor": "disabled",
+    "clock": "explicit",
+    "historyLevel": "audit",
+    "defaultHistoryTimeToLive": "P180D",
+    "enforceHistoryTimeToLive": true
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "service-task",
+      "string-and-null-variables",
+      "literal-input-mapping",
+      "local-variable-output-mapping",
+      "typed-bpmn-error-result",
+      "interrupting-error-boundary-event",
+      "exact-error-code-match",
+      "user-task",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "camunda-delegate-expression-exact-deferred-bean-token",
+      "camunda-input-output-caught-error-path"
+    ],
+    "relationships": [
+      "CIB-AGR-0010",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-OP-0007",
+      "CIB-CFG-0007"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "synchronous-caught-error-host-relation",
+    "semanticConcurrency": false
+  },
+  "effectBindings": [
+    {
+      "source": {
+        "implementation": "urn:bpmn-lean:effect-binding:mapped-boundary-error:v1",
+        "delegateExpression": "#{mappedBoundaryErrorHandler}"
+      },
+      "descriptor": {
+        "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+        "operation": "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1"
+      }
+    }
+  ],
+  "excluded": [
+    "catch-all-error-boundaries",
+    "multiple-error-handlers",
+    "nested-error-propagation",
+    "error-end-events",
+    "general-service-faults",
+    "unmatched-error-compatibility",
+    "general-juel",
+    "arbitrary-beans",
+    "java-class-loading",
+    "delegate-execution-compatibility",
+    "process-scope-worker-writes",
+    "error-code-or-message-process-variables",
+    "technical-failures-as-business-errors",
+    "incidents-as-semantic-outcomes",
+    "retry-exhaustion-semantics",
+    "compensation",
+    "cancellation-recovery",
+    "multiple-effects",
+    "effect-races",
+    "external-tasks",
+    "scripts",
+    "listeners"
+  ]
+}

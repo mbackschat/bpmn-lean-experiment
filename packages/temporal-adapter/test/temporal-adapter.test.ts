@@ -76,11 +76,11 @@ import {
   registerServiceTaskEffectTemporalTests,
 } from "./service-task-effect-temporal-tests.ts";
 import {
-  registerCreateDocumentDataTemporalTests,
-} from "./create-document-data-temporal-tests.ts";
+  registerMappedSuccessTemporalTests,
+} from "./mapped-success-temporal-tests.ts";
 import {
-  registerBoundaryErrorTemporalTests,
-} from "./boundary-error-temporal-tests.ts";
+  registerMappedBoundaryErrorTemporalTests,
+} from "./mapped-boundary-error-temporal-tests.ts";
 import {
   registerExclusiveGatewayTemporalTests,
 } from "./exclusive-gateway-temporal-tests.ts";
@@ -499,7 +499,7 @@ test("batch execution rejects duplicate Workflow identities before start", async
 
 registerParallelTemporalTests(activeRunner);
 registerServiceTaskEffectTemporalTests(activeRunner);
-registerCreateDocumentDataTemporalTests(activeRunner);
-registerBoundaryErrorTemporalTests(activeRunner);
+registerMappedSuccessTemporalTests(activeRunner);
+registerMappedBoundaryErrorTemporalTests(activeRunner);
 registerExclusiveGatewayTemporalTests(activeRunner);
 registerInclusiveGatewayTemporalTests(activeRunner);

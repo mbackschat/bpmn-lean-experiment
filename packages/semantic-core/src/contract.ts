@@ -1,4 +1,5 @@
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 
 export enum CommandOutcome {
   Committed = "committed",
@@ -242,6 +243,7 @@ export type BpmnResource = DeepReadonly<{
   id: string;
   relativePath: string;
   sha256: string;
+  sourceOverlay: SourceOverlayIdentity | null;
 }>;
 
 export type Scenario = DeepReadonly<{

@@ -1,0 +1,41 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/mapped-success-service-task/process.bpmn",
+    "sourceId": "mapped-success-service-task",
+    "semanticProfile": "cibseven-2.0.0-mapped-success-service-task-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_mapped_success_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "urn:bpmn-lean:effect-operation:mapped-success-v1",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "example-result"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

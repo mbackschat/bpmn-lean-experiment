@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "embedded-subprocess-completion-a-then-b",
-    "sha256": "ae0b4fdb9971a0375c1058d3f965714a38e143f154bc7d4c5844fa26436b8474"
+    "sha256": "7fdeaa1f732c42e8f4da98aa7c617ad6d789ed49895db7fd454738f675c352ed"
   },
   "profile": {
     "id": "cibseven-2.2.0-embedded-subprocess-completion-draft",

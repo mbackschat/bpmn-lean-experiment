@@ -220,6 +220,7 @@ function compileText(xml: string, sourceId: string) {
     sourceId,
     expectedSha256: undefined,
     semanticProfile,
+    sourceOverlay: null,
     limits: semanticProcessTestLimits,
   });
 }

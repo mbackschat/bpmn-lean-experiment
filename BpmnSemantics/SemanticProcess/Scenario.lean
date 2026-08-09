@@ -303,6 +303,7 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
         scenario.profile = program.identity.semanticProfile &&
         scenario.bpmn.id = program.identity.sourceId &&
         scenario.bpmn.sha256 = program.identity.sourceSha256 &&
+        scenario.bpmn.sourceOverlay = program.identity.sourceOverlay &&
         scenario.observations = requiredObservations)
 
 /-- Run an admitted scenario with a caller-supplied bounded-closure harness limit. Failed support admission returns the unsupported deployment result without executing a stimulus. -/

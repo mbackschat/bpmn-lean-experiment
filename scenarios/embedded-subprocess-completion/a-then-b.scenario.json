@@ -5,7 +5,8 @@
   "bpmn": {
     "id": "embedded-subprocess-completion-process",
     "relativePath": "scenarios/embedded-subprocess-completion/process.bpmn",
-    "sha256": "6ca0aa3bccb005de1ac4b6ef6283f2a29c4f4ef7c3e8aff6bf29d79247f09a36"
+    "sha256": "6ca0aa3bccb005de1ac4b6ef6283f2a29c4f4ef7c3e8aff6bf29d79247f09a36",
+    "sourceOverlay": null
   },
   "stimuli": [
     {

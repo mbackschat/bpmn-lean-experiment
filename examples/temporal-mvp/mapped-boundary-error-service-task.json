@@ -1,0 +1,50 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/mapped-boundary-error-service-task/process.bpmn",
+    "sourceId": "mapped-boundary-error-service-task",
+    "semanticProfile": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_mapped_boundary_error_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "ReviewMappedError",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1",
+      "result": {
+        "kind": "bpmnError",
+        "code": "MappedBusinessError",
+        "message": "mapped business error",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

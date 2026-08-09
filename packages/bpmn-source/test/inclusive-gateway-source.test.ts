@@ -30,6 +30,7 @@ function compile(bytes: string) {
     sourceId: "inclusive-gateway-test",
     expectedSha256: undefined,
     semanticProfile: profile,
+    sourceOverlay: null,
     limits,
   });
 }

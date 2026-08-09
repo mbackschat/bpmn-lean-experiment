@@ -71,7 +71,8 @@ def scenario : Scenario :=
       { id := ⟨"service-task-effect-phase-zero-probe"⟩
         relativePath := "scenarios/service-task-effect/process.bpmn"
         sha256 :=
-          "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d" }
+          "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d"
+        sourceOverlay := none }
     stimuli :=
       [ .startProcess
           ⟨"start-process"⟩

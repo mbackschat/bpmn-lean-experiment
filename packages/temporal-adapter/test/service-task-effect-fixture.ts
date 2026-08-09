@@ -93,6 +93,7 @@ export function serviceTaskEffectInput(
       sourceId: "service-task-effect-process",
       sourceSha256:
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      sourceOverlay: null,
     },
     processId,
     definitionScopes: [{
@@ -130,6 +131,7 @@ export function serviceTaskEffectInput(
         id: semanticProcess.identity.sourceId,
         relativePath: "scenarios/service-task-effect/process.bpmn",
         sha256: semanticProcess.identity.sourceSha256,
+        sourceOverlay: null,
       },
       stimuli: [
         {
@@ -188,6 +190,7 @@ export function serviceTaskEffectRequest(
         semanticProfile: semanticProcess.identity.semanticProfile,
         sourceId: semanticProcess.identity.sourceId,
         sourceSha256: semanticProcess.identity.sourceSha256,
+        sourceOverlay: semanticProcess.identity.sourceOverlay,
         processId: semanticProcess.processId,
       },
       occurrence: completion.effectId,

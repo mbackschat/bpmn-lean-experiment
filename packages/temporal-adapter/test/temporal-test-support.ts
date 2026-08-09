@@ -165,6 +165,7 @@ export async function compileExecutionInput(
     bytes: await readFile(selectedBpmnUrl),
     sourceId: scenario.bpmn.id,
     expectedSha256: scenario.bpmn.sha256,
+    sourceOverlay: null,
     semanticProfile: scenario.profile,
     limits: {
       maxBytes: 1024 * 1024,
@@ -193,6 +194,7 @@ export function parallelScenario(
       id: "parallel-two-user-tasks-process",
       relativePath: "scenarios/parallel-fork-join/process.bpmn",
       sha256: parallelSourceSha256,
+      sourceOverlay: null,
     },
     stimuli: [
       {
@@ -296,6 +298,7 @@ export function effectDefinitionKey(
     semanticProfile: semanticProcess.identity.semanticProfile,
     sourceId: semanticProcess.identity.sourceId,
     sourceSha256: semanticProcess.identity.sourceSha256,
+    sourceOverlay: semanticProcess.identity.sourceOverlay,
     processId: semanticProcess.processId,
   };
 }

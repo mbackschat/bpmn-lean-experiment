@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "message-addressed-receive-task",
-    "sha256": "8703e5be116373bb61972f937e1b21c790d6e77265a531ce9b640004bb51f5a9"
+    "sha256": "a23bb3c311f78c3484d7340303a6b48093c41b76d0e7b4e5a35cf74602c3ed8b"
   },
   "profile": {
     "id": "cibseven-2.2.0-message-addressed-receive-task-draft",
