@@ -20,6 +20,8 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 
 **Layering.** [The BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) is the primary engine-coverage view; [the CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) owns classified profile additions; [the A12 ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) owns downstream adoption. The three denominators never combine. There is no A12 adapter package, Java Worker, facade bridge, Java semantic core, or JUEL dependency in this repository; [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-compatibility-and-polyglot-effect-execution) owns the reopen trigger for a second core.
 
+**Open A12-boundary checkpoint defects.** The neutral mapped-boundary compiler output is not yet accepted by the shared Semantic Process schema because that schema retains five legacy A12 route constants. The product-decision scan omits `contracts/` and the root Lean umbrella, its frozen decision inventory is not independently derived from immutable baseline `02330ad`, and the frozen export omits two direct retained-evidence dependencies. The payload-free Service Task profile and BPMN bytes are unchanged, while its scenario necessarily adds `sourceOverlay: null` and its evidence rebinds that scenario digest. Until the corrected guarantee is reviewed and approved and these mechanisms are fixed, the A12 product boundary is implemented in part but not evidence-closed.
+
 **This is not** a general BPMN engine, an OMG conformance result, or a production CIB deployment or history compatibility baseline. Individual evidence-bound calibration profile artifacts may already be immutable under the narrower [profile-registry definition](../profiles/README.md).
 
 ## Implemented and absent surfaces
@@ -50,7 +52,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - executable Status, suffixless-singleton, registry, file-link, and heading-anchor documentation discipline; the supplied architecture handoff's current release/readiness obligations have active owners while the original brief and two residual proposals are archived provenance
 - the non-redistributed OMG BPMN 2.0.2 corpus at external sibling `../oss/omg-bpmn-2.0.2`, with overrideable XSD/CMOF consumer paths, official-source-only atomic fetch, a 15-file tracked hash manifest, and an offline verifier; the optional Markdown/image conversion remains a non-authoritative cache
 - portable external-input setup through a 14-repository/four-submodule canonical-remote/commit/tag/gitlink lock plus the per-file OMG digest manifest, separate `verify`/`adoption`/`research`/`all` provisioning scopes, a read-only doctor that hashes every dependency owner and inventories every registered cache root, A12-free CI provisioning, custom-root support, and fail-closed CMOF, MIWG, breadth, and selected adoption lanes; no contributor machine is presumed to contain `../oss`
-- enforced A12 boundary checks over the complete product-source and built-in-artifact inventories, optional-root imports, source-license headers, dependency coordinates, exact external fixture bytes, external-checkout links, and the frozen legacy product-decision manifest, plus an explicit optional exact-source adoption gate outside complete MIT engine verification
+- initial A12 boundary checks over product-source and built-in-artifact inventories, optional-root imports, source-license headers, dependency coordinates, exact external fixture bytes, external-checkout links, and the frozen legacy product-decision manifest, plus an explicit optional exact-source adoption gate outside complete MIT engine verification
 - enforced implementation-surface reviewability through per-surface implemented/absent sections and a 120-word review-unit ceiling
 - commit-bounded nonblank code/document capsule-cost measurement with a parser self-test and explicit unknown treatment for missing historical baselines
 - dependency-free source-hygiene enforcement over tracked and pending Lean/TypeScript/JavaScript/Java source with a 600-nonblank-line review target, 1000-line hard ceiling, exact import-only Lean umbrellas, allowlist-free rejection of every hand-written `.js`/`.cjs`/`.mjs` module, required Lean module-document placement, descriptive public names for maintained non-experimental conformance facts, one composed Lean assessment shared by the live scan and explicit sparse-valid anti-boilerplate fixture, literal-aware diagnostics, and no current reviewed exceptions
@@ -65,6 +67,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - automatic proof of semantic cohesion or function/class responsibility
 - comment-density, word-count, or declaration-documentation scoring; generated comment stubs
 - Semgrep or tree-sitter dependency
+- a complete A12 product-decision scan over shared contracts and the root Lean umbrella, an inventory independently derived from immutable baseline `02330ad`, and a dependency-closed frozen export
 
 ### BPM platform
 
@@ -93,10 +96,10 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - namespace-aware element/extension/expression census
 - production delegate, listener, plugin, REST/JMS façade, and downstream-template inventory
 - bounded CIB Seven `2.0.0`/`2.2.0` assessment
-- exact frozen legacy generation at immutable target `02330ad0f980a5fc282cc0aa93600a9632b86c3e`, with every original path and SHA-256 manifest-bound outside product registries
+- a frozen legacy generation at immutable target `02330ad0f980a5fc282cc0aa93600a9632b86c3e`, manifest-bound outside product registries but currently missing two direct retained-evidence dependencies
 - distinct current overlay-aware adoption scenarios, project-authored fixtures, overlay artifacts, and CIB evidence accepted by current schemas but absent from every product catalog
 - optional exact external `CreateDocument.bpmn` static compilation through the product-neutral mapped-success profile and current data-only overlay, plus exact external boundary-Error source-shape calibration
-- a preservation oracle that executes the immutable baseline tooling in an isolated export and compares legacy/current checked graphs, Semantic Process programs, runtime results, and CIB evidence bodies outside the approved profile/overlay identity translation
+- a preservation oracle that executes the immutable baseline tooling in an isolated export and compares its currently selected legacy/current checked graphs, Semantic Process programs, runtime results, and CIB evidence bodies outside the approved profile/overlay identity translation
 - two completed target-shaped legacy feasibility slices retained as adoption evidence rather than product implementation
 
 #### Explicitly absent
@@ -111,12 +114,13 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - materialized Workflows-enabled full-stack template integration
 - per-model semantic implementations
 - any A12 runtime or license dependency in the MIT engine
+- complete frozen dependency closure and an approved exact payload-free Service Task preservation oracle
 
 ### Wire contracts
 
 #### Implemented
 
-- One current structural schema per semantic profile, source overlay, scenario, canonical result, CIB evidence, checked BPMN graph, and Semantic Process program
+- One structural schema file per semantic profile, source overlay, scenario, canonical result, CIB evidence, checked BPMN graph, and Semantic Process program
 - stable document kinds
 - semantic profile/source/compiler identity plus required nullable source-overlay identity in scenarios, checked graphs, Semantic Process programs, effect transport, and completed-process receipts
 - exact scenario/profile/source-overlay content binding
@@ -149,6 +153,7 @@ Every multi-target agreement claim carries the same qualifier. The TypeScript co
 - value kinds beyond string/null or general variable domain
 - wider or decimal numeric domain
 - identifier normalization or locale-sensitive ordering
+- shared-schema admission of the compiler-produced neutral mapped-boundary Semantic Process program; five legacy A12 route constants still reject it
 
 ### Semantic profile
 
@@ -472,7 +477,7 @@ One nearest boundary per family. The owning capsule holds the full exclusion set
 - **Expressions:** conditional routing beyond the exact Simple Boolean profile. JUEL remains demand-driven, deferred, and separately classified.
 - **Unsupported across families:** arbitrary serial composition, arbitrary graph progress, repeated or nested scope activation, Message payload, key, and global correlation, loops, multi-instance, compensation, and general Event semantics.
 
-**A12 adoption.** The optional adoption lane admits the exact external `CreateDocument.bpmn` bytes through the product-neutral mapped-success profile plus a content-bound data-only overlay. It also preserves the complete pre-extraction generation at immutable target `02330ad` and proves the two current project-authored adoption projections equal that generation outside the approved profile/overlay identity translation. The closed exact-model product count remains **zero** because no external EUPL-1.2 model and Java delegate have executed through an A12-owned add-on. This is an optional adoption-evidence result, not the primary BPMN coverage measure or product-1 implementation. The active Simple Boolean language matches none of the retained A12 JUEL sources and claims zero adoption coverage.
+**A12 adoption.** The optional adoption lane admits the exact external `CreateDocument.bpmn` bytes through the product-neutral mapped-success profile plus a content-bound data-only overlay. Its current oracle proves the two project-authored adoption projections equal the selected frozen generation outside the approved profile/overlay identity translation, but the frozen dependency closure at immutable target `02330ad` is incomplete and the product-boundary checkpoint is rejected. The closed exact-model product count remains **zero** because no external EUPL-1.2 model and Java delegate have executed through an A12-owned add-on. This is optional adoption evidence, not the primary BPMN coverage measure or product-1 implementation. The active Simple Boolean language matches none of the retained A12 JUEL sources and claims zero adoption coverage.
 
 **Closed prerequisite.** Cross-language wire hardening: schemas cap every current integer at `9007199254740991`, canonical identifiers use exact Unicode scalar-value ordering with no normalization, and strict byte readers reject duplicate decoded keys and unpaired surrogates.
 

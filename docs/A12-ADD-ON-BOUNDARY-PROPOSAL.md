@@ -2,17 +2,17 @@
 
 ## Status
 
-Owner-approved on 2026-08-09; the complete cross-language replacement has reached its first green implementation checkpoint and awaits the mandatory semantic-checkpoint review. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. Approval authorizes exactly this independently reviewed contract and no broader A12 compatibility, extension, or packaging work.
+Draft material correction after the rejected first semantic checkpoint. The owner directed that A12-specific work be preserved but moved out of the core product and that the resulting boundary prepare for a later separately owned add-on. The prior approval does not authorize the revised payload-free Service Task preservation guarantee below; that correction requires a new context-cold proposal review and owner approval before implementation resumes.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `8e46a2e` | `fork-turns-none` | `approve-with-required-edits` | `4619b74` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `59bcefc` | `fork-turns-none` | `reject` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal review used two correction rounds. The context-cold review of `8e46a2e` required a profile-owned descriptor allowlist, preservation of the existing non-A12 Service Task profile, separate frozen and current evidence generations, fresh neutral CIB relationships, and complete guard and preservation obligations. Correction `6bbcf42` closed those findings on substance but left the preservation baseline unnamed. Correction `4619b74` bound every legacy oracle and manifest to immutable pre-extraction target `02330ad`, and the same reviewer approved the proposal.
+The original proposal review used two correction rounds. The context-cold review of `8e46a2e` required a profile-owned descriptor allowlist, preservation of the existing non-A12 Service Task profile and BPMN source, separate frozen and current evidence generations, fresh neutral CIB relationships, and complete guard and preservation obligations. Correction `6bbcf42` closed those findings on substance but left the preservation baseline unnamed. Correction `4619b74` bound every legacy oracle and manifest to immutable pre-extraction target `02330ad`, and the same reviewer approved that proposal version. Semantic-checkpoint target `59bcefc` was rejected because the shared Semantic Process schema retained A12 constants, the frozen dependency closure was incomplete, and the proposal's four-artifact byte-preservation guarantee conflicted with the mandatory wire replacement. The first two findings implement the previously selected contract; the third requires the material correction reviewed here.
 
 ## Question
 
@@ -88,7 +88,7 @@ type SourceOverlayIdentity = DeepReadonly<{
 
 The engine accepts an overlay only when the compile request names a registered overlay by exact ID and SHA-256 and supplies the exact matching bytes. It rejects an ID, digest, or `semanticProfile` mismatch before structural projection. The engine enforces a 65,536-byte limit before calculating SHA-256 and before decoding.
 
-`effectBindings` remains in engine semantic-profile artifacts. It owns both the built-in engine source bindings and the exact closed set of allowed neutral effect descriptors for that profile. An overlay supplies alternate source bindings only. Every overlay descriptor must exactly equal a descriptor already present in the selected profile's `effectBindings`; a descriptor allowed only by another profile rejects. This preserves the existing non-A12 payload-free Service Task profile, source fixture, scenario, and evidence byte-for-byte and gives it no overlay or successor identity.
+`effectBindings` remains in engine semantic-profile artifacts. It owns both the built-in engine source bindings and the exact closed set of allowed neutral effect descriptors for that profile. An overlay supplies alternate source bindings only. Every overlay descriptor must exactly equal a descriptor already present in the selected profile's `effectBindings`; a descriptor allowed only by another profile rejects. This preserves the existing non-A12 payload-free Service Task profile artifact and BPMN source fixture byte-for-byte and gives them no overlay or successor identity. The scenario remains semantically overlay-free but receives the mandatory `sourceOverlay: null` wire field, and its retained evidence changes only by rebinding the resulting scenario digest.
 
 `inertAttributes` is the closed expanded-name policy previously planned only for the CreateDocument reader. Both overlay fields are source admission facts, not semantic behavior. An overlay cannot select a checked-node kind, Semantic Process operation, transition, result shape, host behavior, or descriptor outside the selected profile.
 
@@ -115,7 +115,7 @@ The exact current semantic behavior moves to two product-neutral CIB Seven `2.0.
 
 Their project-authored fixtures use neutral element IDs, mapping names, values, Error code, effect-handler tokens, and built-in source bindings. Their built-in `effectBindings` own the descriptors that an optional overlay may reference. No production fixture, profile ID, capability key, diagnostic, Lean namespace, semantic-core test subject, Temporal source branch, or example plan contains `A12`, `CreateDocument`, `createDocumentDelegate`, `createRelationshipLinkDelegate`, `RelationshipModel`, `LinkLimitReachedError`, or another A12 business literal.
 
-Every CIB relationship selected by either neutral profile receives a fresh relationship-register entry and fresh evidence at the neutral claim boundary. Neither neutral profile selects an existing exact A12 relationship ID. The existing A12-specific relationship entries and immutable evidence remain retained as adoption evidence and are not relabeled as generic proof. The existing non-A12 payload-free Service Task profile keeps its current relationship IDs and evidence unchanged.
+Every CIB relationship selected by either neutral profile receives a fresh relationship-register entry and fresh evidence at the neutral claim boundary. Neither neutral profile selects an existing exact A12 relationship ID. The existing A12-specific relationship entries and immutable evidence remain retained as adoption evidence and are not relabeled as generic proof. The existing non-A12 payload-free Service Task profile keeps its current identity, bytes, relationship IDs, and BPMN source bytes. Its scenario adds only `sourceOverlay: null`, and its evidence changes only at the content-bound scenario digest required by that field.
 
 ## Preserved A12 evidence
 
@@ -188,6 +188,8 @@ The compilation-dispatch guard seeds an add-on-specific reader into production s
 
 The retained A12 adoption oracle is bound to the immutable pre-extraction target. It runs that target's original validator and projector in an isolated Git export, compares frozen source and evidence bytes and digests byte-for-byte, then compares the legacy projections with current adoption projections after one explicit identity translation from the old A12 semantic profile to the new neutral semantic profile plus overlay identity. No field outside that declared identity translation may differ.
 
+A separate payload-free Service Task preservation oracle compares the current profile, BPMN source, scenario, and CIB evidence with immutable target `02330ad0f980a5fc282cc0aa93600a9632b86c3e`. It requires exact profile and BPMN byte equality. For the scenario it permits only the addition of `bpmn.sourceOverlay: null`; for the evidence it permits only the corresponding scenario SHA-256 rebinding. Every other byte or projected field must remain equal.
+
 An inert-attribute non-interference pair differs only by one declared inert attribute in its exact BPMN source. The source identity changes and the overlay identity remains equal. After normalizing only source identity, the checked graph and Semantic Process program are equal, and canonical runtime behavior is exactly equal.
 
 The preservation gate also asserts unchanged command closure, unchanged multiple-enabled-state facts, and unchanged stable-wait facts for both neutral programs. Program-shape equality locks the absence of a new concurrent or multiple-enabled state. The Lean lane is `checked`, not proved: exact decoder, lowering, identity, and finite non-interference projections are checked, while no semantic transition family or new proof claim is introduced.
@@ -210,7 +212,7 @@ The smallest refinement witness runs a neutral mapped-success fixture and a neut
 
 ## Versioning and review consequences
 
-The old A12 semantic-profile IDs remain immutable identities only inside the frozen legacy evidence generation and leave the built-in semantic-profile registry. The two new product-neutral profiles receive new IDs because their source surface and claim boundary differ. Current public checked-process, Semantic Process, scenario, evidence, transport, and report artifacts use the overlay-identity shape atomically; no alias maps an old A12 profile ID to a new profile, and no current validator accepts the frozen legacy schemas. The existing non-A12 payload-free Service Task profile and its artifacts keep their current identity and bytes.
+The old A12 semantic-profile IDs remain immutable identities only inside the frozen legacy evidence generation and leave the built-in semantic-profile registry. The two new product-neutral profiles receive new IDs because their source surface and claim boundary differ. Current public checked-process, Semantic Process, scenario, evidence, transport, and report artifacts use the overlay-identity shape atomically; no alias maps an old A12 profile ID to a new profile, and no current validator accepts the frozen legacy schemas. The existing non-A12 payload-free Service Task profile and BPMN source keep their current identities and bytes; its scenario and evidence use the exact bounded wire-only changes above.
 
 This changes semantic profile identity, source admission, shared wire identity, default catalog membership, and the product boundary. It therefore requires context-cold proposal review, a semantic checkpoint review after the first complete green cross-language replacement, and cold closure review unless the approved checkpoint reviewer qualifies for guarded warm continuity.
 
