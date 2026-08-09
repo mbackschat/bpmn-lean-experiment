@@ -20,6 +20,7 @@ The modular monolith keeps atomic engine-to-platform contract changes possible, 
 
 ```text
 packages/                         product 1 TypeScript engine packages
+  temporal-adapter/              product 1 Temporal subsystem package container
 BpmnSemantics/                    product 1 Lean reference
 profiles/ scenarios/ contracts/   product 1 semantic artifacts
 runners/                          product 1 adapters to external executable oracles
@@ -36,6 +37,37 @@ showcase/                         product 2 executable milestone acceptance gate
 ```
 
 `runners/` is reserved for evidence adapters to independent executable oracles. Production Workers belong under `platform/workers/`; in particular, the deferred JUEL evaluator belongs under `platform/workers/juel-evaluator/`, never beside the CIB Seven oracle runner.
+
+## Temporal adapter subsystem
+
+`packages/temporal-adapter/` is a subsystem directory containing independently built workspace packages. It is not one runtime package and has no production umbrella entry point. The boundaries follow actual execution environments and dependency closures:
+
+```text
+packages/temporal-adapter/
+  protocol/    shared Temporal-facing contracts, identity, transport, and host admission
+  client/      start, Query, Signal, Update, and retained-result resolution
+  workflow/    deterministic Workflow implementation and scheduling
+  worker/      Workflow bundling, Worker lifecycle, and Activity hosting
+  runner/      product-1 executable composition and command-line entry points
+  testkit/     private ephemeral servers, mutations, calibration, and evidence support
+```
+
+The permitted dependency direction is:
+
+```text
+runner  ---> client
+  |          |
+  v          v
+worker ---> protocol <--- workflow
+  |                         |
+  +-------------------------+
+
+testkit ---> protocol + client + workflow + worker + runner
+```
+
+`protocol` may depend on the semantic core but on no Temporal SDK package. `client` owns the production `@temporalio/client` dependency. `workflow` owns `@temporalio/workflow`. `worker` owns `@temporalio/worker`. `runner` composes production engine packages and the client/worker surfaces without exporting test infrastructure. `testkit` alone owns `@temporalio/testing` and may depend on every sibling because it is excluded from production dependency graphs.
+
+Product 2 may consume `@bpmn-lean/temporal-client` only through `platform/foundation/engine-gateway`. It does not reach Workflow code, Worker hosting, the product-1 runner, mutation Workflows, ephemeral servers, replay harnesses, or `@temporalio/testing`. This is dependency-closure isolation around the accepted Temporal investment, not a vendor-neutral abstraction.
 
 ## Product 2 dependency direction
 
@@ -133,6 +165,7 @@ The UI may share public contract types or a generated public client. It may not 
 | ARC-008 | Use Fetch-compatible module routes behind a Node HTTP adapter with no external transport library; deploy exact BPMN as a bounded raw XML body | Keeps route ownership with the domain module, preserves exact source bytes, and avoids adopting or hand-writing multipart machinery for a single-file M1 request | A required public operation needs multipart fields, resumable transfer, or another transport contract |
 | ARC-009 | Confine `bpmn-js` to a viewer-only web adapter and retain its required visible bpmn.io watermark and exact license notice | Uses the mature BPMN DI renderer without granting browser parsing semantic authority or misrepresenting its license as MIT | Reopen if the renderer is replaced or the upstream license changes |
 | ARC-010 | Build the static web client with React 19.2.8, React DOM 19.2.8, and development-only Vite 7.3.6, using plain CSS for the M1 workspace and no server-side meta-framework | Fits the HTTP-only static-client boundary, keeps build tooling out of production, and avoids selecting a component system before M1 needs one | Reopen when an accepted surface requires routing, a shared accessible component layer, or build behavior the current static composition cannot supply |
+| ARC-011 | Make `packages/temporal-adapter/` a subsystem container of separate protocol, client, workflow, worker, runner, and testkit workspace packages with no production umbrella export | Isolates real execution environments and production dependency closures while keeping Temporal explicit as product-1 infrastructure; product 2 can use the client boundary without pulling Worker and test infrastructure into its server graph | A measured deployment or build constraint proves two adjacent packages have one inseparable lifecycle and dependency closure, or a new Temporal execution environment needs its own package |
 
 ## Verification
 
