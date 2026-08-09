@@ -14,6 +14,7 @@ import {
   BpmnCompilationStatus,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
+import type { SourceOverlaySelection } from "@bpmn-lean/bpmn-source";
 import {
   CanonicalObservationKind,
   CommandOutcome,
@@ -125,6 +126,11 @@ export type TemporalExecutionInput = Readonly<{
   semanticProcess: SemanticProcessProgram;
 }>;
 
+type SourceOverlayCompileInput = Readonly<{
+  sourceBytes: Uint8Array;
+  sourceOverlay: SourceOverlaySelection;
+}>;
+
 export function withDeadline<Value>(
   promise: Promise<Value>,
   timeoutMs: number,
@@ -160,12 +166,16 @@ export async function loadExecutionInput(
 export async function compileExecutionInput(
   scenario: Scenario,
   selectedBpmnUrl: URL,
+  sourceOverlayInput?: SourceOverlayCompileInput,
 ): Promise<TemporalExecutionInput> {
+  const sourceBytes = sourceOverlayInput === undefined
+    ? await readFile(selectedBpmnUrl)
+    : Uint8Array.from(sourceOverlayInput.sourceBytes);
   const compilation = await compileBpmnToSemanticProcess({
-    bytes: await readFile(selectedBpmnUrl),
+    bytes: sourceBytes,
     sourceId: scenario.bpmn.id,
     expectedSha256: scenario.bpmn.sha256,
-    sourceOverlay: null,
+    sourceOverlay: sourceOverlayInput?.sourceOverlay ?? null,
     semanticProfile: scenario.profile,
     limits: {
       maxBytes: 1024 * 1024,
@@ -176,8 +186,31 @@ export async function compileExecutionInput(
     compilation.status === BpmnCompilationStatus.Accepted,
     `${scenario.bpmn.id} was rejected: ${JSON.stringify(compilation.diagnostics)}`,
   );
+  const selectedOverlayIdentity = sourceOverlayInput === undefined
+    ? null
+    : {
+        id: sourceOverlayInput.sourceOverlay.id,
+        sha256: sourceOverlayInput.sourceOverlay.sha256,
+      };
+  assert.deepEqual(
+    compilation.checkedProcess.identity.sourceOverlay,
+    selectedOverlayIdentity,
+  );
+  assert.deepEqual(
+    compilation.semanticProcess.identity.sourceOverlay,
+    selectedOverlayIdentity,
+  );
+  const compiledScenario = sourceOverlayInput === undefined
+    ? scenario
+    : {
+        ...scenario,
+        bpmn: {
+          ...scenario.bpmn,
+          sourceOverlay: compilation.semanticProcess.identity.sourceOverlay,
+        },
+      };
   return {
-    scenario,
+    scenario: compiledScenario,
     semanticProcess: compilation.semanticProcess,
   };
 }
