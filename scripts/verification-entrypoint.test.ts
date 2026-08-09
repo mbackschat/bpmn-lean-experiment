@@ -79,6 +79,37 @@ function bareLeanCommandFindings(
   );
 }
 
+const projectBuildOutputPath =
+  /(?:packages\/[\w-]+\/dist\/|@bpmn-lean\/[\w-]+\/dist\/|(?:\.\.?\/)+dist\/)/u;
+
+/**
+ * Finds dynamic imports that make a script test depend on a prior package build.
+ *
+ * The source-hygiene gate owns static module specifiers. Dynamic imports can hide the same dependency
+ * behind `pathToFileURL` or `new URL`, so this scan begins only at a code-bearing import call and keeps
+ * enough following lines to include its wrapped argument.
+ */
+function generatedOutputRuntimeImportFindings(
+  surfaces: ReadonlyArray<CommandSurface>,
+): ReadonlyArray<string> {
+  return surfaces.flatMap(({ relativePath, source }) => {
+    const lines = source.split("\n");
+    return lines.flatMap((line, index) => {
+      const trimmed = line.trimStart();
+      if (
+        /^(?:["'`]|\/\/|\*)/u.test(trimmed) ||
+        !/\bimport\s*\(/u.test(line)
+      ) {
+        return [];
+      }
+      const importWindow = lines.slice(index, index + 12).join("\n");
+      return projectBuildOutputPath.test(importWindow)
+        ? [`${relativePath}:${index + 1}: ${line.trim()}`]
+        : [];
+    });
+  });
+}
+
 async function readNonemptyLines(path: string): Promise<readonly string[]> {
   const source = await readFile(path, "utf8");
   return source
@@ -102,6 +133,39 @@ test("default verification includes the focused Temporal history gate", async ()
   await assertLineOccursOnce(
     verifyScriptPath,
     "./scripts/pnpm.sh run test:temporal",
+  );
+});
+
+test("script tests dynamically load no project package build output", async () => {
+  const relativePaths = worktreePaths().filter((relativePath) =>
+    /^scripts\/.*\.test\.ts$/u.test(relativePath)
+  );
+  const surfaces = await Promise.all(relativePaths.map(async (relativePath) => ({
+    relativePath,
+    source: await readFile(relativePath, "utf8"),
+  })));
+
+  assert.deepEqual(
+    generatedOutputRuntimeImportFindings(surfaces),
+    [],
+    "script test gates run before package builds on a clean checkout; move compiler-derived witnesses into the package gate that owns the build",
+  );
+});
+
+test("the runtime-import guard reaches helper and URL wrapped build paths", () => {
+  assert.deepEqual(
+    generatedOutputRuntimeImportFindings([{
+      relativePath: "scripts/probe.test.ts",
+      source: [
+        "const first = await import(pathToFileURL(`${root}/packages/bpmn-source/dist/index.js`).href);",
+        "const second = await import(new URL('../dist/index.js', import.meta.url).href);",
+        "const external = await import('ajv/dist/2020.js');",
+      ].join("\n"),
+    }]),
+    [
+      "scripts/probe.test.ts:1: const first = await import(pathToFileURL(`${root}/packages/bpmn-source/dist/index.js`).href);",
+      "scripts/probe.test.ts:2: const second = await import(new URL('../dist/index.js', import.meta.url).href);",
+    ],
   );
 });
 

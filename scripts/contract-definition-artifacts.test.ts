@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import { Ajv2020 } from "ajv/dist/2020.js";
 
@@ -400,93 +400,6 @@ test("rejects drift in the neutral Service Task effect identity", async () => {
       /schema validation failed|effect identity differs|effect descriptor differs/,
     );
   }
-});
-
-test("rejects every checked-to-IL BPMN Error route drift", async () => {
-  const { compileBpmnToSemanticProcess } = await import(
-    pathToFileURL(
-      `${projectRoot}/packages/bpmn-source/dist/index.js`,
-    ).href
-  );
-  const bytes = await readFile(
-    `${projectRoot}/scenarios/mapped-boundary-error-service-task/process.bpmn`,
-  );
-  const compiled = await compileBpmnToSemanticProcess({
-    bytes,
-    sourceId: "mapped-boundary-error-service-task",
-    semanticProfile:
-      "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
-    sourceOverlay: null,
-    limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
-  });
-  assert.equal(compiled.status, "accepted");
-  if (compiled.status !== "accepted") {
-    throw new Error("expected the mapped boundary fixture to compile");
-  }
-  const mutations: ReadonlyArray<(route: {
-    code: string;
-    output: string;
-    origin: {
-      boundaryEventId: string;
-      errorDefinitionId: string;
-      errorElementId: string;
-      sequenceFlowId: string;
-    };
-  }, effectOutput: string) => void> = [
-    (route) => { route.code = "OtherCode"; },
-    (route, effectOutput) => { route.output = effectOutput; },
-    (route) => { route.origin.boundaryEventId = "OtherBoundary"; },
-    (route) => { route.origin.errorDefinitionId = "OtherDefinition"; },
-    (route) => { route.origin.errorElementId = "OtherError"; },
-    (route) => { route.origin.sequenceFlowId = "Flow_EffectToNormalEnd"; },
-  ];
-
-  for (const mutate of mutations) {
-    const artifacts = structuredClone({
-      checkedProcess: compiled.checkedProcess,
-      semanticProcess: compiled.semanticProcess,
-    }) as unknown as MutableDefinitionArtifacts;
-    const effect = requireAwaitEffect(
-      artifacts.semanticProcess.operations.find(
-        ({ kind }) => kind === semanticOperationKind.AwaitEffect,
-      ),
-    );
-    assert.notEqual(effect.bpmnErrorRoute, null);
-    if (effect.bpmnErrorRoute === null) {
-      throw new Error("expected a BPMN Error route");
-    }
-    mutate(effect.bpmnErrorRoute, effect.output);
-
-    await assert.rejects(
-      verifyDefinitionArtifacts(projectRoot, artifacts),
-      /BPMN Error route differs from its checked BPMN origin/,
-    );
-  }
-
-  const renamedArtifacts = structuredClone({
-    checkedProcess: compiled.checkedProcess,
-    semanticProcess: compiled.semanticProcess,
-  }) as unknown as MutableDefinitionArtifacts;
-  const renamedEffect = requireAwaitEffect(
-    renamedArtifacts.semanticProcess.operations.find(
-      ({ kind }) => kind === semanticOperationKind.AwaitEffect,
-    ),
-  );
-  assert.notEqual(renamedEffect.bpmnErrorRoute, null);
-  if (renamedEffect.bpmnErrorRoute === null) {
-    throw new Error("expected a BPMN Error route");
-  }
-  const routeOutput = renamedEffect.bpmnErrorRoute.output;
-  renamedArtifacts.semanticProcess = JSON.parse(
-    JSON.stringify(renamedArtifacts.semanticProcess).replaceAll(
-      JSON.stringify(routeOutput),
-      JSON.stringify("place:Flow_ErrorToReviewMappedErrorRenamed"),
-    ),
-  ) as MutableDefinitionArtifacts["semanticProcess"];
-  await assert.rejects(
-    verifyDefinitionArtifacts(projectRoot, renamedArtifacts),
-    /BPMN Error route differs from its checked BPMN origin/,
-  );
 });
 
 test("rejects checked and Semantic Process references outside their definition domains", async () => {
