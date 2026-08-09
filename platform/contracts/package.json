@@ -1,0 +1,21 @@
+{
+  "name": "@bpmn-lean/platform-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-test": "tsc -p tsconfig.type-test.json",
+    "test": "pnpm run build && pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts"
+  }
+}

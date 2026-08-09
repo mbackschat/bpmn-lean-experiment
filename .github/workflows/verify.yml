@@ -143,10 +143,10 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify M1 platform foundation
+      - name: Verify M1 platform
         env:
           CI: "true"
-        run: ./scripts/pnpm.sh run test:platform-foundation
+        run: ./scripts/pnpm.sh run test:platform-m1
 
       - name: Verify
         env:

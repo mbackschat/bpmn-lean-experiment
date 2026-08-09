@@ -78,13 +78,14 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - Tracked ownership scaffolds for the server and web composition roots, public contracts, engine gateway, artifact store, definitions module, UI kit, production Workers, and the M1 showcase
 - A narrow `@bpmn-lean/engine-api` compilation entry point plus `@bpmn-lean/platform-engine-gateway`, projecting source identity, definition identity, and located admission diagnostics without exposing the checked graph or Semantic Process program
 - `@bpmn-lean/platform-artifact-store`, which verifies exact SHA-256 identity, publishes caller-snapshotted bytes atomically without replacement, detects occupied-path corruption, and returns defensive copies
+- `@bpmn-lean/platform-contracts` with closed deeply immutable M1 definition transport types, strict unknown decoders, opaque engine diagnostics, and safe versioned route construction
+- `@bpmn-lean/platform-definitions`, which snapshots deployment inputs before its first await, persists only admitted exact source, allocates durable process-local version ordinals through SQLite `BEGIN IMMEDIATE`, lists current and historical versions, and fails explicitly when metadata references missing content
 - An executable product-boundary guard that discovers tracked and pending source plus package manifests, resolves package aliases and subpaths to owners, fails closed on malformed or duplicate identities, and carries planted violations for every guarded dependency class
-- A focused platform-foundation gate run in CI before the platform-independent engine gate
+- A composed M1 platform-package gate run in CI before the platform-independent engine gate
 
 #### Explicitly absent
 
-- The definitions business module, definition version ordinals, public HTTP API, web client, and executable showcase
-- The composed deployment workflow that binds admitted source bytes and engine identity to a durable definition version; the byte store and compilation gateway exist independently
+- The public HTTP API, server composition root, web client, start boundary, and executable showcase
 - the transition-record projection, every read model, and cross-instance discovery
 - task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity and authorization

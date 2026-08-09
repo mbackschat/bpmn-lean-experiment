@@ -24,6 +24,15 @@
       "@bpmn-lean/platform-engine-gateway": [
         "./platform/foundation/engine-gateway/src/index.ts"
       ],
+      "@bpmn-lean/platform-artifact-store": [
+        "./platform/foundation/artifact-store/src/index.ts"
+      ],
+      "@bpmn-lean/platform-contracts": [
+        "./platform/contracts/src/index.ts"
+      ],
+      "@bpmn-lean/platform-definitions": [
+        "./platform/modules/definitions/src/index.ts"
+      ],
       "@bpmn-lean/semantic-core": [
         "./packages/semantic-core/src/index.ts"
       ],
@@ -49,7 +58,9 @@
     "packages/temporal-adapter/calibration/*.ts",
     "packages/temporal-adapter/cli/*.ts",
     "packages/temporal-adapter/test/*.ts",
+    "platform/contracts/test/*.ts",
     "platform/foundation/engine-gateway/test/*.ts",
+    "platform/modules/definitions/test/*.ts",
     "scripts/*.ts"
   ]
 }

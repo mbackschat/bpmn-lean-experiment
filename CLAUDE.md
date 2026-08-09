@@ -373,6 +373,12 @@ Focused M1 engine-gateway and platform-foundation gate:
 ./scripts/pnpm.sh run test:platform-foundation
 ```
 
+Complete implemented M1 platform-package gate:
+
+```sh
+./scripts/pnpm.sh run test:platform-m1
+```
+
 Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:
 
 ```sh

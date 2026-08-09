@@ -73,6 +73,8 @@ importers:
         specifier: workspace:*
         version: link:../bpmn-source
 
+  platform/contracts: {}
+
   platform/foundation/artifact-store: {}
 
   platform/foundation/engine-gateway:
@@ -80,6 +82,15 @@ importers:
       '@bpmn-lean/engine-api':
         specifier: workspace:*
         version: link:../../../packages/engine-api
+
+  platform/modules/definitions:
+    dependencies:
+      '@bpmn-lean/platform-artifact-store':
+        specifier: workspace:*
+        version: link:../../foundation/artifact-store
+      '@bpmn-lean/platform-engine-gateway':
+        specifier: workspace:*
+        version: link:../../foundation/engine-gateway
 
 packages:
 
