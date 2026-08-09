@@ -37,6 +37,7 @@
     "ExpectedUserTaskAfterBPMNError",
     "FlowElementProjectionProfile.A12BoundaryError",
     "FlowElementProjectionProfile.A12CreateDocument",
+    "Link limit reached",
     "LinkLimitReachedError",
     "MyDocumentModel",
     "Plane_A12CreateDocument",

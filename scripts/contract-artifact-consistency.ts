@@ -479,7 +479,9 @@ export function verifyDefinitionReferences(
       const routeOutput = checkedRoute === null
         ? undefined
         : semanticProcess.controlPlaces.find(
-          ({ origin }) => origin.elementId === checkedRoute.outputFlowId,
+          ({ id, origin }) =>
+            id === `place:${checkedRoute.outputFlowId}` &&
+            origin.elementId === checkedRoute.outputFlowId,
         );
       const expectedRoute = checkedRoute === null
         ? null

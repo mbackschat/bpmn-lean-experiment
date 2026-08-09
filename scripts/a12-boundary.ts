@@ -374,7 +374,7 @@ async function deriveLegacyDecisionInputs(
   const businessValues = new Set<string>();
   for (const relativePath of legacyBusinessValueFiles) {
     const value = JSON.parse(await legacyFile(projectRoot, relativePath));
-    collectTypedStringValues(value, businessValues);
+    collectLegacyBusinessValues(value, businessValues);
   }
   return { catalogPaths, businessValues: [...businessValues].sort() };
 }
@@ -412,13 +412,13 @@ async function deriveLegacyImportClosure(
   return [...visited].sort();
 }
 
-function collectTypedStringValues(
+function collectLegacyBusinessValues(
   value: unknown,
   found: Set<string>,
 ): void {
   if (Array.isArray(value)) {
     for (const item of value) {
-      collectTypedStringValues(item, found);
+      collectLegacyBusinessValues(item, found);
     }
     return;
   }
@@ -429,8 +429,14 @@ function collectTypedStringValues(
   if (record["kind"] === "string" && typeof record["value"] === "string") {
     found.add(record["value"]);
   }
+  if (
+    record["kind"] === "bpmnError" &&
+    typeof record["message"] === "string"
+  ) {
+    found.add(record["message"]);
+  }
   for (const item of Object.values(record)) {
-    collectTypedStringValues(item, found);
+    collectLegacyBusinessValues(item, found);
   }
 }
 

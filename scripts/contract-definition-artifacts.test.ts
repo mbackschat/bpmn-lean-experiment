@@ -462,6 +462,31 @@ test("rejects every checked-to-IL BPMN Error route drift", async () => {
       /BPMN Error route differs from its checked BPMN origin/,
     );
   }
+
+  const renamedArtifacts = structuredClone({
+    checkedProcess: compiled.checkedProcess,
+    semanticProcess: compiled.semanticProcess,
+  }) as unknown as MutableDefinitionArtifacts;
+  const renamedEffect = requireAwaitEffect(
+    renamedArtifacts.semanticProcess.operations.find(
+      ({ kind }) => kind === semanticOperationKind.AwaitEffect,
+    ),
+  );
+  assert.notEqual(renamedEffect.bpmnErrorRoute, null);
+  if (renamedEffect.bpmnErrorRoute === null) {
+    throw new Error("expected a BPMN Error route");
+  }
+  const routeOutput = renamedEffect.bpmnErrorRoute.output;
+  renamedArtifacts.semanticProcess = JSON.parse(
+    JSON.stringify(renamedArtifacts.semanticProcess).replaceAll(
+      JSON.stringify(routeOutput),
+      JSON.stringify("place:Flow_ErrorToReviewMappedErrorRenamed"),
+    ),
+  ) as MutableDefinitionArtifacts["semanticProcess"];
+  await assert.rejects(
+    verifyDefinitionArtifacts(projectRoot, renamedArtifacts),
+    /BPMN Error route differs from its checked BPMN origin/,
+  );
 });
 
 test("rejects checked and Semantic Process references outside their definition domains", async () => {

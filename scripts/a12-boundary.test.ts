@@ -116,7 +116,9 @@ test("rejects retained business values and script-owned catalog decisions", () =
     assessA12Boundary([
       {
         path: "packages/semantic-core/src/hidden.ts",
-        bytes: Buffer.from('const result = "Document:42";'),
+        bytes: Buffer.from(
+          'const results = ["Document:42", "Link limit reached"];',
+        ),
       },
       {
         path: "scripts/contract-artifacts.ts",
@@ -129,6 +131,7 @@ test("rejects retained business values and script-owned catalog decisions", () =
     ]),
     [
       "packages/semantic-core/src/hidden.ts: legacy A12 product decision Document:42",
+      "packages/semantic-core/src/hidden.ts: legacy A12 product decision Link limit reached",
       "scripts/contract-artifact-cases.ts: legacy A12 product decision A12",
       "scripts/contract-artifact-cases.ts: legacy A12 product decision A12BoundaryError",
     ],
@@ -159,6 +162,7 @@ test("binds the single legacy decision inventory to the immutable baseline", asy
     await deriveLegacyProductDecisions(projectRoot),
   );
   assert.ok(inventory.decisions.includes("Document:42"));
+  assert.ok(inventory.decisions.includes("Link limit reached"));
 });
 
 test("keeps tracked and pending repository material inside the A12 boundary", async () => {
