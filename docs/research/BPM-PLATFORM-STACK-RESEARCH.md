@@ -2,7 +2,7 @@
 
 ## Status
 
-**Project-authored research carrying one bounded recommendation. It adopts no dependency.** The [recommendation](#3-recommendation) is a research conclusion; adoption requires owner approval per package and must pass the resolved-graph checks in [the platform's dependency posture](../PROJECT-DESIGN.md#dependency-posture). Owner decisions taken during this research are listed in [Decisions taken](#10-decisions-taken) and remain owned by [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) and [PLAN.md](../PLAN.md), not by this document.
+**Project-authored research carrying one bounded recommendation.** The recommendation alone adopts no dependency. Each adoption requires owner approval and the resolved-graph checks in [the platform's dependency posture](../PROJECT-DESIGN.md#dependency-posture); `bpmn-js` 18.22.1 received that approval on 2026-08-09, as [the proposal's adoption record](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-bpmn-js) records. Owner decisions taken during this research are listed in [Decisions taken](#10-decisions-taken) and remain owned by [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) and [PLAN.md](../PLAN.md), not by this document.
 
 Reviewers can read sections 1 to 3 for the conclusion and sections 4 onward for the evidence behind it.
 
@@ -39,7 +39,7 @@ Stated by the owner, with dates where a decision was taken during this research.
 | R2 | **24 resolved packages**, and that figure already includes all three TanStack packages. Against 41 for a Mantine set without TanStack, 64 for a shadcn shape with TanStack, and 84 for Carbon alone. It is the smallest option measured. |
 | R3 | **Partially, and this is the one requirement it does not fully satisfy.** Behavior, accessibility, table logic, virtualization, and server-state caching are all adopted. The visual component layer is not: React Aria ships no components, so the kit is ours, roughly 2,000 lines. |
 | R4 | One coherent selection covering primitives, table, virtualization, server state, diagram, and storage, rather than a per-widget shopping list. |
-| R5 | Verified by measurement, not assurance: **zero install scripts**, the string `telemetry` absent from the entire resolved tree, **no stylesheet shipped at all** so nothing to load or override, no `fetch`, `XMLHttpRequest`, or `sendBeacon` in runtime modules, and **no `@adobe/*` or Spectrum package pulled**. |
+| R5 | The component selection remains unstyled and brand-neutral: **zero install scripts**, the string `telemetry` absent from the resolved component tree, no stylesheet, no runtime network API, and no `@adobe/*` or Spectrum package. The separately approved `bpmn-js` renderer is an explicit exception to the no-vendor-identity criterion because its license requires the bpmn.io watermark to remain visible. |
 | R6 | React is the largest adopter ecosystem and talent pool. Shipping no styles means adopters brand the product without fighting a vendor theme. |
 | R7 | **The strongest backing of any candidate.** Adobe staffs seven to eight people on it and ships it in Photoshop on the web and Creative Cloud, so abandonment would break their own flagship products. Commit concentration is 38% on the top contributor, against 97.8% for Mantine. 3.55M weekly downloads. TanStack Table is comparably entrenched at 17.6M weekly and 53 open issues. |
 | R8 | Unaffected; the UI is a client of the platform API either way. |
@@ -157,7 +157,9 @@ Apache-2.0 throughout, with the frontend enforcing a production licence allowlis
 
 Footprint is not the argument against Next.js. Measured, `next react react-dom` resolves to **54 packages**, smaller than its reputation. The arguments are that its value is SSR, React Server Components, incremental static regeneration, routing, and image optimization, none of which this product needs; that it has no first-class answer for the long-running Temporal Worker and projection subscriber that must run regardless, so it does not remove the multi-process problem it appears to solve; and that a single Node process serving an API and a static bundle is a better deployment story for a self-hosted product.
 
-**All three render BPMN with `bpmn-js` and decorate it through the `overlays` API.** No comparable product hand-draws BPMN from diagram interchange.
+**Camunda 8 and both CIB Seven web generations render BPMN with `bpmn-js` and decorate it through the `overlays` API.** Temporal Web UI is not a BPMN product and does not render BPMN; the earlier statement that all three analogues used `bpmn-js` was incorrect.
+
+The credible no-watermark alternative is Bonitasoft's Apache-2.0 [`bpmn-visualization`](https://www.npmjs.com/package/bpmn-visualization), used in Bonita process and case monitoring since 2022.2. It is designed for execution overlays and resolves to a smaller runtime graph, but remains pre-1.0, has a much smaller public adopter base, and depends on deprecated `mxgraph` 4.2.2. The owner selected the more mature `bpmn-js` ecosystem and explicitly accepted its visible watermark condition on 2026-08-09.
 
 **A separate read model is required here, and CIB's approach is unavailable.** Cockpit can query engine tables directly because Camunda 7 is itself a relational database. Temporal is not a queryable BPMN store, so this project's situation matches Camunda 8's, where an exporter projects into a separate store. That validates projecting committed transition records rather than merely motivating it.
 
@@ -382,12 +384,12 @@ Recorded for traceability; the durable owners are [PROJECT-DESIGN.md](../PROJECT
 6. **Reuse levels 2 and 3 are dropped**, in favour of R6 and R8.
 7. **React 19** as the UI framework, on R6.
 8. **`react-aria-components` plus TanStack Table, Virtual, and Query** as the selection, per [the recommendation](#3-recommendation).
+9. **`bpmn-js` 18.22.1** for viewer-only diagram rendering, with its exact bpmn.io license notice retained and its required watermark left unchanged, visible, linked, and unobstructed. Owner-approved 2026-08-09 after comparison with `bpmn-visualization`.
 
 ## 11. Remaining open decisions
 
-1. **`bpmn-js`** for diagram rendering. The peer evidence is unanimous across all three primary analogues and the alternative is drawing diagram interchange by hand. Needs its own approval record.
-2. **`node:sqlite`** for the read model, verified available without a flag on the pinned Node 24.18.0, exporting `DatabaseSync`, `StatementSync`, `Session`, and `backup`. No approval needed as part of the runtime, but its upstream experimental status should be recorded.
-3. **The styling method** for the platform's own component kit, free per 5.1. CSS Modules costs nothing extra under Vite and has the Dagster precedent.
-4. **Charting**, if hand-rolled SVG proves insufficient. uPlot is dependency-free.
-5. **Long-polling for live views**, on the Temporal pattern of 6.1.
-6. Resolved. `a12/a12-widgets` is registered in [SOURCES.md](../SOURCES.md) and the external-sources lock at revision `f924a85`, because [SOURCES.md](../SOURCES.md) holds that local presence alone never makes a tree a project input, and the finding drawn from it is now a durable owner decision.
+1. **`node:sqlite`** for the read model, verified available without a flag on the pinned Node 24.18.0, exporting `DatabaseSync`, `StatementSync`, `Session`, and `backup`. No approval needed as part of the runtime, but its upstream experimental status should be recorded.
+2. **The styling method** for the platform's own component kit, free per 5.1. CSS Modules costs nothing extra under Vite and has the Dagster precedent.
+3. **Charting**, if hand-rolled SVG proves insufficient. uPlot is dependency-free.
+4. **Long-polling for live views**, on the Temporal pattern of 6.1.
+5. Resolved. `a12/a12-widgets` is registered in [SOURCES.md](../SOURCES.md) and the external-sources lock at revision `f924a85`, because [SOURCES.md](../SOURCES.md) holds that local presence alone never makes a tree a project input, and the finding drawn from it is now a durable owner decision.

@@ -83,7 +83,8 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - A Fetch-compatible definitions route contribution with closed raw-XML deployment input, claimed and streamed byte ceilings, producer-mutation-resistant chunk capture, public-only accepted/rejected projections, exact version/source reads, strict path and method validation, and generic internal failures
 - `@bpmn-lean/platform-server`, a Node HTTP adapter with no external transport library and a modular-monolith composition root with configured request authority, streaming transport, ordered route dispatch, closed errors, local environment configuration, and idempotent socket/SQLite lifecycle
 - An executable product-boundary guard that discovers tracked and pending source plus package manifests, resolves package aliases and subpaths to owners, fails closed on malformed or duplicate identities, and carries planted violations for every guarded dependency class
-- An executable platform dependency policy that traverses the installed reachable production graph through workspace, direct, transitive, optional, and required-peer edges; fails closed on unresolved or contradictory identities; and holds the current exact five-package external footprint to the MIT license allowlist
+- An executable platform dependency policy that traverses the installed reachable production graph through workspace, direct, transitive, optional, and required-peer edges; fails closed on unresolved or contradictory identities; and holds the exact 20-package reachable production graph to MIT, Apache-2.0, ISC, and one identity-scoped bpmn.io license exception
+- The owner-approved `bpmn-js` 18.22.1 viewer dependency, whose exact non-standard license text is hash-bound to its package identity and retained in the web application's future static distribution
 - A separate strict no-emit platform harness and generated-output import guard, with planted clean-checkout counterexamples, so the composed M1 gate runs in CI before the platform-independent engine gate without making `verify.sh` build the platform tree
 
 #### Explicitly absent
@@ -92,7 +93,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - the transition-record projection, every read model, and cross-instance discovery
 - task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity and authorization
-- the platform component kit and every selected UI dependency; `react-aria-components` and the three TanStack packages are owner-selected but not installed, and `bpmn-js` is not approved
+- the platform component kit and every selected UI dependency except `bpmn-js`; `react-aria-components` and the three TanStack packages are owner-selected but not installed, while `bpmn-js` is installed but its viewer adapter is not implemented
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
 - Narrowed start, observe, and submit-command engine entry points. Compilation is narrowed; `packages/temporal-adapter` still re-exports harness material alongside its client surface and is not a permitted platform dependency
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location

@@ -1,9 +1,18 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 
+export type DependencyLicenseOverride = {
+  readonly declaredLicense: string;
+  readonly effectiveLicense: string;
+  readonly licenseFile: string;
+  readonly licenseSha256: string;
+};
+
 export type DependencyPolicy = {
   readonly allowedLicenses: ReadonlyArray<string>;
+  readonly licenseOverrides: Readonly<Record<string, DependencyLicenseOverride>>;
   readonly maxResolvedExternalPackages: number;
 };
 
@@ -59,14 +68,14 @@ export function parseDependencyPolicy(value: unknown): DependencyPolicy {
   if (!plainObject(value)) {
     throw new Error("dependency policy must be an object");
   }
-  const allowedProperties = new Set(["allowedLicenses", "maxResolvedExternalPackages"]);
+  const allowedProperties = new Set(["allowedLicenses", "licenseOverrides", "maxResolvedExternalPackages"]);
   const unknownProperties = Object.keys(value)
     .filter((property) => !allowedProperties.has(property))
     .sort(compareCodeUnits);
   if (unknownProperties[0] !== undefined) {
     throw new Error(`dependency policy has unknown property ${unknownProperties[0]}`);
   }
-  const { allowedLicenses, maxResolvedExternalPackages } = value;
+  const { allowedLicenses, licenseOverrides, maxResolvedExternalPackages } = value;
   if (
     !Array.isArray(allowedLicenses) ||
     allowedLicenses.length === 0 ||
@@ -80,8 +89,48 @@ export function parseDependencyPolicy(value: unknown): DependencyPolicy {
   }
   return {
     allowedLicenses: [...allowedLicenses].sort(compareCodeUnits),
+    licenseOverrides: parseLicenseOverrides(licenseOverrides),
     maxResolvedExternalPackages: Number(maxResolvedExternalPackages),
   };
+}
+
+function parseLicenseOverrides(value: unknown): Readonly<Record<string, DependencyLicenseOverride>> {
+  if (value === undefined) {
+    return {};
+  }
+  if (!plainObject(value)) {
+    throw new Error("licenseOverrides must be an object");
+  }
+  const overrides: Array<readonly [string, DependencyLicenseOverride]> = [];
+  for (const [identity, candidate] of Object.entries(value).sort(([left], [right]) => compareCodeUnits(left, right))) {
+    if (!nonEmptyString(identity) || !plainObject(candidate)) {
+      throw new Error(`licenseOverrides.${identity} must be an object`);
+    }
+    const allowedProperties = new Set(["declaredLicense", "effectiveLicense", "licenseFile", "licenseSha256"]);
+    const unknownProperty = Object.keys(candidate)
+      .filter((property) => !allowedProperties.has(property))
+      .sort(compareCodeUnits)[0];
+    if (unknownProperty !== undefined) {
+      throw new Error(`licenseOverrides.${identity} has unknown property ${unknownProperty}`);
+    }
+    const { declaredLicense, effectiveLicense, licenseFile, licenseSha256 } = candidate;
+    if (!nonEmptyString(declaredLicense) || !nonEmptyString(effectiveLicense)) {
+      throw new Error(`licenseOverrides.${identity} must name declaredLicense and effectiveLicense`);
+    }
+    if (
+      !nonEmptyString(licenseFile) ||
+      path.basename(licenseFile) !== licenseFile ||
+      licenseFile === "." ||
+      licenseFile === ".."
+    ) {
+      throw new Error(`licenseOverrides.${identity}.licenseFile must be one safe filename`);
+    }
+    if (typeof licenseSha256 !== "string" || !/^[0-9a-f]{64}$/u.test(licenseSha256)) {
+      throw new Error(`licenseOverrides.${identity}.licenseSha256 must be a lowercase SHA-256`);
+    }
+    overrides.push([identity, { declaredLicense, effectiveLicense, licenseFile, licenseSha256 }]);
+  }
+  return Object.fromEntries(overrides);
 }
 
 function displayPath(projectRoot: string, targetPath: string): string {
@@ -239,6 +288,7 @@ export async function assessPlatformDependencyPolicy(
   const manifestResults = new Map<string, ManifestReadResult>();
   const identityMetadata = new Map<string, { readonly metadata: string; readonly root: string }>();
   const externalLicenses = new Map<string, Set<string>>();
+  const externalRoots = new Map<string, Set<string>>();
 
   while (queue.length > 0) {
     const entry = queue.shift();
@@ -278,6 +328,9 @@ export async function assessPlatformDependencyPolicy(
       const licenses = externalLicenses.get(manifest.identity) ?? new Set<string>();
       licenses.add(manifest.license);
       externalLicenses.set(manifest.identity, licenses);
+      const roots = externalRoots.get(manifest.identity) ?? new Set<string>();
+      roots.add(packageRoot);
+      externalRoots.set(manifest.identity, roots);
     }
     for (const dependency of manifest.dependencies) {
       const dependencyRoot = await resolvedDependencyRoot(packageRoot, dependency.name, projectRoot);
@@ -296,10 +349,40 @@ export async function assessPlatformDependencyPolicy(
   const externalPackages = [...externalLicenses.keys()].sort(compareCodeUnits);
   const allowedLicenses = new Set(policy.allowedLicenses);
   for (const identity of externalPackages) {
-    for (const license of [...(externalLicenses.get(identity) ?? [])].sort(compareCodeUnits)) {
+    const override = policy.licenseOverrides[identity];
+    const declaredLicenses = [...(externalLicenses.get(identity) ?? [])].sort(compareCodeUnits);
+    const effectiveLicenses = override === undefined
+      ? declaredLicenses
+      : [override.effectiveLicense];
+    if (override !== undefined) {
+      for (const declaredLicense of declaredLicenses) {
+        if (declaredLicense !== override.declaredLicense) {
+          findings.add(`${identity}: declared licence ${declaredLicense} does not match approved marker ${override.declaredLicense}`);
+        }
+      }
+      for (const root of [...(externalRoots.get(identity) ?? [])].sort(compareCodeUnits)) {
+        const licensePath = path.join(root, override.licenseFile);
+        let actualSha256: string;
+        try {
+          actualSha256 = createHash("sha256").update(await readFile(licensePath)).digest("hex");
+        } catch {
+          findings.add(`${identity}: approved licence file ${override.licenseFile} is unreadable`);
+          continue;
+        }
+        if (actualSha256 !== override.licenseSha256) {
+          findings.add(`${identity}: licence file ${override.licenseFile} does not match approved SHA-256`);
+        }
+      }
+    }
+    for (const license of effectiveLicenses) {
       if (!allowedLicenses.has(license)) {
         findings.add(`${identity}: licence ${license} is not allowed`);
       }
+    }
+  }
+  for (const identity of Object.keys(policy.licenseOverrides).sort(compareCodeUnits)) {
+    if (!externalLicenses.has(identity)) {
+      findings.add(`${identity}: licence override does not match a reachable external package`);
     }
   }
   for (const identity of externalPackages.slice(policy.maxResolvedExternalPackages)) {

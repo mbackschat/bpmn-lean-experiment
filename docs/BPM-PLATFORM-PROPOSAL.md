@@ -128,7 +128,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Virtualization | `@tanstack/react-virtual` 3.14.9, MIT | Owner-selected 2026-08-07 |
 | Server state | `@tanstack/react-query` 5.101.4, MIT | Owner-selected 2026-08-07 |
 | Component kit | Platform-owned, written over the primitives | Our source, roughly 2,000 lines expected |
-| Diagram rendering | `bpmn-js` viewer with its `overlays` API | **Approval outstanding** |
+| Diagram rendering | `bpmn-js` 18.22.1 `NavigatedViewer` with its marker and `overlays` APIs | Owner-approved 2026-08-09 with the bpmn.io watermark and notice obligations retained |
 | Read-model store | `node:sqlite`, part of the pinned Node 24.18.0 | No approval needed; upstream experimental status to be recorded |
 | Styling method | Open; CSS Modules costs nothing extra under Vite | **Open decision** |
 | Charting | Hand-rolled SVG first; a dependency-free library if that proves insufficient | **Open decision** |
@@ -145,6 +145,12 @@ Measured on 2026-08-07 by installing into an empty project on the pinned Node 24
 | `@tanstack/react-table` | 9.0.1 | MIT | Headless table logic | Medium. Confined to the kit's table component |
 | `@tanstack/react-virtual` | 3.14.9 | MIT | Row virtualization | Low. One component, large lists only |
 | `@tanstack/react-query` | 5.101.4 | MIT | Server-state caching and refetch | Medium. Replaceable at the cost of re-solving cache invalidation |
+
+### Approval record for `bpmn-js`
+
+The owner approved `bpmn-js` 18.22.1 on 2026-08-09 after comparing it with the Apache-2.0 `bpmn-visualization` alternative. The platform accepts the bpmn.io license condition: the supplied watermark remains unchanged, fully visible, linked to `https://bpmn.io`, and unobstructed. The exact dependency license is retained under the web application and hash-bound to the package identity by the executable dependency policy.
+
+The real pnpm workspace resolution raises the exact platform-reachable production graph from 5 to 20 external package identities: 17 MIT, 1 Apache-2.0, 1 ISC, and `bpmn-js` under the approved `LicenseRef-bpmn.io` text. No React or build dependency is included in that figure. The renderer is confined to the future web viewer adapter, consumes exact source returned by the public API, and has no authority over admission or BPMN meaning. Removal cost is medium: replace that adapter and its overlay integration without changing the server, engine, source identity, or public contract.
 
 ## Implementation architecture
 
@@ -183,9 +189,8 @@ A surface is accepted when it has a runnable demonstration under `showcase/`, re
 ## Open decisions
 
 1. Styling method for the platform component kit.
-2. `bpmn-js` adoption, needing its own approval record.
-3. Charting, if hand-rolled SVG proves insufficient.
-4. Whether platform-only dependencies follow the same per-item approval as engine dependencies. Currently they do, unchanged.
+2. Charting, if hand-rolled SVG proves insufficient.
+3. Whether platform-only dependencies follow the same per-item approval as engine dependencies. Currently they do, unchanged.
 
 ## Reopen conditions
 

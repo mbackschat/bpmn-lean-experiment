@@ -1,0 +1,10 @@
+{
+  "name": "@bpmn-lean/platform-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "bpmn-js": "18.22.1"
+  }
+}

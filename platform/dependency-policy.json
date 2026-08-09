@@ -1,6 +1,17 @@
 {
   "allowedLicenses": [
+    "Apache-2.0",
+    "ISC",
+    "LicenseRef-bpmn.io",
     "MIT"
   ],
-  "maxResolvedExternalPackages": 5
+  "licenseOverrides": {
+    "bpmn-js@18.22.1": {
+      "declaredLicense": "SEE LICENSE IN LICENSE",
+      "effectiveLicense": "LicenseRef-bpmn.io",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "5788cf8bd61481776cee1c943595525499a1355c045e9244f92e6c8092c06770"
+    }
+  },
+  "maxResolvedExternalPackages": 20
 }

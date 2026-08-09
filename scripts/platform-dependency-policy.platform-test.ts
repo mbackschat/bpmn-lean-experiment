@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, test } from "node:test";
@@ -56,6 +57,10 @@ const policy = (maxResolvedExternalPackages: number, allowedLicenses: ReadonlyAr
   maxResolvedExternalPackages,
 });
 
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
 afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map(async (root) => rm(root, { force: true, recursive: true })));
 });
@@ -91,6 +96,103 @@ test("rejects a forbidden licence anywhere in the reachable production graph", a
 
   assert.deepEqual(result.externalPackages, ["copyleft@1.0.0", "direct@1.0.0"]);
   assert.deepEqual(result.findings, ["copyleft@1.0.0: licence GPL-3.0-only is not allowed"]);
+});
+
+test("binds a non-standard licence marker to one exact package and licence file", async () => {
+  const root = await temporaryProject();
+  const app = await packageAt(root, "platform/apps/web", {
+    name: "@example/web",
+    version: "1.0.0",
+    license: "MIT",
+    dependencies: { renderer: "1.0.0" },
+  });
+  const renderer = await packageAt(root, "store/renderer", {
+    name: "renderer",
+    version: "1.0.0",
+    license: "SEE LICENSE IN LICENSE",
+  });
+  const licenseText = "approved renderer licence\n";
+  await writeFile(path.join(renderer, "LICENSE"), licenseText, "utf8");
+  await linkDependency(app, "renderer", renderer);
+
+  const result = await assessPlatformDependencyPolicy({
+    policy: {
+      allowedLicenses: ["LicenseRef-approved-renderer", "MIT"],
+      licenseOverrides: {
+        "renderer@1.0.0": {
+          declaredLicense: "SEE LICENSE IN LICENSE",
+          effectiveLicense: "LicenseRef-approved-renderer",
+          licenseFile: "LICENSE",
+          licenseSha256: sha256(licenseText),
+        },
+      },
+      maxResolvedExternalPackages: 1,
+    },
+    projectRoot: root,
+    platformPackageRoots: [app],
+    workspacePackageRoots: [app],
+  });
+
+  assert.deepEqual(result.findings, []);
+
+  const unrelatedApp = await packageAt(root, "platform/apps/unrelated", {
+    name: "@example/unrelated-app",
+    version: "1.0.0",
+    license: "MIT",
+    dependencies: { unrelated: "1.0.0" },
+  });
+  const unrelated = await packageAt(root, "store/unrelated", {
+    name: "unrelated",
+    version: "1.0.0",
+    license: "SEE LICENSE IN LICENSE",
+  });
+  await writeFile(path.join(unrelated, "LICENSE"), licenseText, "utf8");
+  await linkDependency(unrelatedApp, "unrelated", unrelated);
+
+  const identityScoped = await assessPlatformDependencyPolicy({
+    policy: {
+      allowedLicenses: ["LicenseRef-approved-renderer", "MIT"],
+      licenseOverrides: {
+        "renderer@1.0.0": {
+          declaredLicense: "SEE LICENSE IN LICENSE",
+          effectiveLicense: "LicenseRef-approved-renderer",
+          licenseFile: "LICENSE",
+          licenseSha256: sha256(licenseText),
+        },
+      },
+      maxResolvedExternalPackages: 2,
+    },
+    projectRoot: root,
+    platformPackageRoots: [app, unrelatedApp],
+    workspacePackageRoots: [app, unrelatedApp],
+  });
+
+  assert.deepEqual(identityScoped.findings, [
+    "unrelated@1.0.0: licence SEE LICENSE IN LICENSE is not allowed",
+  ]);
+
+  await writeFile(path.join(renderer, "LICENSE"), "changed renderer licence\n", "utf8");
+  const changed = await assessPlatformDependencyPolicy({
+    policy: {
+      allowedLicenses: ["LicenseRef-approved-renderer", "MIT"],
+      licenseOverrides: {
+        "renderer@1.0.0": {
+          declaredLicense: "SEE LICENSE IN LICENSE",
+          effectiveLicense: "LicenseRef-approved-renderer",
+          licenseFile: "LICENSE",
+          licenseSha256: sha256(licenseText),
+        },
+      },
+      maxResolvedExternalPackages: 1,
+    },
+    projectRoot: root,
+    platformPackageRoots: [app],
+    workspacePackageRoots: [app],
+  });
+
+  assert.deepEqual(changed.findings, [
+    "renderer@1.0.0: licence file LICENSE does not match approved SHA-256",
+  ]);
 });
 
 test("rejects every deterministically selected package above the exact budget", async () => {
@@ -282,6 +384,41 @@ test("validates the policy as a closed shape", () => {
     () => parseDependencyPolicy({ allowedLicenses: ["MIT"], maxResolvedExternalPackages: 1.5 }),
     /maxResolvedExternalPackages must be a non-negative integer/u,
   );
+  assert.throws(
+    () => parseDependencyPolicy({ allowedLicenses: ["MIT"], licenseOverrides: [], maxResolvedExternalPackages: 1 }),
+    /licenseOverrides must be an object/u,
+  );
+  assert.throws(
+    () => parseDependencyPolicy({
+      allowedLicenses: ["MIT"],
+      licenseOverrides: {
+        "renderer@1.0.0": {
+          declaredLicense: "SEE LICENSE IN LICENSE",
+          effectiveLicense: "MIT",
+          licenseFile: "../LICENSE",
+          licenseSha256: "0".repeat(64),
+        },
+      },
+      maxResolvedExternalPackages: 1,
+    }),
+    /licenseFile must be one safe filename/u,
+  );
+  assert.throws(
+    () => parseDependencyPolicy({
+      allowedLicenses: ["MIT"],
+      licenseOverrides: {
+        "renderer@1.0.0": {
+          declaredLicense: "SEE LICENSE IN LICENSE",
+          effectiveLicense: "MIT",
+          licenseFile: "LICENSE",
+          licenseSha256: "not-a-digest",
+          surplus: true,
+        },
+      },
+      maxResolvedExternalPackages: 1,
+    }),
+    /licenseOverrides\.renderer@1\.0\.0 has unknown property surplus/u,
+  );
 });
 
 test("rejects a missing or non-string package identity field", async () => {
@@ -314,10 +451,41 @@ test("keeps the live reachable platform graph at its exact approved footprint", 
   const result = await repositoryPlatformDependencyPolicy(projectRoot);
   assert.deepEqual(result.findings, []);
   assert.deepEqual(result.externalPackages, [
+    "@bpmn-io/diagram-js-ui@0.2.4",
+    "bpmn-js@18.22.1",
     "bpmn-moddle@10.0.0",
+    "clsx@2.1.1",
+    "diagram-js-direct-editing@3.5.1",
+    "diagram-js@15.23.2",
+    "didi@11.0.0",
+    "domify@3.0.0",
+    "htm@3.1.1",
+    "ids@3.0.2",
+    "inherits-browser@0.1.0",
     "min-dash@5.1.0",
+    "min-dom@5.3.0",
     "moddle-xml@12.1.0",
     "moddle@8.2.0",
+    "object-refs@0.4.0",
+    "path-intersection@4.1.0",
+    "preact@10.29.8",
     "saxen@11.1.0",
+    "tiny-svg@4.1.4",
   ]);
+});
+
+test("retains the exact approved bpmn-js licence in the web distribution source", async () => {
+  const installedLicense = await readFile(
+    path.join(projectRoot, "platform/apps/web/node_modules/bpmn-js/LICENSE"),
+  );
+  const retainedLicense = await readFile(
+    path.join(projectRoot, "platform/apps/web/public/third-party/bpmn-js.LICENSE.txt"),
+  );
+
+  assert.deepEqual(retainedLicense, installedLicense);
+  assert.equal(
+    createHash("sha256").update(retainedLicense).digest("hex"),
+    "5788cf8bd61481776cee1c943595525499a1355c045e9244f92e6c8092c06770",
+  );
+  assert.match(retainedLicense.toString("utf8"), /watermark must stay fully visible/u);
 });

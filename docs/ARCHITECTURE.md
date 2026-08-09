@@ -131,6 +131,7 @@ The UI may share public contract types or a generated public client. It may not 
 | ARC-006 | Put production Workers under `platform/workers/` and reserve `runners/` for external oracles | Preserves the product/evidence boundary and allows independent Worker deployment | A new repository-wide deployable category has a materially different lifecycle |
 | ARC-007 | Instantiate directories only when active work needs them | Prevents an aspirational tree from being mistaken for implemented surface | A build or packaging tool requires an explicit generated workspace manifest |
 | ARC-008 | Use Fetch-compatible module routes behind a Node HTTP adapter with no external transport library; deploy exact BPMN as a bounded raw XML body | Keeps route ownership with the domain module, preserves exact source bytes, and avoids adopting or hand-writing multipart machinery for a single-file M1 request | A required public operation needs multipart fields, resumable transfer, or another transport contract |
+| ARC-009 | Confine `bpmn-js` to a viewer-only web adapter and retain its required visible bpmn.io watermark and exact license notice | Uses the mature BPMN DI renderer without granting browser parsing semantic authority or misrepresenting its license as MIT | Reopen if the renderer is replaced or the upstream license changes |
 
 ## Verification
 

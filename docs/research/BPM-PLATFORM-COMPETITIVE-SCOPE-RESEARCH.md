@@ -532,7 +532,7 @@ The stack work in [BPM platform technology stack research](BPM-PLATFORM-STACK-RE
 | React Aria Components | Keep | It supplies maintained interaction and accessibility without visual identity, CDN assets, telemetry, or a branded style system. |
 | TanStack Table, Virtual, and Query | Keep | It covers the data-dense console and long-polling cache problem with a small permissive resolved graph and no commercial feature ceiling. |
 | Platform-owned component kit | Keep, with a cost gate | It preserves brand neutrality and replacement control. Track actual component and accessibility cost against the roughly 2,000-line estimate; use shadcn over Radix only if the estimate fails materially. |
-| `bpmn-js` viewer and overlays | Approve | Every primary analogue uses this family, and drawing BPMN Diagram Interchange correctly is not differentiating platform work. Keep phase one viewer-only, consistent with the proposal’s modeling exclusion. |
+| `bpmn-js` viewer and overlays | Approved 2026-08-09 | Camunda 8 and both CIB Seven web generations use this family, and drawing BPMN Diagram Interchange correctly is not differentiating platform work. Keep phase one viewer-only, consistent with the proposal’s modeling exclusion, and retain the bpmn.io watermark and notice required by its license. |
 | `node:sqlite` read model | Keep for phase one | It provides a zero-service, transactional local read model in the pinned runtime. Record its experimental upstream status and hide it behind the projection-store boundary so later scale does not rewrite product semantics. |
 | CSS Modules | Select | It adds no runtime dependency, is native to Vite, keeps styling project-owned, and has suitable operations-console precedent. |
 | Hand-rolled SVG charts | Use only for the first small aggregate views | The main mining visualization is the BPMN overlay. If general charts become real requirements, adopt a dependency-free library such as uPlot instead of growing an internal charting system. |
@@ -814,7 +814,7 @@ The next documentation action should be smaller and operational:
 3. define the exact gate and supported-profile boundary for that reopened MVP;
 4. give E1a, E1b, and later E2 separate engine-owned requirements and governed cycles;
 5. record the initial modular-monolith deployment shape and the package guards before the first platform package lands;
-6. resolve the open stack decisions, with `bpmn-js`, CSS Modules, and long-polling recommended as above;
+6. resolve the remaining open stack decisions; `bpmn-js` is approved, while CSS Modules and long-polling remain recommended as above;
 7. create separate follow-on proposals only when the first platform needs migration, browser modeling, native Temporal Workflow composition, multi-tenancy, advanced mining, DMN, case work, or agent control.
 
 The current wording that the platform consumes only the engine’s published contract is now adequately qualified in the project design: every **BPMN semantic fact** comes only from that contract, while platform-owned identity, policy, persistence, and audit remain legitimate platform inputs and host facts remain separately labeled. The implementation must make this constitutional distinction executable through package boundaries and planted-violation guards.
