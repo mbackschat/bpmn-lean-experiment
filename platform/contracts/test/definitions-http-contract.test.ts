@@ -5,10 +5,12 @@ import {
   decodeDefinitionDeployResult,
   decodeDefinitionListResponse,
   decodeDefinitionVersionListResponse,
+  decodePublicApiErrorResponse,
   definitionVersionSourcePath,
   definitionVersionStartPath,
   definitionVersionsPath,
   definitionsCollectionPath,
+  PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DeployedDefinitionVersion,
@@ -151,5 +153,41 @@ test("rejects empty process identifiers and unsafe definition versions", () => {
   assert.throws(
     () => definitionVersionStartPath("process", Number.MAX_SAFE_INTEGER + 1),
     /positive safe integer/u,
+  );
+});
+
+test("publishes a closed method-not-allowed API error code", () => {
+  assert.equal(PublicApiErrorCode.MethodNotAllowed, "methodNotAllowed");
+});
+
+test("decodes every closed public API error response", () => {
+  for (const code of Object.values(PublicApiErrorCode)) {
+    const input = { error: { code, message: `${code} response` } };
+    assert.deepEqual(decodePublicApiErrorResponse(input), input);
+  }
+});
+
+test("rejects unknown, empty, and private API error fields", () => {
+  assert.throws(
+    () => decodePublicApiErrorResponse({
+      error: { code: "privateError", message: "not public" },
+    }),
+    /not a public API error code/u,
+  );
+  assert.throws(
+    () => decodePublicApiErrorResponse({
+      error: { code: PublicApiErrorCode.InvalidRequest, message: "" },
+    }),
+    /message must not be empty/u,
+  );
+  assert.throws(
+    () => decodePublicApiErrorResponse({
+      error: {
+        code: PublicApiErrorCode.InternalFailure,
+        message: "generic",
+        privateStack: "must not cross",
+      },
+    }),
+    /API error must contain exactly its public fields/u,
   );
 });

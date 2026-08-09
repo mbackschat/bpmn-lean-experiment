@@ -14,6 +14,9 @@
       "@bpmn-lean/platform-engine-gateway": [
         "./platform/foundation/engine-gateway/src/index.ts"
       ],
+      "@bpmn-lean/platform-server": [
+        "./platform/apps/server/src/index.ts"
+      ],
       "@bpmn-lean/platform-artifact-store": [
         "./platform/foundation/artifact-store/src/index.ts"
       ],
@@ -33,6 +36,7 @@
   },
   "include": [
     "packages/bpmn-source/src/bpmn-moddle.d.ts",
+    "platform/apps/server/test/*.ts",
     "platform/contracts/test/*.ts",
     "platform/foundation/engine-gateway/test/*.ts",
     "platform/modules/definitions/test/*.ts",

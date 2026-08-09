@@ -80,13 +80,15 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - `@bpmn-lean/platform-artifact-store`, which verifies exact SHA-256 identity, publishes caller-snapshotted bytes atomically without replacement, detects occupied-path corruption, and returns defensive copies
 - `@bpmn-lean/platform-contracts` with closed deeply immutable M1 definition transport types, strict unknown decoders, opaque engine diagnostics, and safe versioned route construction
 - `@bpmn-lean/platform-definitions`, which snapshots deployment inputs before its first await, persists only admitted exact source, allocates durable process-local version ordinals through SQLite `BEGIN IMMEDIATE`, lists current and historical versions, and fails explicitly when metadata references missing content
+- A Fetch-compatible definitions route contribution with closed raw-XML deployment input, claimed and streamed byte ceilings, producer-mutation-resistant chunk capture, public-only accepted/rejected projections, exact version/source reads, strict path and method validation, and generic internal failures
+- `@bpmn-lean/platform-server`, a Node HTTP adapter with no external transport library and a modular-monolith composition root with configured request authority, streaming transport, ordered route dispatch, closed errors, local environment configuration, and idempotent socket/SQLite lifecycle
 - An executable product-boundary guard that discovers tracked and pending source plus package manifests, resolves package aliases and subpaths to owners, fails closed on malformed or duplicate identities, and carries planted violations for every guarded dependency class
 - An executable platform dependency policy that traverses the installed reachable production graph through workspace, direct, transitive, optional, and required-peer edges; fails closed on unresolved or contradictory identities; and holds the current exact five-package external footprint to the MIT license allowlist
 - A separate strict no-emit platform harness and generated-output import guard, with planted clean-checkout counterexamples, so the composed M1 gate runs in CI before the platform-independent engine gate without making `verify.sh` build the platform tree
 
 #### Explicitly absent
 
-- The public HTTP API, server composition root, web client, start boundary, and executable showcase
+- The web client, start boundary, and executable showcase
 - the transition-record projection, every read model, and cross-instance discovery
 - task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity and authorization

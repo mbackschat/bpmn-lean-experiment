@@ -1,6 +1,7 @@
 import type {
   DefinitionDeployResult,
   DefinitionListResponse,
+  PublicApiErrorResponse,
 } from "../src/index.js";
 
 declare const discriminantDeployment: DefinitionDeployResult;
@@ -26,3 +27,8 @@ if (listed.definitions[0] !== undefined) {
   // @ts-expect-error Objects inside response arrays are immutable.
   listed.definitions[0].source.id = "replacement.bpmn";
 }
+
+declare const apiError: PublicApiErrorResponse;
+
+// @ts-expect-error API error discriminants are immutable.
+apiError.error.code = "invalidRequest";

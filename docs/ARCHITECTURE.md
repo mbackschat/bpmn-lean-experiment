@@ -130,6 +130,7 @@ The UI may share public contract types or a generated public client. It may not 
 | ARC-005 | Keep generic projection mechanics in foundation and domain projections in modules | Separates delivery correctness from the meaning of task, operation, or intelligence rows | A proven projection is genuinely identical across two domain modules |
 | ARC-006 | Put production Workers under `platform/workers/` and reserve `runners/` for external oracles | Preserves the product/evidence boundary and allows independent Worker deployment | A new repository-wide deployable category has a materially different lifecycle |
 | ARC-007 | Instantiate directories only when active work needs them | Prevents an aspirational tree from being mistaken for implemented surface | A build or packaging tool requires an explicit generated workspace manifest |
+| ARC-008 | Use Fetch-compatible module routes behind a Node HTTP adapter with no external transport library; deploy exact BPMN as a bounded raw XML body | Keeps route ownership with the domain module, preserves exact source bytes, and avoids adopting or hand-writing multipart machinery for a single-file M1 request | A required public operation needs multipart fields, resumable transfer, or another transport contract |
 
 ## Verification
 

@@ -70,6 +70,7 @@ export type DefinitionVersionListResponse = Readonly<{
 
 export const PublicApiErrorCode = {
   InvalidRequest: "invalidRequest",
+  MethodNotAllowed: "methodNotAllowed",
   UnsupportedMediaType: "unsupportedMediaType",
   PayloadTooLarge: "payloadTooLarge",
   NotFound: "notFound",
@@ -86,6 +87,7 @@ type PublicApiErrorFor<Code extends PublicApiErrorCode> = Readonly<{
 
 export type PublicApiError =
   | PublicApiErrorFor<typeof PublicApiErrorCode.InvalidRequest>
+  | PublicApiErrorFor<typeof PublicApiErrorCode.MethodNotAllowed>
   | PublicApiErrorFor<typeof PublicApiErrorCode.UnsupportedMediaType>
   | PublicApiErrorFor<typeof PublicApiErrorCode.PayloadTooLarge>
   | PublicApiErrorFor<typeof PublicApiErrorCode.NotFound>

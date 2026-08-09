@@ -73,6 +73,21 @@ importers:
         specifier: workspace:*
         version: link:../bpmn-source
 
+  platform/apps/server:
+    dependencies:
+      '@bpmn-lean/platform-artifact-store':
+        specifier: workspace:*
+        version: link:../../foundation/artifact-store
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@bpmn-lean/platform-definitions':
+        specifier: workspace:*
+        version: link:../../modules/definitions
+      '@bpmn-lean/platform-engine-gateway':
+        specifier: workspace:*
+        version: link:../../foundation/engine-gateway
+
   platform/contracts: {}
 
   platform/foundation/artifact-store: {}
@@ -88,6 +103,9 @@ importers:
       '@bpmn-lean/platform-artifact-store':
         specifier: workspace:*
         version: link:../../foundation/artifact-store
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../contracts
       '@bpmn-lean/platform-engine-gateway':
         specifier: workspace:*
         version: link:../../foundation/engine-gateway

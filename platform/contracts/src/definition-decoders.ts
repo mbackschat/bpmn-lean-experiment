@@ -1,4 +1,7 @@
-import { DefinitionDeployStatus } from "./definitions.js";
+import {
+  DefinitionDeployStatus,
+  PublicApiErrorCode,
+} from "./definitions.js";
 import type {
   AdmissionDiagnostic,
   DefinitionDeployResult,
@@ -7,6 +10,8 @@ import type {
   DeployedDefinitionVersion,
   ExactPublicSourceIdentity,
   LocatedAdmissionElement,
+  PublicApiErrorCode as PublicApiErrorCodeValue,
+  PublicApiErrorResponse,
   RejectedDefinitionResult,
 } from "./definitions.js";
 
@@ -53,6 +58,37 @@ export function decodeDefinitionVersionListResponse(
     }
   });
   return { processId, versions };
+}
+
+/** Decodes a closed public API error response without accepting private details. */
+export function decodePublicApiErrorResponse(
+  value: unknown,
+): PublicApiErrorResponse {
+  requireObject(value, "API error response");
+  requireExactKeys(value, "API error response", ["error"]);
+  const error = readOwn(value, "error");
+  requireObject(error, "API error");
+  requireExactKeys(error, "API error", ["code", "message"]);
+  return {
+    error: {
+      code: decodePublicApiErrorCode(readOwn(error, "code")),
+      message: requireNonemptyString(readOwn(error, "message"), "API error.message"),
+    },
+  };
+}
+
+function decodePublicApiErrorCode(value: unknown): PublicApiErrorCodeValue {
+  switch (value) {
+    case PublicApiErrorCode.InvalidRequest:
+    case PublicApiErrorCode.MethodNotAllowed:
+    case PublicApiErrorCode.UnsupportedMediaType:
+    case PublicApiErrorCode.PayloadTooLarge:
+    case PublicApiErrorCode.NotFound:
+    case PublicApiErrorCode.InternalFailure:
+      return value;
+    default:
+      throw new TypeError("API error.code is not a public API error code");
+  }
 }
 
 function decodeRejectedDefinition(value: object): RejectedDefinitionResult {

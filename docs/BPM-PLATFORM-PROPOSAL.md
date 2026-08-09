@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-07; product surfaces not implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. Tracked architecture scaffolds and boundary guards do not implement a product surface, so this stays a proposal and no dependency is adopted; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for an implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
+**Owner-approved on 2026-08-07; M1 definition deployment is partially implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. The public definition deployment API and its modular-monolith server exist, while the M1 web and start surfaces and the later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
 Sequencing belongs to [PLAN.md](PLAN.md), durable product and semantic boundaries to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture to [ARCHITECTURE.md](ARCHITECTURE.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
 
@@ -133,7 +133,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Styling method | Open; CSS Modules costs nothing extra under Vite | **Open decision** |
 | Charting | Hand-rolled SVG first; a dependency-free library if that proves insufficient | **Open decision** |
 | Live updates | HTTP long-polling on the Temporal pattern, no WebSockets or server-sent events | Proposed |
-| HTTP surface | To be decided against the dependency posture; hand-writing multipart upload parsing is the worse security answer | **Open decision** |
+| HTTP surface | Fetch-compatible module routes behind the built-in Node HTTP server; deployment uses one bounded raw XML body | Implemented for M1 without an external dependency |
 
 ### Approval record for the selected four
 
@@ -184,9 +184,8 @@ A surface is accepted when it has a runnable demonstration under `showcase/`, re
 
 1. Styling method for the platform component kit.
 2. `bpmn-js` adoption, needing its own approval record.
-3. HTTP surface: a maintained minimal library against hand-written request handling, weighed against the whole alternative rather than the package count.
-4. Charting, if hand-rolled SVG proves insufficient.
-5. Whether platform-only dependencies follow the same per-item approval as engine dependencies. Currently they do, unchanged.
+3. Charting, if hand-rolled SVG proves insufficient.
+4. Whether platform-only dependencies follow the same per-item approval as engine dependencies. Currently they do, unchanged.
 
 ## Reopen conditions
 

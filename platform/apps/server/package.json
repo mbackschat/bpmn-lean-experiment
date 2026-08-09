@@ -1,5 +1,5 @@
 {
-  "name": "@bpmn-lean/platform-definitions",
+  "name": "@bpmn-lean/platform-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,11 +15,13 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "start": "pnpm build && node dist/main.js",
     "test": "pnpm build && node --test --test-concurrency=1 test/*.test.ts"
   },
   "dependencies": {
     "@bpmn-lean/platform-artifact-store": "workspace:*",
     "@bpmn-lean/platform-contracts": "workspace:*",
+    "@bpmn-lean/platform-definitions": "workspace:*",
     "@bpmn-lean/platform-engine-gateway": "workspace:*"
   }
 }
