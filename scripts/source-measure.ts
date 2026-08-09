@@ -16,10 +16,41 @@ export const hardCeiling = 1_000;
 /** Files this close to the review target are effectively full for planning purposes. */
 export const headroomWarningLines = 40;
 
+const handWrittenSourceExtensions = new Set([
+  ".cjs",
+  ".cts",
+  ".java",
+  ".js",
+  ".jsx",
+  ".lean",
+  ".mjs",
+  ".mts",
+  ".ts",
+  ".tsx",
+]);
+const javaScriptSourceExtensions = new Set([".cjs", ".js", ".jsx", ".mjs"]);
+const typeScriptSourceExtensions = new Set([".cts", ".mts", ".ts", ".tsx"]);
+
 export type SourceMeasurement = Readonly<{
   path: string;
   lines: number;
 }>;
+
+/** True for every hand-written source language governed by the module-size boundary. */
+export function isHandWrittenSourcePath(candidate: string): boolean {
+  const extension = candidate.slice(candidate.lastIndexOf("."));
+  return handWrittenSourceExtensions.has(extension);
+}
+
+export function isJavaScriptSourcePath(candidate: string): boolean {
+  const extension = candidate.slice(candidate.lastIndexOf("."));
+  return javaScriptSourceExtensions.has(extension);
+}
+
+export function isTypeScriptSourcePath(candidate: string): boolean {
+  const extension = candidate.slice(candidate.lastIndexOf("."));
+  return typeScriptSourceExtensions.has(extension);
+}
 
 export function nonblankLines(source: string): number {
   return source

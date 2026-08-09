@@ -14,6 +14,9 @@ import { analyzeLeanSource } from "./lean-source-analysis.ts";
 import {
   hardCeiling,
   headroomReportLines,
+  isHandWrittenSourcePath,
+  isJavaScriptSourcePath,
+  isTypeScriptSourcePath,
   nonblankLines,
   reviewTarget,
 } from "./source-measure.ts";
@@ -45,7 +48,7 @@ function worktreeSourceFiles(): string[] {
 
 function presentSourceFiles(paths: ReadonlyArray<string>): string[] {
   return paths
-    .filter((path) => /\.(?:c?js|java|lean|mjs|ts)$/u.test(path))
+    .filter(isHandWrittenSourcePath)
     .filter((path) => !path.includes("/dist/"))
     .filter((path) => existsSync(path));
 }
@@ -58,7 +61,7 @@ function presentSourceFiles(paths: ReadonlyArray<string>): string[] {
  * an unchecked execution path regardless of its size or role.
  */
 function javaScriptModules(files: ReadonlyArray<string>): string[] {
-  return files.filter((path) => /\.(?:c?js|mjs)$/u.test(path));
+  return files.filter(isJavaScriptSourcePath);
 }
 
 function assessLeanUmbrella(path: string, source: string): string | null {
@@ -105,7 +108,7 @@ function directTypeScriptHarnessFiles(): string[] {
  */
 function shippedTypeScriptFiles(): string[] {
   return worktreeSourceFiles().filter((path) =>
-    path.endsWith(".ts") &&
+    isTypeScriptSourcePath(path) &&
     /^(?:(?:packages|runners)\/[^/]+|platform\/(?:apps|foundation|modules|workers)\/[^/]+|platform\/(?:contracts|ui-kit))\/src\//u.test(path)
   );
 }
@@ -188,7 +191,7 @@ test("binds large-source exceptions to the owner-approved baseline", () => {
 });
 
 test("source enumeration includes non-ignored files before commit", () => {
-  const pendingSource = ".source-hygiene-pending-probe.ts";
+  const pendingSource = ".source-hygiene-pending-probe.tsx";
   assert.equal(
     existsSync(pendingSource),
     false,
@@ -218,6 +221,7 @@ test("the JavaScript-module policy admits no extension and no location", () => {
   assert.deepEqual(
     javaScriptModules([
       "packages/semantic-core/test/fixture.mjs",
+      "platform/apps/web/src/fixture.jsx",
       "packages/semantic-core/test/fixture.ts",
       "scripts/harness.cjs",
       "scripts/harness.js",
@@ -227,6 +231,7 @@ test("the JavaScript-module policy admits no extension and no location", () => {
     ]),
     [
       "packages/semantic-core/test/fixture.mjs",
+      "platform/apps/web/src/fixture.jsx",
       "scripts/harness.cjs",
       "scripts/harness.js",
     ],

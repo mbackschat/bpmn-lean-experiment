@@ -21,6 +21,7 @@ import { promisify } from "node:util";
 
 import {
   headroomDescription,
+  isHandWrittenSourcePath,
   nonblankLines,
   type SourceMeasurement,
 } from "./source-measure.ts";
@@ -54,9 +55,6 @@ export type ChangeBindings = Readonly<{
   owner: SourceMeasurement | null;
   bindings: ReadonlyArray<Binding>;
 }>;
-
-/** Hand-written source extensions the module-size boundaries apply to. */
-const measuredSourceExtensions = [".cjs", ".java", ".js", ".lean", ".mjs", ".ts"];
 
 /**
  * Terms from most to least specific: the exact path, its basename, then each ancestor tree.
@@ -138,8 +136,7 @@ export function ownerMeasurement(
   target: string,
   source: string | null,
 ): SourceMeasurement | null {
-  const measured = measuredSourceExtensions.includes(path.extname(target));
-  return source === null || !measured
+  return source === null || !isHandWrittenSourcePath(target)
     ? null
     : { path: target, lines: nonblankLines(source) };
 }

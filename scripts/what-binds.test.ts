@@ -126,13 +126,17 @@ test("an unconstrained path reports no binding rather than a nearest guess", () 
 // Historical miss: the module a plan named as a change site had five lines of headroom, and the
 // ceiling surfaced only after editing began.
 test("measures remaining headroom for a hand-written source owner", () => {
-  assert.deepEqual(
-    ownerMeasurement(
-      "packages/semantic-core/src/runtime.ts",
-      `${"const x = 1;\n".repeat(595)}\n\n`,
-    ),
-    { path: "packages/semantic-core/src/runtime.ts", lines: 595 },
-  );
+  const source = `${"const x = 1;\n".repeat(595)}\n\n`;
+  for (const target of [
+    "packages/semantic-core/src/runtime.ts",
+    "platform/apps/web/src/runtime.tsx",
+    "packages/semantic-core/src/runtime.mts",
+  ]) {
+    assert.deepEqual(
+      ownerMeasurement(target, source),
+      { path: target, lines: 595 },
+    );
+  }
 });
 
 test("a non-source or absent target has no owner measurement", () => {
