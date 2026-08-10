@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented current pre-release contract.** The registered capability catalog includes the independently reviewed Message Start capability; its closure review remains pending.
+**Implemented current pre-release contract.** The registered capability catalog includes the independently reviewed, closure-reviewed, and evidence-closed Message Start capability.
 
 ## Scope
 

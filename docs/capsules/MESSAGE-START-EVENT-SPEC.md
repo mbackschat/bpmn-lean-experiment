@@ -1,8 +1,8 @@
-# Message Start Event proposal
+# Message Start Event specification
 
 ## Status
 
-**Owner-approved on 2026-08-10; implementation and evidence are complete pending closure review.** The cold review of immutable target `0ddc83a` required exact admission for the XSD-required Interface and Operation names, nonempty Lean Message Start wire identities, and Lean start-stimulus-to-program pairing before scenario execution. The same reviewer approved correction target `04a5bae` with all three findings closed and no new required defect. The standards-only profile, answer-free scenario, differential case, runnable example, direct Temporal Worker-absence/history/replay witness, and required mutations are implemented. This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through one exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
+**Implemented, evidence-closed, and graduated on 2026-08-10.** The standards-only profile, answer-free scenario, differential case, runnable example, direct Temporal Worker-absence/history/replay witness, and required mutations are implemented. Closure review of `d118481` required lifecycle, maintained-evidence, and malformed-source corrections; the same reviewer approved final correction target `1b3ed1b` with all findings closed. This specification owns one top-level, payload-free Message Start Event that instantiates one private executable Process through one exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
 
 ## Independent cold-review receipt
 
@@ -10,11 +10,13 @@
 |---|---|---|---|---|
 | Proposal | `8bd3fe9` | `fork-turns-none` | `approve-with-required-edits` | `4540c32` |
 | Semantic checkpoint | `0ddc83a` | `fork-turns-none` | `approve-with-required-edits` | `04a5bae` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `d118481` | `fork-turns-none` | `approve-with-required-edits` | `1b3ed1b` |
 
 The proposal stage used three correction rounds. The context-cold review of `8bd3fe9` returned five required findings. Corrections `6c48839` and `2b02175` closed the substantive findings but retained one missing-versus-unresolved reference discriminator; the owner authorized a third warm audit, and `4540c32` closed that final finding with no reopened issue.
 
 The semantic-checkpoint cold review of `0ddc83a` returned three required admission findings. The same reviewer approved correction target `04a5bae`, closing each finding without changing the selected account, public contract, exclusions, or evidence strategy.
+
+The context-cold closure review of `d118481` required removal of stale checkpoint wording, complete Message Start registration in maintained evidence owners, and retained malformed-source negatives for Operation and catch-data loci. Correction `95482dc` closed the lifecycle and source-evidence findings but left Lean and TypeScript observation ownership conflated in the testing specification. The same reviewer approved correction `1b3ed1b` after that final evidence boundary was separated; no semantic redesign was required.
 
 ## Question
 
@@ -28,7 +30,7 @@ The recommendation is **yes, under the exact source, semantic, hosting, and evid
 
 The existing [Intermediate Catch Message specification](INTERMEDIATE-CATCH-MESSAGE-SPEC.md) already owns an exact operation-addressed Message channel and a running-instance subscription lifecycle. Reusing that channel representation is correct. Reusing its `awaitMessage` operation or `deliverMessage` stimulus would be wrong because no Process instance or subscription exists before a top-level Start Event is triggered.
 
-The existing manual `startProcess` stimulus and `initiate` operation remain byte-for-byte unchanged. Adding an optional trigger field to either would turn two different admission rules into a mode bag and would invalidate the frozen pre-M2 compiler preservation baseline. This proposal instead adds separate closed variants and shares only their genuinely identical root-occurrence and outgoing-token mechanics.
+The existing manual `startProcess` stimulus and `initiate` operation remain byte-for-byte unchanged. Adding an optional trigger field to either would turn two different admission rules into a mode bag and would invalidate the frozen pre-M2 compiler preservation baseline. This specification instead adds separate closed variants and shares only their genuinely identical root-occurrence and outgoing-token mechanics.
 
 ## Normative basis
 
@@ -45,7 +47,7 @@ The official CMOF and XSD `StartEvent`, `CatchEvent`, `MessageEventDefinition`, 
 
 The standard allows multiple Start Events, multiple outgoing Sequence Flows, definitional Collaboration and Message Flows, Event Sub-Process starts, Message payloads, and broader routing. This profile defers those conforming cases. Its checked node, IL operation, and stimulus retain exact Start Event and channel identity, so they do not erase the distinctions a later routing capsule needs. The current runtime nevertheless remains single-start-only: broadening admission to multiple Message Start operations first requires a pending selected-start or operation identity in runtime state plus explicit closure and choice proofs. The existing `initiationPending` boolean is insufficient for that broader case.
 
-The proposal adds `BPMN-MESSAGE-START-01` to the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md). It remains `unsupported` until implementation and closure evidence graduate this proposal.
+This specification owns supported requirement `BPMN-MESSAGE-START-01` in the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md).
 
 ## Selected account and rejected alternatives
 
@@ -318,117 +320,12 @@ Pre-release replace-in-place policy applies. The checked-node, Semantic Process 
 
 Existing `startProcess`, `initiate`, runtime state, canonical observations, Message subscription commands, and all pre-existing artifacts gain no field and retain exact serialized bytes. The additive variants do not require a compatibility reader. No retained cross-version Temporal history corpus exists, so cross-version replay remains unclaimed.
 
-### Owners this implementation grows
-
-The owner inventory is mechanically derived with `node scripts/what-binds.ts`; the figures below are current at proposal preparation and are rechecked by [document reviewability](../../scripts/document-reviewability.test.ts). A fresh Red measurement governs extraction before implementation.
-
-| Owner | Headroom to 600 nonblank lines | Consequence |
-|---|---:|---|
-| [semantic stimulus contract](../../packages/semantic-core/src/contract.ts) | 355 | Add one closed start variant and widen the union without changing the existing start shape. |
-| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 376 | Add one identity-and-channel Start Event alternative. |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 219 | Add one channel-bound initiation operation. |
-| [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 320 | Dispatch to a new cohesive Message-start owner; do not place the full mechanism in this switch. |
-| [Semantic Process admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 257 | Accept the exact start-stimulus union and keep cross-kind pairing fail closed. |
-| [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 145 | Validate one complete channel and a canonical nonempty distinct output list, while profile capability enforces exact-one; extract first if the fresh measurement would cross 600. |
-| [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 112 | Recognize the new root operation with the existing finite graph laws; extract first if the fresh measurement would cross 600. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 60 | Add the exact registered profile only while a fresh measurement keeps this owner at or below 600; otherwise split its existing checked/program capability responsibilities first. |
-| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 539 | Assign the new profile the existing whole-graph acyclic policy. |
-| [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 243 | Add one arm delegating to the shared root-token helper. |
-| [stimulus validation and identity](../../packages/semantic-core/src/stimulus.ts) | 249 | Validate and compare every resolved-target field exactly. |
-| [scenario admission](../../packages/semantic-core/src/scenario.ts) | 203 | Admit either closed start kind only in the first position. |
-| [Message Start semantic owner](../../packages/semantic-core/src/semantic-process-message-start.ts) | 396 | Own exact start pairing, fresh root admission, generic outgoing-token production, and the no-subscription boundary. |
-| [semantic-core public exports](../../packages/semantic-core/src/index.ts) | 562 | Export the new closed contracts and mechanism without adding an umbrella runtime. |
-| [root-definition selection](../../packages/bpmn-source/src/root-definition-selection.ts) | 341 | Reuse the existing exact operation-message root selection without a second reference inventory. |
-| [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 335 | Add a Message Start shape without weakening plain None Start projection. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 221 | Dispatch exact Message Start projection through a new cohesive source owner. |
-| [checked process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Admit the widened checked-node family only through the selected profile and delegate generic topology to the graph owner. |
-| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 284 | Recognize Message Start as a root `0 -> 1` node under existing graph laws. |
-| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 66 | Extract Message Start lowering before editing if the fresh Red measurement would cross 600; never compress or mix source projection into this owner. |
-| [intermediate Message source](../../packages/bpmn-source/src/intermediate-catch-message-source.ts) | 557 | Extract the shared operation-message EventDefinition projection only after the new Message Start source is the second semantic user. |
-| [Message Start source projection](../../packages/bpmn-source/src/message-start-event-source.ts) | 556 | Own the exact top-level source shape and resolved checked node. |
-| [operation-message Event Definition projection](../../packages/bpmn-source/src/operation-message-event-definition-source.ts) | 546 | Share exact Interface Operation and input Message resolution between the two source consumers. |
-| [Message Start lowering](../../packages/bpmn-source/src/message-start-event-lowering.ts) | 559 | Own canonical endpoint-only lowering to one `initiateMessage`. |
-| [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 5 | This owner cannot safely absorb another independent operation family. Extract cohesive start-operation binding before adding the checked-to-IL channel/origin/output rule. |
-| [start-operation artifact consistency](../../scripts/start-operation-artifact-consistency.ts) | 517 | Own exact checked-to-IL binding for both closed Process-start families. |
-| [contract artifact projection](../../scripts/contract-artifacts.ts) | 17 | Extract cohesive start-stimulus and start-operation projection before growth; preserve every existing artifact shape. |
-| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 401 | Register the new normative-only scenario without changing CIB evidence projection. |
-| [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 32 | Put the new Message Start case in a cohesive capsule-owned case module and register it from this near-limit catalog rather than embedding it here. |
-| [Temporal protocol contracts](../../packages/temporal-adapter/protocol/src/contracts.ts) | 418 | Widen the exact Workflow-start input type without exposing SDK types. |
-| [Temporal command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 447 | Include every new stimulus field in canonical identity. |
-| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 399 | Classify `initiateMessage` as passive internal initiation and retain wait-set checks. |
-| [Temporal process client](../../packages/temporal-adapter/client/src/process-client.ts) | 135 | Widen the concrete start input and preserve pre-start admission; extract Message-start client logic first if fresh measurement would cross 600. |
-| [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | Only widen the initial input contract. Any behavioral growth requires extracting an existing lifecycle responsibility before crossing 600. |
-| [Workflow export](../../packages/temporal-adapter/workflow/src/workflows.ts) | 561 | Widen the exact start-input type only. |
-| [testkit scenario admission](../../packages/temporal-adapter/testkit/src/scenario-admission.ts) | 580 | Widen the typed pre-start boundary to the closed process-start union. |
-| [testkit Workflow start](../../packages/temporal-adapter/testkit/src/runner-workflow-start.ts) | 556 | Pass either admitted start variant to the same concrete Workflow start path. |
-| [scenario sequencing](../../packages/temporal-adapter/testkit/src/scenario-stimulus-sequencing.ts) | 558 | Treat both start variants as first-only inputs. |
-| [runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 184 | Construct and execute the registered resolved trigger without a product router. |
-| [runnable MVP config](../../packages/temporal-adapter/runner/cli/runnable-mvp-config.ts) | 389 | Add a second closed Message-start config arm while preserving every existing manual config byte and avoiding optional trigger fields. |
-| [runnable MVP execution](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 257 | Use one exhaustive compiled-program/config-to-start constructor before the existing admission and client path. |
-| [product example guard](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 451 | Build the exact start variant for each registered example so a Message Start profile cannot be tested through manual start. |
-| [Lean scenario wire contract](../../BpmnSemantics/Scenario.lean) | 391 | Add the exact `triggerMessageStart` stimulus and command identity fields. |
-| [Lean semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 138 | Add the checked node and IL operation only while the owner remains below 600. |
-| [Lean checked-process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 293 | Validate the exact checked Message Start node and complete operation-addressed channel. |
-| [Lean checked-graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 472 | Add node identity, `0 -> 1` arity, closed start-family discovery, and acyclic-policy classification. |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 289 | Own the selected profile's exact checked-node, operation, and exact-one output cardinalities. |
-| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 302 | Validate the closed start-operation family, canonical nonempty distinct outputs, and exact root ownership independently of profile cardinality. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 177 | Add the new start operation's outputs, scope ownership, and reachability to existing finite graph laws. |
-| [Lean transition dispatcher](../../BpmnSemantics/SemanticProcess/Transition.lean) | 286 | Delegate one exhaustive `initiateMessage` arm to the new cohesive Message Start relation and evaluator. |
-| [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 52 | Do not add Message-start proofs here; add only exhaustive dispatch/imports to a new cohesive `MessageStart.lean` owner. |
-| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 83 | Add exact channel/origin/output lowering and its preservation bridge. |
-| [Lean scenario admission](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 290 | Close the existing cross-target gap by requiring exactly one supported start variant at index zero and only non-start stimuli afterward, matching TypeScript and the schema. |
-| [Lean Message Start transition](../../BpmnSemantics/SemanticProcess/MessageStart.lean) | 487 | Own the declarative relation, evaluator soundness, per-output token law, and explicit one-output post-initiation relation. |
-| [Lean Message Start admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 550 | Own exact trigger-to-program pairing and fresh-root admission without routing or subscriptions. |
-| [Lean checked-process decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 370 | Decode the exact closed Message Start node. |
-| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 172 | Decode the exact closed `initiateMessage` operation. |
-| [Lean scenario decoder](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 494 | Decode the new first stimulus and reject missing, extra, or malformed fields. |
-| [Lean JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean) | 428 | Decode either closed Process-start stimulus without widening ordinary decoder primitives. |
-| [Lean JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 469 | Lock exact accepted and missing, extra, malformed, and duplicate Message Start wire shapes. |
-| [Lean JSON executable](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 292 | Encode the trigger and discover Process identity through either closed start variant. |
-| [Lean Semantic Process umbrella](../../BpmnSemantics/SemanticProcess.lean) | 576 | Import the new independently buildable Message Start mechanism only. |
-| [Lean root umbrella](../../BpmnSemantics.lean) | 575 | Export the new independent conformance owner without executable declarations. |
-| [Lean Message Start conformance](../../BpmnSemantics/MessageStartConformance.lean) | 133 | Prove source/IL binding, trigger and output laws, exact closure, cross-kind refusal, observation relation, and first-only scenario order. |
-| [Lean conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 585 | Import the new Message Start conformance evidence into the maintained conformance target. |
-| [Lean checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 433 | Reject Message Start explicitly so the frozen experiment does not acquire a new production source mechanism. |
-| [Lean checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 294 | Reject the new checked node and stimulus explicitly in the experiment evaluator. |
-| [Lean checked-source graph experiment](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) | 516 | Reject Message Start in the frozen arity and root predicates. |
-| [Lean checked-source frontier experiment](../../BpmnSemantics/Experiments/CheckedSourceFrontier.lean) | 332 | Keep the generic node-disabling proof exhaustive and reject Message Start through the frozen transition. |
-| [Lean checked-source chain experiment](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) | 407 | Keep the supported-chain classification exhaustive and reject Message Start. |
-| [Lean checked-source coverage experiment](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) | 351 | Keep coverage proofs exhaustive without claiming Message Start support. |
-| [Lean checked-source scenario experiment](../../BpmnSemantics/Experiments/CheckedSourceScenario.lean) | 448 | Classify the new stimulus command identity and reject execution through the frozen experiment. |
-
-Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), and [scenario schema](../../contracts/schemas/scenario.schema.json) change atomically but are not hand-written source headroom owners.
-
-The seven experiment owners above are the complete repository-built fail-closed surface found by the checked-node and stimulus discriminant sweep. They do not gain Message Start semantics. `CheckedSourceCorrespondence` does not exhaust either widened union and remains unchanged.
-
-The profile, scenario, BPMN fixture, and runnable example are new registered artifacts. [profiles/README.md](../../profiles/README.md), [scenarios/README.md](../../scenarios/README.md), [semantic-core README](../../packages/semantic-core/README.md), [BPMN-source README](../../packages/bpmn-source/README.md), [Temporal-adapter README](../../packages/temporal-adapter/README.md), [wire-contract README](../../contracts/README.md), the [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), and the [runnable MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) update atomically with implementation. [Call Activity lowering](../../packages/bpmn-source/src/call-activity-lowering.ts), the handle-free [definition-start client](../../packages/temporal-adapter/client/src/definition-start-client.ts), and Product 2's manual definition-start surface remain unchanged because the exact Message Start profile excludes Call Activity, callable or additional Process roots, and Product 2 ingress.
-
-The complete `what-binds` rerun also reaches the Java [closed scenario stimulus union](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) and [CIB scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java), at 598/600 and 577/600 nonblank lines. They remain unchanged and fail closed for `triggerMessageStart`; the registered Message Start scenario declares `cib: null`, so no CIB runner decodes or executes it. Their [CIB runner registry](../../runners/cibseven/README.md) and [runner registry](../../runners/README.md) therefore remain unchanged. Any future CIB Message Start relationship must open a separate capsule and cohesive Java extraction rather than widening these near-limit owners incidentally.
-
-Existing focused test owners also change where their exact inventories widen:
-
-| Test owner | Headroom to 600 nonblank lines | Obligation |
-|---|---:|---|
-| [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 156 | Register the new exact projector in the closed production key-owner matrix. |
-| [checked graph admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 386 | Lock the exact root `0 -> 1` Message Start shape and reject the nearest incoming, arity, condition, placement, and mixed-start violations. |
-| [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 125 | Remain unchanged; the package-local Message Start artifact test owns the new drift matrix without importing generated build output. |
-| [artifact projection oracle](../../scripts/contract-artifact-projections.test.ts) | 14 | Extract a cohesive Message-start projection oracle before adding the new scenario; do not grow this near-limit owner in place. |
-| [command identity](../../packages/temporal-adapter/testkit/test/command-identity.test.ts) | 362 | Lock canonical identity over every Message-start trigger field. |
-| [Message Start semantic-core characterization](../../packages/semantic-core/test/message-start-event.test.ts) | 68 | Lock exact admission, refusal, closure, identity, and observation facts. |
-| [Message Start semantic-core immutability](../../packages/semantic-core/type-test/message-start-event.type-test.ts) | 549 | Lock deep immutability for the new checked, IL, and stimulus arms. |
-| [Message Start source characterization](../../packages/bpmn-source/test/message-start-event-source.test.ts) | 283 | Lock the accepted source and the complete malformed-source negative union. |
-| [Message Start artifact consistency](../../packages/bpmn-source/test/message-start-artifact-consistency.test.ts) | 488 | Reject independent checked channel, lowered channel, origin, and output drift. |
-| [Message Start wire-schema characterization](../../scripts/message-start-contract-schema.test.ts) | 445 | Lock exact checked, IL, and stimulus schemas plus first-only start placement. |
-| [Message Start Temporal preflight](../../packages/temporal-adapter/testkit/test/message-start-preflight.test.ts) | 462 | Prove exact target admission before direct Workflow start and kill Message-name-only admission. |
-| [product example configs](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 451 | Construct and admit the correct closed start variant for every example. |
-| [runnable MVP](../../packages/temporal-adapter/testkit/test/runnable-mvp.test.ts) | 283 | Lock strict Message-start config validation while preserving the old manual branch. |
-| [external Temporal runtime](../../packages/temporal-adapter/testkit/test/external-temporal-runtime.test.ts) | 462 | Keep its existing fixture explicitly manual-start after the config union widens. |
 
 ### Guards and oracles
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Recompute every owner figure and require this proposal in both registries. |
+| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep the graduated specification in both documentation registries and reject proposal-only owner-headroom inventory. |
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep `BPMN-MESSAGE-START-01`, its disposition, and capsule citation aligned. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [contract artifacts](../../scripts/contract-artifacts.test.ts), and [artifact projection oracle](../../scripts/contract-artifact-projections.test.ts) | Cover each new exact union arm, preserve the ordinary projector path, and reject missing, extra, or malformed channel and start fields. |
 | [definition artifact consistency](../../packages/bpmn-source/test/message-start-artifact-consistency.test.ts) and [start-operation binding](../../scripts/start-operation-artifact-consistency.ts) | Bind checked Start Event origin/channel/output to the lowered operation and reject drift in each component without relying on generated package output. |
@@ -472,9 +369,9 @@ Stop and return to research or owner decision if:
 - any A12 or unreviewed CIB product behavior becomes necessary to define the standards mechanism;
 - an owner would cross 600 nonblank lines without a cohesive extraction, or the first Lean change cannot pass the standing one-CPU, no-swap, 3 GiB resource audit.
 
-## Owner decisions after review
+## Approved decisions
 
-Owner approval is requested for these exact decisions:
+The owner approved these exact decisions:
 
 1. Select one payload-free, top-level, operation-addressed Message Start Event with exact `0 -> 1` arity and the linear User Task witness.
 2. Add separate `MessageStartEvent`, `InitiateMessage`, and `TriggerMessageStart` variants while preserving existing None Start values byte-for-byte.

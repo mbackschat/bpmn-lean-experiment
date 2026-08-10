@@ -8,7 +8,7 @@ This document owns the current checkpoint, ordered next work, unresolved decisio
 
 **The engine executes a bounded but broad slice.** Exact BPMN bytes admit through a checked project-owned graph to the Semantic Process IL, which Lean and an independently written TypeScript semantic core each evaluate, and which Temporal hosts durably. Closed families include Parallel fork/join, Exclusive Gateway with a project-owned Boolean expression language, Inclusive and Event-Based Gateways, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, User Task completion data, three boundary-Timer loci including the non-interrupting one, and the first resumption-bounded cycle. The cycle uses an explicit Exclusive Merge, traverses both conditional back-edges, exits through the default route, survives Worker replacement, refuses a stale occurrence, discriminates candidate-output and occurrence-identity defects, and replays. Each capsule owns its own meaning, laws, and exclusions.
 
-**Message Start implementation and evidence are complete pending closure review.** The registered standards-only profile preserves exact Process, Start Event, Message, Interface, and Interface Operation identity through source, checked graph, IL, Lean, the independent core, the answer-free differential case, the runnable example, and direct Temporal Workflow creation. The live witness starts while no Worker polls, later completes the exact User Task, contains no Signal Event, and replays. Public publication routing and retry-transparent receipt recovery remain excluded.
+**Message Start is implemented, closure-reviewed, evidence-closed, and graduated.** The registered standards-only profile preserves exact Process, Start Event, Message, Interface, and Interface Operation identity through source, checked graph, IL, Lean, the independent core, the answer-free differential case, the runnable example, and direct Temporal Workflow creation. The live witness starts while no Worker polls, later completes the exact User Task, contains no Signal Event, and replays. Public publication routing and retry-transparent receipt recovery remain excluded.
 
 **One generic standards profile now admits the complete selected notation set.** `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them. Every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume only a content-bound data-only overlay that maps alternate exact source bindings to an existing profile-owned descriptor and names exact inert expanded-name loci; it adds no reader or semantic operation. The preserve-enabled profile is registered with its own answer-free scenario, pipeline case, and live example, and a rejected file names each element the classification refused. Five structural requirement rows record what it admits without letting retention read as executable support. M1 is closed across engine admission, storage, versioning, public HTTP, exact-source rendering, selected-version start, real Temporal hosting, and required headless Chromium acceptance.
 
@@ -46,7 +46,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 ### M2 — the file runs its real shape
 
-**Status: in progress.** The resumption-bounded cyclic-control-flow increment is implemented, closure-reviewed, evidence-closed, and graduated. Message Start Event implementation and evidence are complete pending closure review. Timer Start Event, Terminate End Event, the configured generic Task, and the platform increments remain.
+**Status: in progress.** The resumption-bounded cyclic-control-flow and Message Start Event increments are implemented, closure-reviewed, evidence-closed, and graduated. Timer Start Event, Terminate End Event, the configured generic Task, and the platform increments remain.
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
@@ -111,11 +111,12 @@ The Lean lane must stay a research lane rather than becoming a proof tax on prod
 Ordered by the milestone that first needs it, not by size. Each is absent today and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns its exact status.
 
 1. [Resumption-bounded compositional admission with cycles](capsules/CYCLIC-CONTROL-FLOW-SPEC.md), closed for M2.
-2. Message Start Event, Timer Start Event, Terminate End Event, and the configured generic Task — M2.
-3. The value domain beyond string and null — M3.
-4. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
-5. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
-6. E1: committed transition records, and committed control-token and scope positions — M5.
+2. [Message Start Event](capsules/MESSAGE-START-EVENT-SPEC.md), closed for M2.
+3. Timer Start Event, Terminate End Event, and the configured generic Task — M2.
+4. The value domain beyond string and null — M3.
+5. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
+6. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
+7. E1: committed transition records, and committed control-token and scope positions — M5.
 
 E1 and E2 are material engine changes and each takes its own governed cycle. The follow-up extensions in [the extensions research](research/HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md) — multi-instance, Event Sub-Process, and further boundary-event loci — sit behind M5 and are not in this ladder.
 
@@ -144,7 +145,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: close and graduate the M2 Message Start Event capsule.** Registration, answer-free evidence, runnable configuration, exact differential comparison, Worker-absence execution, no-Signal history, and replay are implemented. Reconcile the closure documents, run the complete target-bound gate and cost measurement, submit the immutable descendant of approved checkpoint correction `04a5bae` to its exact reviewer under the warm-continuity manifest, then record approval and graduate the proposal.
+1. **Next: remain paused before selecting the next M2 increment.** Cyclic control flow and Message Start Event are closed and graduated. Do not select Timer Start Event, Terminate End Event, the configured generic Task, or a platform increment until the owner resumes M2 selection.
 
 ## Approved decisions
 
@@ -249,11 +250,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: create and review the immutable closure target for the approved [Message Start Event proposal](capsules/MESSAGE-START-EVENT-PROPOSAL.md).** Registration, scenario, example, differential comparison, and live Worker-absence/no-Signal/replay evidence are present. Finish the owning current-state documents, run focused integration plus the complete verifier, record commit-bounded cost, and use approved checkpoint correction `04a5bae` as the baseline for the exact same reviewer's warm closure audit after the continuity manifest proves the account, public contract, exclusions, and evidence strategy byte-identical. The later BPM platform publication router remains excluded.
+**Next action: remain paused before selecting the next M2 increment.** The [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) is closure-reviewed, evidence-closed, and graduated. Do not select Timer Start Event, Terminate End Event, the configured generic Task, or a platform increment until the owner resumes M2 selection.
 
-**No current owner blocker.** Message Start closure integration and governed review are the active boundary. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**Intentional owner pause.** No technical or environmental blocker remains. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
-**Last verified commands:** the integrated Message Start lanes pass semantic-core 172/172, BPMN source 335/335, contracts 44/44, differential 16/16, the runnable and product-example matrix 15/15, harness types, source hygiene 30/30, and the exact live Worker-absence/no-Signal/replay witness 1/1 with 10 history events. The warm closure packet must bind the exact clean closure target's complete verifier; the reviewed checkpoint predecessor is not closure evidence. The mandatory Linux/arm64 audit passed with Lean 4.31.0 under one CPU, a 3 GiB memory-and-swap ceiling with effective swap disabled, and no OOM: 47.42 seconds wall, 2,621,760 KiB maximum RSS, and 2,816,004,096 bytes cgroup peak. The complete platform M1 gate passed in 14.53 seconds, the registered M1 showcase passed in 9.11 seconds, and the infrastructure gate passed 220/220 in 38.18 seconds.
+**Last verified commands:** the target-bound complete verifier for clean closure target `d118481` passed in 402.48 seconds with log SHA-256 `d83f41bcd2f6c40e56233f355fbf1d2f12fee5bebf8f4126d2e319024639759d`; its complete pipeline replayed 39 live histories. Closure correction evidence passes BPMN source 342/342, Message Start Lean conformance 39/39, documentation/review guards 44/44, and source hygiene 30/30. The mandatory Linux/arm64 audit passed with Lean 4.31.0 under one CPU, a 3 GiB memory-and-swap ceiling with effective swap disabled, and no OOM: 47.42 seconds wall, 2,621,760 KiB maximum RSS, and 2,816,004,096 bytes cgroup peak. The complete platform M1 gate passed in 14.53 seconds, the registered M1 showcase passed in 9.11 seconds, and the infrastructure gate passed 220/220 in 38.18 seconds.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 
