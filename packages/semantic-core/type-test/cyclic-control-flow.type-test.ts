@@ -3,7 +3,7 @@ import {
   SemanticGraphPolicyKind,
   SemanticOperationKind,
   SemanticOriginKind,
-  SemanticCheckpointProfileId,
+  SemanticProfileId,
 } from "../src/index.js";
 import type {
   CheckedNode,
@@ -17,8 +17,8 @@ declare const policy: Extract<
   { kind: SemanticGraphPolicyKind.ResumptionBounded }
 >;
 
-// @ts-expect-error The checkpoint capability catalog is process-wide immutable
-SemanticCheckpointProfileId.UserTaskCycle = "mutated-cycle-profile";
+// @ts-expect-error The registered profile catalog is process-wide immutable
+SemanticProfileId.UserTaskCycle = "mutated-cycle-profile";
 
 const fourInputMerge = {
   id: "operation:Merge",

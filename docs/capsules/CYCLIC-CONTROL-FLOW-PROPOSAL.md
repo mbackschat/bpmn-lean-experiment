@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-10 after renewed independent review; semantic checkpoint correction `9d2bc38` is approved after cold target `cef8958` and two same-reviewer warm audits. The atomic profile/scenario, differential, product-example, and live Temporal evidence lane may now begin.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim evidence-closed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Owner-approved on 2026-08-10 after renewed independent review; semantic checkpoint correction `9d2bc38` is approved after cold target `cef8958` and two same-reviewer warm audits. The atomic profile/scenario, differential, product-example, and live Temporal evidence lane is implemented and awaiting closure review.** The registered answer-free schedule traverses both back-edges and the default exit, and the live witness adds Worker replacement, accepted-result recovery, stale-occurrence refusal, finite history inspection, and replay. This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim closure-reviewed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
@@ -75,7 +75,7 @@ The competing accounts are:
 
 ## Exact source profile
 
-One new immutable standards-only profile is selected as `bpmn-2.0.2-user-task-cycle-draft`. At the semantic checkpoint its identifier remains in the separate `SemanticCheckpointProfileId` capability catalog, outside the product/artifact-registered `SemanticProfileId` catalog. The later profile artifact, scenario, differential case, product example, and live Temporal evidence register atomically after checkpoint approval. The profile selects one private executable root Process with:
+One immutable standards-only profile is registered as `bpmn-2.0.2-user-task-cycle-draft`. Its identifier, profile artifact, scenario, differential case, product example, and live Temporal evidence landed atomically after checkpoint approval. The profile selects one private executable root Process with:
 
 - one None Start Event, one converging Exclusive Gateway, one User Task, one divergent Exclusive Gateway, and one None End Event;
 - six distinct Sequence Flows with exact resolved source and target identities;
@@ -278,12 +278,12 @@ The corrected identity-only checked representation was used to enumerate the com
 |---|---:|---|
 | [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 385 | Add only the identity-only `ExclusiveMerge` union alternative; Sequence Flow endpoints remain the sole checked topology authority. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 228 | Classify the converging Exclusive Gateway and emit identity only; exact endpoint and arity validation remains in admission. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 241 | Add only profile mechanism/cardinality and source-shape capability; reusable graph policy remains delegated to the extracted graph owner. |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Add only profile mechanism/cardinality and source-shape capability; reusable graph policy remains delegated to the extracted graph owner. |
 | [checked-process graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 287 | Add the profile-selected resumption cut beside the existing reusable ownership, reachability, co-reachability, arity, and acyclicity algorithms. |
-| [checked-process graph-admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 443 | Extend the direct owner test with the accepted resumption-crossing cycle and rejected internal-only cycle without moving profile policy into the test. |
+| [checked-process graph-admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 444 | Extend the direct owner test with the accepted resumption-crossing cycle and rejected internal-only cycle without moving profile policy into the test. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 71 | One merge arm may remain only while a fresh measurement keeps the owner at or below 600 and at one lowering responsibility. |
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 23 | Recognize the new operation's exact control-place uses. Grow only while the complete change retains at least 20 lines of review headroom; otherwise extract cohesive operation/place validation first. |
-| [profile capability table](../../packages/semantic-core/src/semantic-process-profile.ts) | 72 | The checkpoint capability catalog and exact checked/program capability tables fit only while the fresh post-change owner remains at or below 600; otherwise split checked and program capabilities by their existing two responsibilities. |
+| [profile capability table](../../packages/semantic-core/src/semantic-process-profile.ts) | 80 | The registered profile catalog and exact checked/program capability tables fit only while the owner remains at or below 600; otherwise split checked and program capabilities by their existing two responsibilities. |
 | [Semantic Process operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 150 | Validate distinct merge places, total shape, and profile capability without sharing graph-policy decisions. |
 | [Semantic Process graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 122 | Resumption-cut validation is cohesive graph work and may remain while the owner stays below 600. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 231 | The one new operation alternative fits without extraction. |

@@ -1,0 +1,91 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-user-task-cycle-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-resumption-bounded-user-task-sequence-flow-cycle",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 8.4.13",
+      "Clause 10.6.2",
+      "Clause 10.7.3",
+      "Clause 13.2",
+      "Clause 13.3.2",
+      "Clause 13.3.3",
+      "Clause 13.4.2",
+      "Table 7.2",
+      "Table 13.2"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "resumption-bounded-sequence-flow-cycle",
+      "exclusive-gateway-convergence",
+      "exclusive-merge",
+      "exclusive-gateway-divergence",
+      "ordered-conditional-sequence-flow",
+      "conditionless-default-sequence-flow",
+      "formal-expression",
+      "simple-boolean-expression-v1",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "repeated-user-task-occurrence",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-cycle-compatibility-claim",
+    "activity-standard-loop-characteristics",
+    "multi-instance",
+    "uncontrolled-activity-fan-in",
+    "concurrent-exclusive-multi-merge-arrivals",
+    "mixed-exclusive-gateway",
+    "more-or-fewer-than-three-merge-inputs",
+    "more-than-two-conditional-branches",
+    "missing-or-conditional-default-flow",
+    "expressions-beyond-simple-boolean-v1",
+    "non-string-and-non-null-process-variables",
+    "parallelism",
+    "multiple-live-waits",
+    "scopes",
+    "call-activities",
+    "messages",
+    "timers",
+    "service-tasks",
+    "boundary-events",
+    "cancellation",
+    "compensation",
+    "migration",
+    "continue-as-new",
+    "semantic-iteration-limit",
+    "unbounded-production-history",
+    "vendor-extensions"
+  ]
+}

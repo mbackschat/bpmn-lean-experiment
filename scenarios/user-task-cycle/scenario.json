@@ -1,0 +1,104 @@
+{
+  "kind": "scenario",
+  "id": "user-task-cycle-repeat-rework-exit",
+  "profile": "bpmn-2.0.2-user-task-cycle-draft",
+  "bpmn": {
+    "id": "cyclic-control-flow",
+    "relativePath": "scenarios/user-task-cycle/process.bpmn",
+    "sha256": "bce35b0b73934026f7da34e8c26eb74d590ad1010a847e34aca6858e2dbdf8b9",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-user-task-cycle",
+      "processId": "Process_CyclicControlFlow",
+      "instanceId": "CyclicControlFlowInstance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-cycle-repeat",
+      "taskId": {
+        "processInstanceId": "CyclicControlFlowInstance_1",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "repeat"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-cycle-rework",
+      "taskId": {
+        "processInstanceId": "CyclicControlFlowInstance_1",
+        "elementId": "Review",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "rework"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-cycle-exit",
+      "taskId": {
+        "processInstanceId": "CyclicControlFlowInstance_1",
+        "elementId": "Review",
+        "activation": 3
+      },
+      "submittedValues": [
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "exit"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Table 7.2",
+      "BPMN 2.0.2 Clause 8.4.13",
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 10.7.3",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.2",
+      "BPMN 2.0.2 Table 13.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/UserTaskTest.java#testTaskPropertiesNotNull"
+    ]
+  }
+}
