@@ -185,6 +185,7 @@ function messageStartSourceMutations(xml: string): Readonly<Record<string, strin
   const startDefinition = '<bpmn:messageEventDefinition id="MessageEventDefinition_ApprovalRequest" messageRef="Message_ApprovalRequest" operationRef="Operation_ReceiveApprovalRequest"/>';
   const startFlow = '<bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="MessageStart_ApprovalRequest" targetRef="UserTask_Approve"/>';
   const messageRoot = '<bpmn:message id="Message_ApprovalRequest" name="Approval request"/>';
+  const operationInput = "      <bpmn:inMessageRef>Message_ApprovalRequest</bpmn:inMessageRef>";
   return {
     "missing Interface name": xml.replace(' name="Process messages"', ""),
     "missing Operation name": xml.replace(
@@ -207,6 +208,27 @@ function messageStartSourceMutations(xml: string): Readonly<Record<string, strin
       'operationRef="Operation_ReceiveApprovalRequest"',
       'operationRef="Operation_Missing"',
     ),
+    "missing Operation input Message reference": xml.replace(
+      `${operationInput}\n`,
+      "",
+    ),
+    "Operation declares an output Message": xml.replace(
+      operationInput,
+      `${operationInput}\n      <bpmn:outMessageRef>Message_ApprovalRequest</bpmn:outMessageRef>`,
+    ),
+    "Operation declares an implementation reference": xml.replace(
+      'name="Receive approval request">',
+      'name="Receive approval request" implementationRef="Implementation_Handler">',
+    ),
+    "Operation declares an Error reference": xml
+      .replace(
+        messageRoot,
+        `${messageRoot}\n  <bpmn:error id="Error_Operation" name="Operation error" errorCode="E_OPERATION"/>`,
+      )
+      .replace(
+        operationInput,
+        `${operationInput}\n      <bpmn:errorRef>Error_Operation</bpmn:errorRef>`,
+      ),
     "Operation input differs from Event Definition Message": xml
       .replace(
         messageRoot,
@@ -240,6 +262,18 @@ function messageStartSourceMutations(xml: string): Readonly<Record<string, strin
     "payload-bearing Message": xml.replace(
       messageRoot,
       '<bpmn:itemDefinition id="Item_Payload" structureRef="bpmn:tBaseElement"/>\n  <bpmn:message id="Message_ApprovalRequest" name="Approval request" itemRef="Item_Payload"/>',
+    ),
+    "catch Event data output": xml.replace(
+      `      ${startDefinition}`,
+      `      <bpmn:dataOutput id="DataOutput_Start"/>\n      ${startDefinition}`,
+    ),
+    "catch Event output set": xml.replace(
+      `      ${startDefinition}`,
+      `      <bpmn:outputSet id="OutputSet_Start"/>\n      ${startDefinition}`,
+    ),
+    "catch Event data output association": xml.replace(
+      `      ${startDefinition}`,
+      `      <bpmn:dataOutput id="DataOutput_Start"/>\n      <bpmn:dataOutputAssociation id="DataOutputAssociation_Start"><bpmn:targetRef>DataOutput_Start</bpmn:targetRef></bpmn:dataOutputAssociation>\n      ${startDefinition}`,
     ),
     "incoming Sequence Flow": xml.replace(
       `    ${startFlow}`,

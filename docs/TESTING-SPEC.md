@@ -194,6 +194,8 @@ Lean and TypeScript independently derive exact completion, wrong activation, and
 
 - the executable operation-identified `step` is universally sound with respect to the declarative `OperationStep`/`ProgramStep` relation;
 - lowering preserves definition identity and Sequence-Flow origins;
+- the exact Message Start checked graph and IL bind one top-level operation-addressed channel and endpoint-derived output, the trigger admits only the matching Process, Start Event, Interface, Interface Operation, and input Message, and cross-kind or wrong-channel stimuli preserve the rejected state;
+- Message Start initiation creates one fresh root occurrence, reaches the ordinary User Task wait within the exact closure bound, preserves the complete downstream observation modulo deliberately distinct definition and semantic instance identities, and keeps the reusable nonempty-output operation separate from the registered profile's exact-one cardinality;
 - exact active-occurrence completion terminates the Process;
 - any Process-instance, BPMN-element, or activation mismatch is rejected with exact state preservation;
 - wrong activation is a corollary of the general mismatch law;

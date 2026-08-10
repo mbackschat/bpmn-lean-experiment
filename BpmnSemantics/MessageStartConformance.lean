@@ -229,7 +229,7 @@ theorem exact_program_is_admitted :
     programWellFormed program = true := by
   decide +kernel
 
-/-- The checkpoint profile selects exactly one Message Start operation with one output. -/
+/-- The registered profile selects exactly one Message Start operation with one output. -/
 theorem exact_program_profile_is_admitted :
     programProfileCapabilitiesValid program = true := by
   decide +kernel
@@ -282,7 +282,7 @@ theorem generic_message_initiation_rejects_empty_or_repeated_outputs :
   decide +kernel
 
 /-- The selected profile refuses the generic multi-output representation. -/
-theorem checkpoint_profile_requires_exactly_one_output :
+theorem selected_profile_requires_exactly_one_output :
     programProfileCapabilitiesValid
       { expectedProgram with
         operations := expectedProgram.operations.map fun operation =>

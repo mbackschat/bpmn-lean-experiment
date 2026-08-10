@@ -612,7 +612,7 @@ lowering produces one `initiate`, one `duplicate`, two `awaitUserTask` operation
 
 An accepted manual start stimulus enables `initiate` exactly once for the process instance. Firing it adds one token to its output control place.
 
-An accepted `triggerMessageStart` stimulus must match the program Process, Message Start Event, Interface, Interface Operation, and input Message exactly. Admission creates the ordinary fresh root occurrence without installing a Message subscription or payload. Firing `initiateMessage` clears pending initiation and adds one root-owned token to every canonical output control place. The reusable operation admits a nonempty output collection; the checkpoint profile requires exactly one output.
+An accepted `triggerMessageStart` stimulus must match the program Process, Message Start Event, Interface, Interface Operation, and input Message exactly. Admission creates the ordinary fresh root occurrence without installing a Message subscription or payload. Firing `initiateMessage` clears pending initiation and adds one root-owned token to every canonical output control place. The reusable operation admits a nonempty output collection; the registered Message Start profile requires exactly one output.
 
 ### User Task wait
 
@@ -857,14 +857,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, and bounded Call Activity exact-source fixtures lower deterministically;
+- sequential, Message Start, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, and bounded Call Activity exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, and bounded called-Process invocation/return separating witnesses;
+- the independent TypeScript evaluator passes sequential, exact-target Message Start admission/initiation/refusal/observation, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, and bounded called-Process invocation/return separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;
