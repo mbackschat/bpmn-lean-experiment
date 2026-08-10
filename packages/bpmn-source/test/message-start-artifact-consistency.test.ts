@@ -19,9 +19,20 @@ import type { DeepMutable } from "../../../scripts/contract-artifact-test-fixtur
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const sourceUrl = new URL(
+  "../../../scenarios/message-start-event/process.bpmn",
+  import.meta.url,
+);
+const characterizationFixtureUrl = new URL(
   "./fixtures/message-start-event.bpmn",
   import.meta.url,
 );
+
+test("registers the byte-identical characterized Message Start source", async () => {
+  assert.deepEqual(
+    await readFile(sourceUrl),
+    await readFile(characterizationFixtureUrl),
+  );
+});
 
 test("rejects every checked-to-IL Message Start binding drift", async () => {
   const accepted = await compileAccepted();

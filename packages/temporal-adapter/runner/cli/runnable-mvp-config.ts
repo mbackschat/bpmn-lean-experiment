@@ -3,12 +3,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  MessageChannelKind,
   StimulusKind,
+  isMessageChannel,
   isWellFormedStimulus,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
+  MessageChannel,
   VariableBinding,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -23,6 +26,24 @@ import type {
 
 import { parseStrictJson } from "../../../../scripts/strict-json.ts";
 
+export type RunnableMvpManualProcessConfig = DeepReadonly<{
+  instanceId: string;
+  initialVariables: VariableBinding[];
+}>;
+
+export type RunnableMvpMessageStartProcessConfig = DeepReadonly<{
+  instanceId: string;
+  startEventId: string;
+  channel: Extract<
+    MessageChannel,
+    { kind: typeof MessageChannelKind.OperationMessage }
+  >;
+}>;
+
+export type RunnableMvpProcessConfig =
+  | RunnableMvpManualProcessConfig
+  | RunnableMvpMessageStartProcessConfig;
+
 export type RunnableMvpConfig = DeepReadonly<{
   kind: "runnableTemporalMvp";
   bpmn: {
@@ -34,10 +55,7 @@ export type RunnableMvpConfig = DeepReadonly<{
       parserDeadlineMs: number;
     };
   };
-  process: {
-    instanceId: string;
-    initialVariables: VariableBinding[];
-  };
+  process: RunnableMvpProcessConfig;
   temporal: ExternalTemporalRuntimeOptions;
   interactions: HostInteractionResponse[];
   effectHandlers: HostEffectHandler[];
@@ -95,23 +113,7 @@ export function validateRunnableMvpConfig(
     "MVP parserDeadlineMs",
   );
 
-  const process = requireExactObject(
-    root.process,
-    ["instanceId", "initialVariables"],
-    "MVP Process config",
-  );
-  requireNonemptyString(process.instanceId, "MVP Process instanceId");
-  if (!isWellFormedStimulus({
-    kind: StimulusKind.StartProcess,
-    commandId: "mvp-config-validation",
-    processId: "mvp-config-validation",
-    instanceId: process.instanceId,
-    initialVariables: process.initialVariables,
-  })) {
-    throw new TypeError(
-      "MVP initialVariables must be a canonical string/null binding list",
-    );
-  }
+  validateRunnableMvpProcessConfig(root.process);
 
   const temporal = requireExactObject(
     root.temporal,
@@ -125,6 +127,53 @@ export function validateRunnableMvpConfig(
 
   validateHostInteractionPlan(root.interactions);
   validateHostEffectHandlers(root.effectHandlers);
+}
+
+function validateRunnableMvpProcessConfig(
+  value: unknown,
+): asserts value is RunnableMvpProcessConfig {
+  if (!isRecord(value)) {
+    throw new TypeError("MVP Process config must be an object");
+  }
+  if (hasExactKeys(value, ["instanceId", "initialVariables"])) {
+    requireNonemptyString(value.instanceId, "MVP Process instanceId");
+    if (!isWellFormedStimulus({
+      kind: StimulusKind.StartProcess,
+      commandId: "mvp-config-validation",
+      processId: "mvp-config-validation",
+      instanceId: value.instanceId,
+      initialVariables: value.initialVariables,
+    })) {
+      throw new TypeError(
+        "MVP initialVariables must be a canonical string/null binding list",
+      );
+    }
+    return;
+  }
+  if (hasExactKeys(value, ["instanceId", "startEventId", "channel"])) {
+    requireNonemptyString(value.instanceId, "MVP Process instanceId");
+    requireNonemptyString(value.startEventId, "MVP Message Start Event id");
+    if (
+      !isMessageChannel(value.channel) ||
+      value.channel.kind !== MessageChannelKind.OperationMessage ||
+      !isWellFormedStimulus({
+        kind: StimulusKind.TriggerMessageStart,
+        commandId: "mvp-config-validation",
+        processId: "mvp-config-validation",
+        instanceId: value.instanceId,
+        startEventId: value.startEventId,
+        channel: value.channel,
+      })
+    ) {
+      throw new TypeError(
+        "MVP Message Start channel must be an exact operation-addressed Message channel",
+      );
+    }
+    return;
+  }
+  throw new TypeError(
+    "MVP Process config must have exactly instanceId and initialVariables, or instanceId, startEventId, and channel",
+  );
 }
 
 function requireExactObject(
@@ -151,6 +200,16 @@ function requireExactObject(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expectedKeys: ReadonlyArray<string>,
+): boolean {
+  const actualKeys = Object.keys(value).sort();
+  const sortedExpectedKeys = [...expectedKeys].sort();
+  return actualKeys.length === sortedExpectedKeys.length &&
+    actualKeys.every((key, index) => key === sortedExpectedKeys[index]);
 }
 
 function requireNonemptyString(value: unknown, label: string): void {

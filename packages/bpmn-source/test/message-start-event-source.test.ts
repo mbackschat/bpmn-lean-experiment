@@ -15,12 +15,9 @@ import type {
   BpmnCompilationResult,
   BpmnSourceLimits,
 } from "@bpmn-lean/bpmn-source";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "@bpmn-lean/semantic-core";
+import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 
-const messageStartProfile = SemanticCheckpointProfileId.MessageStart;
+const messageStartProfile = SemanticProfileId.MessageStart;
 const sourceUrl = new URL("./fixtures/message-start-event.bpmn", import.meta.url);
 const limits: BpmnSourceLimits = Object.freeze({
   maxBytes: 1024 * 1024,

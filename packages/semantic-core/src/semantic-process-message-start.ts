@@ -25,7 +25,7 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  SemanticCheckpointProfileId,
+  SemanticProfileId,
   profileAllowsProgramShape,
 } from "./semantic-process-profile.js";
 import {
@@ -127,7 +127,7 @@ export function admitMessageStart(
   if (
     state.control.kind !== ControlStateKind.NotStarted ||
     program.identity.semanticProfile !==
-      SemanticCheckpointProfileId.MessageStart ||
+      SemanticProfileId.MessageStart ||
     !profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations,

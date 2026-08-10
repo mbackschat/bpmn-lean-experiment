@@ -21,7 +21,6 @@ import {
 } from "@bpmn-lean/bpmn-source";
 import {
   SemanticProfileId,
-  StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import {
   BpmnProcessAdmissionResultKind,
@@ -32,6 +31,9 @@ import {
 
 import { loadRunnableMvpConfig } from "../../runner/cli/runnable-mvp-config.ts";
 import type { RunnableMvpConfig } from "../../runner/cli/runnable-mvp-config.ts";
+import {
+  createRunnableMvpStartStimulus,
+} from "../../runner/cli/runnable-mvp-start.ts";
 
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const exampleRoot = path.join(projectRoot, "examples/temporal-mvp");
@@ -113,13 +115,7 @@ test("admits every example through both pre-start gates without connecting", asy
       `${path.basename(file)} must be within this host's wait-set capability`,
     );
     const admission = assessBpmnProcessAdmission(
-      {
-        kind: StimulusKind.StartProcess,
-        commandId: `product-example:${config.process.instanceId}`,
-        processId: compilation.semanticProcess.processId,
-        instanceId: config.process.instanceId,
-        initialVariables: config.process.initialVariables,
-      },
+      createRunnableMvpStartStimulus(config, compilation.semanticProcess),
       compilation.semanticProcess,
     );
     assert.equal(

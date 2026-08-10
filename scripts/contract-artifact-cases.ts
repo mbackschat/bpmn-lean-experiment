@@ -186,6 +186,10 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/user-task-cycle/scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/message-start-event/scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

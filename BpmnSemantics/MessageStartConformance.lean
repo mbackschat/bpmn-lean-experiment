@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess
 
 /-! # Message Start Event conformance
 
-This module owns the exact standards-only Message Start checkpoint fixture and its proved admission, lowering, transition, identity-refusal, closure, and scenario-ordering laws. It covers one operation-addressed, payload-free Message Start Event followed by one User Task and a None End Event. Routing, subscriptions, Message Flow, multiple starts, and Temporal identity remain outside this account.
+This module owns the exact standards-only Message Start fixture and its proved admission, lowering, transition, identity-refusal, closure, and scenario-ordering laws. It covers one operation-addressed, payload-free Message Start Event followed by one User Task and a None End Event. Routing, subscriptions, Message Flow, multiple starts, and Temporal identity remain outside this account.
 -/
 
 namespace BpmnSemantics.MessageStartConformance

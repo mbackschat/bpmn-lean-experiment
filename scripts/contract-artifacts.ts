@@ -32,11 +32,13 @@ import type {
   CheckedProcess,
   EffectDescriptor,
   OccurrenceId,
+  ProcessStartStimulus,
   Scenario,
   ScenarioResult,
   SemanticOperation,
   SemanticProcessProgram,
   StateObservation,
+  Stimulus,
   VariableBinding,
 } from "../packages/semantic-core/src/index.ts";
 
@@ -457,13 +459,32 @@ function verifyScenarioSourceBinding(
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
   }
-  const startStimuli = scenario.stimuli.filter(
-    (stimulus) => stimulus.kind === "startProcess",
-  );
+  const startStimuli = scenario.stimuli.filter(isProcessStartStimulus);
   if (startStimuli.length !== 1) {
     throw new Error(
-      "scenario must contain exactly one start Process stimulus",
+      "scenario must contain exactly one Process start stimulus",
     );
+  }
+}
+
+function isProcessStartStimulus(
+  stimulus: Stimulus,
+): stimulus is ProcessStartStimulus {
+  switch (stimulus.kind) {
+    case "startProcess":
+    case "triggerMessageStart":
+      return true;
+    case "completeUserTaskInstance":
+    case "deliverMessage":
+    case "fireTimer":
+    case "completeEffect":
+      return false;
+    default: {
+      const unsupported: never = stimulus;
+      throw new TypeError(
+        `unsupported scenario stimulus: ${JSON.stringify(unsupported)}`,
+      );
+    }
   }
 }
 

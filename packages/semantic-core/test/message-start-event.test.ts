@@ -9,7 +9,6 @@ import {
   ObservationRequestKind,
   ScenarioDocumentKind,
   ScenarioStepKind,
-  SemanticCheckpointProfileId,
   SemanticOperationKind,
   SemanticProfileId,
   SemanticProcessCompilerId,
@@ -61,7 +60,7 @@ const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: SemanticCheckpointProfileId.MessageStart,
+    semanticProfile: SemanticProfileId.MessageStart,
     sourceId: "message-start-process",
     sourceOverlay: null,
     sourceSha256:
@@ -364,7 +363,7 @@ test("rejects cross-kind and repeated starts with exact state identity", () => {
   assert.equal(repeated.state, started.state);
 });
 
-test("keeps generic Message initiation outputs canonical while the checkpoint is exact-one", () => {
+test("keeps generic Message initiation outputs canonical while the profile is exact-one", () => {
   const genericOperation = {
     ...operationBase("StartEvent_Message"),
     kind: SemanticOperationKind.InitiateMessage,
@@ -391,7 +390,7 @@ test("keeps generic Message initiation outputs canonical while the checkpoint is
   );
   assert.equal(
     profileAllowsProgramShape(
-      SemanticCheckpointProfileId.MessageStart,
+      SemanticProfileId.MessageStart,
       [
         genericOperation,
         ...program.operations.filter(
@@ -441,8 +440,8 @@ test("creates distinct root ownership for distinct fresh instances", () => {
 test("admits exactly one supported start stimulus at scenario index zero", () => {
   const scenario = {
     kind: ScenarioDocumentKind.Scenario,
-    id: "message-start-checkpoint",
-    profile: SemanticCheckpointProfileId.MessageStart,
+    id: "message-start-profile",
+    profile: SemanticProfileId.MessageStart,
     bpmn: {
       id: program.identity.sourceId,
       relativePath: "message-start.bpmn",
@@ -482,25 +481,17 @@ test("admits exactly one supported start stimulus at scenario index zero", () =>
   }
 });
 
-test("keeps the checkpoint out of the product profile catalog", () => {
+test("registers Message Start in the product profile catalog", () => {
   assert.equal(
-    Object.values(SemanticCheckpointProfileId).includes(
-      SemanticCheckpointProfileId.MessageStart,
-    ),
+    Object.values(SemanticProfileId).includes(SemanticProfileId.MessageStart),
     true,
-  );
-  assert.equal(
-    Object.values(SemanticProfileId).some(
-      (profile) => String(profile) === SemanticCheckpointProfileId.MessageStart,
-    ),
-    false,
   );
 });
 
 test("admits the exact checked Message Start node shape", () => {
   assert.equal(
     profileAllowsCheckedProcessShape(
-      SemanticCheckpointProfileId.MessageStart,
+      SemanticProfileId.MessageStart,
       [
         {
           kind: CheckedNodeKind.MessageStartEvent,

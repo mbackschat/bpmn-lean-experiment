@@ -13,11 +13,9 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   ProcessStatus,
-  StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
-  StartProcessStimulus,
   StateObservation,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -49,6 +47,7 @@ import {
   validateRunnableMvpConfig,
 } from "./runnable-mvp-config.ts";
 import type { RunnableMvpConfig } from "./runnable-mvp-config.ts";
+import { createRunnableMvpStartStimulus } from "./runnable-mvp-start.ts";
 
 export const RunnableMvpEventKind = {
   SourceAdmissionAccepted: "sourceAdmissionAccepted",
@@ -190,7 +189,10 @@ export async function runRunnableTemporalMvp(
     semanticProfile: compilation.semanticProcess.identity.semanticProfile,
     processId: compilation.semanticProcess.processId,
   });
-  const start = createStartStimulus(config, compilation.semanticProcess.processId);
+  const start = createRunnableMvpStartStimulus(
+    config,
+    compilation.semanticProcess,
+  );
   const admission = assessBpmnProcessAdmission(
     start,
     compilation.semanticProcess,
@@ -303,19 +305,6 @@ export async function runRunnableTemporalMvp(
   } finally {
     await runtime.shutdown();
   }
-}
-
-function createStartStimulus(
-  config: RunnableMvpConfig,
-  processId: string,
-): StartProcessStimulus {
-  return {
-    kind: StimulusKind.StartProcess,
-    commandId: `mvp-start:${config.process.instanceId}`,
-    processId,
-    instanceId: config.process.instanceId,
-    initialVariables: config.process.initialVariables,
-  };
 }
 
 /**

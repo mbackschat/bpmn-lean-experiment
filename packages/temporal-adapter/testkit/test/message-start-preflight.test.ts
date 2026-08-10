@@ -9,8 +9,8 @@ import {
 } from "@bpmn-lean/bpmn-source";
 import {
   MessageChannelKind,
-  SemanticCheckpointProfileId,
   SemanticOperationKind,
+  SemanticProfileId,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -90,7 +90,7 @@ async function compileProgram(): Promise<SemanticProcessProgram> {
     bytes: await readFile(sourceUrl),
     sourceId: "message-start-event",
     expectedSha256: undefined,
-    semanticProfile: SemanticCheckpointProfileId.MessageStart,
+    semanticProfile: SemanticProfileId.MessageStart,
     sourceOverlay: null,
     limits: {
       maxBytes: 1024 * 1024,

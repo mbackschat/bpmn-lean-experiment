@@ -1,0 +1,66 @@
+{
+  "kind": "scenario",
+  "id": "message-start-event",
+  "profile": "bpmn-2.0.2-message-start-event-draft",
+  "bpmn": {
+    "id": "message-start-event",
+    "relativePath": "scenarios/message-start-event/process.bpmn",
+    "sha256": "254823e574c7ba8b69ff3e965a86cc579c3ccfcb42f23f0abb344aacc130099c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "triggerMessageStart",
+      "commandId": "trigger-message-start",
+      "processId": "Process_MessageStart",
+      "instanceId": "MessageStartInstance_1",
+      "startEventId": "MessageStart_ApprovalRequest",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_ProcessMessages",
+        "interfaceOperationId": "Operation_ReceiveApprovalRequest",
+        "messageId": "Message_ApprovalRequest"
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-message-start-user-task",
+      "taskId": {
+        "processInstanceId": "MessageStartInstance_1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 8.5",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.87",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/usertask/UserTaskTest.java#testTaskPropertiesNotNull"
+    ]
+  }
+}

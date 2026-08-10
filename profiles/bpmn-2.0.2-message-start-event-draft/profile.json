@@ -1,0 +1,80 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-message-start-event-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-operation-addressed-payload-free-message-start-event",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 8.4.11",
+      "Clause 8.5",
+      "Clause 10.5.2",
+      "Clause 10.5.5",
+      "Clause 13.2",
+      "Clause 13.5.1",
+      "Table 10.84",
+      "Table 10.87",
+      "Table 10.99"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "message-start-event",
+      "payload-free-message",
+      "interface-operation-input-message",
+      "operation-addressed-process-instantiation",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-message-start-compatibility-claim",
+    "message-payload-and-data-mapping",
+    "message-name-only-routing",
+    "business-key-and-bpmn-correlation",
+    "definition-version-and-tenant-routing",
+    "message-broker-buffering-and-fanout",
+    "multiple-start-events",
+    "multiple-outgoing-start-flows",
+    "message-flow-and-collaboration",
+    "event-subprocesses",
+    "running-message-subscription",
+    "signal-with-start-and-update-with-start",
+    "timers",
+    "service-tasks",
+    "gateways",
+    "loops",
+    "multi-instance",
+    "boundary-events",
+    "vendor-extensions",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

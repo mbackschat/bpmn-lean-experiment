@@ -3,11 +3,15 @@ import { test } from "node:test";
 
 import {
   CanonicalObservationKind,
+  StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import {
   ComparisonKind,
   DifferentialTarget,
+  ScenarioBindingIssueKind,
+  ScenarioBindingKind,
   compareTargetResults,
+  verifyScenarioBinding,
 } from "@bpmn-lean/differential";
 
 import {
@@ -23,6 +27,9 @@ import {
 import {
   callActivityPipelineCases,
 } from "./call-activity-pipeline-cases.ts";
+import {
+  messageStartPipelineCases,
+} from "./message-start-pipeline-cases.ts";
 import {
   pipelineCases,
 } from "./pipeline-cases.ts";
@@ -87,6 +94,58 @@ test("registers the bounded Call Activity artifact once with exact Temporal refi
         temporalRelation: TemporalCaseRelation.ExactSemantic,
       },
     ],
+  );
+});
+
+test("registers the operation-addressed Message Start artifact once with exact Temporal refinement", () => {
+  assert.doesNotThrow(() =>
+    verifyPipelineRegistration(
+      artifactCases,
+      normativeArtifactCases,
+      pipelineCases,
+    )
+  );
+  assert.deepEqual(
+    messageStartPipelineCases.map((pipelineCase) => ({
+      id: pipelineCase.id,
+      cib: pipelineCase.cib,
+      temporalRelation: pipelineCase.temporalRelation,
+    })),
+    [
+      {
+        id: "message-start-event",
+        cib: null,
+        temporalRelation: TemporalCaseRelation.ExactSemantic,
+      },
+    ],
+  );
+});
+
+test("reports an exact Message Start Interface Operation binding disagreement", async () => {
+  const [context] = await loadAndCompileCases(messageStartPipelineCases);
+  assert.ok(context !== undefined);
+  const echoed = mutableClone(context.scenario);
+  const trigger = echoed.stimuli[0];
+  assert.equal(trigger?.kind, StimulusKind.TriggerMessageStart);
+  if (trigger?.kind !== StimulusKind.TriggerMessageStart) {
+    throw new TypeError("Message Start scenario must begin with its exact trigger");
+  }
+  trigger.channel.interfaceOperationId = "Operation_Other";
+
+  assert.deepEqual(
+    verifyScenarioBinding(
+      DifferentialTarget.Lean,
+      context.scenario,
+      echoed,
+    ),
+    {
+      kind: ScenarioBindingKind.Unbound,
+      target: DifferentialTarget.Lean,
+      issue: ScenarioBindingIssueKind.ContentMismatch,
+      path: "scenario.stimuli[0].channel.interfaceOperationId",
+      expected: "Operation_ReceiveApprovalRequest",
+      actual: "Operation_Other",
+    },
   );
 });
 

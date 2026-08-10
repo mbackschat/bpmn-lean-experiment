@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_MessageStart"
+  targetNamespace="https://bpmn-lean.local/tests/message-start">
+  <bpmn:message id="Message_ApprovalRequest" name="Approval request"/>
+  <bpmn:interface id="Interface_ProcessMessages" name="Process messages">
+    <bpmn:operation id="Operation_ReceiveApprovalRequest" name="Receive approval request">
+      <bpmn:inMessageRef>Message_ApprovalRequest</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_MessageStart" name="Message start then user task" isExecutable="true">
+    <bpmn:startEvent id="MessageStart_ApprovalRequest">
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ApprovalRequest" messageRef="Message_ApprovalRequest" operationRef="Operation_ReceiveApprovalRequest"/>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_Approve" name="Approve">
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Approved">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="MessageStart_ApprovalRequest" targetRef="UserTask_Approve"/>
+    <bpmn:sequenceFlow id="Flow_TaskToEnd" sourceRef="UserTask_Approve" targetRef="EndEvent_Approved"/>
+  </bpmn:process>
+</bpmn:definitions>

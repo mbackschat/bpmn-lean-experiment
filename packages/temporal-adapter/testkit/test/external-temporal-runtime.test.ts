@@ -49,6 +49,10 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
   const exampleConfig = await loadRunnableMvpConfig(fileURLToPath(
     new URL("../../../../examples/temporal-mvp/user-task-discovery-completion.json", import.meta.url),
   ));
+  if (!("initialVariables" in exampleConfig.process)) {
+    throw new TypeError("External runtime fixture must use manual Process start");
+  }
+  const initialVariables = exampleConfig.process.initialVariables;
   const environment = await withDeadline(
     createCachedLocalEnvironment({
       identity: "bpmn-mvp-server",
@@ -104,7 +108,7 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
     );
     assert.deepEqual(
       waiting?.state.variables,
-      exampleConfig.process.initialVariables,
+      initialVariables,
     );
     assert.equal(waiting?.state.openUserTasks[0]?.id.elementId, "UserTask_Approve");
     const ready = events.find(
@@ -112,7 +116,7 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
     );
     assert.deepEqual(
       ready?.detail?.inputVariables,
-      exampleConfig.process.initialVariables,
+      initialVariables,
     );
     const completion = events.find(
       (event) => event.kind === RunnableMvpEventKind.InteractionResolved,
@@ -128,7 +132,7 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
     );
     assert.deepEqual(result.receipt.finalState.variables, [
       submitted?.submittedValues[0],
-      exampleConfig.process.initialVariables[0],
+      initialVariables[0],
       submitted?.submittedValues[1],
     ]);
   } finally {

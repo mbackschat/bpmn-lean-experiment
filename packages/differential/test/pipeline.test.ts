@@ -193,6 +193,7 @@ test(
         "non-interrupting-boundary-timer-completion-before-the-deadline",
         "called-process-call-activity",
         "user-task-cycle-repeat-rework-exit",
+        "message-start-event",
         "service-task-effect-success",
         "mapped-success-service-task",
         "mapped-boundary-error-service-task-caught",

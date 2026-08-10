@@ -12,7 +12,6 @@ import {
   CheckedNodeKind,
   GatewayDirection,
   MessageChannelKind,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -186,7 +185,7 @@ test("admits a Message Start only as the single zero-to-one graph root", () => {
   assert.notEqual(
     resolveAdmittedCheckedProcessGraph(
       withRootOwnership([messageStart, task, end], linearFlows),
-      SemanticCheckpointProfileId.MessageStart,
+      SemanticProfileId.MessageStart,
     ),
     undefined,
   );
@@ -198,7 +197,7 @@ test("admits a Message Start only as the single zero-to-one graph root", () => {
   assert.equal(
     resolveAdmittedCheckedProcessGraph(
       withRootOwnership([messageStart, task, end], incomingStart),
-      SemanticCheckpointProfileId.MessageStart,
+      SemanticProfileId.MessageStart,
     ),
     undefined,
   );
@@ -216,7 +215,7 @@ test("admits a Message Start only as the single zero-to-one graph root", () => {
   assert.equal(
     resolveAdmittedCheckedProcessGraph(
       withRootOwnership(mixedStarts, mixedFlows),
-      SemanticCheckpointProfileId.MessageStart,
+      SemanticProfileId.MessageStart,
     ),
     undefined,
   );
