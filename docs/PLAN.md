@@ -117,13 +117,15 @@ Ordered by the milestone that first needs it, not by size. Each is absent today 
 
 E1 and E2 are material engine changes and each takes its own governed cycle. The follow-up extensions in [the extensions research](research/HIGH-PRIORITY-BPMN-EXTENSIONS-RESEARCH.md) — multi-instance, Event Sub-Process, and further boundary-event loci — sit behind M5 and are not in this ladder.
 
-### Decided-fixture cost review, scheduled before compositional admission
+### Decided-fixture cost review, completed before compositional admission
 
-Run this review before M2 begins, not after its gate turns red.
+**Completed 2026-08-10.** This is a Lean build-cost result only. Lean is assurance tooling and is absent from the engine and platform runtime dependency graphs.
 
 Every kernel-decided fixture re-reduces the dispatcher branches it passes through, so a change that adds a branch to `fireTimer` or a sibling is re-paid by each such fixture, and the cost grows with the fixture count rather than with the change. Compositional admission with cycles touches admission, which nearly every fixture reduces through. [CLAUDE.md](../CLAUDE.md#code-hygiene-and-module-boundaries) already requires measuring resident memory alongside CPU and building one narrow target before a full build; this repository has twice reverted conversions whose builds had to be killed for exhausting host memory.
 
-The review measures the current Lean gate's peak resident memory and CPU against the thread pin, identifies which decided fixtures dominate, and decides whether M2 lands as-is, behind a fixture restatement, or behind a lane split. It is a measurement, not a design change, and it closes with a recorded number.
+The measurement used the exact pinned Lean `4.31.0` Linux aarch64 toolchain, `LEAN_NUM_THREADS=1`, one container CPU, no swap, and a hard cgroup memory ceiling. Before the split, isolated `SemanticProcessConformance` compilation completed under a 3.4 GiB ceiling in 23.146 seconds with 21.656 user seconds, 1.090 system seconds, and 3,319,264 KiB maximum resident memory; the same module was killed with exit 137 under a 3 GiB ceiling. The profiler reached 13.08 seconds after the checked-process, program, profile, and definition-binding cluster, versus 21.95 seconds for the complete module. Its largest serial increments were parallel definition binding at 2.50 seconds, parallel program well-formedness at 1.54 seconds, sequential definition binding at 1.46 seconds, and Timer/User Task program well-formedness at 1.24 seconds.
+
+**Decision: M2 lands behind a proof-lane split, without fixture restatement.** The unchanged admission, profile, binding, and lowering theorems now compile in `SemanticProcessAdmissionConformance` independently from runtime closure and evaluator checks. Under the original 3 GiB ceiling, the admission lane completed in 16.557 seconds with 15.261 user seconds, 1.142 system seconds, and 2,682,840 KiB maximum resident memory; the runtime lane completed in 7.316 seconds with 7.067 user seconds, 0.159 system seconds, and 1,921,416 KiB maximum resident memory. The split preserves every proposition and reduces the measured peak by 19.2%. M2 may now open, but its first Lean change must build the admission lane narrowly under the same ceiling before any complete gate.
 
 ### A12 dispositions
 
@@ -140,8 +142,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: run the decided-fixture cost review before M2.** Measure the current Lean gate's peak resident memory and CPU against the thread pin, identify the fixtures that dominate admission reduction, and record whether compositional admission can land as-is or first needs a fixture restatement or lane split.
-2. **Then: open M2 compositional admission.** After the cost review, begin the cycles account and select the first M2 capsule by reusable Process Execution leverage, using CIB breadth and A12 prevalence only to order equal-value candidates.
+1. **Next: open M2 compositional admission.** Begin the cycles account and select the first M2 capsule by reusable Process Execution leverage, using CIB breadth and A12 prevalence only to order equal-value candidates. Keep the decided-fixture admission lane under the recorded build ceiling.
 
 ## Approved decisions
 
@@ -246,11 +247,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: run ordered-work item 1, the decided-fixture cost review scheduled before M2.** M1 is closed through the public API and UI over real Temporal hosting. The measurement must use the configured Lean thread pin, record peak resident memory and CPU, identify which decided fixtures dominate admission reduction, and decide whether M2 compositional admission proceeds as-is or first needs a fixture restatement or lane split. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
+**Next action: open the M2 compositional-admission proposal.** The mandatory decided-fixture review is closed by the proof-lane split and its recorded CPU and resident-memory figures. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
 
 **No owner blocker.** The owner approved the concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout on 2026-08-10.
 
-**Last verified commands:** the complete platform M1 gate passed in 14.53 seconds, the registered M1 showcase passed in 9.11 seconds, the infrastructure gate passed 218/218 in 37.25 seconds, and the complete engine verifier passed in 168.76 seconds on 2026-08-10. The showcase admits and renders runtime-created third-party source, advances changed source to version 2, starts selected version 1 through the concrete Temporal client while the production Worker polls the same Task Queue, and rejects an unsupported element without advancing the catalog.
+**Last verified commands:** the complete platform M1 gate passed in 14.53 seconds, the registered M1 showcase passed in 9.11 seconds, the infrastructure gate passed 218/218 in 37.25 seconds, and the complete engine verifier passed in 168.76 seconds on 2026-08-10. The bounded pre-M2 Lean measurements passed both split lanes under 3 GiB at 2,682,840 KiB and 1,921,416 KiB maximum RSS respectively. The showcase admits and renders runtime-created third-party source, advances changed source to version 2, starts selected version 1 through the concrete Temporal client while the production Worker polls the same Task Queue, and rejects an unsupported element without advancing the catalog.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 
