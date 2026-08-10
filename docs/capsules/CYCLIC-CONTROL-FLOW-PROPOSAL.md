@@ -292,6 +292,9 @@ The corrected identity-only checked representation was used to enumerate the com
 | [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 314 | Validate merge place references, distinctness, producer/consumer ownership, and the selected graph policy. |
 | [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 308 | Classify `mergeExclusive` exhaustively as exposing no public task, Message, timer, or effect wait. |
 | [Lean transition dispatcher](../../BpmnSemantics/SemanticProcess/Transition.lean) | 303 | Add one exhaustive transition arm delegating to the cohesive cyclic-control-flow relation. |
+| [Lean checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 437 | Explicitly reject `ExclusiveMerge` so the frozen experiment surface does not acquire production cycle support. |
+| [Lean checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 301 | Classify `ExclusiveMerge` as disabled so the frozen experiment does not gain an unreviewed transition. |
+| [Lean checked-source graph experiment](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) | 518 | Explicitly reject `ExclusiveMerge` in the frozen experiment's arity predicate. |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 401 | Classify `MergeExclusive` as passive so the host adds no scheduler, wait, or token-split capability. |
 | [Temporal Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | No production change is planned. Any required growth must first extract trace or ledger lifecycle ownership instead of crossing 600. |
 
