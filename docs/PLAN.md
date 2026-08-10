@@ -142,7 +142,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: close review and approve the M2 cyclic-control-flow proposal.** The context-cold review of immutable proposal target `31dd294` approved the normative account with required proposal edits. The owner authorized a third warm audit after the two-round automatic bound; submit immutable correction target `d1173b1` to the same reviewer, then stop for owner approval before implementation if the audit closes. The corrected draft selects one root-scope User Task Sequence Flow cycle, identity-only Exclusive Merge derived from checked Sequence Flows, and profile-gated resumption-cut admission. Keep the decided-fixture admission lane under the recorded build ceiling.
+1. **Next: close review and approve the M2 cyclic-control-flow proposal.** The context-cold review of immutable proposal target `31dd294` approved the normative account with required proposal edits. The owner authorized a fourth warm audit after the third audit found three maintained experiment consumers; submit immutable correction target `d5e221e` to the same reviewer, then stop for owner approval before implementation if the audit closes. The corrected draft selects one root-scope User Task Sequence Flow cycle, identity-only Exclusive Merge derived from checked Sequence Flows, and profile-gated resumption-cut admission. Keep the decided-fixture admission lane under the recorded build ceiling.
 
 ## Approved decisions
 
@@ -247,7 +247,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit immutable correction target `d1173b1` of the [resumption-bounded cyclic control flow proposal](capsules/CYCLIC-CONTROL-FLOW-PROPOSAL.md) to the same context-cold reviewer for the owner-authorized third warm audit.** The target adds the four residual exhaustive consumers found in the second audit of `0d9409e`; it adds no implementation and does not widen the selected one-root-scope, one-token User Task cycle. If the audit closes, stop for owner approval before implementation. The mandatory decided-fixture review is closed by the proof-lane split and its recorded CPU and resident-memory figures. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
+**Next action: submit immutable correction target `d5e221e` of the [resumption-bounded cyclic control flow proposal](capsules/CYCLIC-CONTROL-FLOW-PROPOSAL.md) to the same context-cold reviewer for the owner-authorized fourth warm audit.** The target adds the three residual maintained Lean experiment consumers found in the third audit of `d1173b1`; it adds no implementation and does not widen the selected one-root-scope, one-token User Task cycle. If the audit closes, stop for owner approval before implementation. The mandatory decided-fixture review is closed by the proof-lane split and its recorded CPU and resident-memory figures. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
 
 **No owner blocker.** The owner approved the concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout on 2026-08-10.
 
