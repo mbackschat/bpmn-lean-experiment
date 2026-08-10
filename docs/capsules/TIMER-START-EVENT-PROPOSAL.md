@@ -32,7 +32,7 @@ BPMN 2.0.2 is the semantic authority for this standards-only capsule.
 
 - Clause 10.5.2 states that each Start Event occurrence generates a new Process instance, that a Start Event has no incoming Sequence Flow, and that triggering it produces one token on each outgoing Sequence Flow.
 - Clause 10.5.2 and Table 10.84 define Timer Start as a Process trigger at a specific time or on a recurring schedule.
-- Clause 10.5.6 and Table 10.101 define mutually exclusive `timeDate`, `timeCycle`, and `timeDuration` TimerEventDefinition forms.
+- Clause 10.5.5 and Table 10.101 define mutually exclusive `timeDate`, `timeCycle`, and `timeDuration` TimerEventDefinition forms.
 - Clause 13.2 retains the Process token and completion account after the Start Event produces outgoing control.
 - Clause 13.5.1 owns the Process-level Start Event execution context.
 
@@ -42,7 +42,7 @@ The standard permits time-date and cycle expressions, multiple Start Events, mul
 
 The proposal adds `BPMN-TIMER-START-01` to the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md). It remains `unsupported` until implementation and closure evidence graduate this proposal.
 
-- Ledger citation lock for `BPMN-TIMER-START-01`: Clauses 10.5.2, 10.5.6, 13.2, and 13.5.1 plus Tables 10.84 and 10.101
+- Ledger citation lock for `BPMN-TIMER-START-01`: Clauses 10.5.2, 10.5.5, 13.2, and 13.5.1 plus Tables 10.84 and 10.101
 
 ## Selected account and rejected alternatives
 
@@ -96,7 +96,7 @@ type CheckedTimerStartEvent = DeepReadonly<{
 }>;
 ```
 
-The source owner extracts exact `PT1S` TimerEventDefinition admission into one cohesive projector shared by Intermediate Catch Timer, the existing Timer Boundary Event readers, and Timer Start. Placement, arity, interruption, and event kind remain caller-specific. Raw moddle objects stay inside `@bpmn-lean/bpmn-source`.
+The existing source readers keep their caller-specific TimerEventDefinition contracts. Timer Start and Intermediate Catch Timer require `timeDuration` to be a `FormalExpression`; the Timer Boundary Event readers intentionally accept the modelled `Expression` value produced when `xsi:type` is absent. The implementation may share only a scalar exact-`PT1S` body predicate after each caller has applied its own expression-subtype, placement, arity, interruption, and event-kind rules. It must not replace those policies with one raw-moddle projector. Raw moddle objects stay inside `@bpmn-lean/bpmn-source`.
 
 The node lowers to a separate operation:
 
@@ -152,6 +152,7 @@ Canonical observation publishes the existing Process status, root-owned control 
 | `TSTART-REFUSE-01` | Wrong start kind, Process ID, Start Event ID, profile, root binding, timer definition, or non-`notStarted` state rejects and returns the exact input runtime state by identity. |
 | `TSTART-INSTANCE-01` | Two separately admitted occurrences with distinct semantic instance IDs create distinct root scope occurrences and cannot alias one Process instance. |
 | `TSTART-OBSERVE-01` | After initiation and internal closure, the representative Timer Start program exposes the same downstream User Task and empty Process-variable observation as corresponding None and Message Start programs after identity normalization. |
+| `TSTART-CLOSURE-01` | The representative committed start has exactly two internal steps, `initiateTimer` then `awaitUserTask`; limit `2` reaches the stable User Task wait, limit `1` reports exact overflow, every intermediate state has exactly one enabled internal operation, and the stable running state exposes that User Task as its resumption surface. |
 | `TSTART-SCHEDULE-01` | The host may resolve the selected `PT1S` timer through a one-action Temporal Schedule whose action carries the exact compiled program and resolved stimulus, but schedule state and timing policy are not semantic state and cannot alter the committed semantic result. |
 
 `TSTART-TRIGGER-01` and `TSTART-FLOW-01` are vendor-neutral BPMN rules. `TSTART-SCHEDULE-01` is a refinement constraint, not BPMN meaning.
@@ -200,7 +201,7 @@ Delivery and deduplication are host facts. The semantic command identity include
 
 The relation preserved by hosting equates the admitted input and resulting public semantic state with direct semantic-core execution. Temporal Schedule description is evidence that the start was service-scheduled, not a semantic observation. Schedule service state is not reconstructed from Workflow Event History.
 
-The host mutation changes the scheduled action's exact Start Event or compiled program identity while preserving the due occurrence. The witness must detect the resulting pre-start rejection or definition-identity disagreement. A timing mutation that invokes direct Workflow start before the Schedule action must be detected by the absence of the expected Schedule action and history ordering.
+Pre-Schedule admission and post-Schedule action integrity are distinct boundaries. A wrong Process or Start Event supplied before Schedule creation must create neither Schedule nor Workflow. Once the service has stored a `startWorkflow` action, the project has no pre-Workflow callback: a test-owned mutation of that stored action may create one Workflow, after which the witness must observe either exact semantic rejection for a mismatched trigger or exact definition-identity disagreement for a coherently replaced program. A timing mutation that invokes direct Workflow start instead of the Schedule action must be detected by the absent Schedule action and history ordering.
 
 ## Definition scheduling boundary
 
@@ -222,6 +223,7 @@ The later Product 2 increment owns schedule persistence, API shape, idempotency 
 | `TSTART-REFUSE-01` | Cross-kind profile boundary | Exhaustive refusal theorems | Exhaustive refusal tests | Pre-start fake-client and live wrong-kind checks | Every identity and state component varied independently |
 | `TSTART-INSTANCE-01` | Each trigger creates a new instance | Distinct root-occurrence theorem | Distinct state witness | Distinct Workflow IDs in isolated runs | Instance-ID alias mutation |
 | `TSTART-OBSERVE-01` | Same downstream Process behavior | Complete normalized observation equality | Independently normalized observation equality | Canonical stable and terminal states | Timer-state leak mutation |
+| `TSTART-CLOSURE-01` | Finite selected profile | Exact two-step trace, limit 2/1, unique enabledness, stable wait | Independent trace, overflow, enabledness, and resumption checks | Stable User Task Query after start | Skip initiation, extra enabled operation, and hidden stable-wait mutations |
 | `TSTART-SCHEDULE-01` | No host-policy claim | Not applicable to semantic transition | Direct core result is the reference | One-action Schedule, exact program input, Worker absence, history inspection, replay | Direct-start-before-action and scheduled-program-identity mutations |
 
 The registered scenario is standards-only, answer-free, and has `cib: null`. Its first stimulus is the resolved Timer Start occurrence followed by one User Task completion. Differential evidence compares Lean, TypeScript, and Temporal; it makes no CIB compatibility claim.
@@ -318,6 +320,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 376 | Add exact Timer Start identity and duration. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 219 | Add one timer-bound initiation operation. |
 | [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 320 | Delegate one exhaustive arm to a cohesive Timer-start owner. |
+| [Message Start semantic owner](../../packages/semantic-core/src/semantic-process-message-start.ts) | 396 | Extract only genuinely common root-token mechanics while preserving channel-specific admission and cross-kind refusal. |
 | [Semantic Process admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 257 | Keep exact cross-kind start pairing fail closed. |
 | [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 145 | Validate duration and canonical nonempty outputs; extract first if the fresh measurement would cross 600. |
 | [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 112 | Recognize the new root operation under existing finite graph laws; extract first if needed. |
@@ -328,8 +331,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [scenario admission](../../packages/semantic-core/src/scenario.ts) | 203 | Admit Timer Start only as the first stimulus. |
 | [root-definition selection](../../packages/bpmn-source/src/root-definition-selection.ts) | 341 | Select the exact Timer Start root without changing other dispatch paths. |
 | [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 335 | Register one Timer Start projection shape. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 221 | Dispatch through a cohesive shared exact-timer-definition owner. |
-| [Timer Boundary Event source](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 493 | Reuse the extracted exact-timer-definition projector without changing placement or interruption rules. |
+| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 221 | Add Timer Start while retaining its FormalExpression rule; share at most the exact scalar body predicate. |
 | [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 284 | Recognize Timer Start as a root `0 -> 1` node. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 66 | Extract Timer Start lowering rather than adding another independent responsibility to this near-limit owner. |
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 5 | Add only the exhaustive `initiateTimer` delegation while keeping this owner at or below 600. |
@@ -357,6 +359,8 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 302 | Validate generic nonempty outputs and root ownership. |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 177 | Add outputs, scope ownership, and reachability. |
 | [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean) | 286 | Delegate one exhaustive arm to a cohesive Timer-start relation. |
+| [Lean Message Start admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 550 | Extract or specialize shared start-family pairing without weakening exact Message-channel admission. |
+| [Lean Message Start semantics](../../BpmnSemantics/SemanticProcess/MessageStart.lean) | 487 | Share only root-occurrence and output-token mechanics while retaining the complete Message-specific relation. |
 | [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 52 | Add no proofs here; extract or add only exhaustive dispatch/imports. |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 83 | Put Timer Start lowering in a new cohesive owner if fresh growth approaches 600. |
 | [Lean scenario admission](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 290 | Enforce exact first-stimulus/program pairing. |
@@ -386,6 +390,7 @@ Existing focused test owners also change where their inventories widen:
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 156 | Register the exact projector in the closed consumer matrix. |
 | [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 386 | Lock `0 -> 1`, root placement, reachability, and cross-kind start closure. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 125 | Reject origin, duration, and output drift. |
+| [Message Start schema contract](../../scripts/message-start-contract-schema.test.ts) | 445 | Widen the existing closed Process-start union assertion from two exact variants to three. |
 | [command identity](../../packages/temporal-adapter/testkit/test/command-identity.test.ts) | 362 | Lock every trigger field. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 63 | Add only the exact Timer-start passive-host cases or extract a cohesive start-family characterization before crossing 600. |
 | [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 451 | Construct the correct start arm for every registered example. |
@@ -407,6 +412,7 @@ The profile, scenario, BPMN fixture, and runnable example are one atomic registr
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind checked Start Event origin/duration/outputs to the lowered operation. |
 | [projected keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Close the shared projection consumer inventory. |
 | [frozen cyclic baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation.test.ts) | Preserve every pre-M2 source, profile, checked, IL, and registry-origin value. |
+| [Activity boundary Timer source](../../packages/bpmn-source/test/activity-boundary-timer-source.test.ts), [Sub-Process boundary Timer source](../../packages/bpmn-source/test/subprocess-boundary-timer-source.test.ts), and [non-interrupting boundary Timer source](../../packages/bpmn-source/test/non-interrupting-boundary-timer-source.test.ts) | Preserve admission when `xsi:type` is absent and moddle supplies a generic `Expression`, while Timer Start independently requires FormalExpression. |
 | [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts), and [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Land profile, scenario, example, targets, and ordered inventories atomically. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | Admit the passive User Task wait and reject unsupported host shapes before start. |
 | [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts) | Keep Schedule/client, Workflow, Worker, runner, and testkit dependencies in owned packages. |
@@ -425,7 +431,7 @@ Closure may establish only one exact top-level `PT1S` Timer Start profile, its i
 
 The nearest realistic counterexample is an active recurring schedule whose bound definition receives a newer deployed version. A resolver that silently switches to latest changes the executable program without changing the schedule identity. The selected exact-version boundary makes that behavior rejectable later instead of treating it as an implementation detail.
 
-Meaningful mutations are: treat Timer Start as manual start; compare no Start Event ID; normalize a non-`PT1S` expression; lower a stale output; open a runtime Timer; invoke Workflow start directly before the Schedule action; silently select latest definition; leak Schedule ID into observation; and omit one atomic registration. Each must reach a public, semantic, artifact, or durable-host discriminator.
+Meaningful mutations are: treat Timer Start as manual start; compare no Start Event ID; normalize a non-`PT1S` expression; impose Timer Start's FormalExpression rule on an existing boundary reader; lower a stale output; open a runtime Timer; invoke Workflow start directly instead of the Schedule action; mutate the stored action after pre-Schedule admission; leak Schedule ID into observation; and omit one atomic registration. Each must reach a public, semantic, artifact, or durable-host discriminator.
 
 At closure, [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) records commit-bounded code and documentation churn against Message Start Event, the nearest completed increment that changed checked source, start IL, Lean, TypeScript, strict wires, registered evidence, and Temporal Workflow-start hosting.
 
