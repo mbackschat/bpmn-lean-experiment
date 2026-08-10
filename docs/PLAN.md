@@ -145,7 +145,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: complete independent cold proposal review for Timer Start Event.** M2 selection resumed and chose the exact top-level `PT1S` Timer Start account in the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md). Do not implement it before a cold proposal review closes and the owner approves the reviewed account.
+1. **Next: complete independent cold proposal review for Timer Start Event.** Submit immutable proposal target `6caa92b` for review. M2 selection resumed and chose the exact top-level `PT1S` Timer Start account in the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md). Do not implement it before a cold proposal review closes and the owner approves the reviewed account.
 
 ## Approved decisions
 
@@ -250,7 +250,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit the committed [Timer Start Event proposal](capsules/TIMER-START-EVENT-PROPOSAL.md) for independent cold proposal review.** M2 selection resumed and chose the exact top-level `PT1S` Timer Start account. Implementation remains prohibited until the review closes and the owner approves the reviewed account.
+**Next action: submit immutable target `6caa92b` of the [Timer Start Event proposal](capsules/TIMER-START-EVENT-PROPOSAL.md) for independent cold proposal review.** M2 selection resumed and chose the exact top-level `PT1S` Timer Start account. Implementation remains prohibited until the review closes and the owner approves the reviewed account.
 
 **No technical or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
