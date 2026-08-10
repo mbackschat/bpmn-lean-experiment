@@ -5,7 +5,7 @@
  * because the server decides what a Workflow activation contains. That control is what makes a
  * shared-activation race observable at all.
  *
- * Everything here is a property of the pinned `@temporalio/worker` 1.21.0 layout: the VM creator,
+ * Everything here is a property of the manifest-pinned `@temporalio/worker` layout: the VM creator,
  * the `WorkflowInfo` shape, and the timestamp encoding are reached through the installed tree rather
  * than reconstructed, so an SDK change surfaces as a load failure instead of a silently wrong
  * activation envelope.

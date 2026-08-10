@@ -58,6 +58,18 @@ test("pins the repository-local virtual store in ordinary and CI execution", asy
   );
 });
 
+test("does not carry release-age exceptions when release-age protection is disabled", async () => {
+  const environment = pnpmEnvironment("true");
+  assert.equal(
+    await runPnpm(["config", "get", "minimumReleaseAge"], environment),
+    "undefined",
+  );
+  assert.equal(
+    await runPnpm(["config", "get", "minimumReleaseAgeExclude"], environment),
+    "undefined",
+  );
+});
+
 test("disables pnpm CLI self-switching for version discovery and dispatch", async (context) => {
   // The stub must satisfy the wrapper's exact version check, so it answers with the
   // pin resolved from package.json rather than a literal that a bump would strand.

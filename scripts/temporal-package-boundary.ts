@@ -314,9 +314,10 @@ function assessDependencies(
     }
   }
   for (const dependencyName of policy.requiredSdkDependencies) {
-    if (dependencies[dependencyName] !== "1.21.0") {
+    const declaredVersion = dependencies[dependencyName];
+    if (typeof declaredVersion !== "string" || declaredVersion.length === 0) {
       findings.push(
-        `${relative(repositoryRoot, manifestPath)}: missing pinned SDK dependency ${dependencyName}@1.21.0`,
+        `${relative(repositoryRoot, manifestPath)}: missing required SDK dependency ${dependencyName}`,
       );
     }
   }

@@ -66,21 +66,21 @@ hash_file() {
   fi
 }
 
+report_dependency_owner() {
+  owner_path=$1
+  if ! test -f "$project_root/$owner_path"; then
+    echo "DOCTOR_FAIL dependency owner is absent: $owner_path" >&2
+    doctor_failed=1
+  elif test -n "$hash_command"; then
+    echo "DOCTOR_DEPENDENCY_OWNER $owner_path sha256=$(hash_file "$project_root/$owner_path")"
+  fi
+}
+
 for owner_path in \
   .nvmrc \
   .node-version \
-  package.json \
   pnpm-workspace.yaml \
   pnpm-lock.yaml \
-  packages/bpmn-source/package.json \
-  packages/differential/package.json \
-  packages/semantic-core/package.json \
-  packages/temporal-adapter/client/package.json \
-  packages/temporal-adapter/protocol/package.json \
-  packages/temporal-adapter/runner/package.json \
-  packages/temporal-adapter/testkit/package.json \
-  packages/temporal-adapter/worker/package.json \
-  packages/temporal-adapter/workflow/package.json \
   lean-toolchain \
   lakefile.toml \
   lake-manifest.json \
@@ -91,13 +91,49 @@ for owner_path in \
   scripts/workspace-cache.lock \
   docs/reference/bpmn-2.0.2/LOCAL-CORPUS.sha256
 do
-  if ! test -f "$project_root/$owner_path"; then
-    echo "DOCTOR_FAIL dependency owner is absent: $owner_path" >&2
-    doctor_failed=1
-  elif test -n "$hash_command"; then
-    echo "DOCTOR_DEPENDENCY_OWNER $owner_path sha256=$(hash_file "$project_root/$owner_path")"
-  fi
+  report_dependency_owner "$owner_path"
 done
+
+workspace_package_paths=""
+if command -v jq >/dev/null 2>&1; then
+  workspace_package_report=$("$script_dir/pnpm.sh" list --recursive --depth -1 --json 2>/dev/null || true)
+  if ! printf '%s\n' "$workspace_package_report" |
+      jq -e 'type == "array" and length > 0 and all(.[]; (.path | type) == "string")' >/dev/null; then
+    echo "DOCTOR_FAIL pnpm did not report the workspace package graph" >&2
+    doctor_failed=1
+  else
+    workspace_package_paths=$(printf '%s\n' "$workspace_package_report" | jq -r '.[].path' | LC_ALL=C sort)
+  fi
+fi
+
+while IFS= read -r package_path; do
+  test -z "$package_path" && continue
+  case "$package_path" in
+    "$project_root") manifest_path=package.json ;;
+    "$project_root"/*) manifest_path=${package_path#"$project_root"/}/package.json ;;
+    *)
+      echo "DOCTOR_FAIL pnpm reported a package outside the repository: $package_path" >&2
+      doctor_failed=1
+      continue
+      ;;
+  esac
+  report_dependency_owner "$manifest_path"
+done <<EOF
+$workspace_package_paths
+EOF
+
+temporal_sdk_version=""
+if command -v jq >/dev/null 2>&1; then
+  temporal_sdk_version=$(jq -r '.dependencies["@temporalio/testing"] // empty' \
+    "$project_root/packages/temporal-adapter/testkit/package.json")
+  case "$temporal_sdk_version" in
+    ""|*[!0-9A-Za-z._-]*)
+      echo "DOCTOR_FAIL testkit manifest declares no exact safe @temporalio/testing version" >&2
+      doctor_failed=1
+      temporal_sdk_version=""
+      ;;
+  esac
+fi
 
 while IFS="	" read -r source_scope relative_path remote reference revision material_kind; do
   case "$source_scope" in
@@ -137,6 +173,22 @@ while IFS="	" read -r material_role declared_path material_owner; do
   fi
 done < "$cache_lock"
 
+while IFS= read -r package_path; do
+  test -z "$package_path" && continue
+  test "$package_path" = "$project_root" && continue
+  relative_package_path=${package_path#"$project_root"/}
+  material_path="$package_path/dist"
+  declared_path="$relative_package_path/dist"
+  material_owner="$relative_package_path/package.json"
+  if test -e "$material_path"; then
+    echo "DOCTOR_CACHE role=cache status=present sizeKiB=$(cache_size_kib "$material_path") path=$declared_path owner=$material_owner"
+  else
+    echo "DOCTOR_CACHE role=cache status=absent sizeKiB=0 path=$declared_path owner=$material_owner"
+  fi
+done <<EOF
+$workspace_package_paths
+EOF
+
 report_cached_artifact() {
   artifact_label=$1
   artifact_path=$2
@@ -161,9 +213,11 @@ report_cached_artifact() {
 report_cached_artifact \
   "Temporal CLI v1.8.1 platform binary" \
   "$project_root/.cache/temporal-cli/temporal-v1.8.1"
-report_cached_artifact \
-  "Temporal SDK 1.21.0 test-server platform binary" \
-  "$project_root/.cache/temporal-test-server/temporal-test-server-sdk-typescript-1.21.0"
+if test -n "$temporal_sdk_version"; then
+  report_cached_artifact \
+    "Temporal SDK $temporal_sdk_version test-server platform binary" \
+    "$project_root/.cache/temporal-test-server/temporal-test-server-sdk-typescript-$temporal_sdk_version"
+fi
 maven_distribution=$(find "$maven_user_home/wrapper/dists" -type f -name apache-maven-3.8.8-bin.zip -print -quit 2>/dev/null || true)
 if test -n "$maven_distribution"; then
   report_cached_artifact \

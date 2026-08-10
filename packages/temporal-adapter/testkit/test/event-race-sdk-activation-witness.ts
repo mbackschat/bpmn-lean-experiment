@@ -162,11 +162,14 @@ export function assertPinnedSingleBatchSource(source: string): void {
 }
 
 export async function readInstalledPinnedSdkActivationSource(): Promise<string> {
-  const packageJson: unknown = JSON.parse(await readFile(
-    installedWorkerRequire.resolve("@temporalio/worker/package.json"),
-    "utf8",
-  ));
-  assert.equal(installedPackageVersion(packageJson), "1.21.0");
+  const [installedManifest, ownerManifest] = await Promise.all([
+    readJson(installedWorkerRequire.resolve("@temporalio/worker/package.json")),
+    readJson(fileURLToPath(new URL("../package.json", import.meta.url))),
+  ]);
+  assert.equal(
+    installedPackageVersion(installedManifest),
+    declaredDependencyVersion(ownerManifest, "@temporalio/worker"),
+  );
   return readFile(
     installedWorkerRequire.resolve(
       "@temporalio/worker/lib/workflow/vm-shared.js",
@@ -341,9 +344,20 @@ function timerJob(): NonNullable<Activation["jobs"]>[number] {
 }
 
 function installedPackageVersion(value: unknown): string | undefined {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return undefined;
-  }
-  const version = Object.fromEntries(Object.entries(value))["version"];
+  const version = isRecord(value) ? value["version"] : undefined;
   return typeof version === "string" ? version : undefined;
+}
+
+function declaredDependencyVersion(value: unknown, name: string): string | undefined {
+  const dependencies = isRecord(value) ? value["dependencies"] : undefined;
+  const version = isRecord(dependencies) ? dependencies[name] : undefined;
+  return typeof version === "string" ? version : undefined;
+}
+
+async function readJson(filePath: string): Promise<unknown> {
+  return JSON.parse(await readFile(filePath, "utf8")) as unknown;
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }

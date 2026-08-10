@@ -7,6 +7,7 @@ import test from "node:test";
 import { assessTemporalPackageBoundary } from "./temporal-package-boundary.ts";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
+const fixtureSdkVersion = "9.9.9-fixture";
 
 test("keeps Temporal execution environments in separate package closures", async () => {
   assert.deepEqual(await assessTemporalPackageBoundary(repositoryRoot), []);
@@ -43,13 +44,48 @@ test("rejects test-server reachability from the production client", async () => 
     private: true,
     dependencies: {
       "@bpmn-lean/temporal-protocol": "workspace:*",
-      "@temporalio/client": "1.21.0",
-      "@temporalio/testing": "1.21.0",
+      "@temporalio/client": fixtureSdkVersion,
+      "@temporalio/testing": fixtureSdkVersion,
     },
   });
 
   assert.deepEqual(await assessTemporalPackageBoundary(root), [
     "packages/temporal-adapter/client/package.json: forbidden Temporal SDK dependency @temporalio/testing",
+  ]);
+});
+
+test("leaves SDK version resolution to package manifests and the lockfile", async () => {
+  const root = await createValidBoundaryFixture();
+  await writeManifest(
+    path.join(root, "packages", "temporal-adapter", "client", "package.json"),
+    {
+      name: "@bpmn-lean/temporal-client",
+      private: true,
+      dependencies: {
+        "@bpmn-lean/temporal-protocol": "workspace:*",
+        "@temporalio/client": fixtureSdkVersion,
+      },
+    },
+  );
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), []);
+});
+
+test("still requires each execution environment's SDK dependency", async () => {
+  const root = await createValidBoundaryFixture();
+  await writeManifest(
+    path.join(root, "packages", "temporal-adapter", "client", "package.json"),
+    {
+      name: "@bpmn-lean/temporal-client",
+      private: true,
+      dependencies: {
+        "@bpmn-lean/temporal-protocol": "workspace:*",
+      },
+    },
+  );
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-adapter/client/package.json: missing required SDK dependency @temporalio/client",
   ]);
 });
 
@@ -63,7 +99,7 @@ test("permits only the concrete client through the Product 2 engine gateway", as
       dependencies: {
         "@bpmn-lean/temporal-client": "workspace:*",
         "@bpmn-lean/temporal-worker": "workspace:*",
-        "@temporalio/client": "1.21.0",
+        "@temporalio/client": fixtureSdkVersion,
       },
     },
   );
@@ -148,7 +184,7 @@ async function createValidBoundaryFixture(): Promise<string> {
       private: true,
       dependencies: {
         "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@temporalio/client": "1.21.0",
+        "@temporalio/client": fixtureSdkVersion,
       },
     },
     workflow: {
@@ -156,7 +192,7 @@ async function createValidBoundaryFixture(): Promise<string> {
       private: true,
       dependencies: {
         "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@temporalio/workflow": "1.21.0",
+        "@temporalio/workflow": fixtureSdkVersion,
       },
     },
     worker: {
@@ -166,7 +202,7 @@ async function createValidBoundaryFixture(): Promise<string> {
         "@bpmn-lean/temporal-protocol": "workspace:*",
         "@bpmn-lean/temporal-client": "workspace:*",
         "@bpmn-lean/temporal-workflow": "workspace:*",
-        "@temporalio/worker": "1.21.0",
+        "@temporalio/worker": fixtureSdkVersion,
       },
     },
     runner: {
@@ -187,7 +223,7 @@ async function createValidBoundaryFixture(): Promise<string> {
         "@bpmn-lean/temporal-workflow": "workspace:*",
         "@bpmn-lean/temporal-worker": "workspace:*",
         "@bpmn-lean/temporal-runner": "workspace:*",
-        "@temporalio/testing": "1.21.0",
+        "@temporalio/testing": fixtureSdkVersion,
       },
     },
   } as const;

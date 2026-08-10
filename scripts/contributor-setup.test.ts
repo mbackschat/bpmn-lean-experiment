@@ -9,6 +9,32 @@ import { fileURLToPath } from "node:url";
 /** Locks portable contributor bootstrap, diagnostics, and external-source pins. */
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+type WorkspacePackage = Readonly<{
+  path: string;
+}>;
+
+function runProjectCommand(command: string, args: ReadonlyArray<string>): string {
+  const result = spawnSync(command, args, {
+    cwd: projectRoot,
+    encoding: "utf8",
+    timeout: 10_000,
+  });
+  assert.equal(
+    result.status,
+    0,
+    `${command} ${args.join(" ")} failed:\n${result.stdout}${result.stderr}`,
+  );
+  return result.stdout;
+}
+
+function workspacePackagePaths(): ReadonlyArray<string> {
+  const packages = JSON.parse(runProjectCommand(
+    "./scripts/pnpm.sh",
+    ["list", "--recursive", "--depth", "-1", "--json"],
+  )) as ReadonlyArray<WorkspacePackage>;
+  return packages.map(({ path: packagePath }) => packagePath);
+}
+
 type LockedSource = Readonly<{
   scope: string;
   relativePath: string;
@@ -186,7 +212,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     devDependencies?: Record<string, string>;
   };
   assert.equal(webManifest.dependencies?.["@playwright/test"], undefined);
-  assert.equal(webManifest.devDependencies?.["@playwright/test"], "1.62.1");
+  assert.match(webManifest.devDependencies?.["@playwright/test"] ?? "", /^\d+\.\d+\.\d+$/u);
   assert.match(
     mavenWrapperProperties,
     /^distributionSha256Sum=2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a$/mu,
@@ -194,18 +220,8 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   for (const dependencyOwner of [
     ".nvmrc",
     ".node-version",
-    "package.json",
     "pnpm-workspace.yaml",
     "pnpm-lock.yaml",
-    "packages/bpmn-source/package.json",
-    "packages/differential/package.json",
-    "packages/semantic-core/package.json",
-    "packages/temporal-adapter/client/package.json",
-    "packages/temporal-adapter/protocol/package.json",
-    "packages/temporal-adapter/runner/package.json",
-    "packages/temporal-adapter/testkit/package.json",
-    "packages/temporal-adapter/worker/package.json",
-    "packages/temporal-adapter/workflow/package.json",
     "lean-toolchain",
     "lakefile.toml",
     "lake-manifest.json",
@@ -220,9 +236,9 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   }
   assert.match(caches, /^dependency\tnode_modules\tpnpm-lock\.yaml$/mu);
   assert.match(caches, /^cache\t\.cache\/temporal-cli\tTemporal CLI v1\.8\.1$/mu);
-  assert.match(caches, /^cache\t\.cache\/temporal-test-server\tTemporal SDK 1\.21\.0 test server$/mu);
+  assert.match(caches, /^cache\t\.cache\/temporal-test-server\tTemporal SDK test server selected by packages\/temporal-adapter\/testkit\/package\.json$/mu);
   assert.match(caches, /^external-cache\t\$MAVEN_USER_HOME\/repository\tMaven artifact repository$/mu);
-  assert.match(caches, /^external-cache\t\$PLAYWRIGHT_BROWSERS_PATH\tPlaywright 1\.62\.1 Chromium test browser$/mu);
+  assert.match(caches, /^external-cache\t\$PLAYWRIGHT_BROWSERS_PATH\tPlaywright Chromium test browser selected by platform\/apps\/web\/package\.json$/mu);
   assert.match(doctor, /\$PLAYWRIGHT_BROWSERS_PATH\) material_path="\$playwright_browsers_path"/u);
   assert.deepEqual(
     caches.split("\n")
@@ -238,15 +254,6 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       ".cache/temporal-cli",
       ".cache/temporal-test-server",
       "runners/cibseven/target",
-      "packages/bpmn-source/dist",
-      "packages/differential/dist",
-      "packages/semantic-core/dist",
-      "packages/temporal-adapter/client/dist",
-      "packages/temporal-adapter/protocol/dist",
-      "packages/temporal-adapter/runner/dist",
-      "packages/temporal-adapter/testkit/dist",
-      "packages/temporal-adapter/worker/dist",
-      "packages/temporal-adapter/workflow/dist",
       "$MAVEN_USER_HOME/repository",
       "$MAVEN_USER_HOME/wrapper/dists",
       "$PLAYWRIGHT_BROWSERS_PATH",
@@ -254,6 +261,29 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       "$BPMN_EXTERNAL_ROOT/omg-bpmn-2.0.2/BPMN-2_0_2_images",
     ],
   );
+});
+
+test("doctor derives every workspace dependency owner and build cache from pnpm", () => {
+  const doctorOutput = runProjectCommand("./scripts/doctor.sh", ["verify"]);
+  const reportedOwners = new Set(
+    [...doctorOutput.matchAll(/^DOCTOR_DEPENDENCY_OWNER (?<path>.+) sha256=/gmu)]
+      .flatMap((match) => match.groups?.path === undefined ? [] : [match.groups.path]),
+  );
+  const reportedCaches = new Set(
+    [...doctorOutput.matchAll(/^DOCTOR_CACHE .+ path=(?<path>\S+) owner=/gmu)]
+      .flatMap((match) => match.groups?.path === undefined ? [] : [match.groups.path]),
+  );
+
+  for (const packagePath of workspacePackagePaths()) {
+    const relativePackagePath = path.relative(projectRoot, packagePath);
+    const manifestPath = relativePackagePath.length === 0
+      ? "package.json"
+      : `${relativePackagePath}/package.json`;
+    assert.ok(reportedOwners.has(manifestPath), manifestPath);
+    if (relativePackagePath.length > 0) {
+      assert.ok(reportedCaches.has(`${relativePackagePath}/dist`), relativePackagePath);
+    }
+  }
 });
 
 test("external evidence consumers fail closed and honor the shared root", async () => {

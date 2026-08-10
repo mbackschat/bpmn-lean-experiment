@@ -439,7 +439,7 @@ Bounded checked-source relation experiment gate:
 ./scripts/lake.sh exe checkCheckedSourceRelationExperiment
 ```
 
-For every JavaScript or TypeScript test/build, follow the global long-running-command policy and the gate definitions in [TESTING-SPEC.md](docs/TESTING-SPEC.md). Use pnpm, not npm. The adapter keeps strict checking for project source but sets `skipLibCheck: true` because the pinned Temporal 1.21.0 declarations do not type-check under TypeScript 7.0.2; do not broaden that workaround to the semantic core.
+For every JavaScript or TypeScript test/build, follow the global long-running-command policy and the gate definitions in [TESTING-SPEC.md](docs/TESTING-SPEC.md). Use pnpm, not npm. The adapter keeps strict checking for project source but sets `skipLibCheck: true` because the manifest-pinned Temporal declarations do not type-check under TypeScript 7.0.2; do not broaden that workaround to the semantic core.
 
 Always run:
 
