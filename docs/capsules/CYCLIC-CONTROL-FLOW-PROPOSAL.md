@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-10 after renewed independent review; cold semantic-checkpoint target `cef8958` received `approve-with-required-edits`, and its bounded correction must pass the same reviewer's warm audit before profile/scenario, differential, product-example, or live Temporal evidence work begins.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim evidence-closed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Owner-approved on 2026-08-10 after renewed independent review; cold semantic-checkpoint target `cef8958` received `approve-with-required-edits`, and the same reviewer's first warm audit of correction `6ddb788` retained one proof-closure finding plus immutable-target gate binding. A second bounded correction and warm audit remain required before profile/scenario, differential, product-example, or live Temporal evidence work begins.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim evidence-closed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
@@ -293,6 +293,10 @@ The corrected identity-only checked representation was used to enumerate the com
 | [Lean checked-graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 474 | Recognize the new checked-node identity and replace unconditional checked-graph acyclicity only through the selected profile graph policy. |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 183 | The cut predicate and material path/cycle representation are cohesive graph validation and have sufficient measured headroom. |
 | [Lean graph reachability laws](../../BpmnSemantics/SemanticProcess/GraphReachabilityLaws.lean) | 430 | Connect a material directed path and cycle to saturation-certified acyclicity so the selected cut theorem states its full-graph implication. |
+| [Lean representative cyclic execution conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowExecutionConformance.lean) | 388 | Retain only exact representative start, repeat, rework, and exit schedules plus the material cut-cycle facts. |
+| [Lean cyclic reachability conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowReachabilityConformance.lean) | 56 | Own actual reflexive-transitive reachability over exact admission, evaluator steps, and empty, null, or string completion patches plus the active-unit invariants. |
+| [Lean cyclic step-completeness conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowStepCompletenessConformance.lean) | 305 | Prove that every successful evaluator step from an actually reachable selected state belongs to the classified internal-action relation. |
+| [Lean cyclic automatic-closure conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowClosureConformance.lean) | 179 | Derive retained cut edges, resulting reachability, no repeated operation, and the six-operation bound from raw evaluator traces that begin in an actually reachable state. |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 106 | Derive merge endpoints only from checked Sequence Flow endpoints and prove the exact cut correspondence. |
 | [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 306 | Admit the new checked node and operation only through the new exact profile capability, including its exact-three merge payload. |
 | [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 306 | Validate generic canonical nonempty distinct merge place references and producer/consumer ownership without profile-specific arity. |
