@@ -265,7 +265,9 @@ Existing serialized checked nodes, operations, identities, stimuli, runtime stat
 
 ### Owners this implementation grows
 
-The corrected identity-only checked representation was used to enumerate the complete existing owner set that implementation must change. `node scripts/what-binds.ts` produced these current figures at baseline `7529150` for `checked-process-contract.ts`, `checked-element-projection.ts`, `checked-process-admission.ts`, `semantic-process-lowering.ts`, `semantic-process-contract.ts`, `semantic-process-profile.ts`, `semantic-process-operation-admission.ts`, `semantic-process-graph-admission.ts`, `semantic-process-runtime.ts`, `SemanticProcessContract.lean`, `GraphValidation.lean`, and `workflow-implementation.ts`:
+The corrected identity-only checked representation was used to enumerate the complete existing change set. Two non-source contract artifacts must change: the strict [checked-process JSON Schema](../../contracts/schemas/checked-process.schema.json) gains the identity-only checked-node union branch, and the strict [Semantic Process JSON Schema](../../contracts/schemas/semantic-process.schema.json) gains the `mergeExclusive` operation branch. They are part of the planned `what-binds` path set but are outside the mechanically measured source-owner table because JSON contract artifacts have no 600-nonblank-line source headroom.
+
+`node scripts/what-binds.ts` produced these current figures at baseline `7529150` for every existing source owner implementation must change:
 
 | Owner | Headroom to 600 nonblank lines | Consequence |
 |---|---:|---|
@@ -273,13 +275,20 @@ The corrected identity-only checked representation was used to enumerate the com
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 255 | Classify the converging Exclusive Gateway and emit identity only; exact endpoint and arity validation remains in admission. |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 52 | The graph-policy and arity work is expected to exceed the remaining headroom, so extract cohesive graph admission before adding semantics. This condition stops applying if a fresh measurement shows at least the complete estimated change plus 20 lines of review headroom. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 | One merge arm may remain only while a fresh measurement keeps the owner at or below 600 and at one lowering responsibility. |
+| [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 37 | Recognize the new operation's exact control-place uses. Grow only while the complete change retains at least 20 lines of review headroom; otherwise extract cohesive operation/place validation first. |
 | [profile capability table](../../packages/semantic-core/src/semantic-process-profile.ts) | 118 | The new profile and graph policy fit only while the fresh post-change owner remains at or below 600; otherwise split checked and program capabilities by their existing two responsibilities. |
 | [Semantic Process operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 176 | Validate distinct merge places, total shape, and profile capability without sharing graph-policy decisions. |
 | [Semantic Process graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 154 | Resumption-cut validation is cohesive graph work and may remain while the owner stays below 600. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 239 | The one new operation alternative fits without extraction. |
 | [Semantic Process runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 249 | Add one exhaustive dispatch arm to the new cohesive transition owner; do not place merge semantics in the dispatcher. |
 | [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 154 | The checked and IL alternatives fit only while the owner remains below 600; a third responsibility is not added. |
+| [Lean checked-process JSON decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 379 | Decode the identity-only checked-node alternative exactly and reject duplicated endpoint fields. |
+| [Lean Semantic Process JSON decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 192 | Decode the exact `mergeExclusive` operation shape and reject missing, extra, duplicated, or malformed places. |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 264 | The cut predicate is cohesive graph validation and has sufficient measured headroom. |
+| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 149 | Derive merge endpoints only from checked Sequence Flow endpoints and prove the exact cut correspondence. |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 339 | Admit the new checked node and operation only through the new exact profile capability. |
+| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 314 | Validate merge place references, distinctness, producer/consumer ownership, and the selected graph policy. |
+| [Lean transition dispatcher](../../BpmnSemantics/SemanticProcess/Transition.lean) | 303 | Add one exhaustive transition arm delegating to the cohesive cyclic-control-flow relation. |
 | [Temporal Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | No production change is planned. Any required growth must first extract trace or ledger lifecycle ownership instead of crossing 600. |
 
 The new transition relation and runtime behavior belong in new cohesive `CyclicControlFlow` owners, not in the contract or graph modules. The checked-source extraction is a separate behavior-preserving commit with its focused gate before Red for the material feature.
@@ -293,15 +302,26 @@ The implementation must enumerate these again with `node scripts/what-binds.ts` 
 | [document reviewability](../../scripts/document-reviewability.test.ts) | Recompute every owner figure and keep this proposal linked from both registries. |
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Both new requirement IDs and capsule citations agree before either row can advance. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) | Both new union alternatives reach exact schema branches and every old branch remains covered. |
+| [contract artifact gates](../../scripts/contract-artifacts.test.ts) and [definition artifact gates](../../scripts/contract-definition-artifacts.test.ts) | The strict schemas, typed projections, control-place references, and exact checked-to-IL correspondence accept the new alternatives and reject endpoint drift. |
+| [CIB observation fidelity](../../scripts/cib-observation-fidelity.test.ts) | The schema widening does not invent a CIB observation or extend any CIB relationship. |
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | The converging Exclusive Gateway projector remains in the mechanically closed production consumer inventory and cannot regain a private source-key allowlist. |
 | [metamodel default admission](../../packages/bpmn-source/test/metamodel-default-admission.test.ts) | Absent and explicit `Unspecified` gateway direction continue to use the pinned BPMN default and topology inference, without a local default override. |
-| [A12 boundary](../../scripts/a12-boundary.test.ts) | No retained A12 decision, source, profile, or adoption branch enters the standards-only profile or semantic owners. The frozen legacy copy of the projected-key test reported by `what-binds` is historical adoption evidence, is not edited, and is not a gate for this non-A12 capsule. |
+| [A12 boundary](../../scripts/a12-boundary.test.ts) and [A12 preservation](../../scripts/a12-preservation.test.ts) | No retained A12 decision, source, profile, or adoption branch enters the standards-only profile or semantic owners. The frozen legacy projected-key and pipeline copies reported by `what-binds` are historical adoption evidence, are not edited, and are not gates for this non-A12 capsule. |
+| [BPMN Error route consistency](../../packages/bpmn-source/test/bpmn-error-route-consistency.test.ts) | The shared artifact consistency owner retains exact existing route/place checks while adding the new operation. |
+| [Semantic Process lowering](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) | Checked Sequence Flow endpoints remain the sole merge-lowering authority, including hostile endpoint and declaration-permutation cases. |
+| [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Existing scenario results remain exact and the new answer-free scenario compares across all declared targets. |
 | [capsule cost](../../scripts/capsule-cost.test.ts) | Closure records the exact commit-bounded code and documentation cost against the named comparison increments. |
+| [BPMN corpus policy](../../scripts/bpmn-corpus-policy.test.ts) | The selected normative clauses and machine-readable artifacts remain pinned and verified. |
 | [contributor setup](../../scripts/contributor-setup.test.ts) | New registered profile, fixture, and package-owned paths remain provisioned by the documented clean-machine setup. |
+| [host interaction plan](../../packages/temporal-adapter/testkit/test/host-interaction-plan.test.ts) | The widened wire contracts do not add a host interaction or bypass the existing content-bound User Task Update. |
+| [web definition API](../../platform/apps/web/test/definitions-api.test.ts), [web distribution](../../platform/apps/web/test/distribution.test.ts), [definition HTTP contracts](../../platform/contracts/test/definitions-http-contract.test.ts), [process-start contracts](../../platform/contracts/test/process-instance-start-contract.test.ts), [definition HTTP routes](../../platform/modules/definitions/test/definition-http-routes.test.ts), and [definition-start routes](../../platform/modules/definitions/test/definition-start-http-routes.test.ts) | The shared contract-tree change does not expose checked graph, IL, or Temporal-private fields through Product 2 APIs. |
 | [Markdown links](../../scripts/markdown-links.test.ts) | Every new owner, registry, requirement, and evidence link resolves. |
+| [normative reference resolution](../../scripts/normative-reference-resolution.test.ts) | Every selected BPMN clause, table, CMOF, and XSD reference resolves against the pinned corpus. |
+| [pinned toolchain](../../scripts/pinned-toolchain.test.ts) | The expanded Lean and contract lanes continue to use only the declared toolchain and cache inputs. |
 | [platform product boundary](../../scripts/platform-product-boundary.test.ts) | The semantic increment remains in Product 1 and exports no private engine state to Product 2. |
 | [pnpm project config](../../scripts/pnpm-project-config.test.ts) | Package ownership and build order remain declared through normal workspace manifests and root scripts. |
 | [pre-release architecture](../../scripts/pre-release-architecture.test.ts) | No exact topology predicate, legacy operation, or compatibility reader enters production. |
+| [run-command policy](../../scripts/run-command.test.ts) | New direct command examples remain bounded, reproducible, and use the repository wrappers. |
 | [source hygiene](../../scripts/source-hygiene.test.ts) | Every hand-written owner stays within its responsibility and the 600-line review target. |
 | [Lean source contracts](../../scripts/lean-source-contracts.test.ts) | New modules carry purpose documents, durable conformance facts have public theorem names, and every tactic-position `decide` uses `+kernel`. |
 | [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Checkpoint and closure packets route every changed semantic owner and retain immutable gate evidence. |
@@ -315,7 +335,7 @@ The implementation must enumerate these again with `node scripts/what-binds.ts` 
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | The cyclic passive-User-Task program is accepted while internal cycles and unselected profiles reject before Workflow start. |
 | [verification entrypoint](../../scripts/verification-entrypoint.test.ts) | The complete gate continues to build generated TypeScript artifacts before directly importing them and runs the narrow Lean lanes through `scripts/lake.sh`. |
 
-The three package registries reported by the same command, [BPMN source](../../packages/bpmn-source/README.md), [semantic core](../../packages/semantic-core/README.md), and [Temporal adapter](../../packages/temporal-adapter/README.md), must describe the resulting boundary when implementation closes. Generic guards that match every package path are named here once rather than repeated for each owner.
+The four registries reported by the expanded command, [shared contracts](../../contracts/README.md), [BPMN source](../../packages/bpmn-source/README.md), [semantic core](../../packages/semantic-core/README.md), and [Temporal adapter](../../packages/temporal-adapter/README.md), must describe the resulting boundary when implementation closes. Generic guards that match every package, contract, script, or Lean path are named here once rather than repeated for each owner.
 
 ## Epistemic closure and cost boundary
 
