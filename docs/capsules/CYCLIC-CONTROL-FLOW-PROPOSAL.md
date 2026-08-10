@@ -284,11 +284,15 @@ The corrected identity-only checked representation was used to enumerate the com
 | [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 154 | The checked and IL alternatives fit only while the owner remains below 600; a third responsibility is not added. |
 | [Lean checked-process JSON decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 379 | Decode the identity-only checked-node alternative exactly and reject duplicated endpoint fields. |
 | [Lean Semantic Process JSON decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 192 | Decode the exact `mergeExclusive` operation shape and reject missing, extra, duplicated, or malformed places. |
+| [Lean checked-process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 302 | Admit the identity-only checked node only at exact `3 -> 1` arity and retain every existing per-node source invariant. |
+| [Lean checked-graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 503 | Recognize the new checked-node identity and replace unconditional checked-graph acyclicity only through the selected profile graph policy. |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 264 | The cut predicate is cohesive graph validation and has sufficient measured headroom. |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 149 | Derive merge endpoints only from checked Sequence Flow endpoints and prove the exact cut correspondence. |
 | [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 339 | Admit the new checked node and operation only through the new exact profile capability. |
 | [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 314 | Validate merge place references, distinctness, producer/consumer ownership, and the selected graph policy. |
+| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 308 | Classify `mergeExclusive` exhaustively as exposing no public task, Message, timer, or effect wait. |
 | [Lean transition dispatcher](../../BpmnSemantics/SemanticProcess/Transition.lean) | 303 | Add one exhaustive transition arm delegating to the cohesive cyclic-control-flow relation. |
+| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 401 | Classify `MergeExclusive` as passive so the host adds no scheduler, wait, or token-split capability. |
 | [Temporal Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | No production change is planned. Any required growth must first extract trace or ledger lifecycle ownership instead of crossing 600. |
 
 The new transition relation and runtime behavior belong in new cohesive `CyclicControlFlow` owners, not in the contract or graph modules. The checked-source extraction is a separate behavior-preserving commit with its focused gate before Red for the material feature.
