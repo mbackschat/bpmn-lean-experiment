@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-10 after renewed independent review; the first semantic checkpoint is implemented and must pass its mandatory context-cold review before profile/scenario, differential, product-example, or live Temporal evidence work begins.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim evidence-closed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Owner-approved on 2026-08-10 after renewed independent review; cold semantic-checkpoint target `cef8958` received `approve-with-required-edits`, and its bounded correction must pass the same reviewer's warm audit before profile/scenario, differential, product-example, or live Temporal evidence work begins.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim evidence-closed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
@@ -73,7 +73,7 @@ The competing accounts are:
 
 ## Exact source profile
 
-One new immutable standards-only profile is registered as `bpmn-2.0.2-user-task-cycle-draft`. It selects one private executable root Process with:
+One new immutable standards-only profile is selected as `bpmn-2.0.2-user-task-cycle-draft`. At the semantic checkpoint its identifier remains in the separate `SemanticCheckpointProfileId` capability catalog, outside the product/artifact-registered `SemanticProfileId` catalog. The later profile artifact, scenario, differential case, product example, and live Temporal evidence register atomically after checkpoint approval. The profile selects one private executable root Process with:
 
 - one None Start Event, one converging Exclusive Gateway, one User Task, one divergent Exclusive Gateway, and one None End Event;
 - six distinct Sequence Flows with exact resolved source and target identities;
@@ -276,25 +276,26 @@ The corrected identity-only checked representation was used to enumerate the com
 |---|---:|---|
 | [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 385 | Add only the identity-only `ExclusiveMerge` union alternative; Sequence Flow endpoints remain the sole checked topology authority. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 228 | Classify the converging Exclusive Gateway and emit identity only; exact endpoint and arity validation remains in admission. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Add only profile mechanism/cardinality and source-shape capability; reusable graph policy remains delegated to the extracted graph owner. |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 241 | Add only profile mechanism/cardinality and source-shape capability; reusable graph policy remains delegated to the extracted graph owner. |
 | [checked-process graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 287 | Add the profile-selected resumption cut beside the existing reusable ownership, reachability, co-reachability, arity, and acyclicity algorithms. |
-| [checked-process graph-admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 447 | Extend the direct owner test with the accepted resumption-crossing cycle and rejected internal-only cycle without moving profile policy into the test. |
+| [checked-process graph-admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 443 | Extend the direct owner test with the accepted resumption-crossing cycle and rejected internal-only cycle without moving profile policy into the test. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 71 | One merge arm may remain only while a fresh measurement keeps the owner at or below 600 and at one lowering responsibility. |
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 23 | Recognize the new operation's exact control-place uses. Grow only while the complete change retains at least 20 lines of review headroom; otherwise extract cohesive operation/place validation first. |
-| [profile capability table](../../packages/semantic-core/src/semantic-process-profile.ts) | 80 | The new profile and graph policy fit only while the fresh post-change owner remains at or below 600; otherwise split checked and program capabilities by their existing two responsibilities. |
+| [profile capability table](../../packages/semantic-core/src/semantic-process-profile.ts) | 72 | The checkpoint capability catalog and exact checked/program capability tables fit only while the fresh post-change owner remains at or below 600; otherwise split checked and program capabilities by their existing two responsibilities. |
 | [Semantic Process operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 150 | Validate distinct merge places, total shape, and profile capability without sharing graph-policy decisions. |
 | [Semantic Process graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 122 | Resumption-cut validation is cohesive graph work and may remain while the owner stays below 600. |
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 231 | The one new operation alternative fits without extraction. |
 | [Semantic Process runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 246 | Add one exhaustive dispatch arm to the new cohesive transition owner; do not place merge semantics in the dispatcher. |
 | [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 146 | The checked and IL alternatives fit only while the owner remains below 600; a third responsibility is not added. |
 | [Lean checked-process JSON decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 376 | Decode the identity-only checked-node alternative exactly and reject duplicated endpoint fields. |
-| [Lean Semantic Process JSON decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 183 | Decode the exact `mergeExclusive` operation shape and reject missing, extra, duplicated, or malformed places. |
+| [Lean Semantic Process JSON decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 179 | Decode the exact `mergeExclusive` operation shape and reject missing, extra, duplicated, or malformed places. |
 | [Lean checked-process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 300 | Admit the identity-only checked node only at exact `3 -> 1` arity and retain every existing per-node source invariant. |
 | [Lean checked-graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 474 | Recognize the new checked-node identity and replace unconditional checked-graph acyclicity only through the selected profile graph policy. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 219 | The cut predicate is cohesive graph validation and has sufficient measured headroom. |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 183 | The cut predicate and material path/cycle representation are cohesive graph validation and have sufficient measured headroom. |
+| [Lean graph reachability laws](../../BpmnSemantics/SemanticProcess/GraphReachabilityLaws.lean) | 430 | Connect a material directed path and cycle to saturation-certified acyclicity so the selected cut theorem states its full-graph implication. |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 106 | Derive merge endpoints only from checked Sequence Flow endpoints and prove the exact cut correspondence. |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 315 | Admit the new checked node and operation only through the new exact profile capability. |
-| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 304 | Validate merge place references, distinctness, producer/consumer ownership, and the selected graph policy. |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 306 | Admit the new checked node and operation only through the new exact profile capability, including its exact-three merge payload. |
+| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 306 | Validate generic canonical nonempty distinct merge place references and producer/consumer ownership without profile-specific arity. |
 | [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 307 | Classify `mergeExclusive` exhaustively as exposing no public task, Message, timer, or effect wait. |
 | [Lean transition dispatcher](../../BpmnSemantics/SemanticProcess/Transition.lean) | 294 | Add one exhaustive transition arm delegating to the cohesive cyclic-control-flow relation. |
 | [Lean checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 435 | Explicitly reject `ExclusiveMerge` so the frozen experiment surface does not acquire production cycle support. |

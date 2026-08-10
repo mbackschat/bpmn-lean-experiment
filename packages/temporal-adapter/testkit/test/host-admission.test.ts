@@ -9,6 +9,7 @@ import {
 import {
   EffectOperation,
   EffectProtocol,
+  SemanticCheckpointProfileId,
   SemanticOperationKind,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
@@ -138,7 +139,7 @@ test("classifies a resumption-bounded Exclusive Merge as passive", async () => {
   const program = await compileFixture(
     "../../../bpmn-source/test/fixtures/cyclic-control-flow.bpmn",
     "cyclic-control-flow-host-admission",
-    "bpmn-2.0.2-user-task-cycle-draft",
+    SemanticCheckpointProfileId.UserTaskCycle,
   );
   assert.ok(
     program.operations.some(

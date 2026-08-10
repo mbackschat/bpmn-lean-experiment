@@ -306,22 +306,47 @@ def cyclicOldProfileProgram : Program :=
         semanticProfile :=
           ⟨"bpmn-2.0.2-simple-boolean-exclusive-gateway-draft"⟩ } }
 
-def cyclicTwoInputMergeProgram : Program :=
+private def genericMergeProgram (branchPlaces : List ControlPlace) : Program :=
+  let entry : ControlPlace :=
+    { id := ⟨"place:Entry"⟩, origin := ⟨⟨"Flow_Entry"⟩⟩ }
+  let mergeReview : ControlPlace :=
+    { id := ⟨"place:Merge_Review"⟩, origin := ⟨⟨"Flow_Merge_Review"⟩⟩ }
+  let reviewEnd : ControlPlace :=
+    { id := ⟨"place:Review_End"⟩, origin := ⟨⟨"Flow_Review_End"⟩⟩ }
+  let places := branchPlaces ++ [entry, mergeReview, reviewEnd]
+  let branchIds := branchPlaces.map (·.id)
+  let operations : List SemanticOperation :=
+    [ .reachNoneEnd ⟨"operation:End"⟩ ⟨⟨"End"⟩⟩ reviewEnd.id
+    , .duplicate ⟨"operation:Fork"⟩ ⟨⟨"Fork"⟩⟩ entry.id branchIds
+    , .mergeExclusive ⟨"operation:Merge"⟩ ⟨⟨"Merge"⟩⟩ branchIds
+        mergeReview.id
+    , .awaitUserTask ⟨"operation:Review"⟩ ⟨⟨"Review"⟩⟩
+        mergeReview.id reviewEnd.id cyclicTask
+    , .initiate ⟨"operation:Start"⟩ ⟨⟨"Start"⟩⟩ entry.id
+    , .completeScope
+        ⟨"operation:complete-scope:scope:Process_CyclicControlFlow"⟩
+        ⟨⟨"Process_CyclicControlFlow"⟩⟩ cyclicScopeId none ]
   { cyclicProgram with
-    operations := cyclicProgram.operations.map fun
-      | .mergeExclusive id origin _ output =>
-          .mergeExclusive id origin
-            [⟨"place:Flow_Repeat"⟩, ⟨"place:Flow_Start"⟩] output
-      | operation => operation }
+    operationScopes := operations.map fun operation =>
+      { operationId := operation.id, scopeId := cyclicScopeId }
+    controlPlaceScopes := places.map fun place =>
+      { controlPlaceId := place.id, scopeId := cyclicScopeId }
+    controlPlaces := places
+    operations }
 
+/-- Structurally complete generic two-input merge graph used to separate IL admission from the selected profile's exact payload. -/
+def cyclicTwoInputMergeProgram : Program :=
+  genericMergeProgram
+    [ { id := ⟨"place:Branch_A"⟩, origin := ⟨⟨"Flow_Branch_A"⟩⟩ }
+    , { id := ⟨"place:Branch_B"⟩, origin := ⟨⟨"Flow_Branch_B"⟩⟩ } ]
+
+/-- Structurally complete generic four-distinct-input merge graph. Every place has exactly one producer and consumer. -/
 def cyclicFourInputMergeProgram : Program :=
-  { cyclicProgram with
-    operations := cyclicProgram.operations.map fun
-      | .mergeExclusive id origin _ output =>
-          .mergeExclusive id origin
-            [⟨"place:Flow_Repeat"⟩, ⟨"place:Flow_Rework"⟩,
-              ⟨"place:Flow_Start"⟩, ⟨"place:Flow_Start"⟩] output
-      | operation => operation }
+  genericMergeProgram
+    [ { id := ⟨"place:Branch_A"⟩, origin := ⟨⟨"Flow_Branch_A"⟩⟩ }
+    , { id := ⟨"place:Branch_B"⟩, origin := ⟨⟨"Flow_Branch_B"⟩⟩ }
+    , { id := ⟨"place:Branch_C"⟩, origin := ⟨⟨"Flow_Branch_C"⟩⟩ }
+    , { id := ⟨"place:Branch_D"⟩, origin := ⟨⟨"Flow_Branch_D"⟩⟩ } ]
 
 def cyclicNestedScopeCheckedProcess : CheckedProcess :=
   { cyclicCheckedProcess with

@@ -42,6 +42,15 @@ export const SemanticProfileId = Object.freeze({
   UserTask: "cibseven-2.2.0-user-task-process-data-draft",
   UserTaskPreservedNotation:
     "bpmn-2.0.2-user-task-preserved-notation-draft",
+} as const);
+
+/**
+ * Semantic capabilities admitted only for the active implementation checkpoint.
+ *
+ * These IDs are deliberately absent from `SemanticProfileId`, whose values are the product and
+ * artifact-registered profile catalog.
+ */
+export const SemanticCheckpointProfileId = Object.freeze({
   UserTaskCycle: "bpmn-2.0.2-user-task-cycle-draft",
 } as const);
 
@@ -71,7 +80,7 @@ function profileAllowsProgramOperationDetails(
   operations: ReadonlyArray<SemanticOperation>,
 ): boolean {
   switch (semanticProfile) {
-    case SemanticProfileId.UserTaskCycle:
+    case SemanticCheckpointProfileId.UserTaskCycle:
       return operations.every(
         (operation) =>
           operation.kind !== SemanticOperationKind.MergeExclusive ||
@@ -173,7 +182,7 @@ function requiredCheckedProcessShape(
         end,
         end,
       ]);
-    case SemanticProfileId.UserTaskCycle:
+    case SemanticCheckpointProfileId.UserTaskCycle:
       return rootChecked([
         start,
         CheckedNodeKind.ExclusiveMerge,
@@ -365,7 +374,7 @@ function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
-    case SemanticProfileId.UserTaskCycle:
+    case SemanticCheckpointProfileId.UserTaskCycle:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.MergeExclusive,

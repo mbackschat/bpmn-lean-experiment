@@ -17,6 +17,7 @@ import {
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
   SimpleBooleanExpressionKind,
   StimulusKind,
@@ -50,7 +51,7 @@ const cycleProgram = makeCycleProgram();
 
 test("selects one shared resumption policy only for the cycle profile", () => {
   assert.deepEqual(
-    semanticGraphPolicyForProfile(SemanticProfileId.UserTaskCycle),
+    semanticGraphPolicyForProfile(SemanticCheckpointProfileId.UserTaskCycle),
     {
       kind: SemanticGraphPolicyKind.ResumptionBounded,
       checkedResumptionNodeKinds: [CheckedNodeKind.UserTask],
@@ -58,17 +59,39 @@ test("selects one shared resumption policy only for the cycle profile", () => {
     },
   );
   for (const profile of Object.values(SemanticProfileId)) {
-    if (profile !== SemanticProfileId.UserTaskCycle) {
-      assert.deepEqual(semanticGraphPolicyForProfile(profile), {
-        kind: SemanticGraphPolicyKind.Acyclic,
-      });
-    }
+    assert.deepEqual(semanticGraphPolicyForProfile(profile), {
+      kind: SemanticGraphPolicyKind.Acyclic,
+    });
   }
   assert.equal(semanticGraphPolicyForProfile("unknown-profile"), undefined);
 });
 
+test("keeps checkpoint capabilities outside the registered profile catalog", () => {
+  const registeredProfiles: readonly string[] = Object.values(SemanticProfileId);
+  assert.deepEqual(Object.values(SemanticCheckpointProfileId), [
+    "bpmn-2.0.2-user-task-cycle-draft",
+  ]);
+  assert.equal(
+    registeredProfiles.includes(SemanticCheckpointProfileId.UserTaskCycle),
+    false,
+  );
+  const mutableCatalog = SemanticCheckpointProfileId as {
+    UserTaskCycle: string;
+  };
+  assert.throws(
+    () => mutableCatalog.UserTaskCycle = "mutated-cycle-profile",
+    TypeError,
+  );
+  assert.equal(
+    SemanticCheckpointProfileId.UserTaskCycle,
+    "bpmn-2.0.2-user-task-cycle-draft",
+  );
+});
+
 test("does not expose mutable process-wide graph policy state", () => {
-  const policy = semanticGraphPolicyForProfile(SemanticProfileId.UserTaskCycle);
+  const policy = semanticGraphPolicyForProfile(
+    SemanticCheckpointProfileId.UserTaskCycle,
+  );
   assert.equal(policy?.kind, SemanticGraphPolicyKind.ResumptionBounded);
   if (policy?.kind !== SemanticGraphPolicyKind.ResumptionBounded) {
     throw new TypeError("cycle profile did not select resumption-bounded policy");
@@ -89,7 +112,7 @@ test("does not expose mutable process-wide graph policy state", () => {
     TypeError,
   );
   assert.deepEqual(
-    semanticGraphPolicyForProfile(SemanticProfileId.UserTaskCycle),
+    semanticGraphPolicyForProfile(SemanticCheckpointProfileId.UserTaskCycle),
     {
       kind: SemanticGraphPolicyKind.ResumptionBounded,
       checkedResumptionNodeKinds: [CheckedNodeKind.UserTask],
@@ -100,7 +123,7 @@ test("does not expose mutable process-wide graph policy state", () => {
 
 test("pins the exact checked and IL cardinalities", () => {
   assert.equal(profileAllowsCheckedProcessShape(
-    SemanticProfileId.UserTaskCycle,
+    SemanticCheckpointProfileId.UserTaskCycle,
     [
       { kind: CheckedNodeKind.NoneStartEvent, id: "Start" },
       { kind: CheckedNodeKind.ExclusiveMerge, id: "Merge" },
@@ -117,7 +140,7 @@ test("pins the exact checked and IL cardinalities", () => {
     1,
   ), true);
   assert.equal(profileAllowsProgramShape(
-    SemanticProfileId.UserTaskCycle,
+    SemanticCheckpointProfileId.UserTaskCycle,
     cycleProgram.operations,
     cycleProgram.definitionScopes.length,
   ), true);
@@ -187,12 +210,12 @@ test("generic admission accepts four merge inputs while the selected profile rej
 
   assert.equal(isWellFormedSemanticProcessProgram(program), true);
   assert.equal(profileAllowsProgramShape(
-    SemanticProfileId.UserTaskCycle,
+    SemanticCheckpointProfileId.UserTaskCycle,
     program.operations,
     program.definitionScopes.length,
   ), false);
   assert.equal(profileAllowsProgramShape(
-    SemanticProfileId.UserTaskCycle,
+    SemanticCheckpointProfileId.UserTaskCycle,
     selectedShapeWithFourInputs,
     cycleProgram.definitionScopes.length,
   ), false);
@@ -349,7 +372,7 @@ function makeCycleProgram(): SemanticProcessProgram {
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-      semanticProfile: SemanticProfileId.UserTaskCycle,
+      semanticProfile: SemanticCheckpointProfileId.UserTaskCycle,
       sourceId: "cyclic-control-flow",
       sourceOverlay: null,
       sourceSha256: "c".repeat(64),
@@ -415,7 +438,7 @@ function makeFourInputMergeProgram(): SemanticProcessProgram {
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-      semanticProfile: SemanticProfileId.UserTaskCycle,
+      semanticProfile: SemanticCheckpointProfileId.UserTaskCycle,
       sourceId: "four-input-exclusive-merge",
       sourceOverlay: null,
       sourceSha256: "4".repeat(64),

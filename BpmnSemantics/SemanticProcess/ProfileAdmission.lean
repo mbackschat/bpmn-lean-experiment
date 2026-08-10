@@ -288,12 +288,22 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
         nodeCardinalities source.nodes = shape
   | none => false
 
+private def operationPayloadCapabilitiesValid (profile : String)
+    (operations : List SemanticOperation) : Bool :=
+  if profile = "bpmn-2.0.2-user-task-cycle-draft" then
+    operations.all fun
+      | .mergeExclusive _ _ inputs _ => inputs.length = 3
+      | _ => true
+  else true
+
 /-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
   match programShape? program.identity.semanticProfile.value with
   | some (scopeCount, shape) =>
       program.definitionScopes.length = scopeCount &&
-        operationCardinalities program.operations = shape
+        operationCardinalities program.operations = shape &&
+        operationPayloadCapabilitiesValid
+          program.identity.semanticProfile.value program.operations
   | none => false
 
 end BpmnSemantics.SemanticProcess

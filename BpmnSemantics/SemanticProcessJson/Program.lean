@@ -347,11 +347,15 @@ private def decodeOperation (json : Json) :
   | "mergeExclusive" =>
       requireObjectShape json
         ["id", "inputs", "kind", "origin", "output"]
+      let inputs ← decodePlaceIdArray (← field json "inputs")
+      if inputs.isEmpty || inputs.any (·.value.isEmpty) ||
+          inputs.eraseDups.length != inputs.length then
+        throw "mergeExclusive inputs must be nonempty, nonempty-valued, and distinct"
       pure
         (.mergeExclusive
           id
           origin
-          (← decodePlaceIdArray (← field json "inputs"))
+          inputs
           ⟨← stringField json "output"⟩)
   | "choose" =>
       requireObjectShape json

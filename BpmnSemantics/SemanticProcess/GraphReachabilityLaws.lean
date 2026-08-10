@@ -112,6 +112,28 @@ theorem graphReaches_trans (edges : List (GraphEdge α)) {source middle target :
   | refl => exact left
   | step _ edge ih => exact .step ih edge
 
+private theorem directedPath_tail [DecidableEq α]
+    (edges : List (GraphEdge α)) (source next : α) (rest : List α)
+    (path : DirectedPath edges (source :: next :: rest)) :
+    DirectedPath edges (next :: rest) := by
+  intro edge edgeOnTail
+  apply path edge
+  exact List.mem_cons_of_mem _ edgeOnTail
+
+/-- A material vertex path induces the existing declarative reachability relation. -/
+theorem directedPath_graphReaches [DecidableEq α]
+    (edges : List (GraphEdge α)) (source target : α) :
+    ∀ middle,
+      DirectedPath edges (source :: middle ++ [target]) →
+        GraphReaches edges source target
+  | [], path =>
+      .step (.refl source) (path _ (by simp [directedPathEdges]))
+  | next :: rest, path =>
+      graphReaches_trans edges
+        (.step (.refl source) (path _ (by simp [directedPathEdges])))
+        (directedPath_graphReaches edges next target rest
+          (directedPath_tail edges source next (rest ++ [target]) path))
+
 /-- Every accepted saturation-certified graph excludes a return path across each edge. -/
 theorem acyclicClosed_sound [DecidableEq α]
     (edges : List (GraphEdge α)) (fuel : Nat)
@@ -126,6 +148,26 @@ theorem acyclicClosed_sound [DecidableEq α]
     reachableWithin_complete edges fuel edge.target edge.source
       edgeFact.1 path
   simp_all
+
+/-- Saturation-certified acyclicity excludes every material directed cycle, independent of the cycle's listed path length. -/
+theorem acyclicClosed_excludes_directedCycle [DecidableEq α]
+    (edges : List (GraphEdge α)) (fuel : Nat)
+    (accepted : acyclicClosed edges fuel = true) (vertices : List α) :
+    ¬ DirectedCycle edges vertices := by
+  intro cycle
+  obtain ⟨start, middle, rfl, path⟩ := cycle
+  cases middle with
+  | nil =>
+      let edge : GraphEdge α := { source := start, target := start }
+      have member : edge ∈ edges := path edge (by simp [edge, directedPathEdges])
+      exact acyclicClosed_sound edges fuel accepted edge member (.refl start)
+  | cons next rest =>
+      let edge : GraphEdge α := { source := start, target := next }
+      have member : edge ∈ edges := path edge (by simp [edge, directedPathEdges])
+      have tail : DirectedPath edges (next :: rest ++ [start]) :=
+        directedPath_tail edges start next (rest ++ [start]) path
+      exact acyclicClosed_sound edges fuel accepted edge member
+        (directedPath_graphReaches edges next start rest tail)
 
 /-- Declarative reachability is antisymmetric on a saturation-certified graph. -/
 theorem graphReaches_antisymm [DecidableEq α]

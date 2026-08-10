@@ -11,6 +11,7 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -69,7 +70,10 @@ test("admits only the selected User-Task-crossing cycle policy", () => {
   const graph = withRootOwnership(nodes, flows);
 
   assert.notEqual(
-    resolveAdmittedCheckedProcessGraph(graph, SemanticProfileId.UserTaskCycle),
+    resolveAdmittedCheckedProcessGraph(
+      graph,
+      SemanticCheckpointProfileId.UserTaskCycle,
+    ),
     undefined,
   );
   assert.equal(
@@ -118,7 +122,7 @@ test("rejects an internal cycle even when a User Task is reachable outside it", 
   assert.equal(
     resolveAdmittedCheckedProcessGraph(
       withRootOwnership(nodes, flows),
-      SemanticProfileId.UserTaskCycle,
+      SemanticCheckpointProfileId.UserTaskCycle,
     ),
     undefined,
   );

@@ -2,6 +2,7 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
   SimpleBooleanExpressionLanguage,
   profileAllowsCheckedProcessShape,
@@ -211,7 +212,7 @@ function hasSelectedExpressionLanguage(
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
-    case SemanticProfileId.UserTaskCycle:
+    case SemanticCheckpointProfileId.UserTaskCycle:
       return expressionLanguage === SimpleBooleanExpressionLanguage;
     default:
       return expressionLanguage === bpmnDefaultExpressionLanguage;
@@ -225,7 +226,7 @@ function hasSelectedConditions(
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
-    case SemanticProfileId.UserTaskCycle:
+    case SemanticCheckpointProfileId.UserTaskCycle:
       return flows.filter(({ condition }) => condition !== null).length === 2;
     default:
       return flows.every(({ condition }) => condition === null);
@@ -236,7 +237,7 @@ function hasSelectedCyclicTopology(
   semanticProfile: string,
   graph: CheckedProcessGraph,
 ): boolean {
-  if (semanticProfile !== SemanticProfileId.UserTaskCycle) {
+  if (semanticProfile !== SemanticCheckpointProfileId.UserTaskCycle) {
     return true;
   }
   const one = <Kind extends CheckedNodeKind>(kind: Kind) => {

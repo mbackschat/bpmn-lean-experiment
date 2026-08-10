@@ -14,6 +14,23 @@ structure GraphEdge (α : Type) where
   target : α
   deriving Repr, DecidableEq
 
+/-- Consecutive directed edges materialized by a vertex path. -/
+def directedPathEdges : List α → List (GraphEdge α)
+  | source :: target :: rest =>
+      { source, target } :: directedPathEdges (target :: rest)
+  | _ => []
+
+/-- A material vertex path whose every consecutive edge belongs to the selected graph. -/
+def DirectedPath [DecidableEq α] (edges : List (GraphEdge α))
+    (vertices : List α) : Prop :=
+  ∀ edge ∈ directedPathEdges vertices, edge ∈ edges
+
+/-- A nonempty material directed cycle, represented by a path returning to its first vertex. -/
+def DirectedCycle [DecidableEq α] (edges : List (GraphEdge α))
+    (vertices : List α) : Prop :=
+  ∃ start middle,
+    vertices = start :: middle ++ [start] ∧ DirectedPath edges vertices
+
 /-- Distinct direct successors of the current frontier. -/
 def successors [DecidableEq α] (edges : List (GraphEdge α))
     (frontier : List α) : List α :=
@@ -350,6 +367,30 @@ def programEdgeIsResumptionContinuation (program : Program)
 def programResumptionCutEdges (program : Program)
     (edges : List (GraphEdge OperationId)) : List (GraphEdge OperationId) :=
   edges.filter fun edge => !programEdgeIsResumptionContinuation program edge
+
+theorem directed_path_survives_program_resumption_cut
+    (program : Program) (fullEdges : List (GraphEdge OperationId))
+    (vertices : List OperationId)
+    (path : DirectedPath fullEdges vertices)
+    (avoids : ∀ edge ∈ directedPathEdges vertices,
+      programEdgeIsResumptionContinuation program edge = false) :
+    DirectedPath (programResumptionCutEdges program fullEdges) vertices := by
+  intro edge edgeOnPath
+  have fullMember := path edge edgeOnPath
+  have retained := avoids edge edgeOnPath
+  simp [programResumptionCutEdges, fullMember, retained]
+
+theorem directed_cycle_survives_program_resumption_cut
+    (program : Program) (fullEdges : List (GraphEdge OperationId))
+    (vertices : List OperationId)
+    (cycle : DirectedCycle fullEdges vertices)
+    (avoids : ∀ edge ∈ directedPathEdges vertices,
+      programEdgeIsResumptionContinuation program edge = false) :
+    DirectedCycle (programResumptionCutEdges program fullEdges) vertices := by
+  obtain ⟨start, middle, shape, path⟩ := cycle
+  exact ⟨start, middle, shape,
+    directed_path_survives_program_resumption_cut program fullEdges vertices
+      path avoids⟩
 
 private def programGraphPolicyValid (program : Program)
     (edges : List (GraphEdge OperationId)) (fuel : Nat) : Bool :=

@@ -595,9 +595,33 @@ theorem old_profile_rejects_the_cycle_in_both_validators :
       programGraphWellFormed cyclicOldProfileProgram = false := by
   decide +kernel
 
-theorem selected_profile_excludes_arbitrary_merge_fan_in :
-    programWellFormed cyclicTwoInputMergeProgram = false ∧
-      programWellFormed cyclicFourInputMergeProgram = false := by
+theorem generic_structure_accepts_distinct_nonempty_merge_fan_in :
+    programWellFormed cyclicTwoInputMergeProgram = true ∧
+      programWellFormed cyclicFourInputMergeProgram = true := by
+  decide +kernel
+
+theorem selected_profile_separately_rejects_non_three_merge_fan_in :
+    programProfileCapabilitiesValid cyclicTwoInputMergeProgram = false ∧
+      programProfileCapabilitiesValid cyclicFourInputMergeProgram = false := by
+  decide +kernel
+
+theorem selected_profile_payload_requires_exactly_three_merge_inputs :
+    programProfileCapabilitiesValid cyclicProgram = true ∧
+      programProfileCapabilitiesValid
+        { cyclicProgram with
+          operations := cyclicProgram.operations.map fun
+            | .mergeExclusive id origin _ output =>
+                .mergeExclusive id origin
+                  [⟨"place:Flow_Repeat"⟩, ⟨"place:Flow_Start"⟩] output
+            | operation => operation } = false ∧
+      programProfileCapabilitiesValid
+        { cyclicProgram with
+          operations := cyclicProgram.operations.map fun
+            | .mergeExclusive id origin _ output =>
+                .mergeExclusive id origin
+                  [⟨"place:Flow_Repeat"⟩, ⟨"place:Flow_Rework"⟩,
+                    ⟨"place:Flow_Start"⟩, ⟨"place:Fourth"⟩] output
+            | operation => operation } = false := by
   decide +kernel
 
 theorem selected_profile_excludes_nested_scope_and_unlisted_wait_cycles :

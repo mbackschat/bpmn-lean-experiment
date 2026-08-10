@@ -10,6 +10,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  SemanticCheckpointProfileId,
   SemanticProfileId,
   isWellFormedSemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -17,7 +18,7 @@ import {
   verifyDefinitionReferences,
 } from "../../../scripts/contract-artifact-consistency.ts";
 
-const profile = SemanticProfileId.UserTaskCycle;
+const profile = SemanticCheckpointProfileId.UserTaskCycle;
 const oldProfile = SemanticProfileId.ExclusiveGatewaySimpleBoolean;
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 const source = await readFile(

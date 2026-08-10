@@ -190,9 +190,7 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         sortedDistinctPlaceIds inputs &&
         !inputs.contains output &&
         inputs.all (placeExists places) &&
-        placeExists places output &&
-        (program.identity.semanticProfile.value ≠
-            "bpmn-2.0.2-user-task-cycle-draft" || inputs.length = 3)
+        placeExists places output
   | .choose id origin input candidates defaultOutput defaultOrigin =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
