@@ -264,30 +264,35 @@ test("merge preserves the only token owner and every unrelated state field", () 
   });
 });
 
-test("choice exposes the exact selected back-edge before merge", () => {
+test("a candidate-output swap reaches the wrong back-edge before the same public wait", () => {
   const choose = operation(cycleProgram, SemanticOperationKind.Choose);
-  for (const route of ["repeat", "rework"] as const) {
-    const state: RuntimeState = {
-      ...runningState([token("place:Flow_TaskToChoice", 1)]),
-      variables: {
-        process: {
-          bindings: [{
-            name: "route",
-            value: { kind: VariableValueKind.String, value: route },
-          }],
-        },
-        activities: [],
+  const state: RuntimeState = {
+    ...runningState([token("place:Flow_TaskToChoice", 1)]),
+    variables: {
+      process: {
+        bindings: [{
+          name: "route",
+          value: { kind: VariableValueKind.String, value: "repeat" },
+        }],
       },
-    };
+      activities: [],
+    },
+  };
+  const swappedChoose = swapChoiceCandidateOutputs(choose);
+  const selected = applyInternalOperation(cycleProgram, choose, state);
+  const wronglySelected = applyInternalOperation(cycleProgram, swappedChoose, state);
 
-    assert.deepEqual(
-      applyInternalOperation(cycleProgram, choose, state)?.controlTokens,
-      [token(
-        route === "repeat" ? "place:Flow_Repeat" : "place:Flow_Rework",
-        1,
-      )],
-    );
-  }
+  assert.deepEqual(selected?.controlTokens, [token("place:Flow_Repeat", 1)]);
+  assert.deepEqual(wronglySelected?.controlTokens, [token("place:Flow_Rework", 1)]);
+  assert.ok(selected !== null && wronglySelected !== null);
+  const merge = mergeOperation(cycleProgram);
+  const task = operation(cycleProgram, SemanticOperationKind.AwaitUserTask);
+  const selectedMerge = applyInternalOperation(cycleProgram, merge, selected);
+  const wrongMerge = applyInternalOperation(cycleProgram, merge, wronglySelected);
+  assert.ok(selectedMerge !== null && wrongMerge !== null);
+  const selectedWait = applyInternalOperation(cycleProgram, task, selectedMerge);
+  const wrongWait = applyInternalOperation(cycleProgram, task, wrongMerge);
+  assert.deepEqual(wrongWait?.userTaskWaits, selectedWait?.userTaskWaits);
 });
 
 test("start, both repeats, and default exit close in three internal steps", () => {
@@ -538,6 +543,19 @@ function conditionalCandidate(elementId: string, value: string) {
     output: `place:${elementId}`,
     origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId },
   } as const;
+}
+
+function swapChoiceCandidateOutputs(
+  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.Choose }>,
+): Extract<SemanticOperation, { kind: SemanticOperationKind.Choose }> {
+  const [first, second] = operation.candidates;
+  return {
+    ...operation,
+    candidates: [
+      { ...first, output: second.output },
+      { ...second, output: first.output },
+    ],
+  };
 }
 
 function withMerge(

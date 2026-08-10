@@ -6,6 +6,7 @@
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   CanonicalObservationKind,
@@ -20,6 +21,10 @@ import type {
   StateObservation,
 } from "@bpmn-lean/semantic-core";
 import type { WorkflowHandle } from "@temporalio/client";
+import {
+  bundleWorkflowCode,
+  DefaultLogger,
+} from "@temporalio/worker";
 import { parseWorkflowCode } from "@temporalio/worker/lib/worker.js";
 import { defaultPayloadConverter } from "@temporalio/workflow";
 import {
@@ -81,13 +86,20 @@ const bpmnUrl = new URL(
 const operationDeadlineMs = 10_000;
 const identity = "bpmn-lean-user-task-cycle";
 const staleCommandId = "reject-stale-review-activation-1";
+const identityMutationWorkflowTypes = [
+  "runElementIdentityCycleMutation",
+  "runResetActivationCycleMutation",
+] as const;
+const identityMutationWorkflowsPath = fileURLToPath(new URL(
+  "./cyclic-control-flow-identity-mutation-workflows.ts",
+  import.meta.url,
+));
 
 const exactHistoryEventCount = 25;
 
 const fixture = loadCycleFixture();
 
-/** A host keyed only by BPMN element ID, or one that resets activation to one, commits the stale job. */
-test("the direct VM refuses an element-ID-only completion after the first cycle", async () => {
+test("the production Workflow refuses a stale completion after the first cycle", async () => {
   const { scenario, semanticProcess } = await fixture;
   const repeat = completionAt(scenario, 1);
   const stale = staleCompletion(repeat);
@@ -120,6 +132,39 @@ test("the direct VM refuses an element-ID-only completion after the first cycle"
   );
   for (const completion of completions) {
     assert.equal(workflowFailureType(completion), undefined);
+  }
+});
+
+test("identity-losing Workflow mutations commit the stale completion", async () => {
+  const { scenario, semanticProcess } = await fixture;
+  const repeat = completionAt(scenario, 1);
+  const stale = staleCompletion(repeat);
+  const start = startAt(scenario);
+  const bundled = await bundleWorkflowCode({
+    workflowsPath: identityMutationWorkflowsPath,
+    logger: new DefaultLogger("ERROR"),
+  });
+  for (const workflowType of identityMutationWorkflowTypes) {
+    const completions = await runDirectVmActivations({
+      bundle: parseWorkflowCode(bundled.code),
+      workflowType,
+      replaying: false,
+      taskQueue: bpmnSemanticTaskQueue,
+      args: [
+        defaultPayloadConverter.toPayload(start),
+        defaultPayloadConverter.toPayload(semanticProcess),
+      ],
+      readyJobs: [completionUpdateJob(repeat)],
+      assertInitialization: (completion) => {
+        assert.equal(workflowFailureType(completion), undefined);
+      },
+    }, [[completionUpdateJob(stale)]]);
+
+    assert.deepEqual(
+      completions.map(completedUpdateOutcome),
+      [CommandOutcome.Committed, CommandOutcome.Committed],
+      workflowType,
+    );
   }
 });
 
