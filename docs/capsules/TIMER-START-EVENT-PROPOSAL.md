@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft for independent cold proposal review. Not owner-approved and not implemented.** This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
+**Independent cold proposal review returned required edits; the corrected proposal is awaiting the same reviewer's audit. Not owner-approved and not implemented.** This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
 
 ## Independent cold-review receipt
 
@@ -33,6 +33,7 @@ BPMN 2.0.2 is the semantic authority for this standards-only capsule.
 - Clause 10.5.2 states that each Start Event occurrence generates a new Process instance, that a Start Event has no incoming Sequence Flow, and that triggering it produces one token on each outgoing Sequence Flow.
 - Clause 10.5.2 and Table 10.84 define Timer Start as a Process trigger at a specific time or on a recurring schedule.
 - Clause 10.5.5 and Table 10.101 define mutually exclusive `timeDate`, `timeCycle`, and `timeDuration` TimerEventDefinition forms.
+- Clause 10.5.6 owns the common catching-Event occurrence and outgoing-flow handling applied after the Timer trigger is selected.
 - Clause 13.2 retains the Process token and completion account after the Start Event produces outgoing control.
 - Clause 13.5.1 owns the Process-level Start Event execution context.
 
@@ -42,7 +43,7 @@ The standard permits time-date and cycle expressions, multiple Start Events, mul
 
 The proposal adds `BPMN-TIMER-START-01` to the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md). It remains `unsupported` until implementation and closure evidence graduate this proposal.
 
-- Ledger citation lock for `BPMN-TIMER-START-01`: Clauses 10.5.2, 10.5.5, 13.2, and 13.5.1 plus Tables 10.84 and 10.101
+- Ledger citation lock for `BPMN-TIMER-START-01`: Clauses 10.5.2, 10.5.5, 10.5.6, 13.2, and 13.5.1 plus Tables 10.84 and 10.101
 
 ## Selected account and rejected alternatives
 
@@ -444,7 +445,7 @@ Stop and return to research or owner decision if:
 - implementation requires changing existing start, timer-wait, runtime, or observation values rather than adding closed variants;
 - several start operations become admitted while runtime retains only `initiationPending: boolean`;
 - the one-action Schedule witness cannot start durably while the Worker is absent without a Workflow Timer or Signal;
-- wrong identity or version cannot reject before Workflow start;
+- a wrong Process or Start Event cannot reject before Schedule creation, or post-Schedule action tampering cannot be distinguished as semantic rejection or definition-identity disagreement;
 - Product 2 would need private checked graph or IL access to schedule the exact version;
 - the frozen baseline changes or atomic registration guards cannot accept exactly one new profile and scenario;
 - any A12 or unreviewed CIB behavior becomes necessary;

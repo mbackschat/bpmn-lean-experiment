@@ -145,7 +145,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: complete independent cold proposal review for Timer Start Event.** Submit immutable proposal target `6caa92b` for review. M2 selection resumed and chose the exact top-level `PT1S` Timer Start account in the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md). Do not implement it before a cold proposal review closes and the owner approves the reviewed account.
+1. **Next: complete the same reviewer's warm correction audit for Timer Start Event.** The cold review of immutable target `6caa92b` returned five required edits. Submit its committed correction descendant to the same reviewer, then stop for explicit owner approval if the audit closes. Do not implement the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md) before approval.
 
 ## Approved decisions
 
@@ -250,9 +250,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit immutable target `6caa92b` of the [Timer Start Event proposal](capsules/TIMER-START-EVENT-PROPOSAL.md) for independent cold proposal review.** M2 selection resumed and chose the exact top-level `PT1S` Timer Start account. Implementation remains prohibited until the review closes and the owner approves the reviewed account.
+**Next action: submit the committed correction descendant of proposal target `6caa92b` to the same independent reviewer for a warm correction audit.** The corrected [Timer Start Event proposal](capsules/TIMER-START-EVENT-PROPOSAL.md) retains the selected exact top-level `PT1S` account while correcting normative attribution, closure evidence, source preservation, Temporal refinement, and exhaustive owner inventory. Record the audit target after it closes, then stop for explicit owner approval before implementation.
 
-**No technical or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**No technical or environmental blocker remains.** The next work is the same reviewer's audit of the committed proposal correction. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
 **Last verified commands:** the target-bound complete verifier for clean closure target `d118481` passed in 402.48 seconds with log SHA-256 `d83f41bcd2f6c40e56233f355fbf1d2f12fee5bebf8f4126d2e319024639759d`; its complete pipeline replayed 39 live histories. Closure correction evidence passes BPMN source 342/342, Message Start Lean conformance 39/39, documentation/review guards 44/44, and source hygiene 30/30. The mandatory Linux/arm64 audit passed with Lean 4.31.0 under one CPU, a 3 GiB memory-and-swap ceiling with effective swap disabled, and no OOM: 47.42 seconds wall, 2,621,760 KiB maximum RSS, and 2,816,004,096 bytes cgroup peak. The complete platform M1 gate passed in 14.53 seconds, the registered M1 showcase passed in 9.11 seconds, and the infrastructure gate passed 220/220 in 38.18 seconds.
 
