@@ -142,7 +142,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: review the M2 Message Start Event proposal.** The draft [Message Start Event proposal](capsules/MESSAGE-START-EVENT-PROPOSAL.md) selects one payload-free top-level resolved trigger and direct Workflow-start refinement. Commit the immutable proposal target, obtain cold proposal review, correct any required findings, and stop for explicit owner approval before implementation.
+1. **Next: review the M2 Message Start Event proposal.** Submit immutable proposal target `8bd3fe9` to cold proposal review, correct any required findings, and stop for explicit owner approval before implementation. The draft [Message Start Event proposal](capsules/MESSAGE-START-EVENT-PROPOSAL.md) selects one payload-free top-level resolved trigger and direct Workflow-start refinement.
 
 ## Approved decisions
 
@@ -247,7 +247,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit and independently review the M2 Message Start Event proposal.** The draft [Message Start Event proposal](capsules/MESSAGE-START-EVENT-PROPOSAL.md) derives one payload-free top-level resolved trigger from the normative Message Start and Process-instantiation requirements, reuses the existing complete operation-addressed channel, and keeps direct Workflow start separate from broker routing. Obtain cold proposal review, correct any required findings in the same reviewer thread, and stop for explicit owner approval before semantic implementation. The resumption-bounded cycle is closed through specification [CYCLIC-CONTROL-FLOW-SPEC.md](capsules/CYCLIC-CONTROL-FLOW-SPEC.md), closure target `4251dc6`, and approved correction `8aacfa3`. Its mandatory first-change Lean audit passed under the standing one-CPU, no-swap, 3 GiB cgroup ceiling with Lean 4.31.0. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
+**Next action: submit immutable target `8bd3fe9` of the [Message Start Event proposal](capsules/MESSAGE-START-EVENT-PROPOSAL.md) to independent cold review.** The target derives one payload-free top-level resolved trigger from the normative Message Start and Process-instantiation requirements, reuses the existing complete operation-addressed channel, and keeps direct Workflow start separate from broker routing. Correct any required findings in the same reviewer thread, and stop for explicit owner approval before semantic implementation. The resumption-bounded cycle is closed through specification [CYCLIC-CONTROL-FLOW-SPEC.md](capsules/CYCLIC-CONTROL-FLOW-SPEC.md), closure target `4251dc6`, and approved correction `8aacfa3`. Its mandatory first-change Lean audit passed under the standing one-CPU, no-swap, 3 GiB cgroup ceiling with Lean 4.31.0. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
 
 **No current owner blocker.** The next work is proposal commit and cold review. Semantic implementation stops for explicit owner approval of the reviewed Message Start Event account. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
