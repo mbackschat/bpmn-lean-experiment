@@ -2,7 +2,7 @@
 
 ## Status
 
-**Corrected proposal independently approved; owner re-approval pending.** Implementation remains paused until the owner approves the corrected condition-ownership and forward-compatible Multi-Merge account. This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Owner-approved on 2026-08-10 after renewed independent review; implementation is authorized only within correction audit target `58417e0`.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
