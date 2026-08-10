@@ -109,6 +109,10 @@ Default to common, established ecosystem practices and native tool mechanisms. D
 
 ### Semantic code
 
+#### Forward-compatible semantic restrictions
+
+A bounded capsule may restrict the BPMN models, states, or schedules it admits, but it must not present that restriction as the general meaning of the BPMN construct. Before approving a representation or semantic rule, compare it with the complete applicable standard account and verify that later standards coverage can broaden admission or behavior without invalidating the representation or reinterpreting models already accepted under the capsule. Record conforming but deferred behavior explicitly, and redesign before implementation when the chosen representation would foreclose it.
+
 Use red/green TDD:
 
 1. run `node scripts/what-binds.ts <path>...` on every path the change will add or grow, and treat its guard, registry, and `OWNER` headroom lines as constraints on the plan rather than as output to skim;
