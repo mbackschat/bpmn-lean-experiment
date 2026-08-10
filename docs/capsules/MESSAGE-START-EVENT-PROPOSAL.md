@@ -2,15 +2,17 @@
 
 ## Status
 
-**Independent cold proposal review returned required edits; the corrected proposal is awaiting the same reviewer's audit. Not owner-approved and not implemented.** This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through an exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
+**Independent cold proposal review and all correction audits are closed; explicit owner approval is required before implementation. Not owner-approved and not implemented.** This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through an exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `8bd3fe9` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8bd3fe9` | `fork-turns-none` | `approve-with-required-edits` | `4540c32` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal stage used three correction rounds. The context-cold review of `8bd3fe9` returned five required findings. Corrections `6c48839` and `2b02175` closed the substantive findings but retained one missing-versus-unresolved reference discriminator; the owner authorized a third warm audit, and `4540c32` closed that final finding with no reopened issue.
 
 ## Question
 
