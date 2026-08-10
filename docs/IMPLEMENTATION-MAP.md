@@ -188,6 +188,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - approved gap interpretations beyond the reviewed slices
 - confirmed deviations beyond the visible `CIB-DEV-0001` candidate
 - multiple or mixed Message Start Events, payload, external publication routing, definition-version fanout, or retry-transparent start receipt
+- top-level Timer Start Event, resolved timer-start stimulus, durable schedule creation, and Product 2 schedule lifecycle or version activation
 
 ### Runtime scoped data
 
@@ -500,6 +501,7 @@ One nearest boundary per family. The owning capsule holds the full exclusion set
 
 - **Call Activity:** a second or repeated invocation of the same called Process. Deployment or version and tenant resolution, mappings, per-instance data, recursion, exceptional completion, cancellation, and Temporal Child Workflow identity stay outside. See [the capsule](capsules/CALL-ACTIVITY-SPEC.md).
 - **Message Start:** one external publication matching multiple independent Message Start Events or definition versions. Routing, fanout, selected-start identity, and retry-transparent exactly-once policy stay outside. See [the capsule](capsules/MESSAGE-START-EVENT-SPEC.md).
+- **Timer Start:** the exact top-level `PT1S` account is selected only in the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md), not implemented. Recurrence, calendar forms, schedule lifecycle, and silent latest-definition retargeting stay outside.
 - **Receive Task:** an addressless or operation-addressed, instantiating, data-bearing, correlated, or repeated Receive Task. See [the capsule](capsules/RECEIVE-TASK-MESSAGE-SPEC.md).
 - **Sub-Process boundary Timer:** a deadline on a Sub-Process holding more than one child task. That is where this profile's single-child coincidence between the child's last consumed token and scope quiescence stops holding, so the withdrawal rule stated over quiescence becomes separately falsifiable rather than accidentally correct. See [the capsule](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md).
 - **Non-interrupting boundary Timer:** a deadline that fires more than once, which `timeCycle` admits and Table 10.91 contemplates. A second firing makes the element-identity-to-activation join ambiguous, so a capsule admitting repetition must add the occurrence record rather than inherit the argument. See [the capsule](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md).
