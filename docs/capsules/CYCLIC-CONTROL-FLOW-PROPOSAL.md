@@ -2,17 +2,17 @@
 
 ## Status
 
-**Owner-approved on 2026-08-10 after independent review; implementation is authorized only within this exact boundary.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Normative correction pending independent proposal review.** Implementation is paused while the corrected condition-ownership account is reviewed. This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `31dd294` | `fork-turns-none` | `approve-with-required-edits` | `d5e7bb9` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The proposal stage used four warm correction audits in the same reviewer thread. The automatic two-round bound stopped the stage after `88ad69c` and `0d9409e`; the owner explicitly authorized the third correction at `d1173b1` and the fourth correction content at `d5e221e`. Final audit target `d5e7bb9` closed every required finding without changing the selected semantic account.
+The original proposal stage used four warm correction audits in the same reviewer thread. The automatic two-round bound stopped the stage after `88ad69c` and `0d9409e`; the owner explicitly authorized the third correction at `d1173b1` and the fourth correction content at `d5e221e`. Final audit target `d5e7bb9` closed every required finding in that target. The later condition-ownership correction changes reviewed semantic wording and therefore starts a new cold proposal review rather than borrowing that verdict.
 
 ## Question
 
@@ -33,6 +33,7 @@ The first witness reuses the already approved User Task interaction, User Task c
 BPMN 2.0.2 is the semantic authority for this capsule.
 
 - Table 7.2 states that a Sequence Flow loop is formed by connecting a flow to an upstream object. This distinguishes graph-level looping from Standard Loop and Multi-Instance Activity characteristics, which remain outside this proposal.
+- Clause 8.4.13 and Table 8.51 place an optional gating condition on the Sequence Flow itself: a token is placed on that flow only when its condition evaluates true. In this topology, the divergent Exclusive Gateway evaluates the conditions on its two outgoing back-edges before either token can arrive at the converging gateway.
 - Clauses 10.6.2 and 13.4.2 define Exclusive Gateway merging and branching. The merging arm has pass-through behavior for alternative incoming paths, while each arriving token activates the gateway and is routed to one outgoing Sequence Flow.
 - Table 13.2 classifies the behavior as Exclusive Choice, Simple Merge, and Multi-Merge. The selected slice uses Simple Merge under a proved one-token invariant. It does not claim the general multiple-token Multi-Merge case.
 - Clauses 10.7.3, 13.3.2, and 13.3.3 retain the existing User Task activation and completion account. Re-entering the same User Task definition creates a fresh semantic occurrence; it does not reactivate or alias the completed occurrence.
@@ -77,7 +78,7 @@ One new immutable standards-only profile is registered as `bpmn-2.0.2-user-task-
 - one None Start Event, one converging Exclusive Gateway, one User Task, one divergent Exclusive Gateway, and one None End Event;
 - six distinct Sequence Flows with exact resolved source and target identities;
 - the None Start Event at arity `0 -> 1` and the None End Event at `1 -> 0`;
-- the converging Exclusive Gateway at arity `3 -> 1`, with `gatewayDirection` absent, explicitly `Unspecified`, or explicitly `Converging`, no default reference, and no condition expression on any incoming or outgoing flow; topology supplies the inferred direction when the declaration is absent or `Unspecified`;
+- the converging Exclusive Gateway at arity `3 -> 1`, with `gatewayDirection` absent, explicitly `Unspecified`, or explicitly `Converging`, no default reference, one conditionless Start-to-Merge input, two conditional Choice-to-Merge inputs already gated by the upstream divergent gateway, and one conditionless outgoing flow; topology supplies the inferred direction when the declaration is absent or `Unspecified`, and convergence does not re-evaluate either incoming condition;
 - the User Task at arity `1 -> 1` and no assignment, form, data association, loop characteristic, or Multi-Instance characteristic;
 - the divergent Exclusive Gateway at arity `1 -> 3`, with `gatewayDirection` absent, explicitly `Unspecified`, or explicitly `Diverging`, exactly two Simple Boolean v1 conditional Sequence Flows in XML declaration order, and one conditionless referenced default flow; topology supplies the inferred direction when the declaration is absent or `Unspecified`;
 - exactly one definition scope, exact reference closure, unique producer and consumer ownership, full reachability from Start, full co-reachability to End, and the resumption-cut criterion below;
@@ -98,7 +99,7 @@ type CheckedExclusiveMerge = DeepReadonly<{
 }>;
 ```
 
-The node kind is the checked converging classification; it carries only source identity. The authoritative `CheckedProcess.sequenceFlows` endpoints retain the three incoming and one outgoing Sequence Flow identities. Lowering derives the operation endpoints from those validated edges, canonical-ID-sorts the three input places, and does not create a second checked topology inventory. Input order has no transition meaning. Reordering XML declarations may change the canonical source digest but must not change the normalized checked graph or lowered program after identity normalization. A default reference, a condition, a fourth incoming flow, or a second outgoing flow rejects at source admission.
+The node kind is the checked converging classification; it carries only source identity. The authoritative `CheckedProcess.sequenceFlows` endpoints retain the three incoming and one outgoing Sequence Flow identities. Lowering derives the operation endpoints from those validated edges, canonical-ID-sorts the three input places, and does not create a second checked topology inventory. Input order has no transition meaning. Reordering XML declarations may change the canonical source digest but must not change the normalized checked graph or lowered program after identity normalization. A default reference, a condition on the Start-to-Merge or Merge-to-User-Task flow, a missing condition on either Choice-to-Merge back-edge, a fourth incoming flow, or a second outgoing flow rejects at source admission. Incoming conditions are validated as properties of the divergent gateway's outgoing Sequence Flows and do not become fields or decisions of `ExclusiveMerge`.
 
 Lowering maps that node by endpoints to one reusable Semantic Process operation:
 
