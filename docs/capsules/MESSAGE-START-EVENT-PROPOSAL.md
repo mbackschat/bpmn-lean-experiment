@@ -2,7 +2,7 @@
 
 ## Status
 
-**Independent cold proposal review and all correction audits are closed; explicit owner approval is required before implementation. Not owner-approved and not implemented.** This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through an exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
+**Owner-approved on 2026-08-10; implementation is authorized and not yet complete.** The independent cold proposal review and all owner-authorized correction audits are closed. This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through an exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
 
 ## Independent cold-review receipt
 
