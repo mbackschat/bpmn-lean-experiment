@@ -117,6 +117,34 @@ test("preserves the complete operation-addressed channel through ordinary compil
   );
 });
 
+test("allows empty Interface and Operation names without projecting them", async () => {
+  const xml = await readFile(sourceUrl, "utf8");
+  const changed = xml
+    .replace('name="Process messages"', 'name=""')
+    .replace('name="Receive approval request"', 'name=""');
+  assert.notEqual(changed, xml);
+
+  const result = requireAccepted(
+    await compile(new TextEncoder().encode(changed)),
+  );
+
+  assert.deepEqual(
+    result.checkedProcess.nodes.find(
+      ({ id }) => id === "MessageStart_ApprovalRequest",
+    ),
+    {
+      kind: CheckedNodeKind.MessageStartEvent,
+      id: "MessageStart_ApprovalRequest",
+      channel: {
+        kind: MessageChannelKind.OperationMessage,
+        interfaceId: "Interface_ProcessMessages",
+        interfaceOperationId: "Operation_ReceiveApprovalRequest",
+        messageId: "Message_ApprovalRequest",
+      },
+    },
+  );
+});
+
 test("rejects every malformed Message Start source boundary", async (context) => {
   const xml = await readFile(sourceUrl, "utf8");
   const mutations = messageStartSourceMutations(xml);
@@ -161,6 +189,11 @@ function messageStartSourceMutations(xml: string): Readonly<Record<string, strin
   const startFlow = '<bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="MessageStart_ApprovalRequest" targetRef="UserTask_Approve"/>';
   const messageRoot = '<bpmn:message id="Message_ApprovalRequest" name="Approval request"/>';
   return {
+    "missing Interface name": xml.replace(' name="Process messages"', ""),
+    "missing Operation name": xml.replace(
+      ' name="Receive approval request"',
+      "",
+    ),
     "missing Message reference": xml.replace(
       ' messageRef="Message_ApprovalRequest"',
       "",

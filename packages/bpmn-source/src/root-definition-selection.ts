@@ -178,7 +178,8 @@ function selectMessageRoots(
     interface_ === undefined ||
     !hasOnlyModelledKeys(message, ["$type", "id", "name"]) ||
     message.itemRef !== undefined ||
-    !hasOnlyModelledKeys(interface_, ["$type", "id", "name", "operations"])
+    !hasOnlyModelledKeys(interface_, ["$type", "id", "name", "operations"]) ||
+    typeof interface_.name !== "string"
   ) {
     return undefined;
   }
@@ -193,6 +194,7 @@ function selectMessageRoots(
     operation === undefined ||
     operation.$type !== bpmnTypes.operationType ||
     !hasOnlyModelledKeys(operation, ["$type", "id", "name"]) ||
+    typeof operation.name !== "string" ||
     operation.inMessageRef !== message ||
     operation.outMessageRef !== undefined ||
     operation.errorRefs !== undefined ||

@@ -22,26 +22,38 @@ def ordinaryStartMatchesProgram (program : Program) : Bool :=
   | [.initiate ..] => true
   | _ => false
 
+/-- Match one resolved Message Start target to the sole admitted Message initiation operation. -/
+def messageStartTargetMatchesProgram (program : Program)
+    (processId startEventId : SemanticId) (channel : MessageChannel) : Bool :=
+  program.identity.semanticProfile = messageStartProfileId &&
+    programWellFormed program &&
+    programProfileCapabilitiesValid program &&
+    program.processId.value = processId.value &&
+    match program.operations.filterMap fun
+        | .initiateMessage _ origin expectedChannel _ =>
+            some (origin.elementId, expectedChannel)
+        | _ => none with
+    | [(originId, expectedChannel)] =>
+        originId.value = startEventId.value && expectedChannel = channel
+    | _ => false
+
+/-- Pair the closed external start family with the start operation admitted by a program. -/
+def startStimulusMatchesProgram (program : Program) : Stimulus → Bool
+  | .startProcess .. => ordinaryStartMatchesProgram program
+  | .triggerMessageStart _ processId _ startEventId channel =>
+      messageStartTargetMatchesProgram program processId startEventId channel
+  | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
+  | .completeEffect .. => false
+
 /-- Admit one resolved operation-addressed Message trigger against one exact checked IL start. -/
 def admitMessageStart? (program : Program) (state : RuntimeState)
     (processId instanceId startEventId : SemanticId)
     (channel : MessageChannel) : Option RuntimeState :=
   match state.control with
   | .notStarted =>
-      if program.identity.semanticProfile = messageStartProfileId &&
-          programWellFormed program &&
-          programProfileCapabilitiesValid program &&
-          program.processId.value = processId.value then
-        match program.operations.filterMap fun
-            | .initiateMessage _ origin expectedChannel _ =>
-                some (origin.elementId, expectedChannel)
-            | _ => none with
-        | [(originId, expectedChannel)] =>
-            if originId.value = startEventId.value &&
-                expectedChannel = channel then
-              runningProgramStartState? program instanceId []
-            else none
-        | _ => none
+      if messageStartTargetMatchesProgram program processId startEventId
+          channel then
+        runningProgramStartState? program instanceId []
       else none
   | .running _ | .completed _ => none
 

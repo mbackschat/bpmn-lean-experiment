@@ -29,10 +29,10 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           "startEventId"]
       pure
         (.triggerMessageStart
-          ⟨← stringField json "commandId"⟩
-          ⟨← stringField json "processId"⟩
-          ⟨← stringField json "instanceId"⟩
-          ⟨← stringField json "startEventId"⟩
+          (← decodeSemanticIdentityField json "commandId")
+          (← decodeSemanticIdentityField json "processId")
+          (← decodeSemanticIdentityField json "instanceId")
+          (← decodeSemanticIdentityField json "startEventId")
           (← decodeOperationMessageChannel (← field json "channel")))
   | "completeUserTaskInstance" =>
       requireObjectShape json

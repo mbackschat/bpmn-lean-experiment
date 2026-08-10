@@ -45,6 +45,15 @@ def field (json : Json) (key : String) : Except String Json :=
 def stringField (json : Json) (key : String) : Except String String := do
   (← field json key).getStr?
 
+/-- Decode one semantic identity field whose empty string has no legal runtime meaning. -/
+def decodeSemanticIdentityField (json : Json) (key : String) :
+    Except String SemanticId := do
+  let value ← stringField json key
+  if SemanticProcess.nonempty value then
+    pure ⟨value⟩
+  else
+    throw s!"{key} must be non-empty"
+
 def expectString (json : Json) (expected : String) :
     Except String Unit := do
   let actual ← json.getStr?
@@ -113,12 +122,12 @@ def decodeMessageChannel (json : Json) :
       requireObjectShape json
         ["interfaceId", "interfaceOperationId", "kind", "messageId"]
       pure (.operationMessage
-        ⟨← stringField json "interfaceId"⟩
-        ⟨← stringField json "interfaceOperationId"⟩
-        ⟨← stringField json "messageId"⟩)
+        (← decodeSemanticIdentityField json "interfaceId")
+        (← decodeSemanticIdentityField json "interfaceOperationId")
+        (← decodeSemanticIdentityField json "messageId"))
   | "directMessage" =>
       requireObjectShape json ["kind", "messageId"]
-      pure (.directMessage ⟨← stringField json "messageId"⟩)
+      pure (.directMessage (← decodeSemanticIdentityField json "messageId"))
   | kind => throw s!"unsupported Message channel {kind}"
 
 /-- Decode the exact operation-addressed channel used by Message Start and operation-bound catches. -/

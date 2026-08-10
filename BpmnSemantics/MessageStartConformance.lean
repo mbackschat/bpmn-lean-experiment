@@ -148,6 +148,35 @@ def trigger : Stimulus :=
     ⟨startEventId.value⟩
     channel
 
+private def requiredObservations : List ObservationKind :=
+  [ .deployment
+  , .commandResults
+  , .processStatus
+  , .activeWaits
+  , .openUserTasks
+  , .openTimers
+  , .openEffects
+  , .variables
+  , .enabledInteractions
+  , .logicalTime ]
+
+private def scenarioForProgram (candidate : Program) (stimuli : List Stimulus) :
+    Scenario :=
+  { kind := .scenario
+    id := ⟨"message-start-pairing"⟩
+    profile := candidate.identity.semanticProfile
+    bpmn :=
+      { id := candidate.identity.sourceId
+        relativePath := "message-start-pairing.bpmn"
+        sha256 := candidate.identity.sourceSha256
+        sourceOverlay := candidate.identity.sourceOverlay }
+    stimuli
+    observations := requiredObservations
+    provenance :=
+      { normativeRefs := []
+        cibRevision := "not-applicable"
+        cibRefs := [] } }
+
 def rootOwner (id : SemanticId) : ScopeOccurrenceId :=
   rootScopeOccurrenceId id processId
 
@@ -448,6 +477,57 @@ theorem scenario_start_sequence_is_first_only :
           { processInstanceId := instanceId
             elementId := ⟨taskNodeId.value⟩
             activation := 1 } []] = false := by
+  decide +kernel
+
+/-- Scenario admission pairs the first start kind with the program before executing any stimulus. -/
+theorem scenario_start_is_paired_with_program :
+    supportsScenario program (scenarioForProgram program [trigger]) = true ∧
+      supportsScenario sequentialProgram
+        (scenarioForProgram sequentialProgram
+          [.startProcess ⟨"ordinary"⟩
+            ⟨sequentialProgram.processId.value⟩ noneStartInstanceId []]) = true ∧
+      supportsScenario program
+        (scenarioForProgram program
+          [.startProcess ⟨"wrong-kind"⟩ ⟨processId.value⟩ instanceId []]) = false ∧
+      supportsScenario sequentialProgram
+        (scenarioForProgram sequentialProgram
+          [.triggerMessageStart
+            ⟨"message-against-none-start"⟩
+            ⟨sequentialProgram.processId.value⟩
+            instanceId
+            ⟨"StartEvent_1"⟩
+            channel]) = false := by
+  decide +kernel
+
+/-- Cross-kind starts fail deployment admission and therefore execute no stimulus. -/
+theorem cross_kind_scenarios_execute_no_stimulus :
+    runScenario program
+        (scenarioForProgram program
+          [.startProcess ⟨"wrong-kind"⟩ ⟨processId.value⟩ instanceId []]) =
+      { outcome := .semantic .unsupported
+        trace := [.deployment .unsupported] } ∧
+      runScenario sequentialProgram
+        (scenarioForProgram sequentialProgram
+          [.triggerMessageStart
+            ⟨"message-against-none-start"⟩
+            ⟨sequentialProgram.processId.value⟩
+            instanceId
+            ⟨"StartEvent_1"⟩
+            channel]) =
+        { outcome := .semantic .unsupported
+          trace := [.deployment .unsupported] } := by
+  decide +kernel
+
+/-- Exact full-channel target pairing participates in scenario support admission. -/
+theorem wrong_interface_operation_is_unsupported_before_execution :
+    supportsScenario program
+      (scenarioForProgram program
+        [.triggerMessageStart
+          ⟨"wrong-operation"⟩
+          ⟨processId.value⟩
+          instanceId
+          ⟨startEventId.value⟩
+          wrongInterfaceOperationChannel]) = false := by
   decide +kernel
 
 end BpmnSemantics.MessageStartConformance

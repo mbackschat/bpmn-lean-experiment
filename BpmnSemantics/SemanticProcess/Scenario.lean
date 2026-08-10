@@ -308,11 +308,17 @@ def stimulusSequenceSupported : List Stimulus → Bool
       remaining.all fun stimulus => !isProcessStartStimulus stimulus
   | _ => false
 
+private def firstStimulusMatchesProgram (program : Program) :
+    List Stimulus → Bool
+  | stimulus :: _ => startStimulusMatchesProgram program stimulus
+  | [] => false
+
 /-- Admit only the `scenario` document kind for a structurally well-formed, profile-capability-valid program whose profile and source identity match the scenario and whose requested observations are exactly the required observation list. -/
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
     stimulusSequenceSupported scenario.stimuli &&
+    firstStimulusMatchesProgram program scenario.stimuli &&
     decide (
       scenario.kind = .scenario &&
         scenario.profile = program.identity.semanticProfile &&

@@ -2,17 +2,19 @@
 
 ## Status
 
-**Owner-approved on 2026-08-10; the first green semantic checkpoint is implemented and pending independent cold review.** The checkpoint contains exact source admission, checked and IL variants, strict wires, proved Lean and independent TypeScript execution, bounded closure, and direct Temporal Workflow-start preflight. Product profile registration, answer-free scenario and differential evidence, runnable example, and live Temporal history/replay evidence remain blocked until checkpoint approval. This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through an exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
+**Owner-approved on 2026-08-10; the semantic-checkpoint correction is implemented and pending same-reviewer audit.** The cold review of immutable target `0ddc83a` required exact admission for the XSD-required Interface and Operation names, nonempty Lean Message Start wire identities, and Lean start-stimulus-to-program pairing before scenario execution. The correction closes those three boundaries without changing the selected account. Product profile registration, answer-free scenario and differential evidence, runnable example, and live Temporal history/replay evidence remain blocked until checkpoint approval. This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through one exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `8bd3fe9` | `fork-turns-none` | `approve-with-required-edits` | `4540c32` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `0ddc83a` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The proposal stage used three correction rounds. The context-cold review of `8bd3fe9` returned five required findings. Corrections `6c48839` and `2b02175` closed the substantive findings but retained one missing-versus-unresolved reference discriminator; the owner authorized a third warm audit, and `4540c32` closed that final finding with no reopened issue.
+
+The semantic-checkpoint cold review of `0ddc83a` returned three required admission findings. The receipt remains pending until the same reviewer audits the committed correction target.
 
 ## Question
 
@@ -336,7 +338,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; t
 | [scenario admission](../../packages/semantic-core/src/scenario.ts) | 203 | Admit either closed start kind only in the first position. |
 | [Message Start semantic owner](../../packages/semantic-core/src/semantic-process-message-start.ts) | 396 | Own exact start pairing, fresh root admission, generic outgoing-token production, and the no-subscription boundary. |
 | [semantic-core public exports](../../packages/semantic-core/src/index.ts) | 562 | Export the new closed contracts and mechanism without adding an umbrella runtime. |
-| [root-definition selection](../../packages/bpmn-source/src/root-definition-selection.ts) | 342 | Reuse the existing exact operation-message root selection without a second reference inventory. |
+| [root-definition selection](../../packages/bpmn-source/src/root-definition-selection.ts) | 340 | Reuse the existing exact operation-message root selection without a second reference inventory. |
 | [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 335 | Add a Message Start shape without weakening plain None Start projection. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 221 | Dispatch exact Message Start projection through a new cohesive source owner. |
 | [checked process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Admit the widened checked-node family only through the selected profile and delegate generic topology to the graph owner. |
@@ -374,18 +376,18 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; t
 | [Lean transition dispatcher](../../BpmnSemantics/SemanticProcess/Transition.lean) | 286 | Delegate one exhaustive `initiateMessage` arm to the new cohesive Message Start relation and evaluator. |
 | [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 52 | Do not add Message-start proofs here; add only exhaustive dispatch/imports to a new cohesive `MessageStart.lean` owner. |
 | [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 83 | Add exact channel/origin/output lowering and its preservation bridge. |
-| [Lean scenario admission](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 295 | Close the existing cross-target gap by requiring exactly one supported start variant at index zero and only non-start stimuli afterward, matching TypeScript and the schema. |
+| [Lean scenario admission](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 290 | Close the existing cross-target gap by requiring exactly one supported start variant at index zero and only non-start stimuli afterward, matching TypeScript and the schema. |
 | [Lean Message Start transition](../../BpmnSemantics/SemanticProcess/MessageStart.lean) | 487 | Own the declarative relation, evaluator soundness, per-output token law, and explicit one-output post-initiation relation. |
-| [Lean Message Start admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 560 | Own exact trigger-to-program pairing and fresh-root admission without routing or subscriptions. |
+| [Lean Message Start admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 550 | Own exact trigger-to-program pairing and fresh-root admission without routing or subscriptions. |
 | [Lean checked-process decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 370 | Decode the exact closed Message Start node. |
 | [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 172 | Decode the exact closed `initiateMessage` operation. |
 | [Lean scenario decoder](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 494 | Decode the new first stimulus and reject missing, extra, or malformed fields. |
-| [Lean JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean) | 436 | Decode either closed Process-start stimulus without widening ordinary decoder primitives. |
-| [Lean JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 482 | Lock exact accepted and missing, extra, malformed, and duplicate Message Start wire shapes. |
+| [Lean JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean) | 428 | Decode either closed Process-start stimulus without widening ordinary decoder primitives. |
+| [Lean JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 469 | Lock exact accepted and missing, extra, malformed, and duplicate Message Start wire shapes. |
 | [Lean JSON executable](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 292 | Encode the trigger and discover Process identity through either closed start variant. |
 | [Lean Semantic Process umbrella](../../BpmnSemantics/SemanticProcess.lean) | 576 | Import the new independently buildable Message Start mechanism only. |
 | [Lean root umbrella](../../BpmnSemantics.lean) | 575 | Export the new independent conformance owner without executable declarations. |
-| [Lean Message Start conformance](../../BpmnSemantics/MessageStartConformance.lean) | 208 | Prove source/IL binding, trigger and output laws, exact closure, cross-kind refusal, observation relation, and first-only scenario order. |
+| [Lean Message Start conformance](../../BpmnSemantics/MessageStartConformance.lean) | 133 | Prove source/IL binding, trigger and output laws, exact closure, cross-kind refusal, observation relation, and first-only scenario order. |
 | [Lean conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 585 | Import the new Message Start conformance evidence into the maintained conformance target. |
 | [Lean checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 433 | Reject Message Start explicitly so the frozen experiment does not acquire a new production source mechanism. |
 | [Lean checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 294 | Reject the new checked node and stimulus explicitly in the experiment evaluator. |
@@ -414,7 +416,7 @@ Existing focused test owners also change where their exact inventories widen:
 | [command identity](../../packages/temporal-adapter/testkit/test/command-identity.test.ts) | 362 | Lock canonical identity over every Message-start trigger field. |
 | [Message Start semantic-core characterization](../../packages/semantic-core/test/message-start-event.test.ts) | 59 | Lock exact admission, refusal, closure, identity, and observation facts. |
 | [Message Start semantic-core immutability](../../packages/semantic-core/type-test/message-start-event.type-test.ts) | 549 | Lock deep immutability for the new checked, IL, and stimulus arms. |
-| [Message Start source characterization](../../packages/bpmn-source/test/message-start-event-source.test.ts) | 344 | Lock the accepted source and the complete malformed-source negative union. |
+| [Message Start source characterization](../../packages/bpmn-source/test/message-start-event-source.test.ts) | 314 | Lock the accepted source and the complete malformed-source negative union. |
 | [Message Start artifact consistency](../../packages/bpmn-source/test/message-start-artifact-consistency.test.ts) | 498 | Reject independent checked channel, lowered channel, origin, and output drift. |
 | [Message Start wire-schema characterization](../../scripts/message-start-contract-schema.test.ts) | 445 | Lock exact checked, IL, and stimulus schemas plus first-only start placement. |
 | [Message Start Temporal preflight](../../packages/temporal-adapter/testkit/test/message-start-preflight.test.ts) | 462 | Prove exact target admission before direct Workflow start and kill Message-name-only admission. |
