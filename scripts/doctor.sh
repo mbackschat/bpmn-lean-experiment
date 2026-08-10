@@ -122,17 +122,54 @@ done <<EOF
 $workspace_package_paths
 EOF
 
+resolve_workspace_dependency() {
+  dependency_name=$1
+  resolved_workspace_dependency_owner=""
+  resolved_workspace_dependency_version=""
+  while IFS= read -r package_path; do
+    test -z "$package_path" && continue
+    case "$package_path" in
+      "$project_root") manifest_path=package.json ;;
+      "$project_root"/*) manifest_path=${package_path#"$project_root"/}/package.json ;;
+      *) continue ;;
+    esac
+    declared_version=$(jq -r --arg dependency_name "$dependency_name" \
+      '.dependencies[$dependency_name] // .devDependencies[$dependency_name] // empty' \
+      "$project_root/$manifest_path")
+    test -z "$declared_version" && continue
+    case "$declared_version" in
+      *[!0-9A-Za-z._-]*)
+        echo "DOCTOR_FAIL $manifest_path declares no exact safe $dependency_name version" >&2
+        doctor_failed=1
+        continue
+        ;;
+    esac
+    if test -n "$resolved_workspace_dependency_version" && \
+        test "$resolved_workspace_dependency_version" != "$declared_version"; then
+      echo "DOCTOR_FAIL workspace declares conflicting $dependency_name versions: $resolved_workspace_dependency_version and $declared_version" >&2
+      doctor_failed=1
+      continue
+    fi
+    resolved_workspace_dependency_version=$declared_version
+    owner="$manifest_path declares $dependency_name@$declared_version"
+    if test -z "$resolved_workspace_dependency_owner"; then
+      resolved_workspace_dependency_owner=$owner
+    else
+      resolved_workspace_dependency_owner="$resolved_workspace_dependency_owner, $owner"
+    fi
+  done <<EOF
+$workspace_package_paths
+EOF
+  if test -z "$resolved_workspace_dependency_owner"; then
+    echo "DOCTOR_FAIL no workspace manifest declares $dependency_name" >&2
+    doctor_failed=1
+  fi
+}
+
 temporal_sdk_version=""
 if command -v jq >/dev/null 2>&1; then
-  temporal_sdk_version=$(jq -r '.dependencies["@temporalio/testing"] // empty' \
-    "$project_root/packages/temporal-adapter/testkit/package.json")
-  case "$temporal_sdk_version" in
-    ""|*[!0-9A-Za-z._-]*)
-      echo "DOCTOR_FAIL testkit manifest declares no exact safe @temporalio/testing version" >&2
-      doctor_failed=1
-      temporal_sdk_version=""
-      ;;
-  esac
+  resolve_workspace_dependency "@temporalio/testing"
+  temporal_sdk_version=$resolved_workspace_dependency_version
 fi
 
 while IFS="	" read -r source_scope relative_path remote reference revision material_kind; do
@@ -155,6 +192,12 @@ cache_size_kib() {
 while IFS="	" read -r material_role declared_path material_owner; do
   case "$material_role" in
     \#*|"") continue ;;
+  esac
+  case "$material_owner" in
+    workspace-dependency:*)
+      resolve_workspace_dependency "${material_owner#workspace-dependency:}"
+      material_owner=$resolved_workspace_dependency_owner
+      ;;
   esac
   case "$declared_path" in
     \$MAVEN_USER_HOME/*) material_path="$maven_user_home/${declared_path#\$MAVEN_USER_HOME/}" ;;

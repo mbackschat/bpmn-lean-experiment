@@ -1,10 +1,13 @@
 import {
   DefinitionDeployStatus,
+  ProcessInstanceStartStatus,
   decodeDefinitionDeployResult,
   decodeDefinitionListResponse,
   decodeDefinitionVersionListResponse,
+  decodeProcessInstanceStartResult,
   decodePublicApiErrorResponse,
   definitionsCollectionPath,
+  definitionVersionStartPath,
   definitionVersionsPath,
   definitionVersionSourcePath,
 } from "@bpmn-lean/platform-contracts";
@@ -13,6 +16,7 @@ import type {
   DefinitionListResponse,
   DefinitionVersionListResponse,
   DeployedDefinitionVersion,
+  ProcessInstanceStartResult,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 
@@ -140,6 +144,42 @@ export class DefinitionApiClient {
     return bytes.slice();
   }
 
+  async start(definition: DeployedDefinitionVersion): Promise<ProcessInstanceStartResult> {
+    const expected = snapshotDefinition(definition);
+    const response = await this.#fetch(this.#url(definitionVersionStartPath(
+      expected.processId,
+      expected.version,
+    )), {
+      method: "POST",
+      headers: { accept: "application/json" },
+    });
+    if (response.status !== 201 && response.status !== 422) {
+      return await this.#throwApiError(response);
+    }
+    const result = decodeResponse(
+      await readJson(response),
+      decodeProcessInstanceStartResult,
+      "process-instance start response",
+    );
+    if (
+      (response.status === 201 && result.status !== ProcessInstanceStartStatus.Started) ||
+      (response.status === 422 && result.status !== ProcessInstanceStartStatus.Rejected)
+    ) {
+      throw new DefinitionProtocolError(
+        "process-instance start HTTP status does not match its result status",
+      );
+    }
+    const actual = result.status === ProcessInstanceStartStatus.Started
+      ? result.instance.definition
+      : result.definition;
+    if (!sameDefinition(actual, expected)) {
+      throw new DefinitionProtocolError(
+        "process-instance start response does not match the requested definition identity",
+      );
+    }
+    return result;
+  }
+
   #url(pathname: string): URL {
     return new URL(pathname, this.#origin);
   }
@@ -207,4 +247,30 @@ function requireNonempty(value: string, label: string): void {
   if (typeof value !== "string" || value.length === 0) {
     throw new TypeError(`${label} must not be empty`);
   }
+}
+
+function snapshotDefinition(
+  definition: DeployedDefinitionVersion,
+): DeployedDefinitionVersion {
+  return {
+    processId: definition.processId,
+    version: definition.version,
+    source: { ...definition.source },
+    semanticProfile: definition.semanticProfile,
+  };
+}
+
+function sameDefinition(
+  actual: DeployedDefinitionVersion,
+  expected: DeployedDefinitionVersion,
+): boolean {
+  return actual.processId === expected.processId &&
+    actual.version === expected.version &&
+    actual.semanticProfile === expected.semanticProfile &&
+    actual.source.kind === expected.source.kind &&
+    actual.source.id === expected.source.id &&
+    actual.source.sha256 === expected.source.sha256 &&
+    actual.source.byteLength === expected.source.byteLength &&
+    actual.source.declaredEncoding === expected.source.declaredEncoding &&
+    actual.source.decodedAs === expected.source.decodedAs;
 }

@@ -145,7 +145,7 @@ jobs:
 
       - name: Install Chromium for M1 browser acceptance
         if: runner.os == 'Linux'
-        run: pnpm --filter @bpmn-lean/platform-web exec playwright install --with-deps chromium
+        run: pnpm --filter @bpmn-lean/showcase-m1-definition-deployment exec playwright install --with-deps chromium
 
       - name: Verify M1 platform
         env:
@@ -156,7 +156,7 @@ jobs:
         if: runner.os == 'Linux'
         env:
           CI: "true"
-        run: ./scripts/pnpm.sh run test:platform-web:e2e
+        run: ./scripts/pnpm.sh run test:showcase:m1
 
       - name: Verify
         env:

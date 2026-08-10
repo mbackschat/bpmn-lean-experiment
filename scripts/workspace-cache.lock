@@ -1,4 +1,4 @@
-# role<TAB>path or environment-rooted path<TAB>identity owner
+# role<TAB>path or environment-rooted path<TAB>identity owner or workspace-dependency selector
 dependency	node_modules	pnpm-lock.yaml
 cache	.pnpm-store	pnpm store v11
 cache	.lake	lean-toolchain and lake-manifest.json
@@ -6,10 +6,10 @@ cache	.uv-cache	optional uv command cache
 cache	dist	root TypeScript build output
 cache	coverage	test coverage output
 cache	.cache/temporal-cli	Temporal CLI v1.8.1
-cache	.cache/temporal-test-server	Temporal SDK test server selected by packages/temporal-adapter/testkit/package.json
+cache	.cache/temporal-test-server	workspace-dependency:@temporalio/testing
 cache	runners/cibseven/target	runners/cibseven/pom.xml
 external-cache	$MAVEN_USER_HOME/repository	Maven artifact repository
 external-cache	$MAVEN_USER_HOME/wrapper/dists	Maven wrapper distributions
-external-cache	$PLAYWRIGHT_BROWSERS_PATH	Playwright Chromium test browser selected by platform/apps/web/package.json
+external-cache	$PLAYWRIGHT_BROWSERS_PATH	workspace-dependency:@playwright/test
 external-cache	$BPMN_EXTERNAL_ROOT/omg-bpmn-2.0.2/BPMN-2.0.2.md	optional generated BPMN Markdown conversion
 external-cache	$BPMN_EXTERNAL_ROOT/omg-bpmn-2.0.2/BPMN-2_0_2_images	optional generated BPMN figure extraction

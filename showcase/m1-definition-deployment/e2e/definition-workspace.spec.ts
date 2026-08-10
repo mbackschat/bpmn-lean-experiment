@@ -4,11 +4,11 @@ import { expect, test } from "@playwright/test";
 
 const profileId = "bpmn-2.0.2-user-task-preserved-notation-draft";
 const templateUrl = new URL(
-  "../../../../scenarios/user-task-preserved-notation/process.bpmn",
+  "../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,
 );
 
-test("deploys, versions, renders, and rejects a runtime-created third-party definition", async ({ page }) => {
+test("deploys, versions, renders, starts, and rejects a runtime-created third-party definition", async ({ page }) => {
   const token = `${Date.now()}_${process.pid}`;
   const processId = `Process_Browser_${token}`;
   const firstTaskName = `Review browser upload ${token}`;
@@ -32,6 +32,14 @@ test("deploys, versions, renders, and rejects a runtime-created third-party defi
   await expect(page.getByRole("button", { name: new RegExp(processId, "u") })).toContainText("Latest version 2");
   await expect(page.locator(".versions button")).toHaveCount(2);
   await expect(diagram).toContainText(diagramText(secondTaskName));
+
+  await page.locator(".versions button", { hasText: "1" }).click();
+  await page.getByRole("button", { name: "Start version 1" }).click();
+  await expect(page.getByText("Process instance started")).toBeVisible();
+  await expect(page.getByTestId("started-instance-definition")).toHaveText(
+    `${processId}, version 1`,
+  );
+  await expect(page.getByTestId("started-instance-id")).not.toBeEmpty();
 
   const rejectedSource = secondSource.replaceAll("bpmn:userTask", "bpmn:scriptTask");
   await deploy(page, processId, rejectedSource);

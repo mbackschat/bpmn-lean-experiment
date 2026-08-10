@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 
-import { PublicApiErrorCode } from "@bpmn-lean/platform-contracts";
+import {
+  ProcessInstanceStartStatus,
+  PublicApiErrorCode,
+} from "@bpmn-lean/platform-contracts";
 
 import {
   DefinitionApiClient,
@@ -152,6 +155,105 @@ test("uses public routes and rejects source bytes that drift from deployed ident
     corruptClient.getSource(deployed),
     (error: unknown) => error instanceof DefinitionProtocolError && /byte length/u.test(error.message),
   );
+});
+
+test("starts the selected exact version and rejects response identity drift", async () => {
+  const bytes = encoder.encode("<definitions id=\"start\"/>");
+  const definition = structuredClone(deployedResult(bytes).definition);
+  const expectedDefinition = structuredClone(definition);
+  const release = Promise.withResolvers<void>();
+  let capturedUrl: string | undefined;
+  let capturedInit: RequestInit | undefined;
+  const fetcher: typeof fetch = async (input, init) => {
+    capturedUrl = String(input);
+    capturedInit = init;
+    await release.promise;
+    return jsonResponse(201, {
+      status: ProcessInstanceStartStatus.Started,
+      instance: {
+        processInstanceId: "instance/start-001",
+        definition: expectedDefinition,
+      },
+    });
+  };
+  const client = new DefinitionApiClient("https://platform.test/ignored/", fetcher);
+
+  const pending = client.start(definition);
+  Object.assign(definition, { processId: "Process_Mutated", version: 99 });
+  Object.assign(definition.source, { sha256: "f".repeat(64) });
+  release.resolve();
+
+  assert.deepEqual(await pending, {
+    status: ProcessInstanceStartStatus.Started,
+    instance: {
+      processInstanceId: "instance/start-001",
+      definition: expectedDefinition,
+    },
+  });
+  assert.equal(
+    capturedUrl,
+    "https://platform.test/api/v1/definitions/Process_Upload/versions/2/start",
+  );
+  assert.equal(capturedInit?.method, "POST");
+  assert.equal(new Headers(capturedInit?.headers).get("accept"), "application/json");
+  assert.equal(new Headers(capturedInit?.headers).get("content-type"), null);
+  assert.equal(capturedInit?.body, undefined);
+
+  const driftedClient = new DefinitionApiClient(
+    "https://platform.test/",
+    async () => jsonResponse(201, {
+      status: ProcessInstanceStartStatus.Started,
+      instance: {
+        processInstanceId: "instance/start-002",
+        definition: { ...expectedDefinition, version: 3 },
+      },
+    }),
+  );
+  await assert.rejects(
+    driftedClient.start(expectedDefinition),
+    (error: unknown) =>
+      error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
+  );
+});
+
+test("accepts closed start rejection and rejects private or status-inconsistent results", async () => {
+  const bytes = encoder.encode("<definitions id=\"rejected-start\"/>");
+  const definition = deployedResult(bytes).definition;
+  const rejection = {
+    status: ProcessInstanceStartStatus.Rejected,
+    definition,
+    failure: {
+      code: "unsupportedStart",
+      evidence: "The exact stored definition cannot be started.",
+    },
+  } as const;
+  const rejectedClient = new DefinitionApiClient(
+    "https://platform.test/",
+    async () => jsonResponse(422, rejection),
+  );
+  assert.deepEqual(await rejectedClient.start(definition), rejection);
+
+  for (const [status, value] of [
+    [201, rejection],
+    [422, {
+      status: ProcessInstanceStartStatus.Started,
+      instance: { processInstanceId: "instance/status-drift", definition },
+    }],
+    [201, {
+      status: ProcessInstanceStartStatus.Started,
+      instance: {
+        processInstanceId: "instance/private-field",
+        definition,
+        workflowHandle: { workflowId: "private" },
+      },
+    }],
+  ] as const) {
+    const client = new DefinitionApiClient(
+      "https://platform.test/",
+      async () => jsonResponse(status, value),
+    );
+    await assert.rejects(client.start(definition), DefinitionProtocolError);
+  }
 });
 
 test("rejects private response fields and preserves closed public API errors", async () => {

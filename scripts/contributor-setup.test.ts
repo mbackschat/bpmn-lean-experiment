@@ -35,6 +35,26 @@ function workspacePackagePaths(): ReadonlyArray<string> {
   return packages.map(({ path: packagePath }) => packagePath);
 }
 
+async function workspaceDependencyOwner(dependencyName: string): Promise<string> {
+  const owners: Array<string> = [];
+  for (const packagePath of workspacePackagePaths()) {
+    const manifestPath = path.join(packagePath, "package.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Readonly<{
+      dependencies?: Readonly<Record<string, string>>;
+      devDependencies?: Readonly<Record<string, string>>;
+    }>;
+    const declaredVersion = manifest.dependencies?.[dependencyName]
+      ?? manifest.devDependencies?.[dependencyName];
+    if (declaredVersion !== undefined) {
+      owners.push(
+        `${path.relative(projectRoot, manifestPath)} declares ${dependencyName}@${declaredVersion}`,
+      );
+    }
+  }
+  assert.notEqual(owners.length, 0, dependencyName);
+  return owners.join(", ");
+}
+
 type LockedSource = Readonly<{
   scope: string;
   relativePath: string;
@@ -136,6 +156,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     readme,
     packageManifest,
     webPackageManifest,
+    showcasePackageManifest,
     caches,
     mavenWrapperProperties,
   ] =
@@ -152,6 +173,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       readFile(path.join(projectRoot, "README.md"), "utf8"),
       readFile(path.join(projectRoot, "package.json"), "utf8"),
       readFile(path.join(projectRoot, "platform/apps/web/package.json"), "utf8"),
+      readFile(path.join(projectRoot, "showcase/m1-definition-deployment/package.json"), "utf8"),
       readFile(path.join(projectRoot, "scripts/workspace-cache.lock"), "utf8"),
       readFile(path.join(projectRoot, "runners/cibseven/.mvn/wrapper/maven-wrapper.properties"), "utf8"),
     ]);
@@ -193,7 +215,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(corpusFetch, /mktemp -d "\$corpus_parent\/\.bpmn-corpus-fetch\.XXXXXX"/u);
   assert.match(workflow, /setup-external-sources\.sh verify/u);
   assert.match(workflow, /playwright install --with-deps chromium/u);
-  assert.match(workflow, /test:platform-web:e2e/u);
+  assert.match(workflow, /test:showcase:m1/u);
   assert.match(workflow, /if: runner\.os == 'Linux'/u);
   // The corpus cache path is written as an expression, so the relative-segment guard below can
   // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
@@ -203,16 +225,26 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(guide, /doctor\.sh research/u);
   assert.match(guide, /workspace meta-repository/u);
   assert.match(readme, /CONTRIBUTOR-SETUP-GUIDE\.md/u);
-  assert.match(readme, /test:platform-web:e2e/u);
+  assert.match(readme, /test:showcase:m1/u);
   assert.match(guide, /playwright install chromium/u);
-  assert.match(guide, /test:platform-web:e2e/u);
-  assert.match(packageManifest, /"test:platform-web:e2e"/u);
+  assert.match(guide, /test:showcase:m1/u);
+  assert.match(packageManifest, /"test:showcase:m1"/u);
   const webManifest = JSON.parse(webPackageManifest) as {
     dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
   };
   assert.equal(webManifest.dependencies?.["@playwright/test"], undefined);
-  assert.match(webManifest.devDependencies?.["@playwright/test"] ?? "", /^\d+\.\d+\.\d+$/u);
+  assert.equal(webManifest.devDependencies?.["@playwright/test"], undefined);
+  const showcaseManifest = JSON.parse(showcasePackageManifest) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  assert.equal(showcaseManifest.dependencies?.["@playwright/test"], undefined);
+  assert.match(showcaseManifest.devDependencies?.["@playwright/test"] ?? "", /^\d+\.\d+\.\d+$/u);
+  assert.equal(
+    showcaseManifest.devDependencies?.["@bpmn-lean/temporal-testkit"],
+    "workspace:*",
+  );
   assert.match(
     mavenWrapperProperties,
     /^distributionSha256Sum=2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a$/mu,
@@ -236,9 +268,9 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   }
   assert.match(caches, /^dependency\tnode_modules\tpnpm-lock\.yaml$/mu);
   assert.match(caches, /^cache\t\.cache\/temporal-cli\tTemporal CLI v1\.8\.1$/mu);
-  assert.match(caches, /^cache\t\.cache\/temporal-test-server\tTemporal SDK test server selected by packages\/temporal-adapter\/testkit\/package\.json$/mu);
+  assert.match(caches, /^cache\t\.cache\/temporal-test-server\tworkspace-dependency:@temporalio\/testing$/mu);
   assert.match(caches, /^external-cache\t\$MAVEN_USER_HOME\/repository\tMaven artifact repository$/mu);
-  assert.match(caches, /^external-cache\t\$PLAYWRIGHT_BROWSERS_PATH\tPlaywright Chromium test browser selected by platform\/apps\/web\/package\.json$/mu);
+  assert.match(caches, /^external-cache\t\$PLAYWRIGHT_BROWSERS_PATH\tworkspace-dependency:@playwright\/test$/mu);
   assert.match(doctor, /\$PLAYWRIGHT_BROWSERS_PATH\) material_path="\$playwright_browsers_path"/u);
   assert.deepEqual(
     caches.split("\n")
@@ -263,7 +295,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   );
 });
 
-test("doctor derives every workspace dependency owner and build cache from pnpm", () => {
+test("doctor derives every workspace dependency owner and build cache from pnpm", async () => {
   const doctorOutput = runProjectCommand("./scripts/doctor.sh", ["verify"]);
   const reportedOwners = new Set(
     [...doctorOutput.matchAll(/^DOCTOR_DEPENDENCY_OWNER (?<path>.+) sha256=/gmu)]
@@ -272,6 +304,12 @@ test("doctor derives every workspace dependency owner and build cache from pnpm"
   const reportedCaches = new Set(
     [...doctorOutput.matchAll(/^DOCTOR_CACHE .+ path=(?<path>\S+) owner=/gmu)]
       .flatMap((match) => match.groups?.path === undefined ? [] : [match.groups.path]),
+  );
+  const reportedCacheOwners = new Map(
+    [...doctorOutput.matchAll(/^DOCTOR_CACHE .+ path=(?<path>\S+) owner=(?<owner>.+)$/gmu)]
+      .flatMap((match) => match.groups?.path === undefined || match.groups.owner === undefined
+        ? []
+        : [[match.groups.path, match.groups.owner] as const]),
   );
 
   for (const packagePath of workspacePackagePaths()) {
@@ -284,6 +322,14 @@ test("doctor derives every workspace dependency owner and build cache from pnpm"
       assert.ok(reportedCaches.has(`${relativePackagePath}/dist`), relativePackagePath);
     }
   }
+  assert.equal(
+    reportedCacheOwners.get(".cache/temporal-test-server"),
+    await workspaceDependencyOwner("@temporalio/testing"),
+  );
+  assert.equal(
+    reportedCacheOwners.get("$PLAYWRIGHT_BROWSERS_PATH"),
+    await workspaceDependencyOwner("@playwright/test"),
+  );
 });
 
 test("external evidence consumers fail closed and honor the shared root", async () => {

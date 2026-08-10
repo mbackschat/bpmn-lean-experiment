@@ -11,11 +11,11 @@ This project builds two MIT products in one repository: a Temporal-hosted BPMN 2
 | Surface | Status |
 |---|---|
 | BPMN execution engine | Implemented, runnable product floor over a bounded semantic profile catalog |
-| BPM platform | M1 definition workspace and exact-version start API implemented: upload, admission diagnostics, content storage, durable versioning, exact-source reads, licensed diagram viewing, and Temporal start |
-| Active work | M1 UI start action and executable end-to-end showcase |
+| BPM platform | M1 closed: unseen exact BPMN deployment, admission diagnostics, content storage, durable versioning, exact-source viewing, selected-version start, and real Temporal hosting |
+| Active work | Pre-M2 decided-fixture cost review |
 | A12 Workflows | Separate downstream product outside this repository; reusable neutral mechanisms and an optional evidence handoff are preserved without placing A12 decisions in core |
 
-Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. Its adapter is split by execution environment into protocol, client, Workflow, Worker, runner, and testkit packages, with no production umbrella package. Product 2 exposes deployment, admission diagnostics, definition lists, version lists, exact admitted source, and exact-version start through a bounded HTTP API backed by filesystem content storage and SQLite metadata. Start recompiles stored bytes, binds source, digest, profile, Process ID, version, semantic instance ID, and Task Queue before the concrete Temporal client is called, and returns no SDK handle. Its React definition workspace uses the public API to upload BPMN, display accepted or rejected diagnostics, browse versions, and render exact admitted source through the licensed viewer-only `bpmn-js` adapter; the UI start action and registered end-to-end showcase remain absent. The M1 gate independently enforces clean-checkout type safety, package boundaries, and approved production licences; `pnpm-lock.yaml` plus frozen CI installation owns exact dependency resolution. The task inbox and identity system remain absent. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
+Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. Its adapter is split by execution environment into protocol, client, Workflow, Worker, runner, and testkit packages, with no production umbrella package. Product 2 exposes deployment, admission diagnostics, definition lists, version lists, exact admitted source, and exact-version start through a bounded HTTP API backed by filesystem content storage and SQLite metadata. Start recompiles stored bytes, binds source, digest, profile, Process ID, version, semantic instance ID, and Task Queue before the concrete Temporal client is called, and returns no SDK handle. Its React definition workspace uses only the public API to upload BPMN, display accepted or rejected diagnostics, browse versions, render exact admitted source through the licensed viewer-only `bpmn-js` adapter, and start the selected version. The registered M1 showcase creates unseen exact source at runtime and composes the production server and Worker against an ephemeral Temporal service. The M1 gates independently enforce clean-checkout type safety, package boundaries, approved production licences, and headless-browser acceptance; `pnpm-lock.yaml` plus frozen CI installation owns exact dependency resolution. The task inbox and identity system remain absent. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
 
 ## Vision and milestone plan
 
@@ -26,7 +26,7 @@ The showcase ladder is a dependency order, not a delivery schedule. [PLAN.md](do
 | Milestone | Status | Demonstration |
 |---|---|---|
 | M0 | Closed | Run the registered engine profile catalog through the Temporal runner |
-| M1 | In progress | A third party uploads an unseen BPMN file, receives honest admission diagnostics, stores and versions it, views the diagram, and starts an admitted instance |
+| M1 | Closed | A third party uploads an unseen BPMN file, receives honest admission diagnostics, stores and versions it, views the diagram, and starts an admitted instance |
 | M2 | Not started | Execute a cyclic model with real Message or Timer starts and the remaining selected base elements |
 | M3 | Not started | Use a real task inbox and form with values beyond string and null |
 | M4 | Not started | Diagnose, retry, and cancel failed work without confusing BPMN incidents with Temporal retries |
@@ -179,11 +179,11 @@ Useful focused gates:
 ./scripts/pnpm.sh run test:temporal
 ./scripts/pnpm.sh run test:pipeline
 ./scripts/pnpm.sh run test:platform-m1
-./scripts/pnpm.sh run test:platform-web:e2e
+./scripts/pnpm.sh run test:showcase:m1
 node --test scripts/platform-product-boundary.test.ts
 ```
 
-Run the local platform definition server with `./scripts/pnpm.sh run platform:serve`. It defaults to `http://127.0.0.1:3000` and stores local data under ignored `.data/platform/`. In a second terminal, run `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1` and open the printed local URL for the M1 definition workspace. Browser acceptance uses development-only Playwright and Chromium; install that test browser once with `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec playwright install chromium`.
+Run the local platform definition server with `./scripts/pnpm.sh run platform:serve`. It defaults to `http://127.0.0.1:3000` and stores local data under ignored `.data/platform/`. In a second terminal, run `./scripts/pnpm.sh --filter @bpmn-lean/platform-web exec vite --host 127.0.0.1` and open the printed local URL for the M1 definition workspace. Browser acceptance uses development-only Playwright and Chromium; install that test browser once with `./scripts/pnpm.sh --filter @bpmn-lean/showcase-m1-definition-deployment exec playwright install chromium`.
 
 When a task explicitly needs the optional A12 exact-source evidence, provision and run it separately with `./scripts/setup-external-sources.sh adoption` followed by `./scripts/test-a12-adoption.sh`.
 

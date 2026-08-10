@@ -210,6 +210,34 @@ test("applies path-based ownership to exact package names and subpaths", () => {
   );
 });
 
+test("lets showcases drive exact public packages while rejecting engine internals", () => {
+  const packageRoots = packageRootsFromManifests([
+    {
+      path: "packages/temporal-adapter/client/package.json",
+      source: '{"name":"@bpmn-lean/temporal-client"}',
+    },
+    {
+      path: "packages/temporal-adapter/testkit/package.json",
+      source: '{"name":"@bpmn-lean/temporal-testkit"}',
+    },
+  ]);
+  assert.deepEqual(
+    assessPlatformProductBoundary([
+      {
+        path: "showcase/m1-definition-deployment/src/host.ts",
+        source: 'import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-testkit";',
+      },
+      {
+        path: "showcase/m1-definition-deployment/src/deep-import.ts",
+        source: 'import { start } from "@bpmn-lean/temporal-client/src/process-client.js";',
+      },
+    ], { packageRoots }),
+    [
+      "showcase/m1-definition-deployment/src/deep-import.ts: engine internal import @bpmn-lean/temporal-client/src/process-client.js",
+    ],
+  );
+});
+
 test("fails closed for malformed and duplicate package identities", () => {
   assert.throws(
     () => packageRootsFromManifests([{ path: "platform/contracts/package.json", source: "{" }]),

@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig, devices } from "@playwright/test";
 
-const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
+const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 
 export default defineConfig({
   testDir: "./e2e",
@@ -27,15 +27,15 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "./scripts/pnpm.sh run platform:serve",
+      command: "./scripts/pnpm.sh run showcase:m1:host",
       cwd: projectRoot,
       env: {
-        PLATFORM_DATA_DIRECTORY: ".data/platform-playwright",
         PLATFORM_PARSER_DEADLINE_MS: "5000",
         PLATFORM_PORT: "3100",
+        PLATFORM_TEMPORAL_TASK_QUEUE: "bpmn-m1-showcase",
       },
       reuseExistingServer: false,
-      timeout: 120_000,
+      timeout: 60_000,
       url: "http://127.0.0.1:3100/api/v1/definitions",
     },
     {
@@ -45,7 +45,7 @@ export default defineConfig({
         PLATFORM_API_ORIGIN: "http://127.0.0.1:3100",
       },
       reuseExistingServer: false,
-      timeout: 120_000,
+      timeout: 60_000,
       url: "http://127.0.0.1:4173",
     },
   ],

@@ -410,6 +410,7 @@ export function assessPlatformProductBoundary(
     const relativePath = input.path.replaceAll("\\", "/").replace(/^\.\//u, "");
     const isEngine = isWithinRoot(relativePath, engineRoots);
     const isProductTwo = isWithinRoot(relativePath, productTwoRoots);
+    const isShowcase = isWithinRoot(relativePath, ["showcase"]);
     const isEngineGateway = isWithinRoot(relativePath, [engineGatewayRoot]);
     const sourcePlatformOwner = relativePath.startsWith("platform/")
       ? platformOwner(relativePath)
@@ -434,13 +435,19 @@ export function assessPlatformProductBoundary(
       }
       if (isProductTwo) {
         const approvedEngineImport = allowedEngineImports.has(specifier);
+        const publicShowcaseEngineImport = isShowcase &&
+          packageRoots.has(specifier) &&
+          target !== null &&
+          isWithinRoot(target, engineRoots);
         const packageInternal = specifier.startsWith("@bpmn-lean/") &&
           (target === null || isWithinRoot(target, engineRoots)) &&
-          !approvedEngineImport;
+          !approvedEngineImport &&
+          !publicShowcaseEngineImport;
         const publicEngineOutsideGateway = approvedEngineImport && !isEngineGateway;
         const relativeInternal = target !== null &&
           isWithinRoot(target, engineRoots) &&
-          !approvedEngineImport;
+          !approvedEngineImport &&
+          !publicShowcaseEngineImport;
         if (packageInternal || relativeInternal) {
           findings.add(`${relativePath}: engine internal import ${specifier}`);
         }

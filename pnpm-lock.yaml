@@ -186,9 +186,6 @@ importers:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
     devDependencies:
-      '@playwright/test':
-        specifier: 1.62.1
-        version: 1.62.1
       '@types/react':
         specifier: 19.2.18
         version: 19.2.18
@@ -223,6 +220,18 @@ importers:
       '@bpmn-lean/platform-engine-gateway':
         specifier: workspace:*
         version: link:../../foundation/engine-gateway
+
+  showcase/m1-definition-deployment:
+    devDependencies:
+      '@bpmn-lean/platform-server':
+        specifier: workspace:*
+        version: link:../../platform/apps/server
+      '@bpmn-lean/temporal-testkit':
+        specifier: workspace:*
+        version: link:../../packages/temporal-adapter/testkit
+      '@playwright/test':
+        specifier: 1.62.1
+        version: 1.62.1
 
 packages:
 

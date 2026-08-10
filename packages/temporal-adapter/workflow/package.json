@@ -12,6 +12,9 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
   "dependencies": {
     "@bpmn-lean/semantic-core": "workspace:*",
     "@bpmn-lean/temporal-protocol": "workspace:*",

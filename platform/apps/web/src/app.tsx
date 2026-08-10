@@ -8,6 +8,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import { DefinitionDiagram } from "./definition-diagram";
+import { DefinitionStartPanel } from "./definition-start-panel";
 import type { DefinitionApiClient } from "./definitions-api";
 
 export type AppProps = Readonly<{
@@ -102,7 +103,7 @@ export function App({ api }: AppProps) {
           <p className="eyebrow">BPMN Lean Platform</p>
           <h1>Definition workspace</h1>
         </div>
-        <p className="product-summary">Deploy exact BPMN, inspect honest admission, and view every retained version.</p>
+        <p className="product-summary">Deploy exact BPMN, inspect honest admission, view every retained version, and start the selected version.</p>
       </header>
 
       <section className="deploy-panel" aria-labelledby="deploy-heading">
@@ -173,7 +174,16 @@ export function App({ api }: AppProps) {
           <section className="empty-panel">
             <p>Select or deploy a definition to view its exact source diagram.</p>
           </section>
-        ) : <DefinitionDiagram api={api} definition={selected} />}
+        ) : (
+          <div className="selected-definition">
+            <DefinitionStartPanel
+              key={`${selected.processId}:${selected.version}`}
+              api={api}
+              definition={selected}
+            />
+            <DefinitionDiagram api={api} definition={selected} />
+          </div>
+        )}
       </div>
     </main>
   );

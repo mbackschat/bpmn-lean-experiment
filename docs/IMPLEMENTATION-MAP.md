@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 ## Current claim
 
-**Two products, one end-to-end implemented.** The BPMN execution engine executes a bounded but broad slice of BPMN 2.0.2 across twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has an owner-approved contract, a tracked modular-monolith architecture, executable product and dependency guards, and an HTTP-only M1 definition workspace plus exact-version Temporal start API, but no registered end-to-end M1 showcase; its absences are recorded under [BPM platform](#bpm-platform) below.
+**Two products, two end-to-end floors implemented.** The BPMN execution engine executes a bounded but broad slice of BPMN 2.0.2 across twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has an owner-approved contract, a tracked modular-monolith architecture, executable product and dependency guards, and a closed M1 definition-deployment showcase over the HTTP-only workspace, exact-version Temporal start, and a real production Worker; its later absences are recorded under [BPM platform](#bpm-platform) below.
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting. Each capsule owns its own meaning and exclusions; this document owns only their status.
 
@@ -34,7 +34,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 
 - Lean 4.31.0/Lake 5.0
 - Node 24.18.0
-- pnpm 11.20.0 with a repository-pinned CI-oriented local virtual-store projection, shared content-addressable store, exact wrapper-owned CLI selection that disables pnpm's recursive project-driven version switching, bounded wrapper regression execution, and ordinary/CI bare-wrapper guards
+- pnpm 11.20.0 with a repository-pinned CI-oriented local virtual-store projection, shared content-addressable store, exact wrapper-owned CLI selection that disables pnpm's recursive project-driven version switching, package-owned builds with graph-derived topological root commands, bounded wrapper regression execution, and ordinary/CI bare-wrapper guards
 - both the Node and pnpm pins owned by a single `package.json` field each, derived by the wrapper, doctor, and CI setup steps through `scripts/pinned-toolchain.sh`, and guarded against a stale selector, `engines` entry, derived consumer, or documented version
 - TypeScript 7.0.2
 - Ajv 8.20.0
@@ -76,24 +76,24 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 #### Implemented
 
 - The concrete modular-monolith architecture and decision register in [ARCHITECTURE.md](ARCHITECTURE.md)
-- Tracked ownership scaffolds for the server and web composition roots, public contracts, engine gateway, artifact store, definitions module, UI kit, production Workers, and the M1 showcase
+- Tracked owners for the server and web composition roots, public contracts, engine gateway, artifact store, definitions module, UI kit, production Workers, and the M1 showcase
 - Narrow `@bpmn-lean/engine-api` compilation and exact-definition start entry points plus `@bpmn-lean/platform-engine-gateway`, projecting source identity, definition identity, located admission diagnostics, and handle-free start outcomes without exposing the checked graph, Semantic Process program, or Temporal Workflow handle
 - `@bpmn-lean/platform-artifact-store`, which verifies exact SHA-256 identity, publishes caller-snapshotted bytes atomically without replacement, detects occupied-path corruption, and returns defensive copies
 - `@bpmn-lean/platform-contracts` with closed deeply immutable M1 definition and exact-version start transport types, strict unknown decoders, opaque engine diagnostics and start failures, and safe versioned route construction
 - `@bpmn-lean/platform-definitions`, which snapshots deployment and start inputs before their asynchronous boundaries, persists only admitted exact source, allocates durable process-local version ordinals through SQLite `BEGIN IMMEDIATE`, starts only one exact stored version, lists current and historical versions, and fails explicitly when metadata and content lose integrity
 - A Fetch-compatible definitions route contribution with closed raw-XML deployment input, claimed and streamed byte ceilings, producer-mutation-resistant chunk capture, exact-version body-free start, public-only accepted/rejected projections, exact version/source reads, strict path and method validation, and generic internal failures
 - `@bpmn-lean/platform-server`, a Node HTTP adapter with no external transport library and a modular-monolith composition root with configured request authority, streaming transport, ordered route dispatch, closed errors, local and Temporal environment configuration, and idempotent socket/SQLite/lazy-client lifecycle
-- An executable product-boundary guard that discovers tracked and pending source plus package manifests, resolves package aliases and subpaths to owners, fails closed on malformed or duplicate identities, and carries planted violations for every guarded dependency class
+- An executable product-boundary guard that discovers tracked and pending source plus package manifests, resolves package aliases and subpaths to owners, permits showcase evidence to drive exact public package roots while rejecting its deep imports, fails closed on malformed or duplicate identities, and carries planted violations for every guarded dependency class
 - An executable platform licence policy that delegates production-closure discovery to pnpm's native licence report, requires MIT, Apache-2.0, BSD-3-Clause, ISC, or one identity-scoped bpmn.io licence exception, and does not duplicate the lockfile's graph or exact version inventory
-- The HTTP-only `@bpmn-lean/platform-web` React 19.2.8 definition workspace, with exact upload, strict public response decoding, accepted and rejected diagnostics, catalog and version browsing, digest/length/ETag-verified exact-source retrieval, and no server/module/foundation import
+- The HTTP-only `@bpmn-lean/platform-web` React 19.2.8 definition workspace, with exact upload, strict public response decoding, accepted and rejected diagnostics, catalog and version browsing, digest/length/ETag-verified exact-source retrieval, selected exact-version start with request-to-response identity verification, and no server/module/foundation import
 - The owner-approved `bpmn-js` 18.22.1 viewer-only adapter, whose exact non-standard license text is hash-bound to its package identity, copied into the static distribution, and accompanied by an unchanged visible bpmn.io attribution link
 - Development-only Vite 7.3.6 and React declaration packages for the static build and strict type gate; no build tool enters the reachable production graph
-- Development-only Playwright 1.62.1 browser acceptance over its pinned headless Chromium, creating unseen exact BPMN bytes at runtime and checking admitted version 1, changed version 2, exact-source `bpmn-js` rendering and attribution, plus located rejection without version advancement; CI provisions and runs this required lane on Linux without adding any production dependency
+- The private `@bpmn-lean/showcase-m1-definition-deployment` acceptance package, which composes a cached ephemeral Temporal service, the production BPMN Worker, the production platform server, and the HTTP-only web client on one Task Queue without adding reusable behavior or a private API
+- Development-only Playwright 1.62.1 browser acceptance over its pinned headless Chromium, creating unseen exact BPMN bytes at runtime and checking admitted version 1, changed version 2, selected version-1 start through the concrete Temporal client, exact-source `bpmn-js` rendering and attribution, plus located rejection without version advancement; CI provisions and runs this required lane on Linux without adding any production dependency
 - A separate strict no-emit platform harness and generated-output import guard, with planted clean-checkout counterexamples, so the composed M1 gate runs in CI before the platform-independent engine gate without making `verify.sh` build the platform tree
 
 #### Explicitly absent
 
-- The UI start action and executable M1 showcase
 - the transition-record projection, every read model, and cross-instance discovery
 - task list, task interaction and form rendering, operations and monitoring console, incident handling and retry, execution history, and mining views
 - identity and authorization

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -36,6 +36,16 @@ async function runPnpm(
   return result.stdout.trim();
 }
 
+type WorkspacePackage = Readonly<{
+  name: string;
+  path: string;
+}>;
+
+type PackageManifest = Readonly<{
+  files?: ReadonlyArray<string>;
+  scripts?: Readonly<Record<string, string>>;
+}>;
+
 test("pins the repository-local virtual store in ordinary and CI execution", async () => {
   assert.equal(
     await runPnpm(
@@ -68,6 +78,49 @@ test("does not carry release-age exceptions when release-age protection is disab
     await runPnpm(["config", "get", "minimumReleaseAgeExclude"], environment),
     "undefined",
   );
+});
+
+test("derives workspace build order from package manifests", async () => {
+  const environment = pnpmEnvironment("true");
+  const packages = JSON.parse(await runPnpm(
+    ["list", "--recursive", "--depth", "-1", "--json"],
+    environment,
+  )) as ReadonlyArray<WorkspacePackage>;
+  const workspaceNames = new Set(packages.map(({ name }) => name));
+  const rootManifest = JSON.parse(await readFile(
+    path.join(projectRoot, "package.json"),
+    "utf8",
+  )) as PackageManifest;
+
+  for (const workspacePackage of packages) {
+    const manifest = JSON.parse(await readFile(
+      path.join(workspacePackage.path, "package.json"),
+      "utf8",
+    )) as PackageManifest;
+    if (manifest.files?.includes("dist") === true) {
+      assert.equal(
+        manifest.scripts?.build,
+        "tsc -p tsconfig.json",
+        `${workspacePackage.name} must own its build command`,
+      );
+    }
+  }
+
+  for (const [scriptName, command] of Object.entries(rootManifest.scripts ?? {})) {
+    if (!scriptName.startsWith("build:")) {
+      continue;
+    }
+    const graphBuild = /^pnpm --filter (?<packageName>\S+)\.\.\. --if-present run build$/u.exec(
+      command,
+    );
+    if (graphBuild?.groups?.packageName !== undefined) {
+      assert.ok(workspaceNames.has(graphBuild.groups.packageName), scriptName);
+      continue;
+    }
+    const alias = /^pnpm (?<scriptName>build:[a-z0-9-]+)$/u.exec(command);
+    assert.ok(alias?.groups?.scriptName !== undefined, `${scriptName}: ${command}`);
+    assert.ok(rootManifest.scripts?.[alias.groups.scriptName] !== undefined, scriptName);
+  }
 });
 
 test("disables pnpm CLI self-switching for version discovery and dispatch", async (context) => {

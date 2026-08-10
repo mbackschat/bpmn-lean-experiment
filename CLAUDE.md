@@ -266,6 +266,8 @@ Record exact version, role, license, provenance, and removal cost before adoptio
 
 Declare only direct production dependencies in the owning `package.json`, commit `pnpm-lock.yaml`, and require frozen-lockfile installation in CI so the lockfile remains the one exact resolution authority. Use `overrides` only for a documented transitive correction, not to duplicate the lockfile. Review the resolved production graph when adopting or upgrading a direct dependency and keep the whole graph inside the approved licence policy. Do not maintain a second hand-copied transitive-version inventory or an arbitrary resolved-package-count budget. The BPM platform uses pnpm's production licence report as its graph oracle; [`platform/license-policy.json`](platform/license-policy.json) owns only the permissive licence allowlist and exact non-standard licence exceptions. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
 
+Every workspace package that publishes `dist/` owns its own `build` script. Root build commands select a target package and let pnpm derive and topologically build its transitive workspace closure from package manifests. Do not duplicate that graph with a root-level `tsc` chain or hand-maintained package order; such a chain is allowed only after explaining a concrete limitation of pnpm's graph and obtaining owner approval.
+
 ## Documentation ownership
 
 Use one owner for each fact and link to it elsewhere:
@@ -383,10 +385,10 @@ Complete implemented M1 platform-package gate:
 
 This platform-only gate uses `tsconfig.platform-harness.json`; the default engine harness excludes `platform/` and `*.platform-test.ts`, so complete engine verification remains independent of platform package builds.
 
-Required M1 headless-browser acceptance after installing Playwright's pinned Chromium:
+Required M1 end-to-end showcase after installing Playwright's pinned Chromium:
 
 ```sh
-./scripts/pnpm.sh run test:platform-web:e2e
+./scripts/pnpm.sh run test:showcase:m1
 ```
 
 Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:

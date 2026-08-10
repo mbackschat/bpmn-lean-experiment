@@ -82,6 +82,7 @@ h2 {
 
 .deploy-panel,
 .catalog-panel,
+.start-panel,
 .diagram-panel,
 .empty-panel,
 .result {
@@ -207,6 +208,73 @@ form button:disabled {
   padding: 1.25rem;
 }
 
+.selected-definition {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.start-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem 2rem;
+  padding: 1.25rem;
+}
+
+.start-panel p:not(.eyebrow, .error) {
+  margin-bottom: 0;
+  color: #5b6964;
+}
+
+.start-panel > button {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 9px;
+  padding: 0.7rem 1.1rem;
+  background: #0e6b55;
+  color: #fff;
+  font-weight: 800;
+}
+
+.start-panel > button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.start-panel > .error,
+.start-result {
+  grid-column: 1 / -1;
+}
+
+.start-result {
+  display: grid;
+  grid-template-columns: auto auto minmax(12rem, 1fr);
+  align-items: center;
+  gap: 0.45rem 1rem;
+  border-left: 5px solid;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+}
+
+.start-result.accepted {
+  border-color: #238b6b;
+  background: #edf7f3;
+}
+
+.start-result.rejected {
+  border-color: #c8503d;
+  background: #fff0ed;
+}
+
+.start-result code {
+  overflow-wrap: anywhere;
+}
+
+.start-result p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
 .section-heading {
   display: flex;
   align-items: start;
@@ -326,7 +394,9 @@ form button:disabled {
   }
 
   form,
-  .workspace-grid {
+  .workspace-grid,
+  .start-panel,
+  .start-result {
     grid-template-columns: 1fr;
   }
 
