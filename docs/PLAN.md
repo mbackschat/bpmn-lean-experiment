@@ -145,7 +145,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Blocked: obtain explicit owner approval for the corrected Timer Start Event proposal.** The cold review of immutable target `6caa92b` returned five required edits, and the same reviewer approved correction target `eaaf944`. Do not implement the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md) before owner approval.
+1. **Next: implement the owner-approved Timer Start Event semantic checkpoint.** Implement the checked graph, `initiateTimer` IL, `triggerTimerStart` stimulus, independent TypeScript and proved Lean semantics, strict wires, and frozen-preservation guards from the reviewed [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md). Stop at the first green semantic checkpoint for independent review before registered evidence or live Temporal Schedule work.
 
 ## Approved decisions
 
@@ -250,9 +250,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: obtain explicit owner approval for the corrected [Timer Start Event proposal](capsules/TIMER-START-EVENT-PROPOSAL.md).** The cold review of target `6caa92b` returned five required edits, and the same reviewer approved correction target `eaaf944`. If the owner approves, implementation may begin from that reviewed account; otherwise revise or select another M2 increment.
+**Next action: implement the owner-approved Timer Start Event semantic checkpoint from reviewed correction target `eaaf944`.** Complete only the checked graph, `initiateTimer` IL, `triggerTimerStart` stimulus, independent TypeScript and proved Lean semantics, strict wires, and frozen-preservation guards. Commit the first green checkpoint, run its target-bound full gate, and submit it for independent cold semantic-checkpoint review before registered evidence or live Temporal Schedule work.
 
-**The only blocker is owner approval of the corrected Timer Start Event proposal.** No technical or environmental blocker remains. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**No technical or environmental blocker remains.** The owner approved all seven Timer Start decisions on 2026-08-11 and authorized implementation. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
 **Last verified commands:** the target-bound complete verifier for clean closure target `d118481` passed in 402.48 seconds with log SHA-256 `d83f41bcd2f6c40e56233f355fbf1d2f12fee5bebf8f4126d2e319024639759d`; its complete pipeline replayed 39 live histories. Closure correction evidence passes BPMN source 342/342, Message Start Lean conformance 39/39, documentation/review guards 44/44, and source hygiene 30/30. The mandatory Linux/arm64 audit passed with Lean 4.31.0 under one CPU, a 3 GiB memory-and-swap ceiling with effective swap disabled, and no OOM: 47.42 seconds wall, 2,621,760 KiB maximum RSS, and 2,816,004,096 bytes cgroup peak. The complete platform M1 gate passed in 14.53 seconds, the registered M1 showcase passed in 9.11 seconds, and the infrastructure gate passed 220/220 in 38.18 seconds.
 

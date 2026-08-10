@@ -2,7 +2,7 @@
 
 ## Status
 
-**Independent cold proposal review and its correction audit are closed; explicit owner approval is required before implementation. Not owner-approved and not implemented.** This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
+**Owner-approved on 2026-08-11; implementation is authorized and not yet complete.** The independent cold proposal review and its correction audit are closed. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
 
 ## Independent cold-review receipt
 
@@ -462,3 +462,5 @@ Owner approval is requested for these exact decisions:
 5. Keep Product 2 schedule API, lifecycle, and exact-version enforcement in the next platform increment while preserving exact compiled-program identity through this engine capsule.
 6. Use a proved Lean lane and require a conditional semantic checkpoint before registered evidence and live Temporal work.
 7. Keep Timer Start standards-only with no new CIB relationship or A12 dependency.
+
+The owner approved all seven decisions on 2026-08-11 and authorized implementation from reviewed correction target `eaaf944`.
