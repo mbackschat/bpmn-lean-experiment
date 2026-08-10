@@ -539,7 +539,7 @@ The stack work in [BPM platform technology stack research](BPM-PLATFORM-STACK-RE
 | HTTP long-polling | Select for phase one | Temporal UI demonstrates the pattern, it supports resume tokens and cancellation, and it avoids a second live transport before one is needed. |
 | HTTP server and upload handling | Adopt a maintained minimal library after a focused resolved-graph and security comparison | Hand-writing multipart parsing is the higher-risk choice. The decision should optimize the complete attack surface, not the direct package count. |
 
-The dependency guard must inspect the pnpm-resolved graph, package artifact licenses, install scripts, and runtime assets. The research measurements used npm for candidate comparison and must be re-measured under pnpm before becoming executable budgets.
+Dependency review must inspect the pnpm-resolved graph, package artifact licences, install scripts, and runtime assets. Standard owners remain separate: the committed lockfile and frozen CI installation own exact resolution, pnpm's native production licence report supplies the closure for the platform licence check, pnpm `allowBuilds` owns install-script permission, and distribution tests own runtime assets. The research measurements used npm for candidate comparison and must be re-measured under pnpm before adoption.
 
 ### Partner first
 

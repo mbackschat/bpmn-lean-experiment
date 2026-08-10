@@ -1,7 +1,7 @@
 import type { Server } from "node:http";
 
-export interface CloseableRepository {
-  close(): void;
+export interface CloseableResource {
+  close(): void | Promise<void>;
 }
 
 export interface PlatformServerRuntime {
@@ -9,10 +9,10 @@ export interface PlatformServerRuntime {
   close(): Promise<void>;
 }
 
-/** Owns socket and repository lifecycle after the composition root has completed wiring. */
+/** Owns the socket and composed resource lifecycle after wiring completes. */
 export class NodePlatformServerRuntime implements PlatformServerRuntime {
   readonly #server: Server;
-  readonly #repository: CloseableRepository;
+  readonly #resources: ReadonlyArray<CloseableResource>;
   readonly #host: string;
   readonly #port: number;
   readonly #publicOrigin: string;
@@ -21,7 +21,7 @@ export class NodePlatformServerRuntime implements PlatformServerRuntime {
 
   constructor(
     server: Server,
-    repository: CloseableRepository,
+    resources: ReadonlyArray<CloseableResource>,
     options: Readonly<{
       host: string;
       port: number;
@@ -29,7 +29,7 @@ export class NodePlatformServerRuntime implements PlatformServerRuntime {
     }>,
   ) {
     this.#server = server;
-    this.#repository = repository;
+    this.#resources = [...resources];
     this.#host = options.host;
     this.#port = options.port;
     this.#publicOrigin = options.publicOrigin;
@@ -49,7 +49,7 @@ export class NodePlatformServerRuntime implements PlatformServerRuntime {
   }
 
   close(): Promise<void> {
-    this.#closePromise ??= closeRuntime(this.#server, this.#repository);
+    this.#closePromise ??= closeRuntime(this.#server, this.#resources);
     return this.#closePromise;
   }
 }
@@ -78,7 +78,7 @@ async function listenOnce(
 
 async function closeRuntime(
   server: Server,
-  repository: CloseableRepository,
+  resources: ReadonlyArray<CloseableResource>,
 ): Promise<void> {
   try {
     if (server.listening) {
@@ -87,6 +87,22 @@ async function closeRuntime(
       });
     }
   } finally {
-    repository.close();
+    await closeResources(resources);
+  }
+}
+
+export async function closeResources(
+  resources: ReadonlyArray<CloseableResource>,
+): Promise<void> {
+  let firstFailure: unknown;
+  for (const resource of resources.toReversed()) {
+    try {
+      await resource.close();
+    } catch (error: unknown) {
+      firstFailure ??= error;
+    }
+  }
+  if (firstFailure !== undefined) {
+    throw firstFailure;
   }
 }

@@ -105,6 +105,8 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 ## Working method
 
+Default to common, established ecosystem practices and native tool mechanisms. Do not invent a bespoke abstraction, policy, manifest, workflow, or duplicate source of truth when the standard practice satisfies the requirement. When a concrete project constraint requires a deviation, explain the standard approach, the exact gap, and the tradeoff to the owner and obtain approval before implementing the deviation.
+
 ### Semantic code
 
 Use red/green TDD:
@@ -262,7 +264,7 @@ Keep each component’s dependencies at the smallest approved set and add one on
 
 Record exact version, role, license, provenance, and removal cost before adoption.
 
-Approval bounds the direct addition; it does not bound what that addition resolves to, and a transitive graph can double on a patch upgrade nobody reviews. Both halves must therefore become executable. The obligated footprint guard fails when a product's resolved package count exceeds its recorded budget or when any license in that resolved graph falls outside the permissive set, and a budget rises only in the change that records the approval raising it. The BPM platform's exact budget and permissive-license allowlist live in [`platform/dependency-policy.json`](platform/dependency-policy.json), and its platform-only gate traverses the installed reachable production graph. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
+Declare only direct production dependencies in the owning `package.json`, commit `pnpm-lock.yaml`, and require frozen-lockfile installation in CI so the lockfile remains the one exact resolution authority. Use `overrides` only for a documented transitive correction, not to duplicate the lockfile. Review the resolved production graph when adopting or upgrading a direct dependency and keep the whole graph inside the approved licence policy. Do not maintain a second hand-copied transitive-version inventory or an arbitrary resolved-package-count budget. The BPM platform uses pnpm's production licence report as its graph oracle; [`platform/license-policy.json`](platform/license-policy.json) owns only the permissive licence allowlist and exact non-standard licence exceptions. Prefer a built-in capability, a bounded hand-written owner, or doing without over a dependency whose value is convenience.
 
 ## Documentation ownership
 

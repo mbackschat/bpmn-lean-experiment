@@ -72,7 +72,7 @@ Footprint numbers described as measured were obtained by installing into an empt
 
 **Those measurements used npm, not pnpm**, because `packages` and `hasInstallScript` are `package-lock.json` fields. This repository mandates pnpm, and a pnpm resolution can differ. The figures are therefore comparable to each other, which is what the candidate comparison needed, but **any figure that becomes a budget an executable guard reads must be re-measured under pnpm first**.
 
-Where a fact could not be established from a primary source it is recorded as not determined rather than estimated. Two facts in this document were initially reported wrongly by research lanes and corrected by direct measurement; both corrections are recorded in [section 9](#9-method-findings-for-the-dependency-guard) because they bear on how the dependency guard must work.
+Where a fact could not be established from a primary source it is recorded as not determined rather than estimated. Two facts in this document were initially reported wrongly by research lanes and corrected by direct measurement; both corrections are recorded in [section 9](#9-method-findings-for-dependency-review) because they bear on how dependency review must work.
 
 ## 5. Background: what "headless" means
 
@@ -360,15 +360,15 @@ A12's reference full-stack template depends on it at runtime and `a12-workflows`
 
 Three planned pieces of work fall away. The swap-friendly component-boundary discipline is no longer a product requirement, only ordinary hygiene. The objection that Tailwind blocks a component swap loses its force. And React is no longer justified by A12-widget compatibility; it is justified by R6.
 
-## 9. Method findings for the dependency guard
+## 9. Method findings for dependency review
 
-Three findings bear on how [the dependency posture](../PROJECT-DESIGN.md#dependency-posture) must be enforced, and all three argue that the executable check must read the resolved lockfile graph rather than declared metadata.
+Three findings bear on how [the dependency posture](../PROJECT-DESIGN.md#dependency-posture) must be enforced. They require review of the locked production closure rather than direct-package counts, but do not justify a second hand-maintained version inventory beside pnpm's lockfile.
 
 **A repository licence file and its published artifact can disagree, and the repository is the more visible of the two.** Two independent research lanes reported opposite licences for `primereact@11.1.0`, each having read a real source. The GitHub `master` `LICENSE.md` reads "The MIT License (MIT), Copyright (c) 2016-2025 PrimeTek", while the **published npm tarball ships a "PrimeUI License"** that is commercial, requires an offline-verified licence key, and restricts its free Community tier to organizations under one million US dollars of revenue with fewer than five developers and fewer than ten employees. The npm `license` field corroborates the change, reading `MIT` at 10.9.8 and `SEE LICENSE IN LICENSE.md` at 11.1.0. Version 10.9.8 remains MIT.
 
 **A declared direct dependency count can understate the real footprint by an order of magnitude.** Chakra declares seven and carries 67 more through `@ark-ui/react`; the Radix meta-package costs 90 resolved packages where eight individually chosen primitives cost 64.
 
-**Install scripts are invisible to a package count and were the finding that disqualified Carbon.** Its 22 `postinstall` hooks do not show up in any size or licence measure, so the guard must check them explicitly.
+**Install scripts are invisible to a package count and were the finding that disqualified Carbon.** Its 22 `postinstall` hooks do not show up in any size or licence measure. The repository therefore uses pnpm's standard `allowBuilds` setting to deny unapproved dependency scripts instead of maintaining a second custom inventory.
 
 A fourth finding concerns research method rather than the guard: **a GitHub contributor headcount is not a bus-factor measure.** Mantine's roughly 460 contributors and its 97.8% single-contributor commit concentration are both true, and only the second answers R7.
 

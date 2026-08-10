@@ -1,5 +1,6 @@
 import {
   DefinitionDeployStatus,
+  ProcessInstanceStartStatus,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -9,35 +10,44 @@ import type {
   DefinitionVersionListResponse,
   DeployedDefinitionVersion,
   ExactPublicSourceIdentity,
+  ProcessInstanceStartResult,
   PublicApiErrorCode as PublicApiErrorCodeValue,
   PublicApiErrorResponse,
 } from "@bpmn-lean/platform-contracts";
 
-import { DefinitionDeploymentStatus } from "./contracts.js";
+import {
+  DefinitionDeploymentStatus,
+  DefinitionVersionStartStatus,
+} from "./contracts.js";
 import type {
   DefinitionDeploymentResult,
   DefinitionDiagnostic,
   DefinitionMetadata,
   DefinitionSourceIdentity,
+  DefinitionVersionStartResult,
 } from "./contracts.js";
 import type { DefinitionDeploymentService } from "./definition-deployment-service.js";
+import type { DefinitionStartService } from "./definition-start-service.js";
 import {
   decodeProcessId,
   HttpRequestFailure,
   parseDeploymentQuery,
   parsePositiveVersion,
   readBoundedBody,
+  requireEmptyStartBody,
   requireDeploymentMediaType,
 } from "./http-request.js";
 
 const definitionsPath = "/api/v1/definitions";
 const versionsRoute = /^\/api\/v1\/definitions\/([^/]*)\/versions$/u;
 const sourceRoute = /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/source$/u;
+const startRoute = /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/start$/u;
 
 const DefinitionRouteKind = {
   Collection: "collection",
   Versions: "versions",
   Source: "source",
+  Start: "start",
 } as const;
 
 type DefinitionRoute =
@@ -50,6 +60,11 @@ type DefinitionRoute =
       kind: typeof DefinitionRouteKind.Source;
       rawProcessId: string;
       rawVersion: string;
+    }>
+  | Readonly<{
+      kind: typeof DefinitionRouteKind.Start;
+      rawProcessId: string;
+      rawVersion: string;
     }>;
 
 export type DefinitionHttpRoutesOptions = Readonly<{
@@ -58,11 +73,13 @@ export type DefinitionHttpRoutesOptions = Readonly<{
 
 /** Definition module contribution to the platform's Fetch-compatible HTTP boundary. */
 export class DefinitionHttpRoutes {
-  readonly #service: DefinitionDeploymentService;
+  readonly #deploymentService: DefinitionDeploymentService;
+  readonly #startService: DefinitionStartService;
   readonly #maxSourceBytes: number;
 
   constructor(
-    service: DefinitionDeploymentService,
+    deploymentService: DefinitionDeploymentService,
+    startService: DefinitionStartService,
     options: DefinitionHttpRoutesOptions,
   ) {
     if (
@@ -71,7 +88,8 @@ export class DefinitionHttpRoutes {
     ) {
       throw new RangeError("maxSourceBytes must be a positive safe integer");
     }
-    this.#service = service;
+    this.#deploymentService = deploymentService;
+    this.#startService = startService;
     this.#maxSourceBytes = options.maxSourceBytes;
   }
 
@@ -122,6 +140,16 @@ export class DefinitionHttpRoutes {
           request,
           url,
         );
+      case DefinitionRouteKind.Start:
+        if (request.method !== "POST") {
+          return methodNotAllowed("POST");
+        }
+        return await this.#start(
+          route.rawProcessId,
+          route.rawVersion,
+          request,
+          url,
+        );
       default:
         return assertNever(route);
     }
@@ -131,7 +159,7 @@ export class DefinitionHttpRoutes {
     const query = parseDeploymentQuery(url);
     requireDeploymentMediaType(request.headers);
     const bytes = await readBoundedBody(request, this.#maxSourceBytes);
-    const result = await this.#service.deploy({
+    const result = await this.#deploymentService.deploy({
       bytes,
       sourceId: query.sourceId,
       semanticProfile: query.semanticProfile,
@@ -151,7 +179,7 @@ export class DefinitionHttpRoutes {
   #list(request: Request, url: URL): Response {
     requireNoQuery(request, url);
     const result = {
-      definitions: this.#service
+      definitions: this.#deploymentService
         .listLatestDefinitions()
         .map(toPublicDefinition),
     } as const satisfies DefinitionListResponse;
@@ -163,7 +191,7 @@ export class DefinitionHttpRoutes {
     const processId = decodeProcessId(rawProcessId);
     const result = {
       processId,
-      versions: this.#service
+      versions: this.#deploymentService
         .listDefinitionVersions(processId)
         .map(toPublicDefinition),
     } as const satisfies DefinitionVersionListResponse;
@@ -181,7 +209,7 @@ export class DefinitionHttpRoutes {
       processId: decodeProcessId(rawProcessId),
       version: parsePositiveVersion(rawVersion),
     };
-    const metadata = this.#service.getDefinitionMetadata(reference);
+    const metadata = this.#deploymentService.getDefinitionMetadata(reference);
     if (metadata === null) {
       return errorResponse(
         404,
@@ -189,7 +217,7 @@ export class DefinitionHttpRoutes {
         "The definition version was not found.",
       );
     }
-    const bytes = await this.#service.getDefinitionSource(reference);
+    const bytes = await this.#deploymentService.getDefinitionSource(reference);
     if (bytes === null) {
       return errorResponse(
         404,
@@ -209,11 +237,47 @@ export class DefinitionHttpRoutes {
       },
     });
   }
+
+  async #start(
+    rawProcessId: string,
+    rawVersion: string,
+    request: Request,
+    url: URL,
+  ): Promise<Response> {
+    requireNoQuery(request, url);
+    await requireEmptyStartBody(request);
+    const result = await this.#startService.start({
+      processId: decodeProcessId(rawProcessId),
+      version: parsePositiveVersion(rawVersion),
+    });
+    switch (result.status) {
+      case DefinitionVersionStartStatus.Started:
+        return jsonResponse(201, toPublicStartResult(result));
+      case DefinitionVersionStartStatus.Rejected:
+        return jsonResponse(422, toPublicStartResult(result));
+      case DefinitionVersionStartStatus.NotFound:
+        return errorResponse(
+          404,
+          PublicApiErrorCode.NotFound,
+          "The definition version was not found.",
+        );
+      default:
+        return assertNever(result);
+    }
+  }
 }
 
 function matchRoute(pathname: string): DefinitionRoute | null {
   if (pathname === definitionsPath) {
     return { kind: DefinitionRouteKind.Collection };
+  }
+  const startMatch = startRoute.exec(pathname);
+  if (startMatch !== null) {
+    return {
+      kind: DefinitionRouteKind.Start,
+      rawProcessId: startMatch[1] ?? "",
+      rawVersion: startMatch[2] ?? "",
+    };
   }
   const sourceMatch = sourceRoute.exec(pathname);
   if (sourceMatch !== null) {
@@ -231,6 +295,32 @@ function matchRoute(pathname: string): DefinitionRoute | null {
     };
   }
   return null;
+}
+
+function toPublicStartResult(
+  result: Exclude<
+    DefinitionVersionStartResult,
+    { status: typeof DefinitionVersionStartStatus.NotFound }
+  >,
+): ProcessInstanceStartResult {
+  switch (result.status) {
+    case DefinitionVersionStartStatus.Started:
+      return {
+        status: ProcessInstanceStartStatus.Started,
+        instance: {
+          processInstanceId: result.instance.processInstanceId,
+          definition: toPublicDefinition(result.instance.definition),
+        },
+      };
+    case DefinitionVersionStartStatus.Rejected:
+      return {
+        status: ProcessInstanceStartStatus.Rejected,
+        definition: toPublicDefinition(result.definition),
+        failure: { ...result.failure },
+      };
+    default:
+      return assertNever(result);
+  }
 }
 
 function toPublicDeployment(
@@ -307,7 +397,7 @@ function requireNoQuery(request: Request, url: URL): void {
     throw new HttpRequestFailure(
       400,
       PublicApiErrorCode.InvalidRequest,
-      "GET definition routes do not accept query parameters.",
+      "This definition route does not accept query parameters.",
     );
   }
 }

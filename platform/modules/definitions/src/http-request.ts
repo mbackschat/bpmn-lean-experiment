@@ -128,6 +128,31 @@ export async function readBoundedBody(
   return bytes;
 }
 
+/** Start accepts no semantic input; consume the transport stream and require zero bytes. */
+export async function requireEmptyStartBody(request: Request): Promise<void> {
+  if (request.headers.get("content-type") !== null) {
+    throw invalidRequest("Definition start does not accept a media type.");
+  }
+  const claimedLength = parseClaimedLength(request.headers);
+  if (claimedLength !== null && claimedLength !== 0) {
+    throw invalidRequest("Definition start does not accept a request body.");
+  }
+  if (request.body === null) {
+    return;
+  }
+  const reader = request.body.getReader();
+  while (true) {
+    const result = await reader.read();
+    if (result.done) {
+      return;
+    }
+    if (result.value.byteLength > 0) {
+      await reader.cancel().catch(() => undefined);
+      throw invalidRequest("Definition start does not accept a request body.");
+    }
+  }
+}
+
 function parseClaimedLength(headers: Headers): number | null {
   const value = headers.get("content-length");
   if (value === null) {

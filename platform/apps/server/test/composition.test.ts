@@ -20,6 +20,10 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
     dataDirectory,
     maxSourceBytes: 1024,
     parserDeadlineMs: 1000,
+    temporalAddress: "127.0.0.1:7233",
+    temporalNamespace: "default",
+    temporalTaskQueue: "bpmn-semantic",
+    temporalConnectTimeoutMs: 5000,
   });
   try {
     assert.equal(await runtime.listen(), origin);
@@ -51,6 +55,10 @@ test("validates all configuration before creating its data directory", async () 
       dataDirectory,
       maxSourceBytes: 1024,
       parserDeadlineMs: 1000,
+      temporalAddress: "127.0.0.1:7233",
+      temporalNamespace: "default",
+      temporalTaskQueue: "bpmn-semantic",
+      temporalConnectTimeoutMs: 5000,
     }), /publicOrigin/u);
     await assert.rejects(stat(dataDirectory), { code: "ENOENT" });
   } finally {

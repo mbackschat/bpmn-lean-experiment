@@ -13,6 +13,10 @@ test("provides bounded local-MVP defaults", () => {
     dataDirectory: ".data/platform",
     maxSourceBytes: 1024 * 1024,
     parserDeadlineMs: 1000,
+    temporalAddress: "127.0.0.1:7233",
+    temporalNamespace: "default",
+    temporalTaskQueue: "bpmn-semantic",
+    temporalConnectTimeoutMs: 5000,
   });
 });
 
@@ -24,6 +28,10 @@ test("snapshots explicit environment configuration", () => {
     PLATFORM_DATA_DIRECTORY: "/tmp/platform-data",
     PLATFORM_MAX_SOURCE_BYTES: "2097152",
     PLATFORM_PARSER_DEADLINE_MS: "2500",
+    PLATFORM_TEMPORAL_ADDRESS: "temporal.internal:7233",
+    PLATFORM_TEMPORAL_NAMESPACE: "processes",
+    PLATFORM_TEMPORAL_TASK_QUEUE: "platform-processes",
+    PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS: "4000",
   };
   const config = readPlatformServerConfig(environment);
   environment.PLATFORM_HOST = "attacker.invalid";
@@ -34,6 +42,10 @@ test("snapshots explicit environment configuration", () => {
     dataDirectory: "/tmp/platform-data",
     maxSourceBytes: 2097152,
     parserDeadlineMs: 2500,
+    temporalAddress: "temporal.internal:7233",
+    temporalNamespace: "processes",
+    temporalTaskQueue: "platform-processes",
+    temporalConnectTimeoutMs: 4000,
   });
 });
 
@@ -42,6 +54,9 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     "PLATFORM_HOST",
     "PLATFORM_PUBLIC_ORIGIN",
     "PLATFORM_DATA_DIRECTORY",
+    "PLATFORM_TEMPORAL_ADDRESS",
+    "PLATFORM_TEMPORAL_NAMESPACE",
+    "PLATFORM_TEMPORAL_TASK_QUEUE",
   ]) {
     assert.throws(
       () => readPlatformServerConfig({ [name]: "" }),
@@ -53,6 +68,7 @@ test("rejects empty strings and malformed, unsafe, or out-of-range integers", ()
     "PLATFORM_PORT",
     "PLATFORM_MAX_SOURCE_BYTES",
     "PLATFORM_PARSER_DEADLINE_MS",
+    "PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS",
   ]) {
     for (const value of ["0", "-1", "1.5", "1e3", "abc", "9007199254740992"]) {
       assert.throws(

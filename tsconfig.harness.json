@@ -27,6 +27,9 @@
       "@bpmn-lean/temporal-client": [
         "./packages/temporal-adapter/client/src/index.ts"
       ],
+      "@bpmn-lean/temporal-client/definition-start": [
+        "./packages/temporal-adapter/client/src/definition-start-client.ts"
+      ],
       "@bpmn-lean/temporal-protocol": [
         "./packages/temporal-adapter/protocol/src/index.ts"
       ],

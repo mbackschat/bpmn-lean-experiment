@@ -66,6 +66,46 @@ export type DefinitionDeploymentResult =
   | DeployedDefinitionDeployment
   | RejectedDefinitionDeployment;
 
+export const DefinitionVersionStartStatus = {
+  Started: "started",
+  Rejected: "rejected",
+  NotFound: "notFound",
+} as const;
+
+export type DefinitionVersionStartStatus =
+  typeof DefinitionVersionStartStatus[keyof typeof DefinitionVersionStartStatus];
+
+export type DefinitionStartFailure = Readonly<{
+  code: string;
+  evidence: string;
+}>;
+
+export type DefinitionProcessInstanceIdentity = Readonly<{
+  processInstanceId: string;
+  definition: DefinitionMetadata;
+}>;
+
+export type StartedDefinitionVersionStart = Readonly<{
+  status: typeof DefinitionVersionStartStatus.Started;
+  instance: DefinitionProcessInstanceIdentity;
+}>;
+
+export type RejectedDefinitionVersionStart = Readonly<{
+  status: typeof DefinitionVersionStartStatus.Rejected;
+  definition: DefinitionMetadata;
+  failure: DefinitionStartFailure;
+}>;
+
+export type MissingDefinitionVersionStart = Readonly<{
+  status: typeof DefinitionVersionStartStatus.NotFound;
+  reference: DefinitionReference;
+}>;
+
+export type DefinitionVersionStartResult =
+  | StartedDefinitionVersionStart
+  | RejectedDefinitionVersionStart
+  | MissingDefinitionVersionStart;
+
 /** Exact-byte capability consumed by the definitions business workflow. */
 export interface ExactArtifactStore {
   put(request: ArtifactPutRequest): Promise<ArtifactPutResult>;
@@ -84,13 +124,39 @@ export interface DefinitionRepository {
 export class DefinitionArtifactIntegrityError extends Error {
   readonly definition: DefinitionReference;
   readonly sourceSha256: string;
+  readonly expectedByteLength: number | null;
+  readonly actualByteLength: number | null;
 
-  constructor(definition: DefinitionReference, sourceSha256: string) {
+  constructor(
+    definition: DefinitionReference,
+    sourceSha256: string,
+    lengths: Readonly<{
+      expected: number;
+      actual: number;
+    }> | null = null,
+  ) {
     super(
-      `definition ${definition.processId}/${definition.version} references missing artifact ${sourceSha256}`,
+      lengths === null
+        ? `definition ${definition.processId}/${definition.version} references missing artifact ${sourceSha256}`
+        : `definition ${definition.processId}/${definition.version} artifact ${sourceSha256} has ${lengths.actual} bytes instead of ${lengths.expected}`,
     );
     this.name = "DefinitionArtifactIntegrityError";
     this.definition = { ...definition };
     this.sourceSha256 = sourceSha256;
+    this.expectedByteLength = lengths?.expected ?? null;
+    this.actualByteLength = lengths?.actual ?? null;
+  }
+}
+
+/** Raised when engine start does not preserve the selected stored definition binding. */
+export class DefinitionStartIntegrityError extends Error {
+  readonly definition: DefinitionReference;
+
+  constructor(definition: DefinitionReference) {
+    super(
+      `definition ${definition.processId}/${definition.version} did not remain identity-bound during start`,
+    );
+    this.name = "DefinitionStartIntegrityError";
+    this.definition = { ...definition };
   }
 }

@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-07; M1 definition deployment is partially implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. The public definition deployment API, modular-monolith server, and HTTP-only React definition workspace exist, while the M1 start surface, executable showcase, and later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
+**Owner-approved on 2026-08-07; M1 remains partially implemented.** It is the accepted phase-one contract for product 2 of [the product division](PROJECT-DESIGN.md#product-division): an MIT-licensed BPM platform on Temporal, built in this repository on top of the BPMN execution engine. The public definition deployment and exact-version start API, modular-monolith server, and HTTP-only React definition workspace exist, while the UI start action, executable showcase, and later product capabilities remain incomplete, so this document remains a proposal; [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) reserves `-SPEC` for a fully implemented contract. The independent cold proposal review returned `approve-with-required-edits`; all findings are closed and audited, as [the receipt](#independent-cold-review-receipt) records.
 
 Sequencing belongs to [PLAN.md](PLAN.md), durable product and semantic boundaries to [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete implementation architecture to [ARCHITECTURE.md](ARCHITECTURE.md), the exact implemented boundary to [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md), and the stack evidence to [the platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md). The [competitive platform-scope research](research/BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) records a broader growth horizon and does not expand this proposal's first-product contract.
 
@@ -133,7 +133,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Styling method | Open; CSS Modules costs nothing extra under Vite | **Open decision** |
 | Charting | Hand-rolled SVG first; a dependency-free library if that proves insufficient | **Open decision** |
 | Live updates | HTTP long-polling on the Temporal pattern, no WebSockets or server-sent events | Proposed |
-| HTTP surface | Fetch-compatible module routes behind the built-in Node HTTP server; deployment uses one bounded raw XML body | Implemented for M1 without an external dependency |
+| HTTP surface | Fetch-compatible module routes behind the built-in Node HTTP server; deployment uses one bounded raw XML body and exact-version start accepts no body | Implemented for M1 without an external transport dependency |
 | Browser acceptance | Playwright 1.62.1 with its pinned Chromium | Owner-approved and implemented 2026-08-09 as development/CI-only evidence |
 
 ### Approval record for the selected four
@@ -155,9 +155,9 @@ The two React runtime roots add exactly three MIT identities to that graph: Reac
 
 ### Approval record for `bpmn-js`
 
-The owner approved `bpmn-js` 18.22.1 on 2026-08-09 after comparing it with the Apache-2.0 `bpmn-visualization` alternative. The platform accepts the bpmn.io license condition: the supplied watermark remains unchanged, fully visible, linked to bpmn.io, and unobstructed. The exact dependency license is retained under the web application and hash-bound to the package identity by the executable dependency policy.
+The owner approved `bpmn-js` 18.22.1 on 2026-08-09 after comparing it with the Apache-2.0 `bpmn-visualization` alternative. The platform accepts the bpmn.io licence condition: the supplied watermark remains unchanged, fully visible, linked to bpmn.io, and unobstructed. The exact dependency licence is retained under the web application and hash-bound to the package identity by the executable licence policy.
 
-The real pnpm workspace resolution for the implemented web application contains exactly 23 reachable production package identities: 20 MIT, 1 Apache-2.0, 1 ISC, and `bpmn-js` under the approved `LicenseRef-bpmn.io` text. The renderer is confined to the web viewer adapter, consumes exact source returned by the public API, and has no authority over admission or BPMN meaning. Removal cost is medium: replace that adapter and its overlay integration without changing the server, engine, source identity, or public contract.
+The renderer is confined to the web viewer adapter, consumes exact source returned by the public API, and has no authority over admission or BPMN meaning. Its direct declaration belongs in the web package manifest, its exact resolved closure belongs in `pnpm-lock.yaml`, and pnpm's production licence report is checked against the platform policy without copying package identities into this proposal. Removal cost is medium: replace that adapter and its overlay integration without changing the server, engine, source identity, or public contract.
 
 ### Approval record for Playwright
 

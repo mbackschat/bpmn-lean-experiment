@@ -74,25 +74,42 @@ test("rejects every product-boundary regression class", () => {
   );
 });
 
-test("permits only an explicitly named narrow engine entry point", () => {
+test("permits only explicitly named narrow engine entry points through the gateway", () => {
   const packageRoots = packageRootsFromManifests([
     {
       path: "packages/engine-api/package.json",
       source: '{"name":"@bpmn-lean/engine-api"}',
     },
+    {
+      path: "packages/temporal-adapter/client/package.json",
+      source: '{"name":"@bpmn-lean/temporal-client"}',
+    },
   ]);
-  const gatewaySource = {
-    path: "platform/foundation/engine-gateway/src/compile.ts",
-    source: 'import { compile } from "@bpmn-lean/engine-api";',
-  } as const;
-  assert.deepEqual(assessPlatformProductBoundary([gatewaySource], { packageRoots }), [
-    "platform/foundation/engine-gateway/src/compile.ts: engine internal import @bpmn-lean/engine-api",
-  ]);
+  const gatewaySources = [
+    {
+      path: "platform/foundation/engine-gateway/src/compile.ts",
+      source: 'import { compile } from "@bpmn-lean/engine-api";',
+    },
+    {
+      path: "platform/foundation/engine-gateway/src/start.ts",
+      source: 'import { start } from "@bpmn-lean/temporal-client/definition-start";',
+    },
+  ] as const;
+  assert.deepEqual(
+    assessPlatformProductBoundary(gatewaySources, { packageRoots }),
+    [
+      "platform/foundation/engine-gateway/src/compile.ts: engine internal import @bpmn-lean/engine-api",
+      "platform/foundation/engine-gateway/src/start.ts: engine internal import @bpmn-lean/temporal-client/definition-start",
+    ],
+  );
   assert.deepEqual(
     assessPlatformProductBoundary(
-      [gatewaySource],
+      gatewaySources,
       {
-        allowedEngineImports: new Set(["@bpmn-lean/engine-api"]),
+        allowedEngineImports: new Set([
+          "@bpmn-lean/engine-api",
+          "@bpmn-lean/temporal-client/definition-start",
+        ]),
         packageRoots,
       },
     ),
@@ -102,7 +119,7 @@ test("permits only an explicitly named narrow engine entry point", () => {
     assessPlatformProductBoundary(
       [{
         path: "platform/workers/juel-evaluator/src/worker.ts",
-        source: gatewaySource.source,
+        source: gatewaySources[0].source,
       }],
       {
         allowedEngineImports: new Set(["@bpmn-lean/engine-api"]),
@@ -111,6 +128,24 @@ test("permits only an explicitly named narrow engine entry point", () => {
     ),
     [
       "platform/workers/juel-evaluator/src/worker.ts: public engine import outside engine gateway @bpmn-lean/engine-api",
+    ],
+  );
+  assert.deepEqual(
+    assessPlatformProductBoundary(
+      [{
+        path: "platform/apps/server/src/start.ts",
+        source: gatewaySources[1].source,
+      }],
+      {
+        allowedEngineImports: new Set([
+          "@bpmn-lean/engine-api",
+          "@bpmn-lean/temporal-client/definition-start",
+        ]),
+        packageRoots,
+      },
+    ),
+    [
+      "platform/apps/server/src/start.ts: public engine import outside engine gateway @bpmn-lean/temporal-client/definition-start",
     ],
   );
 });
@@ -199,7 +234,10 @@ test("keeps tracked and pending sources and manifests inside the product boundar
   const repository = await repositoryProductBoundary(projectRoot);
   assert.deepEqual(
     assessPlatformProductBoundary(repository.sources, {
-      allowedEngineImports: new Set(["@bpmn-lean/engine-api"]),
+      allowedEngineImports: new Set([
+        "@bpmn-lean/engine-api",
+        "@bpmn-lean/temporal-client/definition-start",
+      ]),
       packageRoots: repository.packageRoots,
     }),
     [],

@@ -16,9 +16,12 @@ import type {
   DefinitionMetadata,
   DefinitionReference,
   DefinitionRepository,
-  DefinitionSourceIdentity,
   ExactArtifactStore,
 } from "./contracts.js";
+import {
+  cloneDefinitionMetadata,
+  cloneDefinitionSource,
+} from "./definition-values.js";
 
 /** Admission and accepted-only persistence for one exact BPMN definition source. */
 export class DefinitionDeploymentService {
@@ -52,7 +55,7 @@ export class DefinitionDeploymentService {
 
     switch (compilation.status) {
       case DefinitionCompilationStatus.Accepted: {
-        const source = cloneSource(compilation.source);
+        const source = cloneDefinitionSource(compilation.source);
         const processId = compilation.definition.processId;
         const acceptedSemanticProfile = compilation.definition.semanticProfile;
         await this.#artifacts.put({
@@ -68,13 +71,13 @@ export class DefinitionDeploymentService {
           status: DefinitionDeploymentStatus.Deployed,
           source,
           diagnostics: [],
-          definition: cloneMetadata(definition),
+          definition: cloneDefinitionMetadata(definition),
         };
       }
       case DefinitionCompilationStatus.Rejected:
         return {
           status: DefinitionDeploymentStatus.Rejected,
-          source: cloneSource(compilation.source),
+          source: cloneDefinitionSource(compilation.source),
           diagnostics: compilation.diagnostics.map(cloneDiagnostic),
           definition: undefined,
         };
@@ -84,18 +87,18 @@ export class DefinitionDeploymentService {
   }
 
   listLatestDefinitions(): ReadonlyArray<DefinitionMetadata> {
-    return this.#repository.listLatest().map(cloneMetadata);
+    return this.#repository.listLatest().map(cloneDefinitionMetadata);
   }
 
   listDefinitionVersions(processId: string): ReadonlyArray<DefinitionMetadata> {
     return this.#repository
       .listVersions(processId)
-      .map(cloneMetadata);
+      .map(cloneDefinitionMetadata);
   }
 
   getDefinitionMetadata(reference: DefinitionReference): DefinitionMetadata | null {
     const definition = this.#repository.get(reference);
-    return definition === null ? null : cloneMetadata(definition);
+    return definition === null ? null : cloneDefinitionMetadata(definition);
   }
 
   async getDefinitionSource(
@@ -114,17 +117,6 @@ export class DefinitionDeploymentService {
     }
     return Uint8Array.from(bytes);
   }
-}
-
-function cloneMetadata(definition: DefinitionMetadata): DefinitionMetadata {
-  return {
-    ...definition,
-    source: cloneSource(definition.source),
-  };
-}
-
-function cloneSource(source: DefinitionSourceIdentity): DefinitionSourceIdentity {
-  return { ...source };
 }
 
 function cloneDiagnostic(diagnostic: DefinitionDiagnostic): DefinitionDiagnostic {

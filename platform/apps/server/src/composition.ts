@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -5,9 +6,12 @@ import { FileArtifactStore } from "@bpmn-lean/platform-artifact-store";
 import {
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
+  DefinitionStartService,
   SqliteDefinitionRepository,
 } from "@bpmn-lean/platform-definitions";
-import { BpmnEngineGateway } from "@bpmn-lean/platform-engine-gateway";
+import {
+  createBpmnEngineGatewayRuntime,
+} from "@bpmn-lean/platform-engine-gateway";
 
 import {
   snapshotPlatformServerConfig,
@@ -16,7 +20,10 @@ import type { PlatformServerConfig } from "./config.js";
 import {
   createPlatformHttpServerFromValidatedOrigin,
 } from "./http-adapter.js";
-import { NodePlatformServerRuntime } from "./runtime.js";
+import {
+  NodePlatformServerRuntime,
+  closeResources,
+} from "./runtime.js";
 import type { PlatformServerRuntime } from "./runtime.js";
 
 /** Creates the M1 modular-monolith runtime from published package entry points. */
@@ -26,9 +33,13 @@ export async function createPlatformServer(
   const snapshot = snapshotPlatformServerConfig(config);
   await mkdir(snapshot.dataDirectory, { recursive: true });
 
-  const compiler = new BpmnEngineGateway({
+  const engineRuntime = createBpmnEngineGatewayRuntime({
     maxSourceBytes: snapshot.maxSourceBytes,
     parserDeadlineMs: snapshot.parserDeadlineMs,
+    temporalAddress: snapshot.temporalAddress,
+    temporalNamespace: snapshot.temporalNamespace,
+    temporalTaskQueue: snapshot.temporalTaskQueue,
+    temporalConnectTimeoutMs: snapshot.temporalConnectTimeoutMs,
   });
   const artifacts = new FileArtifactStore(
     join(snapshot.dataDirectory, "artifacts"),
@@ -38,20 +49,39 @@ export async function createPlatformServer(
   );
   try {
     const service = new DefinitionDeploymentService(
-      compiler,
+      engineRuntime.gateway,
       artifacts,
       repository,
     );
-    const definitionRoutes = new DefinitionHttpRoutes(service, {
-      maxSourceBytes: snapshot.maxSourceBytes,
-    });
+    const startService = new DefinitionStartService(
+      engineRuntime.gateway,
+      artifacts,
+      repository,
+      randomUUID,
+    );
+    const definitionRoutes = new DefinitionHttpRoutes(
+      service,
+      startService,
+      { maxSourceBytes: snapshot.maxSourceBytes },
+    );
     const server = createPlatformHttpServerFromValidatedOrigin({
       publicOrigin: snapshot.publicOrigin,
       routes: [(request) => definitionRoutes.handle(request)],
     });
-    return new NodePlatformServerRuntime(server, repository, snapshot);
+    return new NodePlatformServerRuntime(
+      server,
+      [engineRuntime, repository],
+      snapshot,
+    );
   } catch (error: unknown) {
-    repository.close();
+    try {
+      await closeResources([engineRuntime, repository]);
+    } catch (cleanupError: unknown) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Platform server composition and cleanup both failed",
+      );
+    }
     throw error;
   }
 }

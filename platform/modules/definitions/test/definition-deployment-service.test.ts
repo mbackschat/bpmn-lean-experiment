@@ -14,7 +14,7 @@ import type {
   ArtifactPutResult,
 } from "@bpmn-lean/platform-artifact-store";
 import {
-  BpmnEngineGateway,
+  createBpmnEngineGatewayRuntime,
   DefinitionCompilationStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
@@ -181,16 +181,21 @@ test("snapshots bytes and every scalar before the compiler can yield", async () 
 
 test("returns exact engine rejection diagnostics and performs zero writes", async () => {
   await withRepository(async ({ repository }) => {
-    const compiler = new BpmnEngineGateway({
+    const runtime = createBpmnEngineGatewayRuntime({
       maxSourceBytes: 1_024,
       parserDeadlineMs: 500,
+      temporalAddress: "localhost:7233",
+      temporalNamespace: "default",
+      temporalTaskQueue: "unused-test-queue",
+      temporalConnectTimeoutMs: 100,
     });
-    const rejectedCompilation = await compiler.compileDefinition({
+    const rejectedCompilation = await runtime.gateway.compileDefinition({
       bytes: encoder.encode("<not-bpmn>"),
       sourceId: "rejected-source",
       semanticProfile: "test-profile",
       expectedSha256: undefined,
     });
+    await runtime.close();
     assert.equal(
       rejectedCompilation.status,
       DefinitionCompilationStatus.Rejected,

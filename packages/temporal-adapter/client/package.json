@@ -5,7 +5,11 @@
   "type": "module",
   "license": "MIT",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./definition-start": {
+      "types": "./dist/definition-start-client.d.ts",
+      "import": "./dist/definition-start-client.js"
+    }
   },
   "types": "./dist/index.d.ts",
   "files": [

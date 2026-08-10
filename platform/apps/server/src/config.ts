@@ -8,6 +8,10 @@ const defaultPort = 3_000;
 const defaultDataDirectory = ".data/platform";
 const defaultMaxSourceBytes = 1024 * 1024;
 const defaultParserDeadlineMs = 1_000;
+const defaultTemporalAddress = "127.0.0.1:7233";
+const defaultTemporalNamespace = "default";
+const defaultTemporalTaskQueue = "bpmn-semantic";
+const defaultTemporalConnectTimeoutMs = 5_000;
 
 export type PlatformServerConfig = Readonly<{
   host: string;
@@ -16,6 +20,10 @@ export type PlatformServerConfig = Readonly<{
   dataDirectory: string;
   maxSourceBytes: number;
   parserDeadlineMs: number;
+  temporalAddress: string;
+  temporalNamespace: string;
+  temporalTaskQueue: string;
+  temporalConnectTimeoutMs: number;
 }>;
 
 export type ValidatedPlatformServerConfig = Readonly<
@@ -53,6 +61,26 @@ export function readPlatformServerConfig(
       "PLATFORM_PARSER_DEADLINE_MS",
       defaultParserDeadlineMs,
     ),
+    temporalAddress: readNonemptyString(
+      environment,
+      "PLATFORM_TEMPORAL_ADDRESS",
+      defaultTemporalAddress,
+    ),
+    temporalNamespace: readNonemptyString(
+      environment,
+      "PLATFORM_TEMPORAL_NAMESPACE",
+      defaultTemporalNamespace,
+    ),
+    temporalTaskQueue: readNonemptyString(
+      environment,
+      "PLATFORM_TEMPORAL_TASK_QUEUE",
+      defaultTemporalTaskQueue,
+    ),
+    temporalConnectTimeoutMs: readPositiveSafeInteger(
+      environment,
+      "PLATFORM_TEMPORAL_CONNECT_TIMEOUT_MS",
+      defaultTemporalConnectTimeoutMs,
+    ),
   };
 }
 
@@ -65,6 +93,13 @@ export function snapshotPlatformServerConfig(
   requireNonempty(config.dataDirectory, "dataDirectory");
   requirePositiveSafeInteger(config.maxSourceBytes, "maxSourceBytes");
   requirePositiveSafeInteger(config.parserDeadlineMs, "parserDeadlineMs");
+  requireNonempty(config.temporalAddress, "temporalAddress");
+  requireNonempty(config.temporalNamespace, "temporalNamespace");
+  requireNonempty(config.temporalTaskQueue, "temporalTaskQueue");
+  requirePositiveSafeInteger(
+    config.temporalConnectTimeoutMs,
+    "temporalConnectTimeoutMs",
+  );
   return { ...config, publicOrigin };
 }
 

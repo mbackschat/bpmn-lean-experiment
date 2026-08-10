@@ -53,6 +53,55 @@ test("rejects test-server reachability from the production client", async () => 
   ]);
 });
 
+test("permits only the concrete client through the Product 2 engine gateway", async () => {
+  const root = await createValidBoundaryFixture();
+  await writeManifest(
+    path.join(root, "platform", "foundation", "engine-gateway", "package.json"),
+    {
+      name: "@example/engine-gateway",
+      private: true,
+      dependencies: {
+        "@bpmn-lean/temporal-client": "workspace:*",
+        "@bpmn-lean/temporal-worker": "workspace:*",
+        "@temporalio/client": "1.21.0",
+      },
+    },
+  );
+  await writeManifest(
+    path.join(root, "platform", "apps", "server", "package.json"),
+    {
+      name: "@example/server",
+      private: true,
+      dependencies: {
+        "@bpmn-lean/temporal-client": "workspace:*",
+      },
+    },
+  );
+  await mkdir(path.join(root, "platform", "apps", "server", "src"), {
+    recursive: true,
+  });
+  await writeFile(
+    path.join(root, "platform", "apps", "server", "src", "direct.ts"),
+    'import { WorkflowClient } from "@temporalio/client";\n',
+  );
+  await mkdir(
+    path.join(root, "platform", "foundation", "engine-gateway", "src"),
+    { recursive: true },
+  );
+  await writeFile(
+    path.join(root, "platform", "foundation", "engine-gateway", "src", "worker.ts"),
+    'import { Worker } from "@bpmn-lean/temporal-worker";\n',
+  );
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "platform/apps/server/package.json: Product 2 Temporal dependency @bpmn-lean/temporal-client is allowed only in platform/foundation/engine-gateway/package.json",
+    "platform/apps/server/src/direct.ts: forbidden Product 2 Temporal SDK import @temporalio/client",
+    "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal SDK dependency @temporalio/client",
+    "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal dependency @bpmn-lean/temporal-worker",
+    "platform/foundation/engine-gateway/src/worker.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-worker",
+  ]);
+});
+
 test("rejects Node built-ins from Workflow-reachable protocol code", async () => {
   const root = await createValidBoundaryFixture();
   const protocolSource = path.join(

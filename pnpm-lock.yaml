@@ -48,6 +48,9 @@ importers:
       '@bpmn-lean/semantic-core':
         specifier: workspace:*
         version: link:../semantic-core
+      '@bpmn-lean/temporal-client':
+        specifier: workspace:*
+        version: link:../temporal-adapter/client
 
   packages/semantic-core: {}
 
@@ -205,6 +208,9 @@ importers:
       '@bpmn-lean/engine-api':
         specifier: workspace:*
         version: link:../../../packages/engine-api
+      '@bpmn-lean/temporal-client':
+        specifier: workspace:*
+        version: link:../../../packages/temporal-adapter/client
 
   platform/modules/definitions:
     dependencies:

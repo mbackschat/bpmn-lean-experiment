@@ -61,13 +61,23 @@ export type EngineDefinitionCompilationResult =
 export async function compileBpmnDefinition(
   request: EngineDefinitionCompilationRequest,
 ): Promise<EngineDefinitionCompilationResult> {
-  const compilation = await compileBpmnToSemanticProcess({
-    bytes: request.bytes,
+  if (!(request.bytes instanceof Uint8Array)) {
+    throw new TypeError("bytes must be a Uint8Array");
+  }
+  const snapshot = {
+    bytes: Uint8Array.from(request.bytes),
     sourceId: request.sourceId,
-    expectedSha256: request.expectedSha256,
     semanticProfile: request.semanticProfile,
+    expectedSha256: request.expectedSha256,
+    limits: { ...request.limits },
+  };
+  const compilation = await compileBpmnToSemanticProcess({
+    bytes: snapshot.bytes,
+    sourceId: snapshot.sourceId,
+    expectedSha256: snapshot.expectedSha256,
+    semanticProfile: snapshot.semanticProfile,
     sourceOverlay: null,
-    limits: request.limits,
+    limits: snapshot.limits,
   });
   switch (compilation.status) {
     case BpmnCompilationStatus.Accepted:
@@ -95,3 +105,5 @@ export async function compileBpmnDefinition(
 function assertNever(value: never): never {
   throw new TypeError(`Unsupported BPMN compilation result: ${String(value)}`);
 }
+
+export * from "./definition-start.js";

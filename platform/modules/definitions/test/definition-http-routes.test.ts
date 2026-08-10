@@ -5,17 +5,19 @@ import { test } from "node:test";
 import { ArtifactPutStatus } from "@bpmn-lean/platform-artifact-store";
 import { PublicApiErrorCode } from "@bpmn-lean/platform-contracts";
 import {
-  BpmnEngineGateway,
+  createBpmnEngineGatewayRuntime,
   DefinitionCompilationStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionCompilationRequest,
   DefinitionCompilationResult,
   DefinitionCompiler,
+  DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
+  DefinitionStartService,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionMetadata,
@@ -37,7 +39,7 @@ type CompilerBehavior =
 
 test("rejects streamed source bytes beyond the ceiling when Content-Length is absent", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 5 });
+  const routes = routesFor(fixture, 5);
   const request = streamedDeploymentRequest(
     [encoder.encode("abc"), encoder.encode("def")],
   );
@@ -56,7 +58,7 @@ test("rejects streamed source bytes beyond the ceiling when Content-Length is ab
 
 test("rejects actual streamed bytes beyond a permitted Content-Length claim", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 5 });
+  const routes = routesFor(fixture, 5);
   const request = streamedDeploymentRequest(
     [encoder.encode("abc"), encoder.encode("def")],
     { "content-length": "4" },
@@ -70,7 +72,7 @@ test("rejects actual streamed bytes beyond a permitted Content-Length claim", as
 
 test("snapshots each streamed chunk before the producer can mutate it", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 5 });
+  const routes = routesFor(fixture, 5);
   const firstChunk = Uint8Array.from([1, 2, 3]);
   let pullCount = 0;
   const stream = new ReadableStream<Uint8Array>({
@@ -108,7 +110,7 @@ test("snapshots each streamed chunk before the producer can mutate it", async ()
 
 test("rejects a claimed oversize body before deployment", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 5 });
+  const routes = routesFor(fixture, 5);
   const request = deploymentRequest(encoder.encode("x"), {
     "content-length": "6",
   });
@@ -121,7 +123,7 @@ test("rejects a claimed oversize body before deployment", async () => {
 
 test("forwards exact bytes and returns only the closed deployed projection", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+  const routes = routesFor(fixture, 128);
   const bytes = Uint8Array.from([0, 60, 120, 109, 108, 62, 255]);
   const response = await routes.handle(deploymentRequest(bytes, {
     "content-type": "application/bpmn+xml; charset=\"utf-8\"",
@@ -155,7 +157,7 @@ test("forwards exact bytes and returns only the closed deployed projection", asy
 
 test("maps an engine rejection and opaque diagnostics to 422 without writes", async () => {
   const fixture = createFixture(CompilerBehavior.Reject);
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+  const routes = routesFor(fixture, 128);
   const bytes = encoder.encode("<unsupported/>");
   const response = await routes.handle(deploymentRequest(bytes));
 
@@ -184,7 +186,7 @@ test("accepts only the selected XML media types with syntactic parameters", asyn
   ];
   for (const mediaType of accepted) {
     const fixture = createFixture();
-    const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+    const routes = routesFor(fixture, 128);
     const response = await routes.handle(deploymentRequest(
       encoder.encode("<xml/>"),
       { "content-type": mediaType },
@@ -195,7 +197,7 @@ test("accepts only the selected XML media types with syntactic parameters", asyn
   const rejected = [null, "application/json", "application/xml;"];
   for (const mediaType of rejected) {
     const fixture = createFixture();
-    const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+    const routes = routesFor(fixture, 128);
     const response = await routes.handle(mediaType === null
       ? new Request(
           "http://platform.test/api/v1/definitions?sourceId=upload.bpmn&semanticProfile=profile",
@@ -214,7 +216,7 @@ test("rejects malformed lengths and missing or empty bodies before deployment", 
   const malformedLengths = ["-1", "1.5", "1, 2", "9007199254740992"];
   for (const value of malformedLengths) {
     const fixture = createFixture();
-    const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+    const routes = routesFor(fixture, 128);
     const response = await routes.handle(deploymentRequest(
       encoder.encode("x"),
       { "content-length": value },
@@ -225,7 +227,7 @@ test("rejects malformed lengths and missing or empty bodies before deployment", 
 
   for (const body of [null, new Uint8Array()] as const) {
     const fixture = createFixture();
-    const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+    const routes = routesFor(fixture, 128);
     const response = await routes.handle(deploymentRequest(body));
     assert.equal(response?.status, 400);
     assert.equal(fixture.compileCalls.length, 0);
@@ -242,7 +244,7 @@ test("rejects incomplete, duplicate, extra, empty, and malformed deployment quer
   ];
   for (const query of queries) {
     const fixture = createFixture();
-    const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+    const routes = routesFor(fixture, 128);
     const response = await routes.handle(deploymentRequest(
       encoder.encode("<xml/>"),
       {},
@@ -255,7 +257,7 @@ test("rejects incomplete, duplicate, extra, empty, and malformed deployment quer
 
 test("lists latest definitions and ascending versions through JSON routes", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+  const routes = routesFor(fixture, 128);
   await routes.handle(deploymentRequest(encoder.encode("<one/>")));
   await routes.handle(deploymentRequest(encoder.encode("<two/>")));
 
@@ -288,7 +290,7 @@ test("lists latest definitions and ascending versions through JSON routes", asyn
 
 test("decodes an encoded process segment exactly once", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+  const routes = routesFor(fixture, 128);
 
   const response = await routes.handle(new Request(
     "http://platform.test/api/v1/definitions/Process%252FStillEncoded/versions",
@@ -300,7 +302,7 @@ test("decodes an encoded process segment exactly once", async () => {
 
 test("returns exact source bytes with length and a digest-bound ETag", async () => {
   const fixture = createFixture("accept", "Process/Encoded");
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+  const routes = routesFor(fixture, 128);
   const bytes = Uint8Array.from([60, 120, 109, 108, 62, 0, 255]);
   await routes.handle(deploymentRequest(bytes));
 
@@ -317,7 +319,7 @@ test("returns exact source bytes with length and a digest-bound ETag", async () 
 
 test("rejects invalid GET inputs and returns 404 for unknown metadata", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+  const routes = routesFor(fixture, 128);
   const invalidUrls = [
     "http://platform.test/api/v1/definitions?unexpected=1",
     "http://platform.test/api/v1/definitions/Process/versions?unexpected=1",
@@ -340,7 +342,7 @@ test("rejects invalid GET inputs and returns 404 for unknown metadata", async ()
 
 test("returns 405 for wrong methods on recognized paths and null for unknown paths", async () => {
   const fixture = createFixture();
-  const routes = new DefinitionHttpRoutes(fixture.service, { maxSourceBytes: 128 });
+  const routes = routesFor(fixture, 128);
   const recognized = [
     new Request("http://platform.test/api/v1/definitions", { method: "PUT" }),
     new Request("http://platform.test/api/v1/definitions/Process/versions", { method: "POST" }),
@@ -362,13 +364,13 @@ test("returns 405 for wrong methods on recognized paths and null for unknown pat
 
 test("maps unexpected service and artifact-integrity failures to a generic 500", async () => {
   const failing = createFixture(CompilerBehavior.Throw);
-  const failingRoutes = new DefinitionHttpRoutes(failing.service, { maxSourceBytes: 128 });
+  const failingRoutes = routesFor(failing, 128);
   const failedDeploy = await failingRoutes.handle(deploymentRequest(encoder.encode("<xml/>")));
   assert.equal(failedDeploy?.status, 500);
   assert.doesNotMatch(await failedDeploy!.text(), /private compiler detail/u);
 
   const missing = createFixture();
-  const missingRoutes = new DefinitionHttpRoutes(missing.service, { maxSourceBytes: 128 });
+  const missingRoutes = routesFor(missing, 128);
   await missingRoutes.handle(deploymentRequest(encoder.encode("<xml/>")));
   missing.artifacts.clear();
   const failedRead = await missingRoutes.handle(new Request(
@@ -382,7 +384,11 @@ test("requires a positive safe source-byte ceiling", () => {
   const fixture = createFixture();
   for (const maxSourceBytes of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
     assert.throws(
-      () => new DefinitionHttpRoutes(fixture.service, { maxSourceBytes }),
+      () => new DefinitionHttpRoutes(
+        fixture.service,
+        fixture.startService,
+        { maxSourceBytes },
+      ),
       /positive safe integer/u,
     );
   }
@@ -422,6 +428,20 @@ function streamedDeploymentRequest(
   );
 }
 
+function routesFor(
+  fixture: Readonly<{
+    service: DefinitionDeploymentService;
+    startService: DefinitionStartService;
+  }>,
+  maxSourceBytes: number,
+): DefinitionHttpRoutes {
+  return new DefinitionHttpRoutes(
+    fixture.service,
+    fixture.startService,
+    { maxSourceBytes },
+  );
+}
+
 function createFixture(
   behavior: CompilerBehavior = CompilerBehavior.Accept,
   processId = "Process_Upload",
@@ -430,14 +450,11 @@ function createFixture(
   compileCalls: DefinitionCompilationRequest[];
   compilationResults: DefinitionCompilationResult[];
   service: DefinitionDeploymentService;
+  startService: DefinitionStartService;
   versionListProcessIds: string[];
 }> {
   const compileCalls: DefinitionCompilationRequest[] = [];
   const compilationResults: DefinitionCompilationResult[] = [];
-  const rejectingGateway = new BpmnEngineGateway({
-    maxSourceBytes: 1_024,
-    parserDeadlineMs: 500,
-  });
   const compiler: DefinitionCompiler = {
     compileDefinition: async (request) => {
       compileCalls.push({
@@ -448,9 +465,21 @@ function createFixture(
         throw new Error("private compiler detail");
       }
       if (behavior === CompilerBehavior.Reject) {
-        const result = await rejectingGateway.compileDefinition(request);
-        compilationResults.push(result);
-        return result;
+        const runtime = createBpmnEngineGatewayRuntime({
+          maxSourceBytes: 1_024,
+          parserDeadlineMs: 500,
+          temporalAddress: "localhost:7233",
+          temporalNamespace: "default",
+          temporalTaskQueue: "unused-test-queue",
+          temporalConnectTimeoutMs: 100,
+        });
+        try {
+          const result = await runtime.gateway.compileDefinition(request);
+          compilationResults.push(result);
+          return result;
+        } finally {
+          await runtime.close();
+        }
       }
       const source = {
         kind: "bpmnSource",
@@ -513,11 +542,23 @@ function createFixture(
         definition.version === reference.version,
     ) ?? null,
   };
+  const unusedStarter: DefinitionVersionStarter = {
+    startDefinitionVersion: async () => {
+      throw new Error("start is outside this fixture");
+    },
+  };
+  const startService = new DefinitionStartService(
+    unusedStarter,
+    artifactStore,
+    repository,
+    () => "unused-instance",
+  );
   return {
     artifacts,
     compileCalls,
     compilationResults,
     service: new DefinitionDeploymentService(compiler, artifactStore, repository),
+    startService,
     versionListProcessIds,
   };
 }
