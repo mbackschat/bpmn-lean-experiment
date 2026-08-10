@@ -142,7 +142,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: review and approve the M2 cyclic-control-flow proposal.** Submit immutable proposal target `31dd294` to its required context-cold review, close required findings, and stop for owner approval before implementation. The draft selects one root-scope User Task Sequence Flow cycle, explicit Exclusive Merge, and profile-gated resumption-cut admission. Keep the decided-fixture admission lane under the recorded build ceiling.
+1. **Next: close review and approve the M2 cyclic-control-flow proposal.** The context-cold review of immutable proposal target `31dd294` approved the normative account with required proposal edits. Audit the committed correction in the same reviewer thread, then stop for owner approval before implementation. The corrected draft selects one root-scope User Task Sequence Flow cycle, identity-only Exclusive Merge derived from checked Sequence Flows, and profile-gated resumption-cut admission. Keep the decided-fixture admission lane under the recorded build ceiling.
 
 ## Approved decisions
 
@@ -247,7 +247,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit immutable target `31dd294` of the [resumption-bounded cyclic control flow proposal](capsules/CYCLIC-CONTROL-FLOW-PROPOSAL.md) to the required context-cold proposal review.** The target adds no implementation and selects one root-scope, one-token User Task Sequence Flow cycle, explicit Exclusive Merge, and profile-gated resumption-cut admission. After all required findings close, stop for owner approval before implementation. The mandatory decided-fixture review is closed by the proof-lane split and its recorded CPU and resident-memory figures. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
+**Next action: commit the correction to required findings from the context-cold review of immutable target `31dd294`, then submit that exact correction to the same reviewer for a warm audit.** After all required findings close, stop for owner approval of the [resumption-bounded cyclic control flow proposal](capsules/CYCLIC-CONTROL-FLOW-PROPOSAL.md) before implementation. The correction does not add implementation or widen the selected one-root-scope, one-token User Task cycle. The mandatory decided-fixture review is closed by the proof-lane split and its recorded CPU and resident-memory figures. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
 
 **No owner blocker.** The owner approved the concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout on 2026-08-10.
 
