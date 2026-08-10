@@ -2,15 +2,17 @@
 
 ## Status
 
-**Draft corrected after required proposal-review findings; correction audit and owner approval are pending. No implementation is authorized.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Independently approved after required corrections; owner approval is pending. No implementation is authorized.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `31dd294` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `31dd294` | `fork-turns-none` | `approve-with-required-edits` | `d5e7bb9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal stage used four warm correction audits in the same reviewer thread. The automatic two-round bound stopped the stage after `88ad69c` and `0d9409e`; the owner explicitly authorized the third correction at `d1173b1` and the fourth correction content at `d5e221e`. Final audit target `d5e7bb9` closed every required finding without changing the selected semantic account.
 
 ## Question
 
