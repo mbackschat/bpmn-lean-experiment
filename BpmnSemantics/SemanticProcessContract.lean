@@ -105,6 +105,7 @@ inductive BoundaryInterruption where
 
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
+  | messageStartEvent (id : NodeId) (channel : MessageChannel)
   | embeddedSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
   | callActivity (id : NodeId) (calledProcessId : ProcessId)
   | boundaryErrorEvent (id attachedToRef : NodeId)
@@ -143,6 +144,7 @@ inductive CheckedNode where
 
 def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
+  | .messageStartEvent id _
   | .embeddedSubProcess id _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
@@ -316,6 +318,11 @@ inductive SemanticOperation where
       (id : OperationId)
       (origin : BpmnElementOrigin)
       (output : ControlPlaceId)
+  | initiateMessage
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (channel : MessageChannel)
+      (outputs : List ControlPlaceId)
   | enterScope
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -439,6 +446,7 @@ inductive SemanticOperation where
 
 def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
+  | .initiateMessage id _ _ _
   | .enterScope id _ _ _ _
   | .enterBoundedScope id _ _ _ _ _
   | .invokeProcess id _ _ _ _ _ _

@@ -367,6 +367,26 @@
           "additionalProperties": false,
           "required": [
             "kind",
+            "id",
+            "channel"
+          ],
+          "properties": {
+            "kind": {
+              "const": "messageStartEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "channel": {
+              "$ref": "#/$defs/operationMessageChannel"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
             "id"
           ],
           "properties": {

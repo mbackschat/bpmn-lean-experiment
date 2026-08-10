@@ -183,6 +183,7 @@ function classifyHostOperation(
     case SemanticOperationKind.AwaitMonitoredUserTask:
       return HostOperationClass.MonitoredActivityWait;
     case SemanticOperationKind.Initiate:
+    case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:

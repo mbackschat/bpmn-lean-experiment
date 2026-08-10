@@ -4,6 +4,9 @@ export { deriveCalledProcessInstanceId } from "./semantic-process-call-runtime.j
 export * from "./deep-readonly.js";
 export * from "./effect-transport-material.js";
 export { isMessageChannel, sameMessageChannel } from "./message-channel.js";
+export {
+  isWellFormedInitiateMessageOperation,
+} from "./semantic-process-message-start.js";
 export * from "./semantic-process-admission.js";
 export * from "./inclusive-gateway-admission.js";
 export * from "./event-race-admission.js";

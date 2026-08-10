@@ -3,6 +3,7 @@ import BpmnSemantics.Conformance
 import BpmnSemantics.MappedBoundaryErrorConformance
 import BpmnSemantics.CallActivityConformance
 import BpmnSemantics.IntermediateCatchTimerConformance
+import BpmnSemantics.MessageStartConformance
 import BpmnSemantics.EventBasedGatewayConformance
 import BpmnSemantics.SemanticProcessConformance
 import BpmnSemantics.SemanticProcessJsonConformance
@@ -13,4 +14,4 @@ import BpmnSemantics.UserTaskInteractionConformance
 /-! Executable entry point for the compile-time contract locks. -/
 
 def main : IO Unit :=
-  IO.println "Sequential User Task contract and semantic checks passed."
+  IO.println "BPMN semantic contract checks passed."

@@ -15,9 +15,9 @@ import type {
   OpenTimer,
   OpenEffect,
   OccurrenceId,
+  ProcessStartStimulus,
   Scenario,
   ScenarioResult,
-  StartProcessStimulus,
   StateObservation,
   Stimulus,
 } from "./contract.js";
@@ -325,7 +325,7 @@ export function deployScenario(
 }
 
 export function deployProcess(
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
 ): ScenarioDeployment {
   const outcome = supportsSemanticProcessExecution(start, semanticProcess)

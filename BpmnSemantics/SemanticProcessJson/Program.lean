@@ -216,6 +216,13 @@ private def decodeOperation (json : Json) :
   | "initiate" =>
       requireObjectShape json ["id", "kind", "origin", "output"]
       pure (.initiate id origin ⟨← stringField json "output"⟩)
+  | "initiateMessage" =>
+      requireObjectShape json
+        ["channel", "id", "kind", "origin", "outputs"]
+      pure
+        (.initiateMessage id origin
+          (← decodeOperationMessageChannel (← field json "channel"))
+          (← decodePlaceIdArray (← field json "outputs")))
   | "enterScope" =>
       requireObjectShape json
         ["childEntry", "childScopeId", "id", "input", "kind", "origin"]

@@ -22,6 +22,7 @@ def projectTokenMultiplicities (program : Program) (state : RuntimeState) :
 
 private def commandId : Stimulus → SemanticId
   | .startProcess id _ _ _
+  | .triggerMessageStart id _ _ _ _
   | .completeUserTaskInstance id _ _
   | .deliverMessage id _ _
   | .fireTimer id _ _
@@ -57,7 +58,7 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
       { timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
-  | .initiate .. | .enterScope .. | .invokeProcess .. | .returnProcess ..
+  | .initiate .. | .initiateMessage .. | .enterScope .. | .invokeProcess .. | .returnProcess ..
   | .duplicate .. | .synchronize .. | .mergeExclusive .. | .choose ..
   | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
@@ -295,10 +296,23 @@ private def requiredObservations : List ObservationKind :=
   , .enabledInteractions
   , .logicalTime ]
 
+private def isProcessStartStimulus : Stimulus → Bool
+  | .startProcess .. | .triggerMessageStart .. => true
+  | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
+  | .completeEffect .. => false
+
+/-- A scenario starts exactly once, in its first position, through one member of the closed start family. -/
+def stimulusSequenceSupported : List Stimulus → Bool
+  | .startProcess .. :: remaining
+  | .triggerMessageStart .. :: remaining =>
+      remaining.all fun stimulus => !isProcessStartStimulus stimulus
+  | _ => false
+
 /-- Admit only the `scenario` document kind for a structurally well-formed, profile-capability-valid program whose profile and source identity match the scenario and whose requested observations are exactly the required observation list. -/
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
+    stimulusSequenceSupported scenario.stimuli &&
     decide (
       scenario.kind = .scenario &&
         scenario.profile = program.identity.semanticProfile &&

@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.BoundedScope
 import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
+import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
@@ -99,6 +100,10 @@ inductive OperationStep (program : Program) :
   | initiate (id origin output) (before after : RuntimeState)
       (transition : initiateState? before output = some after) :
       OperationStep program (.initiate id origin output) before after
+  | initiateMessage (id origin channel outputs) (before after : RuntimeState)
+      (transition : MessageInitiationStep before outputs after) :
+      OperationStep program
+        (.initiateMessage id origin channel outputs) before after
   | enterScope (id origin input childEntry childScopeId)
       (before after : RuntimeState)
       (transition :
@@ -208,6 +213,7 @@ def fire? (program : Program) (operation : SemanticOperation)
     Option RuntimeState :=
   match operation with
   | .initiate _ _ output => initiateState? state output
+  | .initiateMessage _ _ _ outputs => initiateMessageState? state outputs
   | .enterScope _ _ input childEntry childScopeId =>
       enterScopeState? state input childEntry childScopeId
   | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
@@ -255,6 +261,8 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     OperationStep program operation before after := by
   cases operation <;> first
     | exact .initiate _ _ _ before after result
+    | exact .initiateMessage _ _ _ _ before after
+        (initiateMessageState_sound before after _ result)
     | exact .enterScope _ _ _ _ _ before after result
     | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
         (armBoundedScopeState_sound before after _ _ _ _

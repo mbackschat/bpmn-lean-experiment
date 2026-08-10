@@ -61,6 +61,22 @@ test("canonically encodes every typed stimulus field", () => {
   );
   assert.equal(
     canonicalStimulusEncoding({
+      kind: StimulusKind.TriggerMessageStart,
+      commandId: "trigger-message-start",
+      processId: "Process_1",
+      instanceId: "Instance_1",
+      startEventId: "MessageStart_1",
+      channel: {
+        kind: MessageChannelKind.OperationMessage,
+        interfaceId: "MessageInterface_1",
+        interfaceOperationId: "ReceiveMessage_1",
+        messageId: "Message_1",
+      },
+    }),
+    '["triggerMessageStart","trigger-message-start","Process_1","Instance_1","MessageStart_1",["operationMessage","MessageInterface_1","ReceiveMessage_1","Message_1"]]',
+  );
+  assert.equal(
+    canonicalStimulusEncoding({
       kind: StimulusKind.DeliverMessage,
       commandId: "deliver-message",
       subscriptionId: {
@@ -97,6 +113,40 @@ test("canonically encodes every typed stimulus field", () => {
     () => canonicalStimulusEncoding({ ...completion, extra: true }),
     /well-formed semantic stimulus/,
   );
+});
+
+test("content-binds every Message Start target field", () => {
+  const exact = {
+    kind: StimulusKind.TriggerMessageStart,
+    commandId: "trigger-message-start",
+    processId: "Process_1",
+    instanceId: "Instance_1",
+    startEventId: "MessageStart_1",
+    channel: {
+      kind: MessageChannelKind.OperationMessage,
+      interfaceId: "MessageInterface_1",
+      interfaceOperationId: "ReceiveMessage_1",
+      messageId: "Message_1",
+    },
+  } as const satisfies Stimulus;
+  const mutations: ReadonlyArray<Stimulus> = [
+    { ...exact, commandId: "other-command" },
+    { ...exact, processId: "OtherProcess" },
+    { ...exact, instanceId: "OtherInstance" },
+    { ...exact, startEventId: "OtherStart" },
+    { ...exact, channel: { ...exact.channel, interfaceId: "OtherInterface" } },
+    {
+      ...exact,
+      channel: {
+        ...exact.channel,
+        interfaceOperationId: "OtherOperation",
+      },
+    },
+    { ...exact, channel: { ...exact.channel, messageId: "OtherMessage" } },
+  ];
+  for (const mutation of mutations) {
+    assert.notEqual(contentBoundUpdateId(exact), contentBoundUpdateId(mutation));
+  }
 });
 
 test("derives fixed SHA-256 Update IDs from exact canonical content", () => {

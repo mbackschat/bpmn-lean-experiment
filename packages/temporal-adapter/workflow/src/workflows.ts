@@ -1,6 +1,6 @@
 import type {
   SemanticProcessProgram,
-  StartProcessStimulus,
+  ProcessStartStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   proxyActivities,
@@ -30,7 +30,7 @@ const {
 });
 
 export function runBpmnProcess(
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
 ): Promise<CompletedProcessReceipt> {
   return runBpmnProcessWithHostEffects(

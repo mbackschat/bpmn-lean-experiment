@@ -182,6 +182,14 @@ private def stimulusJson : Stimulus → Json
         , ("instanceId", toJson instanceId.value)
         , ("initialVariables",
             jsonArray (initialVariables.map variableBindingJson)) ]
+  | .triggerMessageStart commandId processId instanceId startEventId channel =>
+      Json.mkObj
+        [ ("kind", toJson "triggerMessageStart")
+        , ("commandId", toJson commandId.value)
+        , ("processId", toJson processId.value)
+        , ("instanceId", toJson instanceId.value)
+        , ("startEventId", toJson startEventId.value)
+        , ("channel", messageChannelJson channel) ]
   | .completeUserTaskInstance commandId taskId submittedValues =>
       Json.mkObj
         [ ("kind", toJson "completeUserTaskInstance")
@@ -308,6 +316,7 @@ private def definitionForScenario (inputs : List DefinitionInput)
       input.checkedProcess.processId ≠
         match scenario.stimuli.head? with
         | some (.startProcess _ processId _ _) => ⟨processId.value⟩
+        | some (.triggerMessageStart _ processId _ _ _) => ⟨processId.value⟩
         | _ => ⟨""⟩ then
     throw (IO.userError
       s!"definition identity does not match scenario {scenario.id.value}")

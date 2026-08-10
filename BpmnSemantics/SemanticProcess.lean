@@ -14,6 +14,8 @@ import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.ErrorPropagation
 import BpmnSemantics.SemanticProcess.Message
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.Execution

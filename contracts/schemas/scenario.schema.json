@@ -30,7 +30,14 @@
       "type": "array",
       "prefixItems": [
         {
-          "$ref": "#/$defs/startProcess"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/startProcess"
+            },
+            {
+              "$ref": "#/$defs/triggerMessageStart"
+            }
+          ]
         }
       ],
       "items": {
@@ -242,6 +249,38 @@
         }
       }
     },
+    "triggerMessageStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "processId",
+        "instanceId",
+        "startEventId",
+        "channel"
+      ],
+      "properties": {
+        "kind": {
+          "const": "triggerMessageStart"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "processId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "startEventId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "channel": {
+          "$ref": "#/$defs/operationMessageChannel"
+        }
+      }
+    },
     "occurrenceId": {
       "type": "object",
       "additionalProperties": false,
@@ -270,31 +309,34 @@
     "messageSubscriptionId": {
       "$ref": "#/$defs/occurrenceId"
     },
+    "operationMessageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "interfaceId",
+        "interfaceOperationId",
+        "messageId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "operationMessage"
+        },
+        "interfaceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "interfaceOperationId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "messageId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
     "messageChannel": {
       "oneOf": [
         {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "interfaceId",
-            "interfaceOperationId",
-            "messageId"
-          ],
-          "properties": {
-            "kind": {
-              "const": "operationMessage"
-            },
-            "interfaceId": {
-              "$ref": "#/$defs/nonEmptyString"
-            },
-            "interfaceOperationId": {
-              "$ref": "#/$defs/nonEmptyString"
-            },
-            "messageId": {
-              "$ref": "#/$defs/nonEmptyString"
-            }
-          }
+          "$ref": "#/$defs/operationMessageChannel"
         },
         {
           "type": "object",

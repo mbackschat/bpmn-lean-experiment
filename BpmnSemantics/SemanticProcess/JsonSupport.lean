@@ -121,6 +121,14 @@ def decodeMessageChannel (json : Json) :
       pure (.directMessage ⟨← stringField json "messageId"⟩)
   | kind => throw s!"unsupported Message channel {kind}"
 
+/-- Decode the exact operation-addressed channel used by Message Start and operation-bound catches. -/
+def decodeOperationMessageChannel (json : Json) :
+    Except String MessageChannel := do
+  let channel ← decodeMessageChannel json
+  match channel with
+  | .operationMessage .. => pure channel
+  | .directMessage .. => throw "operation-addressed Message channel expected"
+
 def decodeVariableValue (json : Json) :
     Except String VariableValue := do
   match ← stringField json "kind" with

@@ -328,6 +328,39 @@
         }
       }
     },
+    "initiateMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "channel",
+        "outputs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "initiateMessage"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "channel": {
+          "$ref": "#/$defs/operationMessageChannel"
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonemptyString"
+          }
+        }
+      }
+    },
     "enterScope": {
       "type": "object",
       "additionalProperties": false,
@@ -1316,6 +1349,9 @@
       "oneOf": [
         {
           "$ref": "#/$defs/initiate"
+        },
+        {
+          "$ref": "#/$defs/initiateMessage"
         },
         {
           "$ref": "#/$defs/enterScope"

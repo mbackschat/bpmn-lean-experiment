@@ -45,6 +45,11 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-user-task-preserved-notation-draft",
 } as const);
 
+/** Capabilities admitted for an implementation checkpoint but not yet product-registered. */
+export const SemanticCheckpointProfileId = Object.freeze({
+  MessageStart: "bpmn-2.0.2-message-start-event-draft",
+} as const);
+
 /**
  * Checks the exact operation capability selected by one reviewed profile.
  *
@@ -71,6 +76,12 @@ function profileAllowsProgramOperationDetails(
   operations: ReadonlyArray<SemanticOperation>,
 ): boolean {
   switch (semanticProfile) {
+    case SemanticCheckpointProfileId.MessageStart:
+      return operations.every(
+        (operation) =>
+          operation.kind !== SemanticOperationKind.InitiateMessage ||
+          operation.outputs.length === 1,
+      );
     case SemanticProfileId.UserTaskCycle:
       return operations.every(
         (operation) =>
@@ -123,6 +134,12 @@ function requiredCheckedProcessShape(
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:
       return rootChecked([start, CheckedNodeKind.UserTask, end]);
+    case SemanticCheckpointProfileId.MessageStart:
+      return rootChecked([
+        CheckedNodeKind.MessageStartEvent,
+        CheckedNodeKind.UserTask,
+        end,
+      ]);
     case SemanticProfileId.IntermediateCatchTimer:
       return rootChecked([
         start,
@@ -296,6 +313,13 @@ function requiredProgramShape(
   semanticProfile: string,
 ): RequiredProgramShape | undefined {
   switch (semanticProfile) {
+    case SemanticCheckpointProfileId.MessageStart:
+      return rootProgram([
+        SemanticOperationKind.InitiateMessage,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskPreservedNotation:
       return rootProgram([

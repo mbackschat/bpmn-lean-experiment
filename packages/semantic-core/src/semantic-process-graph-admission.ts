@@ -103,7 +103,10 @@ export function isWellFormedSemanticProcessGraph(
     return false;
   }
 
-  const starts = operationsOfKind(graph, SemanticOperationKind.Initiate);
+  const starts = [
+    ...operationsOfKind(graph, SemanticOperationKind.Initiate),
+    ...operationsOfKind(graph, SemanticOperationKind.InitiateMessage),
+  ];
   const rootCompletions = operationsOfKind(
     graph,
     SemanticOperationKind.CompleteScope,
@@ -198,6 +201,10 @@ function operationRespectsScopes(
       return graph.definitionScopes.some(
         ({ id, parentScopeId }) => id === owner && parentScopeId === null,
       ) && referencesOwnedBy([operation.output], owner);
+    case SemanticOperationKind.InitiateMessage:
+      return graph.definitionScopes.some(
+        ({ id, parentScopeId }) => id === owner && parentScopeId === null,
+      ) && referencesOwnedBy(operation.outputs, owner);
     case SemanticOperationKind.EnterScope:
       return referencesOwnedBy([operation.input], owner) &&
         referencesOwnedBy([operation.childEntry], operation.childScopeId) &&
@@ -395,6 +402,7 @@ function operationInputs(
 ): ReadonlyArray<string> {
   switch (operation.kind) {
     case SemanticOperationKind.Initiate:
+    case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.ReturnProcess:
       return [];
@@ -432,6 +440,8 @@ function operationOutputs(
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.MergeExclusive:
       return [operation.output];
+    case SemanticOperationKind.InitiateMessage:
+      return operation.outputs;
     case SemanticOperationKind.AwaitEventRace:
       return [operation.message.output, operation.timer.output];
     // Both arms are token-carrying control places: the boundary Sequence Flow receives a token when

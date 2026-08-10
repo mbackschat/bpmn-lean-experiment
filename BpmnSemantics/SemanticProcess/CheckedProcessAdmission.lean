@@ -190,6 +190,13 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
       incomingCount flows id = 0 && outgoingCount flows id = 1
+  | .messageStartEvent id channel =>
+      (match channel with
+        | .operationMessage .. => channel.identifiersNonempty
+        | .directMessage .. => false) &&
+        incomingCount flows id = 0 && outgoingCount flows id = 1 &&
+        (flows.find? fun flow => decide (flow.sourceId = id)).all
+          (fun flow => flow.condition.isNone)
   | .embeddedSubProcess id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .callActivity id calledProcessId =>

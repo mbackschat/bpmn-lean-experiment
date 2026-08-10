@@ -8,6 +8,8 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting. Each capsule owns its own meaning and exclusions; this document owns only their status.
 
+**Current semantic checkpoint.** One unregistered standards-only Message Start capability admits an exact top-level operation-addressed Message Start Event, preserves its complete channel through checked source and `initiateMessage`, executes a distinct exact-target start stimulus in Lean and the TypeScript core, and passes a direct Temporal Workflow-start preflight. It is not a registered profile, scenario, product example, or live Temporal evidence claim until independent checkpoint approval.
+
 **What it does not do.** One generic standards profile admits the complete selected notation set and no other does. `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them, under [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md); every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume one data-only source overlay, but it can name only an existing profile-owned effect descriptor and exact inert expanded-name loci; it adds no engine operation or source reader.
 
 Retained notation reaches no public observation and has no query surface. Refusals about the document or the checked graph name no element. The whole BPMN data family rejects everywhere. Every registered profile except `bpmn-2.0.2-user-task-cycle-draft` retains whole-graph acyclicity. That exact profile admits one root-scope cycle only after proving that cutting the User Task continuation makes the graph acyclic; it is registered with an answer-free repeat/rework/default-exit scenario, a product example, a seeded differential mutation, and finite Worker-replacement/replay evidence. Variables are string or null. There is no cancellation beyond the direct-parent regional case, no incidents, and no published transition record or token position.
@@ -142,6 +144,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - nullable checked conditions, one typed Simple Boolean expression union, and declaration-ordered `choose` candidates
 - exact divergent/convergent Inclusive Gateway checked-node arms, canonically ordered `selectMany` candidates, and fixed-cardinality `synchronizeSelected` inputs
 - exact divergent Event-Based Gateway checked-node arm and named operation-addressed Message/exact-duration Timer arms on `awaitEventRace`, including both configuration-flow origins
+- checkpoint-only exact Message Start checked-node, channel-bound `initiateMessage`, and `triggerMessageStart` scenario/start shapes with strict first-stimulus placement
 - exact Call Activity checked-node arm and paired `invokeProcess`/`returnProcess` operations with called definition, root, entry, return, and caller-output identities
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one canonical definition-scope forest with exact node/Sequence-Flow and operation/control-place ownership, retaining one rooted tree for existing profiles and one distinct called root for the bounded Call profile, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, effects, and Call records
@@ -174,6 +177,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - Every registered profile is a guarded artifact with exact authority, selected features, observation boundary, exclusions, environment, and reviewed CIB relationship IDs where applicable
 - CIB-backed profiles pin exact oracle revisions and content-bound retained evidence; standards-only profiles declare no CIB execution target
 - definition-scope and operation-kind cardinalities are checked per profile, separately from topology-independent graph validation
+- one frozen unregistered Message Start checkpoint capability remains outside registered-profile enumeration and requires one `initiateMessage` output
 - immutable CIB artifact status freezes only evidence calibration, not a production deployment or history baseline
 
 #### Explicitly absent
@@ -183,6 +187,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - full requirement classification
 - approved gap interpretations beyond the reviewed slices
 - confirmed deviations beyond the visible `CIB-DEV-0001` candidate
+- Message Start registration, profile artifact, answer-free scenario, product example, differential case, or live Temporal evidence before checkpoint approval
 
 ### Runtime scoped data
 
@@ -231,13 +236,14 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 #### Implemented
 
 - Implemented draft spec for a checked source-facing graph
-- current JSON Schemas and boundary validators for typed `initiate`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEventRace`, `awaitEffect`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope` operations
+- current JSON Schemas and boundary validators for typed `initiate`, checkpoint-only `initiateMessage`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEventRace`, `awaitEffect`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope` operations
 - `choose` carries exactly two declaration-ordered typed Simple Boolean candidates and one distinct default
 - `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
 - `awaitEventRace` carries one named operation-addressed Message arm and one named exact-`PT1S` Timer arm with their configuration-flow origins, catch identities, and distinct winner outputs; its configuration Flows are not control places
 - `mergeExclusive` carries a canonical nonempty input collection and one output, with reusable per-offered-token declarative pass-through and a unique-offer executable subset; only the registered cycle profile fixes its input count at three
 - `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across payload-free, mapped-success, and mapped-boundary-Error contracts
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
+- exact Message Start lowering preserves Process, Start Event, Interface, Interface Operation, input Message, and every validated outgoing-flow identity; reusable `initiateMessage` admits canonical nonempty outputs while the checkpoint capability fixes one
 - independent sequential, bounded-parallel, exact-timer, Timer/User Task composition, operation-addressed Intermediate Catch Message and direct-Message Receive Task subscriptions, payload-free effect, mapped-success Service Task, mapped-boundary-Error Service Task, Simple Boolean conditional evaluation, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process invocation/return, and registered resumption-bounded cycle execution
 - generic Lean relation/evaluator including choice, effect-completion, and operation-step soundness, laws, and non-laws
 - separately gated frozen checked-source experiment
@@ -272,6 +278,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 #### Explicitly absent
 
 - General BPMN compiler, arbitrary graph admission or scope nesting, cycles outside the exact registered User Task cycle profile, concurrent Multi-Merge execution, Standard Loop Characteristics, multi-instance, other Exclusive Gateway topology/cardinality, general FormalExpression/JUEL/XPath, Service Task/data/error bindings beyond the approved exact shapes, catch-all/multi-handler/ancestor Error search, timer forms beyond exact `PT1S`, addressless/operation-addressed/instantiating/data-bearing Receive Task, Message payload/key/global correlation/throw/flow or other Message Event loci, external/imported/deployed Call targets, Global Tasks, Call data/mapping/version/tenant/recursion/repetition, synchronous parser CPU isolation, non-UTF-8 decoder, source locations, general extension semantics, DI-preserving export, complete CMOF binding, deployment store
+- registered or multiple Message Start Events, Event Sub-Process start, explicit `isInterrupting`, referenced or repeated MessageEventDefinitions, payload, Message Flow execution, routing, buffering, correlation, or definition-version fanout
 - An element on refusals over the document or checked graph, on unsupported values of consumed keys, or on nested event-definition and mapping-child failures that have no separately reviewed inventory. Those remain `unsupportedModel` records with `element: null`. Preserved material is retained only in the exact source bytes, with no query surface or public projection
 - The whole BPMN data family, and foreign content at every undeclared locus. A mapped Service Task overlay may declare only exact inert expanded-name/element-type pairs; unconsumed attributes, wildcards, and whole-type exemptions reject
 
@@ -288,6 +295,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - declarative `OperationStep`/`ProgramStep` and `EffectCompletionStep`, executable transitions, and evaluator soundness at each closed capsule's declared proof boundary
 - independent decoding, lowering, execution traces, refusal or preservation facts, and non-laws for every closed family named in [the current claim](#current-claim); the three boundary-Timer proof boundaries remain explicit in their sections below
 - cyclic-control-flow proofs for exact checked/program graph policy and lowering, full-cycle interception by the selected cut, general per-offered-token merge relation, unique-offer evaluator soundness, actual execution of every finite reviewed repeat/rework schedule followed by exit, actual-reachability active-unit bounds, automatic cut-DAG closure at no more than six operations, stale/wrong/future identity preservation, and excluded internal-cycle, fan-in, scope, and wait shapes
+- Message Start checkpoint proofs for strict checked/program/stimulus decoding, exact source-to-IL channel and root binding, distinct Message initiation, fresh root occurrence and outgoing-token production, wrong-operation refusal with exact state preservation, bounded closure to the existing User Task wait, and excluded second start or passive-subscription interpretations
 - bounded internal closure for one enabled operation or the exact admitted two-task pair, rejecting every other multiple-enabled shape
 - one catalog-driven result emitter that consumes and echoes answer-free scenarios, with strict role decoders and independent cross-artifact validation
 - the separately gated checked-source experiment with bounded structural, decomposition, reachability, and enabled-frontier results
@@ -316,6 +324,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - explicit scope-occurrence ownership over token multiplicity, child and called instances, selected branches, and canonical task, Message, timer, effect, and variable projections
 - independent evaluation, exact refusal, hidden-state non-projection, and bounded closure for every closed family named in [the current claim](#current-claim), including both data mappings and both Error routes
 - registered cyclic-control-flow admission and execution with one shared frozen graph policy, a reusable nonempty Exclusive Merge contract, profile-local exact-three restriction, owner-preserving unique-offer execution, and zero/multiple-offer evaluator incompleteness kept distinct from the declarative relation
+- unregistered Message Start admission and execution with a distinct exact-target stimulus, one fresh root occurrence, generic canonical nonempty outgoing-token production, checkpoint-local exact-one output, and no subscription or payload
 - exact Process-start installation and User Task completion merge over canonical string/null bindings
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
 - executable enabled-count and stable-state-resumability checks, with malformed-topology and stranded-state witnesses
@@ -367,6 +376,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - Worker replacement, accepted-result recovery, exact Query and history assertions, replay, cleanup, and a separately bundled semantic or host-bypass mutation for each distinct mechanism
 - canonical Process start and completion data, effect transport, public enabled-interaction and task-detail projection, validated terminal receipts, and the repository command's strict external-runtime configuration
 - one live product example per distinct host mechanism, with reused mechanisms checked without a Temporal service and optional time-skipping calibration outside default verification
+- checkpoint-only direct `client.start` preflight for exact Message Start identity through the ordinary Workflow start input, with wrong Interface Operation rejection before any Workflow start and no Signal-With-Start or Update-With-Start
 
 #### Explicitly absent
 
@@ -376,6 +386,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow
 - Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
+- registered Message Start product configuration, public ingress router, accepted-but-response-lost receipt, or live Message Start history/replay evidence before checkpoint approval
 - committed Event History fixtures
 - patch branches
 - legacy representation fallback

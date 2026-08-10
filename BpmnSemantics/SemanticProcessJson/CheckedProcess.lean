@@ -67,6 +67,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   | "noneStartEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneStartEvent ⟨← stringField json "id"⟩)
+  | "messageStartEvent" =>
+      requireObjectShape json ["channel", "id", "kind"]
+      pure
+        (.messageStartEvent
+          ⟨← stringField json "id"⟩
+          (← decodeOperationMessageChannel (← field json "channel")))
   | "embeddedSubProcess" =>
       requireObjectShape json ["childScopeId", "id", "kind"]
       pure

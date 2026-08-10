@@ -142,6 +142,7 @@ function hasSelectedArity(
   const outgoing = flows.filter(({ sourceId }) => sourceId === node.id).length;
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent:
+    case CheckedNodeKind.MessageStartEvent:
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
@@ -187,7 +188,9 @@ function isConnectedGraphUnderPolicy(
   graphPolicy: SemanticGraphPolicy,
 ): boolean {
   const starts = nodes.filter(
-    ({ kind }) => kind === CheckedNodeKind.NoneStartEvent,
+    ({ kind }) =>
+      kind === CheckedNodeKind.NoneStartEvent ||
+      kind === CheckedNodeKind.MessageStartEvent,
   );
   const ends = nodes.filter(
     ({ kind }) =>

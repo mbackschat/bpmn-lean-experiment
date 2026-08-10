@@ -4,8 +4,9 @@ import {
   StimulusKind,
 } from "./contract.js";
 import type {
+  ProcessStartStimulus,
   Scenario,
-  StartProcessStimulus,
+  Stimulus,
 } from "./contract.js";
 import {
   SemanticOriginKind,
@@ -33,6 +34,9 @@ import {
   isWellFormedStimulus,
 } from "./stimulus.js";
 import {
+  processStartMatchesProgram,
+} from "./semantic-process-message-start.js";
+import {
   compareCanonicalStrings,
   isWellFormedWireString,
 } from "./wire.js";
@@ -58,8 +62,11 @@ export function supportsSemanticProcessScenario(
   scenario: Scenario,
   program: SemanticProcessProgram,
 ): boolean {
+  const start = scenario.stimuli[0];
   return (
     isSupportedScenario(scenario) &&
+    start !== undefined &&
+    isProcessStartStimulus(start) &&
     isWellFormedSemanticProcessProgram(program) &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,
@@ -72,24 +79,25 @@ export function supportsSemanticProcessScenario(
     sameSourceOverlayIdentity(
       program.identity.sourceOverlay,
       scenario.bpmn.sourceOverlay,
-    )
+    ) &&
+    processStartMatchesProgram(start, program)
   );
 }
 
 export function supportsSemanticProcessExecution(
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   program: SemanticProcessProgram,
 ): boolean {
   return (
     isWellFormedStimulus(start) &&
-    start.kind === StimulusKind.StartProcess &&
+    isProcessStartStimulus(start) &&
     isWellFormedSemanticProcessProgram(program) &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations,
       program.definitionScopes.length,
     ) &&
-    start.processId === program.processId
+    processStartMatchesProgram(start, program)
   );
 }
 
@@ -260,7 +268,8 @@ function isSupportedScenario(value: unknown): value is Scenario {
     stimuli !== undefined &&
     stimuli.length >= 1 &&
     stimuli.every(isWellFormedStimulus) &&
-    stimuli[0]?.kind === StimulusKind.StartProcess &&
+    stimuli[0] !== undefined &&
+    isProcessStartStimulus(stimuli[0]) &&
     stimuli
       .slice(1)
       .every(
@@ -276,6 +285,27 @@ function isSupportedScenario(value: unknown): value is Scenario {
       (observation, index) => observation === supportedObservations[index],
     )
   );
+}
+
+function isProcessStartStimulus(
+  stimulus: Stimulus,
+): stimulus is ProcessStartStimulus {
+  switch (stimulus.kind) {
+    case StimulusKind.StartProcess:
+    case StimulusKind.TriggerMessageStart:
+      return true;
+    case StimulusKind.CompleteUserTaskInstance:
+    case StimulusKind.DeliverMessage:
+    case StimulusKind.FireTimer:
+    case StimulusKind.CompleteEffect:
+      return false;
+    default:
+      return assertNever(stimulus);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported stimulus variant: ${JSON.stringify(value)}`);
 }
 
 function isSortedById(values: ReadonlyArray<unknown>): boolean {

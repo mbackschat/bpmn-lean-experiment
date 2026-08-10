@@ -1,5 +1,7 @@
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
+import { MessageChannelKind } from "./semantic-value-contract.js";
+import type { MessageChannel } from "./semantic-value-contract.js";
 
 export enum CommandOutcome {
   Committed = "committed",
@@ -33,6 +35,7 @@ export enum ScenarioDocumentKind {
 
 export enum StimulusKind {
   StartProcess = "startProcess",
+  TriggerMessageStart = "triggerMessageStart",
   CompleteUserTaskInstance = "completeUserTaskInstance",
   DeliverMessage = "deliverMessage",
   FireTimer = "fireTimer",
@@ -46,6 +49,23 @@ export type StartProcessStimulus = DeepReadonly<{
   instanceId: string;
   initialVariables: VariableBinding[];
 }>;
+
+/** Starts one fresh Process instance through one exact operation-addressed Message Start Event. */
+export type TriggerMessageStartStimulus = DeepReadonly<{
+  kind: StimulusKind.TriggerMessageStart;
+  commandId: string;
+  processId: string;
+  instanceId: string;
+  startEventId: string;
+  channel: Extract<
+    MessageChannel,
+    { kind: typeof MessageChannelKind.OperationMessage }
+  >;
+}>;
+
+export type ProcessStartStimulus =
+  | StartProcessStimulus
+  | TriggerMessageStartStimulus;
 
 export type OccurrenceId = DeepReadonly<{
   processInstanceId: string;
@@ -128,7 +148,7 @@ export type CompleteEffectStimulus = DeepReadonly<{
 }>;
 
 export type Stimulus =
-  | StartProcessStimulus
+  | ProcessStartStimulus
   | CompleteUserTaskInstanceStimulus
   | DeliverMessageStimulus
   | FireTimerStimulus

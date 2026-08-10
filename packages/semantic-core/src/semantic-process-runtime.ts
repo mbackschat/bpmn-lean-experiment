@@ -35,6 +35,7 @@ import {
   eventRaceAssociationsAreValid,
 } from "./semantic-process-event-race-runtime.js";
 import { createMessageWait } from "./semantic-process-message.js";
+import { applyMessageInitiation } from "./semantic-process-message-start.js";
 import {
   commonTokenOwner,
   enterScope,
@@ -202,6 +203,8 @@ export function applyInternalOperation(
           }
         : null;
     }
+    case SemanticOperationKind.InitiateMessage:
+      return applyMessageInitiation(operation, state);
     case SemanticOperationKind.EnterScope: {
       const owner = onlyTokenOwner(state, operation.input);
       return owner === undefined

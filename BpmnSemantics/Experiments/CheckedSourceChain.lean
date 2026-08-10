@@ -161,6 +161,7 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             cases result
             exact .finish entry endNode nodeResult
         | noneStartEvent _ => simp [parseFrom, nodeResult] at result
+        | messageStartEvent _ _ => simp [parseFrom, nodeResult] at result
         | embeddedSubProcess _ _ => simp [parseFrom, nodeResult] at result
         | callActivity _ _ => simp [parseFrom, nodeResult] at result
         | timerBoundaryEvent _ _ _ _ =>

@@ -12,6 +12,11 @@ import {
   requireUnicodeScalarString,
 } from "./strict-json.ts";
 import { verifyMergeExclusiveBindings } from "./merge-exclusive-artifact-consistency.ts";
+import {
+  referencedStartControlPlaces,
+  verifyCanonicalStartOperationOrder,
+  verifyStartOperationBindings,
+} from "./start-operation-artifact-consistency.ts";
 
 function compareIds(
   left: Readonly<{ id: string }>,
@@ -70,9 +75,11 @@ function requireUniqueIds<Value extends Readonly<{ id: string }>>(
 function referencedControlPlaces(
   operation: SemanticOperation,
 ): ReadonlyArray<string> {
+  const startPlaces = referencedStartControlPlaces(operation);
+  if (startPlaces !== undefined) {
+    return startPlaces;
+  }
   switch (operation.kind) {
-    case "initiate":
-      return [operation.output];
     case "enterScope":
       return [operation.input, operation.childEntry];
     case "invokeProcess":
@@ -196,6 +203,12 @@ export function verifyCanonicalDefinitionOrder(
         requireSortedStrings(
           `operation ${operation.id} inputs`,
           operation.inputs,
+        );
+        break;
+      case "initiateMessage":
+        verifyCanonicalStartOperationOrder(
+          operation,
+          compareCanonicalStrings,
         );
         break;
       case "initiate":
@@ -410,6 +423,12 @@ export function verifyDefinitionReferences(
   if (invokes.length !== checkedCalls.length || returns.length !== checkedCalls.length) {
     throw new Error("Call Activity operation cardinality differs from checked source");
   }
+
+  verifyStartOperationBindings(
+    checkedProcess,
+    semanticProcess,
+    compareCanonicalStrings,
+  );
 
   const placeIds = requireUniqueIds(
     "semantic process control places",

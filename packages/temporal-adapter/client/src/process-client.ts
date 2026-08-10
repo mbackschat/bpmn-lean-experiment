@@ -11,7 +11,7 @@ import type {
   DeepReadonly,
   DeliverMessageStimulus,
   SemanticProcessProgram,
-  StartProcessStimulus,
+  ProcessStartStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   StimulusKind,
@@ -165,7 +165,7 @@ export type BpmnProcessStartOptions = DeepReadonly<{
 }>;
 
 export function assessBpmnProcessAdmission(
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
 ): BpmnProcessAdmissionResult {
   if (!supportsSemanticProcessExecution(start, semanticProcess)) {
@@ -193,7 +193,7 @@ export function assessBpmnProcessAdmission(
 
 export async function startBpmnProcess(
   client: WorkflowClient,
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
   options: BpmnProcessStartOptions,
 ): Promise<BpmnProcessStartResult> {

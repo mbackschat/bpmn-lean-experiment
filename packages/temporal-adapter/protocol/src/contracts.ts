@@ -12,7 +12,7 @@ import type {
   ScenarioResult,
   SemanticProcessIdentity,
   SemanticProcessProgram,
-  StartProcessStimulus,
+  ProcessStartStimulus,
   StateObservation,
   UserTaskInstanceId,
   VariableBinding,
@@ -180,7 +180,7 @@ export type ProcessCommandResult =
     }>;
 
 export type BpmnProcessWorkflow = (
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
 ) => Promise<CompletedProcessReceipt>;
 

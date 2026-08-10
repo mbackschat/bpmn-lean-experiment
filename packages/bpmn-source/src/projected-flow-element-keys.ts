@@ -49,6 +49,7 @@ export const ProjectedFlowElementShape = Object.freeze({
   ExclusiveOrInclusiveGateway: "exclusiveOrInclusiveGateway",
   EventBasedGateway: "eventBasedGateway",
   IntermediateCatchEvent: "intermediateCatchEvent",
+  MessageStartEvent: "messageStartEvent",
   ReceiveTask: "receiveTask",
   ErrorEndEvent: "errorEndEvent",
   BoundaryEvent: "boundaryEvent",
@@ -88,6 +89,11 @@ export const projectedFlowElementKeys = Object.freeze({
   ]),
   [ProjectedFlowElementShape.IntermediateCatchEvent]: Object.freeze([
     "$type", "id", "name", "eventDefinitions",
+  ]),
+  [ProjectedFlowElementShape.MessageStartEvent]: Object.freeze([
+    "$type", "id", "name", "eventDefinitions", "eventDefinitionRef",
+    "parallelMultiple", "isInterrupting", "dataOutputs", "outputSet",
+    "dataOutputAssociations",
   ]),
   [ProjectedFlowElementShape.ReceiveTask]: Object.freeze([
     "$type", "id", "name", "messageRef", "instantiate",
@@ -183,6 +189,10 @@ function genericShapes(
 ): ReadonlyArray<ProjectedFlowElementShape> | undefined {
   switch (type) {
     case bpmnTypes.startEventType:
+      return [
+        ProjectedFlowElementShape.PlainNode,
+        ProjectedFlowElementShape.MessageStartEvent,
+      ];
     case bpmnTypes.userTaskType:
       return [ProjectedFlowElementShape.PlainNode];
     case bpmnTypes.endEventType:

@@ -41,6 +41,23 @@ private def outgoingPlaces (source : CheckedProcess) (nodeId : NodeId) :
     else
       none
 
+/-- Canonical Message Start outputs derived only from checked Sequence Flow source endpoints. -/
+def lowerMessageStartOutputs (source : CheckedProcess) (nodeId : NodeId) :
+    List ControlPlaceId :=
+  canonicalControlPlaceOrder
+    (source.sequenceFlows.filterMap fun flow =>
+      if flow.sourceId = nodeId then some (flowControlPlaceId flow.id)
+      else none)
+
+/-- Preserve the checked Start Event origin and complete operation-addressed channel while lowering its endpoint-derived fan-out. -/
+def lowerMessageStartOperation (source : CheckedProcess) (id : NodeId)
+    (channel : MessageChannel) : SemanticOperation :=
+  .initiateMessage
+    (nodeOperationId id)
+    { elementId := id }
+    channel
+    (lowerMessageStartOutputs source id)
+
 private def firstPlace (places : List ControlPlaceId) : ControlPlaceId :=
   places.head?.getD ⟨""⟩
 
@@ -220,6 +237,14 @@ private def lowerNode (source : CheckedProcess) :
                 (nodeOperationId id)
                 { elementId := id }
                 (firstPlace (outgoingPlaces source id)), scopeId)
+          else none
+      | none => none
+  | .messageStartEvent id channel =>
+      match checkedNodeScopeId? source id with
+      | some scopeId =>
+          if isEntryRootScope source scopeId then
+            some
+              (lowerMessageStartOperation source id channel, scopeId)
           else none
       | none => none
   | .embeddedSubProcess id childScopeId => do

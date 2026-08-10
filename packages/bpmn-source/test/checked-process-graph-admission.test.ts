@@ -11,6 +11,8 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
+  MessageChannelKind,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -157,6 +159,67 @@ test("admits an attached boundary Timer through its exceptional host edge", () =
   assert.notEqual(result, undefined);
   assert.equal(result?.nodeScopes.get("Deadline"), scopeId);
   assert.equal(result?.flowScopes.get("DeadlineToHandler"), scopeId);
+});
+
+test("admits a Message Start only as the single zero-to-one graph root", () => {
+  const messageStart = {
+    kind: CheckedNodeKind.MessageStartEvent,
+    id: "MessageStart",
+    channel: {
+      kind: MessageChannelKind.OperationMessage,
+      interfaceId: "Interface",
+      interfaceOperationId: "Operation",
+      messageId: "Message",
+    },
+  } as const;
+  const task = {
+    kind: CheckedNodeKind.UserTask,
+    id: "Task",
+    name: null,
+  } as const;
+  const end = { kind: CheckedNodeKind.NoneEndEvent, id: "End" } as const;
+  const linearFlows = [
+    flow("StartToTask", "MessageStart", "Task"),
+    flow("TaskToEnd", "Task", "End"),
+  ] as const satisfies CheckedProcessGraph["flows"];
+
+  assert.notEqual(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership([messageStart, task, end], linearFlows),
+      SemanticCheckpointProfileId.MessageStart,
+    ),
+    undefined,
+  );
+
+  const incomingStart = [
+    ...linearFlows,
+    flow("EndToStart", "End", "MessageStart"),
+  ] as const satisfies CheckedProcessGraph["flows"];
+  assert.equal(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership([messageStart, task, end], incomingStart),
+      SemanticCheckpointProfileId.MessageStart,
+    ),
+    undefined,
+  );
+
+  const mixedStarts = [
+    messageStart,
+    { kind: CheckedNodeKind.NoneStartEvent, id: "ManualStart" },
+    task,
+    end,
+  ] as const satisfies CheckedProcessGraph["nodes"];
+  const mixedFlows = [
+    ...linearFlows,
+    flow("ManualToTask", "ManualStart", "Task"),
+  ] as const satisfies CheckedProcessGraph["flows"];
+  assert.equal(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(mixedStarts, mixedFlows),
+      SemanticCheckpointProfileId.MessageStart,
+    ),
+    undefined,
+  );
 });
 
 function flow(

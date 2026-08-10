@@ -37,6 +37,10 @@ import {
 } from "./semantic-process-event-race-runtime.js";
 import { deliverMessage } from "./semantic-process-message.js";
 import {
+  admitMessageStart,
+  processStartMatchesProgram,
+} from "./semantic-process-message-start.js";
+import {
   completeMonitoredUserTask,
   isMonitoredBoundaryTimerDefinition,
   isMonitoredTaskDefinition,
@@ -74,7 +78,7 @@ export function admit(
       const rootScope = entryScopes[0];
       if (
         state.control.kind === ControlStateKind.NotStarted &&
-        stimulus.processId === program.processId &&
+        processStartMatchesProgram(stimulus, program) &&
         entryScopes.length === 1 &&
         rootScope !== undefined &&
         (!isCallActivityProgram(program) || stimulus.initialVariables.length === 0)
@@ -107,6 +111,12 @@ export function admit(
         };
       }
       return { outcome: CommandOutcome.Rejected, state };
+    }
+    case StimulusKind.TriggerMessageStart: {
+      const next = admitMessageStart(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.CompleteUserTaskInstance: {
       if (isBoundedTaskDefinition(program, stimulus.taskId)) {

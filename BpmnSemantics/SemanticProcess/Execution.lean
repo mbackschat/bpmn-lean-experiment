@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.WaitCompletion
 
 /-! # Semantic Process external execution
@@ -30,7 +31,8 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
   | .startProcess _ processId instanceId initialVariables =>
       match state.control with
       | .notStarted =>
-          if program.processId.value = processId.value &&
+          if ordinaryStartMatchesProgram program &&
+              program.processId.value = processId.value &&
               (!isCallActivityProgram program || initialVariables.isEmpty) then
             match runningProgramStartState? program instanceId initialVariables with
             | some started => { outcome := .committed, state := started }
@@ -39,6 +41,11 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
             { outcome := .rejected, state }
       | .running _
       | .completed _ => { outcome := .rejected, state }
+  | .triggerMessageStart _ processId instanceId startEventId channel =>
+      match admitMessageStart? program state processId instanceId startEventId
+          channel with
+      | some started => { outcome := .committed, state := started }
+      | none => { outcome := .rejected, state }
   | .completeUserTaskInstance _ taskId submittedValues =>
       match state.control with
       | .running instanceId =>

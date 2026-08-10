@@ -69,6 +69,7 @@ def observeStableState (source : CheckedProcess)
 
 def commandId : Stimulus → SemanticId
   | .startProcess id _ _ _
+  | .triggerMessageStart id _ _ _ _
   | .completeUserTaskInstance id _ _
   | .fireTimer id _ _
   | .deliverMessage id _ _
@@ -137,7 +138,15 @@ def requiredObservations : List ObservationKind :=
   , .logicalTime ]
 
 def supportsScenario (source : CheckedProcess) (scenario : Scenario) : Bool :=
-  decide (
+  (!source.nodes.any fun node =>
+      match node with
+      | .messageStartEvent .. => true
+      | _ => false) &&
+    (!scenario.stimuli.any fun stimulus =>
+      match stimulus with
+      | .triggerMessageStart .. => true
+      | _ => false) &&
+    decide (
     scenario.kind = .scenario &&
       scenario.profile = source.identity.semanticProfile &&
       scenario.bpmn.id = source.identity.sourceId &&

@@ -32,6 +32,15 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         stimulus.instanceId,
         stimulus.initialVariables.map(variableBindingTuple),
       ]);
+    case StimulusKind.TriggerMessageStart:
+      return canonicalTypedTupleEncoding([
+        stimulus.kind,
+        stimulus.commandId,
+        stimulus.processId,
+        stimulus.instanceId,
+        stimulus.startEventId,
+        messageChannelTuple(stimulus.channel),
+      ]);
     case StimulusKind.CompleteUserTaskInstance:
       return canonicalTypedTupleEncoding([
         stimulus.kind,

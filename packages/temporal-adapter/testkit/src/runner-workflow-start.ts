@@ -3,7 +3,7 @@
  */
 import type {
   SemanticProcessProgram,
-  StartProcessStimulus,
+  ProcessStartStimulus,
 } from "@bpmn-lean/semantic-core";
 import type {
   WorkflowClient,
@@ -23,7 +23,7 @@ import {
 
 export async function startScenarioWorkflow(
   client: WorkflowClient,
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
   workflowId: string,
   operationDeadlineMs: number,

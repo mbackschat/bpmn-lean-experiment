@@ -118,6 +118,12 @@ inductive Stimulus where
       (processId : SemanticId)
       (instanceId : SemanticId)
       (initialVariables : List VariableBinding)
+  | triggerMessageStart
+      (commandId : SemanticId)
+      (processId : SemanticId)
+      (instanceId : SemanticId)
+      (startEventId : SemanticId)
+      (channel : MessageChannel)
   | completeUserTaskInstance
       (commandId : SemanticId)
       (taskId : UserTaskInstanceId)

@@ -26,7 +26,7 @@ import type {
   OpenUserTask,
   RuntimeState,
   SemanticProcessProgram,
-  StartProcessStimulus,
+  ProcessStartStimulus,
   StateObservation,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
@@ -130,7 +130,7 @@ type CommandResultLedgerEntry = Readonly<{
 }>;
 
 export async function runBpmnProcessWithHostEffects(
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
   waitForTimer: (durationMs: number) => Promise<void>,
   executeEffect: (

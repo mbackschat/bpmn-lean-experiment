@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, and the evidence-closed resumption-bounded cyclic-control-flow specification.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, and the evidence-closed resumption-bounded cyclic-control-flow specification. The current unregistered Message Start semantic checkpoint additionally implements one exact top-level operation-addressed Message Start Event through a separate checked node, IL initiation operation, and start stimulus; product registration and live evidence remain paused for independent checkpoint review.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, the checkpoint-only exact top-level Message Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -156,6 +156,14 @@ type CheckedNode = DeepReadonly<
   | {
       kind: "noneStartEvent";
       id: string;
+    }
+  | {
+      kind: "messageStartEvent";
+      id: string;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
     }
   | {
       kind: "embeddedSubProcess";
@@ -409,6 +417,14 @@ type SemanticOperation = DeepReadonly<
       output: string;
     })
   | (OperationBase & {
+      kind: "initiateMessage";
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
+      outputs: [string, ...string[]];
+    })
+  | (OperationBase & {
       kind: "enterScope";
       input: string;
       childEntry: string;
@@ -544,6 +560,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | Checked BPMN construct | Semantic Process construct |
 |---|---|
 | none Start Event | `initiate` |
+| exact top-level operation-addressed Message Start Event | `initiateMessage` with the Start Event origin, complete Interface/Operation/Message channel, and canonical nonempty outgoing control-place collection |
 | ordinary Sequence Flow | `ControlPlace` |
 | Event-Based Gateway-to-catch configuration Flow | retained exactly once as one `awaitEventRace.configurationOrigin`; no control place |
 | ordinary embedded Sub-Process | `enterScope` with the child definition scope and child entry place |
@@ -593,7 +610,9 @@ lowering produces one `initiate`, one `duplicate`, two `awaitUserTask` operation
 
 ### Initiation
 
-An accepted start stimulus enables `initiate` exactly once for the process instance. Firing it adds one token to its output control place.
+An accepted manual start stimulus enables `initiate` exactly once for the process instance. Firing it adds one token to its output control place.
+
+An accepted `triggerMessageStart` stimulus must match the program Process, Message Start Event, Interface, Interface Operation, and input Message exactly. Admission creates the ordinary fresh root occurrence without installing a Message subscription or payload. Firing `initiateMessage` clears pending initiation and adds one root-owned token to every canonical output control place. The reusable operation admits a nonempty output collection; the checkpoint profile requires exactly one output.
 
 ### User Task wait
 
@@ -697,6 +716,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every source origin required by the current profile is present and nonempty;
 - every `duplicate` has at least two distinct outputs;
 - every `synchronize` has at least two distinct inputs;
+- every `initiateMessage` has one complete operation-addressed channel and a canonical nonempty collection of distinct existing outputs; the Message Start checkpoint profile has exactly one output;
 - every `mergeExclusive` has a canonical nonempty collection of distinct inputs, one distinct existing output, and the selected cycle profile has exactly three inputs;
 - every `choose` has exactly two distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement;
 - every `selectMany` has exactly two canonical distinct candidate outputs, one distinct default output, three distinct existing branch-local expected join inputs, valid Simple Boolean expressions, exact Sequence Flow origin/output agreement, and one nonempty selection key;
@@ -710,7 +730,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every non-null `bpmnErrorRoute` has a nonempty exact code, a distinct existing boundary output, complete source provenance, and the exact profile-permitted handler/mapping combination;
 - every `throwError` has a valid Error reference, an input owned by its throwing child scope, exactly one direct-parent handler with the same Error element and code but a distinct catching ErrorEventDefinition, and a handler output owned by that parent and originating from the recorded boundary Sequence Flow;
 - every `invokeProcess` crosses from the entry root to one distinct called root and carries one exact paired `returnProcess`; the return is owned by that called root, crosses only to the caller output, shares the Call Activity origin and called definition, and the called root has one virtual End-to-return edge;
-- the current profile has exactly one entry-root-owned `initiate`; every embedded scope and the entry root have one `completeScope`; a called root instead has exactly one `returnProcess`; and no `enterScope` targets a parentless root;
+- the current profile has exactly one entry-root-owned Process initiation, either `initiate` or `initiateMessage`, and its start stimulus kind must match; every embedded scope and the entry root have one `completeScope`; a called root instead has exactly one `returnProcess`; and no `enterScope` targets a parentless root;
 - each control place has only the producer and consumer shapes permitted by the current lowering;
 - every operation and control place is reachable from initiation and can reach the root completion under the full structural graph, including explicit end-to-scope-completion edges;
 - every existing profile is acyclic; the selected cycle profile alone removes outgoing edges from its exact `awaitUserTask` resumption operation before saturation-certified acyclicity, while full-graph reachability and co-reachability remain mandatory;
@@ -718,6 +738,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - the Simple Boolean Exclusive Gateway profile has exactly one initiation, one choice, three User Task waits, three end-reaching operations, one root completion, seven control places, and the exact producer/consumer chain that makes an independent simultaneous internal operation unreachable.
 - the structured Inclusive Gateway profile has exactly one initiation, one multi-selection, three User Task waits, one selected synchronization, one end-reaching operation, one root completion, eight control places, one branch-local split-to-task-to-join pairing for each output, and no alternate entry or exit;
 - the Event-Based Gateway profile has exactly one initiation, one event race, two User Task waits, two end-reaching operations, one root completion, five control places, two distinct configuration-flow origins, and no separate `awaitMessage` or `awaitTimer` operation for its configured catches;
+- the unregistered Message Start checkpoint capability has exactly one `initiateMessage`, one User Task wait, one end-reaching operation, one root completion, two control places, and one root scope;
 - the User Task cycle profile has exactly one initiation, one three-input Exclusive Merge, one User Task wait, one declaration-ordered conditional choice, one end-reaching operation, one root completion, six control places, one root scope, and no cycle remaining after the User Task continuation cut;
 - the bounded Call Activity profile has exactly two parentless definitions, one caller initiation, one invocation, two User Task waits, two end-reaching operations, one called return, one caller-root completion, five control places, and no called-root initiation or completion operation;
 
@@ -791,7 +812,7 @@ The project must not create a universal `event` operation with a bag of flags, d
 
 The maintained implementation supports exactly:
 
-- one none Start Event;
+- one none Start Event in every registered profile, plus one exact top-level operation-addressed Message Start Event in the unregistered checkpoint profile;
 - one or more User Tasks permitted by the two approved capsules;
 - one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
 - one finite acyclic linear composition containing exactly one exact `PT1S` Intermediate Catch Timer Event and one User Task under the profile-parameterized admission specification;
@@ -808,7 +829,7 @@ The maintained implementation supports exactly:
 - one ordinary one-level embedded Sub-Process with two independent child User Tasks and two child None End Events, followed by one outer User Task and root None End Event;
 - one one-level embedded Sub-Process with two independent child User Tasks, one child Error End Event, one child None End Event, one exact matching interrupting boundary Error in the parent, one outer recovery User Task, and a structurally present but unreachable normal continuation;
 - none End Events permitted by the capsules;
-- `initiate`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope`;
+- `initiate`, checkpoint-only `initiateMessage`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope`;
 - definition-scope ownership and occurrence identity plus token multiplicity per Sequence Flow and scope occurrence;
 - semantic task, Message-subscription, timer, and effect occurrence identity, hidden occurrence-owned Inclusive selected-branch and Event-Based Gateway race records, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
 - the canonical observation boundary including `openMessageSubscriptions`, `openTimers`, effect arguments in `openEffects`, and Process `variables`.
@@ -820,7 +841,7 @@ The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/Use
 The following remain unsupported:
 
 - general BPMN 2.0.2 import or conformance;
-- event subtypes beyond the admitted none Start, exact normal-flow and Event-Based-Gateway-configured `PT1S` Intermediate Catch Timer, exact normal-flow and Event-Based-Gateway-configured payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
+- event subtypes beyond the admitted none Start, checkpoint-only exact top-level payload-free Message Start, exact normal-flow and Event-Based-Gateway-configured `PT1S` Intermediate Catch Timer, exact normal-flow and Event-Based-Gateway-configured payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
 - other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, boundary Events beyond the exact Task-attached and Sub-Process-attached Error slices, catch-all or unmatched Errors, handler search beyond one direct parent, Error payloads, Intermediate Throw Errors, signals as BPMN semantics, escalation, cancellation Events, compensation, and terminate semantics;
 - arbitrary Sub-Process nesting, Call Activities outside the exact two-Process empty-data normal-return slice, external/deployed called definitions, Global Tasks, recursion, repeated/concurrent calls, transactions, event Sub-Processes, and exceptional scope cancellation or event propagation beyond the exact direct-parent Error slice;
 - converging or mixed data-based Exclusive Gateways outside the exact identity-only cycle merge, missing-default or non-binary Exclusive routing, Inclusive Gateways outside the exact paired structured region, general Inclusive reachability, complex gateways, and Event-Based Gateways outside the exact non-instantiating Message/`PT1S` Timer profile;

@@ -1,5 +1,6 @@
 import {
   MessageChannelKind,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
@@ -96,6 +97,7 @@ export function selectRootDefinitions(
     return unselected([]);
   }
   switch (semanticProfile) {
+    case SemanticCheckpointProfileId.MessageStart:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.EventBasedGatewayMessageTimer:
       return selected(selectMessageRoots(rootElements, process));

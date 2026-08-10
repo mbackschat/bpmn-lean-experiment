@@ -47,6 +47,9 @@ import {
   projectIntermediateCatchMessage,
 } from "./intermediate-catch-message-source.js";
 import {
+  projectMessageStartEvent,
+} from "./message-start-event-source.js";
+import {
   projectReceiveTask,
 } from "./receive-task-source.js";
 import {
@@ -95,7 +98,11 @@ export function projectCheckedNodes(
       case bpmnTypes.startEventType:
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneStartEvent, id }
-          : undefined;
+          : projectMessageStartEvent(
+              element,
+              id,
+              rootSelection.messageArtifacts,
+            );
       case bpmnTypes.subProcessType:
         return isProjectableEmbeddedSubProcess(element)
           ? {

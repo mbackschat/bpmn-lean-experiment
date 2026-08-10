@@ -31,6 +31,9 @@ import {
   isWellFormedInvokeProcessOperation,
   isWellFormedReturnProcessOperation,
 } from "./call-activity-admission.js";
+import {
+  isWellFormedInitiateMessageOperation,
+} from "./semantic-process-message-start.js";
 
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
@@ -55,6 +58,8 @@ export function isWellFormedSemanticOperation(
         hasOnlyKeys(value, ["id", "kind", "origin", "output"]) &&
         isPlaceReference(value.output, placeIds)
       );
+    case SemanticOperationKind.InitiateMessage:
+      return isWellFormedInitiateMessageOperation(value, placeIds);
     case SemanticOperationKind.EnterScope:
       return (
         hasOnlyKeys(value, [

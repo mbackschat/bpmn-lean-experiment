@@ -14,10 +14,10 @@ import type {
   FireTimerStimulus,
   OpenEffect,
   OpenTimer,
+  ProcessStartStimulus,
   Scenario,
   ScenarioResult,
   SemanticProcessProgram,
-  StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   CanonicalObservationKind,
@@ -173,6 +173,7 @@ export function requireCompletionStimuli(
       case StimulusKind.CompleteEffect:
         return [];
       case StimulusKind.StartProcess:
+      case StimulusKind.TriggerMessageStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -194,6 +195,7 @@ export function requireMessageDeliveryStimuli(
       case StimulusKind.CompleteEffect:
         return [];
       case StimulusKind.StartProcess:
+      case StimulusKind.TriggerMessageStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -233,6 +235,7 @@ export function requireOptionalTimerStimulus(
         timer = stimulus;
         break;
       case StimulusKind.StartProcess:
+      case StimulusKind.TriggerMessageStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -257,6 +260,7 @@ export function requireOptionalEffectExecution(
       case StimulusKind.FireTimer:
         return [];
       case StimulusKind.StartProcess:
+      case StimulusKind.TriggerMessageStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -340,11 +344,14 @@ export function requireOptionalEffectExecution(
 
 export function requireStartStimulus(
   scenario: Scenario,
-): StartProcessStimulus {
+): ProcessStartStimulus {
   const start = scenario.stimuli[0];
   if (
     start === undefined ||
-    start.kind !== StimulusKind.StartProcess
+    (
+      start.kind !== StimulusKind.StartProcess &&
+      start.kind !== StimulusKind.TriggerMessageStart
+    )
   ) {
     throw new TypeError(
       "Temporal Process execution requires one explicit start stimulus",

@@ -23,6 +23,17 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           ⟨← stringField json "instanceId"⟩
           (← decodeCanonicalVariableBindings
             (← field json "initialVariables")))
+  | "triggerMessageStart" =>
+      requireObjectShape json
+        ["channel", "commandId", "instanceId", "kind", "processId",
+          "startEventId"]
+      pure
+        (.triggerMessageStart
+          ⟨← stringField json "commandId"⟩
+          ⟨← stringField json "processId"⟩
+          ⟨← stringField json "instanceId"⟩
+          ⟨← stringField json "startEventId"⟩
+          (← decodeOperationMessageChannel (← field json "channel")))
   | "completeUserTaskInstance" =>
       requireObjectShape json
         ["commandId", "kind", "submittedValues", "taskId"]

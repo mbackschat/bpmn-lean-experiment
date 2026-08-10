@@ -10,6 +10,8 @@ namespace BpmnSemantics.SemanticProcess
 private structure ShapeCardinalities where
   starts : Nat := 0
   initiates : Nat := 0
+  messageStarts : Nat := 0
+  messageInitiates : Nat := 0
   embeddedScopes : Nat := 0
   callActivities : Nat := 0
   boundaryErrors : Nat := 0
@@ -47,6 +49,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
   nodes.foldl (init := {}) fun counts node =>
     match node with
     | .noneStartEvent .. => { counts with starts := counts.starts + 1 }
+    | .messageStartEvent .. =>
+        { counts with messageStarts := counts.messageStarts + 1 }
     | .embeddedSubProcess .. =>
         { counts with embeddedScopes := counts.embeddedScopes + 1 }
     | .callActivity .. =>
@@ -89,6 +93,8 @@ private def operationCardinalities (operations : List SemanticOperation) :
   operations.foldl (init := {}) fun counts operation =>
     match operation with
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
+    | .initiateMessage .. =>
+        { counts with messageInitiates := counts.messageInitiates + 1 }
     | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
     | .enterBoundedScope .. =>
         { counts with boundedScopeEntries := counts.boundedScopeEntries + 1 }
@@ -124,7 +130,9 @@ private def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) :
   { shape with scopeCompletions := count }
 
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
-  if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
+  if profile = "bpmn-2.0.2-message-start-event-draft" then
+    some (1, { messageStarts := 1, userTasks := 1, ends := 1 })
+  else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     -- The preserve-enabled profile reaches this shape by construction: Lean receives only the
     -- executed partition, so a source carrying retained notation and its notation-free twin
@@ -196,7 +204,10 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else none
 
 private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
-  if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
+  if profile = "bpmn-2.0.2-message-start-event-draft" then
+    some (1, withScopeCompletions 1
+      { messageInitiates := 1, userTasks := 1, ends := 1 })
+  else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-intermediate-catch-timer-draft" then
@@ -290,7 +301,13 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
 
 private def operationPayloadCapabilitiesValid (profile : String)
     (operations : List SemanticOperation) : Bool :=
-  if profile = "bpmn-2.0.2-user-task-cycle-draft" then
+  if profile = "bpmn-2.0.2-message-start-event-draft" then
+    operations.all fun
+      | .initiateMessage _ _ (.operationMessage ..) outputs =>
+          outputs.length = 1
+      | .initiateMessage .. => false
+      | _ => true
+  else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     operations.all fun
       | .mergeExclusive _ _ inputs _ => inputs.length = 3
       | _ => true

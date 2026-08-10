@@ -1,6 +1,6 @@
 import type {
   SemanticProcessProgram,
-  StartProcessStimulus,
+  ProcessStartStimulus,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -10,7 +10,7 @@ import {
 
 /** Enforces typed production admission before a conformance Workflow starts. */
 export function requireScenarioAdmission(
-  start: StartProcessStimulus,
+  start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
 ): void {
   const admission = assessBpmnProcessAdmission(start, semanticProcess);

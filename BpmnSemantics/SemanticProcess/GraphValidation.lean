@@ -103,6 +103,7 @@ theorem saturation_certified_cut_excludes_uncut_cycle
 
 private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiate ..
+  | .initiateMessage ..
   | .returnProcess ..
   | .completeScope .. => []
   | .enterScope _ _ input _ _
@@ -154,6 +155,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .throwError _ _ _ _ handler => [handler.output]
   | .reachNoneEnd .. => []
   | .completeScope _ _ _ parentOutput => parentOutput.toList
+  | .initiateMessage _ _ _ outputs => outputs
 
 private def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
@@ -205,6 +207,9 @@ private def operationRespectsScopes (program : Program)
       | .initiate _ _ output =>
           (definitionScope? program owner).any (·.parentScopeId.isNone) &&
             placesOwnedBy program [output] owner
+      | .initiateMessage _ _ _ outputs =>
+          (definitionScope? program owner).any (·.parentScopeId.isNone) &&
+            placesOwnedBy program outputs owner
       | .enterScope _ _ input childEntry childScopeId =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] childScopeId &&
@@ -283,7 +288,7 @@ missing case. -/
 private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .enterScope _ _ _ _ childScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
-  | .initiate .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
+  | .initiate .. | .initiateMessage .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitEffect .. | .duplicate ..
@@ -349,7 +354,7 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
 /-- Closed Semantic Process resumption family, decided independently from the checked-source cut. -/
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitUserTask .. => true
-  | .initiate .. | .enterScope .. | .enterBoundedScope ..
+  | .initiate .. | .initiateMessage .. | .enterScope .. | .enterBoundedScope ..
   | .invokeProcess .. | .returnProcess .. | .awaitTimer ..
   | .awaitMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..
   | .awaitMonitoredUserTask .. | .awaitEffect .. | .duplicate ..
@@ -404,6 +409,7 @@ private def initiateIds (operations : List SemanticOperation) :
     List OperationId :=
   operations.filterMap fun
     | .initiate id _ _ => some id
+    | .initiateMessage id _ _ _ => some id
     | _ => none
 
 private def rootScope? (program : Program) : Option DefinitionScopeId :=

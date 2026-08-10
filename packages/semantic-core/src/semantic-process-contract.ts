@@ -31,6 +31,7 @@ export enum SemanticProcessCompilerId {
 
 export enum SemanticOperationKind {
   Initiate = "initiate",
+  InitiateMessage = "initiateMessage",
   EnterScope = "enterScope",
   EnterBoundedScope = "enterBoundedScope",
   InvokeProcess = "invokeProcess",
@@ -139,6 +140,17 @@ type OperationBase = DeepReadonly<{
   id: string;
   origin: BpmnElementOrigin;
 }>;
+
+/** One operation-addressed Message start with generic BPMN outgoing-flow multiplicity. */
+export type InitiateMessageOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.InitiateMessage;
+    channel: Extract<
+      MessageChannel,
+      { kind: typeof MessageChannelKind.OperationMessage }
+    >;
+    outputs: [string, ...string[]];
+  }>;
 
 export type SelectManyOperation = OperationBase &
   DeepReadonly<{
@@ -287,6 +299,7 @@ export type SemanticOperation =
         kind: SemanticOperationKind.Initiate;
         output: string;
       }>)
+  | InitiateMessageOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.EnterScope;

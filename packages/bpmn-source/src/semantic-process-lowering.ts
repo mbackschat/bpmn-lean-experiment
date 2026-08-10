@@ -26,6 +26,7 @@ import {
   lowerCallActivityInvoke,
   lowerCalledProcessReturn,
 } from "./call-activity-lowering.js";
+import { lowerMessageStartEvent } from "./message-start-event-lowering.js";
 import {
   lowerConditionalCandidate,
   lowerInclusiveCandidate,
@@ -108,6 +109,10 @@ function lowerNode(
     [{ operation, scopeId }];
 
   switch (node.kind) {
+    case CheckedNodeKind.MessageStartEvent:
+      return isEntryRootScope(source, scopeId)
+        ? scoped(lowerMessageStartEvent(node, source.sequenceFlows))
+        : [];
     case CheckedNodeKind.NoneStartEvent:
       return isEntryRootScope(source, scopeId)
         ? scoped({

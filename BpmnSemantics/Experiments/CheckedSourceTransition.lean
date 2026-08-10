@@ -62,6 +62,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
             tokens :=
               firstFlowId (outgoingFlowIds source id) :: state.tokens }
       else none
+  | .messageStartEvent .. => none
   | .userTask id name =>
       match state.control with
       | .running instanceId =>
@@ -121,6 +122,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
         subst after
         exact .noneStartEvent id before pending
       · simp [fireNode?, pending] at result
+  | messageStartEvent id channel =>
+      simp [fireNode?] at result
   | userTask id name =>
       cases controlEq : before.control with
       | notStarted => simp [fireNode?, controlEq] at result
@@ -219,6 +222,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
             { outcome := .rejected, state }
       | .running _
       | .completed _ => { outcome := .rejected, state }
+  | .triggerMessageStart .. => { outcome := .unsupported, state }
   | .completeUserTaskInstance _ taskId _ =>
       match state.control with
       | .running instanceId =>
