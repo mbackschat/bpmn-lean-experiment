@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft for independent cold proposal review. Not owner-approved and not implemented.** This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through an exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
+**Independent cold proposal review returned required edits; the corrected proposal is awaiting the same reviewer's audit. Not owner-approved and not implemented.** This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through an exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
 
 ## Independent cold-review receipt
 
@@ -39,7 +39,7 @@ BPMN 2.0.2 is the semantic authority for this standards-only capsule.
 
 The official CMOF and XSD `StartEvent`, `CatchEvent`, `MessageEventDefinition`, `Message`, `Interface`, `Operation`, `SequenceFlow`, `isInterrupting`, `messageRef`, `operationRef`, and `inMessageRef` facts constrain source structure. The XSD permits optional references at the generic serialization layer, while Table 10.99 requires them for an executable Process. Source admission follows the executable semantic requirement.
 
-The standard allows multiple Start Events, multiple outgoing Sequence Flows, definitional Collaboration and Message Flows, Event Sub-Process starts, Message payloads, and broader routing. This profile defers those conforming cases. Its checked and IL representations retain exact Start Event identity and channel identity so later coverage can broaden admission without changing the meaning of any model accepted here.
+The standard allows multiple Start Events, multiple outgoing Sequence Flows, definitional Collaboration and Message Flows, Event Sub-Process starts, Message payloads, and broader routing. This profile defers those conforming cases. Its checked node, IL operation, and stimulus retain exact Start Event and channel identity, so they do not erase the distinctions a later routing capsule needs. The current runtime nevertheless remains single-start-only: broadening admission to multiple Message Start operations first requires a pending selected-start or operation identity in runtime state plus explicit closure and choice proofs. The existing `initiationPending` boolean is insufficient for that broader case.
 
 The proposal adds `BPMN-MESSAGE-START-01` to the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md). It remains `unsupported` until implementation and closure evidence graduate this proposal.
 
@@ -81,6 +81,8 @@ One immutable standards-only profile is proposed as `bpmn-2.0.2-message-start-ev
 
 The profile capability fixes the exact node and operation multiset. Reusable graph admission retains distinct identities, reference closure, producer and consumer ownership, legal arity, reachability, co-reachability, whole-graph acyclicity, finite closure, and one root-scope completion.
 
+Ordinary-producer negatives must reject each independent source defect before checked projection: the MessageEventDefinition and Operation resolve different input Messages; the EventDefinition is referenced, repeated, or combined through `parallelMultiple`; the Start Event has an incoming flow, zero or multiple outgoing flows, or a conditional outgoing flow; the Start Event is nested in an Event Sub-Process or another non-top-level scope; or the Process contains multiple or mixed Start Events. These source-chain and topology negatives are separate from a runtime trigger carrying the wrong channel.
+
 No fifth compilation-dispatch path is added. The new profile uses the existing generic structural compiler path and adds one exact Start Event projection beside the existing None Start projection. Product-specific mapped readers, overlay readers, and payload-free Service Task dispatch remain unchanged.
 
 Message Flow and Participant are not required to identify the sender in this slice. Table 10.84 says the sender can be identified through a Message Flow; it does not make that optional notation the only Message Start instantiation mechanism. A later Collaboration capsule may admit and retain that structure without changing the exact channel or start semantics selected here.
@@ -119,7 +121,7 @@ type InitiateMessageOperation = OperationBase & DeepReadonly<{
 
 The existing `initiate` operation remains the untriggered None Start mechanism. The shared internal helper may create the root-owned output token for either operation only after its corresponding external start admission has set `initiationPending`; the two operation discriminants and their admission rules remain exhaustive and separate.
 
-This representation is forward-compatible with the broader BPMN account. Multiple Start Events can later be represented as multiple identity-bearing start operations. A router can resolve one external publication to one or more exact `(definition, startEventId, channel)` targets and create a distinct semantic instance for each target. This capsule admits exactly one target and makes no router-fanout claim.
+This representation preserves the identities needed by the broader BPMN account, but the current execution state does not yet select among several start operations. Multiple Start Events can later use multiple identity-bearing operations only after runtime state gains a pending selected-start or operation identity and the new capsule proves unambiguous closure and routing choice. A router may then resolve one external publication to one or more exact `(definition, startEventId, channel)` targets and create a distinct semantic instance for each target. This capsule admits exactly one start operation and target, so the existing boolean initiation flag is sound here and no current wire redesign is required.
 
 ## Trigger stimulus and runtime semantics
 
@@ -139,7 +141,7 @@ type TriggerMessageStartStimulus = DeepReadonly<{
 }>;
 ```
 
-The exact Start Event identity is material. It lets later routing distinguish two independent Start Events that use the same Message channel without changing this stimulus. The product-facing publication, tenant, definition-version selection, buffering, time-to-live, and fanout contract remain outside the semantic core.
+The exact Start Event identity is material. It lets later routing distinguish two independent Start Events that use the same Message channel without changing this stimulus, but multiple-start execution still requires the pending runtime-selection mechanism above. The product-facing publication, tenant, definition-version selection, buffering, time-to-live, and fanout contract remain outside the semantic core.
 
 The stimulus commits if and only if:
 
@@ -150,7 +152,7 @@ The stimulus commits if and only if:
 - the supplied complete channel equals that operation's channel;
 - the selected profile and program admit Message Start execution.
 
-Commit creates one root scope occurrence owned by `instanceId`, sets activation `1`, creates an empty Process-variable scope, changes the Process to `running`, and sets the existing private `initiationPending` flag. Internal closure then fires the matching `initiateMessage`, clears the flag, and creates one root-owned token on every operation output. The selected profile has exactly one output, so the representative program reaches one User Task and stops.
+Commit creates one root scope occurrence owned by `instanceId`, sets activation `1`, creates an empty Process-variable scope, changes the Process to `running`, and sets the existing private `initiationPending` flag. Exact-one start-operation admission makes that boolean sufficient for this profile. Internal closure has the exact two-step trace `initiateMessage` followed by `awaitUserTask`: the committed state enables exactly one `initiateMessage`; its successor enables exactly one `awaitUserTask`; and the next state is internally stable, `running`, exposes exactly one User Task wait, and satisfies the existing stable-state resumability predicate. The longest reachable closure is therefore `2`, within the production limit `8`; the same representative command with test closure limit `1` must report the over-limit discriminator.
 
 The message trigger carries no `initialVariables` and no payload. Message item definitions, catch data output, data mapping, and any non-BPMN platform start variables require a separate proposition. Empty variables are a semantic result of this profile, not an alias for an omitted payload field.
 
@@ -163,8 +165,9 @@ No active Message subscription is created before or after commit. Canonical obse
 | `MSTART-SOURCE-01` | The selected executable source contains one top-level Message Start Event whose sole inline MessageEventDefinition resolves one exact Interface Operation and its matching input Message, with `0 -> 1` conditionless Sequence Flow arity and no payload or Event Sub-Process property. |
 | `MSTART-TRIGGER-01` | From `notStarted`, a resolved trigger commits only when Process ID, Start Event ID, and the complete operation-addressed channel equal the admitted `initiateMessage` operation. |
 | `MSTART-FLOW-01` | After a committed trigger, `initiateMessage` clears initiation pending and produces exactly one token on each distinct output, all owned by the fresh root scope occurrence, without creating a Message subscription or changing variables. The selected profile admits exactly one output. |
+| `MSTART-CLOSURE-01` | The representative committed trigger has the exact internal trace `initiateMessage -> awaitUserTask`: each unstable prefix has exactly one enabled internal operation, the longest closure is `2 <= 8`, limit `1` reports over-limit, and the final stable `running` state has exactly one User Task wait and is resumable. |
 | `MSTART-REFUSE-01` | Wrong start kind, Process ID, Start Event ID, any channel component, profile, root binding, or a non-`notStarted` state rejects and returns the exact input runtime state by identity. |
-| `MSTART-INSTANCE-01` | Two separately admitted resolved triggers with distinct semantic instance IDs create distinct root scope occurrences and cannot alias one semantic Process instance. Host reuse of one semantic instance address creates no second Workflow. |
+| `MSTART-INSTANCE-01` | Two separately admitted resolved triggers with distinct semantic instance IDs create distinct root scope occurrences and cannot alias one semantic Process instance. Reuse of one semantic instance address creates no second Workflow while its prior execution is running or retained by Temporal. |
 | `MSTART-OBSERVE-01` | After initiation and internal closure, the representative Message Start program exposes exactly the same downstream User Task and Process-variable observation as its corresponding None Start program, apart from the deliberately distinct definition and semantic instance identities. |
 
 `MSTART-TRIGGER-01` and `MSTART-FLOW-01` are vendor-neutral BPMN rules. Exact operation-addressed resolution is a permitted bounded operational detail that preserves all source distinctions required by Table 10.99. Workflow addressing, duplicate-start behavior, and service acknowledgements are host policy, not BPMN facts.
@@ -180,6 +183,7 @@ The required proved facts are:
 - the Message-start evaluator is sound with respect to its declarative relation;
 - accepted trigger admission creates one root occurrence and preserves empty variables;
 - `initiateMessage` produces one root-owned token per output and no subscription, while the selected profile proves exact-one output;
+- the exact closure enables one `initiateMessage`, then one `awaitUserTask`, reaches one stable resumable User Task wait in two steps within limit `8`, and reports over-limit at limit `1`;
 - wrong Process, Start Event, Message, Interface, or Interface Operation identity rejects with exact state preservation;
 - a manual start cannot start a Message-start program and a Message trigger cannot start a None-start program;
 - after initiation, equivalent one-output Message and None start programs have the same control-state shape under an explicit identity-renaming relation;
@@ -187,7 +191,7 @@ The required proved facts are:
 
 The nearest checked non-law is channel equality by Message ID alone. Two channels with the same Message and Interface IDs but different Interface Operation IDs are not equal and do not admit the same trigger.
 
-The full BPMN proposition that one external Message may match several definitions or several independent Start Events is deliberately open because it belongs to definition routing and fanout, not one-instance execution. The chosen exact Start Event selector preserves that future possibility.
+The full BPMN proposition that one external Message may match several definitions or several independent Start Events is deliberately open because it belongs to definition routing and fanout, not one-instance execution. The chosen exact Start Event selector preserves the routing distinction, while multiple-start execution additionally requires a pending selected-start or operation identity and its closure and choice proofs.
 
 ## Temporal hosting and refinement preflight
 
@@ -203,7 +207,9 @@ Durable ingress is the Workflow start input. The adapter does not use Signal, Si
 
 Ordering is fixed: exact source/profile and semantic/host admission precede the one Workflow start. The start input precedes all later command handlers. There is no race with a pre-existing Process because this profile creates a new semantic instance.
 
-Deduplication is bounded to the semantic instance address. Reusing that address cannot create a second Workflow under `REJECT_DUPLICATE`. Exact external publication retry, tenant-aware idempotency keys, definition-version routing, buffering, and fanout belong to the later BPM platform ingress increment and must not be inferred from this host witness.
+Deduplication is bounded to the semantic instance address and Temporal retention. Reusing that address cannot create a second Workflow under `REJECT_DUPLICATE` while the prior execution is running or retained. After retention removes the execution, the address is indistinguishable from one never used; preventing resurrection then requires a later durable tombstone or product router. Exact external publication retry, tenant-aware idempotency keys, definition-version routing, buffering, and fanout belong to that later BPM platform ingress increment and must not be inferred from this host witness.
+
+If Temporal accepts `client.start` but the caller loses the response, the current client cannot recover the exact `Started` result. A retry while the execution is retained may return a duplicate-start or deadline infrastructure failure even though creation succeeded. This is an infrastructure ambiguity, not a semantic rejection or an exact start acknowledgement. The later product ingress contract must own result recovery or an idempotent receipt before it claims retry-transparent publication.
 
 The smallest live witness starts while the Worker is absent, then starts the Worker, observes the exact first User Task, completes it, reaches the terminal receipt, inspects history, and replays it. Event History must contain Workflow start and the later Update path but no Signal event. A test-owned host mutation that routes the trigger through Signal-With-Start must fail the no-Signal history discriminator. A separate fake-client mutation that ignores `interfaceOperationId` must call `client.start` for the primary wrong-channel negative and therefore fail the zero-start assertion.
 
@@ -211,11 +217,12 @@ The smallest live witness starts while the Worker is absent, then starts the Wor
 
 | Rule | Source/profile | Lean | TypeScript core | Temporal | Negative or mutation |
 |---|---|---|---|---|---|
-| `MSTART-SOURCE-01` | Exact BPMN fixture, strict reference closure, profile capability, XML validation | Exact decoder/admission and lowering facts | Independent compiler projection | Pre-start compiled artifact | Missing reference, extra root, payload, explicit `isInterrupting`, second definition |
+| `MSTART-SOURCE-01` | Exact BPMN fixture, strict reference closure, profile capability, XML validation | Exact decoder/admission and lowering facts | Independent compiler projection | Pre-start compiled artifact | Mismatched input Message; referenced, repeated, or parallel Event Definition; incoming, zero, multiple, or conditional outgoing flow; non-top-level placement; multiple or mixed starts |
 | `MSTART-TRIGGER-01` | Checked channel and origin bind the IL operation | Declarative trigger relation and evaluator soundness | Independent start admission | Zero host starts before exact admission | Same Message and Interface, wrong Interface Operation |
 | `MSTART-FLOW-01` | Complete validated outgoing Sequence Flow set; selected profile cardinality one | Root-owner per-output token theorem and selected exact-one corollary | Independent internal transition | First stable User Task after Worker absence | Mutation drops, duplicates, or redirects an output, creates a subscription, or uses manual initiate |
+| `MSTART-CLOSURE-01` | Exact linear checked graph and selected cardinalities | Exact two-step closure, enabled-count, limit, and resumability facts | Exact trace and enabled-count assertions; production limit `8`; limit-`1` negative | First stable User Task after Worker absence | Extra enabled operation, stranded stable state, or closure longer than two |
 | `MSTART-REFUSE-01` | Profile and exact references | Exact-state refusal theorems | Runtime identity assertions | Wrong trigger makes zero Workflow starts | Wrong kind, Process, Start Event, each channel component, repeated state |
-| `MSTART-INSTANCE-01` | One exact target per admitted fixture | Distinct root-owner theorem | Two fresh-state executions | Distinct Workflow IDs; duplicate address creates no second Workflow | Instance-ID reuse and target alias mutation |
+| `MSTART-INSTANCE-01` | One exact target per admitted fixture | Distinct root-owner theorem | Two fresh-state executions | Distinct Workflow IDs; running-or-retained duplicate address creates no second Workflow | Instance-ID reuse and target alias mutation |
 | `MSTART-OBSERVE-01` | Message-start and None-start twin fixtures | Explicit post-initiation relation | Canonical projection equality | Worker-absence start, completion, history, replay | Signal-With-Start history mutation |
 
 No CIB result is used as semantic evidence. The registered scenario is answer-free, declares `cib: null`, and participates in the Lean, TypeScript, and Temporal targets. One isolated differential mutation changes the Interface Operation while retaining the Message ID so the comparator must report the declared channel disagreement.
@@ -226,10 +233,10 @@ The runnable product example uses a second closed configuration variant for Mess
 
 | Construct | Derivation and owner | Public projection | Lifecycle invariant |
 |---|---|---|---|
-| `initiationPending` | Existing semantic-core private state set only by accepted start admission | None | True only between accepted external start and one matching internal initiate transition |
+| `initiationPending` | Existing semantic-core private state set only by accepted start admission | None | Sound only because this profile admits exactly one start operation; multiple-start admission first requires a pending selected-start or operation identity |
 | resolved `startEventId` | Copied from the checked BPMN node through IL origin and supplied by the pre-start router | Present only in the immutable program/stimulus evidence, not canonical state | Must match exactly before instance creation; never rewritten by Temporal |
 | root scope occurrence | Existing semantic runtime identity constructed from definition scope, supplied semantic instance ID, and activation `1` | Consequences appear through existing instance-owned waits and state | Exactly one root occurrence for the admitted instance |
-| Temporal Workflow ID | Collision-resistant encoding of semantic instance ID in the production client | None | One non-reusable Workflow address per semantic instance |
+| Temporal Workflow ID | Collision-resistant encoding of semantic instance ID in the production client | None | Non-reusable while the prior execution is running or retained; post-retention prevention requires a later durable tombstone or router |
 
 There is no synthetic Message subscription, broker record, correlation key, or delivery receipt in the semantic runtime.
 
@@ -253,6 +260,7 @@ Required for closure:
 - strict TypeScript and Lean wire decoding;
 - independent Lean and TypeScript semantics plus evaluator soundness;
 - exact wrong-channel and cross-kind refusal with state identity;
+- exact two-step closure, one enabled operation at each unstable prefix, limit-`1` over-limit evidence, and a final stable resumable User Task wait;
 - registered answer-free scenario, product example, differential case, live Temporal Worker-absence/history/replay evidence, and meaningful mutations;
 - the frozen cyclic baseline and every pre-existing scenario projection unchanged.
 
@@ -260,7 +268,7 @@ Optional after this capsule, but not part of it:
 
 - the BPM platform's public message publication route and durable router;
 - definition-version selection and tenant partitioning;
-- exact retry recovery through a product idempotency key.
+- exact retry recovery through a product idempotency key or durable start receipt.
 
 Excluded:
 
@@ -269,6 +277,7 @@ Excluded:
 - multiple or mixed Start Events, multiple outgoing Sequence Flows, Parallel Multiple, or conditional start;
 - Collaboration, Participant execution, Message Flow execution, Send Task, throw Message Event, or outbound Message commitment;
 - Event Sub-Process start, interruption, boundary Event, scope cancellation, compensation, or migration;
+- Call Activity, a callable or additional Process root, and global callable-Process invocation;
 - Timer, Signal, Conditional, Error, Escalation, Compensation, Multiple, or Parallel Multiple Start Events;
 - CIB Seven Message Start compatibility, A12 adoption, and Product 2 API implementation;
 - Signal-With-Start, Update-With-Start, Continue-As-New, Search Attributes, Schedule, Child Workflow, or Activity hosting.
@@ -289,12 +298,15 @@ The primary common-mode risks are:
 - Lean and TypeScript both compare Message ID but omit Interface Operation ID;
 - manual and Message start collapse to one optional-mode shape;
 - the Temporal client starts before semantic admission or turns the trigger into a Signal;
+- source projection and lowering agree on an internally inconsistent MessageEventDefinition, Operation, and input-Message chain;
+- the boolean pending flag is treated as sufficient after multiple start operations become admissible;
+- Workflow-address reuse is claimed beyond Temporal retention or accepted-but-response-lost is misreported as semantic rejection;
 - a scenario fixture and its expected projection share one faulty Start Event ID constant;
 - a registered profile lands without its scenario, product example, or differential inventory entry.
 
 Separating evidence uses independently constructed source twins, direct program values, exact state-identity negatives, checked-to-IL drift mutations, a fake client start counter, no-Signal live history, and the immutable baseline oracle. A comparator-side mutation alone does not establish that the producer preserved the channel; the source-to-checked-to-IL mutation must pass through the ordinary producer path.
 
-The nearest realistic unsupported claim is a publication that matches two independent Message Start Events, possibly across definition versions, and must create the correct set of new Process instances exactly once. The current resolved-target stimulus preserves the information needed by that future router but does not implement or prove the routing policy.
+The nearest realistic unsupported claim is a publication that matches two independent Message Start Events, possibly across definition versions, and must create the correct set of new Process instances exactly once. The current resolved-target stimulus preserves the information needed by that future router, but the current runtime retains only a boolean initiation flag. That future capsule must add pending selected-start or operation identity before multiple-start admission and must prove its routing, closure, and choice policy.
 
 ## Versioning consequences
 
@@ -323,6 +335,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; t
 | [root-definition selection](../../packages/bpmn-source/src/root-definition-selection.ts) | 344 | Reuse the existing exact operation-message root selection without a second reference inventory. |
 | [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 345 | Add a Message Start shape without weakening plain None Start projection. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 228 | Dispatch exact Message Start projection through a new cohesive source owner. |
+| [checked process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Admit the widened checked-node family only through the selected profile and delegate generic topology to the graph owner. |
 | [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 287 | Recognize Message Start as a root `0 -> 1` node under existing graph laws. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 71 | Extract Message Start lowering before editing if the fresh Red measurement would cross 600; never compress or mix source projection into this owner. |
 | [intermediate Message source](../../packages/bpmn-source/src/intermediate-catch-message-source.ts) | 532 | Extract the shared operation-message EventDefinition projection only after the new Message Start source is the second semantic user. |
@@ -371,14 +384,18 @@ Strict [checked-process schema](../../contracts/schemas/checked-process.schema.j
 
 The six experiment owners above are the complete repository-built fail-closed surface found by the checked-node and stimulus discriminant sweep. They do not gain Message Start semantics. `CheckedSourceFrontier` and `CheckedSourceCorrespondence` do not exhaust either widened union and remain unchanged.
 
-The profile, scenario, BPMN fixture, and runnable example are new registered artifacts. [profiles/README.md](../../profiles/README.md), [scenarios/README.md](../../scenarios/README.md), the [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), and the [runnable MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) update atomically with implementation. [Call Activity lowering](../../packages/bpmn-source/src/call-activity-lowering.ts), the handle-free [definition-start client](../../packages/temporal-adapter/client/src/definition-start-client.ts), and Product 2's manual definition-start surface remain unchanged because the exact Message Start profile excludes Call Activity, additional Process roots, and Product 2 ingress.
+The profile, scenario, BPMN fixture, and runnable example are new registered artifacts. [profiles/README.md](../../profiles/README.md), [scenarios/README.md](../../scenarios/README.md), [semantic-core README](../../packages/semantic-core/README.md), [BPMN-source README](../../packages/bpmn-source/README.md), [Temporal-adapter README](../../packages/temporal-adapter/README.md), [wire-contract README](../../contracts/README.md), the [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), and the [runnable MVP specification](../RUNNABLE-TEMPORAL-MVP-SPEC.md) update atomically with implementation. [Call Activity lowering](../../packages/bpmn-source/src/call-activity-lowering.ts), the handle-free [definition-start client](../../packages/temporal-adapter/client/src/definition-start-client.ts), and Product 2's manual definition-start surface remain unchanged because the exact Message Start profile excludes Call Activity, callable or additional Process roots, and Product 2 ingress.
+
+The complete `what-binds` rerun also reaches the Java [closed scenario stimulus union](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioProtocol.java) and [CIB scenario runner](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java), at 598/600 and 577/600 nonblank lines. They remain unchanged and fail closed for `triggerMessageStart`; the registered Message Start scenario declares `cib: null`, so no CIB runner decodes or executes it. Their [CIB runner registry](../../runners/cibseven/README.md) and [runner registry](../../runners/README.md) therefore remain unchanged. Any future CIB Message Start relationship must open a separate capsule and cohesive Java extraction rather than widening these near-limit owners incidentally.
 
 Existing focused test owners also change where their exact inventories widen:
 
 | Test owner | Headroom to 600 nonblank lines | Obligation |
 |---|---:|---|
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 157 | Register the new exact projector in the closed production key-owner matrix. |
+| [checked graph admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 444 | Lock the exact root `0 -> 1` Message Start shape and reject the nearest incoming, arity, condition, placement, and mixed-start violations. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 125 | Reject checked-to-IL drift in Start Event ID, every output, and every channel component. |
+| [artifact projection oracle](../../scripts/contract-artifact-projections.test.ts) | 14 | Extract a cohesive Message-start projection oracle before adding the new scenario; do not grow this near-limit owner in place. |
 | [command identity](../../packages/temporal-adapter/testkit/test/command-identity.test.ts) | 411 | Lock canonical identity over every Message-start trigger field. |
 | [product example configs](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 447 | Construct and admit the correct closed start variant for every example. |
 | [runnable MVP](../../packages/temporal-adapter/testkit/test/runnable-mvp.test.ts) | 404 | Lock strict Message-start config validation while preserving the old manual branch. |
@@ -390,7 +407,7 @@ Existing focused test owners also change where their exact inventories widen:
 |---|---|
 | [document reviewability](../../scripts/document-reviewability.test.ts) | Recompute every owner figure and require this proposal in both registries. |
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep `BPMN-MESSAGE-START-01`, its disposition, and capsule citation aligned. |
-| [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Cover each new exact union arm and reject missing, extra, or malformed channel and start fields. |
+| [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [contract artifacts](../../scripts/contract-artifacts.test.ts), and [artifact projection oracle](../../scripts/contract-artifact-projections.test.ts) | Cover each new exact union arm, preserve the ordinary projector path, and reject missing, extra, or malformed channel and start fields. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind checked Start Event origin/channel/output to the lowered operation and reject drift in each component. |
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Keep the new Start Event projector in the mechanically closed shared-key consumer inventory. |
 | [frozen cyclic baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation.test.ts) | Preserve every baseline source, profile, admission, checked, IL, and registry-origin value exactly while permitting only additions. |
@@ -412,7 +429,7 @@ Closure may establish only the exact one-target, payload-free top-level Message 
 
 The nearest realistic counterexample is one external publication matching two Message Start Events that share a Message but differ by Interface Operation or definition version. A router that chooses one by Message ID alone would lose a standards-visible distinction. The exact resolved `startEventId` and complete channel keep this counterexample representable and force the later routing capsule to decide fanout explicitly.
 
-Meaningful mutations are: compare only Message ID; accept manual start for a Message-start program; lower a stale operation channel; create a synthetic subscription; send Signal-With-Start; start Temporal before admission; reset or alias the supplied instance ID; and omit one atomic registration. Each must reach a public, semantic, artifact, or durable-history discriminator.
+Meaningful mutations are: compare only Message ID; accept an inconsistent source Message/Operation chain; accept manual start for a Message-start program; lower a stale operation channel; treat a boolean pending flag as a start selector after multiple operations become admissible; create a synthetic subscription; send Signal-With-Start; start Temporal before admission; claim a retained duplicate guarantee after retention; reset or alias the supplied instance ID; and omit one atomic registration. Each must reach a public, semantic, artifact, or durable-history discriminator.
 
 At closure, [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) records commit-bounded code and documentation churn against the resumption-bounded cyclic-control-flow capsule, the nearest completed increment that changed checked source, IL, Lean, TypeScript, schemas, registered evidence, and Temporal hosting.
 
