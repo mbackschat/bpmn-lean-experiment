@@ -2,19 +2,19 @@
 
 ## Status
 
-**Owner-approved on 2026-08-10; the semantic-checkpoint correction is implemented and pending same-reviewer audit.** The cold review of immutable target `0ddc83a` required exact admission for the XSD-required Interface and Operation names, nonempty Lean Message Start wire identities, and Lean start-stimulus-to-program pairing before scenario execution. The correction closes those three boundaries without changing the selected account. Product profile registration, answer-free scenario and differential evidence, runnable example, and live Temporal history/replay evidence remain blocked until checkpoint approval. This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through one exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
+**Owner-approved on 2026-08-10; the semantic checkpoint is approved after same-reviewer correction audit.** The cold review of immutable target `0ddc83a` required exact admission for the XSD-required Interface and Operation names, nonempty Lean Message Start wire identities, and Lean start-stimulus-to-program pairing before scenario execution. The same reviewer approved correction target `04a5bae` with all three findings closed and no new required defect. Product profile registration, answer-free scenario and differential evidence, runnable example, and live Temporal history/replay evidence are now the active closure lanes. This proposal selects one top-level, payload-free Message Start Event that instantiates one private executable Process through one exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `8bd3fe9` | `fork-turns-none` | `approve-with-required-edits` | `4540c32` |
-| Semantic checkpoint | `0ddc83a` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `0ddc83a` | `fork-turns-none` | `approve-with-required-edits` | `04a5bae` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The proposal stage used three correction rounds. The context-cold review of `8bd3fe9` returned five required findings. Corrections `6c48839` and `2b02175` closed the substantive findings but retained one missing-versus-unresolved reference discriminator; the owner authorized a third warm audit, and `4540c32` closed that final finding with no reopened issue.
 
-The semantic-checkpoint cold review of `0ddc83a` returned three required admission findings. The receipt remains pending until the same reviewer audits the committed correction target.
+The semantic-checkpoint cold review of `0ddc83a` returned three required admission findings. The same reviewer approved correction target `04a5bae`, closing each finding without changing the selected account, public contract, exclusions, or evidence strategy.
 
 ## Question
 
