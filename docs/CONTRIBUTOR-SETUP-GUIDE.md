@@ -43,6 +43,18 @@ Tokei-backed README statistics are a maintainer-only publication aid. Tokei is a
 
 The scope split is an architecture boundary. Default verification is complete for the MIT BPMN engine and does not obtain or inspect A12. The optional adoption lane is not a weakened default lane: when selected, it fails unless the external EUPL-1.2 checkout is present at the exact pinned pristine revision and both registered source facts pass. `verify.sh` announces `A12_ADOPTION_EVIDENCE status=not-run` so absence of downstream evidence is explicit without turning A12 into a lower-layer dependency.
 
+## Memory-bounded Lean measurements
+
+Ordinary Lean development runs through [`scripts/lake.sh`](../scripts/lake.sh). Its conservative `LEAN_NUM_THREADS` default bounds build parallelism and does not start Docker. A hard memory ceiling is additionally required for a Lean cost measurement and for the first narrow build after changing a kernel-decided fixture, a dispatcher reduced by those fixtures, admission logic reduced by many fixtures, or proof-lane layout. This is development and CI assurance work only. Lean and the measurement environment are absent from the engine and platform runtime dependency graphs.
+
+Prefer the host operating system's native process-tree memory controller when it provides a verifiable hard resident-memory limit:
+
+- On Linux with cgroup v2 and a delegated systemd user manager, run the narrow target in a transient scope with `MemoryMax`, set `MemorySwapMax=0` when the measurement requires no swap, and use `CPUQuota=100%` when comparing one-CPU measurements. Verify that the properties were applied. If the user manager cannot delegate the memory controller, use the container fallback rather than substituting an address-space limit.
+- On macOS, `setrlimit` and shell `ulimit` do not provide the required hard process-tree resident-memory ceiling. Use a Linux container with explicit `--memory`, equal `--memory-swap` to prohibit additional swap, and `--cpus=1` when reproducing the one-CPU cost lane. The container must use the repository-pinned Lean version and a Linux build cache separate from host artifacts. Docker is a measurement harness here, not a build, test, or product runtime dependency.
+- On another operating system, use its native facility only when it hard-limits the complete process tree and the applied limit can be verified. Otherwise use a constrained container. Record the backend with the result so unlike measurements are not compared as though they used the same enforcement.
+
+Do not use a polling watchdog, Activity Monitor sample, `ulimit -v`, or a virtual-address-space limit as a substitute. Those can observe or constrain a different resource while a Lean process allocates resident memory between samples. Record the exact target, commit, Lean version, `LEAN_NUM_THREADS`, CPU allowance, memory ceiling, swap policy, elapsed/user/system time, peak resident memory, cache state, exit status, and enforcement backend. A timed-out or OOM-killed build is evidence that the target did not fit the declared bound; do not raise the bound merely to make it green.
+
 Run the exact A12 source-adoption lane only after deliberately selecting that license-separated input:
 
 ```sh

@@ -200,6 +200,8 @@ The default is deliberately conservative: this project decides finite fixtures i
 LEAN_NUM_THREADS=4 ./scripts/verify.sh
 ```
 
+Ordinary Lean development uses that wrapper directly and does not require Docker. Changes that can increase kernel-reduction cost need a hard memory-bounded narrow measurement before the complete Lean gate. [The contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements) explains the platform-specific choice: native cgroups on Linux, Docker as the macOS fallback, and a verified native equivalent or container elsewhere.
+
 The complete gate matrix and evidence boundaries are in [TESTING-SPEC.md](docs/TESTING-SPEC.md).
 
 ## Run the Temporal engine runner
