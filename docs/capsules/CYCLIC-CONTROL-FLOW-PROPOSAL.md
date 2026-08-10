@@ -2,17 +2,19 @@
 
 ## Status
 
-**Owner-approved on 2026-08-10 after renewed independent review; cold semantic-checkpoint target `cef8958` received `approve-with-required-edits`, and the same reviewer's first warm audit of correction `6ddb788` retained one proof-closure finding plus immutable-target gate binding. A second bounded correction and warm audit remain required before profile/scenario, differential, product-example, or live Temporal evidence work begins.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim evidence-closed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Owner-approved on 2026-08-10 after renewed independent review; semantic checkpoint correction `9d2bc38` is approved after cold target `cef8958` and two same-reviewer warm audits. The atomic profile/scenario, differential, product-example, and live Temporal evidence lane may now begin.** This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim evidence-closed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `5789223` | `fork-turns-none` | `approve-with-required-edits` | `58417e0` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `cef8958` | `fork-turns-none` | `approve-with-required-edits` | `9d2bc38` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The original proposal stage used four warm correction audits in the same reviewer thread. The automatic two-round bound stopped the stage after `88ad69c` and `0d9409e`; the owner explicitly authorized the third correction at `d1173b1` and the fourth correction content at `d5e221e`. Final audit target `d5e7bb9` closed every required finding in that target. The later condition-ownership correction changed reviewed semantic wording and therefore received a new cold proposal review at `5789223`; same-reviewer audit approved correction `58417e0` after it generalized the declarative merge relation, corrected the cardinality and ordering claims, and refreshed the post-extraction owner inventory.
+
+The semantic checkpoint cold review of `cef8958` required corrections to product-profile registration, generic-versus-profile Lean admission, material Lean reachability and closure proofs, and strict merge-input decoding. The first warm audit of `6ddb788` closed three findings but retained actual-transition closure and immutable-target gate binding. The second warm audit approved clean target `9d2bc38`; the checkpoint used two correction-audit rounds.
 
 ## Question
 
