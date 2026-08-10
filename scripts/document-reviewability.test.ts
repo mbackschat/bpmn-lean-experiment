@@ -16,6 +16,10 @@ const profileCapabilitySectionEnd = "## Structural validators";
 const semanticProfileMapStart =
   "export const SemanticProfileId = Object.freeze({";
 const semanticProfileMapEnd = "} as const);";
+const semanticProcessIlSpecPath = path.join(
+  projectRoot,
+  "docs/SEMANTIC-PROCESS-IL-SPEC.md",
+);
 /** Artifact trees whose registry README must reach every one of their directories. */
 const artifactRegistries = ["profiles", "scenarios"] as const;
 /** Document trees whose own README must reach every sibling Markdown document. */
@@ -290,6 +294,23 @@ test("covers every registered semantic profile in the admission capability table
       rowCount: profileIds.length,
       missingOrDuplicateProfiles: [],
     },
+  );
+});
+
+test("keeps the Timer Start checkpoint visible in the exact IL contract", async () => {
+  const specification = await readFile(semanticProcessIlSpecPath, "utf8");
+
+  assert.match(
+    specification,
+    /unregistered Timer Start checkpoint/u,
+  );
+  assert.match(
+    specification,
+    /kind: "timerStartEvent";\s+id: string;\s+durationLiteral: "PT1S";/u,
+  );
+  assert.match(
+    specification,
+    /one exact top-level `PT1S` Timer Start Event/u,
   );
 });
 

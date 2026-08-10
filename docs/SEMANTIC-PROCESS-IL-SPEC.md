@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, and the evidence-closed Message Start Event specification. The registered Message Start capability implements one exact top-level operation-addressed Message Start Event through a separate checked node, IL initiation operation, and start stimulus.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, the evidence-closed Message Start Event specification, and the unregistered Timer Start checkpoint. The registered Message Start capability implements one exact top-level operation-addressed Message Start Event through a separate checked node, IL initiation operation, and start stimulus. The Timer Start checkpoint implements one exact top-level `PT1S` Timer Start Event through a separate checked node, IL initiation operation, and start stimulus without registering a product profile.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, one exact top-level Message Start Event, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, one exact top-level Message Start Event, one exact top-level `PT1S` Timer Start Event in the unregistered checkpoint, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -164,6 +164,11 @@ type CheckedNode = DeepReadonly<
         MessageChannel,
         { kind: typeof MessageChannelKind.OperationMessage }
       >;
+    }
+  | {
+      kind: "timerStartEvent";
+      id: string;
+      durationLiteral: "PT1S";
     }
   | {
       kind: "embeddedSubProcess";
@@ -822,7 +827,7 @@ The project must not create a universal `event` operation with a bag of flags, d
 
 The maintained implementation supports exactly:
 
-- one profile-selected Process Start Event: one exact top-level operation-addressed Message Start Event in the registered Message Start profile and one none Start Event in every other registered profile;
+- one profile-selected Process Start Event: one exact top-level operation-addressed Message Start Event in the registered Message Start profile, one exact top-level `PT1S` Timer Start Event in the unregistered Timer Start checkpoint, and one none Start Event in every other registered profile;
 - one or more User Tasks permitted by the two approved capsules;
 - one exact `PT1S` Intermediate Catch Timer Event under its single-token linear capsule;
 - one finite acyclic linear composition containing exactly one exact `PT1S` Intermediate Catch Timer Event and one User Task under the profile-parameterized admission specification;

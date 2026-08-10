@@ -193,6 +193,15 @@ test("verification scripts validate BPMN XML through one preflighting owner", as
   }
 });
 
+test("default verification XSD-validates the Timer Start fixture", async () => {
+  const source = await readFile(verifyScriptPath, "utf8");
+
+  assert.match(
+    source,
+    /packages\/bpmn-source\/test\/fixtures\/timer-start-event\.bpmn/u,
+  );
+});
+
 test("default verification builds and executes the checked-source proof experiment", async () => {
   await assertLineOccursOnce(
     verifyScriptPath,
