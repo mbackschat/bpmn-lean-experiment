@@ -1,8 +1,8 @@
-# Resumption-bounded cyclic control flow proposal
+# Resumption-bounded cyclic control flow specification
 
 ## Status
 
-**Owner-approved on 2026-08-10 after renewed independent review; semantic checkpoint correction `9d2bc38` is approved after cold target `cef8958` and two same-reviewer warm audits. Cold closure target `4251dc6` received required edits, and its executable mutation plus status/evidence correction is ready for same-reviewer audit.** The registered answer-free schedule traverses both back-edges and the default exit, and the live witness adds Worker replacement, accepted-result recovery, stale-occurrence refusal, finite history inspection, and replay. This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not yet claim closure-reviewed cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Implemented, evidence-closed, and graduated on 2026-08-10.** The registered answer-free schedule traverses both back-edges and the default exit, and the live witness adds Worker replacement, accepted-result recovery, stale-occurrence refusal, finite history inspection, mutation discrimination, and replay. This specification owns the first closed M2 semantic increment after the Lean admission-lane split. It does not claim BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
@@ -10,11 +10,13 @@
 |---|---|---|---|---|
 | Proposal | `5789223` | `fork-turns-none` | `approve-with-required-edits` | `58417e0` |
 | Semantic checkpoint | `cef8958` | `fork-turns-none` | `approve-with-required-edits` | `9d2bc38` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `4251dc6` | `fork-turns-none` | `approve-with-required-edits` | `8aacfa3` |
 
 The original proposal stage used four warm correction audits in the same reviewer thread. The automatic two-round bound stopped the stage after `88ad69c` and `0d9409e`; the owner explicitly authorized the third correction at `d1173b1` and the fourth correction content at `d5e221e`. Final audit target `d5e7bb9` closed every required finding in that target. The later condition-ownership correction changed reviewed semantic wording and therefore received a new cold proposal review at `5789223`; same-reviewer audit approved correction `58417e0` after it generalized the declarative merge relation, corrected the cardinality and ordering claims, and refreshed the post-extraction owner inventory.
 
 The semantic checkpoint cold review of `cef8958` required corrections to product-profile registration, generic-versus-profile Lean admission, material Lean reachability and closure proofs, and strict merge-input decoding. The first warm audit of `6ddb788` closed three findings but retained actual-transition closure and immutable-target gate binding. The second warm audit approved clean target `9d2bc38`; the checkpoint used two correction-audit rounds.
+
+The closure review of `4251dc6` required real candidate-output and occurrence-identity mutations plus status and evidence corrections. The same reviewer approved correction `8aacfa3` after the semantic core injected the candidate-output swap, two test-owned Workflows exposed element-ID-only and reset-to-one occurrence bugs, the routed status owners were corrected, and the target-bound full verifier passed.
 
 ## Question
 
@@ -26,7 +28,7 @@ The recommendation is **yes, under the exact profile, graph criterion, operation
 
 [PLAN.md](../PLAN.md#engine-backlog-behind-the-ladder) puts compositional admission with cycles first in M2 because acyclicity is currently a structural premise of reachability, closure, and stable-state laws. Replacing it is more fundamental than adding another source element to an acyclic graph.
 
-The predecessor [compositional admission experiment](../archived/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md) proved reusable finite graph validation but deliberately excluded cycles and was superseded before production widening. The [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) now owns the production mechanism: generic structural validation plus an exact profile capability. This proposal reopens that mechanism only at its recorded trigger, a profile that needs graph structure the universal acyclicity predicate rejects.
+The predecessor [compositional admission experiment](../archived/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md) proved reusable finite graph validation but deliberately excluded cycles and was superseded before production widening. The [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) owns the production mechanism: generic structural validation plus an exact profile capability. This specification records the implementation of its reopen trigger, a profile that needs graph structure the universal acyclicity predicate rejects.
 
 The first witness reuses the already approved User Task interaction, User Task completion-data patch, and Simple Boolean v1 condition language. It adds only the missing semantic mechanism, Exclusive Merge, and the missing structural premise, resumption-bounded cycle admission. A second new Event, Task, scope, value, or expression family would obscure whether those two mechanisms are sufficient and is excluded.
 
@@ -34,7 +36,7 @@ The first witness reuses the already approved User Task interaction, User Task c
 
 BPMN 2.0.2 is the semantic authority for this capsule.
 
-- Table 7.2 states that a Sequence Flow loop is formed by connecting a flow to an upstream object. This distinguishes graph-level looping from Standard Loop and Multi-Instance Activity characteristics, which remain outside this proposal.
+- Table 7.2 states that a Sequence Flow loop is formed by connecting a flow to an upstream object. This distinguishes graph-level looping from Standard Loop and Multi-Instance Activity characteristics, which remain outside this specification.
 - Clause 8.4.13 and Table 8.51 place an optional gating condition on the Sequence Flow itself: a token is placed on that flow only when its condition evaluates true. In this topology, the divergent Exclusive Gateway evaluates the conditions on its two outgoing back-edges before either token can arrive at the converging gateway.
 - Clauses 10.6.2 and 13.4.2 define Exclusive Gateway merging and branching. The merging arm has pass-through behavior for alternative incoming paths, while each arriving token activates the gateway and is routed to one outgoing Sequence Flow.
 - Table 13.2 classifies the behavior as Exclusive Choice, Simple Merge, and Multi-Merge. The selected slice reaches only the Simple Merge case under a proved at-most-one invariant. The reusable declarative relation preserves per-arriving-token Multi-Merge meaning, while executable choice among concurrent arrivals remains outside this profile.
@@ -43,9 +45,9 @@ BPMN 2.0.2 is the semantic authority for this capsule.
 
 The CMOF and XSD `ExclusiveGateway`, `Gateway.gatewayDirection`, `SequenceFlow`, `UserTask`, and `FlowNode.incoming`/`outgoing` facts constrain source shape. They do not by themselves define token behavior.
 
-Open issue `BPMN21-268` concerns uncontrolled multiple incoming Sequence Flows on an Activity. This proposal avoids that account by requiring an explicit converging Exclusive Gateway. The issue is an exclusion discriminator, not semantic authority for the selected merge.
+Open issue `BPMN21-268` concerns uncontrolled multiple incoming Sequence Flows on an Activity. This specification avoids that account by requiring an explicit converging Exclusive Gateway. The issue is an exclusion discriminator, not semantic authority for the selected merge.
 
-Two new reviewed requirement rows enter the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md): `BPMN-SEQUENCE-FLOW-CYCLE-01` and `BPMN-EXCLUSIVE-MERGE-01`. They remain `unsupported` until implementation and evidence closure.
+Two reviewed requirement rows in the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), `BPMN-SEQUENCE-FLOW-CYCLE-01` and `BPMN-EXCLUSIVE-MERGE-01`, are supported within this exact slice after implementation and evidence closure.
 
 ## Selected account and rejected alternatives
 
@@ -69,7 +71,7 @@ The competing accounts are:
 
 1. **Delete acyclicity and trust the closure fuel.** Rejected. Fuel exhaustion would turn a structurally predictable internal livelock into a harness failure after Workflow start, and a larger fuel only moves the failure.
 2. **Keep whole-graph acyclicity and add one exact topology exception.** Rejected. That recreates the whole-program disjunct architecture the profile-parameterized admission specification forbids.
-3. **Treat multiple incoming Sequence Flows on the User Task as the merge.** Rejected. That selects uncontrolled Activity fan-in and repeated Activity creation, the exact account this proposal does not need.
+3. **Treat multiple incoming Sequence Flows on the User Task as the merge.** Rejected. That selects uncontrolled Activity fan-in and repeated Activity creation, the exact account this specification does not need.
 4. **Widen `choose` to accept several inputs and one output mode.** Rejected. Merge and conditional choice have different enabling data and would become an optional mode bag over two transition families.
 5. **Add `mergeExclusive` and replace whole-graph acyclicity only for a profile whose cycle cut is proved finite.** Selected.
 
@@ -181,9 +183,9 @@ Required checked non-laws and negative witnesses are:
 - closure limit two fails for each of the representative start, repeat, and exit boundaries;
 - arbitrary uncontrolled Activity fan-in, parallel duplication before the merge, nested-scope cycles, and cycles through any unlisted wait family remain rejected.
 
-The first Lean source change must build `SemanticProcessAdmissionConformance` narrowly under the recorded 3 GiB, one-thread, OS-enforced ceiling before any complete Lean gate. An OOM kill or a regression above that ceiling stops the implementation for another proof-ownership split; the ceiling is not raised to obtain green.
+The first Lean source change built `SemanticProcessAdmissionConformance` narrowly under the recorded 3 GiB, one-thread, OS-enforced ceiling before any complete Lean gate. The admission target passed in 18.93 seconds with 2,606,672 KiB GNU maximum RSS and 2,400,399,360 bytes cgroup peak memory. A later regression above that ceiling stops extension of this proof lane for another ownership split; the ceiling is not raised to obtain green.
 
-## Temporal hosting and refinement preflight
+## Temporal hosting and refinement
 
 **Durable ingress.** Every loop decision arrives through the existing content-bound complete-User-Task Update. The semantic command names the full occurrence, including the activation ordinal, and the submitted string patch. No Signal, Activity, Child Workflow, Timer, or new SDK surface is added.
 
@@ -191,7 +193,7 @@ The first Lean source change must build `SemanticProcessAdmissionConformance` na
 
 **Ordering and concurrency.** The semantic queue retains accepted Update order. The profile has one live occurrence, so no two distinct live tasks compete. An exact retry uses the existing content-bound Update ID and recovers its first semantic result. Reusing a command ID with another activation or patch remains an identity conflict rather than an alias.
 
-**Worker replacement and replay.** The primary live witness starts the Process, completes activation 1 through the repeat edge, stops the Worker, accepts no command while the Worker is absent, starts a replacement Worker, recovers activation 2, proves the stale activation-1 refusal, traverses the second repeat edge, exits from activation 3, validates the terminal receipt, fetches history, and replays it. A direct-VM mutation that caches a task by BPMN element ID or resets its activation to `1` must fail before the full live gate.
+**Worker replacement and replay.** The primary live witness starts the Process, completes activation 1 through the repeat edge, stops the Worker, accepts no command while the Worker is absent, starts a replacement Worker, recovers activation 2, proves the stale activation-1 refusal, traverses the second repeat edge, exits from activation 3, validates the terminal receipt, fetches history, and replays it. Two test-owned Workflow mutations respectively cache a task by BPMN element ID and reset its activation to `1`; each wrongly commits the stale command that production rejects.
 
 **Effects, cancellation, and lifecycle.** The profile creates no effect and defines no cancellation. The Process Workflow remains one semantic lifetime and closes only after the default exit produces terminal semantic state and every accepted handler finishes.
 
@@ -199,7 +201,7 @@ The first Lean source change must build `SemanticProcessAdmissionConformance` na
 
 Temporal is refinement evidence for durability only. It executes the TypeScript semantic core and is not an independent choice of merge or loop meaning.
 
-## Planned rule-to-evidence matrix
+## Rule-to-evidence matrix
 
 | Rule | BPMN/profile | Lean | CIB | TypeScript semantic core | Temporal | Negative and mutation evidence |
 |---|---|---|---|---|---|---|
@@ -245,9 +247,9 @@ The profile may retain `CIB-AGR-0001` and `CIB-OP-0001` as inherited provenance 
 
 ## Preservation obligation and common-mode risks
 
-The source-to-result claim at risk is finite and explicit: every source in the baseline catalog below retains its checked graph, lowered program, admission result, canonical Lean/core/Temporal trace, public occurrence identity, and same-gate replay result after cycle support lands. This proposal does not claim to enumerate every Semantic Process program that callers could construct directly. A profile that did not select cycles must not gain them merely because the generic validator learns the cut algorithm.
+The source-to-result preservation claim is finite and explicit: every source in the baseline catalog retains its checked graph, lowered program, admission result, canonical Lean/core/Temporal trace, public occurrence identity, and same-gate replay result. This specification does not claim to enumerate every Semantic Process program that callers could construct directly. A profile that did not select cycles must not gain them merely because the generic validator knows the cut algorithm.
 
-Immutable pre-implementation baseline `7529150bf3a83de7e36734cf8d401924a0811b7d` binds this obligation. Before extraction or semantic implementation, the first implementation commit must add a non-updatable ordinary-verification artifact generated by building and running that exact baseline in an isolated export. Its closed catalog enumerates every distinct registered scenario source and product-example source at the baseline, binds each exact source/profile digest, and records its accepted checked projection, lowered program, and admission projection. Seeded source/profile hash, checked-projection, lowered-program, and admission-result mismatches must make ordinary verification fail; ordinary verification has no producer or update flag. Existing answer-free scenarios and retained expected results remain the semantic-result oracle.
+Immutable pre-implementation baseline `7529150bf3a83de7e36734cf8d401924a0811b7d` binds this obligation. The non-updatable ordinary-verification artifact was generated by building and running that exact baseline in an isolated export before extraction or semantic implementation. Its closed catalog enumerates every distinct registered scenario source and product-example source at the baseline, binds each exact source/profile digest, and records its accepted checked projection, lowered program, and admission projection. Seeded source/profile hash, checked-projection, lowered-program, and admission-result mismatches make ordinary verification fail; ordinary verification has no producer or update flag. Existing answer-free scenarios and retained expected results remain the semantic-result oracle.
 
 Direct Semantic Process programs have separate invariant guards rather than a false universal snapshot claim. A closed baseline profile-policy inventory proves every baseline profile remains `acyclic`; direct hostile programs prove every old profile still rejects a resumption-crossing cycle and the new profile still rejects an internal-only cycle; existing-operation direct programs retain their current admission discriminator set; and schema/decoder coverage proves every old serialized union value remains byte-shaped and accepted or rejected under its existing rule. These guards are generated from the baseline profile and operation registries so a newly added or omitted entry fails the inventory.
 
@@ -268,62 +270,13 @@ Pre-release replace-in-place policy applies. The checked-node and Semantic Proce
 
 Existing serialized checked nodes, operations, identities, stimuli, runtime state, canonical observations, public commands, and completed receipts gain no field and retain their exact bytes. The new union alternatives and new profile ID widen the schema without changing old values. Existing scenarios are re-executed and their newly created disposable histories replay within the same changed-code gate. No retained cross-version history corpus exists, so cross-version Temporal replay and durable production-history compatibility remain unclaimed; either would require a separately approved history corpus and policy change.
 
-### Owners this implementation grows
-
-The corrected identity-only checked representation was used to enumerate the complete existing change set. Two non-source contract artifacts must change: the strict [checked-process JSON Schema](../../contracts/schemas/checked-process.schema.json) gains the identity-only checked-node union branch, and the strict [Semantic Process JSON Schema](../../contracts/schemas/semantic-process.schema.json) gains the `mergeExclusive` operation branch. They are part of the planned `what-binds` path set but are outside the mechanically measured source-owner table because JSON contract artifacts have no 600-nonblank-line source headroom.
-
-`node scripts/what-binds.ts` produced these figures immediately before the first green semantic-checkpoint commit for every existing source owner the implementation changes:
-
-| Owner | Headroom to 600 nonblank lines | Consequence |
-|---|---:|---|
-| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 385 | Add only the identity-only `ExclusiveMerge` union alternative; Sequence Flow endpoints remain the sole checked topology authority. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 228 | Classify the converging Exclusive Gateway and emit identity only; exact endpoint and arity validation remains in admission. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Add only profile mechanism/cardinality and source-shape capability; reusable graph policy remains delegated to the extracted graph owner. |
-| [checked-process graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 287 | Add the profile-selected resumption cut beside the existing reusable ownership, reachability, co-reachability, arity, and acyclicity algorithms. |
-| [checked-process graph-admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 444 | Extend the direct owner test with the accepted resumption-crossing cycle and rejected internal-only cycle without moving profile policy into the test. |
-| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 71 | One merge arm may remain only while a fresh measurement keeps the owner at or below 600 and at one lowering responsibility. |
-| [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 23 | Recognize the new operation's exact control-place uses. Grow only while the complete change retains at least 20 lines of review headroom; otherwise extract cohesive operation/place validation first. |
-| [profile capability table](../../packages/semantic-core/src/semantic-process-profile.ts) | 80 | The registered profile catalog and exact checked/program capability tables fit only while the owner remains at or below 600; otherwise split checked and program capabilities by their existing two responsibilities. |
-| [Semantic Process operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 150 | Validate distinct merge places, total shape, and profile capability without sharing graph-policy decisions. |
-| [Semantic Process graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 122 | Resumption-cut validation is cohesive graph work and may remain while the owner stays below 600. |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 231 | The one new operation alternative fits without extraction. |
-| [Semantic Process runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 246 | Add one exhaustive dispatch arm to the new cohesive transition owner; do not place merge semantics in the dispatcher. |
-| [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 146 | The checked and IL alternatives fit only while the owner remains below 600; a third responsibility is not added. |
-| [Lean checked-process JSON decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 376 | Decode the identity-only checked-node alternative exactly and reject duplicated endpoint fields. |
-| [Lean Semantic Process JSON decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 179 | Decode the exact `mergeExclusive` operation shape and reject missing, extra, duplicated, or malformed places. |
-| [Lean checked-process admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 300 | Admit the identity-only checked node only at exact `3 -> 1` arity and retain every existing per-node source invariant. |
-| [Lean checked-graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 474 | Recognize the new checked-node identity and replace unconditional checked-graph acyclicity only through the selected profile graph policy. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 183 | The cut predicate and material path/cycle representation are cohesive graph validation and have sufficient measured headroom. |
-| [Lean graph reachability laws](../../BpmnSemantics/SemanticProcess/GraphReachabilityLaws.lean) | 430 | Connect a material directed path and cycle to saturation-certified acyclicity so the selected cut theorem states its full-graph implication. |
-| [Lean representative cyclic execution conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowExecutionConformance.lean) | 388 | Retain only exact representative start, repeat, rework, and exit schedules plus the material cut-cycle facts. |
-| [Lean cyclic reachability conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowReachabilityConformance.lean) | 56 | Own actual reflexive-transitive reachability over exact admission, evaluator steps, and empty, null, or string completion patches plus the active-unit invariants. |
-| [Lean cyclic step-completeness conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowStepCompletenessConformance.lean) | 305 | Prove that every successful evaluator step from an actually reachable selected state belongs to the classified internal-action relation. |
-| [Lean cyclic automatic-closure conformance](../../BpmnSemantics/SemanticProcess/CyclicControlFlowClosureConformance.lean) | 179 | Derive retained cut edges, resulting reachability, no repeated operation, and the six-operation bound from raw evaluator traces that begin in an actually reachable state. |
-| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 106 | Derive merge endpoints only from checked Sequence Flow endpoints and prove the exact cut correspondence. |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 306 | Admit the new checked node and operation only through the new exact profile capability, including its exact-three merge payload. |
-| [Lean program structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 306 | Validate generic canonical nonempty distinct merge place references and producer/consumer ownership without profile-specific arity. |
-| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 307 | Classify `mergeExclusive` exhaustively as exposing no public task, Message, timer, or effect wait. |
-| [Lean transition dispatcher](../../BpmnSemantics/SemanticProcess/Transition.lean) | 294 | Add one exhaustive transition arm delegating to the cohesive cyclic-control-flow relation. |
-| [Lean checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 435 | Explicitly reject `ExclusiveMerge` so the frozen experiment surface does not acquire production cycle support. |
-| [Lean checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 298 | Classify `ExclusiveMerge` as disabled so the frozen experiment does not gain an unreviewed transition. |
-| [Lean checked-source graph experiment](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) | 517 | Explicitly reject `ExclusiveMerge` in the frozen experiment's arity predicate. |
-| [Lean checked-source chain experiment](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) | 408 | Keep the frozen parser-soundness proof exhaustive by rejecting `ExclusiveMerge` through its existing unsupported-node result. |
-| [Lean checked-source coverage experiment](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) | 352 | Keep the frozen coverage proof exhaustive by rejecting `ExclusiveMerge` through its existing unsupported-node result. |
-| [Lean checked-source frontier experiment](../../BpmnSemantics/Experiments/CheckedSourceFrontier.lean) | 333 | Keep the frozen enabled-frontier proof exhaustive by rejecting `ExclusiveMerge` through its existing arity premise. |
-| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 400 | Classify `MergeExclusive` as passive so the host adds no scheduler, wait, or token-split capability. |
-| [Temporal Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | No production change is planned. Any required growth must first extract trace or ledger lifecycle ownership instead of crossing 600. |
-
-The exhaustive Lean build discovered the chain, coverage, and frontier proof consumers after proposal approval. Each correction only makes a frozen experiment fail closed on the widened checked-node union; none admits the new node or changes a production semantic claim. The semantic checkpoint review must assess their exact diffs with the rest of the immutable target.
-
-The new transition relation and runtime behavior belong in new cohesive `CyclicControlFlow` owners, not in the contract or graph modules. The checked-source extraction and its focused characterization are already committed at `c406575`; material cycle work grows the extracted owner rather than repeating that refactor.
-
 ### Guards and oracles
 
-The implementation must enumerate these again with `node scripts/what-binds.ts` immediately before editing:
+The following guards and oracles bind the implemented contract:
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Recompute every owner figure and keep this proposal linked from both registries. |
+| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep this specification linked from both registries and free of proposal-only implementation inventory. |
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Both new requirement IDs and capsule citations agree before either row can advance. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) | Both new union alternatives reach exact schema branches and every old branch remains covered. |
 | [contract artifact gates](../../scripts/contract-artifacts.test.ts) and [definition artifact gates](../../scripts/contract-definition-artifacts.test.ts) | The strict schemas, typed projections, control-place references, and exact checked-to-IL correspondence accept the new alternatives and reject endpoint drift. |
@@ -351,7 +304,7 @@ The implementation must enumerate these again with `node scripts/what-binds.ts` 
 | [Lean source contracts](../../scripts/lean-source-contracts.test.ts) | New modules carry purpose documents, durable conformance facts have public theorem names, and every tactic-position `decide` uses `+kernel`. |
 | [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Checkpoint and closure packets route every changed semantic owner and retain immutable gate evidence. |
 | [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts) | The Workflow continues to consume only published semantic contracts, and no client, Worker, or testkit dependency crosses into the semantic core. |
-| [what-binds](../../scripts/what-binds.test.ts) | The complete planned path set above continues to resolve its current owners, guards, registries, and headroom without a private inventory. |
+| [what-binds](../../scripts/what-binds.test.ts) | Every changed path resolves its current owners, guards, registries, and headroom without a private inventory. |
 | [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts) | The profile, scenario, expected result, and example registration land atomically. |
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | The answer-free scenario has one declared target set, non-null Temporal relation, and a meaningful seeded mutation. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) | The cyclic fixture remains valid against the pinned BPMN 2.0.2 schemas. |
@@ -360,7 +313,7 @@ The implementation must enumerate these again with `node scripts/what-binds.ts` 
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | The cyclic passive-User-Task program is accepted while internal cycles and unselected profiles reject before Workflow start. |
 | [verification entrypoint](../../scripts/verification-entrypoint.test.ts) | The complete gate continues to build generated TypeScript artifacts before directly importing them and runs the narrow Lean lanes through `scripts/lake.sh`. |
 
-The four registries reported by the expanded command, [shared contracts](../../contracts/README.md), [BPMN source](../../packages/bpmn-source/README.md), [semantic core](../../packages/semantic-core/README.md), and [Temporal adapter](../../packages/temporal-adapter/README.md), must describe the resulting boundary when implementation closes. Generic guards that match every package, contract, script, or Lean path are named here once rather than repeated for each owner.
+The four registries reported by the expanded command, [shared contracts](../../contracts/README.md), [BPMN source](../../packages/bpmn-source/README.md), [semantic core](../../packages/semantic-core/README.md), and [Temporal adapter](../../packages/temporal-adapter/README.md), describe the resulting boundary. Generic guards that match every package, contract, script, or Lean path are named here once rather than repeated for each owner.
 
 ## Epistemic closure and cost boundary
 
@@ -374,9 +327,9 @@ Canonical observations depend only on admitted definition/runtime state and expl
 
 Pre-release policy applies. The gate starts disposable Temporal state, inspects and replays the history it created, and removes the server state without a retained-history compatibility promise. Every observed Workflow Task reports `suggestContinueAsNew = false`. The packet-bound full closure gate recorded exactly 25 Event History events and 10,340 service-reported serialized bytes; the event count is deterministic, while the byte value is run-specific because server timestamps and metadata vary.
 
-The exact commit-bounded cost is recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md): `7529150..de866bf` adds `5795` and removes `283` nonblank code lines, and adds `354` and removes `41` nonblank documentation lines. Elapsed lifecycle time is unknown. Both additions exceed the recorded profile-parameterized admission and Inclusive Gateway comparators; the historical Exclusive Gateway condition baseline remains unknown rather than reconstructed. No code mechanism can be removed without weakening the reviewed semantic or evidence boundary. Graduation removes the stale proposal-only implementation owner/headroom inventory so the next capsule does not preserve four rounds of planning and review prose as product specification.
+The exact commit-bounded cost is recorded in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md): `7529150..de866bf` adds `5795` and removes `283` nonblank code lines, and adds `354` and removes `41` nonblank documentation lines. Elapsed lifecycle time is unknown. Both additions exceed the recorded profile-parameterized admission and Inclusive Gateway comparators; the historical Exclusive Gateway condition baseline remains unknown rather than reconstructed. No code mechanism can be removed without weakening the reviewed semantic or evidence boundary. Graduation removed the stale proposal-only implementation owner/headroom inventory so the next capsule does not preserve four rounds of planning and review prose as product specification.
 
-The process self-assessment found one new process mechanism: the approved proposal constrained the same back-edge Sequence Flow as both conditional and conditionless from two endpoint-local passages. The implementation lane stopped rather than inventing a source shape, the corrected account assigns condition ownership to the divergent gateway, and the [process ledger](../PROCESS-ASSESSMENT-LEDGER.md) plus [proposal-review focus](../TESTING-SPEC.md#independent-cold-review-gate) now retain the joint-satisfiability question. Other review findings were caught at their governed checkpoint and did not cross the stage. The result does not change the next best step: after approved closure and graduation, M2 continues with the first remaining essential start-trigger capsule.
+The process self-assessment found one new process mechanism: the approved proposal constrained the same back-edge Sequence Flow as both conditional and conditionless from two endpoint-local passages. The implementation lane stopped rather than inventing a source shape, the corrected account assigns condition ownership to the divergent gateway, and the [process ledger](../PROCESS-ASSESSMENT-LEDGER.md) plus [proposal-review focus](../TESTING-SPEC.md#independent-cold-review-gate) now retain the joint-satisfiability question. Other review findings were caught at their governed checkpoint and did not cross the stage. M2 now continues with the first remaining essential start-trigger capsule.
 
 ## Stop conditions
 
@@ -392,12 +345,12 @@ Stop for owner direction if:
 - an existing acyclic profile admits a cycle or an existing accepted projection/result changes;
 - a semantic iteration cap is proposed to solve a host resource limit.
 
-## Owner decisions required
+## Approved decisions
 
-1. **Approve the first M2 slice:** one root-scope User Task Sequence Flow cycle using both conditional back-edges and one default exit.
-2. **Approve the new mechanism:** identity-only `ExclusiveMerge` derives its endpoints from checked Sequence Flows and lowers to nonempty-input `mergeExclusive`, whose declarative relation passes through each arriving token occurrence without synchronization. The selected profile requires exactly three inputs and proves at most one offered occurrence reachable; executable choice for general multiple arrivals remains deferred rather than being defined as no transition.
-3. **Approve the admission replacement:** existing profiles remain whole-graph acyclic; only the new profile uses saturation-certified resumption-cut acyclicity with `UserTask` / `awaitUserTask` as its closed cut pair.
-4. **Approve the proof boundary:** the Lean lane is proved, including cut soundness, general per-occurrence merge relation, unique-offer evaluator soundness, the selected profile's at-most-one invariant and phase-specific exact-one result, quantified repeated activation and exit, stale refusal, and the closure bound. Unconditional termination and executable choice among concurrent Multi-Merge arrivals remain deliberately open.
-5. **Approve reuse of existing data and expressions:** User Task completion writes the exact current string/null Process-variable patch, and Simple Boolean v1 reads it without grammar or value-domain expansion.
-6. **Approve the host boundary:** one finite semantic-lifetime Temporal witness with Worker replacement and replay is required; Continue-As-New, cross-Run result lookup, unbounded physical history, and a semantic iteration cap remain excluded.
-7. **Approve the standards-only evidence boundary:** no new CIB relationship, CIB runner target, CIB cycle claim, A12 adoption work, or Product 2 feature enters this capsule.
+1. **First M2 slice:** one root-scope User Task Sequence Flow cycle uses both conditional back-edges and one default exit.
+2. **New mechanism:** identity-only `ExclusiveMerge` derives its endpoints from checked Sequence Flows and lowers to nonempty-input `mergeExclusive`, whose declarative relation passes through each arriving token occurrence without synchronization. The selected profile requires exactly three inputs and proves at most one offered occurrence reachable; executable choice for general multiple arrivals remains deferred rather than being defined as no transition.
+3. **Admission replacement:** existing profiles remain whole-graph acyclic; only the new profile uses saturation-certified resumption-cut acyclicity with `UserTask` / `awaitUserTask` as its closed cut pair.
+4. **Proof boundary:** the Lean lane is proved, including cut soundness, general per-occurrence merge relation, unique-offer evaluator soundness, the selected profile's at-most-one invariant and phase-specific exact-one result, quantified repeated activation and exit, stale refusal, and the closure bound. Unconditional termination and executable choice among concurrent Multi-Merge arrivals remain deliberately open.
+5. **Existing data and expressions:** User Task completion writes the exact current string/null Process-variable patch, and Simple Boolean v1 reads it without grammar or value-domain expansion.
+6. **Host boundary:** one finite semantic-lifetime Temporal witness with Worker replacement and replay is required; Continue-As-New, cross-Run result lookup, unbounded physical history, and a semantic iteration cap remain excluded.
+7. **Standards-only evidence boundary:** no new CIB relationship, CIB runner target, CIB cycle claim, A12 adoption work, or Product 2 feature enters this capsule.
