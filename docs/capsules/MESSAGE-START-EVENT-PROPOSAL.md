@@ -454,7 +454,9 @@ The nearest realistic counterexample is one external publication matching two Me
 
 Meaningful mutations are: compare only Message ID; accept an inconsistent source Message/Operation chain; accept manual start for a Message-start program; lower a stale operation channel; treat a boolean pending flag as a start selector after multiple operations become admissible; create a synthetic subscription; send Signal-With-Start; start Temporal before admission; claim a retained duplicate guarantee after retention; reset or alias the supplied instance ID; and omit one atomic registration. Each must reach a public, semantic, artifact, or durable-history discriminator.
 
-At closure, [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) records commit-bounded code and documentation churn against the resumption-bounded cyclic-control-flow capsule, the nearest completed increment that changed checked source, IL, Lean, TypeScript, schemas, registered evidence, and Temporal hosting.
+The commit-bounded implementation range `8442e1a..c31c7c1` adds `3584` and removes `138` nonblank code lines, and adds `165` and removes `97` nonblank documentation lines. Against the approved resumption-bounded cyclic-control-flow comparator at `+5795/-283` code and `+354/-41` documentation, additions fell by 38% in code and 53% in documentation. The reduction comes from reusing whole-graph acyclic admission, root-token production, the existing User Task lifecycle, the concrete Temporal start client, replay support, and the standards-only differential lane. Both measures fell, so no process-weight removal is required. [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) owns the reproducible measurement.
+
+The closure self-assessment found no new process finding. Every correction either failed an executable gate or remained inside its governed proposal or checkpoint review, each reported count came from its named command, and no contended timing was used to draw the cost conclusion.
 
 ## Stop conditions
 
