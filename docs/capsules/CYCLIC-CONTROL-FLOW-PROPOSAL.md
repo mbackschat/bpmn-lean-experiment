@@ -2,17 +2,17 @@
 
 ## Status
 
-**Normative correction pending independent proposal review.** Implementation is paused while the corrected condition-ownership account is reviewed. This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
+**Corrected proposal independently approved; owner re-approval pending.** Implementation remains paused until the owner approves the corrected condition-ownership and forward-compatible Multi-Merge account. This proposal opens the first M2 semantic increment after the required Lean admission-lane split. It does not claim implemented cycle support, BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `5789223` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `5789223` | `fork-turns-none` | `approve-with-required-edits` | `58417e0` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The original proposal stage used four warm correction audits in the same reviewer thread. The automatic two-round bound stopped the stage after `88ad69c` and `0d9409e`; the owner explicitly authorized the third correction at `d1173b1` and the fourth correction content at `d5e221e`. Final audit target `d5e7bb9` closed every required finding in that target. The later condition-ownership correction changes reviewed semantic wording and therefore starts a new cold proposal review rather than borrowing that verdict.
+The original proposal stage used four warm correction audits in the same reviewer thread. The automatic two-round bound stopped the stage after `88ad69c` and `0d9409e`; the owner explicitly authorized the third correction at `d1173b1` and the fourth correction content at `d5e221e`. Final audit target `d5e7bb9` closed every required finding in that target. The later condition-ownership correction changed reviewed semantic wording and therefore received a new cold proposal review at `5789223`; same-reviewer audit approved correction `58417e0` after it generalized the declarative merge relation, corrected the cardinality and ordering claims, and refreshed the post-extraction owner inventory.
 
 ## Question
 
