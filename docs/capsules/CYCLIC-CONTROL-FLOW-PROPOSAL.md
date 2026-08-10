@@ -35,7 +35,7 @@ BPMN 2.0.2 is the semantic authority for this capsule.
 - Table 7.2 states that a Sequence Flow loop is formed by connecting a flow to an upstream object. This distinguishes graph-level looping from Standard Loop and Multi-Instance Activity characteristics, which remain outside this proposal.
 - Clause 8.4.13 and Table 8.51 place an optional gating condition on the Sequence Flow itself: a token is placed on that flow only when its condition evaluates true. In this topology, the divergent Exclusive Gateway evaluates the conditions on its two outgoing back-edges before either token can arrive at the converging gateway.
 - Clauses 10.6.2 and 13.4.2 define Exclusive Gateway merging and branching. The merging arm has pass-through behavior for alternative incoming paths, while each arriving token activates the gateway and is routed to one outgoing Sequence Flow.
-- Table 13.2 classifies the behavior as Exclusive Choice, Simple Merge, and Multi-Merge. The selected slice uses Simple Merge under a proved one-token invariant. It does not claim the general multiple-token Multi-Merge case.
+- Table 13.2 classifies the behavior as Exclusive Choice, Simple Merge, and Multi-Merge. The selected slice reaches only the Simple Merge case under a proved at-most-one invariant. The reusable declarative relation preserves per-arriving-token Multi-Merge meaning, while executable choice among concurrent arrivals remains outside this profile.
 - Clauses 10.7.3, 13.3.2, and 13.3.3 retain the existing User Task activation and completion account. Re-entering the same User Task definition creates a fresh semantic occurrence; it does not reactivate or alias the completed occurrence.
 - Clause 13.2 retains the existing Process completion condition. Taking the default exit reaches the None End Event and completes only when the root scope is quiescent.
 
@@ -99,21 +99,21 @@ type CheckedExclusiveMerge = DeepReadonly<{
 }>;
 ```
 
-The node kind is the checked converging classification; it carries only source identity. The authoritative `CheckedProcess.sequenceFlows` endpoints retain the three incoming and one outgoing Sequence Flow identities. Lowering derives the operation endpoints from those validated edges, canonical-ID-sorts the three input places, and does not create a second checked topology inventory. Input order has no transition meaning. Reordering XML declarations may change the canonical source digest but must not change the normalized checked graph or lowered program after identity normalization. A default reference, a condition on the Start-to-Merge or Merge-to-User-Task flow, a missing condition on either Choice-to-Merge back-edge, a fourth incoming flow, or a second outgoing flow rejects at source admission. Incoming conditions are validated as properties of the divergent gateway's outgoing Sequence Flows and do not become fields or decisions of `ExclusiveMerge`.
+The node kind is the checked converging classification; it carries only source identity. The authoritative `CheckedProcess.sequenceFlows` endpoints retain the three incoming and one outgoing Sequence Flow identities. Lowering derives the operation endpoints from those validated edges, canonical-ID-sorts the merge's input places, and does not create a second checked topology inventory. Merge input order has no transition meaning. Reordering semantically unordered declarations or either gateway's incoming/outgoing reference arrays may change the canonical source digest but must not change the normalized checked graph or lowered program after identity normalization. Process-level conditional Sequence Flow declaration order remains semantic and is preserved exactly in `choose.candidates`; the existing declaration-order source lock and overlapping-true semantic discriminator from the [Simple Boolean capsule](EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) continue to prove first-true selection. A default reference, a condition on the Start-to-Merge or Merge-to-User-Task flow, a missing condition on either Choice-to-Merge back-edge, a fourth incoming flow, or a second outgoing flow rejects at source admission. Incoming conditions are validated as properties of the divergent gateway's outgoing Sequence Flows and do not become fields or decisions of `ExclusiveMerge`.
 
 Lowering maps that node by endpoints to one reusable Semantic Process operation:
 
 ```ts
 type MergeExclusiveOperation = OperationBase & DeepReadonly<{
   kind: SemanticOperationKind.MergeExclusive;
-  inputs: [string, string, string];
+  inputs: [string, ...string[]];
   output: string;
 }>;
 ```
 
-The operation is a token mechanism, not a retained BPMN gateway object. It consumes exactly one token from exactly one input control place and produces exactly one token at the output with the same scope owner. Exactly one means total owned token multiplicity across all three inputs is one, not merely that one distinct input is occupied. It has no condition, default, selected-branch record, wait, variable mutation, occurrence, scheduler decision, or public projection.
+The operation is a token mechanism, not a retained BPMN gateway object. Its reusable contract requires a nonempty collection of distinct input control places. The selected profile requires exactly three; input arity belongs to profile admission rather than the operation representation. For each offered token occurrence, the declarative relation has one transition that consumes that occurrence and produces exactly one token at the output with the same scope owner, without synchronization. It has no condition, default, selected-branch record, wait, variable mutation, occurrence, or public projection.
 
-If total owned token multiplicity across the three inputs is zero or greater than one, the operation is disabled rather than choosing by input order or collapsing duplicate tokens. This includes two tokens owned by the same scope on one input and tokens distributed across several inputs. The selected profile proves every greater-than-one state unreachable. General Multi-Merge behavior with concurrent arrivals therefore remains unsupported instead of being hidden behind a canonical sort.
+The selected profile proves that total owned token multiplicity across its three inputs never exceeds one, so its executable evaluator has a unique transition whenever the merge is enabled. Executable selection among several offered occurrences remains deliberately incomplete until a later profile either supplies an explicit semantic choice input or proves the possible steps observationally equivalent. That incompleteness does not change the declarative BPMN account: a multi-arrival state has one permitted pass-through transition per offered occurrence, not no transition. Canonical input sorting has no selection meaning.
 
 ## Resumption-bounded graph admission
 
@@ -135,16 +135,16 @@ An internal-only cycle with the User Task outside the cycle is the primary negat
 
 No runtime field is added for the merge or the loop. Existing control-place tokens carry exact Sequence Flow identity; existing `taskActivations` allocates the next ordinal for each User Task element; existing Process variables carry the selected completion patch; and existing canonical observations already publish the full active User Task occurrence.
 
-The new transition family is `mergeExclusive`. Lean defines a declarative relation whose premise identifies exactly one owned token across the operation's distinct inputs and whose result removes that token and adds the same owner's token to the output. The executable Lean evaluator and independent TypeScript function each implement that relation, and each has a soundness bridge. Neither target imports, generates, or calls the other.
+The new transition family is `mergeExclusive`. Lean defines the general declarative relation over one selected offered token occurrence and its pass-through result. The executable Lean evaluator and independent TypeScript function implement the unique-offer subset needed by this profile, and each has a soundness bridge into that relation. Neither target imports, generates, or calls the other. Executable completeness for a state with several offered occurrences is deferred rather than represented as a semantic refusal.
 
-The selected profile has a one-token conservation invariant. `initiate` creates one token; `mergeExclusive`, `choose`, and a User Task completion move one token; `awaitUserTask` exchanges that token for one wait; and `reachNoneEnd` consumes the token before quiescent completion. No selected operation duplicates, synchronizes, spawns, calls, or interrupts. Consequently exactly one merge input can be live in every reachable state.
+The selected profile has an at-most-one active-unit invariant over control tokens plus live User Task occurrences. Initial and initiation-pending states have zero; `initiate` creates one token; `mergeExclusive`, `choose`, and a User Task completion move one token; `awaitUserTask` exchanges that token for one wait; and `reachNoneEnd` consumes the final token before quiescent completion. From successful initiation until that End consumption, the measure is exactly one. No selected operation duplicates, synchronizes, spawns, calls, or interrupts. Consequently exactly one merge input token is live whenever `mergeExclusive` can fire in a reachable selected-profile state.
 
 ## Stable semantic rules
 
 | Rule ID | Proposition |
 |---|---|
 | `CYCLE-ADMIT-01` | A profile may admit a cyclic full graph only when its profile-selected resumption cut is saturation-certified acyclic; every existing profile retains whole-graph acyclicity. |
-| `CYCLE-MERGE-01` | When total owned token multiplicity across all merge inputs is exactly one, `mergeExclusive` consumes that token and produces exactly one output token with the same owner; zero or excess multiplicity is disabled without synchronization, collapse, or input-order choice. |
+| `CYCLE-MERGE-01` | Each offered input token occurrence permits one condition-independent `mergeExclusive` pass-through that consumes that occurrence and produces exactly one output token with the same owner, without synchronization or input-order priority. The selected profile makes that transition unique by proving at most one offered occurrence reachable. |
 | `CYCLE-WAIT-01` | Each traversal of the reviewed User Task definition creates one fresh occurrence whose activation ordinal is exactly one greater than the preceding occurrence for that element. |
 | `CYCLE-REPEAT-01` | In the representative fixture, completing activation `n + 1` with either reviewed repeat value commits the completion data, routes through the corresponding conditional back-edge, and reaches exactly activation `n + 2` of the same User Task. |
 | `CYCLE-EXIT-01` | In the representative fixture, after any finite number `n` of reviewed repeat completions, completing the live activation with a value selecting the default route reaches the None End Event and a terminal completed Process. |
@@ -163,7 +163,7 @@ Required quantified or structural facts are:
 - saturation-certified resumption-cut acyclicity implies every full-graph cycle contains a selected resumption edge;
 - lowering preserves the cut classification and exact Exclusive Merge endpoints for the admitted checked graph;
 - the `mergeExclusive` evaluator is sound with respect to its declarative relation;
-- every reachable selected-profile state has total control-token plus live-User-Task cardinality one before terminal completion;
+- every reachable selected-profile state has total control-token plus live-User-Task cardinality at most one, with exact cardinality one from successful initiation until None End consumption;
 - exactly one merge input is offered whenever `mergeExclusive` fires;
 - for the representative program and every natural `n`, `n` reviewed repeat completions expose activation `n + 1`, and one following default-exit completion reaches the terminal state;
 - stale occurrence refusal preserves the complete semantic state for every earlier positive activation ordinal;
@@ -172,7 +172,7 @@ Required quantified or structural facts are:
 Required checked non-laws and negative witnesses are:
 
 - whole-graph termination does not follow from resumption-cut acyclicity;
-- a synthetic state with tokens on two merge inputs, and a separate state with two same-owner tokens on one merge input, each has no `mergeExclusive` step and is not claimed to implement general Multi-Merge;
+- a synthetic state with tokens on two merge inputs, and a separate state with two same-owner tokens on one merge input, each exhibits the declarative per-occurrence pass-through relation while remaining unreachable under the selected profile; the executable evaluator's choice among multiple offered occurrences remains deliberately incomplete;
 - an internal-only directed cycle is rejected even when another User Task is reachable elsewhere;
 - the same resumption-crossing graph is rejected under every existing acyclic profile;
 - a wrong, stale, or future activation cannot complete the current occurrence;
@@ -202,7 +202,7 @@ Temporal is refinement evidence for durability only. It executes the TypeScript 
 | Rule | BPMN/profile | Lean | CIB | TypeScript semantic core | Temporal | Negative and mutation evidence |
 |---|---|---|---|---|---|---|
 | `CYCLE-ADMIT-01` | New exact profile and both new ledger rows | Cut-cycle theorem, cut-preserving lowering, internal-cycle refusal | None | Independent checked and program graph validators | Pre-start rejection creates no Workflow | Old-profile cycle, internal-only cycle, and cut-classification mutation |
-| `CYCLE-MERGE-01` | Clause 13.4.2 and Table 13.2 | Declarative relation, evaluator soundness, token conservation | None | Independent transition and focused state test | Executed only through the core | Zero-input, two-input, same-input excess-multiplicity, input-order, and synchronization mutations |
+| `CYCLE-MERGE-01` | Clause 13.4.2 and Table 13.2 | General per-occurrence declarative relation, unique-offer evaluator soundness, selected-profile at-most-one invariant | None | Independent unique-offer transition, focused state tests, and selected-profile unreachability | Executed only through the core | Zero-input refusal, multi-input and same-input relational pass-through, selected-profile unreachability, input-priority, and synchronization mutations |
 | `CYCLE-WAIT-01`, fixture-scoped `CYCLE-REPEAT-01`, fixture-scoped `CYCLE-EXIT-01` | User Task, Simple Boolean v1, and exact representative two-back-edge/default fixture | Quantified repeat and exit theorems over that program | No cycle claim | Quantified fixture helper, exact post-`choose` output-place oracle, and exact scenario | Three live activations, Worker replacement, terminal receipt, replay | Element-ID cache, ordinal reset, candidate-output swap, and no-exit mutations |
 | `CYCLE-REFUSE-01` | Existing exact occurrence contract | Quantified earlier-ordinal state preservation | Existing `CIB-OP-0001` only for the reused one-live-task mapping, not repetition | Full-state stale refusal | Durable stale Update result with unchanged Query | Element-ID-only completion mutation |
 | `CYCLE-CLOSURE-01` | Resumption-bounded graph policy | Structural bound and exact three-step witnesses | None | Exact limit `3` success and `2` exhaustion at all three boundaries | No Workflow harness failure | Remove cut, bypass wait, and limit mutations |
@@ -214,14 +214,14 @@ The answer-free scenario contains source and input schedule only. Expected canon
 
 No new runtime-only construct is selected. The existing activation counter remains hidden monotonic semantic state and the existing User Task occurrence remains the public interaction identity. The merge exists only as immutable program data and an internal transition.
 
-Synthetic states and programs are test-owned: a two-input merge state, a two-token same-input merge state, an internal-only cycle, a cycle admitted under the wrong profile, a stale activation, and closure-limit-two executions. None is a scenario result or production recovery mode.
+Synthetic states and programs are test-owned: a two-input merge state and a two-token same-input merge state that exercise the general declarative relation plus selected-profile unreachability, an internal-only cycle, a cycle admitted under the wrong profile, a stale activation, and closure-limit-two executions. None is a scenario result or production recovery mode.
 
 ## Layer ownership
 
 - BPMN 2.0.2 owns Sequence Flow cycling and Exclusive Gateway merge behavior.
 - The standards profile owns the exact graph capability, Simple Boolean v1 consumer, cardinalities, one-token restriction, and exclusions.
 - Checked-source admission owns parser warnings, exact source shape, references, arity, full reachability, co-reachability, and checked resumption-cut validation.
-- Semantic Process IL owns `mergeExclusive`, control-place identity, program-level graph validation, and no source topology branch.
+- Semantic Process IL owns nonempty-input `mergeExclusive`, per-arriving-token pass-through, control-place identity, program-level graph validation, and no source topology branch.
 - Lean owns the declarative relation, evaluator, structural and quantified laws, and checked non-laws.
 - The TypeScript semantic core independently implements the operation, admission, closure, occurrence, and result behavior.
 - The Temporal adapter owns durable Update transport, one-Workflow lifecycle, Worker replacement, result recovery, history, and replay without defining merge, branch, or activation semantics.
@@ -253,7 +253,7 @@ The main common-mode risks are:
 
 - checked and Semantic Process validators could call one shared faulty cycle predicate; Lean must implement its own graph and cut decision, while TypeScript directly decodes a hostile program that bypasses lowering;
 - the checked wait and IL wait cut lists could drift; a closed cross-layer mapping guard must fail for an omitted, private, or extra cut kind and for a seeded replacement of `awaitUserTask` with an internal operation;
-- source lowering and the program validator could agree on the same wrong merge endpoints; deriving the checked topology only from authoritative Sequence Flow endpoints, declaration-permutation equality, direct program counterexamples, and Lean lowering facts separate them;
+- source lowering and the program validator could agree on the same wrong merge endpoints; deriving the checked topology only from authoritative Sequence Flow endpoints, semantically unordered declaration-permutation equality, exact preservation of conditional Sequence Flow declaration order, direct program counterexamples, and Lean lowering facts separate them;
 - the core and Temporal share one evaluator, so Temporal is not semantic independence; its distinct claim is identity-preserving durability, exact Update result recovery, history, and replay;
 - every target reuses the existing activation counter shape; a direct-VM element-ID cache and a reset-to-one mutation are required because final completion alone would not distinguish them;
 - a finite witness can establish neither unconditional termination nor unbounded physical history. Both unsupported claims remain prominent rather than inferred from one completed schedule.
@@ -270,13 +270,15 @@ Existing serialized checked nodes, operations, identities, stimuli, runtime stat
 
 The corrected identity-only checked representation was used to enumerate the complete existing change set. Two non-source contract artifacts must change: the strict [checked-process JSON Schema](../../contracts/schemas/checked-process.schema.json) gains the identity-only checked-node union branch, and the strict [Semantic Process JSON Schema](../../contracts/schemas/semantic-process.schema.json) gains the `mergeExclusive` operation branch. They are part of the planned `what-binds` path set but are outside the mechanically measured source-owner table because JSON contract artifacts have no 600-nonblank-line source headroom.
 
-`node scripts/what-binds.ts` produced these current figures at baseline `7529150` for every existing source owner implementation must change:
+`node scripts/what-binds.ts` produced these current figures at corrected proposal target `5789223` for every existing source owner implementation must change. The target already contains the behavior-preserving graph-admission extraction:
 
 | Owner | Headroom to 600 nonblank lines | Consequence |
 |---|---:|---|
 | [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 390 | Add only the identity-only `ExclusiveMerge` union alternative; Sequence Flow endpoints remain the sole checked topology authority. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 255 | Classify the converging Exclusive Gateway and emit identity only; exact endpoint and arity validation remains in admission. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 52 | The graph-policy and arity work is expected to exceed the remaining headroom, so extract cohesive graph admission before adding semantics. This condition stops applying if a fresh measurement shows at least the complete estimated change plus 20 lines of review headroom. |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 290 | Add only profile mechanism/cardinality and source-shape capability; reusable graph policy remains delegated to the extracted graph owner. |
+| [checked-process graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 328 | Add the profile-selected resumption cut beside the existing reusable ownership, reachability, co-reachability, arity, and acyclicity algorithms. |
+| [checked-process graph-admission characterization](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 485 | Extend the direct owner test with the accepted resumption-crossing cycle and rejected internal-only cycle without moving profile policy into the test. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 78 | One merge arm may remain only while a fresh measurement keeps the owner at or below 600 and at one lowering responsibility. |
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 37 | Recognize the new operation's exact control-place uses. Grow only while the complete change retains at least 20 lines of review headroom; otherwise extract cohesive operation/place validation first. |
 | [profile capability table](../../packages/semantic-core/src/semantic-process-profile.ts) | 118 | The new profile and graph policy fit only while the fresh post-change owner remains at or below 600; otherwise split checked and program capabilities by their existing two responsibilities. |
@@ -301,7 +303,7 @@ The corrected identity-only checked representation was used to enumerate the com
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 401 | Classify `MergeExclusive` as passive so the host adds no scheduler, wait, or token-split capability. |
 | [Temporal Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | No production change is planned. Any required growth must first extract trace or ledger lifecycle ownership instead of crossing 600. |
 
-The new transition relation and runtime behavior belong in new cohesive `CyclicControlFlow` owners, not in the contract or graph modules. The checked-source extraction is a separate behavior-preserving commit with its focused gate before Red for the material feature.
+The new transition relation and runtime behavior belong in new cohesive `CyclicControlFlow` owners, not in the contract or graph modules. The checked-source extraction and its focused characterization are already committed at `c406575`; material cycle work grows the extracted owner rather than repeating that refactor.
 
 ### Guards and oracles
 
@@ -314,11 +316,12 @@ The implementation must enumerate these again with `node scripts/what-binds.ts` 
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) | Both new union alternatives reach exact schema branches and every old branch remains covered. |
 | [contract artifact gates](../../scripts/contract-artifacts.test.ts) and [definition artifact gates](../../scripts/contract-definition-artifacts.test.ts) | The strict schemas, typed projections, control-place references, and exact checked-to-IL correspondence accept the new alternatives and reject endpoint drift. |
 | [CIB observation fidelity](../../scripts/cib-observation-fidelity.test.ts) | The schema widening does not invent a CIB observation or extend any CIB relationship. |
+| [checked-process graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | The extracted graph owner admits only a resumption-crossing cycle under the selected policy and rejects an arity-valid connected internal cycle that remains after the cut. |
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | The converging Exclusive Gateway projector remains in the mechanically closed production consumer inventory and cannot regain a private source-key allowlist. |
 | [metamodel default admission](../../packages/bpmn-source/test/metamodel-default-admission.test.ts) | Absent and explicit `Unspecified` gateway direction continue to use the pinned BPMN default and topology inference, without a local default override. |
 | [A12 boundary](../../scripts/a12-boundary.test.ts) and [A12 preservation](../../scripts/a12-preservation.test.ts) | No retained A12 decision, source, profile, or adoption branch enters the standards-only profile or semantic owners. The frozen legacy projected-key and pipeline copies reported by `what-binds` are historical adoption evidence, are not edited, and are not gates for this non-A12 capsule. |
 | [BPMN Error route consistency](../../packages/bpmn-source/test/bpmn-error-route-consistency.test.ts) | The shared artifact consistency owner retains exact existing route/place checks while adding the new operation. |
-| [Semantic Process lowering](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) | Checked Sequence Flow endpoints remain the sole merge-lowering authority, including hostile endpoint and declaration-permutation cases. |
+| [Semantic Process lowering](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) | Checked Sequence Flow endpoints remain the sole merge-lowering authority, semantically unordered declaration and gateway-reference permutations leave merge lowering unchanged, and process-level conditional Flow declaration order remains exact in `choose.candidates`. |
 | [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Existing scenario results remain exact and the new answer-free scenario compares across all declared targets. |
 | [capsule cost](../../scripts/capsule-cost.test.ts) | Closure records the exact commit-bounded code and documentation cost against the named comparison increments. |
 | [BPMN corpus policy](../../scripts/bpmn-corpus-policy.test.ts) | The selected normative clauses and machine-readable artifacts remain pinned and verified. |
@@ -372,9 +375,9 @@ Stop for owner direction if:
 ## Owner decisions required
 
 1. **Approve the first M2 slice:** one root-scope User Task Sequence Flow cycle using both conditional back-edges and one default exit.
-2. **Approve the new mechanism:** identity-only `ExclusiveMerge` derives its endpoints from checked Sequence Flows and lowers to `mergeExclusive`, which consumes exactly one token by total owned input multiplicity and rejects multi-input or same-input excess-multiplicity states rather than selecting or collapsing by order.
+2. **Approve the new mechanism:** identity-only `ExclusiveMerge` derives its endpoints from checked Sequence Flows and lowers to nonempty-input `mergeExclusive`, whose declarative relation passes through each arriving token occurrence without synchronization. The selected profile requires exactly three inputs and proves at most one offered occurrence reachable; executable choice for general multiple arrivals remains deferred rather than being defined as no transition.
 3. **Approve the admission replacement:** existing profiles remain whole-graph acyclic; only the new profile uses saturation-certified resumption-cut acyclicity with `UserTask` / `awaitUserTask` as its closed cut pair.
-4. **Approve the proof boundary:** the Lean lane is proved, including cut soundness, evaluator soundness, one-token conservation, quantified repeated activation and exit, stale refusal, and the closure bound, while unconditional termination and general Multi-Merge remain checked non-laws.
+4. **Approve the proof boundary:** the Lean lane is proved, including cut soundness, general per-occurrence merge relation, unique-offer evaluator soundness, the selected profile's at-most-one invariant and phase-specific exact-one result, quantified repeated activation and exit, stale refusal, and the closure bound. Unconditional termination and executable choice among concurrent Multi-Merge arrivals remain deliberately open.
 5. **Approve reuse of existing data and expressions:** User Task completion writes the exact current string/null Process-variable patch, and Simple Boolean v1 reads it without grammar or value-domain expansion.
 6. **Approve the host boundary:** one finite semantic-lifetime Temporal witness with Worker replacement and replay is required; Continue-As-New, cross-Run result lookup, unbounded physical history, and a semantic iteration cap remain excluded.
 7. **Approve the standards-only evidence boundary:** no new CIB relationship, CIB runner target, CIB cycle claim, A12 adoption work, or Product 2 feature enters this capsule.
