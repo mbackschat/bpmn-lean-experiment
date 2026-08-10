@@ -31,6 +31,7 @@ type MatrixEntry = readonly [string, string, readonly string[]];
 const consumers = [
   { source: "checked-element-projection.ts", anchor: "projectCheckedSequenceFlows", elementName: "flow", shape: "StandardSequenceFlow" },
   { source: "checked-element-projection.ts", anchor: "classifyGateway", elementName: "element", shape: "ParallelGateway" },
+  { source: "checked-element-projection.ts", anchor: "projectExclusiveMerge", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
   { source: "checked-element-projection.ts", anchor: "projectServiceTask", elementName: "element", shape: "GenericServiceTask" },
   { source: "checked-element-projection.ts", anchor: "isExactPt1sTimerEvent", elementName: "element", shape: "IntermediateCatchEvent" },
   { source: "checked-element-projection.ts", anchor: "isPlainFlowNode", elementName: "element", shape: "PlainNode" },

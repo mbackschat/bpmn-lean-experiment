@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcessContract
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
+import BpmnSemantics.SemanticProcess.ProfileAdmission
 
 /-! # Fuel-bounded graph validation
 
@@ -66,6 +67,23 @@ def acyclicClosed [DecidableEq α] (edges : List (GraphEdge α))
     reachedClosed edges fuel edge.target &&
       !reachableWithin edges fuel edge.target edge.source
 
+/-- A finite directed-cycle witness: one retained edge plus a saturated return search through the same retained graph. -/
+def CycleWitnessWithin [DecidableEq α] (edges : List (GraphEdge α))
+    (fuel : Nat) : Prop :=
+  ∃ edge ∈ edges,
+    reachableWithin edges fuel edge.target edge.source = true
+
+/-- Saturation-certified acyclicity rules out every cycle that survives a profile-selected edge cut. Therefore any full-graph cycle must contain at least one removed edge. -/
+theorem saturation_certified_cut_excludes_uncut_cycle
+    [DecidableEq α] (retainedEdges : List (GraphEdge α)) (fuel : Nat)
+    (acyclic : acyclicClosed retainedEdges fuel = true) :
+    ¬ CycleWitnessWithin retainedEdges fuel := by
+  intro witness
+  obtain ⟨edge, member, returns⟩ := witness
+  simp [acyclicClosed] at acyclic
+  have checked := acyclic edge member
+  simp [returns] at checked
+
 private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiate ..
   | .returnProcess ..
@@ -86,6 +104,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .throwError _ _ input _ _
   | .reachNoneEnd _ _ input => [input]
   | .synchronize _ _ inputs _
+  | .mergeExclusive _ _ inputs _
   | .synchronizeSelected _ _ inputs _ _ => inputs
 
 private def operationOutputs : SemanticOperation → List ControlPlaceId
@@ -95,7 +114,8 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitUserTask _ _ _ output _
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _
-  | .synchronize _ _ _ output => [output]
+  | .synchronize _ _ _ output
+  | .mergeExclusive _ _ _ output => [output]
   | .awaitEventRace _ _ _ message timer => [message.output, timer.output]
   -- The monitored family declares the same two outputs, though it can produce both within one run
   -- rather than one of them.
@@ -250,7 +270,8 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitEffect .. | .duplicate ..
-  | .synchronize .. | .choose .. | .selectMany .. | .synchronizeSelected ..
+  | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
+  | .synchronizeSelected ..
   | .throwError .. | .reachNoneEnd .. | .completeScope .. => none
 
 private def oneCompletionStrategyPerScope (program : Program)
@@ -307,6 +328,36 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
   placeEdges program ++ completionEdges program ++
     (callCompletionPairs program).map fun pair =>
       { source := pair.1, target := pair.2 }
+
+/-- Closed Semantic Process resumption family, decided independently from the checked-source cut. -/
+def semanticOperationIsResumptionCut : SemanticOperation → Bool
+  | .awaitUserTask .. => true
+  | .initiate .. | .enterScope .. | .enterBoundedScope ..
+  | .invokeProcess .. | .returnProcess .. | .awaitTimer ..
+  | .awaitMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..
+  | .awaitMonitoredUserTask .. | .awaitEffect .. | .duplicate ..
+  | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
+  | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
+  | .completeScope .. => false
+
+/-- Independently classify Semantic Process graph edges removed after an `awaitUserTask` producer. -/
+def programEdgeIsResumptionContinuation (program : Program)
+    (edge : GraphEdge OperationId) : Bool :=
+  program.operations.any fun operation =>
+    decide (operation.id = edge.source) &&
+      semanticOperationIsResumptionCut operation
+
+def programResumptionCutEdges (program : Program)
+    (edges : List (GraphEdge OperationId)) : List (GraphEdge OperationId) :=
+  edges.filter fun edge => !programEdgeIsResumptionContinuation program edge
+
+private def programGraphPolicyValid (program : Program)
+    (edges : List (GraphEdge OperationId)) (fuel : Nat) : Bool :=
+  match profileGraphPolicy? program.identity.semanticProfile.value with
+  | some .acyclic => acyclicClosed edges fuel
+  | some .resumptionBounded =>
+      acyclicClosed (programResumptionCutEdges program edges) fuel
+  | none => false
 
 private def initiateIds (operations : List SemanticOperation) :
     List OperationId :=
@@ -368,7 +419,7 @@ def programGraphWellFormed (program : Program) : Bool :=
               (consumers program.operations place.id).length = 1) &&
             allReachableWithin operationIds edges fuel start &&
             allCoreachableWithin operationIds edges fuel ends &&
-            acyclicClosed edges fuel
+            programGraphPolicyValid program edges fuel
       | none => false
   | _ => false
 

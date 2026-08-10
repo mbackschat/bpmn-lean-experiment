@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcessContract
 
 /-! # Semantic profile shape capabilities
 
-This module owns exact checked-node and Semantic Process operation cardinalities. Generic scoped graph validation remains profile-independent.
+This module owns exact checked-node and Semantic Process operation cardinalities plus the closed graph-policy choice shared by the two independently implemented graph validators.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -25,6 +25,7 @@ private structure ShapeCardinalities where
   effects : Nat := 0
   duplicates : Nat := 0
   synchronizes : Nat := 0
+  exclusiveMerges : Nat := 0
   choices : Nat := 0
   inclusiveSplits : Nat := 0
   inclusiveJoins : Nat := 0
@@ -71,6 +72,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with duplicates := counts.duplicates + 1 }
     | .parallelGateway _ .converging =>
         { counts with synchronizes := counts.synchronizes + 1 }
+    | .exclusiveMerge .. =>
+        { counts with exclusiveMerges := counts.exclusiveMerges + 1 }
     | .exclusiveGateway .. => { counts with choices := counts.choices + 1 }
     | .inclusiveGatewayDiverging .. =>
         { counts with inclusiveSplits := counts.inclusiveSplits + 1 }
@@ -105,6 +108,8 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .duplicate .. => { counts with duplicates := counts.duplicates + 1 }
     | .synchronize .. =>
         { counts with synchronizes := counts.synchronizes + 1 }
+    | .mergeExclusive .. =>
+        { counts with exclusiveMerges := counts.exclusiveMerges + 1 }
     | .choose .. => { counts with choices := counts.choices + 1 }
     | .selectMany .. => { counts with selectMany := counts.selectMany + 1 }
     | .synchronizeSelected .. =>
@@ -141,6 +146,10 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" then
     some (1,
       { starts := 1, userTasks := 3, choices := 1, ends := 3 })
+  else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
+    some (1,
+      { starts := 1, userTasks := 1, exclusiveMerges := 1,
+        choices := 1, ends := 1 })
   else if profile =
       "bpmn-2.0.2-inclusive-gateway-selected-branches-draft" then
     some (1,
@@ -207,6 +216,10 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 3, choices := 1, ends := 3 })
+  else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, exclusiveMerges := 1,
+        choices := 1, ends := 1 })
   else if profile =
       "bpmn-2.0.2-inclusive-gateway-selected-branches-draft" then
     some (1, withScopeCompletions 1
@@ -252,6 +265,19 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-subprocess-boundary-timer-draft" then
     some (2, withScopeCompletions 2
       { initiates := 1, boundedScopeEntries := 1, userTasks := 3, ends := 3 })
+  else none
+
+/-- Closed graph-policy capability. Every pre-cycle profile retains whole-graph acyclicity; only the exact cycle profile selects the User Task resumption cut. -/
+inductive ProfileGraphPolicy where
+  | acyclic
+  | resumptionBounded
+  deriving Repr, DecidableEq
+
+def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
+  if profile = "bpmn-2.0.2-user-task-cycle-draft" then
+    some .resumptionBounded
+  else if (checkedShape? profile).isSome && (programShape? profile).isSome then
+    some .acyclic
   else none
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/

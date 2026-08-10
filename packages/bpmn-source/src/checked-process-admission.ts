@@ -22,16 +22,16 @@ import type {
 
 const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
-/**
- * Applies profile cardinalities to a graph admitted through generic scoped BPMN facts.
- * No complete model topology is named here.
- */
+/** Applies profile cardinalities and any selected bounded topology after generic graph admission. */
 export function isAdmittedCheckedProcess(
   graph: CheckedProcessGraph,
   expressionLanguage: unknown,
   semanticProfile: string,
 ): boolean {
-  const admittedGraph = resolveAdmittedCheckedProcessGraph(graph);
+  const admittedGraph = resolveAdmittedCheckedProcessGraph(
+    graph,
+    semanticProfile,
+  );
   return profileAllowsCheckedProcessShape(
       semanticProfile,
       graph.nodes,
@@ -48,6 +48,7 @@ export function isAdmittedCheckedProcess(
     boundaryTimersAttachToDeadlineOwners(graph, admittedGraph.nodeScopes) &&
     hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
+    hasSelectedCyclicTopology(semanticProfile, graph) &&
     hasSelectedInclusivePairing(semanticProfile, graph) &&
     hasSelectedEventRaceTopology(semanticProfile, graph);
 }
@@ -210,6 +211,7 @@ function hasSelectedExpressionLanguage(
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
+    case SemanticProfileId.UserTaskCycle:
       return expressionLanguage === SimpleBooleanExpressionLanguage;
     default:
       return expressionLanguage === bpmnDefaultExpressionLanguage;
@@ -223,10 +225,57 @@ function hasSelectedConditions(
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
+    case SemanticProfileId.UserTaskCycle:
       return flows.filter(({ condition }) => condition !== null).length === 2;
     default:
       return flows.every(({ condition }) => condition === null);
   }
+}
+
+function hasSelectedCyclicTopology(
+  semanticProfile: string,
+  graph: CheckedProcessGraph,
+): boolean {
+  if (semanticProfile !== SemanticProfileId.UserTaskCycle) {
+    return true;
+  }
+  const one = <Kind extends CheckedNodeKind>(kind: Kind) => {
+    const matches = graph.nodes.filter(
+      (node): node is Extract<CheckedNode, { kind: Kind }> => node.kind === kind,
+    );
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  const start = one(CheckedNodeKind.NoneStartEvent);
+  const merge = one(CheckedNodeKind.ExclusiveMerge);
+  const task = one(CheckedNodeKind.UserTask);
+  const choice = one(CheckedNodeKind.ExclusiveGateway);
+  const end = one(CheckedNodeKind.NoneEndEvent);
+  if (
+    start === undefined || merge === undefined || task === undefined ||
+    choice === undefined || end === undefined || graph.nodes.length !== 5
+  ) {
+    return false;
+  }
+  const exactFlow = (
+    sourceId: string,
+    targetId: string,
+    condition: "absent" | "present",
+  ) => graph.flows.filter((flow) =>
+    flow.sourceId === sourceId &&
+    flow.targetId === targetId &&
+    (condition === "present" ? flow.condition !== null : flow.condition === null)
+  );
+  const backEdges = exactFlow(choice.id, merge.id, "present");
+  const exit = exactFlow(choice.id, end.id, "absent");
+  return graph.flows.length === 6 &&
+    exactFlow(start.id, merge.id, "absent").length === 1 &&
+    exactFlow(merge.id, task.id, "absent").length === 1 &&
+    exactFlow(task.id, choice.id, "absent").length === 1 &&
+    backEdges.length === 2 &&
+    new Set(backEdges.map(({ id }) => id)).size === 2 &&
+    backEdges.every(({ id }) => choice.candidateFlowIds.includes(id)) &&
+    choice.candidateFlowIds.every((id) => backEdges.some((flow) => flow.id === id)) &&
+    exit.length === 1 && exit[0]?.id === choice.defaultFlowId;
 }
 
 function hasSelectedInclusivePairing(

@@ -154,7 +154,8 @@ export function projectCheckedNodes(
             };
       }
       case bpmnTypes.exclusiveGatewayType:
-        return projectExclusiveGateway(element, id, flows);
+        return projectExclusiveMerge(element, id, flows) ??
+          projectExclusiveGateway(element, id, flows);
       case bpmnTypes.inclusiveGatewayType:
         return projectInclusiveGateway(element, id, flows, elements);
       case bpmnTypes.eventBasedGatewayType:
@@ -173,6 +174,33 @@ export function projectCheckedNodes(
   });
   return projected.every((node) => node !== undefined)
     ? (projected as ReadonlyArray<CheckedNode>)
+    : undefined;
+}
+
+function projectExclusiveMerge(
+  element: ElementRecord,
+  id: string,
+  flows: ReadonlyArray<CheckedSequenceFlow>,
+): Extract<CheckedNode, { kind: CheckedNodeKind.ExclusiveMerge }> | undefined {
+  if (
+    !hasOnlyProjectedFlowElementKeys(
+      element,
+      ProjectedFlowElementShape.ExclusiveOrInclusiveGateway,
+    ) ||
+    !declaredGatewayDirectionMatches(
+      element.gatewayDirection,
+      GatewayDirection.Converging,
+    ) ||
+    element.default !== undefined
+  ) {
+    return undefined;
+  }
+  const incoming = flows.filter(({ targetId }) => targetId === id);
+  const outgoing = flows.filter(({ sourceId }) => sourceId === id);
+  return incoming.length === 3 &&
+      outgoing.length === 1 &&
+      outgoing[0]?.condition === null
+    ? { kind: CheckedNodeKind.ExclusiveMerge, id }
     : undefined;
 }
 

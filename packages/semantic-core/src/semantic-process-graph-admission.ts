@@ -9,8 +9,13 @@ import {
   callCompletionEdges,
   callOperationsArePaired,
 } from "./call-activity-admission.js";
+import {
+  SemanticGraphPolicyKind,
+  semanticGraphPolicyForProfile,
+} from "./semantic-process-graph-policy.js";
 
 export type SemanticProcessGraph = Readonly<{
+  semanticProfile: string;
   processId: string;
   definitionScopes: ReadonlyArray<DefinitionScope>;
   operationScopes: ReadonlyArray<OperationScopeOwnership>;
@@ -23,6 +28,10 @@ export type SemanticProcessGraph = Readonly<{
 export function isWellFormedSemanticProcessGraph(
   graph: SemanticProcessGraph,
 ): boolean {
+  const graphPolicy = semanticGraphPolicyForProfile(graph.semanticProfile);
+  if (graphPolicy === undefined) {
+    return false;
+  }
   const scopeIds = new Set(graph.definitionScopes.map(({ id }) => id));
   const entryRoots = graph.definitionScopes.filter(
     ({ parentScopeId, originElementId }) =>
@@ -143,9 +152,30 @@ export function isWellFormedSemanticProcessGraph(
     [end.id],
     edges.map(({ source, target }) => ({ source: target, target: source })),
   );
-  return operationIds.every(
+  if (!operationIds.every(
     (id) => reached.has(id) && canReachEnd.has(id),
-  ) && isAcyclic(operationIds, edges);
+  )) {
+    return false;
+  }
+  switch (graphPolicy.kind) {
+    case SemanticGraphPolicyKind.Acyclic:
+      return isAcyclic(operationIds, edges);
+    case SemanticGraphPolicyKind.ResumptionBounded: {
+      const resumptionKinds = new Set<SemanticOperationKind>(
+        graphPolicy.semanticResumptionOperationKinds,
+      );
+      const operationKinds = new Map(
+        graph.operations.map(({ id, kind }) => [id, kind]),
+      );
+      return isAcyclic(
+        operationIds,
+        edges.filter(({ source }) => {
+          const kind = operationKinds.get(source);
+          return kind === undefined || !resumptionKinds.has(kind);
+        }),
+      );
+    }
+  }
 }
 
 function operationRespectsScopes(
@@ -385,6 +415,7 @@ function operationInputs(
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
     case SemanticOperationKind.Synchronize:
+    case SemanticOperationKind.MergeExclusive:
     case SemanticOperationKind.SynchronizeSelected:
       return operation.inputs;
   }
@@ -399,6 +430,7 @@ function operationOutputs(
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.Synchronize:
+    case SemanticOperationKind.MergeExclusive:
       return [operation.output];
     case SemanticOperationKind.AwaitEventRace:
       return [operation.message.output, operation.timer.output];

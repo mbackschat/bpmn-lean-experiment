@@ -43,6 +43,7 @@ export enum SemanticOperationKind {
   AwaitEffect = "awaitEffect",
   Duplicate = "duplicate",
   Synchronize = "synchronize",
+  MergeExclusive = "mergeExclusive",
   Choose = "choose",
   SelectMany = "selectMany",
   SynchronizeSelected = "synchronizeSelected",
@@ -154,6 +155,13 @@ export type SynchronizeSelectedOperation = OperationBase &
     inputs: [string, string, string];
     output: string;
     selectionKey: string;
+  }>;
+
+export type MergeExclusiveOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.MergeExclusive;
+    inputs: [string, ...string[]];
+    output: string;
   }>;
 
 export type AwaitEventRaceOperation = OperationBase &
@@ -346,6 +354,7 @@ export type SemanticOperation =
         inputs: string[];
         output: string;
       }>)
+  | MergeExclusiveOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.Choose;

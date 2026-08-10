@@ -8,6 +8,7 @@ import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.ScopeCompletion
+import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.Transition
 import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway

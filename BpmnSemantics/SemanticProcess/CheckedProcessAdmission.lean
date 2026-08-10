@@ -239,6 +239,8 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
   | .parallelGateway id .converging =>
       incomingCount flows id ≥ 2 && outgoingCount flows id = 1
+  | .exclusiveMerge id =>
+      incomingCount flows id = 3 && outgoingCount flows id = 1
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       incomingCount flows id = 1 &&
         outgoingCount flows id = 3 &&

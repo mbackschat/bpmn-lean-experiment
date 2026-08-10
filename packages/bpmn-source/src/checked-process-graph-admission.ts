@@ -1,12 +1,16 @@
 import {
   CheckedNodeKind,
   GatewayDirection,
+  SemanticGraphPolicyKind,
+  SemanticProfileId,
+  semanticGraphPolicyForProfile,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
   CheckedSequenceFlow,
   DefinitionScope,
   NodeScopeOwnership,
+  SemanticGraphPolicy,
   SequenceFlowScopeOwnership,
 } from "@bpmn-lean/semantic-core";
 
@@ -24,10 +28,12 @@ type AdmittedCheckedProcessGraph = Readonly<{
   flowScopes: ReadonlyMap<string, string>;
 }>;
 
-/** Resolves ownership only when every definition scope is an admitted whole acyclic graph. */
+/** Resolves ownership only when every definition scope satisfies the selected profile graph policy. */
 export function resolveAdmittedCheckedProcessGraph(
   graph: CheckedProcessGraph,
+  semanticProfile: string = SemanticProfileId.UserTask,
 ): AdmittedCheckedProcessGraph | undefined {
+  const graphPolicy = semanticGraphPolicyForProfile(semanticProfile);
   const nodeScopes = ownershipMap(
     graph.nodeScopes,
     "nodeId",
@@ -43,9 +49,16 @@ export function resolveAdmittedCheckedProcessGraph(
   if (
     nodeScopes === undefined ||
     flowScopes === undefined ||
+    graphPolicy === undefined ||
     !isDefinitionScopeForest(graph.definitionScopes) ||
     !graph.definitionScopes.every(({ id }) =>
-      isAdmittedDefinitionScope(graph, id, nodeScopes, flowScopes)
+      isAdmittedDefinitionScope(
+        graph,
+        id,
+        nodeScopes,
+        flowScopes,
+        graphPolicy,
+      )
     )
   ) {
     return undefined;
@@ -58,6 +71,7 @@ function isAdmittedDefinitionScope(
   scopeId: string,
   nodeScopes: ReadonlyMap<string, string>,
   flowScopes: ReadonlyMap<string, string>,
+  graphPolicy: SemanticGraphPolicy,
 ): boolean {
   const nodes = graph.nodes.filter(({ id }) => nodeScopes.get(id) === scopeId);
   const flows = graph.flows.filter(({ id }) => flowScopes.get(id) === scopeId);
@@ -72,7 +86,7 @@ function isAdmittedDefinitionScope(
       ({ sourceId, targetId }) =>
         nodeIds.has(sourceId) && nodeIds.has(targetId),
     ) &&
-    isConnectedAcyclicGraph(nodes, flows, exceptionalEdges);
+    isConnectedGraphUnderPolicy(nodes, flows, exceptionalEdges, graphPolicy);
 }
 
 function isDefinitionScopeForest(
@@ -149,6 +163,8 @@ function hasSelectedArity(
       }
     case CheckedNodeKind.ExclusiveGateway:
       return incoming === 1 && outgoing === 3;
+    case CheckedNodeKind.ExclusiveMerge:
+      return incoming === 3 && outgoing === 1;
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:
@@ -164,10 +180,11 @@ function hasSelectedArity(
   }
 }
 
-function isConnectedAcyclicGraph(
+function isConnectedGraphUnderPolicy(
   nodes: ReadonlyArray<CheckedNode>,
   flows: ReadonlyArray<CheckedSequenceFlow>,
   exceptionalEdges: ReadonlyArray<NodeEdge>,
+  graphPolicy: SemanticGraphPolicy,
 ): boolean {
   const starts = nodes.filter(
     ({ kind }) => kind === CheckedNodeKind.NoneStartEvent,
@@ -194,7 +211,32 @@ function isConnectedAcyclicGraph(
     edges.map(({ source, target }) => ({ source: target, target: source })),
   );
   return nodes.every(({ id }) => reached.has(id) && canReachEnd.has(id)) &&
-    isAcyclic(nodes.map(({ id }) => id), edges);
+    isAcyclic(
+      nodes.map(({ id }) => id),
+      graphEdgesSelectedByPolicy(nodes, edges, graphPolicy),
+    );
+}
+
+function graphEdgesSelectedByPolicy(
+  nodes: ReadonlyArray<CheckedNode>,
+  edges: ReadonlyArray<NodeEdge>,
+  graphPolicy: SemanticGraphPolicy,
+): ReadonlyArray<NodeEdge> {
+  switch (graphPolicy.kind) {
+    case SemanticGraphPolicyKind.Acyclic:
+      return edges;
+    case SemanticGraphPolicyKind.ResumptionBounded: {
+      const resumptionKinds = new Set<string>(
+        graphPolicy.checkedResumptionNodeKinds,
+      );
+      const resumptionNodeIds = new Set(
+        nodes
+          .filter(({ kind }) => resumptionKinds.has(kind))
+          .map(({ id }) => id),
+      );
+      return edges.filter(({ source }) => !resumptionNodeIds.has(source));
+    }
+  }
 }
 
 type NodeEdge = Readonly<{ source: string; target: string }>;

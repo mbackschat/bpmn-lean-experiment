@@ -183,6 +183,16 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         sortedDistinctPlaceIds inputs &&
         inputs.all (placeExists places) &&
         placeExists places output
+  | .mergeExclusive id origin inputs output =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        !inputs.isEmpty &&
+        sortedDistinctPlaceIds inputs &&
+        !inputs.contains output &&
+        inputs.all (placeExists places) &&
+        placeExists places output &&
+        (program.identity.semanticProfile.value ≠
+            "bpmn-2.0.2-user-task-cycle-draft" || inputs.length = 3)
   | .choose id origin input candidates defaultOutput defaultOrigin =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

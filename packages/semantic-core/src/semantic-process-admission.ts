@@ -63,7 +63,7 @@ export function supportsSemanticProcessScenario(
     isWellFormedSemanticProcessProgram(program) &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,
-      program.operations.map(({ kind }) => kind),
+      program.operations,
       program.definitionScopes.length,
     ) &&
     program.identity.semanticProfile === scenario.profile &&
@@ -86,7 +86,7 @@ export function supportsSemanticProcessExecution(
     isWellFormedSemanticProcessProgram(program) &&
     profileAllowsProgramShape(
       program.identity.semanticProfile,
-      program.operations.map(({ kind }) => kind),
+      program.operations,
       program.definitionScopes.length,
     ) &&
     start.processId === program.processId
@@ -201,6 +201,7 @@ export function isWellFormedSemanticProcessProgram(
   }
   return inclusiveOperationsArePaired(checkedOperations) &&
     isWellFormedSemanticProcessGraph({
+      semanticProfile: identity.semanticProfile,
       processId: value.processId,
       definitionScopes,
       operationScopes,

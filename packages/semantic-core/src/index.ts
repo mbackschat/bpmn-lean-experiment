@@ -25,6 +25,7 @@ export * from "./checked-process-contract.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
 export * from "./semantic-process-graph-admission.js";
+export * from "./semantic-process-graph-policy.js";
 export * from "./semantic-process-profile.js";
 export * from "./semantic-process-runtime.js";
 export * from "./simple-boolean-expression.js";

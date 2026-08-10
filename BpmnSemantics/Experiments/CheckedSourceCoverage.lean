@@ -55,6 +55,8 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
             simp [parseFrom, nodeResult] at result
         | receiveTask _ _ =>
             simp [parseFrom, nodeResult] at result
+        | exclusiveMerge _ =>
+            simp [parseFrom, nodeResult] at result
         | exclusiveGateway _ _ _ =>
             simp [parseFrom, nodeResult] at result
         | inclusiveGatewayDiverging _ _ _ =>

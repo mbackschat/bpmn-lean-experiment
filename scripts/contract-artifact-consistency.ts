@@ -11,6 +11,7 @@ import type {
 import {
   requireUnicodeScalarString,
 } from "./strict-json.ts";
+import { verifyMergeExclusiveBindings } from "./merge-exclusive-artifact-consistency.ts";
 
 function compareIds(
   left: Readonly<{ id: string }>,
@@ -86,6 +87,8 @@ function referencedControlPlaces(
     case "duplicate":
       return [operation.input, ...operation.outputs];
     case "synchronize":
+      return [...operation.inputs, operation.output];
+    case "mergeExclusive":
       return [...operation.inputs, operation.output];
     case "choose":
       return [
@@ -175,6 +178,12 @@ export function verifyCanonicalDefinitionOrder(
           operation.inputs,
         );
         break;
+      case "mergeExclusive":
+        requireSortedStrings(
+          `operation ${operation.id} inputs`,
+          operation.inputs,
+        );
+        break;
       case "choose":
         break;
       case "selectMany":
@@ -211,6 +220,11 @@ export function verifyDefinitionReferences(
   checkedProcess: CheckedProcess,
   semanticProcess: SemanticProcessProgram,
 ): void {
+  verifyMergeExclusiveBindings(
+    checkedProcess,
+    semanticProcess,
+    compareCanonicalStrings,
+  );
   const nodeIds = requireUniqueIds(
     "checked process nodes",
     checkedProcess.nodes,

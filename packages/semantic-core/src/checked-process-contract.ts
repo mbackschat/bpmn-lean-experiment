@@ -33,6 +33,7 @@ export enum CheckedNodeKind {
   ReceiveTask = "receiveTask",
   ServiceTask = "serviceTask",
   ParallelGateway = "parallelGateway",
+  ExclusiveMerge = "exclusiveMerge",
   ExclusiveGateway = "exclusiveGateway",
   InclusiveGateway = "inclusiveGateway",
   EventBasedGateway = "eventBasedGateway",
@@ -158,6 +159,10 @@ export type CheckedNode =
       kind: CheckedNodeKind.ParallelGateway;
       id: string;
       direction: GatewayDirection;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.ExclusiveMerge;
+      id: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.ExclusiveGateway;

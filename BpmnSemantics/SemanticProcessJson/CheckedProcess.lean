@@ -143,6 +143,9 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
       | "converging" =>
           pure (.parallelGateway ⟨← stringField json "id"⟩ .converging)
       | _ => throw s!"unsupported gateway direction {direction}"
+  | "exclusiveMerge" =>
+      requireObjectShape json ["id", "kind"]
+      pure (.exclusiveMerge ⟨← stringField json "id"⟩)
   | "exclusiveGateway" =>
       requireObjectShape json
         ["candidateFlowIds", "defaultFlowId", "direction", "id", "kind"]

@@ -4,6 +4,7 @@ import {
 } from "./checked-process-contract.js";
 import type { CheckedNode } from "./checked-process-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { SemanticOperation } from "./semantic-process-contract.js";
 
 export const SemanticProfileId = Object.freeze({
   ActivityBoundaryTimer:
@@ -41,23 +42,44 @@ export const SemanticProfileId = Object.freeze({
   UserTask: "cibseven-2.2.0-user-task-process-data-draft",
   UserTaskPreservedNotation:
     "bpmn-2.0.2-user-task-preserved-notation-draft",
+  UserTaskCycle: "bpmn-2.0.2-user-task-cycle-draft",
 } as const);
 
 /**
- * Checks the exact operation cardinalities selected by one reviewed profile.
+ * Checks the exact operation capability selected by one reviewed profile.
  *
- * Graph structure remains the responsibility of the profile-independent
- * checked-source and Semantic Process graph validators.
+ * Kind cardinalities and profile-local payload restrictions live here. Graph structure remains the
+ * responsibility of the profile-independent checked-source and Semantic Process graph validators.
  */
 export function profileAllowsProgramShape(
   semanticProfile: string,
-  actualKinds: ReadonlyArray<SemanticOperationKind>,
+  actualOperations: ReadonlyArray<SemanticOperation>,
   definitionScopeCount: number,
 ): boolean {
   const required = requiredProgramShape(semanticProfile);
   return required !== undefined &&
     definitionScopeCount === required.definitionScopeCount &&
-    sameOperationCardinalities(actualKinds, required.operationKinds);
+    sameOperationCardinalities(
+      actualOperations.map(({ kind }) => kind),
+      required.operationKinds,
+    ) &&
+    profileAllowsProgramOperationDetails(semanticProfile, actualOperations);
+}
+
+function profileAllowsProgramOperationDetails(
+  semanticProfile: string,
+  operations: ReadonlyArray<SemanticOperation>,
+): boolean {
+  switch (semanticProfile) {
+    case SemanticProfileId.UserTaskCycle:
+      return operations.every(
+        (operation) =>
+          operation.kind !== SemanticOperationKind.MergeExclusive ||
+          operation.inputs.length === 3,
+      );
+    default:
+      return true;
+  }
 }
 
 export function profileAllowsCheckedProcessShape(
@@ -149,6 +171,14 @@ function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
         end,
+        end,
+      ]);
+    case SemanticProfileId.UserTaskCycle:
+      return rootChecked([
+        start,
+        CheckedNodeKind.ExclusiveMerge,
+        CheckedNodeKind.UserTask,
+        CheckedNodeKind.ExclusiveGateway,
         end,
       ]);
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
@@ -332,6 +362,15 @@ function requiredProgramShape(
         SemanticOperationKind.AwaitUserTask,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case SemanticProfileId.UserTaskCycle:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.MergeExclusive,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.Choose,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);

@@ -124,6 +124,7 @@ inductive CheckedNode where
       (outputMappings : List VariableMapping)
       (bpmnErrorRoute : Option CheckedBpmnErrorRoute)
   | parallelGateway (id : NodeId) (direction : GatewayDirection)
+  | exclusiveMerge (id : NodeId)
   | exclusiveGateway
       (id : NodeId)
       (candidateFlowIds : List SequenceFlowId)
@@ -152,6 +153,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .receiveTask id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
+  | .exclusiveMerge id
   | .exclusiveGateway id _ _
   | .inclusiveGatewayDiverging id _ _
   | .inclusiveGatewayConverging id _
@@ -393,6 +395,11 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (inputs : List ControlPlaceId)
       (output : ControlPlaceId)
+  | mergeExclusive
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (inputs : List ControlPlaceId)
+      (output : ControlPlaceId)
   | choose
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -445,6 +452,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .awaitEffect id _ _ _ _ _
   | .duplicate id _ _ _
   | .synchronize id _ _ _
+  | .mergeExclusive id _ _ _
   | .choose id _ _ _ _ _
   | .selectMany id _ _ _ _ _
   | .synchronizeSelected id _ _ _ _

@@ -262,6 +262,13 @@ function lowerNode(
           elementId: node.defaultFlowId,
         },
       });
+    case CheckedNodeKind.ExclusiveMerge:
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.MergeExclusive,
+        inputs: requireExactThree(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+      });
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging: {

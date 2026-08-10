@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.ProfileAdmission
 
 /-! # Checked BPMN graph validation
 
@@ -19,6 +20,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .receiveTask id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
+  | .exclusiveMerge id
   | .exclusiveGateway id _ _
   | .inclusiveGatewayDiverging id _ _
   | .inclusiveGatewayConverging id _
@@ -72,6 +74,7 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .userTask .. | .intermediateCatchTimerEvent ..
   | .intermediateCatchMessageEvent .. | .receiveTask .. | .serviceTask ..
   | .parallelGateway .. | .exclusiveGateway ..
+  | .exclusiveMerge ..
   | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
   | .eventBasedGateway .. | .errorEndEvent .. | .noneEndEvent .. => none
 
@@ -89,6 +92,36 @@ private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
     | .noneEndEvent id => some id
     | _ => none
 
+/-- Closed checked-source resumption family for the only profile that selects a cut graph. -/
+def checkedNodeIsResumptionCut : CheckedNode → Bool
+  | .userTask .. => true
+  | .noneStartEvent .. | .embeddedSubProcess .. | .callActivity ..
+  | .boundaryErrorEvent .. | .timerBoundaryEvent ..
+  | .intermediateCatchTimerEvent .. | .intermediateCatchMessageEvent ..
+  | .receiveTask .. | .serviceTask .. | .parallelGateway ..
+  | .exclusiveMerge .. | .exclusiveGateway ..
+  | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
+  | .eventBasedGateway .. | .errorEndEvent .. | .noneEndEvent .. => false
+
+/-- Independently classify checked graph edges removed after a selected User Task resumption boundary. -/
+def checkedEdgeIsResumptionContinuation (nodes : List CheckedNode)
+    (edge : GraphEdge NodeId) : Bool :=
+  nodes.any fun node =>
+    decide (checkedNodeId node = edge.source) && checkedNodeIsResumptionCut node
+
+def checkedResumptionCutEdges (nodes : List CheckedNode)
+    (edges : List (GraphEdge NodeId)) : List (GraphEdge NodeId) :=
+  edges.filter fun edge => !checkedEdgeIsResumptionContinuation nodes edge
+
+private def checkedGraphPolicyValid (source : CheckedProcess)
+    (nodes : List CheckedNode) (edges : List (GraphEdge NodeId))
+    (fuel : Nat) : Bool :=
+  match profileGraphPolicy? source.identity.semanticProfile.value with
+  | some .acyclic => acyclicClosed edges fuel
+  | some .resumptionBounded =>
+      acyclicClosed (checkedResumptionCutEdges nodes edges) fuel
+  | none => false
+
 /-- Finite per-scope graph progress backstop independent of any complete model topology. -/
 private def checkedScopeGraphWellFormed (source : CheckedProcess)
     (scope : DefinitionScope) : Bool :=
@@ -103,10 +136,10 @@ private def checkedScopeGraphWellFormed (source : CheckedProcess)
       !ends.isEmpty &&
       allReachableWithin nodeIds edges fuel start &&
         allCoreachableWithin nodeIds edges fuel ends &&
-        acyclicClosed edges fuel
+        checkedGraphPolicyValid source nodes edges fuel
   | _ => false
 
-/-- Every declared definition scope is independently connected, co-reachable, and acyclic. -/
+/-- Every declared definition scope is independently connected, co-reachable, and accepted by its closed whole-graph or resumption-cut policy. -/
 def checkedProcessGraphWellFormed (source : CheckedProcess) : Bool :=
   !source.definitionScopes.isEmpty &&
     source.definitionScopes.all (checkedScopeGraphWellFormed source)

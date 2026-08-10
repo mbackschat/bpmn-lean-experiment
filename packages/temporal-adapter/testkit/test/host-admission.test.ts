@@ -134,6 +134,40 @@ test("classifies Message and User Task as passive ingress in either operation or
   );
 });
 
+test("classifies a resumption-bounded Exclusive Merge as passive", async () => {
+  const program = await compileFixture(
+    "../../../bpmn-source/test/fixtures/cyclic-control-flow.bpmn",
+    "cyclic-control-flow-host-admission",
+    "bpmn-2.0.2-user-task-cycle-draft",
+  );
+  assert.ok(
+    program.operations.some(
+      ({ kind }) => kind === SemanticOperationKind.MergeExclusive,
+    ),
+  );
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+
+  const start: StartProcessStimulus = {
+    kind: StimulusKind.StartProcess,
+    commandId: "start-cyclic-control-flow",
+    processId: program.processId,
+    instanceId: "CyclicControlFlowInstance_1",
+    initialVariables: [],
+  };
+  assert.deepEqual(assessBpmnProcessAdmission(start, program), {
+    kind: BpmnProcessAdmissionResultKind.Admitted,
+  });
+  assert.equal(
+    assessBpmnProcessAdmission(start, {
+      ...program,
+      identity: { ...program.identity, semanticProfile: "unknown-profile" },
+    }).kind,
+    BpmnProcessAdmissionResultKind.Rejected,
+  );
+});
+
 test("keeps passive parallel User Tasks separate from host-driven waits", async () => {
   const parallel = await compileFixture(
     "../../../../scenarios/parallel-fork-join/process.bpmn",

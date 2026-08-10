@@ -60,6 +60,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .parallelGateway id .converging =>
       (incomingFlows source id).length = 2 &&
         (outgoingFlows source id).length = 1
+  | .exclusiveMerge _
   | .exclusiveGateway _ _ _
   | .inclusiveGatewayDiverging _ _ _
   | .inclusiveGatewayConverging _ _ => false

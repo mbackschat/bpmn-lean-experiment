@@ -184,6 +184,19 @@ export function isWellFormedSemanticOperation(
         isManyPlaceReferences(value.inputs, placeIds) &&
         isPlaceReference(value.output, placeIds)
       );
+    case SemanticOperationKind.MergeExclusive:
+      return (
+        hasOnlyKeys(value, [
+          "id",
+          "kind",
+          "origin",
+          "inputs",
+          "output",
+        ]) &&
+        isNonEmptyPlaceReferences(value.inputs, placeIds) &&
+        isPlaceReference(value.output, placeIds) &&
+        value.inputs.every((input) => input !== value.output)
+      );
     case SemanticOperationKind.Choose:
       return isWellFormedChooseOperation(
         value,
@@ -394,9 +407,24 @@ function isSingleMapping(
 function isManyPlaceReferences(
   value: unknown,
   placeIds: ReadonlySet<string>,
-): boolean {
+): value is string[] {
+  return isCanonicalPlaceReferences(value, placeIds, 2);
+}
+
+function isNonEmptyPlaceReferences(
+  value: unknown,
+  placeIds: ReadonlySet<string>,
+): value is string[] {
+  return isCanonicalPlaceReferences(value, placeIds, 1);
+}
+
+function isCanonicalPlaceReferences(
+  value: unknown,
+  placeIds: ReadonlySet<string>,
+  minimumLength: number,
+): value is string[] {
   return Array.isArray(value) &&
-    value.length >= 2 &&
+    value.length >= minimumLength &&
     new Set(value).size === value.length &&
     isSortedStrings(value) &&
     value.every((item) => isPlaceReference(item, placeIds));

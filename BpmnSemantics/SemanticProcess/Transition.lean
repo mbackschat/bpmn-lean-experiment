@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Semantic Process internal transitions
@@ -163,6 +164,10 @@ inductive OperationStep (program : Program) :
   | synchronize (id origin inputs output) (before after : RuntimeState)
       (transition : synchronizeState? before inputs output = some after) :
       OperationStep program (.synchronize id origin inputs output) before after
+  | mergeExclusive (id origin inputs output) (before after : RuntimeState)
+      (transition : MergeExclusiveStep before inputs output after) :
+      OperationStep program
+        (.mergeExclusive id origin inputs output) before after
   | choose (id origin input candidates defaultOutput defaultOrigin)
       (before after : RuntimeState)
       (transition :
@@ -230,6 +235,8 @@ def fire? (program : Program) (operation : SemanticOperation)
       awaitEffectState? state input output effect route
   | .duplicate _ _ input outputs => duplicateState? state input outputs
   | .synchronize _ _ inputs output => synchronizeState? state inputs output
+  | .mergeExclusive _ _ inputs output =>
+      mergeExclusiveState? state inputs output
   | .choose _ _ input candidates defaultOutput _ =>
       chooseState? state input candidates defaultOutput
   | .selectMany _ _ input candidates defaultBranch selectionKey =>
@@ -271,6 +278,8 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     | exact .awaitEffect _ _ _ _ _ _ before after result
     | exact .duplicate _ _ _ _ before after result
     | exact .synchronize _ _ _ _ before after result
+    | exact .mergeExclusive _ _ _ _ before after
+        (mergeExclusiveState_sound before after _ _ result)
     | exact .choose _ _ _ _ _ _ before after result
     | exact .selectMany _ _ _ _ _ _ before after
         (selectManyState_sound _ _ _ _ _ _ result)

@@ -44,6 +44,16 @@ private def outgoingPlaces (source : CheckedProcess) (nodeId : NodeId) :
 private def firstPlace (places : List ControlPlaceId) : ControlPlaceId :=
   places.head?.getD ⟨""⟩
 
+/-- Canonical merge inputs derived only from authoritative checked Sequence Flow endpoints. -/
+def lowerExclusiveMergeInputs (source : CheckedProcess) (nodeId : NodeId) :
+    List ControlPlaceId :=
+  canonicalControlPlaceOrder (incomingPlaces source nodeId)
+
+/-- The sole merge output derived only from the authoritative checked Sequence Flow endpoint. Admission establishes that the list has exactly one member. -/
+def lowerExclusiveMergeOutput (source : CheckedProcess) (nodeId : NodeId) :
+    ControlPlaceId :=
+  firstPlace (outgoingPlaces source nodeId)
+
 def eventRaceConfigurationFlow (source : CheckedProcess)
     (flow : CheckedSequenceFlow) : Bool :=
   source.nodes.any fun
@@ -335,6 +345,13 @@ private def lowerNode (source : CheckedProcess) :
         { elementId := id }
         (incomingPlaces source id)
         (firstPlace (outgoingPlaces source id)), scopeId)
+  | .exclusiveMerge id =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.mergeExclusive
+        (nodeOperationId id)
+        { elementId := id }
+        (lowerExclusiveMergeInputs source id)
+        (lowerExclusiveMergeOutput source id), scopeId)
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.choose
@@ -384,6 +401,36 @@ private def lowerNode (source : CheckedProcess) :
         (nodeOperationId id)
         { elementId := id }
         (firstPlace (incomingPlaces source id)), scopeId)
+
+/-- Exclusive Merge lowering has no topology inventory besides checked Sequence Flow endpoints. -/
+theorem lower_exclusive_merge_uses_checked_flow_endpoints
+    (source : CheckedProcess) (id : NodeId) :
+    lowerNode source (.exclusiveMerge id) =
+      (checkedNodeScopeId? source id).map fun scopeId =>
+        (.mergeExclusive
+          (nodeOperationId id)
+          { elementId := id }
+          (lowerExclusiveMergeInputs source id)
+          (lowerExclusiveMergeOutput source id), scopeId) := by
+  rfl
+
+/-- Ordinary User Task lowering preserves the exact checked/IL resumption-cut classification when no boundary deadline changes the operation family. -/
+theorem lowering_preserves_user_task_resumption_cut
+    (source : CheckedProcess) (id : NodeId) (name : Option String)
+    (scopeId : DefinitionScopeId)
+    (scope : checkedNodeScopeId? source id = some scopeId)
+    (unbounded : timerBoundaryFor source id = none) :
+    ∃ operation,
+      lowerNode source (.userTask id name) = some (operation, scopeId) ∧
+        checkedNodeIsResumptionCut (.userTask id name) = true ∧
+        semanticOperationIsResumptionCut operation = true := by
+  refine ⟨.awaitUserTask
+      (nodeOperationId id)
+      { elementId := id }
+      (firstPlace (incomingPlaces source id))
+      (firstPlace (outgoingPlaces source id))
+      { id := ⟨id.value⟩, name }, ?_, rfl, rfl⟩
+  simp [lowerNode, unbounded, scope]
 
 private def lowerScopeCompletion (source : CheckedProcess)
     (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=

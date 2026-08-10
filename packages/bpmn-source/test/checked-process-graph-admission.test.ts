@@ -1,8 +1,8 @@
 /**
  * Characterizes the generic checked-source graph gate independently of profile-specific policy.
  *
- * The two cases separate the non-Sequence-Flow edge needed for an attached boundary Event from the
- * saturation rule that rejects an otherwise connected and arity-valid automatic cycle.
+ * The cases separate the non-Sequence-Flow edge needed for an attached boundary Event, one selected
+ * User-Task resumption cut, and an internal cycle that remains after that cut.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -11,6 +11,7 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -43,9 +44,44 @@ function withRootOwnership(
   };
 }
 
-test("rejects an arity-valid connected automatic cycle", () => {
+test("admits only the selected User-Task-crossing cycle policy", () => {
   const nodes = [
     { kind: CheckedNodeKind.NoneStartEvent, id: "Start" },
+    { kind: CheckedNodeKind.ExclusiveMerge, id: "Merge" },
+    { kind: CheckedNodeKind.UserTask, id: "Review", name: null },
+    {
+      kind: CheckedNodeKind.ExclusiveGateway,
+      id: "Choice",
+      direction: GatewayDirection.Diverging,
+      candidateFlowIds: ["Repeat", "Rework"],
+      defaultFlowId: "Exit",
+    },
+    { kind: CheckedNodeKind.NoneEndEvent, id: "End" },
+  ] as const satisfies CheckedProcessGraph["nodes"];
+  const flows = [
+    flow("StartMerge", "Start", "Merge"),
+    flow("Repeat", "Choice", "Merge"),
+    flow("Rework", "Choice", "Merge"),
+    flow("MergeReview", "Merge", "Review"),
+    flow("ReviewChoice", "Review", "Choice"),
+    flow("Exit", "Choice", "End"),
+  ] as const satisfies CheckedProcessGraph["flows"];
+  const graph = withRootOwnership(nodes, flows);
+
+  assert.notEqual(
+    resolveAdmittedCheckedProcessGraph(graph, SemanticProfileId.UserTaskCycle),
+    undefined,
+  );
+  assert.equal(
+    resolveAdmittedCheckedProcessGraph(graph, SemanticProfileId.UserTask),
+    undefined,
+  );
+});
+
+test("rejects an internal cycle even when a User Task is reachable outside it", () => {
+  const nodes = [
+    { kind: CheckedNodeKind.NoneStartEvent, id: "Start" },
+    { kind: CheckedNodeKind.UserTask, id: "Wait", name: null },
     {
       kind: CheckedNodeKind.ParallelGateway,
       id: "LoopMerge",
@@ -69,7 +105,8 @@ test("rejects an arity-valid connected automatic cycle", () => {
     { kind: CheckedNodeKind.NoneEndEvent, id: "End" },
   ] as const satisfies CheckedProcessGraph["nodes"];
   const flows = [
-    flow("StartToMerge", "Start", "LoopMerge"),
+    flow("StartToWait", "Start", "Wait"),
+    flow("WaitToMerge", "Wait", "LoopMerge"),
     flow("MergeToSplit", "LoopMerge", "BranchSplit"),
     flow("SplitToJoinA", "BranchSplit", "BranchJoin"),
     flow("SplitToJoinB", "BranchSplit", "BranchJoin"),
@@ -79,7 +116,10 @@ test("rejects an arity-valid connected automatic cycle", () => {
   ] as const satisfies CheckedProcessGraph["flows"];
 
   assert.equal(
-    resolveAdmittedCheckedProcessGraph(withRootOwnership(nodes, flows)),
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(nodes, flows),
+      SemanticProfileId.UserTaskCycle,
+    ),
     undefined,
   );
 });

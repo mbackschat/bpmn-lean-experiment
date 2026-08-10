@@ -58,7 +58,8 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
   | .initiate .. | .enterScope .. | .invokeProcess .. | .returnProcess ..
-  | .duplicate .. | .synchronize .. | .choose .. | .selectMany ..
+  | .duplicate .. | .synchronize .. | .mergeExclusive .. | .choose ..
+  | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
   | .completeScope .. => {}
 

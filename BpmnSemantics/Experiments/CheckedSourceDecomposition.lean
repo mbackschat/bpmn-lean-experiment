@@ -98,6 +98,7 @@ def parseFrom (source : CheckedProcess) :
       | some (.intermediateCatchMessageEvent ..)
       | some (.receiveTask ..)
       | some (.parallelGateway _ .converging)
+      | some (.exclusiveMerge ..)
       | some (.exclusiveGateway ..)
       | some (.inclusiveGatewayDiverging ..)
       | some (.inclusiveGatewayConverging ..)
@@ -150,6 +151,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
         route.isNone
   | .intermediateCatchMessageEvent .. => false
   | .receiveTask .. => false
+  | .exclusiveMerge .. => false
   | .exclusiveGateway .. => false
   | .inclusiveGatewayDiverging .. => false
   | .inclusiveGatewayConverging .. => false

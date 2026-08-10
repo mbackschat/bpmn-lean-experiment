@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CyclicControlFlow"
+  targetNamespace="urn:bpmn-lean:test"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="Process_CyclicControlFlow" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Merge" gatewayDirection="Converging">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:incoming>Flow_Repeat</bpmn:incoming>
+      <bpmn:incoming>Flow_Rework</bpmn:incoming>
+      <bpmn:outgoing>Flow_Merge_Review</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Review" name="Review request">
+      <bpmn:incoming>Flow_Merge_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Choice</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Choice" gatewayDirection="Diverging" default="Flow_Exit">
+      <bpmn:incoming>Flow_Review_Choice</bpmn:incoming>
+      <bpmn:outgoing>Flow_Repeat</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rework</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Exit</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End">
+      <bpmn:incoming>Flow_Exit</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Merge" />
+    <bpmn:sequenceFlow id="Flow_Merge_Review" sourceRef="Merge" targetRef="Review" />
+    <bpmn:sequenceFlow id="Flow_Review_Choice" sourceRef="Review" targetRef="Choice" />
+    <bpmn:sequenceFlow id="Flow_Repeat" sourceRef="Choice" targetRef="Merge">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(route,"repeat")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Rework" sourceRef="Choice" targetRef="Merge">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(route,"rework")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Exit" sourceRef="Choice" targetRef="End" />
+  </bpmn:process>
+</bpmn:definitions>

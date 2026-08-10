@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcessAdmissionConformance
+import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
 
 /-! # BpmnSemantics.SemanticProcessConformance: runtime and evaluator contract checks
 

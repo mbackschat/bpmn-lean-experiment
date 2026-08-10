@@ -188,6 +188,7 @@ function classifyHostOperation(
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.MergeExclusive:
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.SynchronizeSelected:
     case SemanticOperationKind.Choose:

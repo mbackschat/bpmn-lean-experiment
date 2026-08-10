@@ -367,6 +367,22 @@
           "additionalProperties": false,
           "required": [
             "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "exclusiveMerge"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
             "id",
             "childScopeId"
           ],

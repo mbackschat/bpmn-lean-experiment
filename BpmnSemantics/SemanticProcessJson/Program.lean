@@ -344,6 +344,15 @@ private def decodeOperation (json : Json) :
           origin
           (← decodePlaceIdArray (← field json "inputs"))
           ⟨← stringField json "output"⟩)
+  | "mergeExclusive" =>
+      requireObjectShape json
+        ["id", "inputs", "kind", "origin", "output"]
+      pure
+        (.mergeExclusive
+          id
+          origin
+          (← decodePlaceIdArray (← field json "inputs"))
+          ⟨← stringField json "output"⟩)
   | "choose" =>
       requireObjectShape json
         ["candidates", "defaultOrigin", "defaultOutput", "id", "input",

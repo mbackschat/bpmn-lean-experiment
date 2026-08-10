@@ -16,6 +16,7 @@ import {
   reachNoneEnd,
   synchronize,
 } from "./semantic-process-control-flow-runtime.js";
+import { mergeExclusive } from "./semantic-process-cyclic-control-flow-runtime.js";
 import {
   armBoundedScope,
   completeScopeWithdrawingDeadline,
@@ -275,6 +276,8 @@ export function applyInternalOperation(
         ? synchronize(operation, state, synchronizedOwner)
         : null;
     }
+    case SemanticOperationKind.MergeExclusive:
+      return mergeExclusive(operation, state);
     case SemanticOperationKind.Choose: {
       const choiceOwner = onlyTokenOwner(state, operation.input);
       return choiceOwner !== undefined

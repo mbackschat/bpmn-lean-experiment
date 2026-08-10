@@ -212,6 +212,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | intermediateCatchMessageEvent id channel => rfl
   | receiveTask id channel => rfl
   | serviceTask id descriptor inputs outputs route => rfl
+  | exclusiveMerge id =>
+      simp [nodeArityValid] at candidateArity
   | exclusiveGateway id candidateFlowIds defaultFlowId =>
       simp [nodeArityValid] at candidateArity
   | inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
