@@ -108,7 +108,7 @@ The Lean lane must stay a research lane rather than becoming a proof tax on prod
 
 Ordered by the milestone that first needs it, not by size. Each is absent today and [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md) owns its exact status.
 
-1. Compositional admission with cycles — M2.
+1. [Resumption-bounded compositional admission with cycles](capsules/CYCLIC-CONTROL-FLOW-PROPOSAL.md), required by M2.
 2. Message Start Event, Timer Start Event, Terminate End Event, and the configured generic Task — M2.
 3. The value domain beyond string and null — M3.
 4. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
@@ -142,7 +142,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Next: open M2 compositional admission.** Begin the cycles account and select the first M2 capsule by reusable Process Execution leverage, using CIB breadth and A12 prevalence only to order equal-value candidates. Keep the decided-fixture admission lane under the recorded build ceiling.
+1. **Next: review and approve the M2 cyclic-control-flow proposal.** The draft selects one root-scope User Task Sequence Flow cycle, explicit Exclusive Merge, and profile-gated resumption-cut admission. Commit the immutable proposal target, run its required context-cold review, close required findings, and stop for owner approval before implementation. Keep the decided-fixture admission lane under the recorded build ceiling.
 
 ## Approved decisions
 
@@ -247,7 +247,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: open the M2 compositional-admission proposal.** The mandatory decided-fixture review is closed by the proof-lane split and its recorded CPU and resident-memory figures. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
+**Next action: submit the draft [resumption-bounded cyclic control flow proposal](capsules/CYCLIC-CONTROL-FLOW-PROPOSAL.md) to the required context-cold proposal review.** The draft adds no implementation and selects one root-scope, one-token User Task Sequence Flow cycle, explicit Exclusive Merge, and profile-gated resumption-cut admission. After all required findings close, stop for owner approval before implementation. The mandatory decided-fixture review is closed by the proof-lane split and its recorded CPU and resident-memory figures. M1 remains closed through the public API and UI over real Temporal hosting. The A12 product boundary remains closed, its stable contract is active, and its proposal is archived.
 
 **No owner blocker.** The owner approved the concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout on 2026-08-10.
 
