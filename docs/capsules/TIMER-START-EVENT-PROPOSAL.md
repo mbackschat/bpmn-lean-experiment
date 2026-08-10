@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11; the first green semantic checkpoint is implemented and pending independent cold review.** The checkpoint contains exact source admission, checked and IL variants, strict wires, proved Lean and independent TypeScript execution, bounded closure, content-bound command identity, and passive Temporal host admission. Product profile registration, answer-free scenario and differential evidence, runnable example, live one-action Temporal Schedule evidence, and Product 2 scheduling remain blocked until checkpoint approval. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
+**Owner-approved on 2026-08-11; the corrected first green semantic checkpoint is independently approved.** Checkpoint target `7ac0307` received `approve-with-required-edits`; correction `ba3bbf8` closed the stale IL contract and missing XSD regression binding. The approved checkpoint contains exact source admission, checked and IL variants, strict wires, proved Lean and independent TypeScript execution, bounded closure, content-bound command identity, and passive Temporal host admission. Product profile registration, answer-free scenario and differential evidence, the runnable example, and live one-action Temporal Schedule evidence are the active closure lanes. Product 2 scheduling remains excluded. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `6caa92b` | `fork-turns-none` | `approve-with-required-edits` | `eaaf944` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `7ac0307` | `fork-turns-none` | `approve-with-required-edits` | `ba3bbf8` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question
