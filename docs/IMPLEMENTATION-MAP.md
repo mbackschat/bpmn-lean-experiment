@@ -10,6 +10,8 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **Current closure boundary.** The standards-only Message Start capability is registered, closure-reviewed, and evidence-closed with its exact top-level operation-addressed source, complete checked and `initiateMessage` channel identity, answer-free scenario, product example, isolated differential case, and direct Temporal Worker-absence/history/replay witness. No public broker route, definition-version fanout, retry-transparent publication receipt, or Product 2 message-ingress API exists.
 
+**Current semantic checkpoint.** One unregistered standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, closes in two unique internal steps to the existing User Task wait, and is admitted as passive by the Temporal host boundary. It is not a registered profile, scenario, product example, differential case, live Schedule witness, or Product 2 scheduling claim until independent checkpoint approval.
+
 **What it does not do.** One generic standards profile admits the complete selected notation set and no other does. `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them, under [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md); every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume one data-only source overlay, but it can name only an existing profile-owned effect descriptor and exact inert expanded-name loci; it adds no engine operation or source reader.
 
 Retained notation reaches no public observation and has no query surface. Refusals about the document or the checked graph name no element. The whole BPMN data family rejects everywhere. Every registered profile except `bpmn-2.0.2-user-task-cycle-draft` retains whole-graph acyclicity. That exact profile admits one root-scope cycle only after proving that cutting the User Task continuation makes the graph acyclic; it is registered with an answer-free repeat/rework/default-exit scenario, a product example, a seeded differential mutation, and finite Worker-replacement/replay evidence. Variables are string or null. There is no cancellation beyond the direct-parent regional case, no incidents, and no published transition record or token position.
@@ -145,6 +147,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - exact divergent/convergent Inclusive Gateway checked-node arms, canonically ordered `selectMany` candidates, and fixed-cardinality `synchronizeSelected` inputs
 - exact divergent Event-Based Gateway checked-node arm and named operation-addressed Message/exact-duration Timer arms on `awaitEventRace`, including both configuration-flow origins
 - exact Message Start checked-node, channel-bound `initiateMessage`, and `triggerMessageStart` scenario/start shapes with strict first-stimulus placement
+- checkpoint-only exact Timer Start checked-node, duration-bound `initiateTimer`, and `triggerTimerStart` scenario/start shapes with strict first-stimulus placement
 - exact Call Activity checked-node arm and paired `invokeProcess`/`returnProcess` operations with called definition, root, entry, return, and caller-output identities
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one canonical definition-scope forest with exact node/Sequence-Flow and operation/control-place ownership, retaining one rooted tree for existing profiles and one distinct called root for the bounded Call profile, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, effects, and Call records
@@ -178,6 +181,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - CIB-backed profiles pin exact oracle revisions and content-bound retained evidence; standards-only profiles declare no CIB execution target
 - definition-scope and operation-kind cardinalities are checked per profile, separately from topology-independent graph validation
 - one registered Message Start capability requires one `initiateMessage` output and a matching exact Message-start stimulus
+- one frozen unregistered Timer Start checkpoint capability requires one `initiateTimer` output, normalized duration `1000`, and a matching exact Timer-start stimulus
 - immutable CIB artifact status freezes only evidence calibration, not a production deployment or history baseline
 
 #### Explicitly absent
@@ -188,7 +192,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - approved gap interpretations beyond the reviewed slices
 - confirmed deviations beyond the visible `CIB-DEV-0001` candidate
 - multiple or mixed Message Start Events, payload, external publication routing, definition-version fanout, or retry-transparent start receipt
-- top-level Timer Start Event, resolved timer-start stimulus, durable schedule creation, and Product 2 schedule lifecycle or version activation
+- Timer Start product registration, answer-free scenario, runnable example, differential case, live one-action Schedule evidence, and Product 2 schedule lifecycle or version activation
 
 ### Runtime scoped data
 
@@ -237,7 +241,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 #### Implemented
 
 - Implemented draft spec for a checked source-facing graph
-- current JSON Schemas and boundary validators for typed `initiate`, `initiateMessage`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEventRace`, `awaitEffect`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope` operations
+- current JSON Schemas and boundary validators for typed `initiate`, `initiateMessage`, `initiateTimer`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEventRace`, `awaitEffect`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope` operations
 - `choose` carries exactly two declaration-ordered typed Simple Boolean candidates and one distinct default
 - `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
 - `awaitEventRace` carries one named operation-addressed Message arm and one named exact-`PT1S` Timer arm with their configuration-flow origins, catch identities, and distinct winner outputs; its configuration Flows are not control places
@@ -245,6 +249,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across payload-free, mapped-success, and mapped-boundary-Error contracts
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
 - exact Message Start lowering preserves Process, Start Event, Interface, Interface Operation, input Message, and every validated outgoing-flow identity; reusable `initiateMessage` admits canonical nonempty outputs while the registered capability fixes one
+- exact Timer Start lowering preserves Process, Start Event, `PT1S -> 1000`, and every validated outgoing-flow identity; reusable `initiateTimer` admits canonical nonempty outputs while the checkpoint capability fixes one
 - independent sequential, bounded-parallel, exact-timer, Timer/User Task composition, operation-addressed Intermediate Catch Message and direct-Message Receive Task subscriptions, payload-free effect, mapped-success Service Task, mapped-boundary-Error Service Task, Simple Boolean conditional evaluation, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process invocation/return, and registered resumption-bounded cycle execution
 - generic Lean relation/evaluator including choice, effect-completion, and operation-step soundness, laws, and non-laws
 - separately gated frozen checked-source experiment
@@ -501,7 +506,7 @@ One nearest boundary per family. The owning capsule holds the full exclusion set
 
 - **Call Activity:** a second or repeated invocation of the same called Process. Deployment or version and tenant resolution, mappings, per-instance data, recursion, exceptional completion, cancellation, and Temporal Child Workflow identity stay outside. See [the capsule](capsules/CALL-ACTIVITY-SPEC.md).
 - **Message Start:** one external publication matching multiple independent Message Start Events or definition versions. Routing, fanout, selected-start identity, and retry-transparent exactly-once policy stay outside. See [the capsule](capsules/MESSAGE-START-EVENT-SPEC.md).
-- **Timer Start:** the exact top-level `PT1S` account is selected only in the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md), not implemented. Recurrence, calendar forms, schedule lifecycle, and silent latest-definition retargeting stay outside.
+- **Timer Start:** one external resolved occurrence for the exact top-level `PT1S` checkpoint is implemented but unregistered. Recurrence, calendar forms, multiple starts, Schedule lifecycle, live hosting evidence, Product 2 scheduling, and silent latest-definition retargeting stay outside. See the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md).
 - **Receive Task:** an addressless or operation-addressed, instantiating, data-bearing, correlated, or repeated Receive Task. See [the capsule](capsules/RECEIVE-TASK-MESSAGE-SPEC.md).
 - **Sub-Process boundary Timer:** a deadline on a Sub-Process holding more than one child task. That is where this profile's single-child coincidence between the child's last consumed token and scope quiescence stops holding, so the withdrawal rule stated over quiescence becomes separately falsifiable rather than accidentally correct. See [the capsule](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md).
 - **Non-interrupting boundary Timer:** a deadline that fires more than once, which `timeCycle` admits and Table 10.91 contemplates. A second firing makes the element-identity-to-activation join ambiguous, so a capsule admitting repetition must add the occurrence record rather than inherit the argument. See [the capsule](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md).

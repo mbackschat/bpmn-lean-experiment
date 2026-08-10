@@ -184,6 +184,7 @@ function classifyHostOperation(
       return HostOperationClass.MonitoredActivityWait;
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.InitiateMessage:
+    case SemanticOperationKind.InitiateTimer:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:

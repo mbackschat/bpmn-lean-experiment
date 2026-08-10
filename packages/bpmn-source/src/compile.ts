@@ -38,6 +38,9 @@ import {
 import {
   admitSourceOverlay,
 } from "./source-overlay.js";
+import {
+  firstSingletonContainmentLoss,
+} from "./singleton-containment-admission.js";
 
 export async function compileBpmnToSemanticProcess(
   request: CompileBpmnToSemanticProcessRequest,
@@ -155,6 +158,18 @@ export async function compileBpmnToSemanticProcess(
   }
   if (imported.warnings.length > 0) {
     return reject(imported.warnings);
+  }
+
+  const singletonLoss = firstSingletonContainmentLoss(xml, imported.located);
+  if (singletonLoss !== undefined) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.UnsupportedModel,
+        singletonLoss.sourceOccurrences < 0
+          ? `The bounded singleton-containment checker does not own ${singletonLoss.property}.`
+          : `Exact source contains ${singletonLoss.sourceOccurrences} ${singletonLoss.property} element occurrences, while structural import retained ${singletonLoss.projectedOccurrences}.`,
+      ),
+    ]);
   }
 
   // A reference resolving outside the type its property declares is malformed source rather than

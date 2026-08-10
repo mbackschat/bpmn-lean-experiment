@@ -36,6 +36,9 @@
             },
             {
               "$ref": "#/$defs/triggerMessageStart"
+            },
+            {
+              "$ref": "#/$defs/triggerTimerStart"
             }
           ]
         }
@@ -278,6 +281,34 @@
         },
         "channel": {
           "$ref": "#/$defs/operationMessageChannel"
+        }
+      }
+    },
+    "triggerTimerStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "processId",
+        "instanceId",
+        "startEventId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "triggerTimerStart"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "processId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "startEventId": {
+          "$ref": "#/$defs/nonEmptyString"
         }
       }
     },

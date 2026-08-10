@@ -36,6 +36,7 @@ export function requiresHostProgressBeforeCompletion(
           return true;
         case StimulusKind.StartProcess:
         case StimulusKind.TriggerMessageStart:
+        case StimulusKind.TriggerTimerStart:
         case StimulusKind.CompleteUserTaskInstance:
           return false;
       }

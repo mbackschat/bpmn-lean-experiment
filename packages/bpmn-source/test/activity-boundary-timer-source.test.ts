@@ -75,6 +75,18 @@ test("lowers the bounded task and its deadline into one Activity-owned wait", as
   );
 });
 
+test("preserves the reviewed no-xsi generic Expression boundary Timer shape", async () => {
+  const withoutExplicitExpressionType = source.replace(
+    ' xsi:type="bpmn:tFormalExpression"',
+    "",
+  );
+  assert.notEqual(withoutExplicitExpressionType, source);
+
+  const result = await compile(withoutExplicitExpressionType);
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+});
+
 test("keeps both routes distinguishable through distinct follow-on tasks", async () => {
   const result = await compile(source);
 

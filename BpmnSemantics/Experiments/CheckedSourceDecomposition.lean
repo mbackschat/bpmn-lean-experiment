@@ -91,6 +91,7 @@ def parseFrom (source : CheckedProcess) :
           | _ => none
       | some (.noneStartEvent _)
       | some (.messageStartEvent ..)
+      | some (.timerStartEvent ..)
       | some (.embeddedSubProcess ..)
       | some (.callActivity ..)
       | some (.boundaryErrorEvent ..)
@@ -158,6 +159,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .inclusiveGatewayConverging .. => false
   | .eventBasedGateway .. => false
   | .messageStartEvent .. => false
+  | .timerStartEvent .. => false
 
 def profileChecks (source : CheckedProcess) : Bool :=
   source.nodes.all composedNodeSurfaceValid &&

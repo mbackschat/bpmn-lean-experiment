@@ -206,6 +206,7 @@ export function verifyCanonicalDefinitionOrder(
         );
         break;
       case "initiateMessage":
+      case "initiateTimer":
         verifyCanonicalStartOperationOrder(
           operation,
           compareCanonicalStrings,

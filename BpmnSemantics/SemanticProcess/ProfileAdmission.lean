@@ -12,6 +12,8 @@ private structure ShapeCardinalities where
   initiates : Nat := 0
   messageStarts : Nat := 0
   messageInitiates : Nat := 0
+  timerStarts : Nat := 0
+  timerInitiates : Nat := 0
   embeddedScopes : Nat := 0
   callActivities : Nat := 0
   boundaryErrors : Nat := 0
@@ -51,6 +53,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .noneStartEvent .. => { counts with starts := counts.starts + 1 }
     | .messageStartEvent .. =>
         { counts with messageStarts := counts.messageStarts + 1 }
+    | .timerStartEvent .. =>
+        { counts with timerStarts := counts.timerStarts + 1 }
     | .embeddedSubProcess .. =>
         { counts with embeddedScopes := counts.embeddedScopes + 1 }
     | .callActivity .. =>
@@ -95,6 +99,8 @@ private def operationCardinalities (operations : List SemanticOperation) :
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
     | .initiateMessage .. =>
         { counts with messageInitiates := counts.messageInitiates + 1 }
+    | .initiateTimer .. =>
+        { counts with timerInitiates := counts.timerInitiates + 1 }
     | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
     | .enterBoundedScope .. =>
         { counts with boundedScopeEntries := counts.boundedScopeEntries + 1 }
@@ -132,6 +138,8 @@ private def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) :
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, { messageStarts := 1, userTasks := 1, ends := 1 })
+  else if profile = "bpmn-2.0.2-timer-start-event-draft" then
+    some (1, { timerStarts := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     -- The preserve-enabled profile reaches this shape by construction: Lean receives only the
@@ -207,6 +215,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   if profile = "bpmn-2.0.2-message-start-event-draft" then
     some (1, withScopeCompletions 1
       { messageInitiates := 1, userTasks := 1, ends := 1 })
+  else if profile = "bpmn-2.0.2-timer-start-event-draft" then
+    some (1, withScopeCompletions 1
+      { timerInitiates := 1, userTasks := 1, ends := 1 })
   else if profile = "cibseven-2.2.0-user-task-process-data-draft" ||
       profile = "bpmn-2.0.2-user-task-preserved-notation-draft" then
     some (1, withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 1 })
@@ -306,6 +317,11 @@ private def operationPayloadCapabilitiesValid (profile : String)
       | .initiateMessage _ _ (.operationMessage ..) outputs =>
           outputs.length = 1
       | .initiateMessage .. => false
+      | _ => true
+  else if profile = "bpmn-2.0.2-timer-start-event-draft" then
+    operations.all fun
+      | .initiateTimer _ _ durationMs outputs =>
+          durationMs = 1000 && outputs.length = 1
       | _ => true
   else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     operations.all fun

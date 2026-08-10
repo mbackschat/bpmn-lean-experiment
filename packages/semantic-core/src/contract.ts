@@ -36,6 +36,7 @@ export enum ScenarioDocumentKind {
 export enum StimulusKind {
   StartProcess = "startProcess",
   TriggerMessageStart = "triggerMessageStart",
+  TriggerTimerStart = "triggerTimerStart",
   CompleteUserTaskInstance = "completeUserTaskInstance",
   DeliverMessage = "deliverMessage",
   FireTimer = "fireTimer",
@@ -63,9 +64,19 @@ export type TriggerMessageStartStimulus = DeepReadonly<{
   >;
 }>;
 
+/** Starts one fresh Process instance through one exact resolved Timer Start occurrence. */
+export type TriggerTimerStartStimulus = DeepReadonly<{
+  kind: StimulusKind.TriggerTimerStart;
+  commandId: string;
+  processId: string;
+  instanceId: string;
+  startEventId: string;
+}>;
+
 export type ProcessStartStimulus =
   | StartProcessStimulus
-  | TriggerMessageStartStimulus;
+  | TriggerMessageStartStimulus
+  | TriggerTimerStartStimulus;
 
 export type OccurrenceId = DeepReadonly<{
   processInstanceId: string;

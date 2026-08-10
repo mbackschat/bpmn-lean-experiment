@@ -106,6 +106,7 @@ export function isWellFormedSemanticProcessGraph(
   const starts = [
     ...operationsOfKind(graph, SemanticOperationKind.Initiate),
     ...operationsOfKind(graph, SemanticOperationKind.InitiateMessage),
+    ...operationsOfKind(graph, SemanticOperationKind.InitiateTimer),
   ];
   const rootCompletions = operationsOfKind(
     graph,
@@ -202,6 +203,10 @@ function operationRespectsScopes(
         ({ id, parentScopeId }) => id === owner && parentScopeId === null,
       ) && referencesOwnedBy([operation.output], owner);
     case SemanticOperationKind.InitiateMessage:
+      return graph.definitionScopes.some(
+        ({ id, parentScopeId }) => id === owner && parentScopeId === null,
+      ) && referencesOwnedBy(operation.outputs, owner);
+    case SemanticOperationKind.InitiateTimer:
       return graph.definitionScopes.some(
         ({ id, parentScopeId }) => id === owner && parentScopeId === null,
       ) && referencesOwnedBy(operation.outputs, owner);
@@ -403,6 +408,7 @@ function operationInputs(
   switch (operation.kind) {
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.InitiateMessage:
+    case SemanticOperationKind.InitiateTimer:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.ReturnProcess:
       return [];
@@ -441,6 +447,8 @@ function operationOutputs(
     case SemanticOperationKind.MergeExclusive:
       return [operation.output];
     case SemanticOperationKind.InitiateMessage:
+      return operation.outputs;
+    case SemanticOperationKind.InitiateTimer:
       return operation.outputs;
     case SemanticOperationKind.AwaitEventRace:
       return [operation.message.output, operation.timer.output];

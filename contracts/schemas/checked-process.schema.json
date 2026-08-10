@@ -368,6 +368,26 @@
           "required": [
             "kind",
             "id",
+            "durationLiteral"
+          ],
+          "properties": {
+            "kind": {
+              "const": "timerStartEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "durationLiteral": {
+              "const": "PT1S"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "channel"
           ],
           "properties": {

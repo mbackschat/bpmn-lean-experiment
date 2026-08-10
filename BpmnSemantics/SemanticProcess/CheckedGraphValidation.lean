@@ -11,6 +11,7 @@ namespace BpmnSemantics.SemanticProcess
 private def checkedNodeId : CheckedNode → NodeId
   | .noneStartEvent id
   | .messageStartEvent id _
+  | .timerStartEvent id _
   | .embeddedSubProcess id _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
@@ -71,7 +72,7 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .boundaryErrorEvent id attachedToRef _ _
   | .timerBoundaryEvent id attachedToRef _ _ _ =>
       some { source := attachedToRef, target := id }
-  | .noneStartEvent .. | .messageStartEvent .. | .embeddedSubProcess .. | .callActivity ..
+  | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .userTask .. | .intermediateCatchTimerEvent ..
   | .intermediateCatchMessageEvent .. | .receiveTask .. | .serviceTask ..
   | .parallelGateway .. | .exclusiveGateway ..
@@ -86,6 +87,7 @@ private def checkedStartIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .noneStartEvent id => some id
     | .messageStartEvent id _ => some id
+    | .timerStartEvent id _ => some id
     | _ => none
 
 private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
@@ -97,7 +99,7 @@ private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
 /-- Closed checked-source resumption family for the only profile that selects a cut graph. -/
 def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .userTask .. => true
-  | .noneStartEvent .. | .messageStartEvent .. | .embeddedSubProcess .. | .callActivity ..
+  | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .boundaryErrorEvent .. | .timerBoundaryEvent ..
   | .intermediateCatchTimerEvent .. | .intermediateCatchMessageEvent ..
   | .receiveTask .. | .serviceTask .. | .parallelGateway ..

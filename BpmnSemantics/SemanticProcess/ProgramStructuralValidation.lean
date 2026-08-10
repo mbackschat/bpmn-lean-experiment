@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.GraphValidation
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
 
@@ -47,6 +48,8 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         placeExists program.controlPlaces output
   | .initiateMessage id origin channel outputs =>
       messageInitiationOperationWellFormed places id origin channel outputs
+  | .initiateTimer id origin durationMs outputs =>
+      timerInitiationOperationWellFormed places id origin durationMs outputs
   | .enterScope id origin input childEntry childScopeId =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -261,6 +264,7 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
 private def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
   | .initiateMessage .. => true
+  | .initiateTimer .. => true
   | _ => false
 
 private def inclusiveOperationsPaired (operations : List SemanticOperation) : Bool :=

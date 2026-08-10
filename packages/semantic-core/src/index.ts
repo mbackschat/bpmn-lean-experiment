@@ -7,6 +7,9 @@ export { isMessageChannel, sameMessageChannel } from "./message-channel.js";
 export {
   isWellFormedInitiateMessageOperation,
 } from "./semantic-process-message-start.js";
+export {
+  isWellFormedInitiateTimerOperation,
+} from "./semantic-process-timer-start.js";
 export * from "./semantic-process-admission.js";
 export * from "./inclusive-gateway-admission.js";
 export * from "./event-race-admission.js";

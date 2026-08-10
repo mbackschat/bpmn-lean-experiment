@@ -35,7 +35,7 @@ import {
 } from "./stimulus.js";
 import {
   processStartMatchesProgram,
-} from "./semantic-process-message-start.js";
+} from "./semantic-process-triggered-start.js";
 import {
   compareCanonicalStrings,
   isWellFormedWireString,
@@ -293,6 +293,7 @@ function isProcessStartStimulus(
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
     case StimulusKind.TriggerMessageStart:
+    case StimulusKind.TriggerTimerStart:
       return true;
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:

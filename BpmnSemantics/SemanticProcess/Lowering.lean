@@ -2,6 +2,8 @@ import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import BpmnSemantics.SemanticProcess.LoweringIdentity
+import BpmnSemantics.SemanticProcess.TimerStartLowering
 
 /-! # Canonical checked-process lowering
 
@@ -18,12 +20,6 @@ def CheckedSequenceFlow.toControlPlace (flow : CheckedSequenceFlow) :
     ControlPlace :=
   { id := ⟨"place:" ++ flow.id.value⟩
     origin := { elementId := flow.id } }
-
-def nodeOperationId (id : NodeId) : OperationId :=
-  ⟨"operation:" ++ id.value⟩
-
-def flowControlPlaceId (id : SequenceFlowId) : ControlPlaceId :=
-  ⟨"place:" ++ id.value⟩
 
 private def incomingPlaces (source : CheckedProcess) (nodeId : NodeId) :
     List ControlPlaceId :=
@@ -245,6 +241,13 @@ private def lowerNode (source : CheckedProcess) :
           if isEntryRootScope source scopeId then
             some
               (lowerMessageStartOperation source id channel, scopeId)
+          else none
+      | none => none
+  | .timerStartEvent id durationLiteral =>
+      match checkedNodeScopeId? source id with
+      | some scopeId =>
+          if isEntryRootScope source scopeId then
+            some (lowerTimerStartOperation source id durationLiteral, scopeId)
           else none
       | none => none
   | .embeddedSubProcess id childScopeId => do

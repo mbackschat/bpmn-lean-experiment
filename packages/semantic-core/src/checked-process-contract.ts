@@ -24,6 +24,7 @@ export enum CheckedProcessKind {
 export enum CheckedNodeKind {
   NoneStartEvent = "noneStartEvent",
   MessageStartEvent = "messageStartEvent",
+  TimerStartEvent = "timerStartEvent",
   EmbeddedSubProcess = "embeddedSubProcess",
   CallActivity = "callActivity",
   BoundaryErrorEvent = "boundaryErrorEvent",
@@ -103,6 +104,11 @@ export type CheckedNode =
         MessageChannel,
         { kind: typeof MessageChannelKind.OperationMessage }
       >;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.TimerStartEvent;
+      id: string;
+      durationLiteral: "PT1S";
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.EmbeddedSubProcess;

@@ -38,8 +38,11 @@ import {
 import { deliverMessage } from "./semantic-process-message.js";
 import {
   admitMessageStart,
-  processStartMatchesProgram,
 } from "./semantic-process-message-start.js";
+import {
+  processStartMatchesProgram,
+} from "./semantic-process-triggered-start.js";
+import { admitTimerStart } from "./semantic-process-timer-start.js";
 import {
   completeMonitoredUserTask,
   isMonitoredBoundaryTimerDefinition,
@@ -114,6 +117,12 @@ export function admit(
     }
     case StimulusKind.TriggerMessageStart: {
       const next = admitMessageStart(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
+    }
+    case StimulusKind.TriggerTimerStart: {
+      const next = admitTimerStart(program, state, stimulus);
       return next === null
         ? { outcome: CommandOutcome.Rejected, state }
         : { outcome: CommandOutcome.Committed, state: next };

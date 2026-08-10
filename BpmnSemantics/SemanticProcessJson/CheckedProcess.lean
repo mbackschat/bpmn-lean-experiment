@@ -73,6 +73,16 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.messageStartEvent
           ⟨← stringField json "id"⟩
           (← decodeOperationMessageChannel (← field json "channel")))
+  | "timerStartEvent" =>
+      requireObjectShape json ["durationLiteral", "id", "kind"]
+      let id ← stringField json "id"
+      let durationLiteral ← stringField json "durationLiteral"
+      if id.isEmpty || durationLiteral ≠ "PT1S" then
+        throw "timerStartEvent requires a nonempty id and exact PT1S duration"
+      pure
+        (.timerStartEvent
+          ⟨id⟩
+          durationLiteral)
   | "embeddedSubProcess" =>
       requireObjectShape json ["childScopeId", "id", "kind"]
       pure

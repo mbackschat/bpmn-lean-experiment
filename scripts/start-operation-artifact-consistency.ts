@@ -14,6 +14,7 @@ export function referencedStartControlPlaces(
     case "initiate":
       return [operation.output];
     case "initiateMessage":
+    case "initiateTimer":
       return operation.outputs;
     default:
       return undefined;
@@ -21,12 +22,15 @@ export function referencedStartControlPlaces(
 }
 
 export function verifyCanonicalStartOperationOrder(
-  operation: Extract<SemanticOperation, { kind: "initiateMessage" }>,
+  operation: Extract<
+    SemanticOperation,
+    { kind: "initiateMessage" | "initiateTimer" }
+  >,
   compare: (left: string, right: string) => number,
 ): void {
   if (!isDeepStrictEqual(operation.outputs, [...operation.outputs].sort(compare))) {
     throw new Error(
-      `Message Start operation ${operation.id} outputs must be sorted`,
+      `Triggered Start operation ${operation.id} outputs must be sorted`,
     );
   }
 }
@@ -37,10 +41,16 @@ export function verifyStartOperationBindings(
   compare: (left: string, right: string) => number,
 ): void {
   const starts = checkedProcess.nodes.filter(
-    ({ kind }) => kind === "noneStartEvent" || kind === "messageStartEvent",
+    ({ kind }) =>
+      kind === "noneStartEvent" ||
+      kind === "messageStartEvent" ||
+      kind === "timerStartEvent",
   );
   const initiations = semanticProcess.operations.filter(
-    ({ kind }) => kind === "initiate" || kind === "initiateMessage",
+    ({ kind }) =>
+      kind === "initiate" ||
+      kind === "initiateMessage" ||
+      kind === "initiateTimer",
   );
   for (const start of starts) {
     const matching = initiations.filter(
@@ -76,6 +86,19 @@ export function verifyStartOperationBindings(
         ) {
           throw new Error(
             `Message Start ${start.id} has no exact initiation binding`,
+          );
+        }
+        break;
+      case "timerStartEvent":
+        if (
+          matching.length !== 1 ||
+          initiation?.kind !== "initiateTimer" ||
+          start.durationLiteral !== "PT1S" ||
+          initiation.timer.durationMs !== 1_000 ||
+          !isDeepStrictEqual(initiation.outputs, expectedOutputs)
+        ) {
+          throw new Error(
+            `Timer Start ${start.id} has no exact initiation binding`,
           );
         }
         break;

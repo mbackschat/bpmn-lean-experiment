@@ -23,8 +23,8 @@ def messageInitiationOperationWellFormed (places : List ControlPlace)
     strictlySortedStrings (outputs.map fun output => output.value) &&
     outputs.all fun output => places.any fun place => decide (place.id = output)
 
-/-- Produce one root-owned token on every admitted outgoing place and consume the pending initiation marker. -/
-def initiateMessageState? (state : RuntimeState)
+/-- Produce one root-owned token on every admitted triggered-start output and consume the pending initiation marker. -/
+def initiateTriggeredStartState? (state : RuntimeState)
     (outputs : List ControlPlaceId) : Option RuntimeState := do
   let owner ← rootScopeOccurrence? state
   if state.initiationPending then
@@ -33,6 +33,11 @@ def initiateMessageState? (state : RuntimeState)
         initiationPending := false
         tokens := addTokens state.tokens outputs owner }
   else none
+
+/-- Message Start specializes the shared triggered-start token production without changing its channel-specific admission. -/
+def initiateMessageState? (state : RuntimeState)
+    (outputs : List ControlPlaceId) : Option RuntimeState :=
+  initiateTriggeredStartState? state outputs
 
 /-- Declarative Message Start initiation, separated from the executable dispatcher. -/
 inductive MessageInitiationStep :
@@ -60,7 +65,8 @@ theorem message_initiation_from_fresh_root_produces_each_output
         { state with
           initiationPending := false
           tokens := outputs.map fun output => { placeId := output, owner } } := by
-  simp [initiateMessageState?, root, pending, empty, addTokens, addToken]
+  simp [initiateMessageState?, initiateTriggeredStartState?, root, pending,
+    empty, addTokens, addToken]
 
 /-- One-output Message initiation is the exact singleton specialization of the generic fan-out. -/
 theorem message_initiation_one_output_corollary

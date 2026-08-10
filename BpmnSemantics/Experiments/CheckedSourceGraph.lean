@@ -40,6 +40,7 @@ def nodeArityValid (source : CheckedProcess) :
       (incomingFlows source id).isEmpty &&
         (outgoingFlows source id).length = 1
   | .messageStartEvent .. => false
+  | .timerStartEvent .. => false
   | .noneEndEvent id =>
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).isEmpty

@@ -5,17 +5,10 @@
  * exactly. Runtime initiation creates only the ordinary root scope occurrence and root-owned control
  * tokens. Message routing, subscriptions, and payload handling remain outside the semantic core.
  */
-import {
-  StimulusKind,
-} from "./contract.js";
 import type {
-  ProcessStartStimulus,
   TriggerMessageStartStimulus,
 } from "./contract.js";
-import {
-  isMessageChannel,
-  sameMessageChannel,
-} from "./message-channel.js";
+import { isMessageChannel } from "./message-channel.js";
 import {
   SemanticOperationKind,
   SemanticOriginKind,
@@ -29,13 +22,11 @@ import {
   profileAllowsProgramShape,
 } from "./semantic-process-profile.js";
 import {
-  addToken,
-  ControlStateKind,
-  setActivationCount,
-} from "./semantic-process-state.js";
-import type {
-  RuntimeState,
-} from "./semantic-process-state.js";
+  admitTriggeredStartRoot,
+  applyTriggeredStartOutputs,
+  processStartMatchesProgram,
+} from "./semantic-process-triggered-start.js";
+import type { RuntimeState } from "./semantic-process-state.js";
 import {
   compareCanonicalStrings,
   isWellFormedWireString,
@@ -75,57 +66,16 @@ export function isWellFormedInitiateMessageOperation(
   );
 }
 
-/** Pairs each public start-command kind with exactly one corresponding IL initiation kind. */
-export function processStartMatchesProgram(
-  stimulus: ProcessStartStimulus,
-  program: SemanticProcessProgram,
-): boolean {
-  const initiations = program.operations.filter(
-    ({ kind }) =>
-      kind === SemanticOperationKind.Initiate ||
-      kind === SemanticOperationKind.InitiateMessage,
-  );
-  const initiation = initiations[0];
-  if (
-    stimulus.processId !== program.processId ||
-    initiations.length !== 1 ||
-    initiation === undefined
-  ) {
-    return false;
-  }
-  switch (stimulus.kind) {
-    case StimulusKind.StartProcess:
-      return initiation.kind === SemanticOperationKind.Initiate;
-    case StimulusKind.TriggerMessageStart:
-      return initiation.kind === SemanticOperationKind.InitiateMessage &&
-        stimulus.startEventId === initiation.origin.elementId &&
-        sameMessageChannel(stimulus.channel, initiation.channel);
-    default:
-      return assertNever(stimulus);
-  }
-}
-
 /** Admits a fresh Message-start instance without installing a subscription or payload. */
 export function admitMessageStart(
   program: SemanticProcessProgram,
   state: RuntimeState,
   stimulus: TriggerMessageStartStimulus,
 ): RuntimeState | null {
-  const entryScopes = program.definitionScopes.filter(
-    ({ parentScopeId, originElementId }) =>
-      parentScopeId === null && originElementId === program.processId,
-  );
-  const rootScope = entryScopes[0];
   const initiation = program.operations.find(
     ({ kind }) => kind === SemanticOperationKind.InitiateMessage,
   );
-  const initiationScopes = initiation === undefined
-    ? []
-    : program.operationScopes.filter(
-      ({ operationId }) => operationId === initiation.id,
-    );
   if (
-    state.control.kind !== ControlStateKind.NotStarted ||
     program.identity.semanticProfile !==
       SemanticProfileId.MessageStart ||
     !profileAllowsProgramShape(
@@ -133,37 +83,17 @@ export function admitMessageStart(
       program.operations,
       program.definitionScopes.length,
     ) ||
-    entryScopes.length !== 1 ||
-    rootScope === undefined ||
-    initiationScopes.length !== 1 ||
-    initiationScopes[0]?.scopeId !== rootScope.id ||
+    initiation === undefined ||
     !processStartMatchesProgram(stimulus, program)
   ) {
     return null;
   }
-  const rootOccurrence = {
-    processInstanceId: stimulus.instanceId,
-    definitionScopeId: rootScope.id,
-    activation: 1,
-  };
-  return {
-    ...state,
-    control: {
-      kind: ControlStateKind.Running,
-      instanceId: stimulus.instanceId,
-    },
-    initiationPending: true,
-    scopeOccurrences: [{ id: rootOccurrence, parent: null }],
-    scopeActivations: setActivationCount(
-      state.scopeActivations,
-      rootScope.id,
-      1,
-    ),
-    variables: {
-      process: { bindings: [] },
-      activities: [],
-    },
-  };
+  return admitTriggeredStartRoot(
+    program,
+    state,
+    stimulus.instanceId,
+    initiation.id,
+  );
 }
 
 /** Produces every canonical outgoing token under the already-created root owner exactly once. */
@@ -171,20 +101,7 @@ export function applyMessageInitiation(
   operation: InitiateMessageOperation,
   state: RuntimeState,
 ): RuntimeState | null {
-  const rootOwner = state.scopeOccurrences.find(
-    ({ parent }) => parent === null,
-  )?.id;
-  if (!state.initiationPending || rootOwner === undefined) {
-    return null;
-  }
-  return {
-    ...state,
-    initiationPending: false,
-    controlTokens: operation.outputs.reduce(
-      (tokens, output) => addToken(tokens, output, rootOwner),
-      state.controlTokens,
-    ),
-  };
+  return applyTriggeredStartOutputs(operation.outputs, state);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -205,8 +122,4 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" &&
     value.length > 0 &&
     isWellFormedWireString(value);
-}
-
-function assertNever(value: never): never {
-  throw new TypeError(`Unsupported start variant: ${JSON.stringify(value)}`);
 }

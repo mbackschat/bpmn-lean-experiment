@@ -104,6 +104,7 @@ theorem saturation_certified_cut_excludes_uncut_cycle
 private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiate ..
   | .initiateMessage ..
+  | .initiateTimer ..
   | .returnProcess ..
   | .completeScope .. => []
   | .enterScope _ _ input _ _
@@ -156,6 +157,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .reachNoneEnd .. => []
   | .completeScope _ _ _ parentOutput => parentOutput.toList
   | .initiateMessage _ _ _ outputs => outputs
+  | .initiateTimer _ _ _ outputs => outputs
 
 private def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
@@ -288,7 +290,7 @@ missing case. -/
 private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .enterScope _ _ _ _ childScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
-  | .initiate .. | .initiateMessage .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
+  | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitEffect .. | .duplicate ..
@@ -354,7 +356,7 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
 /-- Closed Semantic Process resumption family, decided independently from the checked-source cut. -/
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitUserTask .. => true
-  | .initiate .. | .initiateMessage .. | .enterScope .. | .enterBoundedScope ..
+  | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
   | .invokeProcess .. | .returnProcess .. | .awaitTimer ..
   | .awaitMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..
   | .awaitMonitoredUserTask .. | .awaitEffect .. | .duplicate ..
@@ -410,6 +412,7 @@ private def initiateIds (operations : List SemanticOperation) :
   operations.filterMap fun
     | .initiate id _ _ => some id
     | .initiateMessage id _ _ _ => some id
+    | .initiateTimer id _ _ _ => some id
     | _ => none
 
 private def rootScope? (program : Program) : Option DefinitionScopeId :=

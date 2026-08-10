@@ -174,6 +174,7 @@ export function requireCompletionStimuli(
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
+      case StimulusKind.TriggerTimerStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -196,6 +197,7 @@ export function requireMessageDeliveryStimuli(
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
+      case StimulusKind.TriggerTimerStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -236,6 +238,7 @@ export function requireOptionalTimerStimulus(
         break;
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
+      case StimulusKind.TriggerTimerStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -261,6 +264,7 @@ export function requireOptionalEffectExecution(
         return [];
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
+      case StimulusKind.TriggerTimerStart:
         throw new TypeError(
           "Only the first scenario stimulus may start the Process",
         );
@@ -350,7 +354,8 @@ export function requireStartStimulus(
     start === undefined ||
     (
       start.kind !== StimulusKind.StartProcess &&
-      start.kind !== StimulusKind.TriggerMessageStart
+      start.kind !== StimulusKind.TriggerMessageStart &&
+      start.kind !== StimulusKind.TriggerTimerStart
     )
   ) {
     throw new TypeError(

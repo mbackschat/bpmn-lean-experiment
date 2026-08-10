@@ -77,6 +77,16 @@ test("canonically encodes every typed stimulus field", () => {
   );
   assert.equal(
     canonicalStimulusEncoding({
+      kind: StimulusKind.TriggerTimerStart,
+      commandId: "trigger-timer-start",
+      processId: "Process_1",
+      instanceId: "Instance_1",
+      startEventId: "TimerStart_1",
+    }),
+    '["triggerTimerStart","trigger-timer-start","Process_1","Instance_1","TimerStart_1"]',
+  );
+  assert.equal(
+    canonicalStimulusEncoding({
       kind: StimulusKind.DeliverMessage,
       commandId: "deliver-message",
       subscriptionId: {
@@ -143,6 +153,25 @@ test("content-binds every Message Start target field", () => {
       },
     },
     { ...exact, channel: { ...exact.channel, messageId: "OtherMessage" } },
+  ];
+  for (const mutation of mutations) {
+    assert.notEqual(contentBoundUpdateId(exact), contentBoundUpdateId(mutation));
+  }
+});
+
+test("content-binds every Timer Start target field", () => {
+  const exact = {
+    kind: StimulusKind.TriggerTimerStart,
+    commandId: "trigger-timer-start",
+    processId: "Process_1",
+    instanceId: "Instance_1",
+    startEventId: "TimerStart_1",
+  } as const satisfies Stimulus;
+  const mutations: ReadonlyArray<Stimulus> = [
+    { ...exact, commandId: "other-command" },
+    { ...exact, processId: "OtherProcess" },
+    { ...exact, instanceId: "OtherInstance" },
+    { ...exact, startEventId: "OtherStart" },
   ];
   for (const mutation of mutations) {
     assert.notEqual(contentBoundUpdateId(exact), contentBoundUpdateId(mutation));

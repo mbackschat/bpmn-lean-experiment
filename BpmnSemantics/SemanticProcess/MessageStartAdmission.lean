@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.TimerStartAdmission
 
 /-! # Message Start Event external admission
 
@@ -17,7 +18,7 @@ def messageStartProfileId : ProfileId :=
 def ordinaryStartMatchesProgram (program : Program) : Bool :=
   match program.operations.filter fun operation =>
       match operation with
-      | .initiate .. | .initiateMessage .. => true
+      | .initiate .. | .initiateMessage .. | .initiateTimer .. => true
       | _ => false with
   | [.initiate ..] => true
   | _ => false
@@ -42,6 +43,8 @@ def startStimulusMatchesProgram (program : Program) : Stimulus → Bool
   | .startProcess .. => ordinaryStartMatchesProgram program
   | .triggerMessageStart _ processId _ startEventId channel =>
       messageStartTargetMatchesProgram program processId startEventId channel
+  | .triggerTimerStart _ processId _ startEventId =>
+      timerStartTargetMatchesProgram program processId startEventId
   | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
   | .completeEffect .. => false
 

@@ -14,7 +14,7 @@ const channel = {
   messageId: "Message_CreateOrder",
 } as const;
 
-test("admits only exact Message Start checked, IL, and stimulus wire shapes", async () => {
+test("admits only exact triggered Start checked, IL, and stimulus wire shapes", async () => {
   const [checkedSchema, programSchema, scenarioSchema] = await Promise.all([
     readSchema("checked-process.schema.json"),
     readSchema("semantic-process.schema.json"),
@@ -77,6 +77,58 @@ test("admits only exact Message Start checked, IL, and stimulus wire shapes", as
         startEventId: "Start_Message",
       },
     },
+    {
+      validate: checkedNode,
+      exact: {
+        kind: "timerStartEvent",
+        id: "Start_Timer",
+        durationLiteral: "PT1S",
+      },
+      missing: {
+        kind: "timerStartEvent",
+        id: "Start_Timer",
+      },
+    },
+    {
+      validate: operation,
+      exact: {
+        kind: "initiateTimer",
+        id: "operation:Start_Timer",
+        origin: {
+          kind: "bpmnElement",
+          elementId: "Start_Timer",
+        },
+        timer: {
+          durationMs: 1000,
+        },
+        outputs: ["place:Flow_Timer_User"],
+      },
+      missing: {
+        kind: "initiateTimer",
+        id: "operation:Start_Timer",
+        origin: {
+          kind: "bpmnElement",
+          elementId: "Start_Timer",
+        },
+        outputs: ["place:Flow_Timer_User"],
+      },
+    },
+    {
+      validate: stimulus,
+      exact: {
+        kind: "triggerTimerStart",
+        commandId: "command-timer-start",
+        processId: "Process_TimerStart",
+        instanceId: "instance-timer-start",
+        startEventId: "Start_Timer",
+      },
+      missing: {
+        kind: "triggerTimerStart",
+        commandId: "command-timer-start",
+        processId: "Process_TimerStart",
+        instanceId: "instance-timer-start",
+      },
+    },
   ] as const;
 
   for (const { validate, exact, missing } of values) {
@@ -86,7 +138,7 @@ test("admits only exact Message Start checked, IL, and stimulus wire shapes", as
   }
 });
 
-test("requires either start variant first and forbids every later start", async () => {
+test("requires one exact Process-start variant first and forbids every later start", async () => {
   const scenarioSchema = await readSchema("scenario.schema.json");
   const validate = new Ajv2020({ strict: true, strictTuples: false }).compile(
     scenarioSchema,
@@ -131,6 +183,24 @@ test("requires either start variant first and forbids every later start", async 
 
   assert.equal(validate(scenario), true, JSON.stringify(validate.errors));
   assert.equal(
+    validate({
+      ...scenario,
+      id: "timer-start-event",
+      profile: "bpmn-2.0.2-timer-start-event-draft",
+      stimuli: [
+        {
+          kind: "triggerTimerStart",
+          commandId: "command-timer-start",
+          processId: "Process_TimerStart",
+          instanceId: "instance-timer-start",
+          startEventId: "Start_Timer",
+        },
+      ],
+    }),
+    true,
+    JSON.stringify(validate.errors),
+  );
+  assert.equal(
     validate({ ...scenario, stimuli: [start, start] }),
     false,
   );
@@ -161,6 +231,7 @@ function compileStimulus(schema: Record<string, unknown>) {
     oneOf: [
       { $ref: "#/$defs/startProcess" },
       { $ref: "#/$defs/triggerMessageStart" },
+      { $ref: "#/$defs/triggerTimerStart" },
     ],
   });
 }

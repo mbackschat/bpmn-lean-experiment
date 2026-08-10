@@ -20,6 +20,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
     case StimulusKind.TriggerMessageStart:
+    case StimulusKind.TriggerTimerStart:
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
     case StimulusKind.FireTimer:
@@ -48,6 +49,14 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.instanceId === right.instanceId &&
         left.startEventId === right.startEventId &&
         sameMessageChannel(left.channel, right.channel)
+      );
+    case StimulusKind.TriggerTimerStart:
+      return (
+        right.kind === StimulusKind.TriggerTimerStart &&
+        left.commandId === right.commandId &&
+        left.processId === right.processId &&
+        left.instanceId === right.instanceId &&
+        left.startEventId === right.startEventId
       );
     case StimulusKind.CompleteUserTaskInstance:
       return (
@@ -126,6 +135,20 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isNonEmptyString(value.startEventId) &&
         isMessageChannel(value.channel) &&
         value.channel.kind === MessageChannelKind.OperationMessage
+      );
+    case StimulusKind.TriggerTimerStart:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "processId",
+          "instanceId",
+          "startEventId",
+        ]) &&
+        isNonEmptyString(value.commandId) &&
+        isNonEmptyString(value.processId) &&
+        isNonEmptyString(value.instanceId) &&
+        isNonEmptyString(value.startEventId)
       );
     case StimulusKind.CompleteUserTaskInstance:
       return (

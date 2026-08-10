@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_TimerStart"
+  targetNamespace="https://bpmn-lean.local/tests/timer-start">
+  <bpmn:process id="Process_TimerStart" name="Timer start then user task" isExecutable="true">
+    <bpmn:startEvent id="TimerStart_PT1S">
+      <bpmn:outgoing>Flow_TimerStartToTask</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_AfterTimer" name="Review">
+      <bpmn:incoming>Flow_TimerStartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_AfterTimer">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_TimerStartToTask" sourceRef="TimerStart_PT1S" targetRef="UserTask_AfterTimer"/>
+    <bpmn:sequenceFlow id="Flow_TaskToEnd" sourceRef="UserTask_AfterTimer" targetRef="EndEvent_AfterTimer"/>
+  </bpmn:process>
+</bpmn:definitions>

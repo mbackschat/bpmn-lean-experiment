@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11; implementation is authorized and not yet complete.** The independent cold proposal review and its correction audit are closed. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
+**Owner-approved on 2026-08-11; the first green semantic checkpoint is implemented and pending independent cold review.** The checkpoint contains exact source admission, checked and IL variants, strict wires, proved Lean and independent TypeScript execution, bounded closure, content-bound command identity, and passive Temporal host admission. Product profile registration, answer-free scenario and differential evidence, runnable example, live one-action Temporal Schedule evidence, and Product 2 scheduling remain blocked until checkpoint approval. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
 
 ## Independent cold-review receipt
 
@@ -316,71 +316,81 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 
 | Owner | Headroom to 600 nonblank lines | Consequence |
 |---|---:|---|
-| [semantic stimulus contract](../../packages/semantic-core/src/contract.ts) | 355 | Add one closed Timer-start variant without changing existing starts. |
-| [semantic-core public exports](../../packages/semantic-core/src/index.ts) | 562 | Export only the new closed contract and cohesive admission helper needed by source lowering. |
-| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 376 | Add exact Timer Start identity and duration. |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 219 | Add one timer-bound initiation operation. |
-| [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 320 | Delegate one exhaustive arm to a cohesive Timer-start owner. |
-| [Message Start semantic owner](../../packages/semantic-core/src/semantic-process-message-start.ts) | 396 | Extract only genuinely common root-token mechanics while preserving channel-specific admission and cross-kind refusal. |
-| [Semantic Process admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 257 | Keep exact cross-kind start pairing fail closed. |
-| [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 145 | Validate duration and canonical nonempty outputs; extract first if the fresh measurement would cross 600. |
-| [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 112 | Recognize the new root operation under existing finite graph laws; extract first if needed. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 60 | Split existing catalog/capability responsibility before semantic growth if the fresh measurement cannot remain at or below 600. |
-| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 539 | Assign the existing whole-graph acyclic policy. |
-| [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 243 | Add one delegated internal operation arm. |
-| [stimulus identity](../../packages/semantic-core/src/stimulus.ts) | 249 | Validate and compare every resolved trigger field. |
+| [semantic stimulus contract](../../packages/semantic-core/src/contract.ts) | 345 | Add one closed Timer-start variant without changing existing starts. |
+| [semantic-core public exports](../../packages/semantic-core/src/index.ts) | 559 | Export only the new closed contract and cohesive admission helper needed by source lowering. |
+| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 370 | Add exact Timer Start identity and duration. |
+| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 210 | Add one timer-bound initiation operation. |
+| [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 311 | Delegate one exhaustive arm to a cohesive Timer-start owner. |
+| [Message Start semantic owner](../../packages/semantic-core/src/semantic-process-message-start.ts) | 481 | Preserve channel-specific admission and cross-kind refusal after extracting shared root-token mechanics. |
+| [triggered-start mechanics](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 484 | Own the root-token mechanics shared by Message and Timer starts. |
+| [Timer Start semantic owner](../../packages/semantic-core/src/semantic-process-timer-start.ts) | 485 | Own exact Timer admission and execution. |
+| [Semantic Process admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 256 | Keep exact cross-kind start pairing fail closed. |
+| [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 140 | Validate duration and canonical nonempty outputs. |
+| [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 104 | Recognize the new root operation under existing finite graph laws. |
+| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 31 | Keep the checkpoint capability separate from the registered profile catalog. |
+| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 535 | Assign the existing whole-graph acyclic policy. |
+| [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 240 | Add one delegated internal operation arm. |
+| [stimulus identity](../../packages/semantic-core/src/stimulus.ts) | 226 | Validate and compare every resolved trigger field. |
 | [scenario admission](../../packages/semantic-core/src/scenario.ts) | 203 | Admit Timer Start only as the first stimulus. |
 | [root-definition selection](../../packages/bpmn-source/src/root-definition-selection.ts) | 341 | Select the exact Timer Start root without changing other dispatch paths. |
-| [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 335 | Register one Timer Start projection shape. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 221 | Add Timer Start while retaining its FormalExpression rule; share at most the exact scalar body predicate. |
-| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 284 | Recognize Timer Start as a root `0 -> 1` node. |
-| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 66 | Extract Timer Start lowering rather than adding another independent responsibility to this near-limit owner. |
-| [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 5 | Add only the exhaustive `initiateTimer` delegation while keeping this owner at or below 600. |
-| [start-operation artifact consistency](../../scripts/start-operation-artifact-consistency.ts) | 517 | Extend the existing cohesive None/Message Start binding owner with Timer origin/duration/output consistency. |
-| [contract artifact projection](../../scripts/contract-artifacts.ts) | 17 | Add only the exhaustive Timer-start classifier arm; any new projection responsibility requires extraction first. |
+| [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 328 | Register one Timer Start projection shape. |
+| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 220 | Add Timer Start while retaining its FormalExpression rule. |
+| [Timer Start source](../../packages/bpmn-source/src/timer-start-event-source.ts) | 540 | Own the caller-specific exact source projection. |
+| [singleton containment admission](../../packages/bpmn-source/src/singleton-containment-admission.ts) | 506 | Reject repeated singleton XML children before moddle can overwrite them. |
+| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 282 | Recognize Timer Start as a root `0 -> 1` node. |
+| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 61 | Delegate Timer Start lowering to its cohesive owner. |
+| [Timer Start lowering](../../packages/bpmn-source/src/timer-start-event-lowering.ts) | 553 | Derive canonical origin and outputs from validated endpoints. |
+| [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 4 | Add only the exhaustive `initiateTimer` delegation while keeping this owner at or below 600. |
+| [start-operation artifact consistency](../../scripts/start-operation-artifact-consistency.ts) | 494 | Extend the existing cohesive None/Message Start binding owner with Timer origin/duration/output consistency. |
+| [contract artifact projection](../../scripts/contract-artifacts.ts) | 16 | Add only the exhaustive Timer-start classifier arm; any new projection responsibility requires extraction first. |
 | [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 401 | Register the standards-only scenario with no CIB target. |
 | [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 32 | Add a capsule-owned case module and only register it from this near-limit catalog. |
 | [Temporal protocol contracts](../../packages/temporal-adapter/protocol/src/contracts.ts) | 418 | Widen the exact Workflow-start input union. |
-| [Temporal command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 447 | Include every Timer-start stimulus field. |
-| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 399 | Classify `initiateTimer` as passive internal initiation. |
+| [Temporal command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 439 | Include every Timer-start stimulus field. |
+| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 398 | Classify `initiateTimer` as passive internal initiation. |
 | [Temporal process client](../../packages/temporal-adapter/client/src/process-client.ts) | 135 | Preserve pre-start admission and exact Workflow identity; extract if the fresh measurement would cross 600. |
 | [Workflow implementation](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | Widen only the initial input contract; any behavior requires extraction first. |
 | [Workflow export](../../packages/temporal-adapter/workflow/src/workflows.ts) | 561 | Widen only the exact start-input type. |
 | [testkit scenario admission](../../packages/temporal-adapter/testkit/src/scenario-admission.ts) | 580 | Widen the closed start union. |
 | [testkit Workflow start](../../packages/temporal-adapter/testkit/src/runner-workflow-start.ts) | 556 | Pass the admitted start variant to the existing Workflow start path. |
-| [scenario sequencing](../../packages/temporal-adapter/testkit/src/scenario-stimulus-sequencing.ts) | 558 | Treat Timer Start as first-only. |
-| [runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 184 | Construct the registered trigger without Product 2 scheduling. |
+| [scenario sequencing](../../packages/temporal-adapter/testkit/src/scenario-stimulus-sequencing.ts) | 557 | Treat Timer Start as first-only. |
+| [runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 179 | Recognize the checkpoint trigger without Product 2 scheduling. |
 | [runnable MVP config](../../packages/temporal-adapter/runner/cli/runnable-mvp-config.ts) | 389 | Add a third closed start config, not optional mode fields. |
 | [runnable start constructor](../../packages/temporal-adapter/runner/cli/runnable-mvp-start.ts) | 571 | Map the exact config exhaustively to the resolved stimulus. |
-| [Lean scenario wire](../../BpmnSemantics/Scenario.lean) | 391 | Add the exact Timer-start stimulus. |
-| [Lean semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 138 | Add checked and IL variants without crossing the owner limit. |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 293 | Validate exact Timer Start shape. |
-| [Lean checked graph](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 472 | Add root arity and identity. |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 289 | Own exact node/operation/output cardinality. |
-| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 302 | Validate generic nonempty outputs and root ownership. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 177 | Add outputs, scope ownership, and reachability. |
-| [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean) | 286 | Delegate one exhaustive arm to a cohesive Timer-start relation. |
-| [Lean Message Start admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 550 | Extract or specialize shared start-family pairing without weakening exact Message-channel admission. |
-| [Lean Message Start semantics](../../BpmnSemantics/SemanticProcess/MessageStart.lean) | 487 | Share only root-occurrence and output-token mechanics while retaining the complete Message-specific relation. |
-| [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 52 | Add no proofs here; extract or add only exhaustive dispatch/imports. |
-| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 83 | Put Timer Start lowering in a new cohesive owner if fresh growth approaches 600. |
-| [Lean scenario admission](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 290 | Enforce exact first-stimulus/program pairing. |
-| [Lean checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 370 | Decode the exact closed node. |
-| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 172 | Decode the exact closed operation. |
-| [Lean scenario decoder](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 494 | Decode the exact closed first stimulus. |
+| [Lean scenario wire](../../BpmnSemantics/Scenario.lean) | 386 | Add the exact Timer-start stimulus. |
+| [Lean semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 130 | Add checked and IL variants without crossing the owner limit. |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 288 | Validate exact Timer Start shape. |
+| [Lean checked graph](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 470 | Add root arity and identity. |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 273 | Own exact node/operation/output cardinality. |
+| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 298 | Validate generic nonempty outputs and root ownership. |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 174 | Add outputs, scope ownership, and reachability. |
+| [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean) | 278 | Delegate one exhaustive arm to a cohesive Timer-start relation. |
+| [Lean Message Start admission](../../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) | 547 | Preserve exact Message-channel admission after sharing pairwise start-kind checks. |
+| [Lean Message Start semantics](../../BpmnSemantics/SemanticProcess/MessageStart.lean) | 482 | Share only root-occurrence and output-token mechanics while retaining the complete Message-specific relation. |
+| [Lean Timer Start semantics](../../BpmnSemantics/SemanticProcess/TimerStart.lean) | 553 | Own the declarative relation, evaluator, and soundness result. |
+| [Lean Timer Start admission](../../BpmnSemantics/SemanticProcess/TimerStartAdmission.lean) | 567 | Own exact external trigger admission. |
+| [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 48 | Add only exhaustive dispatch and imports. |
+| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 78 | Delegate Timer Start lowering. |
+| [Lean lowering identity](../../BpmnSemantics/SemanticProcess/LoweringIdentity.lean) | 589 | Share canonical endpoint-derived identities. |
+| [Lean Timer Start lowering](../../BpmnSemantics/SemanticProcess/TimerStartLowering.lean) | 576 | Own exact endpoint lowering and preservation. |
+| [Lean scenario admission](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 288 | Enforce exact first-stimulus/program pairing. |
+| [Lean checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 360 | Decode the exact closed node. |
+| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 156 | Decode the exact closed operation. |
+| [Lean scenario decoder](../../BpmnSemantics/SemanticProcessJson/Scenario.lean) | 485 | Decode the exact closed first stimulus. |
 | [Lean JSON support](../../BpmnSemantics/SemanticProcess/JsonSupport.lean) | 428 | Reuse strict nonempty identity and safe scalar decoding without creating timer-specific string rules. |
-| [Lean JSON executable](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 292 | Encode and discover the third closed start family. |
-| [Lean JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 469 | Lock the strict checked, program, and scenario wire shapes. |
-| [Lean Semantic Process umbrella](../../BpmnSemantics/SemanticProcess.lean) | 576 | Import the independently buildable Timer Start mechanism only. |
-| [Lean conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 585 | Import the new conformance evidence only. |
-| [Lean library umbrella](../../BpmnSemantics.lean) | 575 | Import the new public conformance module only. |
-| [checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 433 | Reject Timer Start explicitly in exhaustive decomposition. |
-| [checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 294 | Reject the new node, operation, and stimulus in the frozen evaluator. |
-| [checked-source graph experiment](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) | 516 | Reject Timer Start in frozen root and arity predicates. |
-| [checked-source chain experiment](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) | 407 | Keep supported-chain classification exhaustive and fail closed. |
-| [checked-source coverage experiment](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) | 351 | Keep coverage proofs exhaustive without claiming Timer Start support. |
-| [checked-source scenario experiment](../../BpmnSemantics/Experiments/CheckedSourceScenario.lean) | 448 | Classify command identity and reject frozen experiment execution. |
-| [checked-source frontier experiment](../../BpmnSemantics/Experiments/CheckedSourceFrontier.lean) | 332 | Add an explicit fail-closed arm if its exhaustive frontier consumer widens. |
+| [Lean JSON executable](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 284 | Encode and discover the third closed start family. |
+| [Lean JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 452 | Lock the strict checked, program, and scenario wire shapes. |
+| [Lean Timer Start conformance](../../BpmnSemantics/TimerStartConformance.lean) | 200 | Prove the selected admission, lowering, execution, closure, observation, and refusal account. |
+| [Lean Semantic Process umbrella](../../BpmnSemantics/SemanticProcess.lean) | 574 | Import the independently buildable Timer Start mechanism only. |
+| [Lean conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 584 | Import the new conformance evidence only. |
+| [Lean library umbrella](../../BpmnSemantics.lean) | 574 | Import the new public conformance module only. |
+| [checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 431 | Reject Timer Start explicitly in exhaustive decomposition. |
+| [checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 290 | Reject the new node, operation, and stimulus in the frozen evaluator. |
+| [checked-source graph experiment](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) | 515 | Reject Timer Start in frozen root and arity predicates. |
+| [checked-source chain experiment](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) | 406 | Keep supported-chain classification exhaustive and fail closed. |
+| [checked-source coverage experiment](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) | 350 | Keep coverage proofs exhaustive without claiming Timer Start support. |
+| [checked-source scenario experiment](../../BpmnSemantics/Experiments/CheckedSourceScenario.lean) | 445 | Classify command identity and reject frozen experiment execution. |
+| [checked-source frontier experiment](../../BpmnSemantics/Experiments/CheckedSourceFrontier.lean) | 331 | Add an explicit fail-closed arm if its exhaustive frontier consumer widens. |
 
 Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json), [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json), and [scenario schema](../../contracts/schemas/scenario.schema.json) change atomically but are not hand-written source headroom owners.
 
@@ -388,12 +398,17 @@ Existing focused test owners also change where their inventories widen:
 
 | Test owner | Headroom to 600 nonblank lines | Obligation |
 |---|---:|---|
-| [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 156 | Register the exact projector in the closed consumer matrix. |
-| [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 386 | Lock `0 -> 1`, root placement, reachability, and cross-kind start closure. |
+| [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 155 | Register the exact projector in the closed consumer matrix. |
+| [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 337 | Lock `0 -> 1`, root placement, reachability, and cross-kind start closure. |
+| [Timer Start source](../../packages/bpmn-source/test/timer-start-event-source.test.ts) | 304 | Lock exact projection and the complete excluded source matrix. |
+| [singleton containment](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | 513 | Lock repeated singleton rejection across all affected Timer and condition readers. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 125 | Reject origin, duration, and output drift. |
-| [Message Start schema contract](../../scripts/message-start-contract-schema.test.ts) | 445 | Widen the existing closed Process-start union assertion from two exact variants to three. |
-| [command identity](../../packages/temporal-adapter/testkit/test/command-identity.test.ts) | 362 | Lock every trigger field. |
-| [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 63 | Add only the exact Timer-start passive-host cases or extract a cohesive start-family characterization before crossing 600. |
+| [Message Start schema contract](../../scripts/message-start-contract-schema.test.ts) | 374 | Widen the existing closed Process-start union assertion from two exact variants to three. |
+| [start-operation artifact consistency](../../scripts/start-operation-artifact-consistency.test.ts) | 413 | Reject Timer origin, duration, output, and canonical-order drift. |
+| [Timer Start semantic core](../../packages/semantic-core/test/timer-start-event.test.ts) | 73 | Lock the selected runtime and admission account. |
+| [Timer Start immutability](../../packages/semantic-core/type-test/timer-start-event.type-test.ts) | 548 | Lock deep compile-time immutability. |
+| [command identity](../../packages/temporal-adapter/testkit/test/command-identity.test.ts) | 334 | Lock every trigger field. |
+| [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 29 | Lock exact Timer-start passive-host admission. |
 | [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 451 | Construct the correct start arm for every registered example. |
 | [runnable MVP](../../packages/temporal-adapter/testkit/test/runnable-mvp.test.ts) | 283 | Lock strict Timer-start config while preserving old branches. |
 | [external runtime](../../packages/temporal-adapter/testkit/test/external-temporal-runtime.test.ts) | 462 | Keep its existing fixture explicitly manual after the config union widens. |

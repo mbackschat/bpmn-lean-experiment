@@ -34,6 +34,9 @@ import {
 import {
   isWellFormedInitiateMessageOperation,
 } from "./semantic-process-message-start.js";
+import {
+  isWellFormedInitiateTimerOperation,
+} from "./semantic-process-timer-start.js";
 
 /** Validates one operation independently of profile topology and graph reachability. */
 export function isWellFormedSemanticOperation(
@@ -60,6 +63,8 @@ export function isWellFormedSemanticOperation(
       );
     case SemanticOperationKind.InitiateMessage:
       return isWellFormedInitiateMessageOperation(value, placeIds);
+    case SemanticOperationKind.InitiateTimer:
+      return isWellFormedInitiateTimerOperation(value, placeIds);
     case SemanticOperationKind.EnterScope:
       return (
         hasOnlyKeys(value, [

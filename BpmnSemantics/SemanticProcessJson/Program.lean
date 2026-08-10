@@ -223,6 +223,22 @@ private def decodeOperation (json : Json) :
         (.initiateMessage id origin
           (← decodeOperationMessageChannel (← field json "channel"))
           (← decodePlaceIdArray (← field json "outputs")))
+  | "initiateTimer" =>
+      requireObjectShape json
+        ["id", "kind", "origin", "outputs", "timer"]
+      let timer ← field json "timer"
+      requireObjectShape timer ["durationMs"]
+      let durationMs ← decodeSafeNat (← field timer "durationMs")
+      let outputs ← decodePlaceIdArray (← field json "outputs")
+      if id.value.isEmpty || origin.elementId.value.isEmpty ||
+          durationMs ≠ 1000 || outputs.isEmpty ||
+          outputs.any (fun output => output.value.isEmpty) ||
+          outputs.eraseDups.length ≠ outputs.length then
+        throw "initiateTimer requires exact identity, PT1S normalization, and distinct outputs"
+      pure
+        (.initiateTimer id origin
+          durationMs
+          outputs)
   | "enterScope" =>
       requireObjectShape json
         ["childEntry", "childScopeId", "id", "input", "kind", "origin"]

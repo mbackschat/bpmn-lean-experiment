@@ -70,6 +70,7 @@ def observeStableState (source : CheckedProcess)
 def commandId : Stimulus → SemanticId
   | .startProcess id _ _ _
   | .triggerMessageStart id _ _ _ _
+  | .triggerTimerStart id _ _ _
   | .completeUserTaskInstance id _ _
   | .fireTimer id _ _
   | .deliverMessage id _ _
@@ -141,10 +142,12 @@ def supportsScenario (source : CheckedProcess) (scenario : Scenario) : Bool :=
   (!source.nodes.any fun node =>
       match node with
       | .messageStartEvent .. => true
+      | .timerStartEvent .. => true
       | _ => false) &&
     (!scenario.stimuli.any fun stimulus =>
       match stimulus with
       | .triggerMessageStart .. => true
+      | .triggerTimerStart .. => true
       | _ => false) &&
     decide (
     scenario.kind = .scenario &&

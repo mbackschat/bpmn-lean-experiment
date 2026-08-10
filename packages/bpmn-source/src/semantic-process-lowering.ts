@@ -27,6 +27,7 @@ import {
   lowerCalledProcessReturn,
 } from "./call-activity-lowering.js";
 import { lowerMessageStartEvent } from "./message-start-event-lowering.js";
+import { lowerTimerStartEvent } from "./timer-start-event-lowering.js";
 import {
   lowerConditionalCandidate,
   lowerInclusiveCandidate,
@@ -109,6 +110,10 @@ function lowerNode(
     [{ operation, scopeId }];
 
   switch (node.kind) {
+    case CheckedNodeKind.TimerStartEvent:
+      return isEntryRootScope(source, scopeId)
+        ? scoped(lowerTimerStartEvent(node, source.sequenceFlows))
+        : [];
     case CheckedNodeKind.MessageStartEvent:
       return isEntryRootScope(source, scopeId)
         ? scoped(lowerMessageStartEvent(node, source.sequenceFlows))

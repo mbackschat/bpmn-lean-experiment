@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
@@ -104,6 +105,10 @@ inductive OperationStep (program : Program) :
       (transition : MessageInitiationStep before outputs after) :
       OperationStep program
         (.initiateMessage id origin channel outputs) before after
+  | initiateTimer (id origin durationMs outputs) (before after : RuntimeState)
+      (transition : TimerInitiationStep before outputs after) :
+      OperationStep program
+        (.initiateTimer id origin durationMs outputs) before after
   | enterScope (id origin input childEntry childScopeId)
       (before after : RuntimeState)
       (transition :
@@ -214,6 +219,7 @@ def fire? (program : Program) (operation : SemanticOperation)
   match operation with
   | .initiate _ _ output => initiateState? state output
   | .initiateMessage _ _ _ outputs => initiateMessageState? state outputs
+  | .initiateTimer _ _ _ outputs => initiateTimerState? state outputs
   | .enterScope _ _ input childEntry childScopeId =>
       enterScopeState? state input childEntry childScopeId
   | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
@@ -263,6 +269,8 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     | exact .initiate _ _ _ before after result
     | exact .initiateMessage _ _ _ _ before after
         (initiateMessageState_sound before after _ result)
+    | exact .initiateTimer _ _ _ _ before after
+        (initiateTimerState_sound before after _ result)
     | exact .enterScope _ _ _ _ _ before after result
     | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
         (armBoundedScopeState_sound before after _ _ _ _

@@ -361,6 +361,48 @@
         }
       }
     },
+    "initiateTimer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "timer",
+        "outputs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "initiateTimer"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "timer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "durationMs"
+          ],
+          "properties": {
+            "durationMs": {
+              "const": 1000
+            }
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonemptyString"
+          }
+        }
+      }
+    },
     "enterScope": {
       "type": "object",
       "additionalProperties": false,
@@ -1352,6 +1394,9 @@
         },
         {
           "$ref": "#/$defs/initiateMessage"
+        },
+        {
+          "$ref": "#/$defs/initiateTimer"
         },
         {
           "$ref": "#/$defs/enterScope"

@@ -124,6 +124,11 @@ inductive Stimulus where
       (instanceId : SemanticId)
       (startEventId : SemanticId)
       (channel : MessageChannel)
+  | triggerTimerStart
+      (commandId : SemanticId)
+      (processId : SemanticId)
+      (instanceId : SemanticId)
+      (startEventId : SemanticId)
   | completeUserTaskInstance
       (commandId : SemanticId)
       (taskId : UserTaskInstanceId)

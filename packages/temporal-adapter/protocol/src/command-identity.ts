@@ -41,6 +41,14 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         stimulus.startEventId,
         messageChannelTuple(stimulus.channel),
       ]);
+    case StimulusKind.TriggerTimerStart:
+      return canonicalTypedTupleEncoding([
+        stimulus.kind,
+        stimulus.commandId,
+        stimulus.processId,
+        stimulus.instanceId,
+        stimulus.startEventId,
+      ]);
     case StimulusKind.CompleteUserTaskInstance:
       return canonicalTypedTupleEncoding([
         stimulus.kind,

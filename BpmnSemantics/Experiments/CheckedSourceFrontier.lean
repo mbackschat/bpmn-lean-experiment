@@ -199,6 +199,7 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   cases candidate with
   | noneStartEvent id => simp [fireNode?, notPending]
   | messageStartEvent id channel => rfl
+  | timerStartEvent id durationLiteral => rfl
   | embeddedSubProcess id scopeId =>
       simp [nodeArityValid] at candidateArity
   | callActivity id calledElement =>

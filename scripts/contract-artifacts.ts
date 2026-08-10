@@ -473,6 +473,7 @@ function isProcessStartStimulus(
   switch (stimulus.kind) {
     case "startProcess":
     case "triggerMessageStart":
+    case "triggerTimerStart":
       return true;
     case "completeUserTaskInstance":
     case "deliverMessage":

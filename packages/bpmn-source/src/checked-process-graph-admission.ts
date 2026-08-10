@@ -143,6 +143,7 @@ function hasSelectedArity(
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent:
     case CheckedNodeKind.MessageStartEvent:
+    case CheckedNodeKind.TimerStartEvent:
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
@@ -190,7 +191,8 @@ function isConnectedGraphUnderPolicy(
   const starts = nodes.filter(
     ({ kind }) =>
       kind === CheckedNodeKind.NoneStartEvent ||
-      kind === CheckedNodeKind.MessageStartEvent,
+      kind === CheckedNodeKind.MessageStartEvent ||
+      kind === CheckedNodeKind.TimerStartEvent,
   );
   const ends = nodes.filter(
     ({ kind }) =>

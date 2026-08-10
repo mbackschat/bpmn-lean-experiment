@@ -55,6 +55,18 @@ test("admits one interrupting PT1S deadline attached to the embedded Sub-Process
   assert.equal(isWellFormedSemanticProcessProgram(result.semanticProcess), true);
 });
 
+test("preserves the reviewed no-xsi generic Expression boundary Timer shape", async () => {
+  const withoutExplicitExpressionType = source.replace(
+    ' xsi:type="bpmn:tFormalExpression"',
+    "",
+  );
+  assert.notEqual(withoutExplicitExpressionType, source);
+
+  const result = await compile(withoutExplicitExpressionType);
+
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+});
+
 /**
  * A deadline on the child task is the nearest wrong attachment, and the conjunct that rejects it is
  * the *same-scope* one, not the host-kind one. The boundary node sits in the root Process scope while

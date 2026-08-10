@@ -49,6 +49,7 @@ import {
 import {
   projectMessageStartEvent,
 } from "./message-start-event-source.js";
+import { projectTimerStartEvent } from "./timer-start-event-source.js";
 import {
   projectReceiveTask,
 } from "./receive-task-source.js";
@@ -102,7 +103,7 @@ export function projectCheckedNodes(
               element,
               id,
               rootSelection.messageArtifacts,
-            );
+            ) ?? projectTimerStartEvent(element, id);
       case bpmnTypes.subProcessType:
         return isProjectableEmbeddedSubProcess(element)
           ? {

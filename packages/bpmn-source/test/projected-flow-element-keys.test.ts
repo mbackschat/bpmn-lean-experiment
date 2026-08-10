@@ -40,6 +40,7 @@ const consumers = [
   { source: "inclusive-gateway-source.ts", anchor: "projectInclusiveGateway", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
   { source: "intermediate-catch-message-source.ts", anchor: "projectIntermediateCatchMessage", elementName: "element", shape: "IntermediateCatchEvent" },
   { source: "message-start-event-source.ts", anchor: "projectMessageStartEvent", elementName: "element", shape: "MessageStartEvent" },
+  { source: "timer-start-event-source.ts", anchor: "projectTimerStartEvent", elementName: "element", shape: "TimerStartEvent" },
   { source: "receive-task-source.ts", anchor: "projectReceiveTask", elementName: "element", shape: "ReceiveTask" },
   { source: "simple-boolean-exclusive-gateway-source.ts", anchor: "projectExclusiveGateway", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
   { source: "subprocess-error-source.ts", anchor: "projectErrorEndEvent", elementName: "element", shape: "ErrorEndEvent" },
@@ -59,7 +60,7 @@ const consumers = [
 ] as const satisfies ReadonlyArray<ConsumerSite>;
 
 const inventoryCases = [
-  ["genericShapes", "startEventType", ["PlainNode", "MessageStartEvent"]],
+  ["genericShapes", "startEventType", ["PlainNode", "MessageStartEvent", "TimerStartEvent"]],
   ["genericShapes", "userTaskType", ["PlainNode"]],
   ["genericShapes", "endEventType", ["PlainNode", "ErrorEndEvent"]],
   ["genericShapes", "subProcessType", ["EmbeddedSubProcess"]],

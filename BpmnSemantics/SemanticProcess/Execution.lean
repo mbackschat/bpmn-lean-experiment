@@ -46,6 +46,10 @@ private def admitStimulus (program : Program) (state : RuntimeState) :
           channel with
       | some started => { outcome := .committed, state := started }
       | none => { outcome := .rejected, state }
+  | .triggerTimerStart _ processId instanceId startEventId =>
+      match admitTimerStart? program state processId instanceId startEventId with
+      | some started => { outcome := .committed, state := started }
+      | none => { outcome := .rejected, state }
   | .completeUserTaskInstance _ taskId submittedValues =>
       match state.control with
       | .running instanceId =>

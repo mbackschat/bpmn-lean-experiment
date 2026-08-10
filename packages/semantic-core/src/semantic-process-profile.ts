@@ -46,6 +46,10 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-user-task-preserved-notation-draft",
 } as const);
 
+/** Implementation-checkpoint capability, deliberately absent from the registered profile catalog. */
+export const TimerStartCheckpointProfileId =
+  "bpmn-2.0.2-timer-start-event-draft" as const;
+
 /**
  * Checks the exact operation capability selected by one reviewed profile.
  *
@@ -72,6 +76,13 @@ function profileAllowsProgramOperationDetails(
   operations: ReadonlyArray<SemanticOperation>,
 ): boolean {
   switch (semanticProfile) {
+    case TimerStartCheckpointProfileId:
+      return operations.every(
+        (operation) =>
+          operation.kind !== SemanticOperationKind.InitiateTimer ||
+          (operation.timer.durationMs === 1000 &&
+            operation.outputs.length === 1),
+      );
     case SemanticProfileId.MessageStart:
       return operations.every(
         (operation) =>
@@ -101,7 +112,13 @@ export function profileAllowsCheckedProcessShape(
     nodes.every((node) =>
       node.kind !== CheckedNodeKind.TimerBoundaryEvent ||
       node.interruption === required.boundaryInterruption
-    );
+    ) &&
+    (semanticProfile !== TimerStartCheckpointProfileId ||
+      nodes.every(
+        (node) =>
+          node.kind !== CheckedNodeKind.TimerStartEvent ||
+          node.durationLiteral === "PT1S",
+      ));
 }
 
 /**
@@ -133,6 +150,12 @@ function requiredCheckedProcessShape(
     case SemanticProfileId.MessageStart:
       return rootChecked([
         CheckedNodeKind.MessageStartEvent,
+        CheckedNodeKind.UserTask,
+        end,
+      ]);
+    case TimerStartCheckpointProfileId:
+      return rootChecked([
+        CheckedNodeKind.TimerStartEvent,
         CheckedNodeKind.UserTask,
         end,
       ]);
@@ -309,6 +332,13 @@ function requiredProgramShape(
   semanticProfile: string,
 ): RequiredProgramShape | undefined {
   switch (semanticProfile) {
+    case TimerStartCheckpointProfileId:
+      return rootProgram([
+        SemanticOperationKind.InitiateTimer,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.MessageStart:
       return rootProgram([
         SemanticOperationKind.InitiateMessage,

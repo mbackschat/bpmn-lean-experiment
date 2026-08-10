@@ -32,6 +32,7 @@ export enum SemanticProcessCompilerId {
 export enum SemanticOperationKind {
   Initiate = "initiate",
   InitiateMessage = "initiateMessage",
+  InitiateTimer = "initiateTimer",
   EnterScope = "enterScope",
   EnterBoundedScope = "enterBoundedScope",
   InvokeProcess = "invokeProcess",
@@ -149,6 +150,14 @@ export type InitiateMessageOperation = OperationBase &
       MessageChannel,
       { kind: typeof MessageChannelKind.OperationMessage }
     >;
+    outputs: [string, ...string[]];
+  }>;
+
+/** One resolved Timer Start occurrence with no pre-Process wait state. */
+export type InitiateTimerOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.InitiateTimer;
+    timer: { durationMs: 1000 };
     outputs: [string, ...string[]];
   }>;
 
@@ -300,6 +309,7 @@ export type SemanticOperation =
         output: string;
       }>)
   | InitiateMessageOperation
+  | InitiateTimerOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.EnterScope;

@@ -34,6 +34,15 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           (← decodeSemanticIdentityField json "instanceId")
           (← decodeSemanticIdentityField json "startEventId")
           (← decodeOperationMessageChannel (← field json "channel")))
+  | "triggerTimerStart" =>
+      requireObjectShape json
+        ["commandId", "instanceId", "kind", "processId", "startEventId"]
+      pure
+        (.triggerTimerStart
+          (← decodeSemanticIdentityField json "commandId")
+          (← decodeSemanticIdentityField json "processId")
+          (← decodeSemanticIdentityField json "instanceId")
+          (← decodeSemanticIdentityField json "startEventId"))
   | "completeUserTaskInstance" =>
       requireObjectShape json
         ["commandId", "kind", "submittedValues", "taskId"]

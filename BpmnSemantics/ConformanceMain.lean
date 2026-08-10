@@ -4,6 +4,7 @@ import BpmnSemantics.MappedBoundaryErrorConformance
 import BpmnSemantics.CallActivityConformance
 import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.MessageStartConformance
+import BpmnSemantics.TimerStartConformance
 import BpmnSemantics.EventBasedGatewayConformance
 import BpmnSemantics.SemanticProcessConformance
 import BpmnSemantics.SemanticProcessJsonConformance

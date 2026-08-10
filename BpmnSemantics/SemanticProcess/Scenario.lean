@@ -23,6 +23,7 @@ def projectTokenMultiplicities (program : Program) (state : RuntimeState) :
 private def commandId : Stimulus → SemanticId
   | .startProcess id _ _ _
   | .triggerMessageStart id _ _ _ _
+  | .triggerTimerStart id _ _ _
   | .completeUserTaskInstance id _ _
   | .deliverMessage id _ _
   | .fireTimer id _ _
@@ -58,7 +59,7 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
       { timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
-  | .initiate .. | .initiateMessage .. | .enterScope .. | .invokeProcess .. | .returnProcess ..
+  | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .invokeProcess .. | .returnProcess ..
   | .duplicate .. | .synchronize .. | .mergeExclusive .. | .choose ..
   | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
@@ -297,14 +298,15 @@ private def requiredObservations : List ObservationKind :=
   , .logicalTime ]
 
 private def isProcessStartStimulus : Stimulus → Bool
-  | .startProcess .. | .triggerMessageStart .. => true
+  | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => true
   | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
   | .completeEffect .. => false
 
 /-- A scenario starts exactly once, in its first position, through one member of the closed start family. -/
 def stimulusSequenceSupported : List Stimulus → Bool
   | .startProcess .. :: remaining
-  | .triggerMessageStart .. :: remaining =>
+  | .triggerMessageStart .. :: remaining
+  | .triggerTimerStart .. :: remaining =>
       remaining.all fun stimulus => !isProcessStartStimulus stimulus
   | _ => false
 

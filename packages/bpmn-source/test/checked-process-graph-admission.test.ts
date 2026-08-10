@@ -13,6 +13,7 @@ import {
   GatewayDirection,
   MessageChannelKind,
   SemanticProfileId,
+  TimerStartCheckpointProfileId,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -216,6 +217,58 @@ test("admits a Message Start only as the single zero-to-one graph root", () => {
     resolveAdmittedCheckedProcessGraph(
       withRootOwnership(mixedStarts, mixedFlows),
       SemanticProfileId.MessageStart,
+    ),
+    undefined,
+  );
+});
+
+test("admits a Timer Start only as the single zero-to-one graph root", () => {
+  const timerStart = {
+    kind: CheckedNodeKind.TimerStartEvent,
+    id: "TimerStart",
+    durationLiteral: "PT1S",
+  } as const;
+  const task = {
+    kind: CheckedNodeKind.UserTask,
+    id: "Task",
+    name: null,
+  } as const;
+  const end = { kind: CheckedNodeKind.NoneEndEvent, id: "End" } as const;
+  const linearFlows = [
+    flow("StartToTask", "TimerStart", "Task"),
+    flow("TaskToEnd", "Task", "End"),
+  ] as const satisfies CheckedProcessGraph["flows"];
+
+  assert.notEqual(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership([timerStart, task, end], linearFlows),
+      TimerStartCheckpointProfileId,
+    ),
+    undefined,
+  );
+
+  assert.equal(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(
+        [timerStart, task, end],
+        [...linearFlows, flow("EndToStart", "End", "TimerStart")],
+      ),
+      TimerStartCheckpointProfileId,
+    ),
+    undefined,
+  );
+
+  const manualStart = {
+    kind: CheckedNodeKind.NoneStartEvent,
+    id: "ManualStart",
+  } as const;
+  assert.equal(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(
+        [timerStart, manualStart, task, end],
+        [...linearFlows, flow("ManualToTask", "ManualStart", "Task")],
+      ),
+      TimerStartCheckpointProfileId,
     ),
     undefined,
   );

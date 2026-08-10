@@ -425,6 +425,11 @@ type SemanticOperation = DeepReadonly<
       outputs: [string, ...string[]];
     })
   | (OperationBase & {
+      kind: "initiateTimer";
+      timer: { durationMs: 1000 };
+      outputs: [string, ...string[]];
+    })
+  | (OperationBase & {
       kind: "enterScope";
       input: string;
       childEntry: string;
@@ -561,6 +566,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 |---|---|
 | none Start Event | `initiate` |
 | exact top-level operation-addressed Message Start Event | `initiateMessage` with the Start Event origin, complete Interface/Operation/Message channel, and canonical nonempty outgoing control-place collection |
+| exact top-level `PT1S` Timer Start Event | `initiateTimer` with the Start Event origin, normalized `durationMs: 1000`, and canonical nonempty outgoing control-place collection |
 | ordinary Sequence Flow | `ControlPlace` |
 | Event-Based Gateway-to-catch configuration Flow | retained exactly once as one `awaitEventRace.configurationOrigin`; no control place |
 | ordinary embedded Sub-Process | `enterScope` with the child definition scope and child entry place |
@@ -613,6 +619,8 @@ lowering produces one `initiate`, one `duplicate`, two `awaitUserTask` operation
 An accepted manual start stimulus enables `initiate` exactly once for the process instance. Firing it adds one token to its output control place.
 
 An accepted `triggerMessageStart` stimulus must match the program Process, Message Start Event, Interface, Interface Operation, and input Message exactly. Admission creates the ordinary fresh root occurrence without installing a Message subscription or payload. Firing `initiateMessage` clears pending initiation and adds one root-owned token to every canonical output control place. The reusable operation admits a nonempty output collection; the registered Message Start profile requires exactly one output.
+
+An accepted `triggerTimerStart` stimulus must match the program Process and Timer Start Event exactly while the checkpoint profile binds the operation to normalized duration `1000`. Admission creates the ordinary fresh root occurrence without installing a running Timer, schedule, due time, or logical-clock change. Firing `initiateTimer` clears pending initiation and adds one root-owned token to every canonical output control place. The reusable operation admits a nonempty output collection; the unregistered Timer Start checkpoint capability requires exactly one output.
 
 ### User Task wait
 
@@ -717,6 +725,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every `duplicate` has at least two distinct outputs;
 - every `synchronize` has at least two distinct inputs;
 - every `initiateMessage` has one complete operation-addressed channel and a canonical nonempty collection of distinct existing outputs; the registered Message Start profile has exactly one output;
+- every `initiateTimer` has exact duration `1000` and a canonical nonempty collection of distinct existing outputs; the Timer Start checkpoint capability has exactly one output;
 - every `mergeExclusive` has a canonical nonempty collection of distinct inputs, one distinct existing output, and the selected cycle profile has exactly three inputs;
 - every `choose` has exactly two distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement;
 - every `selectMany` has exactly two canonical distinct candidate outputs, one distinct default output, three distinct existing branch-local expected join inputs, valid Simple Boolean expressions, exact Sequence Flow origin/output agreement, and one nonempty selection key;
@@ -730,7 +739,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - every non-null `bpmnErrorRoute` has a nonempty exact code, a distinct existing boundary output, complete source provenance, and the exact profile-permitted handler/mapping combination;
 - every `throwError` has a valid Error reference, an input owned by its throwing child scope, exactly one direct-parent handler with the same Error element and code but a distinct catching ErrorEventDefinition, and a handler output owned by that parent and originating from the recorded boundary Sequence Flow;
 - every `invokeProcess` crosses from the entry root to one distinct called root and carries one exact paired `returnProcess`; the return is owned by that called root, crosses only to the caller output, shares the Call Activity origin and called definition, and the called root has one virtual End-to-return edge;
-- the current profile has exactly one entry-root-owned Process initiation, either `initiate` or `initiateMessage`, and its start stimulus kind must match; every embedded scope and the entry root have one `completeScope`; a called root instead has exactly one `returnProcess`; and no `enterScope` targets a parentless root;
+- the current profile has exactly one entry-root-owned Process initiation, `initiate`, `initiateMessage`, or `initiateTimer`, and its start stimulus kind must match; every embedded scope and the entry root have one `completeScope`; a called root instead has exactly one `returnProcess`; and no `enterScope` targets a parentless root;
 - each control place has only the producer and consumer shapes permitted by the current lowering;
 - every operation and control place is reachable from initiation and can reach the root completion under the full structural graph, including explicit end-to-scope-completion edges;
 - every existing profile is acyclic; the selected cycle profile alone removes outgoing edges from its exact `awaitUserTask` resumption operation before saturation-certified acyclicity, while full-graph reachability and co-reachability remain mandatory;
@@ -739,6 +748,7 @@ The relation may permit more than one internal operation. Any semantically mater
 - the structured Inclusive Gateway profile has exactly one initiation, one multi-selection, three User Task waits, one selected synchronization, one end-reaching operation, one root completion, eight control places, one branch-local split-to-task-to-join pairing for each output, and no alternate entry or exit;
 - the Event-Based Gateway profile has exactly one initiation, one event race, two User Task waits, two end-reaching operations, one root completion, five control places, two distinct configuration-flow origins, and no separate `awaitMessage` or `awaitTimer` operation for its configured catches;
 - the registered Message Start capability has exactly one `initiateMessage`, one User Task wait, one end-reaching operation, one root completion, two control places, and one root scope;
+- the unregistered Timer Start checkpoint capability has exactly one `initiateTimer`, one User Task wait, one end-reaching operation, one root completion, two control places, and one root scope;
 - the User Task cycle profile has exactly one initiation, one three-input Exclusive Merge, one User Task wait, one declaration-ordered conditional choice, one end-reaching operation, one root completion, six control places, one root scope, and no cycle remaining after the User Task continuation cut;
 - the bounded Call Activity profile has exactly two parentless definitions, one caller initiation, one invocation, two User Task waits, two end-reaching operations, one called return, one caller-root completion, five control places, and no called-root initiation or completion operation;
 
@@ -829,7 +839,7 @@ The maintained implementation supports exactly:
 - one ordinary one-level embedded Sub-Process with two independent child User Tasks and two child None End Events, followed by one outer User Task and root None End Event;
 - one one-level embedded Sub-Process with two independent child User Tasks, one child Error End Event, one child None End Event, one exact matching interrupting boundary Error in the parent, one outer recovery User Task, and a structurally present but unreachable normal continuation;
 - none End Events permitted by the capsules;
-- `initiate`, `initiateMessage`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope`;
+- `initiate`, `initiateMessage`, `initiateTimer`, `enterScope`, `invokeProcess`, `returnProcess`, `awaitUserTask`, `awaitTimer`, `awaitMessage`, `awaitEffect`, `awaitEventRace`, `duplicate`, `synchronize`, `mergeExclusive`, `choose`, `selectMany`, `synchronizeSelected`, `throwError`, `reachNoneEnd`, and `completeScope`;
 - definition-scope ownership and occurrence identity plus token multiplicity per Sequence Flow and scope occurrence;
 - semantic task, Message-subscription, timer, and effect occurrence identity, hidden occurrence-owned Inclusive selected-branch and Event-Based Gateway race records, closed string-or-null Process/Activity-local data for the exact mapping slices, logical time, and command closure;
 - the canonical observation boundary including `openMessageSubscriptions`, `openTimers`, effect arguments in `openEffects`, and Process `variables`.

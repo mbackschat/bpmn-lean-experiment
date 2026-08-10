@@ -12,11 +12,13 @@ import {
   SemanticProfileId,
   SemanticOperationKind,
   StimulusKind,
+  TimerStartCheckpointProfileId,
 } from "@bpmn-lean/semantic-core";
 import type {
   SemanticOperation,
   SemanticProcessProgram,
   StartProcessStimulus,
+  TriggerTimerStartStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   BpmnProcessAdmissionFailureCode,
@@ -165,6 +167,40 @@ test("classifies a resumption-bounded Exclusive Merge as passive", async () => {
       ...program,
       identity: { ...program.identity, semanticProfile: "unknown-profile" },
     }).kind,
+    BpmnProcessAdmissionResultKind.Rejected,
+  );
+});
+
+test("admits only the exact Timer Start target at the passive host boundary", async () => {
+  const program = await compileFixture(
+    "../../../bpmn-source/test/fixtures/timer-start-event.bpmn",
+    "timer-start-event-host-admission",
+    TimerStartCheckpointProfileId,
+  );
+  assert.ok(
+    program.operations.some(
+      ({ kind }) => kind === SemanticOperationKind.InitiateTimer,
+    ),
+  );
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+
+  const start = {
+    kind: StimulusKind.TriggerTimerStart,
+    commandId: "trigger-timer-start",
+    processId: program.processId,
+    instanceId: "TimerStartInstance_1",
+    startEventId: "TimerStart_PT1S",
+  } as const satisfies TriggerTimerStartStimulus;
+  assert.deepEqual(assessBpmnProcessAdmission(start, program), {
+    kind: BpmnProcessAdmissionResultKind.Admitted,
+  });
+  assert.equal(
+    assessBpmnProcessAdmission(
+      { ...start, startEventId: "OtherTimerStart" },
+      program,
+    ).kind,
     BpmnProcessAdmissionResultKind.Rejected,
   );
 });

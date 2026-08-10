@@ -5,6 +5,7 @@ import BpmnSemantics.Conformance
 import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.IntermediateCatchMessageConformance
 import BpmnSemantics.MessageStartConformance
+import BpmnSemantics.TimerStartConformance
 import BpmnSemantics.ReceiveTaskConformance
 import BpmnSemantics.ServiceTaskEffectConformance
 import BpmnSemantics.MappedSuccessConformance

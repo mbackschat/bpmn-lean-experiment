@@ -50,6 +50,7 @@ export const ProjectedFlowElementShape = Object.freeze({
   EventBasedGateway: "eventBasedGateway",
   IntermediateCatchEvent: "intermediateCatchEvent",
   MessageStartEvent: "messageStartEvent",
+  TimerStartEvent: "timerStartEvent",
   ReceiveTask: "receiveTask",
   ErrorEndEvent: "errorEndEvent",
   BoundaryEvent: "boundaryEvent",
@@ -91,6 +92,11 @@ export const projectedFlowElementKeys = Object.freeze({
     "$type", "id", "name", "eventDefinitions",
   ]),
   [ProjectedFlowElementShape.MessageStartEvent]: Object.freeze([
+    "$type", "id", "name", "eventDefinitions", "eventDefinitionRef",
+    "parallelMultiple", "isInterrupting", "dataOutputs", "outputSet",
+    "dataOutputAssociations",
+  ]),
+  [ProjectedFlowElementShape.TimerStartEvent]: Object.freeze([
     "$type", "id", "name", "eventDefinitions", "eventDefinitionRef",
     "parallelMultiple", "isInterrupting", "dataOutputs", "outputSet",
     "dataOutputAssociations",
@@ -192,6 +198,7 @@ function genericShapes(
       return [
         ProjectedFlowElementShape.PlainNode,
         ProjectedFlowElementShape.MessageStartEvent,
+        ProjectedFlowElementShape.TimerStartEvent,
       ];
     case bpmnTypes.userTaskType:
       return [ProjectedFlowElementShape.PlainNode];

@@ -36,6 +36,7 @@ import {
 } from "./semantic-process-event-race-runtime.js";
 import { createMessageWait } from "./semantic-process-message.js";
 import { applyMessageInitiation } from "./semantic-process-message-start.js";
+import { applyTimerInitiation } from "./semantic-process-timer-start.js";
 import {
   commonTokenOwner,
   enterScope,
@@ -205,6 +206,8 @@ export function applyInternalOperation(
     }
     case SemanticOperationKind.InitiateMessage:
       return applyMessageInitiation(operation, state);
+    case SemanticOperationKind.InitiateTimer:
+      return applyTimerInitiation(operation, state);
     case SemanticOperationKind.EnterScope: {
       const owner = onlyTokenOwner(state, operation.input);
       return owner === undefined
