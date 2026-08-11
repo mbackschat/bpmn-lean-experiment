@@ -73,30 +73,7 @@ const prohibitedSourceFragments = [
   ["hasEffect", "ExecutionSurface"].join(""),
   ["hasBoundaryError", "ExecutionSurface"].join(""),
   ["hasBalancedParallel", "ExecutionSurface"].join(""),
-  retiredOperationName,
 ];
-
-const permittedRetiredSourceLines = new Map<string, ReadonlySet<string>>([
-  [
-    "packages/temporal-adapter/testkit/src/runner.ts",
-    new Set([
-      'handle.terminate("conformance scenario input exhausted"),',
-    ]),
-  ],
-  [
-    "packages/temporal-adapter/testkit/src/bypass-mutation.ts",
-    new Set([
-      "handle.terminate(`retained ${configuration.description}`),",
-    ]),
-  ],
-  [
-    "packages/temporal-adapter/testkit/test/call-activity-temporal.test.ts",
-    new Set([
-      'await earlyHandle.terminate("Call early-return mutation observed");',
-      'await erasedHandle.terminate("Call identity-erasure mutation observed");',
-    ]),
-  ],
-]);
 
 const permittedRetiredDocumentationContexts = new Map([
   [
@@ -132,15 +109,18 @@ function retiredSourceFindings(
   relativePath: string,
   source: string,
 ): string[] {
-  const permittedLines = permittedRetiredSourceLines.get(relativePath) ??
-    new Set<string>();
   return source.split("\n").flatMap((line, index) => {
-    if (!new RegExp(`\\b${retiredOperationName}\\b`, "iu").test(line)) {
+    const hasRetiredWireLiteral = new RegExp(
+      `(["'])${retiredOperationName}\\1`,
+      "u",
+    ).test(line);
+    const hasRetiredLeanContractVariant =
+      relativePath === "BpmnSemantics/SemanticProcessContract.lean" &&
+      /^\s*\|\s*terminate(?:\s|\()/u.test(line);
+    if (!hasRetiredWireLiteral && !hasRetiredLeanContractVariant) {
       return [];
     }
-    return permittedLines.has(line.trim())
-      ? []
-      : [`${relativePath}:${index + 1}: ${retiredOperationName}`];
+    return [`${relativePath}:${index + 1}: ${retiredOperationName}`];
   });
 }
 
@@ -170,12 +150,21 @@ test("keeps active code and maintained documentation on one replace-in-place pre
   for (const relativePath of files) {
     const source = await readFile(path.join(projectRoot, relativePath), "utf8");
     for (const fragment of prohibitedSourceFragments) {
-      if (fragment === retiredOperationName) {
-        findings.push(...retiredSourceFindings(relativePath, source));
-      } else if (source.includes(fragment)) {
+      if (source.includes(fragment)) {
         findings.push(`${relativePath}: ${fragment}`);
       }
     }
+  }
+
+  const retiredOperationFiles = [
+    ...files,
+    ...await sourceFiles("contracts/schemas"),
+  ];
+  for (const relativePath of retiredOperationFiles) {
+    findings.push(...retiredSourceFindings(
+      relativePath,
+      await readFile(path.join(projectRoot, relativePath), "utf8"),
+    ));
   }
 
   const documentationFiles = (await sourceFiles("docs")).filter(
@@ -205,6 +194,27 @@ test("keeps active code and maintained documentation on one replace-in-place pre
   }
 
   assert.deepEqual(findings, []);
+});
+
+test("distinguishes the retired terminate wire operation from Terminate End", () => {
+  assert.deepEqual(
+    retiredSourceFindings("fixture.ts", 'const operation = { kind: "terminate" };'),
+    ["fixture.ts:1: terminate"],
+  );
+  assert.deepEqual(
+    retiredSourceFindings(
+      "BpmnSemantics/SemanticProcessContract.lean",
+      "  | terminate (id : OperationId)",
+    ),
+    ["BpmnSemantics/SemanticProcessContract.lean:1: terminate"],
+  );
+  assert.deepEqual(
+    retiredSourceFindings(
+      "BpmnSemantics/SemanticProcess/TerminateEnd.lean",
+      "  | terminate (before : RuntimeState)\nconst kind = 'terminateScope'",
+    ),
+    [],
+  );
 });
 
 test("starts every cached ephemeral server through the owner that creates its cache", async () => {
