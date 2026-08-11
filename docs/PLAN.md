@@ -115,7 +115,7 @@ Ordered by the milestone that first needs it, not by size. Each is absent today 
 1. [Resumption-bounded compositional admission with cycles](capsules/CYCLIC-CONTROL-FLOW-SPEC.md), closed for M2.
 2. [Message Start Event](capsules/MESSAGE-START-EVENT-SPEC.md), closed for M2.
 3. [Timer Start Event](capsules/TIMER-START-EVENT-SPEC.md), closed for M2.
-4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), independently approved at the semantic checkpoint and active in registration and Temporal evidence; the configured generic Task remains unselected.
+4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), independently approved at its omission-only semantic checkpoint and active in renewed proposal review for the metamodel-default correction; registration and Temporal evidence resume only after the corrected first-green checkpoint is cold-reviewed, and the configured generic Task remains unselected.
 4. The value domain beyond string and null — M3.
 5. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
 6. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
