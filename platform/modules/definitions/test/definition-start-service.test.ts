@@ -245,6 +245,9 @@ type MutableDefinition = {
     decodedAs: "UTF-8";
   };
   semanticProfile: string;
+  startCapabilities: {
+    timerStarts: Array<{ startEventId: string; durationMs: number }>;
+  };
 };
 
 function definition(
@@ -274,6 +277,7 @@ function mutableDefinition(
       decodedAs: "UTF-8",
     },
     semanticProfile: `profile-v${version}`,
+    startCapabilities: { timerStarts: [] },
   };
 }
 

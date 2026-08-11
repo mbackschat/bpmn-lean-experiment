@@ -7,6 +7,10 @@ import type {
   DefinitionRepository,
   NewDefinitionMetadata,
 } from "./contracts.js";
+import {
+  decodeDefinitionStartCapabilities,
+  encodeDefinitionStartCapabilities,
+} from "./definition-capabilities.js";
 
 const defaultBusyTimeoutMs = 5_000;
 
@@ -21,25 +25,12 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
     requirePositiveSafeInteger(busyTimeoutMs, "busyTimeoutMs");
     this.#database = new DatabaseSync(databaseFile);
     this.#database.exec(`PRAGMA busy_timeout = ${busyTimeoutMs}`);
-    this.#database.exec(`
-      CREATE TABLE IF NOT EXISTS definition_versions (
-        process_id TEXT NOT NULL,
-        version INTEGER NOT NULL CHECK (version > 0),
-        source_kind TEXT NOT NULL CHECK (source_kind = 'bpmnSource'),
-        source_id TEXT NOT NULL,
-        source_sha256 TEXT NOT NULL CHECK (
-          length(source_sha256) = 64
-          AND source_sha256 NOT GLOB '*[^0-9a-f]*'
-        ),
-        source_byte_length INTEGER NOT NULL CHECK (source_byte_length >= 0),
-        source_declared_encoding TEXT,
-        source_decoded_as TEXT CHECK (
-          source_decoded_as IS NULL OR source_decoded_as = 'UTF-8'
-        ),
-        semantic_profile TEXT NOT NULL,
-        PRIMARY KEY (process_id, version)
-      ) STRICT
-    `);
+    try {
+      initializeSchema(this.#database);
+    } catch (error: unknown) {
+      this.#database.close();
+      throw error;
+    }
   }
 
   get isOpen(): boolean {
@@ -66,8 +57,9 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
           source_byte_length,
           source_declared_encoding,
           source_decoded_as,
-          semantic_profile
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          semantic_profile,
+          start_capabilities_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         metadata.processId,
         version,
@@ -78,11 +70,15 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
         metadata.source.declaredEncoding,
         metadata.source.decodedAs,
         metadata.semanticProfile,
+        encodeDefinitionStartCapabilities(metadata.startCapabilities),
       );
       this.#database.exec("COMMIT");
       return {
         ...metadata,
         source: { ...metadata.source },
+        startCapabilities: decodeDefinitionStartCapabilities(
+          encodeDefinitionStartCapabilities(metadata.startCapabilities),
+        ),
         version,
       };
     } catch (error: unknown) {
@@ -104,7 +100,8 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
         definition.source_byte_length,
         definition.source_declared_encoding,
         definition.source_decoded_as,
-        definition.semantic_profile
+        definition.semantic_profile,
+        definition.start_capabilities_json
       FROM definition_versions AS definition
       INNER JOIN (
         SELECT process_id, MAX(version) AS version
@@ -128,7 +125,8 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
         source_byte_length,
         source_declared_encoding,
         source_decoded_as,
-        semantic_profile
+        semantic_profile,
+        start_capabilities_json
       FROM definition_versions
       WHERE process_id = ?
       ORDER BY version ASC
@@ -146,7 +144,8 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
         source_byte_length,
         source_declared_encoding,
         source_decoded_as,
-        semantic_profile
+        semantic_profile,
+        start_capabilities_json
       FROM definition_versions
       WHERE process_id = ? AND version = ?
     `).get(reference.processId, reference.version);
@@ -157,6 +156,91 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
     if (this.#database.isOpen) {
       this.#database.close();
     }
+  }
+}
+
+export class DefinitionSchemaResetRequiredError extends Error {
+  constructor() {
+    super(
+      "definition SQLite schema is from an incompatible pre-release; reset the platform database before restarting",
+    );
+    this.name = "DefinitionSchemaResetRequiredError";
+  }
+}
+
+function initializeSchema(database: DatabaseSync): void {
+  database.exec("BEGIN IMMEDIATE");
+  try {
+    const existing = database.prepare(`
+      SELECT name FROM sqlite_schema
+      WHERE type = 'table' AND name = 'definition_versions'
+    `).get();
+    if (existing !== undefined) {
+      requireCurrentSchema(database);
+      database.exec("COMMIT");
+      return;
+    }
+    database.exec(`
+      CREATE TABLE definition_versions (
+        process_id TEXT NOT NULL,
+        version INTEGER NOT NULL CHECK (version > 0),
+        source_kind TEXT NOT NULL CHECK (source_kind = 'bpmnSource'),
+        source_id TEXT NOT NULL,
+        source_sha256 TEXT NOT NULL CHECK (
+          length(source_sha256) = 64
+          AND source_sha256 NOT GLOB '*[^0-9a-f]*'
+        ),
+        source_byte_length INTEGER NOT NULL CHECK (source_byte_length >= 0),
+        source_declared_encoding TEXT,
+        source_decoded_as TEXT CHECK (
+          source_decoded_as IS NULL OR source_decoded_as = 'UTF-8'
+        ),
+        semantic_profile TEXT NOT NULL,
+        start_capabilities_json TEXT NOT NULL CHECK (
+          length(start_capabilities_json) > 0
+        ),
+        PRIMARY KEY (process_id, version)
+      ) STRICT
+    `);
+    database.exec("COMMIT");
+  } catch (error: unknown) {
+    if (database.isTransaction) {
+      database.exec("ROLLBACK");
+    }
+    throw error;
+  }
+}
+
+function requireCurrentSchema(database: DatabaseSync): void {
+  const columns = database.prepare(`
+    SELECT name, type, "notnull", pk
+    FROM pragma_table_info('definition_versions')
+    ORDER BY cid
+  `).all();
+  const expected = [
+    ["process_id", "TEXT", 1, 1],
+    ["version", "INTEGER", 1, 2],
+    ["source_kind", "TEXT", 1, 0],
+    ["source_id", "TEXT", 1, 0],
+    ["source_sha256", "TEXT", 1, 0],
+    ["source_byte_length", "INTEGER", 1, 0],
+    ["source_declared_encoding", "TEXT", 0, 0],
+    ["source_decoded_as", "TEXT", 0, 0],
+    ["semantic_profile", "TEXT", 1, 0],
+    ["start_capabilities_json", "TEXT", 1, 0],
+  ] as const;
+  if (
+    columns.length !== expected.length ||
+    columns.some((column, index) => {
+      const wanted = expected[index];
+      return wanted === undefined ||
+        column.name !== wanted[0] ||
+        column.type !== wanted[1] ||
+        column.notnull !== wanted[2] ||
+        column.pk !== wanted[3];
+    })
+  ) {
+    throw new DefinitionSchemaResetRequiredError();
   }
 }
 
@@ -186,6 +270,9 @@ function decodeMetadata(
       decodedAs,
     },
     semanticProfile: requireStringField(row, "semantic_profile"),
+    startCapabilities: decodeDefinitionStartCapabilities(
+      requireStringField(row, "start_capabilities_json"),
+    ),
   };
 }
 

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
 import {
@@ -25,6 +26,7 @@ import type {
 
 import {
   DefinitionArtifactIntegrityError,
+  DefinitionSchemaResetRequiredError,
   DefinitionDeploymentService,
   DefinitionDeploymentStatus,
   SqliteDefinitionRepository,
@@ -70,11 +72,23 @@ class MemoryArtifactStore implements ExactArtifactStore {
 class AcceptedCompiler implements DefinitionCompiler {
   readonly #processId: string;
   readonly #gate: Promise<void>;
+  readonly #timerStarts: ReadonlyArray<Readonly<{
+    startEventId: string;
+    durationMs: number;
+  }>>;
   seenExpectedSha256: string | undefined;
 
-  constructor(processId: string, gate: Promise<void> = Promise.resolve()) {
+  constructor(
+    processId: string,
+    gate: Promise<void> = Promise.resolve(),
+    timerStarts: ReadonlyArray<Readonly<{
+      startEventId: string;
+      durationMs: number;
+    }>> = [{ startEventId: "TimerStart", durationMs: 1_000 }],
+  ) {
     this.#processId = processId;
     this.#gate = gate;
+    this.#timerStarts = timerStarts;
   }
 
   async compileDefinition(
@@ -97,6 +111,9 @@ class AcceptedCompiler implements DefinitionCompiler {
       definition: {
         processId: this.#processId,
         semanticProfile: request.semanticProfile,
+      },
+      startCapabilities: {
+        timerStarts: this.#timerStarts.map((capability) => ({ ...capability })),
       },
     };
   }
@@ -167,6 +184,9 @@ test("snapshots bytes and every scalar before the compiler can yield", async () 
         decodedAs: "UTF-8",
       },
       semanticProfile: "original-profile",
+      startCapabilities: {
+        timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
+      },
     });
     assert.equal(compiler.seenExpectedSha256, originalDigest);
     assert.deepEqual(
@@ -177,6 +197,114 @@ test("snapshots bytes and every scalar before the compiler can yield", async () 
       expectedBytes,
     );
   });
+});
+
+test("round-trips exact Timer Start capability through SQLite reopen", async () => {
+  await withRepository(async ({ databaseFile, repository }) => {
+    const service = new DefinitionDeploymentService(
+      new AcceptedCompiler("Process_Timer"),
+      new MemoryArtifactStore(),
+      repository,
+    );
+    const deployed = await deployText(service, "timer-capability");
+    assert.deepEqual(deployed.definition?.startCapabilities, {
+      timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
+    });
+    repository.close();
+
+    const reopened = new SqliteDefinitionRepository(databaseFile);
+    try {
+      assert.deepEqual(
+        reopened.get({ processId: "Process_Timer", version: 1 })
+          ?.startCapabilities,
+        {
+          timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
+        },
+      );
+    } finally {
+      reopened.close();
+    }
+  });
+});
+
+test("round-trips an exact empty start capability collection", async () => {
+  await withRepository(async ({ databaseFile, repository }) => {
+    const service = new DefinitionDeploymentService(
+      new AcceptedCompiler("Process_Empty", Promise.resolve(), []),
+      new MemoryArtifactStore(),
+      repository,
+    );
+    const deployed = await deployText(service, "empty-capability");
+    assert.deepEqual(deployed.definition?.startCapabilities, { timerStarts: [] });
+    repository.close();
+
+    const reopened = new SqliteDefinitionRepository(databaseFile);
+    try {
+      assert.deepEqual(
+        reopened.get({ processId: "Process_Empty", version: 1 })
+          ?.startCapabilities,
+        { timerStarts: [] },
+      );
+    } finally {
+      reopened.close();
+    }
+  });
+});
+
+test("refuses noncanonical capability corruption instead of repairing it", async () => {
+  await withRepository(async ({ databaseFile, repository }) => {
+    const service = new DefinitionDeploymentService(
+      new AcceptedCompiler("Process_Corrupt"),
+      new MemoryArtifactStore(),
+      repository,
+    );
+    await deployText(service, "corrupt-capability");
+    repository.close();
+    const database = new DatabaseSync(databaseFile);
+    database.prepare(`
+      UPDATE definition_versions
+      SET start_capabilities_json = ?
+      WHERE process_id = ? AND version = ?
+    `).run('{"timerStarts": []}', "Process_Corrupt", 1);
+    database.close();
+
+    const reopened = new SqliteDefinitionRepository(databaseFile);
+    try {
+      assert.throws(
+        () => reopened.get({ processId: "Process_Corrupt", version: 1 }),
+        /noncanonical start_capabilities_json/u,
+      );
+    } finally {
+      reopened.close();
+    }
+  });
+});
+
+test("rejects the older definition schema with an actionable reset error", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-old-definitions-"));
+  const databaseFile = join(root, "definitions.sqlite");
+  try {
+    const database = new DatabaseSync(databaseFile);
+    database.exec(`
+      CREATE TABLE definition_versions (
+        process_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        PRIMARY KEY (process_id, version)
+      ) STRICT
+    `);
+    database.close();
+
+    assert.throws(
+      () => new SqliteDefinitionRepository(databaseFile),
+      (error: unknown) => {
+        assert.ok(error instanceof DefinitionSchemaResetRequiredError);
+        assert.match(error.message, /reset the platform database/u);
+        return true;
+      },
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("returns exact engine rejection diagnostics and performs zero writes", async () => {

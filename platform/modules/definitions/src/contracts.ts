@@ -27,17 +27,28 @@ export type DefinitionReference = Readonly<{
   version: number;
 }>;
 
+export type DefinitionTimerStartCapability = Readonly<{
+  startEventId: string;
+  durationMs: number;
+}>;
+
+export type DefinitionStartCapabilities = Readonly<{
+  timerStarts: ReadonlyArray<DefinitionTimerStartCapability>;
+}>;
+
 export type DefinitionMetadata = Readonly<{
   processId: string;
   version: number;
   source: DefinitionSourceIdentity;
   semanticProfile: string;
+  startCapabilities: DefinitionStartCapabilities;
 }>;
 
 export type NewDefinitionMetadata = Readonly<{
   processId: string;
   source: DefinitionSourceIdentity;
   semanticProfile: string;
+  startCapabilities: DefinitionStartCapabilities;
 }>;
 
 type RejectedCompilation = Extract<

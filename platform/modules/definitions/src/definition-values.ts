@@ -1,7 +1,9 @@
 import type {
   DefinitionMetadata,
   DefinitionSourceIdentity,
+  DefinitionStartCapabilities,
 } from "./contracts.js";
+import { cloneDefinitionStartCapabilities } from "./definition-capabilities.js";
 
 export function cloneDefinitionMetadata(
   definition: DefinitionMetadata,
@@ -11,6 +13,9 @@ export function cloneDefinitionMetadata(
     version: definition.version,
     source: cloneDefinitionSource(definition.source),
     semanticProfile: definition.semanticProfile,
+    startCapabilities: cloneDefinitionStartCapabilities(
+      definition.startCapabilities,
+    ),
   };
 }
 

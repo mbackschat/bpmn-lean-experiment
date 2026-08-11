@@ -22,6 +22,7 @@ import {
   cloneDefinitionMetadata,
   cloneDefinitionSource,
 } from "./definition-values.js";
+import { cloneDefinitionStartCapabilities } from "./definition-capabilities.js";
 
 /** Admission and accepted-only persistence for one exact BPMN definition source. */
 export class DefinitionDeploymentService {
@@ -58,6 +59,9 @@ export class DefinitionDeploymentService {
         const source = cloneDefinitionSource(compilation.source);
         const processId = compilation.definition.processId;
         const acceptedSemanticProfile = compilation.definition.semanticProfile;
+        const startCapabilities = cloneDefinitionStartCapabilities(
+          compilation.startCapabilities,
+        );
         await this.#artifacts.put({
           sha256: source.sha256,
           bytes: sourceBytes,
@@ -66,6 +70,7 @@ export class DefinitionDeploymentService {
           processId,
           source,
           semanticProfile: acceptedSemanticProfile,
+          startCapabilities,
         });
         return {
           status: DefinitionDeploymentStatus.Deployed,
