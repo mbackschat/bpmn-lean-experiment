@@ -52,7 +52,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
-**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End and the configured generic Task remain absent.
+**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End has a first green semantic checkpoint but remains unregistered and unevidenced pending cold checkpoint review. The configured generic Task remains absent.
 
 This is the milestone that must be preceded by the decided-fixture cost review recorded below.
 
@@ -148,7 +148,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: implement the Terminate End Event semantic checkpoint.** Owner approval on 2026-08-11 authorizes the exact reviewed proposal corrected at `64ab573`. Implement the disjoint semantic-core, BPMN-source, and Lean lanes, integrate the shared wire/metamodel owners, run the complete applicable gate once, and submit the immutable checkpoint to a new context-cold reviewer before registration or Temporal evidence.
+1. **Active: close the Terminate End Event semantic checkpoint review.** The disjoint semantic-core, BPMN-source, Lean, strict wire/artifact, metamodel, and passive-host lanes are first-green. Run the complete applicable gate once at the clean immutable checkpoint target and submit the neutral packet to a new context-cold reviewer before registration or Temporal evidence.
 
 ## Approved decisions
 
@@ -253,7 +253,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: implement the owner-approved Terminate End Event semantic checkpoint across the disjoint semantic-core, BPMN-source, and Lean lanes, then integrate the shared wire/metamodel owners and run the complete applicable gate once.** Submit the resulting immutable checkpoint to a new context-cold reviewer before profile registration, answer-free scenarios, differential evidence, or Temporal refinement evidence. Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
+**Next action: run the complete applicable gate once at the clean immutable Terminate End semantic checkpoint, mint its neutral review packet, and submit it to a new context-cold reviewer.** Profile registration, answer-free scenarios, differential evidence, and live Temporal refinement remain blocked until that review closes. Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

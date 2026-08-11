@@ -97,6 +97,7 @@ def parseFrom (source : CheckedProcess) :
       | some (.boundaryErrorEvent ..)
       | some (.timerBoundaryEvent ..)
       | some (.errorEndEvent ..)
+      | some (.terminateEndEvent ..)
       | some (.intermediateCatchMessageEvent ..)
       | some (.receiveTask ..)
       | some (.parallelGateway _ .converging)
@@ -141,6 +142,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .boundaryErrorEvent ..
   | .timerBoundaryEvent ..
   | .errorEndEvent .. => false
+  | .terminateEndEvent .. => false
   | .intermediateCatchTimerEvent _ durationLiteral =>
       durationLiteral = "PT1S"
   | .serviceTask _ descriptor inputMappings outputMappings route =>

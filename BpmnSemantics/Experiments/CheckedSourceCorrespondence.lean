@@ -112,11 +112,24 @@ private def closeRootIfEnabled (program : Program) (state : RuntimeState) :
   | none => state
   | some completion => (fire? program completion state).getD state
 
+/-- Frozen operation surface for this pre-Terminate experiment. The new family is explicit and fail-closed. -/
+private def correspondenceOperationSupported : SemanticOperation → Bool
+  | .initiate .. | .awaitUserTask .. | .duplicate .. | .synchronize ..
+  | .reachNoneEnd .. | .completeScope .. => true
+  | .initiateMessage .. | .initiateTimer .. | .enterScope ..
+  | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+  | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
+  | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. | .awaitEffect ..
+  | .mergeExclusive .. | .choose .. | .selectMany ..
+  | .synchronizeSelected .. | .throwError .. | .terminateScope .. => false
+
 private def programEnabledTransitions (program : Program)
     (state : RuntimeState) : List (OperationId × RuntimeState) :=
   program.operations.filterMap fun operation =>
-    (fire? program operation state).map fun successor =>
-      (operation.id, closeRootIfEnabled program successor)
+    if correspondenceOperationSupported operation then
+      (fire? program operation state).map fun successor =>
+        (operation.id, closeRootIfEnabled program successor)
+    else none
 
 private def enabledTransitionsCorrespondAt (source : CheckedProcess)
     (state : CheckedSourceSemantics.SourceRuntimeState) : Bool :=

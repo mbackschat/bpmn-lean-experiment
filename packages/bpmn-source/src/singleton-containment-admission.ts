@@ -4,10 +4,18 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 import { asElement } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
 
-type SingletonContainmentLoss = Readonly<{
+type ContainmentCardinalityMismatch = Readonly<{
   property: string;
   sourceOccurrences: number;
   projectedOccurrences: number;
+  expectedOccurrences: number | null;
+}>;
+
+export type ExactContainmentCardinality = Readonly<{
+  property: string;
+  projectedType: string;
+  xmlLocalName: string;
+  expectedOccurrences: number;
 }>;
 
 type SingletonContainmentSpec = Readonly<{
@@ -17,17 +25,19 @@ type SingletonContainmentSpec = Readonly<{
 }>;
 
 /**
- * Detects source occurrences that `bpmn-moddle` silently overwrote in a singleton containment.
+ * Preserves exact containment cardinalities before raw BPMN source is discarded.
  *
  * The parser exposes neither the discarded value nor a warning, so comparing its projected owner
  * properties with the exact XML element occurrences is the only way to preserve the manifest's
- * upper bound before the raw source is discarded. This is a cardinality check, not a second BPMN
- * parser: `bpmn-moddle` still owns namespaces, structure, values, and references.
+ * upper bound before the raw source is discarded. Selected source checkpoints can additionally
+ * require an exact occurrence count for repeatable containments. This is a cardinality check, not
+ * a second BPMN parser: `bpmn-moddle` still owns namespaces, structure, values, and references.
  */
-export function firstSingletonContainmentLoss(
+export function firstContainmentCardinalityMismatch(
   xml: string,
   elements: ReadonlyMap<ElementRecord, unknown>,
-): SingletonContainmentLoss | undefined {
+  exactCardinalities: ReadonlyArray<ExactContainmentCardinality> = [],
+): ContainmentCardinalityMismatch | undefined {
   const searchableXml = removeOpaqueXmlRegions(xml);
   for (const property of metamodelManifest.properties) {
     if (!property.containment || property.upper !== 1) {
@@ -39,6 +49,7 @@ export function firstSingletonContainmentLoss(
         property: `${property.owner}.${property.name}`,
         sourceOccurrences: -1,
         projectedOccurrences: -1,
+        expectedOccurrences: null,
       };
     }
     const sourceOccurrences = countOpeningElements(
@@ -55,6 +66,27 @@ export function firstSingletonContainmentLoss(
         property: `${property.owner}.${property.name}`,
         sourceOccurrences,
         projectedOccurrences,
+        expectedOccurrences: null,
+      };
+    }
+  }
+  for (const cardinality of exactCardinalities) {
+    const sourceOccurrences = countOpeningElements(
+      searchableXml,
+      cardinality.xmlLocalName,
+    );
+    const projectedOccurrences = [...elements.keys()].filter(
+      ({ $type }) => $type === cardinality.projectedType,
+    ).length;
+    if (
+      sourceOccurrences !== cardinality.expectedOccurrences ||
+      projectedOccurrences !== cardinality.expectedOccurrences
+    ) {
+      return {
+        property: cardinality.property,
+        sourceOccurrences,
+        projectedOccurrences,
+        expectedOccurrences: cardinality.expectedOccurrences,
       };
     }
   }

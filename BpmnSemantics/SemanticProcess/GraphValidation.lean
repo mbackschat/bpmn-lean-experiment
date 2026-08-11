@@ -121,7 +121,8 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .choose _ _ input _ _ _
   | .selectMany _ _ input _ _ _
   | .throwError _ _ input _ _
-  | .reachNoneEnd _ _ input => [input]
+  | .reachNoneEnd _ _ input
+  | .terminateScope _ _ input _ => [input]
   | .synchronize _ _ inputs _
   | .mergeExclusive _ _ inputs _
   | .synchronizeSelected _ _ inputs _ _ => inputs
@@ -154,7 +155,8 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .selectMany _ _ _ candidates defaultBranch _ =>
       candidates.map (·.output) ++ [defaultBranch.output]
   | .throwError _ _ _ _ handler => [handler.output]
-  | .reachNoneEnd .. => []
+  | .reachNoneEnd ..
+  | .terminateScope .. => []
   | .completeScope _ _ _ parentOutput => parentOutput.toList
   | .initiateMessage _ _ _ outputs => outputs
   | .initiateTimer _ _ _ outputs => outputs
@@ -244,6 +246,8 @@ private def operationRespectsScopes (program : Program)
                 | some parent, some output =>
                     placesOwnedBy program [output] parent
                 | _, _ => false
+      | .terminateScope _ _ input scopeId =>
+          scopeId = owner && placesOwnedBy program [input] owner
       | .throwError _ _ input _ handler =>
           handler.attachedScopeId = owner &&
             placesOwnedBy program [input] owner &&
@@ -296,7 +300,8 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected ..
-  | .throwError .. | .reachNoneEnd .. | .completeScope .. => none
+  | .throwError .. | .reachNoneEnd .. | .terminateScope ..
+  | .completeScope .. => none
 
 private def oneCompletionStrategyPerScope (program : Program)
     (entryRootId : DefinitionScopeId) : Bool :=
@@ -346,6 +351,12 @@ private def completionEdges (program : Program) : List (GraphEdge OperationId) :
         let scopeId ← operationScope? program id
         let completionId ← completionId? program scopeId
         pure { source := id, target := completionId }
+    | .terminateScope id _ _ scopeId => do
+        let owner ← operationScope? program id
+        if owner = scopeId then
+          let completionId ← completionId? program scopeId
+          pure { source := id, target := completionId }
+        else none
     | _ => none
 
 private def programEdges (program : Program) : List (GraphEdge OperationId) :=
@@ -362,6 +373,7 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitMonitoredUserTask .. | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
+  | .terminateScope ..
   | .completeScope .. => false
 
 /-- Independently classify Semantic Process graph edges removed after an `awaitUserTask` producer. -/

@@ -12,6 +12,7 @@ import {
   requireUnicodeScalarString,
 } from "./strict-json.ts";
 import { verifyMergeExclusiveBindings } from "./merge-exclusive-artifact-consistency.ts";
+import { verifyTerminateScopeBindings } from "./end-operation-artifact-consistency.ts";
 import {
   referencedStartControlPlaces,
   verifyCanonicalStartOperationOrder,
@@ -118,6 +119,7 @@ function referencedControlPlaces(
     case "throwError":
       return [operation.input, operation.handler.output];
     case "reachNoneEnd":
+    case "terminateScope":
       return [operation.input];
     case "completeScope":
       return operation.parentOutput === null ? [] : [operation.parentOutput];
@@ -222,6 +224,7 @@ export function verifyCanonicalDefinitionOrder(
       case "awaitEffect":
       case "throwError":
       case "reachNoneEnd":
+      case "terminateScope":
       case "completeScope":
         break;
       default:
@@ -430,6 +433,7 @@ export function verifyDefinitionReferences(
     semanticProcess,
     compareCanonicalStrings,
   );
+  verifyTerminateScopeBindings(checkedProcess, semanticProcess);
 
   const placeIds = requireUniqueIds(
     "semantic process control places",

@@ -270,7 +270,7 @@ test("covers every registered semantic profile in the admission capability table
   const profileSource = await readFile(
     path.join(
       projectRoot,
-      "packages/semantic-core/src/semantic-process-profile.ts",
+      "packages/semantic-core/src/semantic-profile-catalog.ts",
     ),
     "utf8",
   );

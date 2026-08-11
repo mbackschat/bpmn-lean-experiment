@@ -39,8 +39,11 @@ import {
   admitSourceOverlay,
 } from "./source-overlay.js";
 import {
-  firstSingletonContainmentLoss,
+  firstContainmentCardinalityMismatch,
 } from "./singleton-containment-admission.js";
+import {
+  terminateEndContainmentCardinalities,
+} from "./terminate-end-event-source.js";
 
 export async function compileBpmnToSemanticProcess(
   request: CompileBpmnToSemanticProcessRequest,
@@ -160,14 +163,20 @@ export async function compileBpmnToSemanticProcess(
     return reject(imported.warnings);
   }
 
-  const singletonLoss = firstSingletonContainmentLoss(xml, imported.located);
-  if (singletonLoss !== undefined) {
+  const cardinalityMismatch = firstContainmentCardinalityMismatch(
+    xml,
+    imported.located,
+    terminateEndContainmentCardinalities(request.semanticProfile),
+  );
+  if (cardinalityMismatch !== undefined) {
     return reject([
       diagnostic(
         BpmnSourceDiagnosticCode.UnsupportedModel,
-        singletonLoss.sourceOccurrences < 0
-          ? `The bounded singleton-containment checker does not own ${singletonLoss.property}.`
-          : `Exact source contains ${singletonLoss.sourceOccurrences} ${singletonLoss.property} element occurrences, while structural import retained ${singletonLoss.projectedOccurrences}.`,
+        cardinalityMismatch.sourceOccurrences < 0
+          ? `The bounded containment-cardinality checker does not own ${cardinalityMismatch.property}.`
+          : cardinalityMismatch.expectedOccurrences !== null
+            ? `Exact source requires ${cardinalityMismatch.expectedOccurrences} ${cardinalityMismatch.property} element occurrence, while source contains ${cardinalityMismatch.sourceOccurrences} and structural import retained ${cardinalityMismatch.projectedOccurrences}.`
+          : `Exact source contains ${cardinalityMismatch.sourceOccurrences} ${cardinalityMismatch.property} element occurrences, while structural import retained ${cardinalityMismatch.projectedOccurrences}.`,
       ),
     ]);
   }

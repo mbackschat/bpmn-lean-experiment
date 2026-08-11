@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11 after independent cold proposal review and the same reviewer's correction audits closed; implementation is authorized and not complete.** Approval covers exactly the selected account, public contract, required evidence, and exclusions below. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
+**Owner-approved on 2026-08-11; the first green semantic checkpoint is implemented and awaiting independent cold checkpoint review. It is not product-registered or evidence-closed.** The checkpoint implements the exact source, checked graph, no-output IL operation, independent Lean and TypeScript semantics, strict schemas, exact artifact binding, and passive Temporal host admission selected below. Profile registration, answer-free scenarios, differential evidence, live Temporal refinement, closure review, and graduation remain blocked until the checkpoint review closes. Approval covers exactly the selected account, public contract, required evidence, and exclusions below. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
 
 ## Independent cold-review receipt
 
@@ -315,49 +315,49 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | Owner | Headroom to 600 nonblank lines | Consequence |
 |---|---:|---|
 | [semantic-core public exports](../../packages/semantic-core/src/index.ts) | 559 | Export closed Terminate contracts and cohesive owners only. |
-| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 370 | Add the identity-only checked Terminate End variant. |
-| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 210 | Add the no-output `terminateScope` operation. |
-| [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 140 | Validate input, scope, and canonical identity or delegate before the limit. |
-| [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 104 | Add the synthetic completion edge through a cohesive extracted owner if fresh growth approaches the limit. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 33 | Split the catalog/capability responsibility before profile growth crosses 600. |
-| [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 240 | Add only one delegated operation arm. |
-| [scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 499 | Own shared subtree classification and selected-root-retaining cancellation. |
-| [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 328 | Add the exact Terminate End projection key set consumed by the shared projector guard. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 220 | Delegate exact Terminate End projection without changing None/Error branches. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 242 | Add exact profile multiset and scope policy. |
-| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 282 | Recognize Terminate End as a `1 -> 0` sink. |
-| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 61 | Delegate to a new cohesive Terminate lowering owner. |
-| [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 4 | Extract an End/termination consistency owner before adding semantic checks. |
+| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 365 | Add the identity-only checked Terminate End variant. |
+| [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 201 | Add the no-output `terminateScope` operation. |
+| [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 133 | Validate input, scope, and canonical identity or delegate before the limit. |
+| [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 99 | Add the synthetic completion edge through a cohesive extracted owner if fresh growth approaches the limit. |
+| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 35 | Split the catalog/capability responsibility before profile growth crosses 600. |
+| [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 233 | Add only one delegated operation arm. |
+| [scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 484 | Own shared subtree classification and selected-root-retaining cancellation. |
+| [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 323 | Add the exact Terminate End projection key set consumed by the shared projector guard. |
+| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 219 | Delegate exact Terminate End projection without changing None/Error branches. |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 149 | Add exact profile multiset and scope policy. |
+| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 280 | Recognize Terminate End as a `1 -> 0` sink. |
+| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 58 | Delegate to a new cohesive Terminate lowering owner. |
+| [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 0 | Extract an End/termination consistency owner before adding semantic checks. |
 | [contract artifact projection](../../scripts/contract-artifacts.ts) | 16 | Add only an exhaustive classifier arm; extract any new projection responsibility. |
 | [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 397 | Register standards-only scenarios with no CIB target. |
-| [bounded CMOF calibration](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 366 | Verify the newly consumed normative `TerminateEventDefinition` class before source admission uses it. |
+| [bounded CMOF calibration](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 340 | Verify the newly consumed normative `TerminateEventDefinition` class before source admission uses it. |
 | [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 28 | Put cases in a capsule-owned module and add only catalog registration. |
-| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 398 | Classify `terminateScope` as a passive internal operation. |
+| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 397 | Classify `terminateScope` as a passive internal operation. |
 | [test mutation Workflows](../../packages/temporal-adapter/testkit/src/branch-bypass-mutation-workflows.ts) | 512 | Add a cohesive global-cancellation mutation or extract a termination mutation owner. |
-| [Lean semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 130 | Add checked and IL variants without widening old values. |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 288 | Validate exact checked shape. |
-| [Lean checked graph](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 470 | Add `1 -> 0` arity and scope ownership. |
-| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 273 | Own exact selected node and operation multiset. |
-| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 298 | Validate generic input, scope, and no-output structure. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 174 | Add the synthetic completion edge and reachability. |
-| [Lean runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 89 | Extract reusable scope cancellation before semantic growth. |
-| [Lean Error propagation](../../BpmnSemantics/SemanticProcess/ErrorPropagation.lean) | 448 | Preserve existing cancellation laws through the extracted primitive. |
-| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 288 | Classify the new operation as owning no public wait definition. |
-| [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean) | 278 | Add only one delegated relation/evaluator arm. |
+| [Lean semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 122 | Add checked and IL variants without widening old values. |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 286 | Validate exact checked shape. |
+| [Lean checked graph](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 466 | Add `1 -> 0` arity and scope ownership. |
+| [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 256 | Own exact selected node and operation multiset. |
+| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 293 | Validate generic input, scope, and no-output structure. |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 162 | Add the synthetic completion edge and reachability. |
+| [Lean runtime state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 160 | Extract reusable scope cancellation before semantic growth. |
+| [Lean Error propagation](../../BpmnSemantics/SemanticProcess/ErrorPropagation.lean) | 447 | Preserve existing cancellation laws through the extracted primitive. |
+| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 287 | Classify the new operation as owning no public wait definition. |
+| [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean) | 267 | Add only one delegated relation/evaluator arm. |
 | [Lean execution](../../BpmnSemantics/SemanticProcess/Execution.lean) | 48 | Add no proofs; only import or exhaustive dispatch after extraction. |
-| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 78 | Delegate to a new cohesive Terminate lowering owner. |
-| [Lean checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 360 | Decode the exact checked node. |
-| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 156 | Decode the exact operation. |
-| [Lean Semantic Process umbrella](../../BpmnSemantics/SemanticProcess.lean) | 574 | Import independently buildable owners only. |
-| [Lean conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 584 | Import conformance evidence only. |
+| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 76 | Delegate to a new cohesive Terminate lowering owner. |
+| [Lean checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 357 | Decode the exact checked node. |
+| [Lean program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 150 | Decode the exact operation. |
+| [Lean Semantic Process umbrella](../../BpmnSemantics/SemanticProcess.lean) | 571 | Import independently buildable owners only. |
+| [Lean conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 583 | Import conformance evidence only. |
 | [Lean library umbrella](../../BpmnSemantics.lean) | 574 | Import the public conformance module only. |
-| [checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 431 | Reject the new node explicitly. |
-| [checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 290 | Reject the new node and operation explicitly. |
-| [checked-source graph experiment](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) | 515 | Reject Terminate End in frozen sink and graph predicates. |
-| [checked-source chain experiment](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) | 406 | Keep supported-chain classification exhaustive and fail closed. |
-| [checked-source coverage experiment](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) | 350 | Keep coverage proofs exhaustive without claiming support. |
-| [checked-source frontier experiment](../../BpmnSemantics/Experiments/CheckedSourceFrontier.lean) | 331 | Add an explicit fail-closed arm if its exhaustive consumer widens. |
-| [checked-source correspondence experiment](../../BpmnSemantics/Experiments/CheckedSourceCorrespondence.lean) | 431 | Preserve exhaustive source/program correspondence classification. |
+| [checked-source decomposition experiment](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) | 429 | Reject the new node explicitly. |
+| [checked-source transition experiment](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) | 287 | Reject the new node and operation explicitly. |
+| [checked-source graph experiment](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) | 514 | Reject Terminate End in frozen sink and graph predicates. |
+| [checked-source chain experiment](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) | 405 | Keep supported-chain classification exhaustive and fail closed. |
+| [checked-source coverage experiment](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) | 349 | Keep coverage proofs exhaustive without claiming support. |
+| [checked-source frontier experiment](../../BpmnSemantics/Experiments/CheckedSourceFrontier.lean) | 329 | Add an explicit fail-closed arm if its exhaustive consumer widens. |
+| [checked-source correspondence experiment](../../BpmnSemantics/Experiments/CheckedSourceCorrespondence.lean) | 419 | Preserve exhaustive source/program correspondence classification. |
 
 The bounded [CMOF manifest](../../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json) adds `TerminateEventDefinition` together with the calibration owner above. Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json) and [Semantic Process schema](../../contracts/schemas/semantic-process.schema.json) change atomically but are not hand-written source headroom owners. New cohesive source, lowering, semantic runtime, Lean cancellation, relation, fixture, and conformance owners start below the 600-line threshold and are inventoried before their Red.
 
@@ -365,9 +365,9 @@ Existing focused test owners also change where their exhaustive inventories wide
 
 | Test owner | Headroom to 600 nonblank lines | Obligation |
 |---|---:|---|
-| [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 155 | Register the exact projector in the closed consumer matrix. |
-| [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 338 | Lock `1 -> 0`, nested scope, and synthetic completion edges. |
-| [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 125 | Reject origin, input, scope, and output drift. |
+| [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 154 | Register the exact projector in the closed consumer matrix. |
+| [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 312 | Lock `1 -> 0`, nested scope, and synthetic completion edges. |
+| [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 61 | Reject origin, input, scope, and output drift. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 30 | Extract a termination characterization owner rather than crowding this test. |
 | [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 429 | Require at least one runnable example when the checkpoint-only profile graduates. |
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 295 | Lock additive profiles, cases, standards-only targets, and mutations. |

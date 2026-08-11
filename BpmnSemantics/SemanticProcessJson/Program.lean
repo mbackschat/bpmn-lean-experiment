@@ -424,6 +424,12 @@ private def decodeOperation (json : Json) :
   | "reachNoneEnd" =>
       requireObjectShape json ["id", "input", "kind", "origin"]
       pure (.reachNoneEnd id origin ⟨← stringField json "input"⟩)
+  | "terminateScope" =>
+      requireObjectShape json ["id", "input", "kind", "origin", "scopeId"]
+      pure
+        (.terminateScope id origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "scopeId"⟩)
   | "completeScope" =>
       requireObjectShape json
         ["id", "kind", "origin", "parentOutput", "scopeId"]

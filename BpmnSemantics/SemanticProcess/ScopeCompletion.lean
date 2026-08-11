@@ -3,9 +3,8 @@ import BpmnSemantics.SemanticProcess.RuntimeState
 /-! # Normal scope completion
 
 This module owns the quiescence predicate and the normal completion transition for one scope
-occurrence: whether a scope *may* complete, and what completing it does. Regional cancellation, token
-operations, and wait construction remain in `RuntimeState`, because interruption removes a subtree
-regardless of quiescence and shares no decision with this transition.
+occurrence: whether a scope *may* complete, and what completing it does. Regional cancellation is
+owned by `ScopeCancellation`; token operations and wait construction remain in `RuntimeState`.
 
 Completion is deliberately the only transition that may retire a scope occurrence normally, so a family
 that layers extra withdrawal on it composes this owner rather than reimplementing quiescence.

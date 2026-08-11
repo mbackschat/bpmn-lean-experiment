@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Event-Based Gateway race semantics
 
@@ -580,7 +580,7 @@ theorem interruptScope_removes_interrupted_event_race
     (output : ControlPlaceId) (race : EventRace)
     (interrupted : occurrenceInSubtree state.scopeOccurrences root race.owner = true) :
     race ∉ (interruptScope state root parent output).eventRaces := by
-  simp [interruptScope, interrupted]
+  simp [interruptScope, cancelScopeSubtree, interrupted]
 
 /-- Interruption never reuses a race activation identity. -/
 theorem interruptScope_preserves_event_race_activations
@@ -588,6 +588,6 @@ theorem interruptScope_preserves_event_race_activations
     (output : ControlPlaceId) :
     (interruptScope state root parent output).eventRaceActivations =
       state.eventRaceActivations := by
-  simp [interruptScope]
+  simp [interruptScope, cancelScopeSubtree]
 
 end BpmnSemantics.SemanticProcess

@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.LoweringIdentity
 import BpmnSemantics.SemanticProcess.TimerStartLowering
+import BpmnSemantics.SemanticProcess.TerminateEndLowering
 
 /-! # Canonical checked-process lowering
 
@@ -423,6 +424,7 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id))
         error
         (lowerInterruptingErrorHandler source scopeId error), scopeId)
+  | .terminateEndEvent id => lowerTerminateEnd? source id
   | .noneEndEvent id =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.reachNoneEnd

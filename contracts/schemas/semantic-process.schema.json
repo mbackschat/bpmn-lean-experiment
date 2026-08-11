@@ -1355,6 +1355,34 @@
         }
       }
     },
+    "terminateScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "scopeId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "terminateScope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "scopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "completeScope": {
       "type": "object",
       "additionalProperties": false,
@@ -1454,6 +1482,9 @@
         },
         {
           "$ref": "#/$defs/reachNoneEnd"
+        },
+        {
+          "$ref": "#/$defs/terminateScope"
         },
         {
           "$ref": "#/$defs/completeScope"

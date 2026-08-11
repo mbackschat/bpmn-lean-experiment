@@ -73,6 +73,7 @@ import {
   projectBoundaryErrorEvent,
   projectErrorEndEvent,
 } from "./subprocess-error-source.js";
+import { projectTerminateEndEvent } from "./terminate-end-event-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
@@ -171,7 +172,7 @@ export function projectCheckedNodes(
       case bpmnTypes.endEventType:
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneEndEvent, id }
-          : projectErrorEndEvent(
+          : projectTerminateEndEvent(element, id) ?? projectErrorEndEvent(
               element,
               id,
               rootSelection.errorArtifact,

@@ -84,6 +84,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .boundaryErrorEvent .. => none
   | .timerBoundaryEvent .. => none
   | .errorEndEvent .. => none
+  | .terminateEndEvent .. => none
   | .exclusiveMerge _ => none
   | .exclusiveGateway _ _ _ => none
   | .inclusiveGatewayDiverging _ _ _ => none
@@ -155,6 +156,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | timerBoundaryEvent id attachedToRef durationLiteral outputFlowId =>
       simp [fireNode?] at result
   | errorEndEvent id error =>
+      simp [fireNode?] at result
+  | terminateEndEvent id =>
       simp [fireNode?] at result
   | exclusiveMerge id =>
       simp [fireNode?] at result

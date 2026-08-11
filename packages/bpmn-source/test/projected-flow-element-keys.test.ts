@@ -44,6 +44,7 @@ const consumers = [
   { source: "receive-task-source.ts", anchor: "projectReceiveTask", elementName: "element", shape: "ReceiveTask" },
   { source: "simple-boolean-exclusive-gateway-source.ts", anchor: "projectExclusiveGateway", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
   { source: "subprocess-error-source.ts", anchor: "projectErrorEndEvent", elementName: "element", shape: "ErrorEndEvent" },
+  { source: "terminate-end-event-source.ts", anchor: "projectTerminateEndEvent", elementName: "element", shape: "TerminateEndEvent" },
   { source: "subprocess-error-source.ts", anchor: "projectBoundaryErrorEvent", elementName: "element", shape: "BoundaryEvent" },
   { source: "timer-boundary-event-source.ts", anchor: "projectTimerBoundaryEvent", elementName: "element", shape: "BoundaryEvent" },
   { source: "mapped-service-task-source.ts", anchor: "projectMappedSuccessServiceTask", elementName: "value", shape: "MappedSuccessServiceTask" },
@@ -62,7 +63,7 @@ const consumers = [
 const inventoryCases = [
   ["genericShapes", "startEventType", ["PlainNode", "MessageStartEvent", "TimerStartEvent"]],
   ["genericShapes", "userTaskType", ["PlainNode"]],
-  ["genericShapes", "endEventType", ["PlainNode", "ErrorEndEvent"]],
+  ["genericShapes", "endEventType", ["PlainNode", "ErrorEndEvent", "TerminateEndEvent"]],
   ["genericShapes", "subProcessType", ["EmbeddedSubProcess"]],
   ["genericShapes", "sequenceFlowType", ["StandardSequenceFlow"]],
   ["genericShapes", "serviceTaskType", ["GenericServiceTask"]],

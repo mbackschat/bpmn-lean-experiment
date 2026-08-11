@@ -39,7 +39,7 @@
     "research:cib-breadth": "node scripts/cib-bpmn-breadth.ts",
     "publication-stats:update": "node scripts/publication-statistics.ts --write",
     "publication-stats:check": "node scripts/publication-statistics.ts --check",
-    "test:contracts": "node --test --test-concurrency=1 scripts/capsule-roundtrip.test.ts scripts/contract-artifacts.test.ts scripts/contract-artifact-projections.test.ts scripts/contract-message-projection.test.ts scripts/contract-definition-artifacts.test.ts scripts/contract-schema-coverage.test.ts scripts/message-start-contract-schema.test.ts scripts/cib-observation-fidelity.test.ts",
+    "test:contracts": "node --test --test-concurrency=1 scripts/capsule-roundtrip.test.ts scripts/contract-artifacts.test.ts scripts/contract-artifact-projections.test.ts scripts/contract-message-projection.test.ts scripts/contract-definition-artifacts.test.ts scripts/contract-schema-coverage.test.ts scripts/message-start-contract-schema.test.ts scripts/terminate-end-contract-schema.test.ts scripts/cib-observation-fidelity.test.ts",
     "test:differential": "pnpm build:differential && node --test --test-concurrency=1 packages/differential/test/comparator.test.ts packages/differential/test/scenario-binding.test.ts packages/differential/test/pipeline-catalog.test.ts",
     "test:infrastructure": "pnpm check:harness-types && pnpm test:infrastructure:runtime",
     "test:infrastructure:runtime": "node --test --test-concurrency=1 scripts/*.test.ts",

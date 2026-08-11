@@ -21,7 +21,7 @@ theorem interruptScope_preserves_runtime_history
       after.scopeActivations = state.scopeActivations ∧
       after.callActivations = state.callActivations ∧
       after.endOccurrences = state.endOccurrences := by
-  simp [interruptScope]
+  simp [interruptScope, cancelScopeSubtree]
 
 /-- Every User Task wait owned by the interrupted occurrence subtree is removed. -/
 theorem interruptScope_removes_interrupted_user_wait
@@ -29,7 +29,7 @@ theorem interruptScope_removes_interrupted_user_wait
     (output : ControlPlaceId) (wait : UserTaskWait)
     (interrupted : occurrenceInSubtree state.scopeOccurrences root wait.owner = true) :
     wait ∉ (interruptScope state root parent output).waits := by
-  simp [interruptScope, interrupted]
+  simp [interruptScope, cancelScopeSubtree, interrupted]
 
 /-- A User Task wait outside the interrupted occurrence subtree survives. -/
 theorem interruptScope_preserves_unrelated_user_wait
@@ -40,7 +40,8 @@ theorem interruptScope_preserves_unrelated_user_wait
     (outsideCalledTree :
       wait.owner.processInstanceId ∉ calledInstanceClosure state root) :
     wait ∈ (interruptScope state root parent output).waits := by
-  simp [interruptScope, present, unrelated, outsideCalledTree]
+  simp [interruptScope, cancelScopeSubtree, present, unrelated,
+    outsideCalledTree]
 
 private def instanceId : SemanticId := ⟨"ErrorInstance"⟩
 

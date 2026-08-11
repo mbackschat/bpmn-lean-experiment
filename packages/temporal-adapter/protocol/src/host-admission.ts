@@ -196,6 +196,7 @@ function classifyHostOperation(
     case SemanticOperationKind.Choose:
     case SemanticOperationKind.ThrowError:
     case SemanticOperationKind.ReachNoneEnd:
+    case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.CompleteScope:
       return HostOperationClass.Passive;
     default:

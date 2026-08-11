@@ -37,6 +37,7 @@ import {
 import { createMessageWait } from "./semantic-process-message.js";
 import { applyMessageInitiation } from "./semantic-process-message-start.js";
 import { applyTimerInitiation } from "./semantic-process-timer-start.js";
+import { terminateScope } from "./semantic-process-termination-runtime.js";
 import {
   commonTokenOwner,
   enterScope,
@@ -302,6 +303,12 @@ export function applyInternalOperation(
       const throwingOwner = onlyTokenOwner(state, operation.input);
       return throwingOwner !== undefined
         ? throwError(operation, state, throwingOwner)
+        : null;
+    }
+    case SemanticOperationKind.TerminateScope: {
+      const terminatedOwner = onlyTokenOwner(state, operation.input);
+      return terminatedOwner !== undefined
+        ? terminateScope(operation, state, terminatedOwner)
         : null;
     }
     case SemanticOperationKind.ReachNoneEnd: {

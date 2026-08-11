@@ -273,6 +273,34 @@ test("admits a Timer Start only as the single zero-to-one graph root", () => {
   );
 });
 
+test("admits Terminate End as a one-to-zero sink and rejects an outgoing flow", () => {
+  const start = { kind: CheckedNodeKind.NoneStartEvent, id: "Start" } as const;
+  const terminate = {
+    kind: CheckedNodeKind.TerminateEndEvent,
+    id: "Terminate",
+  } as const;
+  const nodes = [start, terminate] as const satisfies CheckedProcessGraph["nodes"];
+  const admittedFlow = flow("StartToTerminate", start.id, terminate.id);
+
+  assert.notEqual(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(nodes, [admittedFlow]),
+      SemanticProfileId.UserTask,
+    ),
+    undefined,
+  );
+  assert.equal(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(
+        nodes,
+        [admittedFlow, flow("TerminateToStart", terminate.id, start.id)],
+      ),
+      SemanticProfileId.UserTask,
+    ),
+    undefined,
+  );
+});
+
 function flow(
   id: string,
   sourceId: string,

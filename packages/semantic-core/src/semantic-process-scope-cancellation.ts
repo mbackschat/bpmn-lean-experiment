@@ -1,11 +1,9 @@
 /**
- * Regional cancellation of one scope occurrence and every occurrence descended from it.
+ * Regional cancellation classifies one scope occurrence and every occurrence descended from it.
  *
- * One owner because two semantic families cancel a live child region on exactly the same terms —
- * an interrupting Error caught at the scope boundary and an interrupting boundary Timer deadline —
- * and a per-family copy would let them drift on which runtime collections a region owns. What each
- * family does afterwards stays with that family and is deliberately different: the Error produces its
- * handler token, while the deadline additionally consumes its own parent-owned Timer wait.
+ * One owner because interruption and Terminate End must agree on which runtime collections a live
+ * region owns. What each family does with the selected occurrence stays distinct: Error and boundary
+ * Timer interruption remove it, while Terminate End retains it quiescent for ordinary completion.
  *
  * Activation counters and `endOccurrences` are monotonic historical facts and are never rewound, so a
  * cancelled region's counts survive it. This function removes live owners only.
@@ -33,7 +31,23 @@ export function removeScopeOccurrenceSubtree(
   state: RuntimeState,
   attached: RuntimeScopeOccurrence,
 ): RuntimeState {
-  const interrupted = interruptedOccurrences(state.scopeOccurrences, attached);
+  return removeScopeOccurrenceRegion(state, attached, false);
+}
+
+/** Removes every live owner below one occurrence while retaining that occurrence for completion. */
+export function removeScopeOccurrenceContents(
+  state: RuntimeState,
+  attached: RuntimeScopeOccurrence,
+): RuntimeState {
+  return removeScopeOccurrenceRegion(state, attached, true);
+}
+
+function removeScopeOccurrenceRegion(
+  state: RuntimeState,
+  attached: RuntimeScopeOccurrence,
+  retainRoot: boolean,
+): RuntimeState {
+  const interrupted = scopeOccurrenceSubtree(state.scopeOccurrences, attached);
   const isInterrupted = (owner: ScopeOccurrenceId): boolean =>
     interrupted.some(({ id }) => sameScopeOccurrence(id, owner));
   const interruptedEffects = state.effectWaits
@@ -49,7 +63,9 @@ export function removeScopeOccurrenceSubtree(
       ({ owner }) => !isInterrupted(owner),
     ),
     scopeOccurrences: withoutCalledProcesses.scopeOccurrences.filter(
-      ({ id }) => !isInterrupted(id),
+      ({ id }) =>
+        (retainRoot && sameScopeOccurrence(id, attached.id)) ||
+        !isInterrupted(id),
     ),
     userTaskWaits: withoutCalledProcesses.userTaskWaits.filter(
       ({ owner }) => !isInterrupted(owner),
@@ -79,7 +95,8 @@ export function removeScopeOccurrenceSubtree(
   };
 }
 
-function interruptedOccurrences(
+/** Classifies one runtime occurrence and every occurrence descended through parent ownership. */
+export function scopeOccurrenceSubtree(
   occurrences: ReadonlyArray<RuntimeScopeOccurrence>,
   root: RuntimeScopeOccurrence,
 ): ReadonlyArray<RuntimeScopeOccurrence> {

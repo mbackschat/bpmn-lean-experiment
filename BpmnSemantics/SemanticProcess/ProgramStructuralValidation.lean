@@ -255,6 +255,11 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
       nonempty id.value &&
         nonempty origin.elementId.value &&
         placeExists places input
+  | .terminateScope id origin input scopeId =>
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        nonempty scopeId.value &&
+        placeExists places input
   | .completeScope id origin scopeId parentOutput =>
       nonempty id.value &&
         nonempty origin.elementId.value &&

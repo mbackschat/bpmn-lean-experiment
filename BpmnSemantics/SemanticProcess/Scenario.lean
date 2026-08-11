@@ -63,6 +63,7 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .duplicate .. | .synchronize .. | .mergeExclusive .. | .choose ..
   | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
+  | .terminateScope ..
   | .completeScope .. => {}
 
 private def taskDefinitions (program : Program) : List UserTaskDefinition :=

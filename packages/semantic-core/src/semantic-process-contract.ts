@@ -51,6 +51,7 @@ export enum SemanticOperationKind {
   SynchronizeSelected = "synchronizeSelected",
   AwaitEventRace = "awaitEventRace",
   ThrowError = "throwError",
+  TerminateScope = "terminateScope",
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
 }
@@ -302,6 +303,14 @@ export type ReturnProcessOperation = OperationBase &
     callerOutput: string;
   }>;
 
+/** Consumes one End Event input and clears the live contents of its exact containing occurrence. */
+export type TerminateScopeOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.TerminateScope;
+    input: string;
+    scopeId: string;
+  }>;
+
 export type SemanticOperation =
   | (OperationBase &
       DeepReadonly<{
@@ -396,6 +405,7 @@ export type SemanticOperation =
         error: ErrorReference;
         handler: InterruptingErrorHandler;
       }>)
+  | TerminateScopeOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.ReachNoneEnd;

@@ -7,7 +7,10 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.Data
+import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.ScopeCompletion
+import BpmnSemantics.SemanticProcess.TerminateEnd
+import BpmnSemantics.SemanticProcess.TerminateEndLowering
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.Transition
 import BpmnSemantics.SemanticProcess.BoundedTask

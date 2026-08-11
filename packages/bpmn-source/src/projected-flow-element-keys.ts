@@ -53,6 +53,7 @@ export const ProjectedFlowElementShape = Object.freeze({
   TimerStartEvent: "timerStartEvent",
   ReceiveTask: "receiveTask",
   ErrorEndEvent: "errorEndEvent",
+  TerminateEndEvent: "terminateEndEvent",
   BoundaryEvent: "boundaryEvent",
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedSuccessSequenceFlow: "mappedSuccessSequenceFlow",
@@ -105,6 +106,9 @@ export const projectedFlowElementKeys = Object.freeze({
     "$type", "id", "name", "messageRef", "instantiate",
   ]),
   [ProjectedFlowElementShape.ErrorEndEvent]: Object.freeze([
+    "$type", "id", "name", "eventDefinitions",
+  ]),
+  [ProjectedFlowElementShape.TerminateEndEvent]: Object.freeze([
     "$type", "id", "name", "eventDefinitions",
   ]),
   [ProjectedFlowElementShape.BoundaryEvent]: Object.freeze([
@@ -206,6 +210,7 @@ function genericShapes(
       return [
         ProjectedFlowElementShape.PlainNode,
         ProjectedFlowElementShape.ErrorEndEvent,
+        ProjectedFlowElementShape.TerminateEndEvent,
       ];
     case bpmnTypes.subProcessType:
       return [ProjectedFlowElementShape.EmbeddedSubProcess];

@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Interrupting Sub-Process boundary Timer

@@ -1,0 +1,111 @@
+import BpmnSemantics.SemanticProcess.RuntimeState
+
+/-! # Scope-subtree cancellation
+
+This module owns classification and removal of every represented live runtime owner in one selected
+scope-occurrence subtree, including transitively called Process instances and Activity-local effect
+state. The selected occurrence may be retained for immediate normal completion or removed for an
+interrupting boundary route. Activation counters, Process variables, End history, and logical time are
+never cancellation targets.
+-/
+
+namespace BpmnSemantics.SemanticProcess
+
+open BpmnSemantics
+
+inductive SelectedScopeDisposition where
+  | retain
+  | remove
+  deriving Repr, DecidableEq
+
+private def occurrenceParent? (occurrences : List RuntimeScopeOccurrence)
+    (candidate : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
+  (occurrences.find? fun occurrence => decide (occurrence.id = candidate))
+    |>.bind (·.parent)
+
+private def occurrenceInSubtreeWithin
+    (occurrences : List RuntimeScopeOccurrence) (root candidate : ScopeOccurrenceId) :
+    Nat → Bool
+  | 0 => false
+  | fuel + 1 =>
+      if candidate = root then true
+      else match occurrenceParent? occurrences candidate with
+        | some parent => occurrenceInSubtreeWithin occurrences root parent fuel
+        | none => false
+
+/-- Whether one live occurrence is the selected scope occurrence or one of its descendants. -/
+def occurrenceInSubtree (occurrences : List RuntimeScopeOccurrence)
+    (root candidate : ScopeOccurrenceId) : Bool :=
+  occurrenceInSubtreeWithin occurrences root candidate (occurrences.length + 1)
+
+private def calledInstanceClosureWithin
+    (records : List CalledProcessOccurrence) (seed : List SemanticId) :
+    Nat → List SemanticId
+  | 0 => seed
+  | fuel + 1 =>
+      let expanded := (seed ++ records.filterMap fun record =>
+        if seed.contains record.caller.processInstanceId then
+          some record.calledRoot.processInstanceId
+        else none).eraseDups
+      if expanded.length = seed.length then expanded
+      else calledInstanceClosureWithin records expanded fuel
+
+/-- Semantic Process-instance IDs transitively owned by calls whose callers lie in one cancelled scope subtree. -/
+def calledInstanceClosure (state : RuntimeState)
+    (root : ScopeOccurrenceId) : List SemanticId :=
+  let direct := state.calledProcessOccurrences.filterMap fun record =>
+    if occurrenceInSubtree state.scopeOccurrences root record.caller then
+      some record.calledRoot.processInstanceId
+    else none
+  calledInstanceClosureWithin state.calledProcessOccurrences direct
+    (state.calledProcessOccurrences.length + 1)
+
+private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
+  { processInstanceId := wait.processInstanceId
+    elementId := ⟨wait.elementId.value⟩
+    activation := wait.activation }
+
+private def keepScopeOccurrence (disposition : SelectedScopeDisposition)
+    (root : ScopeOccurrenceId) (cancelled : ScopeOccurrenceId → Bool)
+    (occurrence : RuntimeScopeOccurrence) : Bool :=
+  match disposition with
+  | .retain => occurrence.id = root || !cancelled occurrence.id
+  | .remove => !cancelled occurrence.id
+
+/-- Remove all represented live owners in the selected occurrence subtree while independently choosing whether the selected occurrence itself remains for a following completion step. -/
+def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
+    (disposition : SelectedScopeDisposition) : RuntimeState :=
+  let calledInstances := calledInstanceClosure state root
+  let cancelled := fun owner =>
+    occurrenceInSubtree state.scopeOccurrences root owner ||
+      calledInstances.contains owner.processInstanceId
+  let cancelledEffects := state.effectWaits.filter fun wait =>
+    cancelled wait.owner
+  { state with
+    tokens := state.tokens.filter fun token => !cancelled token.owner
+    scopeOccurrences := state.scopeOccurrences.filter
+      (keepScopeOccurrence disposition root cancelled)
+    waits := state.waits.filter fun wait => !cancelled wait.owner
+    messageWaits := state.messageWaits.filter fun wait => !cancelled wait.owner
+    timerWaits := state.timerWaits.filter fun wait => !cancelled wait.owner
+    effectWaits := state.effectWaits.filter fun wait => !cancelled wait.owner
+    selectedBranchSets :=
+      state.selectedBranchSets.filter fun record => !cancelled record.owner
+    eventRaces := state.eventRaces.filter fun race => !cancelled race.owner
+    calledProcessOccurrences :=
+      state.calledProcessOccurrences.filter fun record =>
+        !cancelled record.caller && !cancelled record.calledRoot
+    variables :=
+      { state.variables with
+        activities := state.variables.activities.filter fun activity =>
+          !calledInstances.contains activity.owner.processInstanceId &&
+            !(cancelledEffects.any fun wait =>
+              activityScopeMatches (effectOccurrenceId wait) activity) } }
+
+/-- Regional interruption removes the selected occurrence and then emits the caught route token in its live parent. -/
+def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
+    (output : ControlPlaceId) : RuntimeState :=
+  let cancelled := cancelScopeSubtree state root .remove
+  { cancelled with tokens := addToken cancelled.tokens output parent }
+
+end BpmnSemantics.SemanticProcess

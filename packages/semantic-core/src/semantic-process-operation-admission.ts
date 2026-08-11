@@ -238,6 +238,13 @@ export function isWellFormedSemanticOperation(
         placeOrigins,
         scopeOrigins,
       );
+    case SemanticOperationKind.TerminateScope:
+      return (
+        hasOnlyKeys(value, ["id", "kind", "origin", "input", "scopeId"]) &&
+        isPlaceReference(value.input, placeIds) &&
+        isNonEmptyString(value.scopeId) &&
+        scopeOrigins.has(value.scopeId)
+      );
     case SemanticOperationKind.ReachNoneEnd:
       return (
         hasOnlyKeys(value, ["id", "kind", "origin", "input"]) &&

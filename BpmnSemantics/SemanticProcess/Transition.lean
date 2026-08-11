@@ -4,10 +4,12 @@ import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.TimerStart
+import BpmnSemantics.SemanticProcess.TerminateEnd
 import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Semantic Process internal transitions
 
@@ -205,6 +207,11 @@ inductive OperationStep (program : Program) :
   | reachNoneEnd (id origin input) (before after : RuntimeState)
       (transition : reachNoneEndState? before input = some after) :
       OperationStep program (.reachNoneEnd id origin input) before after
+  | terminateScope (id origin input scopeId) (before after : RuntimeState)
+      (transition :
+        TerminateScopeStep program id origin input scopeId before after) :
+      OperationStep program
+        (.terminateScope id origin input scopeId) before after
   | completeScope (id origin scopeId parentOutput)
       (before after : RuntimeState)
       (transition :
@@ -258,6 +265,8 @@ def fire? (program : Program) (operation : SemanticOperation)
   | .throwError _ _ input error handler =>
       throwErrorState? state input error handler
   | .reachNoneEnd _ _ input => reachNoneEndState? state input
+  | .terminateScope id origin input scopeId =>
+      terminateScopeState? program state id origin input scopeId
   | .completeScope _ _ scopeId parentOutput =>
       completeBoundedScope? program state scopeId parentOutput
 
@@ -303,6 +312,8 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
         (synchronizeSelectedState_sound _ _ _ _ result)
     | exact .throwError _ _ _ _ _ before after result
     | exact .reachNoneEnd _ _ _ before after result
+    | exact .terminateScope _ _ _ _ before after
+        (terminateScopeState_sound program before after _ _ _ _ result)
     | exact .completeScope _ _ _ _ before after result
 
 /-- Program relation keeps the explicit selected operation identity as semantic input. -/

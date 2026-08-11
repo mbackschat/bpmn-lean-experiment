@@ -40,6 +40,7 @@ export enum CheckedNodeKind {
   InclusiveGateway = "inclusiveGateway",
   EventBasedGateway = "eventBasedGateway",
   ErrorEndEvent = "errorEndEvent",
+  TerminateEndEvent = "terminateEndEvent",
   NoneEndEvent = "noneEndEvent",
 }
 
@@ -208,6 +209,10 @@ export type CheckedNode =
       kind: CheckedNodeKind.ErrorEndEvent;
       id: string;
       error: ErrorReference;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.TerminateEndEvent;
+      id: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.NoneEndEvent;

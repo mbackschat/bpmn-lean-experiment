@@ -269,6 +269,8 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .errorEndEvent id error =>
       errorReferenceValid error &&
         incomingCount flows id = 1 && outgoingCount flows id = 0
+  | .terminateEndEvent id =>
+      incomingCount flows id = 1 && outgoingCount flows id = 0
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 

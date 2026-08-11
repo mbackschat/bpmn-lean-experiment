@@ -13,6 +13,8 @@
 
 There is no `@bpmn-lean/temporal-adapter` umbrella export. Product 2 may reach `@bpmn-lean/temporal-client` only through `platform/foundation/engine-gateway`; it cannot reach Worker, Workflow, runner, or testkit packages. Temporal records delivery and Workflow decisions, while the semantic core remains the owner of BPMN-visible state transitions and canonical observations.
 
+Host admission classifies the checkpoint-only `terminateScope` operation as passive internal closure. The exact compiled nested Terminate program remains admissible in either operation order, including its parallel split, because scope cancellation is computed only by the semantic core. No Terminate profile, scenario, Workflow branch, cancellation scope, or live Temporal evidence is registered at this checkpoint.
+
 `ExternalTemporalRuntime.connect` is the product-facing Worker boundary. It connects one Worker and Workflow client to a caller-managed Temporal address, Namespace, and Task Queue; it never starts an embedded server or binds a server port. `startBpmnProcess` receives that same explicit Task Queue, so the client and Worker cannot drift through hidden defaults. The connection requires explicit effect Activities and registers them with the Worker; the engine runner supplies a deterministic handler registry for effect-bearing profiles.
 
 ## Engine runner command

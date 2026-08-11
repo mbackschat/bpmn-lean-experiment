@@ -35,6 +35,9 @@ type MetamodelManifest = Readonly<{
   extraction: string;
   source: Readonly<{ sha256: string }>;
   coverage: Readonly<{ status: string }>;
+  compilerProjection: Readonly<{
+    terminateEventDefinitionType: string;
+  }>;
   classes: ReadonlyArray<ClassFact>;
   properties: ReadonlyArray<PropertyFact>;
 }>;
@@ -159,6 +162,16 @@ function decodeMetamodelManifest(text: string): MetamodelManifest {
         "manifest.coverage",
       ),
     },
+    compilerProjection: {
+      terminateEventDefinitionType: requiredMember(
+        requireRecord(
+          record["compilerProjection"],
+          "manifest.compilerProjection",
+        ),
+        "terminateEventDefinitionType",
+        "manifest.compilerProjection",
+      ),
+    },
     classes: requireArray(record["classes"], "manifest.classes").map(
       (entry, index) => decodeClassFact(entry, `manifest.classes[${index}]`),
     ),
@@ -212,6 +225,20 @@ for (const classFact of manifest.classes) {
     `CMOF generalizations changed for ${classFact.name}`,
   );
 }
+
+const terminateEventDefinitionFacts = manifest.classes.filter(
+  ({ name }) => name === "TerminateEventDefinition",
+);
+assert.equal(
+  terminateEventDefinitionFacts.length,
+  1,
+  "the bounded manifest must contain one calibrated TerminateEventDefinition class",
+);
+assert.equal(
+  manifest.compilerProjection.terminateEventDefinitionType,
+  `bpmn:${terminateEventDefinitionFacts[0]?.name}`,
+  "the compiler Terminate Event Definition type must derive from the calibrated CMOF class",
+);
 
 for (const propertyFact of manifest.properties) {
   const id = `${propertyFact.owner}-${propertyFact.name}`;

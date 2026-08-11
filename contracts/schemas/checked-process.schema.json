@@ -813,6 +813,22 @@
           ],
           "properties": {
             "kind": {
+              "const": "terminateEndEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
               "const": "noneEndEvent"
             },
             "id": {

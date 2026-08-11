@@ -37,8 +37,74 @@ import {
   isRecord,
   localDefinitionReferences,
 } from "./schema-structure.ts";
+import { verifyTerminateScopeBindings } from "./end-operation-artifact-consistency.ts";
+import type {
+  CheckedProcess,
+  SemanticProcessProgram,
+  TerminateScopeOperation,
+} from "../packages/semantic-core/src/index.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+test("rejects every checked-to-IL Terminate End binding drift", () => {
+  const checkedProcess = {
+    nodes: [{ kind: "terminateEndEvent", id: "End_Terminate" }],
+    nodeScopes: [{ nodeId: "End_Terminate", scopeId: "Scope_Child" }],
+    sequenceFlows: [{
+      id: "Flow_Trigger_Terminate",
+      sourceId: "Task_Trigger",
+      targetId: "End_Terminate",
+      condition: null,
+    }],
+  } as unknown as CheckedProcess;
+  const operation = {
+    kind: "terminateScope",
+    id: "operation:End_Terminate",
+    origin: { kind: "bpmnElement", elementId: "End_Terminate" },
+    input: "place:Flow_Trigger_Terminate",
+    scopeId: "Scope_Child",
+  } as unknown as TerminateScopeOperation;
+  const semanticProcess = {
+    operations: [operation],
+    operationScopes: [{
+      operationId: operation.id,
+      scopeId: "Scope_Child",
+    }],
+    controlPlaces: [{
+      id: operation.input,
+      origin: {
+        kind: "bpmnSequenceFlow",
+        elementId: "Flow_Trigger_Terminate",
+      },
+    }],
+    controlPlaceScopes: [{
+      controlPlaceId: operation.input,
+      scopeId: "Scope_Child",
+    }],
+  } as unknown as SemanticProcessProgram;
+
+  assert.doesNotThrow(() =>
+    verifyTerminateScopeBindings(checkedProcess, semanticProcess)
+  );
+  const mutations: ReadonlyArray<TerminateScopeOperation> = [
+    {
+      ...operation,
+      origin: { kind: "bpmnElement", elementId: "End_Other" },
+    } as unknown as TerminateScopeOperation,
+    { ...operation, input: "place:Flow_Other" },
+    { ...operation, scopeId: "Scope_Parent" },
+  ];
+  for (const mutatedOperation of mutations) {
+    assert.throws(
+      () =>
+        verifyTerminateScopeBindings(checkedProcess, {
+          ...semanticProcess,
+          operations: [mutatedOperation],
+        }),
+      /Terminate End/u,
+    );
+  }
+});
 
 test("keeps executable and scenario MessageChannel schemas on the same closed union", async () => {
   const values = [

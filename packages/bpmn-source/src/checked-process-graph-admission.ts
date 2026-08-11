@@ -177,6 +177,7 @@ function hasSelectedArity(
     case CheckedNodeKind.EventBasedGateway:
       return incoming === 1 && outgoing === 2;
     case CheckedNodeKind.ErrorEndEvent:
+    case CheckedNodeKind.TerminateEndEvent:
     case CheckedNodeKind.NoneEndEvent:
       return incoming === 1 && outgoing === 0;
   }
@@ -197,7 +198,8 @@ function isConnectedGraphUnderPolicy(
   const ends = nodes.filter(
     ({ kind }) =>
       kind === CheckedNodeKind.NoneEndEvent ||
-      kind === CheckedNodeKind.ErrorEndEvent,
+      kind === CheckedNodeKind.ErrorEndEvent ||
+      kind === CheckedNodeKind.TerminateEndEvent,
   );
   const start = starts[0];
   if (starts.length !== 1 || start === undefined || ends.length === 0) {

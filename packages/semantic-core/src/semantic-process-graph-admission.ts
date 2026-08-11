@@ -132,18 +132,18 @@ export function isWellFormedSemanticProcessGraph(
       ? []
       : [{ source, target }];
   });
-  const completionEdges = operationsOfKind(
-    graph,
-    SemanticOperationKind.ReachNoneEnd,
-  ).flatMap((reach) => {
-    const scopeId = operationScope.get(reach.id);
+  const completionEdges = [
+    ...operationsOfKind(graph, SemanticOperationKind.ReachNoneEnd),
+    ...operationsOfKind(graph, SemanticOperationKind.TerminateScope),
+  ].flatMap((predecessor) => {
+    const scopeId = operationScope.get(predecessor.id);
     const completion = operationsOfKind(
       graph,
       SemanticOperationKind.CompleteScope,
     ).find((candidate) => candidate.scopeId === scopeId);
     return completion === undefined
       ? []
-      : [{ source: reach.id, target: completion.id }];
+      : [{ source: predecessor.id, target: completion.id }];
   });
   const edges = [
     ...placeEdges,
@@ -251,6 +251,9 @@ function operationRespectsScopes(
         referencesOwnedBy([operation.input], owner) &&
         referencesOwnedBy([operation.handler.output], attached.parentScopeId);
     }
+    case SemanticOperationKind.TerminateScope:
+      return operation.scopeId === owner &&
+        referencesOwnedBy([operation.input], owner);
     case SemanticOperationKind.CompleteScope: {
       const scope = graph.definitionScopes.find(({ id }) => id === owner);
       return operation.scopeId === owner &&
@@ -426,6 +429,7 @@ function operationInputs(
     case SemanticOperationKind.Choose:
     case SemanticOperationKind.SelectMany:
     case SemanticOperationKind.ThrowError:
+    case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
     case SemanticOperationKind.Synchronize:
@@ -491,6 +495,7 @@ function operationOutputs(
       return [operation.output];
     case SemanticOperationKind.ThrowError:
       return [operation.handler.output];
+    case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
       return [];
     case SemanticOperationKind.CompleteScope:

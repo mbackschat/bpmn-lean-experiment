@@ -169,6 +169,7 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             simp [parseFrom, nodeResult] at result
         | boundaryErrorEvent _ _ _ _ => simp [parseFrom, nodeResult] at result
         | errorEndEvent _ _ => simp [parseFrom, nodeResult] at result
+        | terminateEndEvent _ => simp [parseFrom, nodeResult] at result
         | userTask id name =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | intermediateCatchTimerEvent id duration =>

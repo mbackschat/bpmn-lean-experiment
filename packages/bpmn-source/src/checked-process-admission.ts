@@ -2,6 +2,7 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
   SimpleBooleanExpressionLanguage,
   profileAllowsCheckedProcessShape,
@@ -50,7 +51,100 @@ export function isAdmittedCheckedProcess(
     hasSelectedConditions(semanticProfile, graph.flows) &&
     hasSelectedCyclicTopology(semanticProfile, graph) &&
     hasSelectedInclusivePairing(semanticProfile, graph) &&
-    hasSelectedEventRaceTopology(semanticProfile, graph);
+    hasSelectedEventRaceTopology(semanticProfile, graph) &&
+    hasSelectedTerminateTopology(
+      semanticProfile,
+      graph,
+      admittedGraph.nodeScopes,
+    );
+}
+
+/** Locks the selected nested scope distribution and branch topology without using fixture IDs. */
+function hasSelectedTerminateTopology(
+  semanticProfile: string,
+  graph: CheckedProcessGraph,
+  nodeScopes: ReadonlyMap<string, string>,
+): boolean {
+  if (semanticProfile !== SemanticCheckpointProfileId.TerminateEnd) {
+    return true;
+  }
+  const only = <Kind extends CheckedNodeKind>(
+    nodes: ReadonlyArray<CheckedNode>,
+    kind: Kind,
+  ): Extract<CheckedNode, { kind: Kind }> | undefined => {
+    const matches = nodes.filter(
+      (node): node is Extract<CheckedNode, { kind: Kind }> =>
+        node.kind === kind,
+    );
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  const rootScope = graph.definitionScopes.find(
+    ({ parentScopeId, originElementId }) =>
+      parentScopeId === null && originElementId === graph.processId,
+  );
+  const embedded = only(graph.nodes, CheckedNodeKind.EmbeddedSubProcess);
+  if (rootScope === undefined || embedded === undefined) {
+    return false;
+  }
+  const childScope = graph.definitionScopes.find(
+    ({ id, parentScopeId, originElementId }) =>
+      id === embedded.childScopeId &&
+      parentScopeId === rootScope.id &&
+      originElementId === embedded.id,
+  );
+  if (childScope === undefined) {
+    return false;
+  }
+  const rootNodes = graph.nodes.filter(
+    ({ id }) => nodeScopes.get(id) === rootScope.id,
+  );
+  const childNodes = graph.nodes.filter(
+    ({ id }) => nodeScopes.get(id) === childScope.id,
+  );
+  const rootStart = only(rootNodes, CheckedNodeKind.NoneStartEvent);
+  const outerTask = only(rootNodes, CheckedNodeKind.UserTask);
+  const rootEnd = only(rootNodes, CheckedNodeKind.NoneEndEvent);
+  const childStart = only(childNodes, CheckedNodeKind.NoneStartEvent);
+  const fork = only(childNodes, CheckedNodeKind.ParallelGateway);
+  const terminate = only(childNodes, CheckedNodeKind.TerminateEndEvent);
+  const siblingEnd = only(childNodes, CheckedNodeKind.NoneEndEvent);
+  const childTasks = childNodes.filter(
+    (node): node is Extract<CheckedNode, { kind: CheckedNodeKind.UserTask }> =>
+      node.kind === CheckedNodeKind.UserTask,
+  );
+  if (
+    rootNodes.length !== 4 || childNodes.length !== 6 ||
+    rootStart === undefined || outerTask === undefined || rootEnd === undefined ||
+    childStart === undefined || fork === undefined || terminate === undefined ||
+    siblingEnd === undefined || childTasks.length !== 2 ||
+    fork.direction !== GatewayDirection.Diverging || graph.flows.length !== 8
+  ) {
+    return false;
+  }
+  const exactFlow = (sourceId: string, targetId: string) =>
+    graph.flows.filter(
+      (flow) => flow.sourceId === sourceId && flow.targetId === targetId,
+    ).length === 1;
+  const forkTargets = graph.flows
+    .filter(({ sourceId }) => sourceId === fork.id)
+    .map(({ targetId }) => targetId);
+  const taskTargets = childTasks.map((task) =>
+    graph.flows.filter(({ sourceId }) => sourceId === task.id),
+  );
+  const taskTargetIds = taskTargets.flatMap((flows) =>
+    flows.map(({ targetId }) => targetId)
+  );
+  return exactFlow(rootStart.id, embedded.id) &&
+    exactFlow(embedded.id, outerTask.id) &&
+    exactFlow(outerTask.id, rootEnd.id) &&
+    exactFlow(childStart.id, fork.id) &&
+    forkTargets.length === 2 &&
+    childTasks.every(({ id }) => forkTargets.includes(id)) &&
+    taskTargets.every((flows) => flows.length === 1) &&
+    taskTargetIds.length === 2 &&
+    new Set(taskTargetIds).size === 2 &&
+    taskTargetIds.includes(siblingEnd.id) &&
+    taskTargetIds.includes(terminate.id);
 }
 
 /**

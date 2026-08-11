@@ -70,6 +70,9 @@ import type {
 import {
   hasDistinctErrorIdentity,
 } from "./subprocess-error-source.js";
+import {
+  terminateEndSourcePropertiesValid,
+} from "./terminate-end-event-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -182,6 +185,12 @@ export function compileCheckedProcess(
     return unsupported(
       classification,
       "Every embedded SubProcess must be ordinary, have an ID, and contain a FlowElements graph.",
+    );
+  }
+  if (!terminateEndSourcePropertiesValid(scoped.elements, semanticProfile)) {
+    return unsupported(
+      classification,
+      "The Terminate End checkpoint requires one ordinary embedded Sub-Process with no explicit scope-kind property.",
     );
   }
 

@@ -37,6 +37,7 @@ import {
   controlPlaceId,
   operationId,
 } from "./semantic-process-identifiers.js";
+import { lowerTerminateEndEvent } from "./terminate-end-event-lowering.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -311,6 +312,8 @@ function lowerNode(
       }
     case CheckedNodeKind.EventBasedGateway:
       return scoped(lowerEventRaceOperation(node, source));
+    case CheckedNodeKind.TerminateEndEvent:
+      return [lowerTerminateEndEvent(node, source)];
     case CheckedNodeKind.ErrorEndEvent: {
       const handler = requireDirectErrorHandler(source, node);
       return scoped({

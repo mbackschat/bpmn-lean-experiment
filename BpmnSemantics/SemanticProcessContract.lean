@@ -140,6 +140,7 @@ inductive CheckedNode where
       (pairedGatewayId : NodeId)
   | eventBasedGateway (id : NodeId)
   | errorEndEvent (id : NodeId) (error : ErrorReference)
+  | terminateEndEvent (id : NodeId)
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
 
@@ -163,6 +164,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .inclusiveGatewayConverging id _
   | .eventBasedGateway id
   | .errorEndEvent id _
+  | .terminateEndEvent id
   | .noneEndEvent id => id
 
 structure CheckedSequenceFlow where
@@ -444,6 +446,11 @@ inductive SemanticOperation where
       (id : OperationId)
       (origin : BpmnElementOrigin)
       (input : ControlPlaceId)
+  | terminateScope
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (scopeId : DefinitionScopeId)
   | completeScope
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -474,6 +481,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .synchronizeSelected id _ _ _ _
   | .throwError id _ _ _ _
   | .reachNoneEnd id _ _
+  | .terminateScope id _ _ _
   | .completeScope id _ _ _ => id
 
 structure OperationScopeOwnership where

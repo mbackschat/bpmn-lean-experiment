@@ -41,7 +41,9 @@ private structure ShapeCardinalities where
   monitoredUserTasks : Nat := 0
   boundedScopeEntries : Nat := 0
   errorEnds : Nat := 0
+  terminateEnds : Nat := 0
   errorThrows : Nat := 0
+  scopeTerminations : Nat := 0
   ends : Nat := 0
   scopeCompletions : Nat := 0
   deriving DecidableEq
@@ -90,6 +92,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .eventBasedGateway .. =>
         { counts with eventGateways := counts.eventGateways + 1 }
     | .errorEndEvent .. => { counts with errorEnds := counts.errorEnds + 1 }
+    | .terminateEndEvent .. =>
+        { counts with terminateEnds := counts.terminateEnds + 1 }
     | .noneEndEvent .. => { counts with ends := counts.ends + 1 }
 
 private def operationCardinalities (operations : List SemanticOperation) :
@@ -128,12 +132,18 @@ private def operationCardinalities (operations : List SemanticOperation) :
         { counts with synchronizeSelected := counts.synchronizeSelected + 1 }
     | .throwError .. => { counts with errorThrows := counts.errorThrows + 1 }
     | .reachNoneEnd .. => { counts with ends := counts.ends + 1 }
+    | .terminateScope .. =>
+        { counts with scopeTerminations := counts.scopeTerminations + 1 }
     | .completeScope .. =>
         { counts with scopeCompletions := counts.scopeCompletions + 1 }
 
 private def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) :
     ShapeCardinalities :=
   { shape with scopeCompletions := count }
+
+/-- Runtime-frozen profile identity used only by the owner-approved semantic checkpoint. Product registration remains outside this Lean lane. -/
+def terminateEndCheckpointProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-terminate-end-event-draft"⟩
 
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   if profile = "bpmn-2.0.2-message-start-event-draft" then
@@ -209,6 +219,10 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (2,
       { starts := 2, embeddedScopes := 1, boundaryTimers := 1,
         userTasks := 3, ends := 3 })
+  else if profile = terminateEndCheckpointProfileId.value then
+    some (2,
+      { starts := 2, embeddedScopes := 1, userTasks := 3,
+        duplicates := 1, terminateEnds := 1, ends := 2 })
   else none
 
 private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
@@ -287,6 +301,10 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-subprocess-boundary-timer-draft" then
     some (2, withScopeCompletions 2
       { initiates := 1, boundedScopeEntries := 1, userTasks := 3, ends := 3 })
+  else if profile = terminateEndCheckpointProfileId.value then
+    some (2, withScopeCompletions 2
+      { initiates := 1, scopeEntries := 1, userTasks := 3,
+        duplicates := 1, scopeTerminations := 1, ends := 2 })
   else none
 
 /-- Closed graph-policy capability. Every pre-cycle profile retains whole-graph acyclicity; only the exact cycle profile selects the User Task resumption cut. -/

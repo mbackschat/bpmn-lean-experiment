@@ -199,6 +199,9 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   | "noneEndEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneEndEvent ⟨← stringField json "id"⟩)
+  | "terminateEndEvent" =>
+      requireObjectShape json ["id", "kind"]
+      pure (.terminateEndEvent ⟨← stringField json "id"⟩)
   | "errorEndEvent" =>
       requireObjectShape json ["error", "id", "kind"]
       pure
