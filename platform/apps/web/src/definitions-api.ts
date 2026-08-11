@@ -257,6 +257,11 @@ function snapshotDefinition(
     version: definition.version,
     source: { ...definition.source },
     semanticProfile: definition.semanticProfile,
+    startCapabilities: {
+      timerStarts: definition.startCapabilities.timerStarts.map(
+        ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
+      ),
+    },
   };
 }
 
@@ -272,5 +277,21 @@ function sameDefinition(
     actual.source.sha256 === expected.source.sha256 &&
     actual.source.byteLength === expected.source.byteLength &&
     actual.source.declaredEncoding === expected.source.declaredEncoding &&
-    actual.source.decodedAs === expected.source.decodedAs;
+    actual.source.decodedAs === expected.source.decodedAs &&
+    sameTimerStarts(
+      actual.startCapabilities.timerStarts,
+      expected.startCapabilities.timerStarts,
+    );
+}
+
+function sameTimerStarts(
+  actual: DeployedDefinitionVersion["startCapabilities"]["timerStarts"],
+  expected: DeployedDefinitionVersion["startCapabilities"]["timerStarts"],
+): boolean {
+  return actual.length === expected.length && actual.every((capability, index) => {
+    const expectedCapability = expected[index];
+    return expectedCapability !== undefined &&
+      capability.startEventId === expectedCapability.startEventId &&
+      capability.durationMs === expectedCapability.durationMs;
+  });
 }

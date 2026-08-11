@@ -34,6 +34,9 @@ function deployedResult(bytes: Uint8Array) {
         decodedAs: "UTF-8",
       },
       semanticProfile: "profile/portable",
+      startCapabilities: {
+        timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
+      },
     },
   } as const;
 }
@@ -211,6 +214,27 @@ test("starts the selected exact version and rejects response identity drift", as
   );
   await assert.rejects(
     driftedClient.start(expectedDefinition),
+    (error: unknown) =>
+      error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
+  );
+
+  const capabilityDriftClient = new DefinitionApiClient(
+    "https://platform.test/",
+    async () => jsonResponse(201, {
+      status: ProcessInstanceStartStatus.Started,
+      instance: {
+        processInstanceId: "instance/start-003",
+        definition: {
+          ...expectedDefinition,
+          startCapabilities: {
+            timerStarts: [{ startEventId: "TimerStart_Drift", durationMs: 1_000 }],
+          },
+        },
+      },
+    }),
+  );
+  await assert.rejects(
+    capabilityDriftClient.start(expectedDefinition),
     (error: unknown) =>
       error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
   );
