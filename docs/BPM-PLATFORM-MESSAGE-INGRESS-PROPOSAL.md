@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved and ready for implementation.** This proposal selects the smallest Product 2 published Message Start ingress for M2. It adds an exact deployed-definition capability, one-target publication resource, durable retry and deduplication lifecycle, handle-free direct Workflow-start host boundary, HTTP-only UI, and independent live evidence. It changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
+**Owner-approved; first-green checkpoint implemented and pending independent semantic review.** The committed checkpoint adds the exact deployed-definition capability, strict public publication contract, shared SQLite schema epoch, durable retry and deduplication lifecycle, and handle-free direct Workflow-start host boundary. HTTP routes, server composition, UI, and live/browser evidence remain paused through checkpoint approval. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
 

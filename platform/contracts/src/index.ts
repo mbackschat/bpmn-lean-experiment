@@ -5,8 +5,13 @@ export * from "./definition-schedule-routes.js";
 export * from "./definition-schedules.js";
 export {
   decodePublicDefinitionStartCapabilities,
+  decodePublicMessageStartCapability,
+  decodePublicOperationMessageChannel,
   decodePublicTimerStartCapability,
 } from "./deployed-definition-decoder.js";
 export * from "./definitions.js";
+export * from "./message-start-publication-decoders.js";
+export * from "./message-start-publication-routes.js";
+export * from "./message-start-publications.js";
 export * from "./process-instance-decoders.js";
 export * from "./process-instances.js";

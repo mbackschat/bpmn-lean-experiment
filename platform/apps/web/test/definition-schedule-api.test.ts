@@ -31,7 +31,24 @@ const definition = {
   },
   semanticProfile: "timer-start-event-draft",
   startCapabilities: {
+    messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
+  },
+} as const satisfies DeployedDefinitionVersion;
+
+const messageDefinition = {
+  ...definition,
+  startCapabilities: {
+    messageStarts: [{
+      startEventId: "MessageStart_OrderReceived",
+      channel: {
+        kind: "operationMessage",
+        interfaceId: "Orders",
+        interfaceOperationId: "receiveOrder",
+        messageId: "OrderReceived",
+      },
+    }],
+    timerStarts: definition.startCapabilities.timerStarts,
   },
 } as const satisfies DeployedDefinitionVersion;
 
@@ -128,6 +145,26 @@ test("rejects item and list responses whose exact public identities drift", asyn
       response: {
         definition: { ...definition, version: 3 },
         schedules: [],
+      },
+    },
+    {
+      label: "Message Start operation",
+      invoke: (client) => client.get(messageDefinition, scheduled.scheduleId),
+      response: {
+        ...scheduled,
+        definition: {
+          ...messageDefinition,
+          startCapabilities: {
+            ...messageDefinition.startCapabilities,
+            messageStarts: [{
+              ...messageDefinition.startCapabilities.messageStarts[0],
+              channel: {
+                ...messageDefinition.startCapabilities.messageStarts[0].channel,
+                interfaceOperationId: "receiveChangedOrder",
+              },
+            }],
+          },
+        },
       },
     },
     {

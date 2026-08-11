@@ -365,6 +365,12 @@ function snapshotRequest(
     semanticProfile: request.semanticProfile,
     expectedProcessId: request.expectedProcessId,
     expectedStartCapabilities: {
+      messageStarts: request.expectedStartCapabilities.messageStarts.map(
+        ({ startEventId, channel }) => ({
+          startEventId,
+          channel: { ...channel },
+        }),
+      ),
       timerStarts: request.expectedStartCapabilities.timerStarts.map(
         ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
       ),
@@ -386,6 +392,16 @@ function sameStartCapabilities(
   right: EngineDefinitionStartCapabilities,
 ): boolean {
   return (
+    left.messageStarts.length === right.messageStarts.length &&
+    left.messageStarts.every((capability, index) => {
+      const expected = right.messageStarts[index];
+      return capability.startEventId === expected?.startEventId &&
+        capability.channel.kind === expected.channel.kind &&
+        capability.channel.interfaceId === expected.channel.interfaceId &&
+        capability.channel.interfaceOperationId ===
+          expected.channel.interfaceOperationId &&
+        capability.channel.messageId === expected.channel.messageId;
+    }) &&
     left.timerStarts.length === right.timerStarts.length &&
     left.timerStarts.every((capability, index) => {
       const expected = right.timerStarts[index];

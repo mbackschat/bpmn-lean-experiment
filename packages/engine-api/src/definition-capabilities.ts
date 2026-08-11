@@ -9,7 +9,20 @@ export type EngineTimerStartCapability = DeepReadonly<{
   durationMs: number;
 }>;
 
+export type EngineOperationMessageChannel = DeepReadonly<{
+  kind: "operationMessage";
+  interfaceId: string;
+  interfaceOperationId: string;
+  messageId: string;
+}>;
+
+export type EngineMessageStartCapability = DeepReadonly<{
+  startEventId: string;
+  channel: EngineOperationMessageChannel;
+}>;
+
 export type EngineDefinitionStartCapabilities = DeepReadonly<{
+  messageStarts: readonly EngineMessageStartCapability[];
   timerStarts: readonly EngineTimerStartCapability[];
 }>;
 
@@ -18,6 +31,22 @@ export function engineDefinitionStartCapabilities(
   program: SemanticProcessProgram,
 ): EngineDefinitionStartCapabilities {
   return {
+    messageStarts: program.operations.flatMap((operation) => {
+      switch (operation.kind) {
+        case SemanticOperationKind.InitiateMessage:
+          return [{
+            startEventId: operation.origin.elementId,
+            channel: {
+              kind: operation.channel.kind,
+              interfaceId: operation.channel.interfaceId,
+              interfaceOperationId: operation.channel.interfaceOperationId,
+              messageId: operation.channel.messageId,
+            },
+          }];
+        default:
+          return [];
+      }
+    }),
     timerStarts: program.operations.flatMap((operation) => {
       switch (operation.kind) {
         case SemanticOperationKind.InitiateTimer:

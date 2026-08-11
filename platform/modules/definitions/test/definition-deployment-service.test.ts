@@ -113,6 +113,7 @@ class AcceptedCompiler implements DefinitionCompiler {
         semanticProfile: request.semanticProfile,
       },
       startCapabilities: {
+        messageStarts: [],
         timerStarts: this.#timerStarts.map((capability) => ({ ...capability })),
       },
     };
@@ -185,6 +186,7 @@ test("snapshots bytes and every scalar before the compiler can yield", async () 
       },
       semanticProfile: "original-profile",
       startCapabilities: {
+        messageStarts: [],
         timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
       },
     });
@@ -208,6 +210,7 @@ test("round-trips exact Timer Start capability through SQLite reopen", async () 
     );
     const deployed = await deployText(service, "timer-capability");
     assert.deepEqual(deployed.definition?.startCapabilities, {
+      messageStarts: [],
       timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
     });
     repository.close();
@@ -218,6 +221,7 @@ test("round-trips exact Timer Start capability through SQLite reopen", async () 
         reopened.get({ processId: "Process_Timer", version: 1 })
           ?.startCapabilities,
         {
+          messageStarts: [],
           timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
         },
       );
@@ -235,7 +239,10 @@ test("round-trips an exact empty start capability collection", async () => {
       repository,
     );
     const deployed = await deployText(service, "empty-capability");
-    assert.deepEqual(deployed.definition?.startCapabilities, { timerStarts: [] });
+    assert.deepEqual(deployed.definition?.startCapabilities, {
+      messageStarts: [],
+      timerStarts: [],
+    });
     repository.close();
 
     const reopened = new SqliteDefinitionRepository(databaseFile);
@@ -243,7 +250,7 @@ test("round-trips an exact empty start capability collection", async () => {
       assert.deepEqual(
         reopened.get({ processId: "Process_Empty", version: 1 })
           ?.startCapabilities,
-        { timerStarts: [] },
+        { messageStarts: [], timerStarts: [] },
       );
     } finally {
       reopened.close();
@@ -251,7 +258,7 @@ test("round-trips an exact empty start capability collection", async () => {
   });
 });
 
-test("refuses noncanonical capability corruption instead of repairing it", async () => {
+test("refuses old-shape capability corruption instead of repairing it", async () => {
   await withRepository(async ({ databaseFile, repository }) => {
     const service = new DefinitionDeploymentService(
       new AcceptedCompiler("Process_Corrupt"),
@@ -272,7 +279,7 @@ test("refuses noncanonical capability corruption instead of repairing it", async
     try {
       assert.throws(
         () => reopened.get({ processId: "Process_Corrupt", version: 1 }),
-        /noncanonical start_capabilities_json/u,
+        /only messageStarts and timerStarts/u,
       );
     } finally {
       reopened.close();

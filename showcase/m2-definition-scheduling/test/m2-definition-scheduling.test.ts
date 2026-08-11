@@ -115,6 +115,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       semanticProfile: profileId,
     });
     assert.equal(versionOne.value.version, 1);
+    assert.deepEqual(versionOne.value.startCapabilities.messageStarts, []);
     assert.deepEqual(versionOne.value.startCapabilities.timerStarts, [{
       startEventId: "TimerStart_PT1S",
       durationMs: 1_000,

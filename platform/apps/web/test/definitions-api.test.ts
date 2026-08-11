@@ -35,6 +35,7 @@ function deployedResult(bytes: Uint8Array) {
       },
       semanticProfile: "profile/portable",
       startCapabilities: {
+        messageStarts: [],
         timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
       },
     },
@@ -227,6 +228,7 @@ test("starts the selected exact version and rejects response identity drift", as
         definition: {
           ...expectedDefinition,
           startCapabilities: {
+            messageStarts: [],
             timerStarts: [{ startEventId: "TimerStart_Drift", durationMs: 1_000 }],
           },
         },
@@ -235,6 +237,49 @@ test("starts the selected exact version and rejects response identity drift", as
   );
   await assert.rejects(
     capabilityDriftClient.start(expectedDefinition),
+    (error: unknown) =>
+      error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
+  );
+
+  const messageDefinition = {
+    ...expectedDefinition,
+    startCapabilities: {
+      messageStarts: [{
+        startEventId: "MessageStart_OrderReceived",
+        channel: {
+          kind: "operationMessage",
+          interfaceId: "Orders",
+          interfaceOperationId: "receiveOrder",
+          messageId: "OrderReceived",
+        },
+      }],
+      timerStarts: expectedDefinition.startCapabilities.timerStarts,
+    },
+  } as const;
+  const messageOperationDriftClient = new DefinitionApiClient(
+    "https://platform.test/",
+    async () => jsonResponse(201, {
+      status: ProcessInstanceStartStatus.Started,
+      instance: {
+        processInstanceId: "instance/start-004",
+        definition: {
+          ...messageDefinition,
+          startCapabilities: {
+            ...messageDefinition.startCapabilities,
+            messageStarts: [{
+              ...messageDefinition.startCapabilities.messageStarts[0],
+              channel: {
+                ...messageDefinition.startCapabilities.messageStarts[0].channel,
+                interfaceOperationId: "receiveChangedOrder",
+              },
+            }],
+          },
+        },
+      },
+    }),
+  );
+  await assert.rejects(
+    messageOperationDriftClient.start(messageDefinition),
     (error: unknown) =>
       error instanceof DefinitionProtocolError && /requested definition identity/u.test(error.message),
   );

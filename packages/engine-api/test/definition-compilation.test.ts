@@ -19,6 +19,10 @@ const timerStartSource = new URL(
   "../../../scenarios/timer-start-event/process.bpmn",
   import.meta.url,
 );
+const messageStartSource = new URL(
+  "../../../scenarios/message-start-event/process.bpmn",
+  import.meta.url,
+);
 const limits = {
   maxBytes: 1_048_576,
   parserDeadlineMs: 1_000,
@@ -39,7 +43,10 @@ test("projects accepted source identity without exposing engine representations"
   assert.match(result.source.sha256, /^[0-9a-f]{64}$/u);
   assert.equal(result.definition.processId, "Process_SequentialUserTask");
   assert.equal(result.definition.semanticProfile, semanticProfile);
-  assert.deepEqual(result.startCapabilities, { timerStarts: [] });
+  assert.deepEqual(result.startCapabilities, {
+    messageStarts: [],
+    timerStarts: [],
+  });
   assert.equal("checkedProcess" in result, false);
   assert.equal("semanticProcess" in result, false);
 });
@@ -55,10 +62,46 @@ test("projects the admitted Timer Start identity and normalized duration", async
 
   assert.equal(result.status, EngineDefinitionCompilationStatus.Accepted);
   assert.deepEqual(result.startCapabilities, {
+    messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
   });
   assert.equal("checkedProcess" in result, false);
   assert.equal("semanticProcess" in result, false);
+});
+
+test("projects the exact complete operation-addressed Message Start capability", async () => {
+  const result = await compileBpmnDefinition({
+    bytes: await readFile(messageStartSource),
+    sourceId: "arbitrary message source",
+    semanticProfile: "bpmn-2.0.2-message-start-event-draft",
+    expectedSha256: undefined,
+    limits,
+  });
+
+  assert.equal(result.status, EngineDefinitionCompilationStatus.Accepted);
+  assert.deepEqual(result.startCapabilities, {
+    messageStarts: [{
+      startEventId: "MessageStart_ApprovalRequest",
+      channel: {
+        kind: "operationMessage",
+        interfaceId: "Interface_ProcessMessages",
+        interfaceOperationId: "Operation_ReceiveApprovalRequest",
+        messageId: "Message_ApprovalRequest",
+      },
+    }],
+    timerStarts: [],
+  });
+  const changedOperation = {
+    ...result.startCapabilities,
+    messageStarts: result.startCapabilities.messageStarts.map((capability) => ({
+      ...capability,
+      channel: {
+        ...capability.channel,
+        interfaceOperationId: "Operation_ChangedOnly",
+      },
+    })),
+  };
+  assert.notDeepEqual(changedOperation, result.startCapabilities);
 });
 
 test("retains every located rejection while keeping engine representations private", async () => {

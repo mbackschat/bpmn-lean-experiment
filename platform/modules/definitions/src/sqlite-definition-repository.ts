@@ -11,6 +11,10 @@ import {
   decodeDefinitionStartCapabilities,
   encodeDefinitionStartCapabilities,
 } from "./definition-capabilities.js";
+import {
+  DefinitionSchemaResetRequiredError,
+  requireDefinitionDatabaseSchemaEpoch,
+} from "./database-schema-epoch.js";
 
 const defaultBusyTimeoutMs = 5_000;
 
@@ -26,6 +30,7 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
     this.#database = new DatabaseSync(databaseFile);
     this.#database.exec(`PRAGMA busy_timeout = ${busyTimeoutMs}`);
     try {
+      requireDefinitionDatabaseSchemaEpoch(this.#database);
       initializeSchema(this.#database);
     } catch (error: unknown) {
       this.#database.close();
@@ -156,15 +161,6 @@ export class SqliteDefinitionRepository implements DefinitionRepository {
     if (this.#database.isOpen) {
       this.#database.close();
     }
-  }
-}
-
-export class DefinitionSchemaResetRequiredError extends Error {
-  constructor() {
-    super(
-      "definition SQLite schema is from an incompatible pre-release; reset the platform database before restarting",
-    );
-    this.name = "DefinitionSchemaResetRequiredError";
   }
 }
 

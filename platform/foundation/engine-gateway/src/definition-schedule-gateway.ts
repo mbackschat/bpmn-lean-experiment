@@ -16,14 +16,13 @@ import type {
   TemporalDefinitionScheduleClient,
 } from "@bpmn-lean/temporal-client/definition-schedule";
 
-export type DefinitionTimerStartCapability = Readonly<{
-  startEventId: string;
-  durationMs: number;
-}>;
-
-export type DefinitionStartCapabilities = Readonly<{
-  timerStarts: readonly DefinitionTimerStartCapability[];
-}>;
+import {
+  mapDefinitionStartCapabilities,
+} from "./definition-capabilities.js";
+import type {
+  DefinitionStartCapabilities,
+  DefinitionTimerStartCapability,
+} from "./definition-capabilities.js";
 
 export type DefinitionScheduleValidationRequest = Readonly<{
   bytes: Uint8Array;
@@ -220,16 +219,6 @@ export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
       taskQueue: this.#taskQueue,
     };
   }
-}
-
-export function mapDefinitionStartCapabilities(
-  capabilities: AcceptedCompilation["startCapabilities"],
-): DefinitionStartCapabilities {
-  return {
-    timerStarts: capabilities.timerStarts.map(
-      ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
-    ),
-  };
 }
 
 function mapHostResult(

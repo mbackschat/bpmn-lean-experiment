@@ -33,6 +33,7 @@ test("round-trips immutable snapshots and orders schedule IDs by Unicode scalar"
     const stored = repository.get(reference("A"));
     assert.equal(stored?.definition.source.id, "timer-source");
     assert.deepEqual(stored?.definition.startCapabilities, {
+      messageStarts: [],
       timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
     });
     assert.deepEqual(stored?.timerStart, {
@@ -224,6 +225,7 @@ function record(scheduleId: string, identity: number): NewDefinitionScheduleReco
       },
       semanticProfile: "timer-profile",
       startCapabilities: {
+        messageStarts: [],
         timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
       },
     },

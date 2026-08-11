@@ -20,6 +20,11 @@ import type {
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 
+import {
+  sameExactDefinition,
+  snapshotExactDefinition,
+} from "./exact-definition.ts";
+
 export type DefinitionDeploymentInput = Readonly<{
   bytes: Uint8Array;
   sourceId: string;
@@ -145,7 +150,7 @@ export class DefinitionApiClient {
   }
 
   async start(definition: DeployedDefinitionVersion): Promise<ProcessInstanceStartResult> {
-    const expected = snapshotDefinition(definition);
+    const expected = snapshotExactDefinition(definition);
     const response = await this.#fetch(this.#url(definitionVersionStartPath(
       expected.processId,
       expected.version,
@@ -172,7 +177,7 @@ export class DefinitionApiClient {
     const actual = result.status === ProcessInstanceStartStatus.Started
       ? result.instance.definition
       : result.definition;
-    if (!sameDefinition(actual, expected)) {
+    if (!sameExactDefinition(actual, expected)) {
       throw new DefinitionProtocolError(
         "process-instance start response does not match the requested definition identity",
       );
@@ -247,51 +252,4 @@ function requireNonempty(value: string, label: string): void {
   if (typeof value !== "string" || value.length === 0) {
     throw new TypeError(`${label} must not be empty`);
   }
-}
-
-function snapshotDefinition(
-  definition: DeployedDefinitionVersion,
-): DeployedDefinitionVersion {
-  return {
-    processId: definition.processId,
-    version: definition.version,
-    source: { ...definition.source },
-    semanticProfile: definition.semanticProfile,
-    startCapabilities: {
-      timerStarts: definition.startCapabilities.timerStarts.map(
-        ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
-      ),
-    },
-  };
-}
-
-function sameDefinition(
-  actual: DeployedDefinitionVersion,
-  expected: DeployedDefinitionVersion,
-): boolean {
-  return actual.processId === expected.processId &&
-    actual.version === expected.version &&
-    actual.semanticProfile === expected.semanticProfile &&
-    actual.source.kind === expected.source.kind &&
-    actual.source.id === expected.source.id &&
-    actual.source.sha256 === expected.source.sha256 &&
-    actual.source.byteLength === expected.source.byteLength &&
-    actual.source.declaredEncoding === expected.source.declaredEncoding &&
-    actual.source.decodedAs === expected.source.decodedAs &&
-    sameTimerStarts(
-      actual.startCapabilities.timerStarts,
-      expected.startCapabilities.timerStarts,
-    );
-}
-
-function sameTimerStarts(
-  actual: DeployedDefinitionVersion["startCapabilities"]["timerStarts"],
-  expected: DeployedDefinitionVersion["startCapabilities"]["timerStarts"],
-): boolean {
-  return actual.length === expected.length && actual.every((capability, index) => {
-    const expectedCapability = expected[index];
-    return expectedCapability !== undefined &&
-      capability.startEventId === expectedCapability.startEventId &&
-      capability.durationMs === expectedCapability.durationMs;
-  });
 }

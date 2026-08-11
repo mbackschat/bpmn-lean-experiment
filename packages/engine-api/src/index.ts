@@ -119,4 +119,5 @@ function assertNever(value: never): never {
 
 export * from "./definition-start.js";
 export * from "./definition-capabilities.js";
+export * from "./definition-message-start.js";
 export * from "./definition-schedule.js";

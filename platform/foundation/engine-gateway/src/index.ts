@@ -15,12 +15,22 @@ import {
 
 import {
   BpmnDefinitionScheduleGateway,
-  mapDefinitionStartCapabilities,
 } from "./definition-schedule-gateway.js";
 import type {
   BpmnDefinitionScheduleGatewayOptions,
-  DefinitionStartCapabilities,
 } from "./definition-schedule-gateway.js";
+import {
+  mapDefinitionStartCapabilities,
+} from "./definition-capabilities.js";
+import type {
+  DefinitionStartCapabilities,
+} from "./definition-capabilities.js";
+import {
+  BpmnDefinitionMessageStartGateway,
+} from "./definition-message-start-gateway.js";
+import type {
+  BpmnDefinitionMessageStartGatewayOptions,
+} from "./definition-message-start-gateway.js";
 import type {
   LazyTemporalClientRuntime,
   TemporalDefinitionStartClient,
@@ -153,6 +163,7 @@ export class BpmnEngineGateway
 export class BpmnEngineGatewayRuntime {
   readonly gateway: BpmnEngineGateway;
   readonly scheduleHost: BpmnDefinitionScheduleGateway;
+  readonly messageStartHost: BpmnDefinitionMessageStartGateway;
   readonly #temporalRuntime: LazyTemporalClientRuntime;
 
   constructor(options: BpmnEngineGatewayRuntimeOptions) {
@@ -178,6 +189,13 @@ export class BpmnEngineGatewayRuntime {
         BpmnDefinitionScheduleGatewayOptions["temporalClient"],
       temporalTaskQueue: snapshot.temporalTaskQueue,
     });
+    this.messageStartHost = new BpmnDefinitionMessageStartGateway({
+      maxSourceBytes: snapshot.maxSourceBytes,
+      parserDeadlineMs: snapshot.parserDeadlineMs,
+      temporalClient: this.#temporalRuntime.client as unknown as
+        BpmnDefinitionMessageStartGatewayOptions["temporalClient"],
+      temporalTaskQueue: snapshot.temporalTaskQueue,
+    });
   }
 
   close(): Promise<void> {
@@ -191,6 +209,8 @@ function assertNever(value: never): never {
 
 export * from "./definition-schedule-gateway.js";
 export * from "./definition-schedule-address.js";
+export * from "./definition-capabilities.js";
+export * from "./definition-message-start-gateway.js";
 
 export function createBpmnEngineGatewayRuntime(
   options: BpmnEngineGatewayRuntimeOptions,

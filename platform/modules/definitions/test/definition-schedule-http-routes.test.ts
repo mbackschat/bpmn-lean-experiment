@@ -34,6 +34,7 @@ const definition = {
   },
   semanticProfile: "bpmn-2.0.2-timer-start-event-draft",
   startCapabilities: {
+    messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
   },
 } as const satisfies DefinitionMetadata;

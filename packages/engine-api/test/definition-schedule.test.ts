@@ -119,10 +119,39 @@ test("stored capability collection drift creates no host resource", async () => 
   const result = await createBpmnDefinitionSchedule({
     ...requestFor(bytes, fake.client),
     expectedStartCapabilities: {
+      messageStarts: [],
       timerStarts: [
         { startEventId: "TimerStart_PT1S", durationMs: 1_000 },
         { startEventId: "Unexpected_Start", durationMs: 1_000 },
       ],
+    },
+  });
+
+  assert.equal(result.status, EngineDefinitionScheduleStatus.IntegrityFailure);
+  assert.equal(
+    result.failure.code,
+    EngineDefinitionScheduleIntegrityCode.CapabilityDrift,
+  );
+  assert.equal(fake.scheduleCreates, 0);
+  assert.equal(fake.describes, 0);
+});
+
+test("Message Start capability drift creates no Timer Schedule", async () => {
+  const bytes = await readFile(sourceUrl);
+  const fake = new FakeScheduleClient();
+  const result = await createBpmnDefinitionSchedule({
+    ...requestFor(bytes, fake.client),
+    expectedStartCapabilities: {
+      messageStarts: [{
+        startEventId: "MessageStart_1",
+        channel: {
+          kind: "operationMessage",
+          interfaceId: "Interface_1",
+          interfaceOperationId: "Operation_1",
+          messageId: "Message_1",
+        },
+      }],
+      timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
     },
   });
 
@@ -385,6 +414,7 @@ function requestFor(
     semanticProfile: profile,
     expectedProcessId,
     expectedStartCapabilities: {
+      messageStarts: [],
       timerStarts: [{ startEventId, durationMs: 1_000 }],
     },
     expectedTimerStart: { startEventId, durationMs: 1_000 },

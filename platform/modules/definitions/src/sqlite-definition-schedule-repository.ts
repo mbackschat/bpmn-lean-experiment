@@ -17,6 +17,7 @@ import {
   deriveScheduleDueAt,
   requireWholeSecondActivation,
 } from "./definition-schedule-values.js";
+import { requireDefinitionDatabaseSchemaEpoch } from "./database-schema-epoch.js";
 import type {
   DefinitionScheduleCancellationOrigin,
   DefinitionScheduleRecord,
@@ -39,6 +40,7 @@ implements DefinitionScheduleRepository {
     this.#database = new DatabaseSync(databaseFile);
     this.#database.exec(`PRAGMA busy_timeout = ${busyTimeoutMs}`);
     try {
+      requireDefinitionDatabaseSchemaEpoch(this.#database);
       initializeSchema(this.#database);
     } catch (error: unknown) {
       this.#database.close();

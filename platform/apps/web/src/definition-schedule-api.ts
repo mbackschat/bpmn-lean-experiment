@@ -18,6 +18,10 @@ import {
   DefinitionApiError,
   DefinitionProtocolError,
 } from "./definitions-api.ts";
+import {
+  sameExactDefinition,
+  snapshotExactDefinition,
+} from "./exact-definition.ts";
 
 /** Same-origin public schedule client bound only to exact deployed definitions. */
 export class DefinitionScheduleApiClient {
@@ -38,7 +42,7 @@ export class DefinitionScheduleApiClient {
     scheduleId: string,
     request: PutDefinitionScheduleRequest,
   ): Promise<DefinitionSchedule> {
-    const expectedDefinition = snapshotDefinition(definition);
+    const expectedDefinition = snapshotExactDefinition(definition);
     const expectedRequest = decodePutDefinitionScheduleRequest({
       activationAt: request.activationAt,
     });
@@ -86,7 +90,7 @@ export class DefinitionScheduleApiClient {
   async list(
     definition: DeployedDefinitionVersion,
   ): Promise<DefinitionScheduleListResponse> {
-    const expectedDefinition = snapshotDefinition(definition);
+    const expectedDefinition = snapshotExactDefinition(definition);
     const response = await this.#fetch(this.#url(definitionSchedulesPath(
       expectedDefinition.processId,
       expectedDefinition.version,
@@ -101,7 +105,7 @@ export class DefinitionScheduleApiClient {
       decodeDefinitionScheduleListResponse,
       "definition-schedule list response",
     );
-    if (!sameDefinition(result.definition, expectedDefinition)) {
+    if (!sameExactDefinition(result.definition, expectedDefinition)) {
       throw new DefinitionProtocolError(
         "definition-schedule list does not match the requested definition identity",
       );
@@ -134,7 +138,7 @@ export class DefinitionScheduleApiClient {
     definition: DeployedDefinitionVersion,
     scheduleId: string,
   ): Promise<DefinitionSchedule> {
-    const expectedDefinition = snapshotDefinition(definition);
+    const expectedDefinition = snapshotExactDefinition(definition);
     const expectedScheduleId = snapshotScheduleId(scheduleId);
     const response = await this.#fetch(this.#url(definitionSchedulePath(
       expectedDefinition.processId,
@@ -224,7 +228,7 @@ function requireScheduleIdentity(
 ): void {
   if (
     schedule.scheduleId !== scheduleId ||
-    !sameDefinition(schedule.definition, definition)
+    !sameExactDefinition(schedule.definition, definition)
   ) {
     throw new DefinitionProtocolError(
       "definition-schedule response does not match the requested identity",
@@ -237,51 +241,4 @@ function snapshotScheduleId(scheduleId: string): string {
     throw new TypeError("scheduleId must not be empty");
   }
   return scheduleId;
-}
-
-function snapshotDefinition(
-  definition: DeployedDefinitionVersion,
-): DeployedDefinitionVersion {
-  return {
-    processId: definition.processId,
-    version: definition.version,
-    source: { ...definition.source },
-    semanticProfile: definition.semanticProfile,
-    startCapabilities: {
-      timerStarts: definition.startCapabilities.timerStarts.map(
-        ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
-      ),
-    },
-  };
-}
-
-function sameDefinition(
-  actual: DeployedDefinitionVersion,
-  expected: DeployedDefinitionVersion,
-): boolean {
-  return actual.processId === expected.processId &&
-    actual.version === expected.version &&
-    actual.semanticProfile === expected.semanticProfile &&
-    actual.source.kind === expected.source.kind &&
-    actual.source.id === expected.source.id &&
-    actual.source.sha256 === expected.source.sha256 &&
-    actual.source.byteLength === expected.source.byteLength &&
-    actual.source.declaredEncoding === expected.source.declaredEncoding &&
-    actual.source.decodedAs === expected.source.decodedAs &&
-    sameTimerStarts(
-      actual.startCapabilities.timerStarts,
-      expected.startCapabilities.timerStarts,
-    );
-}
-
-function sameTimerStarts(
-  actual: DeployedDefinitionVersion["startCapabilities"]["timerStarts"],
-  expected: DeployedDefinitionVersion["startCapabilities"]["timerStarts"],
-): boolean {
-  return actual.length === expected.length && actual.every((capability, index) => {
-    const expectedCapability = expected[index];
-    return expectedCapability !== undefined &&
-      capability.startEventId === expectedCapability.startEventId &&
-      capability.durationMs === expectedCapability.durationMs;
-  });
 }

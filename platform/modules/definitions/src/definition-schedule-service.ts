@@ -12,12 +12,12 @@ import {
 } from "./definition-capabilities.js";
 import {
   cloneDefinitionMetadata,
+  equalDefinitionSource,
 } from "./definition-values.js";
 import {
   cloneDefinitionReference,
   cloneScheduleReference,
   deriveScheduleDueAt,
-  equalDefinitionSource,
   projectDefinitionSchedule,
   requireDefinitionReference,
   requireSameScheduleIntent,

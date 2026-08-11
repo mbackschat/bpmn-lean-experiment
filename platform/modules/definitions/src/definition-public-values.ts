@@ -18,6 +18,12 @@ export function toPublicDefinition(
     source: toPublicSource(definition.source),
     semanticProfile: definition.semanticProfile,
     startCapabilities: {
+      messageStarts: definition.startCapabilities.messageStarts.map(
+        ({ startEventId, channel }) => ({
+          startEventId,
+          channel: { ...channel },
+        }),
+      ),
       timerStarts: definition.startCapabilities.timerStarts.map(
         ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
       ),

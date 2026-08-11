@@ -33,6 +33,7 @@ test("validates the exact stored definition and maps its Timer Start capability"
 
   assert.equal(result.status, "accepted");
   assert.deepEqual(result.startCapabilities, {
+    messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
   });
 });
@@ -186,6 +187,7 @@ function bindingFor(bytes: Uint8Array): DefinitionScheduleHostRequest {
       },
       semanticProfile: "bpmn-2.0.2-timer-start-event-draft",
       startCapabilities: {
+        messageStarts: [],
         timerStarts: [{
           startEventId: "TimerStart_PT1S",
           durationMs: 1_000,

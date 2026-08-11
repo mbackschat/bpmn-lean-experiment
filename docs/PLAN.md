@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: implement the approved published Message Start ingress first-green checkpoint for M2.** Context-cold review of immutable target `4223ded` retained the one-target, no-fanout, at-most-once account. Three bounded warm audits closed Memo authority, SQLite epoch, lifecycle reachability, integration inventory, and exact HTTP status wording. Implement Product 1 capability projection, the public contract, durable lifecycle, and handle-free host client, then obtain the required semantic checkpoint review before UI or live evidence. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
+1. **Active: obtain independent semantic review of the published Message Start ingress first-green checkpoint for M2.** Context-cold review of immutable target `4223ded` retained the one-target, no-fanout, at-most-once account. The implemented checkpoint now contains Product 1 capability projection, the strict public contract, shared SQLite epoch, durable lifecycle, and handle-free host client. UI, HTTP/server composition, and live/browser evidence remain paused through checkpoint approval. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: implement and commit the approved Product 2 Message Start ingress first-green checkpoint.** Begin with separating Red tests for exact Message Start capability projection, the closed public publication contract, SQLite epoch and durable no-redispatch lifecycle, and the handle-free direct-start host request. UI, browser, and live evidence remain paused through checkpoint approval.
+**Next action: commit the Product 2 Message Start ingress first-green checkpoint, mint its neutral review packet, and obtain a context-cold semantic checkpoint verdict while the repository-wide gate runs.** UI, HTTP/server composition, and live/browser evidence remain paused through checkpoint approval.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

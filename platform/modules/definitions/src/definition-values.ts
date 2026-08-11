@@ -3,7 +3,10 @@ import type {
   DefinitionSourceIdentity,
   DefinitionStartCapabilities,
 } from "./contracts.js";
-import { cloneDefinitionStartCapabilities } from "./definition-capabilities.js";
+import {
+  cloneDefinitionStartCapabilities,
+  equalDefinitionStartCapabilities,
+} from "./definition-capabilities.js";
 
 export function cloneDefinitionMetadata(
   definition: DefinitionMetadata,
@@ -30,4 +33,30 @@ export function cloneDefinitionSource(
     declaredEncoding: source.declaredEncoding,
     decodedAs: source.decodedAs,
   };
+}
+
+export function equalDefinitionMetadata(
+  left: DefinitionMetadata,
+  right: DefinitionMetadata,
+): boolean {
+  return left.processId === right.processId &&
+    left.version === right.version &&
+    left.semanticProfile === right.semanticProfile &&
+    equalDefinitionSource(left.source, right.source) &&
+    equalDefinitionStartCapabilities(
+      left.startCapabilities,
+      right.startCapabilities,
+    );
+}
+
+export function equalDefinitionSource(
+  left: DefinitionSourceIdentity,
+  right: DefinitionSourceIdentity,
+): boolean {
+  return left.kind === right.kind &&
+    left.id === right.id &&
+    left.sha256 === right.sha256 &&
+    left.byteLength === right.byteLength &&
+    left.declaredEncoding === right.declaredEncoding &&
+    left.decodedAs === right.decodedAs;
 }

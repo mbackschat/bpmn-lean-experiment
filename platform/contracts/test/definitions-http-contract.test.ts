@@ -32,6 +32,7 @@ const deployedDefinition = {
   source,
   semanticProfile: "cib-seven-2.2.0:sequential-user-task",
   startCapabilities: {
+    messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_1", durationMs: 1000 }],
   },
 } as const satisfies DeployedDefinitionVersion;

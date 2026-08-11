@@ -22,6 +22,10 @@ const timerStartSource = new URL(
   "../../../../scenarios/timer-start-event/process.bpmn",
   import.meta.url,
 );
+const messageStartSource = new URL(
+  "../../../../scenarios/message-start-event/process.bpmn",
+  import.meta.url,
+);
 const semanticProfile = "bpmn-2.0.2-user-task-preserved-notation-draft";
 
 test("compiles exact third-party bytes through the only product-2 engine boundary", async () => {
@@ -42,7 +46,10 @@ test("compiles exact third-party bytes through the only product-2 engine boundar
   assert.equal(result.source.id, "uploaded-review-process");
   assert.equal(result.definition.processId, "Process_SequentialUserTask");
   assert.equal(result.definition.semanticProfile, semanticProfile);
-  assert.deepEqual(result.startCapabilities, { timerStarts: [] });
+  assert.deepEqual(result.startCapabilities, {
+    messageStarts: [],
+    timerStarts: [],
+  });
 });
 
 test("maps the Timer Start capability into a platform-owned gateway value", async () => {
@@ -61,7 +68,37 @@ test("maps the Timer Start capability into a platform-owned gateway value", asyn
 
   assert.equal(result.status, DefinitionCompilationStatus.Accepted);
   assert.deepEqual(result.startCapabilities, {
+    messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
+  });
+});
+
+test("maps every operation-addressed Message Start field into the platform value", async () => {
+  const gateway = new BpmnEngineGateway({
+    maxSourceBytes: 1_048_576,
+    parserDeadlineMs: 1_000,
+    temporalClient: fakeClient([]),
+    temporalTaskQueue: "m1-start-queue",
+  });
+  const result = await gateway.compileDefinition({
+    bytes: await readFile(messageStartSource),
+    sourceId: "uploaded-message-start-process",
+    semanticProfile: "bpmn-2.0.2-message-start-event-draft",
+    expectedSha256: undefined,
+  });
+
+  assert.equal(result.status, DefinitionCompilationStatus.Accepted);
+  assert.deepEqual(result.startCapabilities, {
+    messageStarts: [{
+      startEventId: "MessageStart_ApprovalRequest",
+      channel: {
+        kind: "operationMessage",
+        interfaceId: "Interface_ProcessMessages",
+        interfaceOperationId: "Operation_ReceiveApprovalRequest",
+        messageId: "Message_ApprovalRequest",
+      },
+    }],
+    timerStarts: [],
   });
 });
 
@@ -101,6 +138,9 @@ test("constructs a close-idempotent gateway runtime without connecting", async (
     temporalConnectTimeoutMs: 1,
   });
 
+  assert.equal(typeof runtime.messageStartHost.prepare, "function");
+  assert.equal(typeof runtime.messageStartHost.start, "function");
+  assert.equal(typeof runtime.messageStartHost.describe, "function");
   const firstClose = runtime.close();
   assert.strictEqual(runtime.close(), firstClose);
   await firstClose;

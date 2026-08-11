@@ -1,4 +1,5 @@
 import type {
+  DefinitionMessageStartCapability,
   DefinitionStartCapabilities,
   DefinitionTimerStartCapability,
 } from "./contracts.js";
@@ -6,13 +7,22 @@ import type {
 export function cloneDefinitionStartCapabilities(
   value: unknown,
 ): DefinitionStartCapabilities {
-  if (!isRecord(value) || !hasOnlyKeys(value, ["timerStarts"])) {
-    throw new TypeError("definition start capabilities must contain only timerStarts");
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["messageStarts", "timerStarts"])
+  ) {
+    throw new TypeError(
+      "definition start capabilities must contain only messageStarts and timerStarts",
+    );
+  }
+  if (!Array.isArray(value.messageStarts)) {
+    throw new TypeError("definition messageStarts capability must be an array");
   }
   if (!Array.isArray(value.timerStarts)) {
     throw new TypeError("definition timerStarts capability must be an array");
   }
   return {
+    messageStarts: value.messageStarts.map(decodeMessageStartCapability),
     timerStarts: value.timerStarts.map(decodeTimerStartCapability),
   };
 }
@@ -66,6 +76,42 @@ function decodeTimerStartCapability(value: unknown): DefinitionTimerStartCapabil
     startEventId: value.startEventId,
     durationMs: value.durationMs,
   };
+}
+
+function decodeMessageStartCapability(
+  value: unknown,
+): DefinitionMessageStartCapability {
+  if (
+    !isRecord(value) ||
+    !hasOnlyKeys(value, ["startEventId", "channel"]) ||
+    !isNonemptyWellFormedString(value.startEventId) ||
+    !isRecord(value.channel) ||
+    !hasOnlyKeys(value.channel, [
+      "kind",
+      "interfaceId",
+      "interfaceOperationId",
+      "messageId",
+    ]) ||
+    value.channel.kind !== "operationMessage" ||
+    !isNonemptyWellFormedString(value.channel.interfaceId) ||
+    !isNonemptyWellFormedString(value.channel.interfaceOperationId) ||
+    !isNonemptyWellFormedString(value.channel.messageId)
+  ) {
+    throw new TypeError("definition messageStarts capability is invalid");
+  }
+  return {
+    startEventId: value.startEventId,
+    channel: {
+      kind: value.channel.kind,
+      interfaceId: value.channel.interfaceId,
+      interfaceOperationId: value.channel.interfaceOperationId,
+      messageId: value.channel.messageId,
+    },
+  };
+}
+
+function isNonemptyWellFormedString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.isWellFormed();
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

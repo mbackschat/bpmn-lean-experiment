@@ -2,6 +2,8 @@ import type {
   DeployedDefinitionVersion,
   ExactPublicSourceIdentity,
   PublicDefinitionStartCapabilities,
+  PublicMessageStartCapability,
+  PublicOperationMessageChannel,
   PublicTimerStartCapability,
 } from "./definitions.js";
 import {
@@ -53,17 +55,79 @@ export function decodePublicDefinitionStartCapabilities(
   label = "start capabilities",
 ): PublicDefinitionStartCapabilities {
   requireObject(value, label);
-  requireExactKeys(value, label, ["timerStarts"]);
+  requireExactKeys(value, label, ["messageStarts", "timerStarts"]);
+  const messageStarts = readOwn(value, "messageStarts");
+  if (!Array.isArray(messageStarts)) {
+    throw new TypeError(`${label}.messageStarts must be an array`);
+  }
   const timerStarts = readOwn(value, "timerStarts");
   if (!Array.isArray(timerStarts)) {
     throw new TypeError(`${label}.timerStarts must be an array`);
   }
   return {
+    messageStarts: Array.from(messageStarts, (capability, index) =>
+      decodePublicMessageStartCapability(
+        capability,
+        `${label}.messageStarts[${index}]`,
+      )
+    ),
     timerStarts: Array.from(timerStarts, (capability, index) =>
       decodePublicTimerStartCapability(
         capability,
         `${label}.timerStarts[${index}]`,
       )
+    ),
+  };
+}
+
+/** Decodes one closed Message Start capability and its complete channel. */
+export function decodePublicMessageStartCapability(
+  value: unknown,
+  label = "Message Start capability",
+): PublicMessageStartCapability {
+  requireObject(value, label);
+  requireExactKeys(value, label, ["channel", "startEventId"]);
+  return {
+    startEventId: requireNonemptyString(
+      readOwn(value, "startEventId"),
+      `${label}.startEventId`,
+    ),
+    channel: decodePublicOperationMessageChannel(
+      readOwn(value, "channel"),
+      `${label}.channel`,
+    ),
+  };
+}
+
+/** Decodes the closed public operation-addressed Message channel. */
+export function decodePublicOperationMessageChannel(
+  value: unknown,
+  label = "operation Message channel",
+): PublicOperationMessageChannel {
+  requireObject(value, label);
+  requireExactKeys(value, label, [
+    "interfaceId",
+    "interfaceOperationId",
+    "kind",
+    "messageId",
+  ]);
+  const kind = readOwn(value, "kind");
+  if (kind !== "operationMessage") {
+    throw new TypeError(`${label}.kind must be operationMessage`);
+  }
+  return {
+    kind,
+    interfaceId: requireNonemptyString(
+      readOwn(value, "interfaceId"),
+      `${label}.interfaceId`,
+    ),
+    interfaceOperationId: requireNonemptyString(
+      readOwn(value, "interfaceOperationId"),
+      `${label}.interfaceOperationId`,
+    ),
+    messageId: requireNonemptyString(
+      readOwn(value, "messageId"),
+      `${label}.messageId`,
     ),
   };
 }

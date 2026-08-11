@@ -325,6 +325,7 @@ function timerDefinition(): DefinitionMetadata {
     },
     semanticProfile: "timer-profile",
     startCapabilities: {
+      messageStarts: [],
       timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
     },
   };

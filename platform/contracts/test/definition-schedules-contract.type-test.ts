@@ -17,7 +17,7 @@ capability.durationMs = 2000;
 declare const definition: DeployedDefinitionVersion;
 
 // @ts-expect-error The capability container is immutable.
-definition.startCapabilities = { timerStarts: [] };
+definition.startCapabilities = { messageStarts: [], timerStarts: [] };
 // @ts-expect-error The Timer Start capability array is immutable.
 definition.startCapabilities.timerStarts.push(capability);
 if (definition.startCapabilities.timerStarts[0] !== undefined) {

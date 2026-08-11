@@ -39,8 +39,23 @@ export type PublicTimerStartCapability = Readonly<{
   durationMs: number;
 }>;
 
+/** Complete operation-addressed public channel of one Message Start capability. */
+export type PublicOperationMessageChannel = Readonly<{
+  kind: "operationMessage";
+  interfaceId: string;
+  interfaceOperationId: string;
+  messageId: string;
+}>;
+
+/** Platform-owned projection of one resolved Message Start capability. */
+export type PublicMessageStartCapability = Readonly<{
+  startEventId: string;
+  channel: PublicOperationMessageChannel;
+}>;
+
 /** Start capabilities published for one exact deployed definition version. */
 export type PublicDefinitionStartCapabilities = Readonly<{
+  messageStarts: readonly PublicMessageStartCapability[];
   timerStarts: readonly PublicTimerStartCapability[];
 }>;
 

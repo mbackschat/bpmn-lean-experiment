@@ -7,10 +7,8 @@ import {
   decodeCanonicalWholeSecondUtcInstant,
 } from "@bpmn-lean/platform-contracts";
 import {
-  equalDefinitionStartCapabilities,
-} from "./definition-capabilities.js";
-import {
   cloneDefinitionMetadata,
+  equalDefinitionMetadata,
 } from "./definition-values.js";
 import {
   DefinitionScheduleConflictError,
@@ -42,32 +40,6 @@ export function requireSameScheduleIntent(
       "schedule identity is already bound to another immutable request",
     );
   }
-}
-
-export function equalDefinitionMetadata(
-  left: DefinitionMetadata,
-  right: DefinitionMetadata,
-): boolean {
-  return left.processId === right.processId &&
-    left.version === right.version &&
-    left.semanticProfile === right.semanticProfile &&
-    equalDefinitionSource(left.source, right.source) &&
-    equalDefinitionStartCapabilities(
-      left.startCapabilities,
-      right.startCapabilities,
-    );
-}
-
-export function equalDefinitionSource(
-  left: DefinitionMetadata["source"],
-  right: DefinitionMetadata["source"],
-): boolean {
-  return left.kind === right.kind &&
-    left.id === right.id &&
-    left.sha256 === right.sha256 &&
-    left.byteLength === right.byteLength &&
-    left.declaredEncoding === right.declaredEncoding &&
-    left.decodedAs === right.decodedAs;
 }
 
 export function deriveScheduleDueAt(

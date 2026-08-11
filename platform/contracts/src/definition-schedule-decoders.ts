@@ -205,6 +205,18 @@ function definitionsEqual(
     left.source.byteLength === right.source.byteLength &&
     left.source.declaredEncoding === right.source.declaredEncoding &&
     left.source.decodedAs === right.source.decodedAs &&
+    left.startCapabilities.messageStarts.length ===
+      right.startCapabilities.messageStarts.length &&
+    left.startCapabilities.messageStarts.every((capability, index) => {
+      const other = right.startCapabilities.messageStarts[index];
+      return other !== undefined &&
+        capability.startEventId === other.startEventId &&
+        capability.channel.kind === other.channel.kind &&
+        capability.channel.interfaceId === other.channel.interfaceId &&
+        capability.channel.interfaceOperationId ===
+          other.channel.interfaceOperationId &&
+        capability.channel.messageId === other.channel.messageId;
+    }) &&
     left.startCapabilities.timerStarts.length ===
       right.startCapabilities.timerStarts.length &&
     left.startCapabilities.timerStarts.every((capability, index) => {

@@ -246,6 +246,15 @@ type MutableDefinition = {
   };
   semanticProfile: string;
   startCapabilities: {
+    messageStarts: Array<{
+      startEventId: string;
+      channel: {
+        kind: "operationMessage";
+        interfaceId: string;
+        interfaceOperationId: string;
+        messageId: string;
+      };
+    }>;
     timerStarts: Array<{ startEventId: string; durationMs: number }>;
   };
 };
@@ -277,7 +286,7 @@ function mutableDefinition(
       decodedAs: "UTF-8",
     },
     semanticProfile: `profile-v${version}`,
-    startCapabilities: { timerStarts: [] },
+    startCapabilities: { messageStarts: [], timerStarts: [] },
   };
 }
 

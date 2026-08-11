@@ -35,6 +35,7 @@ const definition = {
   },
   semanticProfile: "cib-seven-2.2.0:timer-start",
   startCapabilities: {
+    messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_1", durationMs: 1000 }],
   },
 } as const satisfies DeployedDefinitionVersion;
@@ -71,12 +72,14 @@ test("decodes the exact closed Timer Start capability and activation request", (
   );
   assert.throws(
     () => decodePublicDefinitionStartCapabilities({
+      messageStarts: [],
       timerStarts: new Array<unknown>(1),
     }),
     /timerStarts\[0\] must be an object/u,
   );
   assert.throws(
     () => decodePublicDefinitionStartCapabilities({
+      messageStarts: [],
       timerStarts: [capability],
       taskQueue: "private",
     }),
@@ -155,6 +158,34 @@ test("rejects private Temporal execution identities instead of stripping them", 
       },
     }),
     /instance must contain exactly its public fields/u,
+  );
+});
+
+test("rejects a repeated definition whose Message Start capabilities drift", () => {
+  assert.throws(
+    () => decodeDefinitionSchedule({
+      ...scheduled,
+      status: DefinitionScheduleStatus.Started,
+      instance: {
+        processInstanceId: "process-instance-42",
+        definition: {
+          ...definition,
+          startCapabilities: {
+            ...definition.startCapabilities,
+            messageStarts: [{
+              startEventId: "MessageStart_1",
+              channel: {
+                kind: "operationMessage",
+                interfaceId: "Interface_1",
+                interfaceOperationId: "Operation_1",
+                messageId: "Message_1",
+              },
+            }],
+          },
+        },
+      },
+    }),
+    /instance\.definition must equal definition/u,
   );
 });
 

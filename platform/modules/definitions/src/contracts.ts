@@ -32,7 +32,20 @@ export type DefinitionTimerStartCapability = Readonly<{
   durationMs: number;
 }>;
 
+export type DefinitionOperationMessageChannel = Readonly<{
+  kind: "operationMessage";
+  interfaceId: string;
+  interfaceOperationId: string;
+  messageId: string;
+}>;
+
+export type DefinitionMessageStartCapability = Readonly<{
+  startEventId: string;
+  channel: DefinitionOperationMessageChannel;
+}>;
+
 export type DefinitionStartCapabilities = Readonly<{
+  messageStarts: ReadonlyArray<DefinitionMessageStartCapability>;
   timerStarts: ReadonlyArray<DefinitionTimerStartCapability>;
 }>;
 

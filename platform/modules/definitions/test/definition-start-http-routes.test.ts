@@ -39,7 +39,7 @@ const storedDefinition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "test/profile",
-  startCapabilities: { timerStarts: [] },
+  startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const satisfies DefinitionMetadata;
 
 const StartBehavior = {
@@ -292,7 +292,7 @@ function createFixture(
         processId: storedDefinition.processId,
         semanticProfile: storedDefinition.semanticProfile,
       },
-      startCapabilities: { timerStarts: [] },
+      startCapabilities: { messageStarts: [], timerStarts: [] },
     }),
   };
   const deployment = new DefinitionDeploymentService(
