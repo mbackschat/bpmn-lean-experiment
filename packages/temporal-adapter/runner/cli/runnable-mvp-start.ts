@@ -20,12 +20,21 @@ export function createRunnableMvpStartStimulus(
       initialVariables: config.process.initialVariables,
     };
   }
+  if ("channel" in config.process) {
+    return {
+      kind: StimulusKind.TriggerMessageStart,
+      commandId: `mvp-start:${config.process.instanceId}`,
+      processId: program.processId,
+      instanceId: config.process.instanceId,
+      startEventId: config.process.startEventId,
+      channel: config.process.channel,
+    };
+  }
   return {
-    kind: StimulusKind.TriggerMessageStart,
+    kind: StimulusKind.TriggerTimerStart,
     commandId: `mvp-start:${config.process.instanceId}`,
     processId: program.processId,
     instanceId: config.process.instanceId,
     startEventId: config.process.startEventId,
-    channel: config.process.channel,
   };
 }

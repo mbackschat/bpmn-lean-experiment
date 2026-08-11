@@ -327,8 +327,8 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [Semantic Process admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 256 | Keep exact cross-kind start pairing fail closed. |
 | [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 140 | Validate duration and canonical nonempty outputs. |
 | [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 104 | Recognize the new root operation under existing finite graph laws. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 31 | Keep the checkpoint capability separate from the registered profile catalog. |
-| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 535 | Assign the existing whole-graph acyclic policy. |
+| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 33 | Register the exact capability without changing existing catalog values. |
+| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 538 | Assign the existing whole-graph acyclic policy. |
 | [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 240 | Add one delegated internal operation arm. |
 | [stimulus identity](../../packages/semantic-core/src/stimulus.ts) | 226 | Validate and compare every resolved trigger field. |
 | [scenario admission](../../packages/semantic-core/src/scenario.ts) | 203 | Admit Timer Start only as the first stimulus. |
@@ -343,8 +343,8 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 4 | Add only the exhaustive `initiateTimer` delegation while keeping this owner at or below 600. |
 | [start-operation artifact consistency](../../scripts/start-operation-artifact-consistency.ts) | 494 | Extend the existing cohesive None/Message Start binding owner with Timer origin/duration/output consistency. |
 | [contract artifact projection](../../scripts/contract-artifacts.ts) | 16 | Add only the exhaustive Timer-start classifier arm; any new projection responsibility requires extraction first. |
-| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 401 | Register the standards-only scenario with no CIB target. |
-| [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 32 | Add a capsule-owned case module and only register it from this near-limit catalog. |
+| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 397 | Register the standards-only scenario with no CIB target. |
+| [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 28 | Add a capsule-owned case module and only register it from this near-limit catalog. |
 | [Temporal protocol contracts](../../packages/temporal-adapter/protocol/src/contracts.ts) | 418 | Widen the exact Workflow-start input union. |
 | [Temporal command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 439 | Include every Timer-start stimulus field. |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 398 | Classify `initiateTimer` as passive internal initiation. |
@@ -355,8 +355,8 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [testkit Workflow start](../../packages/temporal-adapter/testkit/src/runner-workflow-start.ts) | 556 | Pass the admitted start variant to the existing Workflow start path. |
 | [scenario sequencing](../../packages/temporal-adapter/testkit/src/scenario-stimulus-sequencing.ts) | 557 | Treat Timer Start as first-only. |
 | [runner support](../../packages/temporal-adapter/testkit/src/runner-support.ts) | 179 | Recognize the checkpoint trigger without Product 2 scheduling. |
-| [runnable MVP config](../../packages/temporal-adapter/runner/cli/runnable-mvp-config.ts) | 389 | Add a third closed start config, not optional mode fields. |
-| [runnable start constructor](../../packages/temporal-adapter/runner/cli/runnable-mvp-start.ts) | 571 | Map the exact config exhaustively to the resolved stimulus. |
+| [runnable MVP config](../../packages/temporal-adapter/runner/cli/runnable-mvp-config.ts) | 368 | Add a third closed start config, not optional mode fields. |
+| [runnable start constructor](../../packages/temporal-adapter/runner/cli/runnable-mvp-start.ts) | 562 | Map the exact config exhaustively to the resolved stimulus. |
 | [Lean scenario wire](../../BpmnSemantics/Scenario.lean) | 386 | Add the exact Timer-start stimulus. |
 | [Lean semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 130 | Add checked and IL variants without crossing the owner limit. |
 | [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 288 | Validate exact Timer Start shape. |
@@ -399,20 +399,20 @@ Existing focused test owners also change where their inventories widen:
 | Test owner | Headroom to 600 nonblank lines | Obligation |
 |---|---:|---|
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 155 | Register the exact projector in the closed consumer matrix. |
-| [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 337 | Lock `0 -> 1`, root placement, reachability, and cross-kind start closure. |
-| [Timer Start source](../../packages/bpmn-source/test/timer-start-event-source.test.ts) | 304 | Lock exact projection and the complete excluded source matrix. |
-| [singleton containment](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | 513 | Lock repeated singleton rejection across all affected Timer and condition readers. |
+| [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 338 | Lock `0 -> 1`, root placement, reachability, and cross-kind start closure. |
+| [Timer Start source](../../packages/bpmn-source/test/timer-start-event-source.test.ts) | 286 | Lock exact projection and the complete excluded source matrix. |
+| [singleton containment](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | 514 | Lock repeated singleton rejection across all affected Timer and condition readers. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 125 | Reject origin, duration, and output drift. |
 | [Message Start schema contract](../../scripts/message-start-contract-schema.test.ts) | 374 | Widen the existing closed Process-start union assertion from two exact variants to three. |
 | [start-operation artifact consistency](../../scripts/start-operation-artifact-consistency.test.ts) | 413 | Reject Timer origin, duration, output, and canonical-order drift. |
 | [Timer Start semantic core](../../packages/semantic-core/test/timer-start-event.test.ts) | 73 | Lock the selected runtime and admission account. |
-| [Timer Start immutability](../../packages/semantic-core/type-test/timer-start-event.type-test.ts) | 548 | Lock deep compile-time immutability. |
+| [Timer Start immutability](../../packages/semantic-core/type-test/timer-start-event.type-test.ts) | 550 | Lock deep compile-time immutability. |
 | [command identity](../../packages/temporal-adapter/testkit/test/command-identity.test.ts) | 334 | Lock every trigger field. |
-| [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 29 | Lock exact Timer-start passive-host admission. |
-| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 451 | Construct the correct start arm for every registered example. |
-| [runnable MVP](../../packages/temporal-adapter/testkit/test/runnable-mvp.test.ts) | 283 | Lock strict Timer-start config while preserving old branches. |
+| [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 30 | Lock exact Timer-start passive-host admission. |
+| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 429 | Construct the correct start arm for every registered example. |
+| [runnable MVP](../../packages/temporal-adapter/testkit/test/runnable-mvp.test.ts) | 218 | Lock strict Timer-start config while preserving old branches. |
 | [external runtime](../../packages/temporal-adapter/testkit/test/external-temporal-runtime.test.ts) | 462 | Keep its existing fixture explicitly manual after the config union widens. |
-| [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 344 | Lock the additive profile/case inventory and exact standards-only target shape. |
+| [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 295 | Lock the additive profile/case inventory and exact standards-only target shape. |
 
 The seven experiment owners above are the current repository-built exhaustive consumers found by the node, operation, and stimulus discriminant sweep. No experiment gains Timer Start semantics. The implementation repeats the sweep after the unions widen and treats any new consumer as part of the same atomic change.
 

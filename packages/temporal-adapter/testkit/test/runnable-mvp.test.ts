@@ -42,6 +42,10 @@ const messageStartBpmn = path.join(
   projectRoot,
   "packages/bpmn-source/test/fixtures/message-start-event.bpmn",
 );
+const timerStartBpmn = path.join(
+  projectRoot,
+  "packages/bpmn-source/test/fixtures/timer-start-event.bpmn",
+);
 const profile = "cibseven-2.2.0-user-task-process-data-draft";
 const messageStartProcess = {
   instanceId: "Message_Start_Mvp_1",
@@ -52,6 +56,10 @@ const messageStartProcess = {
     interfaceOperationId: "Operation_StartOrder",
     messageId: "Message_StartOrder",
   },
+} as const;
+const timerStartProcess = {
+  instanceId: "Timer_Start_Mvp_1",
+  startEventId: "TimerStart_PT1S",
 } as const;
 
 const config = {
@@ -136,6 +144,20 @@ test("loads the exact Message-start Process configuration", async () => {
   assert.deepEqual(loaded.process, messageStartProcess);
 });
 
+test("loads the exact Timer-start Process configuration", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-mvp-config-"));
+  const configPath = path.join(directory, "timer-start.json");
+  await writeFile(
+    configPath,
+    `${JSON.stringify({ ...config, process: timerStartProcess })}\n`,
+    "utf8",
+  );
+
+  const loaded = await loadRunnableMvpConfig(configPath);
+
+  assert.deepEqual(loaded.process, timerStartProcess);
+});
+
 test("rejects mixed, both-arm, missing, extra, and malformed Process-start shapes", async () => {
   const invalidProcesses = [
     {
@@ -144,11 +166,15 @@ test("rejects mixed, both-arm, missing, extra, and malformed Process-start shape
       startEventId: messageStartProcess.startEventId,
     },
     { ...messageStartProcess, initialVariables: [] },
+    { ...timerStartProcess, initialVariables: [] },
     {
-      instanceId: messageStartProcess.instanceId,
-      startEventId: messageStartProcess.startEventId,
+      ...timerStartProcess,
+      channel: messageStartProcess.channel,
+      initialVariables: [],
     },
+    { instanceId: timerStartProcess.instanceId },
     { ...messageStartProcess, payload: null },
+    { ...timerStartProcess, startEventId: "" },
     {
       ...messageStartProcess,
       channel: {
@@ -172,7 +198,7 @@ test("rejects mixed, both-arm, missing, extra, and malformed Process-start shape
   }
 });
 
-test("constructs distinct exact manual and Message-start stimuli", () => {
+test("constructs distinct exact manual, Message-start, and Timer-start stimuli", () => {
   assert.deepEqual(
     createRunnableMvpStartStimulus(config, { processId: "Process_Manual" }),
     {
@@ -195,6 +221,19 @@ test("constructs distinct exact manual and Message-start stimuli", () => {
       instanceId: "Message_Start_Mvp_1",
       startEventId: "StartEvent_Message",
       channel: messageStartProcess.channel,
+    },
+  );
+  assert.deepEqual(
+    createRunnableMvpStartStimulus(
+      { ...config, process: timerStartProcess },
+      { processId: "Process_TimerStart" },
+    ),
+    {
+      kind: StimulusKind.TriggerTimerStart,
+      commandId: "mvp-start:Timer_Start_Mvp_1",
+      processId: "Process_TimerStart",
+      instanceId: "Timer_Start_Mvp_1",
+      startEventId: "TimerStart_PT1S",
     },
   );
 });
@@ -273,6 +312,37 @@ test("rejects wrong Message-start identity before opening a Temporal connection"
 
   assert.equal(result.kind, RunnableMvpResultKind.ProcessAdmissionRejected);
   assert.equal(attemptedConnection, false);
+});
+
+test("rejects a wrong or Message-shaped Timer start before opening a Temporal connection", async () => {
+  for (const process of [
+    { ...timerStartProcess, startEventId: "OtherTimerStart" },
+    { ...timerStartProcess, channel: messageStartProcess.channel },
+  ]) {
+    let attemptedConnection = false;
+    const result = await runRunnableTemporalMvp(
+      {
+        ...config,
+        bpmn: {
+          ...config.bpmn,
+          file: timerStartBpmn,
+          sourceId: "timer-start-event",
+          semanticProfile: "bpmn-2.0.2-timer-start-event-draft",
+        },
+        process,
+      },
+      () => undefined,
+      {
+        connect: async () => {
+          attemptedConnection = true;
+          throw new Error("Temporal connection must not be attempted");
+        },
+      },
+    );
+
+    assert.equal(result.kind, RunnableMvpResultKind.ProcessAdmissionRejected);
+    assert.equal(attemptedConnection, false);
+  }
 });
 
 test("the command emits typed rejection for an unsupported model without Temporal", async () => {

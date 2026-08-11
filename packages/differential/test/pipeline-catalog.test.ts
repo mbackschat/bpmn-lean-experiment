@@ -31,6 +31,9 @@ import {
   messageStartPipelineCases,
 } from "./message-start-pipeline-cases.ts";
 import {
+  timerStartPipelineCases,
+} from "./timer-start-pipeline-cases.ts";
+import {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import {
@@ -43,6 +46,9 @@ import {
 import {
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
+
+const timerStartScenarioRelativePath =
+  "scenarios/timer-start-event/scenario.json";
 
 test("registers every Event race artifact once with exact Temporal refinement", () => {
   assert.doesNotThrow(() =>
@@ -118,6 +124,53 @@ test("registers the operation-addressed Message Start artifact once with exact T
         temporalRelation: TemporalCaseRelation.ExactSemantic,
       },
     ],
+  );
+});
+
+test("registers Timer Start atomically as one standards-only exact-semantic case", () => {
+  assert.deepEqual(
+    normativeArtifactCases.filter(
+      ({ scenarioRelativePath }) =>
+        scenarioRelativePath === timerStartScenarioRelativePath,
+    ),
+    [{ scenarioRelativePath: timerStartScenarioRelativePath }],
+  );
+  assert.deepEqual(
+    pipelineCases.filter(
+      ({ scenarioRelativePath }) =>
+        scenarioRelativePath === timerStartScenarioRelativePath,
+    ).map(({ id, cib, temporalRelation }) => ({
+      id,
+      cib,
+      temporalRelation,
+    })),
+    [{
+      id: "timer-start-event",
+      cib: null,
+      temporalRelation: TemporalCaseRelation.ExactSemantic,
+    }],
+  );
+});
+
+test("makes the Timer Start instance-identity mutation reach its declared disagreement", async () => {
+  const [context] = await loadAndCompileCases(timerStartPipelineCases);
+  assert.ok(context !== undefined);
+  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  assert.ok(result !== undefined);
+  const mutated = mutableClone(result);
+  context.pipelineCase.injectMutation(mutated);
+
+  const comparison = compareTargetResults(
+    { target: DifferentialTarget.SemanticCore, result },
+    [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+  );
+  assert.equal(comparison.kind, ComparisonKind.Disagreement);
+  if (comparison.kind !== ComparisonKind.Disagreement) {
+    throw new Error("Timer Start mutation did not create a disagreement");
+  }
+  assert.deepEqual(
+    comparison.disagreement,
+    context.pipelineCase.expectedInjectedDisagreement,
   );
 });
 

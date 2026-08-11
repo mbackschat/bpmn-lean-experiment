@@ -62,6 +62,9 @@ import {
 import {
   messageStartPipelineCases,
 } from "./message-start-pipeline-cases.ts";
+import {
+  timerStartPipelineCases,
+} from "./timer-start-pipeline-cases.ts";
 
 type InteractionCaseOptions = Readonly<{
   completionDelivery?: TemporalCompletionDelivery;
@@ -587,6 +590,7 @@ export const pipelineCases = Object.freeze([
   ...callActivityPipelineCases,
   ...cyclicControlFlowPipelineCases,
   ...messageStartPipelineCases,
+  ...timerStartPipelineCases,
   effectCase(),
   mappedSuccessCase(),
   boundaryErrorCase(),

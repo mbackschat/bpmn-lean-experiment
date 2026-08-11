@@ -9,8 +9,8 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
+  SemanticProfileId,
   profileAllowsProgramShape,
-  TimerStartCheckpointProfileId,
 } from "./semantic-process-profile.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import {
@@ -71,7 +71,7 @@ export function admitTimerStart(
   );
   const initiation = initiations[0];
   if (
-    program.identity.semanticProfile !== TimerStartCheckpointProfileId ||
+    program.identity.semanticProfile !== SemanticProfileId.TimerStart ||
     !profileAllowsProgramShape(
       program.identity.semanticProfile,
       program.operations,

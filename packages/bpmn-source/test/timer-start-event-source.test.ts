@@ -1,5 +1,6 @@
 /** Locks the exact top-level, payload-free Timer Start Event source slice. */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
@@ -14,10 +15,16 @@ import type {
   BpmnCompilationResult,
   BpmnSourceLimits,
 } from "@bpmn-lean/bpmn-source";
-import { TimerStartCheckpointProfileId } from "@bpmn-lean/semantic-core";
+import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 
-const timerStartProfile = TimerStartCheckpointProfileId;
+const timerStartProfile = SemanticProfileId.TimerStart;
 const sourceUrl = new URL("./fixtures/timer-start-event.bpmn", import.meta.url);
+const registeredSourceUrl = new URL(
+  "../../../scenarios/timer-start-event/process.bpmn",
+  import.meta.url,
+);
+const expectedSourceSha256 =
+  "16ede7a6d5090be3a481ce7a4af97745bba96375272a59da66384091dd2c02b0";
 const limits: BpmnSourceLimits = Object.freeze({
   maxBytes: 1024 * 1024,
   parserDeadlineMs: 1_000,
@@ -66,6 +73,19 @@ test("compiles and lowers the exact Timer Start Event source slice", async () =>
     },
   );
   assert.deepEqual(Array.from(result.copyExactBytes()), Array.from(bytes));
+});
+
+test("keeps the registered Timer Start source byte-identical to the approved fixture", async () => {
+  const [fixtureBytes, registeredBytes] = await Promise.all([
+    readFile(sourceUrl),
+    readFile(registeredSourceUrl),
+  ]);
+
+  assert.deepEqual(registeredBytes, fixtureBytes);
+  assert.equal(
+    createHash("sha256").update(registeredBytes).digest("hex"),
+    expectedSourceSha256,
+  );
 });
 
 test("derives origin and output only from arbitrary admitted source identities", async () => {

@@ -12,7 +12,6 @@ import {
   SemanticProfileId,
   SemanticOperationKind,
   StimulusKind,
-  TimerStartCheckpointProfileId,
 } from "@bpmn-lean/semantic-core";
 import type {
   SemanticOperation,
@@ -175,7 +174,7 @@ test("admits only the exact Timer Start target at the passive host boundary", as
   const program = await compileFixture(
     "../../../bpmn-source/test/fixtures/timer-start-event.bpmn",
     "timer-start-event-host-admission",
-    TimerStartCheckpointProfileId,
+    SemanticProfileId.TimerStart,
   );
   assert.ok(
     program.operations.some(

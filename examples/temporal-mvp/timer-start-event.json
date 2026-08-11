@@ -1,0 +1,32 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/timer-start-event/process.bpmn",
+    "sourceId": "timer-start-event",
+    "semanticProfile": "bpmn-2.0.2-timer-start-event-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_timer_start_event_1",
+    "startEventId": "TimerStart_PT1S"
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_AfterTimer",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}

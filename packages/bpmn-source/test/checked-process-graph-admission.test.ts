@@ -13,7 +13,6 @@ import {
   GatewayDirection,
   MessageChannelKind,
   SemanticProfileId,
-  TimerStartCheckpointProfileId,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -242,7 +241,7 @@ test("admits a Timer Start only as the single zero-to-one graph root", () => {
   assert.notEqual(
     resolveAdmittedCheckedProcessGraph(
       withRootOwnership([timerStart, task, end], linearFlows),
-      TimerStartCheckpointProfileId,
+      SemanticProfileId.TimerStart,
     ),
     undefined,
   );
@@ -253,7 +252,7 @@ test("admits a Timer Start only as the single zero-to-one graph root", () => {
         [timerStart, task, end],
         [...linearFlows, flow("EndToStart", "End", "TimerStart")],
       ),
-      TimerStartCheckpointProfileId,
+      SemanticProfileId.TimerStart,
     ),
     undefined,
   );
@@ -268,7 +267,7 @@ test("admits a Timer Start only as the single zero-to-one graph root", () => {
         [timerStart, manualStart, task, end],
         [...linearFlows, flow("ManualToTask", "ManualStart", "Task")],
       ),
-      TimerStartCheckpointProfileId,
+      SemanticProfileId.TimerStart,
     ),
     undefined,
   );

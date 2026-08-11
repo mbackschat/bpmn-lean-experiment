@@ -4,7 +4,6 @@ import {
   SemanticOriginKind,
   SemanticProfileId,
   StimulusKind,
-  TimerStartCheckpointProfileId,
 } from "../src/index.js";
 import type {
   CheckedNode,
@@ -40,9 +39,8 @@ const checkedNode = {
 type RegisteredSemanticProfileId =
   typeof SemanticProfileId[keyof typeof SemanticProfileId];
 
-// @ts-expect-error Timer Start remains outside the registered profile catalog at checkpoint
 const registeredProfile: RegisteredSemanticProfileId =
-  TimerStartCheckpointProfileId;
+  SemanticProfileId.TimerStart;
 // @ts-expect-error Timer-start command identity is immutable
 trigger.startEventId = "OtherStart";
 // @ts-expect-error normalized timer configuration is deeply immutable

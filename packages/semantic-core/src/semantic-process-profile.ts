@@ -16,6 +16,7 @@ export const SemanticProfileId = Object.freeze({
   MappedSuccessServiceTask:
     "cibseven-2.0.0-mapped-success-service-task-draft",
   MessageStart: "bpmn-2.0.2-message-start-event-draft",
+  TimerStart: "bpmn-2.0.2-timer-start-event-draft",
   EmbeddedSubProcessCompletion:
     "cibseven-2.2.0-embedded-subprocess-completion-draft",
   SubProcessBoundaryTimer:
@@ -46,10 +47,6 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-user-task-preserved-notation-draft",
 } as const);
 
-/** Implementation-checkpoint capability, deliberately absent from the registered profile catalog. */
-export const TimerStartCheckpointProfileId =
-  "bpmn-2.0.2-timer-start-event-draft" as const;
-
 /**
  * Checks the exact operation capability selected by one reviewed profile.
  *
@@ -76,7 +73,7 @@ function profileAllowsProgramOperationDetails(
   operations: ReadonlyArray<SemanticOperation>,
 ): boolean {
   switch (semanticProfile) {
-    case TimerStartCheckpointProfileId:
+    case SemanticProfileId.TimerStart:
       return operations.every(
         (operation) =>
           operation.kind !== SemanticOperationKind.InitiateTimer ||
@@ -113,7 +110,7 @@ export function profileAllowsCheckedProcessShape(
       node.kind !== CheckedNodeKind.TimerBoundaryEvent ||
       node.interruption === required.boundaryInterruption
     ) &&
-    (semanticProfile !== TimerStartCheckpointProfileId ||
+    (semanticProfile !== SemanticProfileId.TimerStart ||
       nodes.every(
         (node) =>
           node.kind !== CheckedNodeKind.TimerStartEvent ||
@@ -153,7 +150,7 @@ function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
       ]);
-    case TimerStartCheckpointProfileId:
+    case SemanticProfileId.TimerStart:
       return rootChecked([
         CheckedNodeKind.TimerStartEvent,
         CheckedNodeKind.UserTask,
@@ -332,7 +329,7 @@ function requiredProgramShape(
   semanticProfile: string,
 ): RequiredProgramShape | undefined {
   switch (semanticProfile) {
-    case TimerStartCheckpointProfileId:
+    case SemanticProfileId.TimerStart:
       return rootProgram([
         SemanticOperationKind.InitiateTimer,
         SemanticOperationKind.AwaitUserTask,

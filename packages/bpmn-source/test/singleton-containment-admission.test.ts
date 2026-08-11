@@ -9,7 +9,6 @@ import {
 } from "@bpmn-lean/bpmn-source";
 import {
   SemanticProfileId,
-  TimerStartCheckpointProfileId,
 } from "@bpmn-lean/semantic-core";
 
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
@@ -32,7 +31,7 @@ const timerCases = [
   [
     "Timer Start",
     new URL("./fixtures/timer-start-event.bpmn", import.meta.url),
-    TimerStartCheckpointProfileId,
+    SemanticProfileId.TimerStart,
   ],
   [
     "Intermediate Catch Timer",
@@ -94,7 +93,7 @@ test("ignores element-like text inside XML comments", async () => {
   );
   assert.notEqual(commented, source);
 
-  const result = await compile(commented, TimerStartCheckpointProfileId);
+  const result = await compile(commented, SemanticProfileId.TimerStart);
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
 });

@@ -38,6 +38,7 @@ import {
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const exampleRoot = path.join(projectRoot, "examples/temporal-mvp");
 const registeredProfiles = Object.values(SemanticProfileId);
+const timerStartProfileId = "bpmn-2.0.2-timer-start-event-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -93,6 +94,28 @@ test("gives every registered semantic profile at least one example and no exampl
         ),
     },
     { profilesWithoutExample: [], unregisteredProfiles: [] },
+  );
+});
+
+test("registers Timer Start with one exact runnable product example", async () => {
+  assert.equal(registeredProfiles.includes(timerStartProfileId), true);
+  const timerExamples = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) => path.basename(file) === "timer-start-event.json")
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.deepEqual(
+    timerExamples.map(({ bpmn, process }) => ({
+      semanticProfile: bpmn.semanticProfile,
+      process,
+    })),
+    [{
+      semanticProfile: timerStartProfileId,
+      process: {
+        instanceId: "MvpExample_timer_start_event_1",
+        startEventId: "TimerStart_PT1S",
+      },
+    }],
   );
 });
 

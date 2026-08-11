@@ -1,0 +1,78 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-timer-start-event-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-exact-pt1s-top-level-timer-start-event",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.5.2",
+      "Clause 10.5.5",
+      "Clause 10.5.6",
+      "Clause 13.2",
+      "Clause 13.5.1",
+      "Table 10.84",
+      "Table 10.101"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "timer-start-event",
+      "exact-pt1s-time-duration",
+      "resolved-timer-occurrence-process-instantiation",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-timer-start-compatibility-claim",
+    "time-date-and-time-cycle",
+    "recurrence-and-calendar-expressions",
+    "schedule-origin-and-due-time",
+    "schedule-lifecycle-and-operator-controls",
+    "catch-up-overlap-backfill-and-jitter",
+    "multiple-start-events",
+    "multiple-outgoing-start-flows",
+    "event-subprocesses",
+    "timer-start-payload-and-initial-variables",
+    "runtime-timer-wait-before-process-creation",
+    "definition-version-retargeting",
+    "product-2-scheduling-api",
+    "message-start-events",
+    "service-tasks",
+    "gateways",
+    "loops",
+    "multi-instance",
+    "boundary-events",
+    "vendor-extensions",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

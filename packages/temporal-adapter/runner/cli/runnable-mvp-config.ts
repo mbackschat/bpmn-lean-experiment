@@ -40,9 +40,15 @@ export type RunnableMvpMessageStartProcessConfig = DeepReadonly<{
   >;
 }>;
 
+export type RunnableMvpTimerStartProcessConfig = DeepReadonly<{
+  instanceId: string;
+  startEventId: string;
+}>;
+
 export type RunnableMvpProcessConfig =
   | RunnableMvpManualProcessConfig
-  | RunnableMvpMessageStartProcessConfig;
+  | RunnableMvpMessageStartProcessConfig
+  | RunnableMvpTimerStartProcessConfig;
 
 export type RunnableMvpConfig = DeepReadonly<{
   kind: "runnableTemporalMvp";
@@ -171,8 +177,24 @@ function validateRunnableMvpProcessConfig(
     }
     return;
   }
+  if (hasExactKeys(value, ["instanceId", "startEventId"])) {
+    requireNonemptyString(value.instanceId, "MVP Process instanceId");
+    requireNonemptyString(value.startEventId, "MVP Timer Start Event id");
+    if (!isWellFormedStimulus({
+      kind: StimulusKind.TriggerTimerStart,
+      commandId: "mvp-config-validation",
+      processId: "mvp-config-validation",
+      instanceId: value.instanceId,
+      startEventId: value.startEventId,
+    })) {
+      throw new TypeError(
+        "MVP Timer Start identity must be an exact resolved Timer Start occurrence",
+      );
+    }
+    return;
+  }
   throw new TypeError(
-    "MVP Process config must have exactly instanceId and initialVariables, or instanceId, startEventId, and channel",
+    "MVP Process config must have exactly instanceId and initialVariables; instanceId, startEventId, and channel; or instanceId and startEventId",
   );
 }
 

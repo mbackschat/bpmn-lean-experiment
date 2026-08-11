@@ -15,7 +15,6 @@ import {
   SemanticProcessCompilerId,
   SemanticProcessKind,
   StimulusKind,
-  TimerStartCheckpointProfileId,
   advanceScenario,
   applyInternalOperation,
   applyStimulus,
@@ -59,7 +58,7 @@ const timerProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: TimerStartCheckpointProfileId,
+    semanticProfile: SemanticProfileId.TimerStart,
     sourceId: "timer-start-process",
     sourceOverlay: null,
     sourceSha256:
@@ -320,7 +319,7 @@ test("matches complete downstream None and Message observations after identity n
   assert.equal(timerState.logicalTimeMs, 0);
 });
 
-test("admits generic canonical Timer initiation but keeps the checkpoint exact", () => {
+test("admits generic canonical Timer initiation but keeps the profile exact", () => {
   const genericOperation = {
     ...operationBase("StartEvent_Timer"),
     kind: SemanticOperationKind.InitiateTimer,
@@ -334,7 +333,7 @@ test("admits generic canonical Timer initiation but keeps the checkpoint exact",
   );
   assert.equal(
     profileAllowsProgramShape(
-      TimerStartCheckpointProfileId,
+      SemanticProfileId.TimerStart,
       timerProgram.operations.map((operation) =>
         operation.kind === SemanticOperationKind.InitiateTimer
           ? genericOperation
@@ -360,7 +359,7 @@ test("admits generic canonical Timer initiation but keeps the checkpoint exact",
   }
 });
 
-test("admits the exact checked profile without registering its checkpoint ID", () => {
+test("admits the exact checked registered profile", () => {
   const nodes = [
     {
       kind: CheckedNodeKind.TimerStartEvent,
@@ -375,7 +374,7 @@ test("admits the exact checked profile without registering its checkpoint ID", (
     { kind: CheckedNodeKind.NoneEndEvent, id: "EndEvent_1" },
   ] as const satisfies ReadonlyArray<CheckedNode>;
   assert.equal(
-    profileAllowsCheckedProcessShape(TimerStartCheckpointProfileId, nodes, 1),
+    profileAllowsCheckedProcessShape(SemanticProfileId.TimerStart, nodes, 1),
     true,
   );
   const wrongDuration = {
@@ -384,21 +383,21 @@ test("admits the exact checked profile without registering its checkpoint ID", (
   } as unknown as CheckedNode;
   assert.equal(
     profileAllowsCheckedProcessShape(
-      TimerStartCheckpointProfileId,
+      SemanticProfileId.TimerStart,
       [wrongDuration, ...nodes.slice(1)],
       1,
     ),
     false,
   );
   assert.deepEqual(
-    semanticGraphPolicyForProfile(TimerStartCheckpointProfileId),
+    semanticGraphPolicyForProfile(SemanticProfileId.TimerStart),
     { kind: SemanticGraphPolicyKind.Acyclic },
   );
   assert.equal(
     new Set<string>(Object.values(SemanticProfileId)).has(
-      TimerStartCheckpointProfileId,
+      SemanticProfileId.TimerStart,
     ),
-    false,
+    true,
   );
 });
 
@@ -416,7 +415,7 @@ test("strictly validates Timer Start stimulus identity and first-only sequencing
   const scenario = {
     kind: ScenarioDocumentKind.Scenario,
     id: "timer-start-profile",
-    profile: TimerStartCheckpointProfileId,
+    profile: SemanticProfileId.TimerStart,
     bpmn: {
       id: timerProgram.identity.sourceId,
       relativePath: "timer-start.bpmn",
@@ -433,6 +432,7 @@ test("strictly validates Timer Start stimulus identity and first-only sequencing
   } as const satisfies Scenario;
   assert.equal(supportsSemanticProcessScenario(scenario, timerProgram), true);
   for (const stimuli of [
+    [],
     [noneStart],
     [messageTrigger],
     [timerTrigger, timerTrigger],
