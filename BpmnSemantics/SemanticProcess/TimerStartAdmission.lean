@@ -3,7 +3,7 @@ import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Timer Start Event external admission
 
-This module owns exact resolved Timer Start admission against the checkpoint profile and its single admitted IL start operation. It creates no runtime Timer and performs no scheduling.
+This module owns exact resolved Timer Start admission against the registered profile and its single admitted IL start operation. It creates no runtime Timer and performs no scheduling.
 -/
 
 namespace BpmnSemantics.SemanticProcess

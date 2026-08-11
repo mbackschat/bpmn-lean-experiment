@@ -10,7 +10,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **Current closure boundary.** The standards-only Message Start capability is registered, closure-reviewed, and evidence-closed with its exact top-level operation-addressed source, complete checked and `initiateMessage` channel identity, answer-free scenario, product example, isolated differential case, and direct Temporal Worker-absence/history/replay witness. No public broker route, definition-version fanout, retry-transparent publication receipt, or Product 2 message-ingress API exists.
 
-**Current Timer Start boundary.** The independently approved standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, closes in two unique internal steps to the existing User Task wait, and is admitted as passive by the Temporal host boundary. Its profile, answer-free scenario, product example, and differential case are registered. The live Schedule witness is paused at the reviewed-contract boundary because the pinned service returns an execution Workflow ID formed from the configured semantic-instance-derived base plus the nominal due time. Product 2 scheduling remains excluded from the engine capsule.
+**Current Timer Start boundary.** The independently approved standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, closes in two unique internal steps to the existing User Task wait, and is admitted as passive by the Temporal host boundary. Its profile, answer-free scenario, product example, and differential case are registered. The live Schedule witness is paused at the reviewed-contract boundary because the pinned service returns an opaque execution Workflow ID distinct from the configured semantic-instance-derived base. Product 2 scheduling remains excluded from the engine capsule.
 
 **What it does not do.** One generic standards profile admits the complete selected notation set and no other does. `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them, under [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md); every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume one data-only source overlay, but it can name only an existing profile-owned effect descriptor and exact inert expanded-name loci; it adds no engine operation or source reader.
 
@@ -147,7 +147,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - exact divergent/convergent Inclusive Gateway checked-node arms, canonically ordered `selectMany` candidates, and fixed-cardinality `synchronizeSelected` inputs
 - exact divergent Event-Based Gateway checked-node arm and named operation-addressed Message/exact-duration Timer arms on `awaitEventRace`, including both configuration-flow origins
 - exact Message Start checked-node, channel-bound `initiateMessage`, and `triggerMessageStart` scenario/start shapes with strict first-stimulus placement
-- checkpoint-only exact Timer Start checked-node, duration-bound `initiateTimer`, and `triggerTimerStart` scenario/start shapes with strict first-stimulus placement
+- registered exact Timer Start checked-node, duration-bound `initiateTimer`, and `triggerTimerStart` scenario/start shapes with strict first-stimulus placement
 - exact Call Activity checked-node arm and paired `invokeProcess`/`returnProcess` operations with called definition, root, entry, return, and caller-output identities
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one canonical definition-scope forest with exact node/Sequence-Flow and operation/control-place ownership, retaining one rooted tree for existing profiles and one distinct called root for the bounded Call profile, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, effects, and Call records
@@ -181,7 +181,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - CIB-backed profiles pin exact oracle revisions and content-bound retained evidence; standards-only profiles declare no CIB execution target
 - definition-scope and operation-kind cardinalities are checked per profile, separately from topology-independent graph validation
 - one registered Message Start capability requires one `initiateMessage` output and a matching exact Message-start stimulus
-- one frozen unregistered Timer Start checkpoint capability requires one `initiateTimer` output, normalized duration `1000`, and a matching exact Timer-start stimulus
+- one registered Timer Start capability requires one `initiateTimer` output, normalized duration `1000`, and a matching exact Timer-start stimulus
 - immutable CIB artifact status freezes only evidence calibration, not a production deployment or history baseline
 
 #### Explicitly absent
@@ -249,7 +249,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - `awaitEffect` carries typed input/output mappings plus an optional exact-code boundary route across payload-free, mapped-success, and mapped-boundary-Error contracts
 - deterministic TypeScript lowerer and independent Lean decoder/lowerer preserve admitted scope ownership, condition, mapping, route, and exact source data
 - exact Message Start lowering preserves Process, Start Event, Interface, Interface Operation, input Message, and every validated outgoing-flow identity; reusable `initiateMessage` admits canonical nonempty outputs while the registered capability fixes one
-- exact Timer Start lowering preserves Process, Start Event, `PT1S -> 1000`, and every validated outgoing-flow identity; reusable `initiateTimer` admits canonical nonempty outputs while the checkpoint capability fixes one
+- exact Timer Start lowering preserves Process, Start Event, `PT1S -> 1000`, and every validated outgoing-flow identity; reusable `initiateTimer` admits canonical nonempty outputs while the registered capability fixes one
 - independent sequential, bounded-parallel, exact-timer, Timer/User Task composition, operation-addressed Intermediate Catch Message and direct-Message Receive Task subscriptions, payload-free effect, mapped-success Service Task, mapped-boundary-Error Service Task, Simple Boolean conditional evaluation, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process invocation/return, and registered resumption-bounded cycle execution
 - generic Lean relation/evaluator including choice, effect-completion, and operation-step soundness, laws, and non-laws
 - separately gated frozen checked-source experiment

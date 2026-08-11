@@ -297,12 +297,12 @@ test("covers every registered semantic profile in the admission capability table
   );
 });
 
-test("keeps the Timer Start checkpoint visible in the exact IL contract", async () => {
+test("keeps the registered Timer Start capability visible in the exact IL contract", async () => {
   const specification = await readFile(semanticProcessIlSpecPath, "utf8");
 
   assert.match(
     specification,
-    /unregistered Timer Start checkpoint/u,
+    /registered Timer Start capability/u,
   );
   assert.match(
     specification,
