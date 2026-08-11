@@ -1,14 +1,14 @@
-# BPM platform definition scheduling proposal
+# BPM platform definition scheduling specification
 
 ## Status
 
-**Owner-approved on 2026-08-11; implementation and executable evidence are complete, and governed closure review is next.** This proposal selects the smallest Product 2 definition-scheduling increment for the registered Timer Start profile. The approved checkpoint publishes the engine capability, strict platform wire contract, exact persisted lifecycle, handle-free Schedule gateway, public HTTP routes, and server composition. The completed closure lanes add the HTTP-only UI, live Schedule race and recovery witness, M2 showcase, and headless-browser acceptance. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem. The proposal cold review returned `approve-with-required-edits`; two bounded correction rounds closed every finding, and the same reviewer approved final correction `e2814a5`. The semantic checkpoint review of `5a0f087` returned `approve-with-required-edits`; correction `6c52442` closed every finding, and the same reviewer approved it.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns the smallest Product 2 definition-scheduling increment for the registered Timer Start profile: the engine capability, strict platform wire contract, exact persisted lifecycle, handle-free Schedule gateway, public HTTP routes, HTTP-only UI, live Schedule race and recovery evidence, M2 showcase, and headless-browser acceptance. Closure target `2b5cc40` passed the complete repository gate and an approved warm-continuity review. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md) owns semantic and host-refinement meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
-## Product question
+## Product boundary
 
-What is the smallest public definition-scheduling surface that lets an operator activate the registered one-shot Timer Start profile without inspecting private engine representations, retargeting a deployed version, or treating Temporal identifiers as BPMN identity?
+This specification defines the smallest public definition-scheduling surface that lets an operator activate the registered one-shot Timer Start profile without inspecting private engine representations, retargeting a deployed version, or treating Temporal identifiers as BPMN identity.
 
 ## Selected increment
 
@@ -179,7 +179,7 @@ From `cancelling`, the gateway pauses the Schedule before describing it. If the 
 - if no action was taken or is running and no future action can fire while paused, the platform persists `cancelled`, then deletes the Schedule;
 - if service state cannot establish either fact, cancellation fails without changing public state.
 
-This proposal relies on the pinned Temporal Schedule service to serialize pause and action state so the post-pause description decides the race. The implementation checkpoint must prove that boundary with a focused live witness. Crash tests cover intent persistence, create-dispatch persistence, pause, description, terminal persistence, and deletion. If the pinned stack cannot provide this decision without reconstructing server internals, pre-start cancellation is a stop condition and requires a corrected proposal rather than a local best-effort policy.
+This specification relies on the pinned Temporal Schedule service to serialize pause and action state so the post-pause description decides the race. The retained live witness proves that boundary. Crash tests cover intent persistence, create-dispatch persistence, pause, description, terminal persistence, and deletion. A future pinned stack that cannot provide this decision without reconstructing server internals is a stop condition and requires a corrected specification rather than a local best-effort policy.
 
 ## Temporal hosting and refinement preflight
 
@@ -193,7 +193,7 @@ The smallest executable refinement witness deploys Timer Start version 1, create
 
 ## Required evidence
 
-Implementation uses red/green TDD and must retain these separating facts:
+The implementation retains these separating facts:
 
 | Rule | Required evidence |
 |---|---|
@@ -214,7 +214,7 @@ The registered Product 2 showcase uses the public HTTP API and browser UI to dep
 
 The implementation remains inside existing architectural boundaries and uses cohesive new owners where schedule lifecycle would otherwise crowd M1 files:
 
-| Boundary | Planned owner |
+| Boundary | Owner |
 |---|---|
 | Product 1 Timer Start capability projection | New capability owner under `packages/engine-api/src/` |
 | Public platform schedule and mapped capability shapes, strict decoders, route helpers | New files under `platform/contracts/src/` |
@@ -230,8 +230,6 @@ The implementation remains inside existing architectural boundaries and uses coh
 | Product/Temporal dependency policy | Existing `scripts/temporal-package-boundary.ts`, `scripts/temporal-package-boundary.test.ts`, and `scripts/platform-product-boundary.test.ts`, with planted rejections for any scheduling import outside the exact gateway/client subpath |
 
 The existing definition route, definition metadata/deployment/value owners, SQLite definition repository, start service, engine-gateway index, engine-api index, Temporal-client index, boundary-policy guards, and composition root receive only bounded wiring, schema replacement, mappings, or exports. No production Workflow, Worker, semantic core, BPMN source, Lean, CIB runner, or differential owner changes.
-
-Before implementation, `what-binds` must be rerun for every added or grown path. The current tight existing owners are `platform/foundation/engine-gateway/src/index.ts` at 142/600, `packages/engine-api/src/index.ts` at 99/600, `platform/apps/server/src/composition.ts` at 83/600, and `platform/apps/web/src/definitions-api.ts` at 256/600; new schedule responsibilities must not be folded into those mixed owners.
 
 ## Required, optional, and excluded functionality
 
@@ -261,13 +259,13 @@ Excluded:
 - Process cancellation after start, incidents, migration, or Continue-As-New;
 - new BPMN source admission, profile semantics, IL operation, runtime state, command, observation, Lean proof, CIB claim, or A12 surface.
 
-The current fake identity boundary permits every caller as the platform proposal already specifies. This increment owns the future authorization point on every schedule route but does not select an authentication or authorization provider.
+The current fake identity boundary permits every caller as the [platform proposal](BPM-PLATFORM-PROPOSAL.md) specifies. This increment owns the future authorization point on every schedule route but does not select an authentication or authorization provider.
 
 ## Acceptance and stop conditions
 
 The increment is accepted when the public API, web client, exact SQLite recovery path, engine gateway, live Temporal witness, and M2 showcase pass their focused gates; every planted mutation reaches its declared discriminator; the platform tree still consumes the engine only through the gateway; the engine gate passes with the platform tree absent; and the complete repository gate is green.
 
-Stop and correct this proposal if:
+Stop and correct this specification if:
 
 - Product 2 must inspect a checked node, IL operation, Process Workflow Query, or Event History to decide schedule meaning;
 - an existing schedule can observe a newer definition version;
@@ -298,6 +296,6 @@ The approval set is:
 |---|---|---|---|---|
 | Proposal | `a4fd274` | `fork-turns-none` | `approve-with-required-edits` | `e2814a5` |
 | Semantic checkpoint | `5a0f087` | `fork-turns-none` | `approve-with-required-edits` | `6c52442` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `2b5cc40` | `checkpoint-reviewer-warm` | `approve` | `not-required` |
 
-The cold review of `a4fd274` returned `approve-with-required-edits` across five bounded findings. First correction `5e5c89e` closed the root mechanisms but left three phase and response contradictions. Second correction `e2814a5` closed those residuals, and the same reviewer approved it without another finding. The semantic checkpoint review of `5a0f087` found four bounded lifecycle and ownership defects. Correction `6c52442` closed them, and the same reviewer approved the correction without another finding.
+The cold review of `a4fd274` returned `approve-with-required-edits` across five bounded findings. First correction `5e5c89e` closed the root mechanisms but left three phase and response contradictions. Second correction `e2814a5` closed those residuals, and the same reviewer approved it without another finding. The semantic checkpoint review of `5a0f087` found four bounded lifecycle and ownership defects. Correction `6c52442` closed them, and the same reviewer approved the correction without another finding. The same reviewer approved closure target `2b5cc40` after the continuity manifest reproduced selected-account, contract, exclusion, and evidence bytes at SHA-256 `7bb974e465579dd9fc0e3eda6fcb6eee30b69e3f269dc0cae5b256257657cd0f`; the closure review reported no findings.

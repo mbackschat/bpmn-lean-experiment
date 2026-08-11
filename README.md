@@ -12,7 +12,7 @@ This project builds two MIT products in one repository: a Temporal-hosted BPMN 2
 |---|---|
 | BPMN execution engine | Implemented, runnable product floor over a bounded semantic profile catalog |
 | BPM platform | M1 closed: unseen exact BPMN deployment, admission diagnostics, content storage, durable versioning, exact-source viewing, selected-version start, and real Temporal hosting |
-| Active work | M2 definition-scheduling closure review, followed by published Message Start ingress |
+| Active work | M2 published Message Start ingress contract and evidence design |
 | A12 Workflows | Separate downstream product outside this repository; reusable neutral mechanisms and an optional evidence handoff are preserved without placing A12 decisions in core |
 
 Today, the [Temporal engine runner](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) can admit exact BPMN XML, connect its Worker to an existing Temporal service, drive interactions published by a registered profile, and report final Process state. Its adapter is split by execution environment into protocol, client, Workflow, Worker, runner, and testkit packages, with no production umbrella package. Product 2 exposes deployment, admission diagnostics, definition lists, version lists, exact admitted source, exact-version start, and one-shot Timer Start scheduling through a bounded HTTP API backed by filesystem content storage and SQLite metadata. Scheduling binds an immutable definition version and Timer Start capability, reconciles host response loss and cancellation races, and publishes no Temporal execution identity. Its React definition workspace uses only the public API to upload BPMN, display diagnostics, browse versions, render exact admitted source through the licensed viewer-only `bpmn-js` adapter, start the selected version, and create, inspect, or cancel that version's schedule. The registered M1 showcase preserves unseen-source deployment as an independent regression floor. The M2 showcase adds real one-action Temporal Schedule execution, platform restart, Worker replacement, version-1 retention after version-2 deployment, replay, pre-start cancellation, and headless-browser acceptance. The task inbox and identity system remain absent. The [complete differential/refinement pipeline](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) exercises every registered scenario through its declared Lean, TypeScript, compatibility, durability, mutation, and replay lanes.
@@ -27,7 +27,7 @@ The showcase ladder is a dependency order, not a delivery schedule. [PLAN.md](do
 |---|---|---|
 | M0 | Closed | Run the registered engine profile catalog through the Temporal runner |
 | M1 | Closed | A third party uploads an unseen BPMN file, receives honest admission diagnostics, stores and versions it, views the diagram, and starts an admitted instance |
-| M2 | In progress | All five engine increments are evidence-closed; platform definition scheduling is implementation-complete and pending closure review; published message ingress and instance search remain |
+| M2 | In progress | All five engine increments and exact-version definition scheduling are closure-reviewed and evidence-closed; published Message Start ingress and instance search remain |
 | M3 | Not started | Use a real task inbox and form with values beyond string and null |
 | M4 | Not started | Diagnose, retry, and cancel failed work without confusing BPMN incidents with Temporal retries |
 | M5 | Not started | Rebuild and explain committed execution history, diagram position, and operational views |
