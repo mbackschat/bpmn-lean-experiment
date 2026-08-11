@@ -26,7 +26,7 @@ A strong first version should execute approximately 12–15 behavioral concepts:
 - None and message start events
 - None, error, and terminate end events
 - Sequence flows, including conditional and default flows
-- Service, user, receive, and configured generic tasks
+- Service, user, receive, and configured Task extensions
 - Exclusive, parallel, and event-based gateways
 - Intermediate message and timer catch events
 - Embedded subprocesses

@@ -20,7 +20,7 @@ The recommendation is **yes, under the exact extension, descriptor, topology, pr
 
 ## Selection basis
 
-[PLAN.md](../PLAN.md#ordered-work) selects configured generic Task as the final M2 base-element capsule. The prior M2 increments already close resumption-bounded cycles, Message Start, Timer Start, and Terminate End. This increment supplies the remaining explicit external-work form without adding data semantics, a new public interaction family, or another Temporal adapter architecture.
+[PLAN.md](../PLAN.md#ordered-work) selects the configured Task extension as the final M2 base-element capsule. The prior M2 increments already close resumption-bounded cycles, Message Start, Timer Start, and Terminate End. This increment supplies the remaining explicit external-work form without adding data semantics, a new public interaction family, or another Temporal adapter architecture.
 
 The earlier [minimal-engine research](../research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md#37-abstract-task-and-configured-task-extension) correctly preferred explicit engine configuration for useful external work but incorrectly described a plain `bpmn:task` as semantically underspecified and prohibited no-op execution. BPMN 2.0.2 Clause 13.3.3 instead gives Abstract Task an exact conceptual meaning: it completes upon activation and is not executed by an IT system. This proposal corrects that research statement before selecting a distinct executable extension.
 
@@ -46,9 +46,9 @@ The representation preserves this distinction permanently. Later admission of pl
 
 ## CIB relationship
 
-No new CIB relationship, compatibility profile, retained result, or declared CIB target is selected. The pinned CIB Seven source treats a plain Abstract Task as pass-through, which agrees with BPMN Clause 13.3.3, but CIB does not define this project extension and cannot be its oracle.
+No new CIB relationship, compatibility profile, retained compatibility result, or declared CIB target is selected. The pinned CIB Seven source treats a plain Abstract Task as pass-through, which agrees with BPMN Clause 13.3.3, but CIB does not define this project extension and cannot be its oracle.
 
-Before implementation, one bounded diagnostic compiles the exact extension source under CIB Seven and confirms that CIB ignores the project extension and reaches the trailing User Task without an external effect. That discriminator prevents accidental use of CIB as configured-Task evidence. It creates no compatibility claim or relationship entry. Registered scenarios have `cib: null`; existing `CIB-AGR-0001` and `CIB-OP-0001` apply only to the unchanged trailing User Task lifecycle and host-identity mapping.
+Before implementation, one bounded diagnostic compiles the exact extension source under CIB Seven and confirms that CIB ignores the project extension and reaches the trailing User Task without an external effect. The resulting trace is retained only as an exclusion oracle that prevents accidental use of CIB as configured-Task evidence. It creates no compatibility claim or relationship entry. Registered scenarios have `cib: null`; existing `CIB-AGR-0001` and `CIB-OP-0001` apply only to the unchanged trailing User Task lifecycle and host-identity mapping.
 
 ## Selected account and rejected alternatives
 
@@ -92,9 +92,11 @@ The exact profile permits:
 - exactly one nonempty `type` attribute with value `urn:bpmn-lean:task-handler:probe-v1` and no other extension attribute, child, or text body;
 - no input/output data, BPMN Error route, loop characteristic, compensation, boundary Event, resource role, rendering dependency, parser warning, or foreign executable content.
 
-The source reader rejects an unconfigured plain Task under this profile while recording it as conforming-deferred, not malformed. It also rejects missing extension container, missing or repeated definition, wrong namespace, wrong local name, missing/empty/wrong handler type, extra attribute/body/child, unsupported inherited Activity property, wrong topology or arity, condition, extra root, extra Process, and unexpected parser warning. The exact fixture must pass the pinned OMG BPMN XSD; the custom child remains valid through the standard extension wildcard.
+The source reader rejects an unconfigured plain Task under this profile while recording it as conforming-deferred, not malformed. It also rejects missing or repeated extension containers, missing or repeated definitions, wrong namespace, wrong local name, missing/empty/wrong handler type, extra attribute/body/child, unsupported inherited Activity property, wrong topology or arity, condition, extra root, extra Process, and unexpected parser warning. The exact fixture must pass the pinned OMG BPMN XSD; the custom child remains valid through the standard extension wildcard.
 
-The compilation dispatch count remains unchanged. The generic source path selects the profile-owned configured Task projector; no fifth compiler dispatch or raw-moddle export is added.
+The compilation dispatch count remains unchanged. Before the existing node/flow partition, the generic source path derives a closed configured-Task projection policy only from the exact selected profile and binding. The partition treats `bpmn:Task` as projectable only when that policy is present, and the checked-node projector receives the same policy before it delegates to the configured source reader. Every other profile retains the existing global projectable-type set and the exact element-located `unsupportedElementType` diagnostic for `bpmn:Task`. No fifth compiler dispatch or raw-moddle export is added.
+
+The raw-source containment gate also consumes the bounded `BaseElement.extensionElements` upper bound before structural import is discarded. It compares source occurrences with retained modeled containments, so a repeated container rejects even when `bpmn-moddle` emits no warning and retains only one value. The configured source reader then validates the one retained container and its exact child. This extends the existing singleton-containment mechanism rather than adding a second XML parser.
 
 ## Profile-owned source binding
 
@@ -146,7 +148,7 @@ No runtime contract changes. The configured Task specializes existing `awaitEffe
 
 - activation consumes one exact input token and publishes one effect occurrence with the configured Task element identity and existing descriptor;
 - completing the exact occurrence with the existing successful Probe result consumes the wait and produces one token on the exact output;
-- missing, stale, wrong-element, wrong-activation, wrong-instance, wrong-descriptor, duplicate, or non-running completion rejects with exact state preservation;
+- missing, stale, wrong-element, wrong-activation, wrong-instance, duplicate, or non-running completion rejects with exact state preservation;
 - no result mapping, local variable, BPMN Error route, retry outcome, incident, or handler-specific state exists in this profile.
 
 Canonical observation uses the existing `openEffects`, `enabledInteractions`, `openUserTasks`, variables, status, and logical-time fields. It gains no configured-Task field. Definition identity, semantic instance identity, effect occurrence identity, Activity attempt identity, and Temporal Workflow identity remain distinct.
@@ -160,7 +162,7 @@ Canonical observation uses the existing `openEffects`, `enabledInteractions`, `o
 | `CTASK-LOWER-01` | Lowering preserves configured Task identity and endpoint-derived control places, emits existing `awaitEffect` with empty mappings and no BPMN Error route, and never projects the node as Service Task. |
 | `CTASK-WAIT-01` | Start closure reaches exactly one stable configured effect occurrence and does not expose the trailing User Task before successful exact effect completion. |
 | `CTASK-COMPLETE-01` | Completing the exact configured effect uses existing effect semantics and exposes exactly the trailing User Task; completing that task then completes the Process. |
-| `CTASK-REFUSE-01` | Wrong, stale, duplicate, mismatched-descriptor, or non-running effect completion has no successor and preserves exact committed state. |
+| `CTASK-REFUSE-01` | Wrong-identity, stale, duplicate, or non-running effect completion has no successor and preserves exact committed state. Descriptor drift refuses earlier under `CTASK-BIND-01` because the completion stimulus does not resubmit a descriptor. |
 | `CTASK-OBSERVE-01` | The configured Task uses the existing effect and User Task observations and adds no public source-extension, handler, host, or retry field. |
 | `CTASK-CLOSURE-01` | Start-to-effect, effect-to-User-Task, and User-Task-to-completion each have an exact finite closure length and one-smaller overflow witness; every stable running state exposes exactly one existing resumable interaction, and internal enabledness is unique. |
 | `CTASK-HOST-01` | Existing Temporal Activity execution durably refines only the selected existing effect operation; the Workflow never parses the BPMN extension or defines configured-Task meaning. |
@@ -219,7 +221,7 @@ The existing Service Task retry, reconciliation, accepted-but-response-lost, and
 | `CTASK-LOWER-01` | Checked/IL artifact pair | Endpoint and normalized-shape theorems | Independent lowerer | Exact program preflight | Checked-kind collapse and endpoint swap |
 | `CTASK-WAIT-01` | Representative profile | Initial closure theorem | Direct core witness | Query before Activity result | Pass-through mutation exposes User Task early |
 | `CTASK-COMPLETE-01` | Answer-free scenario | Effect then User Task closure | Direct core witness and differential | Activity then Update | Dropped effect completion or output mutation |
-| `CTASK-REFUSE-01` | Exact occurrence contract | State-identity refusal | State-identity refusal | Stale/duplicate durable command | Wrong activation and descriptor |
+| `CTASK-REFUSE-01` | Exact occurrence contract | State-identity refusal | State-identity refusal | Stale/duplicate durable command | Wrong element, activation, or instance identity |
 | `CTASK-OBSERVE-01` | Existing observation schema | Normalized Service Task comparison | Full canonical comparison | Query projection | Private extension/handler field leak |
 | `CTASK-CLOSURE-01` | Exact program cardinality | Exact limits, overflow, enabledness, resumption | Same finite closures | Stable waits in scenario | One-smaller limits and extra enabled operation |
 | `CTASK-HOST-01` | Non-null Temporal relation, `cib: null` | Not a host theorem | Existing effect host preflight | Worker replacement, history, replay | CIB pass-through diagnostic and Temporal pass-through mutation |
@@ -233,16 +235,17 @@ No runtime-only construct is added. Existing effect occurrence, transport materi
 Required:
 
 - the exact versioned source extension, one standard `bpmn-moddle` extension descriptor, and closed machine-readable profile binding;
+- prefix-independent projection plus raw duplicate-container refusal before parser-erased source is discarded;
 - distinct configured checked node, strict schema/decoders, graph admission, and endpoint-only lowering to existing `awaitEffect`;
 - proved Lean specialization and independent TypeScript source/lowering evidence;
 - one registered answer-free standards scenario with `cib: null`, one runnable example, one differential case, and meaningful source/descriptor/pass-through mutations;
 - one focused live Temporal Activity/Worker-replacement/history/replay witness using existing effect hosting;
+- one bounded retained CIB pass-through trace used only as an exclusion oracle;
 - frozen pre-M2 preservation and atomic catalog guards.
 
 Optional only if it adds no semantic or public claim:
 
-- a second namespace-prefix spelling witness after the same-URI acceptance test is green;
-- a diagnostic CIB trace proving the extension is ignored, retained only as an exclusion oracle and not a declared target.
+- an additional namespace-prefix spelling beyond the required alternate-prefix witness.
 
 Excluded:
 
@@ -285,15 +288,19 @@ The owner inventory was mechanically derived with `node scripts/what-binds.ts`. 
 | [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 41 | Extract checked/program shape catalogs first, then add exact configured-node and existing-effect cardinalities plus descriptor detail. |
 | [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 537 | Keep the new profile whole-graph acyclic. |
 | [moddle adapter](../../packages/bpmn-source/src/moddle-adapter.ts) | 444 | Register one package-local extension descriptor through the standard constructor option. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 219 | Delegate `bpmn:Task` to a new cohesive configured source reader. |
+| [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 210 | Derive the closed profile-aware projection policy before partitioning and preserve the exact non-selected-profile Task diagnostic. |
+| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 219 | Accept the same closed projection policy and delegate selected `bpmn:Task` values to a new cohesive configured source reader. |
 | [projected-key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 323 | Add the exact `Task` plus `extensionElements` key shape. |
 | [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 280 | Add both unavoidable configured-node switches and `1 -> 1` ownership. |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 150 | Add exact cardinality and Start-to-configured-to-User-to-End topology, not cardinality alone. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 58 | Delegate one configured arm to a new cohesive lowerer; do not grow the near-limit generic test owner. |
-| [metamodel checker](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 340 | Calibrate the Task and extension facts actually consumed. |
+| [singleton containment admission](../../packages/bpmn-source/src/singleton-containment-admission.ts) | 475 | Consume the inherited `BaseElement.extensionElements` upper bound before parser projection can erase a duplicate. |
+| [source compiler](../../packages/bpmn-source/src/compile.ts) | 236 | Keep the shared raw containment check before checked compilation and pass no raw XML into projectors. |
+| [metamodel checker](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 340 | Calibrate the Task, extension wildcard, and `BaseElement.extensionElements` upper-bound facts actually consumed. |
 | [projected-key test](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 154 | Register the new projector and prefix-independent exact-key behavior. |
+| [singleton-containment test](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | 514 | Add the duplicate `extensionElements` discriminator to the existing parser-erasure oracle. |
 
-The new focused source test owns the complete positive/negative matrix. [Semantic Process lowering tests](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) already use 571/600 nonblank lines and [the BPMN-source package integration test](../../packages/bpmn-source/test/bpmn-source.test.ts) uses 506/600, so neither receives the feature matrix.
+The new focused source test owns the complete positive/negative matrix, including the same bytes under a non-selected profile retaining the exact `unsupportedElementType` diagnostic. The shared singleton-containment test owns the repeated-container parser-erasure discriminator. [Semantic Process lowering tests](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) already use 571/600 nonblank lines and [the BPMN-source package integration test](../../packages/bpmn-source/test/bpmn-source.test.ts) uses 506/600, so neither receives the feature matrix.
 
 | Owner | Headroom to 600 nonblank lines | Required consequence |
 |---|---:|---|
@@ -308,7 +315,7 @@ The new focused source test owns the complete positive/negative matrix. [Semanti
 
 The new `effect-operation-artifact-consistency.ts` accepts only checked `serviceTask | configuredTask` origins. It compares element identity, descriptor, mappings, and Error route. Configured Task requires empty maps and a null route; Service Task keeps its exact current descriptor, mapping, and route rules. A second new `configured-task-profile-consistency.ts` proves the exact namespace/type-to-Probe binding because schema shape alone cannot establish that selected value.
 
-Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json) and [semantic-profile schema](../../contracts/schemas/semantic-profile.schema.json) change atomically but are declarative JSON rather than hand-written source headroom owners. The local moddle descriptor, configured source reader/lowerer/tests, effect-origin verifier, profile-consistency verifier, pipeline cases, and live witness are cohesive new owners and begin below 600.
+Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json) and [semantic-profile schema](../../contracts/schemas/semantic-profile.schema.json) change atomically but are declarative JSON rather than hand-written source headroom owners. The bounded BPMN metamodel manifest adds the consumed `BaseElement.extensionElements` cardinality fact. The local moddle descriptor, configured source reader/lowerer/tests, effect-origin verifier, profile-consistency verifier, pipeline cases, and live witness are cohesive new owners and begin below 600.
 
 | Owner | Headroom to 600 nonblank lines | Required consequence |
 |---|---:|---|
@@ -335,7 +342,8 @@ The profile, one scenario, BPMN fixture, product example, and differential case 
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep the two Task requirements, citations, dispositions, and capsule aligned. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Cover the new checked/profile shapes and reject malformed exact values. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind configured origin, descriptor, endpoints, empty mappings, and absent Error route without weakening Service Task. |
-| [projected keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Close the Task projector and exact consumed-key inventory. |
+| [projected keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Close the Task projector and exact consumed-key inventory without changing another profile's Task diagnostic. |
+| [singleton containment](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | Reject repeated `extensionElements` before `bpmn-moddle` can erase one container. |
 | [frozen cyclic baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation.test.ts) | Preserve every pre-M2 source, profile, checked, IL, and registry-origin value. |
 | [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts) and [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Land profile, scenario, target, and ordered inventories atomically. |
 | [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | Give the registered profile one runnable existing-handler example. |
