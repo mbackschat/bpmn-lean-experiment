@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft; independent cold proposal review pending.** This proposal selects the smallest Product 2 definition-scheduling increment for the registered Timer Start profile. It changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem. Implementation remains unauthorized by repository status until the proposal review receipt is complete.
+**Draft; independent cold proposal review returned `approve-with-required-edits`, and the correction audit is pending.** This proposal selects the smallest Product 2 definition-scheduling increment for the registered Timer Start profile. It changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem. Implementation remains unauthorized by repository status until the proposal review receipt is complete.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md) owns semantic and host-refinement meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
@@ -18,16 +18,16 @@ This increment is schedule management for a host-resolved start occurrence. It i
 
 ## Public engine capability
 
-Product 2 must not inspect the checked graph or Semantic Process IL to discover whether a definition is schedulable. Accepted compilation therefore publishes one additive capability projection:
+Product 2 must not inspect the checked graph or Semantic Process IL to discover whether a definition is schedulable. Accepted compilation therefore publishes one additive Product 1 capability projection from `@bpmn-lean/engine-api`:
 
 ```ts
-type PublicTimerStartCapability = DeepReadonly<{
+type EngineTimerStartCapability = DeepReadonly<{
   startEventId: string;
   durationMs: number;
 }>;
 
-type PublicDefinitionStartCapabilities = DeepReadonly<{
-  timerStarts: readonly PublicTimerStartCapability[];
+type EngineDefinitionStartCapabilities = DeepReadonly<{
+  timerStarts: readonly EngineTimerStartCapability[];
 }>;
 ```
 
@@ -35,7 +35,9 @@ The current registered Timer Start profile publishes exactly one entry with `dur
 
 The projection contains only resolved start identity and normalized duration needed by a scheduling client. It contains no checked node, IL operation, token place, scope, stimulus, Temporal Schedule ID, Workflow ID, Run ID, task queue, retry policy, or private host instruction.
 
-The deployed definition version stores this capability beside its exact source identity and profile. Schedule creation recompiles the stored bytes and requires the same Process ID, profile, digest, byte length, Start Event ID, and duration before any Temporal Schedule is created. Stored metadata is an index, not an alternative admission authority.
+The platform engine gateway maps that Product 1 value into a distinct platform-owned definition capability with the same public fields. `platform/contracts` never imports `@bpmn-lean/engine-api`; the platform definitions module consumes only the gateway mapping and maps its own stored value into the HTTP contract.
+
+`DeployedDefinitionVersion`, the definitions module's `DefinitionMetadata` and `NewDefinitionMetadata`, and the SQLite definition-version row all gain the platform-owned start-capability value atomically. The pre-release storage schema is replaced in place under the existing no-compatibility policy: an older database without the required non-null capability column fails with an actionable reset error rather than defaulting existing Timer Start rows to an empty capability or adding a compatibility reader. Schedule creation recompiles the stored bytes and requires the same Process ID, profile, digest, byte length, Start Event ID, and duration before any Temporal Schedule is created. Stored metadata is an index, not an alternative admission authority.
 
 ## Public contract
 
@@ -49,12 +51,17 @@ type PutDefinitionScheduleRequest = DeepReadonly<{
 }>;
 ```
 
-`activationAt` must equal its canonical UTC RFC 3339 millisecond rendering, for example `2026-08-11T12:00:00.000Z`. The platform computes `dueAt = activationAt + durationMs`. The API exposes both instants so an operator can distinguish activation policy from the modeled duration.
+`activationAt` must equal its canonical UTC RFC 3339 millisecond rendering and end in `.000Z`, for example `2026-08-11T12:00:00.000Z`. The platform computes `dueAt = activationAt + durationMs` and requires that result to remain a whole UTC second. The whole-second rule preserves the already-evidenced Calendar representation instead of pretending it can select milliseconds. The API exposes both instants so an operator can distinguish activation policy from the modeled duration.
 
 One returned schedule is a closed union:
 
 ```ts
-type DefinitionScheduleBase = DeepReadonly<{
+type PublicTimerStartCapability = Readonly<{
+  startEventId: string;
+  durationMs: number;
+}>;
+
+type DefinitionScheduleBase = Readonly<{
   scheduleId: string;
   definition: DeployedDefinitionVersion;
   timerStart: PublicTimerStartCapability;
@@ -63,16 +70,21 @@ type DefinitionScheduleBase = DeepReadonly<{
 }>;
 
 type DefinitionSchedule =
-  | (DefinitionScheduleBase & { status: "scheduled"; instance: null })
-  | (DefinitionScheduleBase & {
+  | (DefinitionScheduleBase & Readonly<{ status: "scheduled"; instance: null }>)
+  | (DefinitionScheduleBase & Readonly<{
       status: "started";
       instance: PublicProcessInstanceIdentity;
-    })
-  | (DefinitionScheduleBase & { status: "missed"; instance: null })
-  | (DefinitionScheduleBase & { status: "cancelled"; instance: null });
+    }>)
+  | (DefinitionScheduleBase & Readonly<{ status: "missed"; instance: null }>)
+  | (DefinitionScheduleBase & Readonly<{ status: "cancelled"; instance: null }>);
+
+type DefinitionScheduleListResponse = Readonly<{
+  definition: DeployedDefinitionVersion;
+  schedules: readonly DefinitionSchedule[];
+}>;
 ```
 
-No response contains a Temporal Schedule ID, configured Workflow-ID base, execution Workflow ID, first Run ID, action timestamp, Schedule description, or raw Temporal failure.
+Every referenced nested platform contract is independently readonly, so the union is deeply immutable without importing Product 1's `DeepReadonly` utility into `platform/contracts`. `DeployedDefinitionVersion` gains `startCapabilities: Readonly<{ timerStarts: readonly PublicTimerStartCapability[] }>`, which is the exact-version response consumed by the UI. No response contains a Temporal Schedule ID, configured Workflow-ID base, execution Workflow ID, first Run ID, action timestamp, Schedule description, or raw Temporal failure.
 
 ## HTTP surface
 
@@ -85,7 +97,9 @@ The definition module adds these exact routes:
 | `GET` | `/api/v1/definitions/{processId}/versions/{version}/schedules/{scheduleId}` | Reconcile and return one exact schedule. |
 | `DELETE` | `/api/v1/definitions/{processId}/versions/{version}/schedules/{scheduleId}` | Cancel a still-pending schedule and return its terminal `cancelled` representation. |
 
-`PUT` returns `201` for the first completed creation and `200` for an identical retry. Reusing the same schedule identity with a different activation instant, definition version, capability, or derived Process-instance identity returns `409 conflict` and changes nothing. A missing definition or schedule returns `404`. A definition without exactly one Timer Start capability, a noncanonical instant, an activation whose due instant is no longer in the future, or an out-of-range timestamp returns `422` before any host resource is created. Existing body-size, media-type, and exact-key rules remain in force.
+`PUT` accepts exactly `application/json`, applies a 1024-byte body ceiling, and returns the schedule item as `201` for the first completed creation or `200` for an identical retry. `GET` item and `DELETE` return the item as `200`; `GET` collection returns `DefinitionScheduleListResponse` as `200`. Every JSON response uses the existing canonical response media type.
+
+The public error-code union adds only `conflict`. Reusing the same schedule identity with a different activation instant, definition version, capability, or derived Process-instance identity returns `409` with `{ error: { code: "conflict", message } }` and changes nothing. Deleting a schedule whose action won returns the same conflict body. A missing definition or schedule returns the existing `404/notFound` body. A malformed route identity, malformed JSON, non-string activation, or missing or extra body field returns `400/invalidRequest`. A syntactically formed but noncanonical, nonzero-millisecond, out-of-range, or no-longer-future activation, and a definition without exactly one Timer Start capability, return `422/invalidRequest` before any host resource is created. Oversized bodies use the existing `413/payloadTooLarge` body, unsupported media uses `415/unsupportedMediaType`, and unexpected integrity or service failures use the existing `500/internalFailure` body. Strict decoders accept no unlisted item, list, capability, or error field.
 
 Replacement is deliberately absent. An operator cancels a pending schedule and creates another public schedule identity. A started, missed, or cancelled schedule is immutable. `DELETE` against `started` or `missed` returns `409` with the current representation; repeated deletion of `cancelled` returns that representation idempotently.
 
@@ -104,12 +118,13 @@ The host Schedule ID and configured Workflow-ID base are deterministic private a
 The schedule repository stores one immutable intent and a closed internal lifecycle:
 
 ```text
-creating -> scheduled -> started
-                    \-> missed
-          \-> cancelled
+creating -> creatingHost -> scheduled -> started
+    \-> cancelled          \-> missed
+                  \-> cancelling -> cancelled
+                                \-> started
 ```
 
-`creating` is internal and never returned as a successful public result. It records the exact request, definition capability, semantic instance identity, private host Schedule ID, and configured Workflow-ID base before the network call. `scheduled`, `started`, `missed`, and `cancelled` are durable public states. A separate cleanup flag records whether the terminal Temporal Schedule resource has been deleted; cleanup progress is not public lifecycle state.
+`creating`, `creatingHost`, and `cancelling` are internal and never returned as successful public results. `creating` records the exact request, definition capability, semantic instance identity, private host Schedule ID, and configured Workflow-ID base before any network call. A compare-and-set transition to `creatingHost` commits before Schedule creation, proving that a concurrent cancellation cannot both finalize locally and permit a later undisclosed create call. `cancelling` is durable cancellation intent and commits before pause. `scheduled`, `started`, `missed`, and `cancelled` are durable public states. A separate cleanup flag records whether the terminal Temporal Schedule resource has been deleted; cleanup progress is not public lifecycle state.
 
 The repository uses one SQLite table with the complete public tuple as its primary key and unique constraints for the private host Schedule ID and semantic Process-instance identity. Definition metadata is copied into the row rather than joined to a mutable latest-version pointer. The artifact remains content-addressed in the existing store.
 
@@ -120,11 +135,12 @@ The exact creation algorithm is:
 1. Decode the route and body, load the exact deployed version, and read its exact artifact bytes.
 2. Recompile those bytes through the engine gateway and require identity plus Timer Start capability equality.
 3. Begin an immediate SQLite transaction. If the public identity exists, require complete immutable request equality and return to reconciliation. Otherwise generate and reserve the semantic instance identity plus private host addresses in `creating`, then commit.
-4. Ask the engine gateway to create the one exact Temporal Schedule from the exact artifact, profile, expected identity, reserved semantic instance identity, and stored host Schedule ID.
-5. If creation reports that the host Schedule already exists, describe it through the same gateway and require equality of the entire stored spec, action, arguments, configured Workflow-ID base, task queue, retry policy, and one-action state. This is the accepted-but-response-lost and concurrent-retry path, not success by ID alone.
-6. Persist `scheduled` only after exact host equality is established, then return the public schedule.
+4. Compare-and-set `creating -> creatingHost`, commit, and only then ask the engine gateway to create the one exact Temporal Schedule from the exact artifact, profile, expected identity, reserved semantic instance identity, and stored host Schedule ID. A concurrent `DELETE` that wins while the row is still `creating` moves it directly to `cancelled`, causing this compare-and-set to fail before any host call.
+5. If creation reports that the host Schedule already exists, describe it through the same gateway. Compare every immutable normalized spec, action, argument, configured Workflow-ID base, task queue, Workflow retry policy, Schedule overlap policy, catch-up window, pause-on-failure value, and initial one-action bound. This is the accepted-but-response-lost and concurrent-retry path, not success by ID alone.
+6. Classify mutable service state separately as `pending`, `actionInProgress`, `started`, or `missed`. `pending` has no taken/running action, one remaining action, and the exact future occurrence. `actionInProgress` has one exact running action and is retried without inventing an execution result. `started` has one exact recent start result with service-returned Workflow and first Run identities, zero remaining/future/running actions, and one action taken. `missed` has no taken/running/future action, zero remaining actions, and one service-reported missed-catch-up count. Persist the corresponding legal public state; a mixed or out-of-domain combination is integrity failure.
+7. If the row became `cancelling` while creation was in flight, run cancellation reconciliation instead of publishing `scheduled`. Otherwise persist `scheduled` only for the legal pending phase, then return the public schedule.
 
-Every `PUT`, item `GET`, `DELETE`, and server startup reconciles nonterminal rows. A missing or divergent host resource after durable `scheduled` state is an integrity failure and returns an opaque internal error. It is never silently recreated, silently retargeted, or treated as cancellation.
+Every `PUT`, item `GET`, `DELETE`, and server startup reconciles nonterminal rows. Startup resumes `creating`, describes or exactly recreates `creatingHost` after an ambiguous response, and repeats pause-describe resolution for `cancelling`. A missing or divergent host resource after durable `scheduled` state is an integrity failure and returns an opaque internal error. It is never silently recreated, silently retargeted, or treated as cancellation.
 
 A crash after host creation but before `scheduled` persistence is recovered by the exact describe-and-compare path. A crash after terminal state persistence but before host deletion is recovered by the cleanup flag. No database transaction remains open across a Temporal call.
 
@@ -151,13 +167,19 @@ After `started`, `missed`, or `cancelled` is durable, the reconciler deletes the
 
 ## Cancellation and races
 
-Cancellation is permitted only before the Schedule action wins. The gateway first pauses the Schedule, then describes it:
+Cancellation is permitted only before the Schedule action wins. `DELETE` first performs one atomic state transition:
 
-- if one action was taken or is running, the platform persists `started`, retains the returned execution identity when available, and returns `409`;
+- `creating -> cancelled`, after which the creator's `creating -> creatingHost` compare-and-set cannot succeed and no host call occurs;
+- `creatingHost -> cancelling` or `scheduled -> cancelling`, after which every creator, request, and startup path runs the same cancellation reconciler;
+- terminal state remains terminal and immutable.
+
+From `cancelling`, the gateway pauses the Schedule before describing it. If the Schedule is temporarily absent after an ambiguous `creatingHost` call, reconciliation performs the same exact idempotent create-or-compare operation and then pauses it, rather than assuming the request failed. The post-pause description decides:
+
+- if one action was taken or is running, the exact recent or running action supplies Workflow and first Run identities, the platform persists `started`, and `DELETE` returns `409`;
 - if no action was taken or is running and no future action can fire while paused, the platform persists `cancelled`, then deletes the Schedule;
 - if service state cannot establish either fact, cancellation fails without changing public state.
 
-This proposal relies on the pinned Temporal Schedule service to serialize pause and action state so the post-pause description decides the race. The implementation checkpoint must prove that boundary with a focused live witness. If the pinned stack cannot provide this decision without reconstructing server internals, pre-start cancellation is a stop condition and requires a corrected proposal rather than a local best-effort policy.
+This proposal relies on the pinned Temporal Schedule service to serialize pause and action state so the post-pause description decides the race. The implementation checkpoint must prove that boundary with a focused live witness. Crash tests cover intent persistence, create-dispatch persistence, pause, description, terminal persistence, and deletion. If the pinned stack cannot provide this decision without reconstructing server internals, pre-start cancellation is a stop condition and requires a corrected proposal rather than a local best-effort policy.
 
 ## Temporal hosting and refinement preflight
 
@@ -177,12 +199,12 @@ Implementation uses red/green TDD and must retain these separating facts:
 |---|---|
 | `DSCHED-CAPABILITY-01` | Accepted compilation publishes exact Timer Start identity and duration; other profiles publish an empty collection; a changed Start Event or duration cannot pass stored capability equality. |
 | `DSCHED-VERSION-01` | A schedule bound to version 1 executes version 1 after version 2 is deployed; latest-version lookup and changed artifact mutations fail. |
-| `DSCHED-IDEMPOTENCY-01` | An identical `PUT` and accepted-but-response-lost retry return one schedule and one semantic instance; changed request reuse returns conflict and creates nothing. |
-| `DSCHED-ZERO-CREATE-01` | Wrong Process, version, digest, profile, start identity, capability, body, or past due instant creates neither Schedule nor Workflow. |
+| `DSCHED-IDEMPOTENCY-01` | An identical `PUT` and accepted-but-response-lost retry before and after action exhaustion return one schedule and one semantic instance; changed request reuse returns conflict and creates nothing. Every Schedule policy has an independent drift mutation. |
+| `DSCHED-ZERO-CREATE-01` | Wrong Process, version, digest, profile, start identity, capability, body, nonzero-millisecond activation, or past due instant creates neither Schedule nor Workflow. |
 | `DSCHED-HOST-01` | Exact one-action policy, Worker absence, service-returned opaque execution identity, version-1 semantic result, action exhaustion, cleanup, and replay are observed on the pinned Temporal stack. |
-| `DSCHED-CANCEL-01` | Cancellation before action yields no Workflow; action winning the race yields `started` and cannot be rewritten to `cancelled`; repeated cancellation is idempotent. |
+| `DSCHED-CANCEL-01` | Durable cancellation intent precedes pause; cancellation before create dispatch yields no host resource; cancellation during create recovers through exact create-or-compare; action winning the race yields `started` and cannot be rewritten to `cancelled`; repeated cancellation is idempotent. |
 | `DSCHED-PUBLIC-01` | Strict HTTP decoders reject extra, missing, empty, malformed, and private fields; every public response excludes all Temporal identities and checked/IL values. |
-| `DSCHED-RECOVERY-01` | Crashes at each database/host boundary reconcile without duplicate action, silent recreation, retargeting, or a database transaction spanning a network call. |
+| `DSCHED-RECOVERY-01` | Crashes after intent persistence, create-dispatch persistence, host acceptance, pause, description, terminal persistence, and deletion reconcile without duplicate action, silent recreation, retargeting, or a database transaction spanning a network call. |
 
 Meaningful mutations are: resolve latest at fire time; omit capability equality; reuse an ID by host Schedule ID alone; call direct Workflow start; reconstruct the execution ID from the configured base; publish a Run ID; mark missed from wall clock alone; cancel without pause-and-describe; and recreate a missing `scheduled` host resource.
 
@@ -194,17 +216,20 @@ The implementation remains inside existing architectural boundaries and uses coh
 
 | Boundary | Planned owner |
 |---|---|
-| Public schedule and capability shapes, strict decoders, route helpers | New files under `platform/contracts/src/` |
+| Product 1 Timer Start capability projection | New capability owner under `packages/engine-api/src/` |
+| Public platform schedule and mapped capability shapes, strict decoders, route helpers | New files under `platform/contracts/src/` |
+| Platform metadata and gateway capability mapping | Existing `platform/modules/definitions/src/contracts.ts`, definition values/deployment owners, and a new engine-gateway schedule collaborator |
 | Immutable schedule workflow, repository contract, reconciliation, and HTTP routes | New files under `platform/modules/definitions/src/` |
-| SQLite schedule persistence | New `sqlite-definition-schedule-repository.ts` under the definitions module |
+| Definition capability schema replacement and schedule persistence | Existing `sqlite-definition-repository.ts` plus new `sqlite-definition-schedule-repository.ts` under the definitions module |
 | Product-facing compile/schedule gateway | New schedule collaborator under `platform/foundation/engine-gateway/src/` |
-| Capability projection and exact-version Schedule preparation | New cohesive owners under `packages/engine-api/src/` |
+| Exact-version Schedule preparation | New cohesive owner under `packages/engine-api/src/` |
 | Handle-free Schedule create/describe/pause/delete | New cohesive owner under `packages/temporal-adapter/client/src/` |
 | Server assembly | Existing composition root only |
 | HTTP-only schedule UI | New panel and API collaborator under `platform/apps/web/src/` |
 | Runnable M2 acceptance | New `showcase/m2-definition-scheduling/` package |
+| Product/Temporal dependency policy | Existing `scripts/temporal-package-boundary.ts`, `scripts/temporal-package-boundary.test.ts`, and `scripts/platform-product-boundary.test.ts`, with planted rejections for any scheduling import outside the exact gateway/client subpath |
 
-The existing definition route, start service, engine-gateway index, engine-api index, Temporal-client index, and composition root receive only bounded wiring or exports. No production Workflow, Worker, semantic core, BPMN source, Lean, CIB runner, or differential owner changes.
+The existing definition route, definition metadata/deployment/value owners, SQLite definition repository, start service, engine-gateway index, engine-api index, Temporal-client index, boundary-policy guards, and composition root receive only bounded wiring, schema replacement, mappings, or exports. No production Workflow, Worker, semantic core, BPMN source, Lean, CIB runner, or differential owner changes.
 
 Before implementation, `what-binds` must be rerun for every added or grown path. The current tight existing owners are `platform/foundation/engine-gateway/src/index.ts` at 142/600, `packages/engine-api/src/index.ts` at 99/600, `platform/apps/server/src/composition.ts` at 83/600, and `platform/apps/web/src/definitions-api.ts` at 256/600; new schedule responsibilities must not be folded into those mixed owners.
 
@@ -259,9 +284,9 @@ The approval set is:
 
 1. one exact-version, one-shot Timer Start schedule, not general cron;
 2. an additive engine-published Timer Start capability collection;
-3. public identity `(processId, version, scheduleId)` and `PUT` idempotency;
-4. immutable activation with derived due instant and explicit 60-second catch-up;
-5. private intent-first persistence and exact describe-and-compare recovery;
+3. public identity `(processId, version, scheduleId)`, a complete strict item/list/error wire contract, and `PUT` idempotency;
+4. immutable whole-second activation with derived whole-second due instant and explicit 60-second catch-up;
+5. private intent-first creation and cancellation persistence plus phase-aware exact describe-and-compare recovery;
 6. service-returned execution identity retained privately and never reconstructed or published;
 7. pre-start pause-describe-delete cancellation, with started winning every race;
 8. terminal host Schedule cleanup after durable state;
@@ -271,6 +296,8 @@ The approval set is:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `a4fd274` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The cold review of `a4fd274` returned `approve-with-required-edits` across five bounded findings. The row remains `pending` until the same reviewer audits the correction commit, because the executable receipt policy records completed isolation, verdict, and correction identity atomically.
