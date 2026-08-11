@@ -2,13 +2,13 @@
 
 ## Status
 
-**Independent cold proposal review returned required edits; the corrected proposal is awaiting the same reviewer's audit. Not owner-approved and not implemented.** This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
+**Independent cold proposal review and the same reviewer's correction audits are closed; owner approval is required before implementation. Not owner-approved and not implemented.** This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `26758d0` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `26758d0` | `fork-turns-none` | `approve-with-required-edits` | `64ab573` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 

@@ -115,7 +115,7 @@ Ordered by the milestone that first needs it, not by size. Each is absent today 
 1. [Resumption-bounded compositional admission with cycles](capsules/CYCLIC-CONTROL-FLOW-SPEC.md), closed for M2.
 2. [Message Start Event](capsules/MESSAGE-START-EVENT-SPEC.md), closed for M2.
 3. [Timer Start Event](capsules/TIMER-START-EVENT-SPEC.md), closed for M2.
-4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), selected for one nested containing-scope witness and awaiting context-cold proposal review; the configured generic Task remains unselected.
+4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), selected for one nested containing-scope witness with its proposal review closed and awaiting owner approval; the configured generic Task remains unselected.
 4. The value domain beyond string and null — M3.
 5. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
 6. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
@@ -148,7 +148,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: complete the same reviewer's warm correction audit for Terminate End Event.** Cold review of immutable target `26758d0` returned three required edits. Submit correction descendant `7456d0a` to the same reviewer, record the closed audit and owner approval, then begin the semantic checkpoint. Do not implement before that audit closes.
+1. **Active: record owner approval for Terminate End Event.** Cold review of immutable target `26758d0` returned required edits, and the same reviewer closed the final correction audit at `64ab573`. Record owner approval, then begin the semantic checkpoint. Do not begin another semantic family while this increment is active.
 
 ## Approved decisions
 
@@ -253,7 +253,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit correction descendant `7456d0a` of Terminate End Event proposal target `26758d0` to the same reviewer for a warm correction audit.** The correction adds the direct nested-scope normative rule, aligns termination with the existing aggregate End counter, and completes the owner, metamodel, registry, checkpoint-profile, and product-example inventory without changing the selected account. Record the closed audit and owner approval before implementation. Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
+**Next action: record owner approval for the independently reviewed Terminate End Event proposal, then begin its semantic checkpoint.** Cold review of target `26758d0` returned required edits, and the same reviewer's final warm audit approved correction target `64ab573` with no remaining finding. Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
