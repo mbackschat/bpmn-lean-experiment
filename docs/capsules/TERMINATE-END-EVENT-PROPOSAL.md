@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11; the first green semantic checkpoint is implemented and awaiting independent cold checkpoint review. It is not product-registered or evidence-closed.** The checkpoint implements the exact source, checked graph, no-output IL operation, independent Lean and TypeScript semantics, strict schemas, exact artifact binding, and passive Temporal host admission selected below. Profile registration, answer-free scenarios, differential evidence, live Temporal refinement, closure review, and graduation remain blocked until the checkpoint review closes. Approval covers exactly the selected account, public contract, required evidence, and exclusions below. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
+**Owner-approved on 2026-08-11; the first green semantic checkpoint is implemented and independently approved after correction audit `d7140a9`. It is not product-registered or evidence-closed.** The checkpoint implements the exact source, checked graph, no-output IL operation, independent Lean and TypeScript semantics, strict schemas, exact artifact binding, and passive Temporal host admission selected below. Profile registration, answer-free scenarios, differential evidence, live Temporal refinement, closure review, and graduation remain open. Approval covers exactly the selected account, public contract, required evidence, and exclusions below. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `26758d0` | `fork-turns-none` | `approve-with-required-edits` | `64ab573` |
-| Semantic checkpoint | `6e6a3da` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `6e6a3da` | `fork-turns-none` | `approve-with-required-edits` | `d7140a9` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question

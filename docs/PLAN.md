@@ -52,7 +52,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
-**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End has a first green semantic checkpoint but remains unregistered and unevidenced pending cold checkpoint review. The configured generic Task remains absent.
+**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End has an independently approved semantic checkpoint but remains unregistered and unevidenced pending its registration, live Temporal evidence, and closure lanes. The configured generic Task remains absent.
 
 This is the milestone that must be preceded by the decided-fixture cost review recorded below.
 
@@ -115,7 +115,7 @@ Ordered by the milestone that first needs it, not by size. Each is absent today 
 1. [Resumption-bounded compositional admission with cycles](capsules/CYCLIC-CONTROL-FLOW-SPEC.md), closed for M2.
 2. [Message Start Event](capsules/MESSAGE-START-EVENT-SPEC.md), closed for M2.
 3. [Timer Start Event](capsules/TIMER-START-EVENT-SPEC.md), closed for M2.
-4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), owner-approved for one nested containing-scope witness and active at the semantic checkpoint; the configured generic Task remains unselected.
+4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), independently approved at the semantic checkpoint and active in registration and Temporal evidence; the configured generic Task remains unselected.
 4. The value domain beyond string and null — M3.
 5. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
 6. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
@@ -148,7 +148,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close the Terminate End Event semantic checkpoint review.** The disjoint semantic-core, BPMN-source, Lean, strict wire/artifact, metamodel, and passive-host lanes are first-green, and the complete applicable gate is green at clean immutable target `6e6a3da`. Await the context-cold review verdict before registration or Temporal evidence.
+1. **Active: register and evidence Terminate End Event.** The semantic checkpoint is independently approved after correction audit `d7140a9`. Atomically register the profile, three answer-free scenarios, runnable product example, and differential cases, and add the existing-Update Worker-replacement, stale-refusal, history, replay, and global-cancellation mutation witness before closure.
 
 ## Approved decisions
 
@@ -253,11 +253,11 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: await the context-cold review of immutable Terminate End semantic checkpoint `6e6a3da`, then close any required findings in the same reviewer thread or begin the blocked registration and Temporal evidence lanes after approval.** Profile registration, answer-free scenarios, differential evidence, and live Temporal refinement remain blocked until that review closes. Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
+**Next action: complete the atomic Terminate End registration and the disjoint live Temporal evidence lane, then integrate them, run the complete closure gate, record cost and reflection, and submit the closure target for independent review.** Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
-**Last verified commands:** the complete Terminate End semantic-checkpoint verifier passed at clean immutable target `6e6a3da` in 176.27 seconds with log SHA-256 `993701d0a47b9ded0e178d2813b04966f87bb5c74cadc168cf31e50c164fcc82` and replayed 40 live histories. Its mandatory Linux/arm64 Lean admission audit passed with Lean 4.31.0 under one CPU, a 3 GiB memory-and-swap ceiling with effective swap disabled, and no OOM: 26.82 seconds wall, 2,648,276 KiB maximum RSS, and 2,336,649,216 bytes cgroup peak. The complete Timer Start closure verifier passed at clean immutable target `fb8929e` in 190.02 seconds with log SHA-256 `9eedaf374a43e915321dfc239a82a550d7522da068d6aa792c3ec52460abefe4` and replayed 40 live histories. The complete platform M1 gate passed in 14.53 seconds, and the registered M1 showcase passed in 9.11 seconds.
+**Last verified commands:** the Terminate End correction target `d7140a9` passed its 51-job Lean JSON/Terminate build, 46 contract tests, 30 source-hygiene/Lean-contract tests, and 26 document/review-policy tests before the same reviewer approved the correction. The complete Terminate End semantic-checkpoint verifier passed at clean immutable target `6e6a3da` in 176.27 seconds with log SHA-256 `993701d0a47b9ded0e178d2813b04966f87bb5c74cadc168cf31e50c164fcc82` and replayed 40 live histories. Its mandatory Linux/arm64 Lean admission audit passed with Lean 4.31.0 under one CPU, a 3 GiB memory-and-swap ceiling with effective swap disabled, and no OOM: 26.82 seconds wall, 2,648,276 KiB maximum RSS, and 2,336,649,216 bytes cgroup peak. The complete Timer Start closure verifier passed at clean immutable target `fb8929e` in 190.02 seconds with log SHA-256 `9eedaf374a43e915321dfc239a82a550d7522da068d6aa792c3ec52460abefe4` and replayed 40 live histories. The complete platform M1 gate passed in 14.53 seconds, and the registered M1 showcase passed in 9.11 seconds.
 
 **Standing constraints for the next family.** Every registered scenario must run through Temporal, because `PipelineCase.temporalRelation` is non-nullable while `cib` is nullable, so a schedule no Temporal target can execute cannot be registered. A profile artifact, its scenarios, and its live example are one atomic change across three guards. Package tests execute `dist/`, so build before believing a result, and plain `lake build` does not build the `Experiments` tree that `./scripts/verify.sh` also builds. Invoke `./scripts/verify.sh` bare, because a trailing `; echo` replaces its exit status and has already reported a failing run as green. Registering a schedule proves a family is hosted but not that its host is *used*: a boundary-deadline family is separated from the generic durable-timer fallback only by a shared activation carrying both callbacks, so each such family needs a direct-VM witness checked by mutating `ownsDeadline`.
 
