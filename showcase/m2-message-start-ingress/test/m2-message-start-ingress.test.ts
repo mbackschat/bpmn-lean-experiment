@@ -145,6 +145,8 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       versionTwo.value.startCapabilities.messageStarts[0]?.channel.interfaceOperationId,
       versionTwoOperation,
     );
+    const versionTwoMessageStart = versionTwo.value.startCapabilities.messageStarts[0];
+    assert.ok(versionTwoMessageStart !== undefined);
 
     const workflowsBefore = await listWorkflowExecutions(environment.client);
     const schedulesBefore = await listScheduleIds(environment.client);
@@ -287,46 +289,86 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     await replayRunner.shutdown();
     replayRunner = undefined;
 
-    const directPublicationId = `direct-start-${token}`;
-    const directWorkflowId = `direct-message-start-version-2-mutation-${token}`;
-    const directWorkflowsBefore = await listWorkflowExecutions(environment.client);
+    const versionTwoReferencePublicationId = `version-two-reference-${token}`;
+    const referenceWorkflowsBefore = await listWorkflowExecutions(environment.client);
+    const versionTwoReference = await putMessageStartPublication(
+      origin,
+      versionTwoReferencePublicationId,
+      versionTwo.value,
+      versionTwoMessageStart,
+    );
+    publicCaptures.push(versionTwoReference);
+    const versionTwoExecution = await waitForOnlyNewWorkflow(
+      environment.client,
+      referenceWorkflowsBefore,
+    );
+    const versionTwoHistory = await withDeadline(
+      processHandle(environment.client.workflow, versionTwoExecution).fetchHistory(),
+      operationDeadlineMs,
+      "exact version-2 reference Workflow history",
+    ) as TemporalHistory;
+    const versionTwoArguments = workflowStartArguments(versionTwoHistory);
+    assertVersionStart(
+      versionTwoArguments,
+      versionTwo.value.source.sha256,
+      versionTwoOperation,
+    );
+    assertNoSemanticInstanceFanout([startArguments, versionTwoArguments]);
+
+    const fanoutWorkflowId = `direct-message-start-fanout-mutation-${token}`;
+    const fanoutWorkflowsBefore = await listWorkflowExecutions(environment.client);
     const directSchedulesBefore = await listScheduleIds(environment.client);
-    const fanoutArguments = replaceExactStringValues(startArguments, new Map([
-      [versionOne.value.source.id, versionTwo.value.source.id],
-      [versionOne.value.source.sha256, versionTwo.value.source.sha256],
-      [versionOneOperation, versionTwoOperation],
-    ]));
+    const fanoutStimulus = fanoutStartInput(
+      versionTwoArguments[0],
+      recovered.value.instance.processInstanceId,
+      `fanout-message-start-${token}`,
+    );
+    await withDeadline(
+      environment.client.workflow.start(bpmnProcessWorkflowType, {
+        taskQueue,
+        workflowId: fanoutWorkflowId,
+        workflowIdReusePolicy: "REJECT_DUPLICATE",
+        args: [fanoutStimulus, versionTwoArguments[1]],
+      }),
+      operationDeadlineMs,
+      "additional matching-version Workflow-start mutation",
+    );
+    const fanoutExecution = await waitForOnlyNewWorkflow(
+      environment.client,
+      fanoutWorkflowsBefore,
+    );
+    assert.equal(fanoutExecution.workflowId, fanoutWorkflowId);
+    assert.deepEqual(await listScheduleIds(environment.client), directSchedulesBefore);
+    const fanoutHistory = await withDeadline(
+      processHandle(environment.client.workflow, fanoutExecution).fetchHistory(),
+      operationDeadlineMs,
+      "additional matching-version Workflow history",
+    ) as TemporalHistory;
+    const recordedFanoutArguments = workflowStartArguments(fanoutHistory);
+    assert.deepEqual(recordedFanoutArguments, [fanoutStimulus, versionTwoArguments[1]]);
+    assert.throws(
+      () => assertNoSemanticInstanceFanout([startArguments, recordedFanoutArguments]),
+      /semantic Process instance fanout/u,
+    );
+
+    const directPublicationId = `direct-start-${token}`;
+    const directWorkflowId = `direct-message-start-mutation-${token}`;
+    const directWorkflowsBefore = await listWorkflowExecutions(environment.client);
     await withDeadline(
       environment.client.workflow.start(bpmnProcessWorkflowType, {
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [fanoutArguments[0], fanoutArguments[1]],
+        args: [directStartInput(startArguments[0], directPublicationId), startArguments[1]],
       }),
       operationDeadlineMs,
-      "additional matching-version Workflow-start mutation",
+      "publication-linked direct Workflow-start mutation",
     );
     const directExecution = await waitForOnlyNewWorkflow(
       environment.client,
       directWorkflowsBefore,
     );
     assert.equal(directExecution.workflowId, directWorkflowId);
-    assert.deepEqual(await listScheduleIds(environment.client), directSchedulesBefore);
-    const directHistory = await withDeadline(
-      processHandle(environment.client.workflow, directExecution).fetchHistory(),
-      operationDeadlineMs,
-      "additional matching-version Workflow history",
-    ) as TemporalHistory;
-    const recordedFanoutArguments = workflowStartArguments(directHistory);
-    assertVersionStart(
-      recordedFanoutArguments,
-      versionTwo.value.source.sha256,
-      versionTwoOperation,
-    );
-    assert.throws(
-      () => assertNoSemanticInstanceFanout([startArguments, recordedFanoutArguments]),
-      /semantic Process instance fanout/u,
-    );
     const missing = await getMissingMessageStartPublication(origin, directPublicationId);
     publicCaptures.push(missing);
     assert.equal(missing.value.error.code, PublicApiErrorCode.NotFound);
@@ -335,6 +377,10 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       execution.workflowId,
       execution.runId,
       execution.taskQueue,
+      versionTwoExecution.workflowId,
+      versionTwoExecution.runId,
+      fanoutExecution.workflowId,
+      fanoutExecution.runId,
       directExecution.workflowId,
       directExecution.runId,
       completion.commandId,
@@ -474,27 +520,18 @@ function assertNoSemanticInstanceFanout(
   }
 }
 
-function replaceExactStringValues<Value>(
-  value: Value,
-  replacements: ReadonlyMap<string, string>,
-): Value {
-  if (typeof value === "string") {
-    return (replacements.get(value) ?? value) as Value;
-  }
-  if (Array.isArray(value)) {
-    return value.map((candidate) =>
-      replaceExactStringValues(candidate, replacements)
-    ) as Value;
-  }
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value).map(([key, candidate]) => [
-      key,
-      replaceExactStringValues(candidate, replacements),
-    ]),
-  ) as Value;
+function fanoutStartInput(
+  value: unknown,
+  instanceId: string,
+  commandId: string,
+): Record<string, unknown> {
+  const start = requireRecord(value, "Message Start stimulus");
+  assert.equal(start.kind, "triggerMessageStart");
+  return { ...start, commandId, instanceId };
+}
+
+function directStartInput(value: unknown, identity: string): Record<string, unknown> {
+  return fanoutStartInput(value, `${identity}-instance`, `${identity}-command`);
 }
 
 function assertPublicResponsesHidePrivateFacts(
