@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11; implementation is authorized and not yet complete.** This proposal selects the smallest Product 2 definition-scheduling increment for the registered Timer Start profile. It changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem. The independent cold review returned `approve-with-required-edits`; two bounded correction rounds closed every finding, and the same reviewer approved final correction `e2814a5`.
+**Owner-approved on 2026-08-11; the first-green public-contract and lifecycle checkpoint is implemented and pending independent review.** This proposal selects the smallest Product 2 definition-scheduling increment for the registered Timer Start profile. The checkpoint publishes the engine capability, strict platform wire contract, exact persisted lifecycle, handle-free Schedule gateway, public HTTP routes, and server composition. The UI, live Schedule race witness, and M2 showcase remain paused. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem. The proposal cold review returned `approve-with-required-edits`; two bounded correction rounds closed every finding, and the same reviewer approved final correction `e2814a5`.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md) owns semantic and host-refinement meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
@@ -297,7 +297,7 @@ The approval set is:
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `a4fd274` | `fork-turns-none` | `approve-with-required-edits` | `e2814a5` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `c111bdb` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The cold review of `a4fd274` returned `approve-with-required-edits` across five bounded findings. First correction `5e5c89e` closed the root mechanisms but left three phase and response contradictions. Second correction `e2814a5` closed those residuals, and the same reviewer approved it without another finding.
