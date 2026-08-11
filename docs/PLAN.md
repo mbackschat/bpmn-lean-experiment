@@ -148,7 +148,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: cold-review the Terminate End Event proposal.** Submit immutable proposal target `26758d0` for review. The selected proposal composes reusable containing-scope regional termination with unchanged ordinary scope completion, distinguishes root completion from nested continuation, and includes the required Temporal preflight and preservation matrix. Pass a context-cold proposal review before implementation.
+1. **Active: complete the same reviewer's warm correction audit for Terminate End Event.** Cold review of immutable target `26758d0` returned three required edits. Submit correction descendant `7456d0a` to the same reviewer, record the closed audit and owner approval, then begin the semantic checkpoint. Do not implement before that audit closes.
 
 ## Approved decisions
 
@@ -253,7 +253,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit immutable target `26758d0` of the Terminate End Event proposal for context-cold review.** The selected account uses one no-output `terminateScope` operation to clear the chosen live scope subtree while retaining that occurrence for immediate unchanged `completeScope`; this makes nested continuation and root completion consequences of the same forward-compatible representation. Do not implement before the proposal review closes, and do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
+**Next action: submit correction descendant `7456d0a` of Terminate End Event proposal target `26758d0` to the same reviewer for a warm correction audit.** The correction adds the direct nested-scope normative rule, aligns termination with the existing aggregate End counter, and completes the owner, metamodel, registry, checkpoint-profile, and product-example inventory without changing the selected account. Record the closed audit and owner approval before implementation. Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
