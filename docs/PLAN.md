@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: define and review published Message Start ingress for M2.** Design the smallest Product 2 contract that accepts a publication against an exact admitted definition version and complete registered Message Start channel, owns delivery, retry, deduplication, fanout, and receipt semantics without exposing Temporal identity, and preserves the existing engine start meaning. Keep broker selection, payload and correlation expansion, instance search, and new BPMN semantics excluded. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
+1. **Active: review the published Message Start ingress proposal for M2.** The [draft proposal](BPM-PLATFORM-MESSAGE-INGRESS-PROPOSAL.md) selects one exact deployed definition and complete registered Message Start channel, no fanout, durable at-most-once dispatch, accepted and truthful indeterminate receipts, and no Temporal identity exposure or new BPMN semantics. Commit the immutable proposal target and obtain context-cold approval before implementation. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: prepare the Product 2 published Message Start ingress proposal.** Bind publication to an exact deployed definition version and complete registered Message Start channel; define public receipt, retry, deduplication, fanout, and failure semantics; preserve semantic instance identity separately from host execution identity; and complete the Temporal information-preservation preflight before implementation. Exclude broker-product selection, payload and correlation expansion, instance search, and new BPMN semantics. Submit the immutable proposal to context-cold review before implementation.
+**Next action: commit and submit the Product 2 published Message Start ingress proposal to context-cold review.** The draft binds one global publication identity to an exact deployed definition version and complete registered Message Start channel, excludes fanout, and records the retention-gap result: after any possibly transmitted start call, absence never authorizes redispatch and the durable public result remains `indeterminate` unless an exact retained Workflow description proves acceptance. Implementation remains paused through proposal approval.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
