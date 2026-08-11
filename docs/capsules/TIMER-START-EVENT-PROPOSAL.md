@@ -8,7 +8,7 @@
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `6caa92b` | `fork-turns-none` | `approve-with-required-edits` | `eaaf944` |
+| Proposal | `1c5c702` | `fork-turns-none` | `approve-with-required-edits` | `276bee8` |
 | Semantic checkpoint | `7ac0307` | `fork-turns-none` | `approve-with-required-edits` | `ba3bbf8` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
