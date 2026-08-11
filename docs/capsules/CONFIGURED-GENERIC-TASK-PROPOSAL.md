@@ -2,7 +2,7 @@
 
 ## Status
 
-**First semantic checkpoint independently approved; registration and evidence active.** The unregistered checkpoint selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive. Profile/scenario registration, differential evidence, the retained CIB exclusion trace, and live Temporal reuse evidence are now the active closure lanes.
+**Implementation and evidence complete; governed closure review pending.** The registered profile selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. Exact source, checked/IL binding, Lean/core execution, answer-free artifacts, differential mutation, live Temporal Worker-replacement/history/replay evidence, and the retained CIB pass-through exclusion trace are green. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive.
 
 ## Independent cold-review receipt
 
@@ -50,7 +50,7 @@ The representation preserves this distinction permanently. Later admission of pl
 
 No new CIB relationship, compatibility profile, retained compatibility result, or declared CIB target is selected. The pinned CIB Seven source treats a plain Abstract Task as pass-through, which agrees with BPMN Clause 13.3.3, but CIB does not define this project extension and cannot be its oracle.
 
-Before implementation, one bounded diagnostic compiles the exact extension source under CIB Seven and confirms that CIB ignores the project extension and reaches the trailing User Task without an external effect. The resulting trace is retained only as an exclusion oracle that prevents accidental use of CIB as configured-Task evidence. It creates no compatibility claim or relationship entry. Registered scenarios have `cib: null`; existing `CIB-AGR-0001` and `CIB-OP-0001` apply only to the unchanged trailing User Task lifecycle and host-identity mapping.
+One bounded diagnostic deploys a byte-identical copy of the exact extension source under CIB Seven and confirms through public services that CIB ignores the project extension, reaches the trailing User Task with zero jobs and incidents, and completes after that task. The trace is retained only as an exclusion oracle that prevents accidental use of CIB as configured-Task evidence. It creates no compatibility claim or relationship entry. Registered scenarios have `cib: null`; existing `CIB-AGR-0001` and `CIB-OP-0001` apply only to the unchanged trailing User Task lifecycle and host-identity mapping.
 
 ## Selected account and rejected alternatives
 

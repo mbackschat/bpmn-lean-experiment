@@ -50,11 +50,11 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 ### M2 — the file runs its real shape
 
-**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, and Terminate End Event increments are implemented, closure-reviewed, evidence-closed, and graduated. The [configured Task extension proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) has an independently approved semantic checkpoint; atomic registration, differential evidence, and live Temporal reuse evidence are active, while the platform increments remain behind the M2 engine exit gate.
+**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, and Terminate End Event increments are implemented, closure-reviewed, evidence-closed, and graduated. The [configured Task extension proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) has an independently approved semantic checkpoint and complete registration, differential, CIB-exclusion, and live Temporal evidence; its full gate and governed closure review are active, while the platform increments remain behind the M2 engine exit gate.
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
-**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start, Timer Start, and Terminate End are closed. The remaining configured Task is selected as a versioned extended Task that reuses the existing neutral effect mechanism while preserving plain Abstract Task's standard immediate-completion meaning as conforming but deferred.
+**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start, Timer Start, and Terminate End are closed. The remaining configured Task is implemented and evidence-complete as a versioned extended Task that reuses the existing neutral effect mechanism while preserving plain Abstract Task's standard immediate-completion meaning as conforming but deferred.
 
 This is the milestone that must be preceded by the decided-fixture cost review recorded below.
 
@@ -118,7 +118,7 @@ Ordered by the milestone that first needs it, not by size. Each is absent today 
 2. [Message Start Event](capsules/MESSAGE-START-EVENT-SPEC.md), closed for M2.
 3. [Timer Start Event](capsules/TIMER-START-EVENT-SPEC.md), closed for M2.
 4. [Terminate End Event](capsules/TERMINATE-END-EVENT-SPEC.md), closed for M2.
-5. [Configured Task extension](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md), the selected remaining M2 base-element capsule, owner-approved and active at its first semantic checkpoint.
+5. [Configured Task extension](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md), the selected remaining M2 base-element capsule, implementation- and evidence-complete pending closure review.
 6. The value domain beyond string and null — M3.
 7. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
 8. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
@@ -151,7 +151,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close configured Task registration and evidence.** The independently approved semantic checkpoint retains the exact extension, distinct checked identity, existing-effect lowering, strict contracts, and proved Lean account. Register the profile, answer-free scenario, product example, and differential case atomically; add the retained CIB pass-through exclusion trace and focused live Temporal Activity/Worker-replacement/history/replay witness; then complete the closure evidence, cost record, full gate, and governed closure review.
+1. **Active: close and graduate the configured Task extension.** The exact profile, answer-free scenario, product example, differential mutation, retained CIB pass-through exclusion trace, and focused live Temporal Activity/Worker-replacement/history/replay witness are complete. Run the repository-wide gate once, commit the immutable closure target, prove warm-review continuity from approved checkpoint correction `85d42aa`, obtain governed closure review, and graduate the proposal to its specification before selecting another M2 increment.
 
 ## Approved decisions
 
@@ -256,7 +256,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: register the approved configured Task checkpoint atomically and add its differential, retained CIB exclusion, and live Temporal reuse evidence.** Semantic-checkpoint target `929ebd1` returned approve-with-required-edits; correction `85d42aa` closed maintained fixture validation, the direct Semantic XSD override, and exact profile-owner documentation, and the same reviewer approved the correction. Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
+**Next action: run the complete configured Task closure gate and submit the immutable evidence-complete target for governed closure review.** The profile/scenario/example/differential catalog is atomic, the live Activity witness survives Worker replacement and replays, the pass-through mutation reaches the public User Task discriminator, and pinned CIB's immediate User Task exposure is retained only as an exclusion oracle. Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
