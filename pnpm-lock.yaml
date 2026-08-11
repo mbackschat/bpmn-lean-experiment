@@ -233,6 +233,18 @@ importers:
         specifier: 1.62.1
         version: 1.62.1
 
+  showcase/m2-definition-scheduling:
+    devDependencies:
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../platform/contracts
+      '@bpmn-lean/platform-server':
+        specifier: workspace:*
+        version: link:../../platform/apps/server
+      '@bpmn-lean/temporal-testkit':
+        specifier: workspace:*
+        version: link:../../packages/temporal-adapter/testkit
+
 packages:
 
   '@bpmn-io/diagram-js-ui@0.2.4':

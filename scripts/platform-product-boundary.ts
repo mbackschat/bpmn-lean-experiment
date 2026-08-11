@@ -317,6 +317,12 @@ const temporalHistoryApiNames = new Set([
   "WorkflowExecutionHistory",
 ]);
 
+function isApprovedTemporalHistoryEvidence(relativePath: string, apiName: string): boolean {
+  return relativePath ===
+      "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts" &&
+    apiName === "fetchHistory";
+}
+
 const PlatformOwnerKind = {
   Server: "server",
   Web: "web",
@@ -481,7 +487,11 @@ export function assessPlatformProductBoundary(
     }
     if (isProductTwo) {
       for (const token of tokens) {
-        if (token.kind === "identifier" && temporalHistoryApiNames.has(token.text)) {
+        if (
+          token.kind === "identifier" &&
+          temporalHistoryApiNames.has(token.text) &&
+          !isApprovedTemporalHistoryEvidence(relativePath, token.text)
+        ) {
           findings.add(`${relativePath}: Temporal Event History API reference ${token.text}`);
         }
       }

@@ -245,6 +245,34 @@ test("lets showcases drive exact public packages while rejecting engine internal
   );
 });
 
+test("allows only the exact M2 evidence owner to fetch history", () => {
+  assert.deepEqual(
+    assessPlatformProductBoundary([
+      {
+        path: "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts",
+        source: "await handle.fetchHistory();",
+      },
+      {
+        path: "showcase/m2-definition-scheduling/test/temporal-support.ts",
+        source: "await handle.fetchHistory();",
+      },
+      {
+        path: "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts",
+        source: "await service.getWorkflowExecutionHistory();",
+      },
+      {
+        path: "showcase/m2-definition-scheduling/src/host.ts",
+        source: "await handle.fetchHistory();",
+      },
+    ]),
+    [
+      "showcase/m2-definition-scheduling/src/host.ts: Temporal Event History API reference fetchHistory",
+      "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts: Temporal Event History API reference getWorkflowExecutionHistory",
+      "showcase/m2-definition-scheduling/test/temporal-support.ts: Temporal Event History API reference fetchHistory",
+    ],
+  );
+});
+
 test("fails closed for malformed and duplicate package identities", () => {
   assert.throws(
     () => packageRootsFromManifests([{ path: "platform/contracts/package.json", source: "{" }]),

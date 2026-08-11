@@ -1,0 +1,16 @@
+{
+  "name": "@bpmn-lean/showcase-m2-definition-scheduling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "type-test": "tsc -p tsconfig.json",
+    "test": "pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts"
+  },
+  "devDependencies": {
+    "@bpmn-lean/platform-contracts": "workspace:*",
+    "@bpmn-lean/platform-server": "workspace:*",
+    "@bpmn-lean/temporal-testkit": "workspace:*"
+  }
+}
