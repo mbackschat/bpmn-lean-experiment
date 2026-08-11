@@ -211,6 +211,7 @@ export * from "./definition-schedule-gateway.js";
 export * from "./definition-schedule-address.js";
 export * from "./definition-capabilities.js";
 export * from "./definition-message-start-gateway.js";
+export * from "./message-start-publication-address.js";
 
 export function createBpmnEngineGatewayRuntime(
   options: BpmnEngineGatewayRuntimeOptions,

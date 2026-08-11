@@ -23,6 +23,7 @@ import {
   describeTemporalMessageStart,
   prepareTemporalMessageStart,
   startTemporalMessageStart,
+  temporalMessageStartWorkflowId,
 } from "@bpmn-lean/temporal-client/message-start";
 import type {
   TemporalMessageStartClient,
@@ -45,6 +46,13 @@ const start = {
 } as const satisfies TriggerMessageStartStimulus;
 const workflowId = "private-workflow-address-42";
 const taskQueue = "semantic-message-start-queue";
+
+test("derives the canonical Process Workflow address for Message Start hosts", () => {
+  assert.equal(
+    temporalMessageStartWorkflowId("semantic-instance-42"),
+    "bpmn-process-sha256:70bf84dd9e508d837f28845dabf282a408f90ef9516389a59d3a87d7ff0c3104",
+  );
+});
 
 test("constructs one exact request and rejects correct-Memo request mutations", async () => {
   const calls: CapturedStartCall[] = [];

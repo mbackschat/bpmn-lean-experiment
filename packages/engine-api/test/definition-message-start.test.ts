@@ -8,6 +8,7 @@ import {
   EngineDefinitionMessageStartDescriptionStatus,
   EngineDefinitionMessageStartStatus,
   describeBpmnDefinitionMessageStart,
+  engineDefinitionMessageStartWorkflowId,
   prepareBpmnDefinitionMessageStart,
   startBpmnDefinitionMessageStart,
 } from "@bpmn-lean/engine-api";
@@ -29,6 +30,13 @@ const messageStart = {
     messageId: "Message_ApprovalRequest",
   },
 } as const;
+
+test("derives the canonical Process Workflow address behind Product 1", () => {
+  assert.equal(
+    engineDefinitionMessageStartWorkflowId("semantic-instance-42"),
+    "bpmn-process-sha256:70bf84dd9e508d837f28845dabf282a408f90ef9516389a59d3a87d7ff0c3104",
+  );
+});
 
 test("prepares the exact capability and intent with zero SDK calls", async () => {
   const bytes = await readFile(sourceUrl);

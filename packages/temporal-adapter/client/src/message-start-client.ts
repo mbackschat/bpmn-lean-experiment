@@ -14,6 +14,7 @@ import {
   bpmnProcessWorkflowType,
   canonicalTypedTupleEncoding,
   deterministicSha256Hex,
+  processWorkflowId,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -31,6 +32,11 @@ const messageStartMemoKey = "bpmnMessageStartIntent";
 
 export type TemporalMessageStartClient = TemporalDefinitionStartClient;
 export const temporalMessageStartWorkflowType = bpmnProcessWorkflowType;
+
+/** Derives the canonical Process Workflow address without exposing protocol ownership. */
+export function temporalMessageStartWorkflowId(processInstanceId: string): string {
+  return processWorkflowId(processInstanceId);
+}
 
 export type TemporalMessageStartIntent = Readonly<{
   protocol: string;

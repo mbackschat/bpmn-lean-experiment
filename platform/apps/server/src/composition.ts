@@ -9,13 +9,19 @@ import {
   DefinitionScheduleHttpRoutes,
   DefinitionScheduleService,
   DefinitionStartService,
+  MessageStartPublicationHttpRoutes,
+  MessageStartPublicationService,
   SqliteDefinitionRepository,
   SqliteDefinitionScheduleRepository,
+  SqliteMessageStartPublicationRepository,
 } from "@bpmn-lean/platform-definitions";
 import {
   createBpmnEngineGatewayRuntime,
   definitionScheduleHostId,
   definitionScheduleWorkflowIdBase,
+  messageStartPublicationCommandId,
+  messageStartPublicationProcessInstanceId,
+  messageStartPublicationWorkflowId,
 } from "@bpmn-lean/platform-engine-gateway";
 
 import {
@@ -59,6 +65,10 @@ export async function createPlatformServer(
     resources.push(repository);
     const scheduleRepository = new SqliteDefinitionScheduleRepository(databaseFile);
     resources.push(scheduleRepository);
+    const publicationRepository = new SqliteMessageStartPublicationRepository(
+      databaseFile,
+    );
+    resources.push(publicationRepository);
     const service = new DefinitionDeploymentService(
       engineRuntime.gateway,
       artifacts,
@@ -69,11 +79,6 @@ export async function createPlatformServer(
       artifacts,
       repository,
       randomUUID,
-    );
-    const definitionRoutes = new DefinitionHttpRoutes(
-      service,
-      startService,
-      { maxSourceBytes: snapshot.maxSourceBytes },
     );
     const scheduleService = new DefinitionScheduleService({
       artifacts,
@@ -88,13 +93,34 @@ export async function createPlatformServer(
       now: Date.now,
     });
     await scheduleService.reconcileAll();
+    const publicationService = new MessageStartPublicationService({
+      artifacts,
+      definitions: repository,
+      publications: publicationRepository,
+      host: engineRuntime.messageStartHost,
+      identities: {
+        processInstanceId: messageStartPublicationProcessInstanceId,
+        commandId: messageStartPublicationCommandId,
+        workflowId: messageStartPublicationWorkflowId,
+      },
+    });
+    await publicationService.reconcileAll();
+    const definitionRoutes = new DefinitionHttpRoutes(
+      service,
+      startService,
+      { maxSourceBytes: snapshot.maxSourceBytes },
+    );
     const scheduleRoutes = new DefinitionScheduleHttpRoutes(
       scheduleService,
       service,
     );
+    const publicationRoutes = new MessageStartPublicationHttpRoutes(
+      publicationService,
+    );
     const server = createPlatformHttpServerFromValidatedOrigin({
       publicOrigin: snapshot.publicOrigin,
       routes: [
+        (request) => publicationRoutes.handle(request),
         (request) => scheduleRoutes.handle(request),
         (request) => definitionRoutes.handle(request),
       ],

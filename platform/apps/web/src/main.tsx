@@ -7,6 +7,8 @@ import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 import { App } from "./app";
 import { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import { DefinitionApiClient } from "./definitions-api";
+import { MessageStartPublicationApiClient } from "./message-start-publication-api";
+import "./message-start-publication.css";
 import "./styles.css";
 
 const container = document.getElementById("root");
@@ -15,9 +17,14 @@ if (container === null) {
 }
 
 const api = new DefinitionApiClient(window.location.origin);
+const messageStartPublicationApi = new MessageStartPublicationApiClient(window.location.origin);
 const scheduleApi = new DefinitionScheduleApiClient(window.location.origin);
 createRoot(container).render(
   <StrictMode>
-    <App api={api} scheduleApi={scheduleApi} />
+    <App
+      api={api}
+      messageStartPublicationApi={messageStartPublicationApi}
+      scheduleApi={scheduleApi}
+    />
   </StrictMode>,
 );

@@ -43,6 +43,17 @@ test("composes the definition route and closes its HTTP and SQLite owners idempo
         message: "The definition version was not found.",
       },
     });
+    const publication = await fetch(
+      `${origin}/api/v1/message-start-publications/missing`,
+      { signal: AbortSignal.timeout(1_000) },
+    );
+    assert.equal(publication.status, 404);
+    assert.deepEqual(await publication.json(), {
+      error: {
+        code: "notFound",
+        message: "The Message Start publication was not found.",
+      },
+    });
 
     await Promise.all([runtime.close(), runtime.close()]);
     await runtime.close();

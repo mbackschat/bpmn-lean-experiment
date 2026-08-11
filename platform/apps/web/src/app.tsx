@@ -12,13 +12,16 @@ import { DefinitionSchedulePanel } from "./definition-schedule-panel";
 import { DefinitionStartPanel } from "./definition-start-panel";
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
+import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
+import { MessageStartPublicationPanel } from "./message-start-publication-panel";
 
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
+  messageStartPublicationApi: MessageStartPublicationApiClient;
   scheduleApi: DefinitionScheduleApiClient;
 }>;
 
-export function App({ api, scheduleApi }: AppProps) {
+export function App({ api, messageStartPublicationApi, scheduleApi }: AppProps) {
   const [definitions, setDefinitions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [versions, setVersions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [selected, setSelected] = useState<DeployedDefinitionVersion | null>(null);
@@ -179,6 +182,11 @@ export function App({ api, scheduleApi }: AppProps) {
           </section>
         ) : (
           <div className="selected-definition">
+            <MessageStartPublicationPanel
+              key={`message-publication:${selected.processId}:${selected.version}`}
+              api={messageStartPublicationApi}
+              definition={selected}
+            />
             <DefinitionSchedulePanel
               key={`schedule:${selected.processId}:${selected.version}`}
               api={scheduleApi}

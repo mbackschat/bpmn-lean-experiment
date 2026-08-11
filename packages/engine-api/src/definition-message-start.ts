@@ -22,6 +22,7 @@ import {
   describeTemporalMessageStart,
   prepareTemporalMessageStart,
   startTemporalMessageStart,
+  temporalMessageStartWorkflowId,
   temporalMessageStartWorkflowType,
 } from "@bpmn-lean/temporal-client/message-start";
 import type {
@@ -119,6 +120,13 @@ export enum EngineDefinitionMessageStartDescriptionStatus {
 export type EngineDefinitionMessageStartDescriptionResult = Readonly<{
   status: EngineDefinitionMessageStartDescriptionStatus;
 }>;
+
+/** Keeps the canonical Process Workflow address behind the Product 1 boundary. */
+export function engineDefinitionMessageStartWorkflowId(
+  processInstanceId: string,
+): string {
+  return temporalMessageStartWorkflowId(processInstanceId);
+}
 
 /** Recompiles and admits the exact dispatch while returning no semantic representation. */
 export async function prepareBpmnDefinitionMessageStart(

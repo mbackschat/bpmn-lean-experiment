@@ -85,6 +85,7 @@ export {
   SqliteMessageStartPublicationRepository,
 } from "./sqlite-message-start-publication-repository.js";
 export { MessageStartPublicationService } from "./message-start-publication-service.js";
+export { MessageStartPublicationHttpRoutes } from "./message-start-publication-http-routes.js";
 export type {
   MessageStartPublicationDescriptionResult,
   MessageStartPublicationHost,
