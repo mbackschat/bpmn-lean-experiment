@@ -258,7 +258,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit and run the context-cold proposal review for the bounded [Product 2 definition-scheduling proposal](BPM-PLATFORM-DEFINITION-SCHEDULING-PROPOSAL.md).** Bind the review to its immutable target, correct every required finding through the same reviewer, then record the owner approval that this session authorizes without pausing and begin red/green implementation. Preserve exact definition-version binding, keep service execution identity opaque, and exclude recurrence, silent latest-version retargeting, broker/message routing, instance search, and new BPMN semantics from this first platform increment.
+**Next action: implement the approved [Product 2 definition-scheduling proposal](BPM-PLATFORM-DEFINITION-SCHEDULING-PROPOSAL.md) through red/green TDD.** Start with the engine capability projection and strict public wire contract Reds, then build the intent-first persistence, handle-free Schedule gateway, HTTP/UI surface, and M2 showcase. Commit the first green public-contract and Temporal-lifecycle checkpoint for a context-cold review before the browser/showcase closure lane. Preserve exact definition-version binding, keep service execution identity opaque, and exclude recurrence, silent latest-version retargeting, broker/message routing, instance search, and new BPMN semantics from this first platform increment.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
