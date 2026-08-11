@@ -368,6 +368,26 @@
           "required": [
             "kind",
             "id",
+            "descriptor"
+          ],
+          "properties": {
+            "kind": {
+              "const": "configuredTask"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "descriptor": {
+              "$ref": "#/$defs/effectDescriptor"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "durationLiteral"
           ],
           "properties": {

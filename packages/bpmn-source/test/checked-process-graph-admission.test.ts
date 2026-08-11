@@ -12,6 +12,9 @@ import {
   CheckedNodeKind,
   GatewayDirection,
   MessageChannelKind,
+  EffectOperation,
+  EffectProtocol,
+  SemanticCheckpointProfileId,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -296,6 +299,42 @@ test("admits Terminate End as a one-to-zero sink and rejects an outgoing flow", 
         [admittedFlow, flow("TerminateToStart", terminate.id, start.id)],
       ),
       SemanticProfileId.UserTask,
+    ),
+    undefined,
+  );
+});
+
+test("admits configured Task only as a one-to-one graph node", () => {
+  const start = { kind: CheckedNodeKind.NoneStartEvent, id: "Start" } as const;
+  const configured = {
+    kind: CheckedNodeKind.ConfiguredTask,
+    id: "Configured",
+    descriptor: {
+      protocol: EffectProtocol.Activity,
+      operation: EffectOperation.Probe,
+    },
+  } as const;
+  const end = { kind: CheckedNodeKind.NoneEndEvent, id: "End" } as const;
+  const nodes = [start, configured, end] as const satisfies CheckedProcessGraph["nodes"];
+  const admittedFlows = [
+    flow("StartToConfigured", start.id, configured.id),
+    flow("ConfiguredToEnd", configured.id, end.id),
+  ] as const;
+
+  assert.notEqual(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(nodes, admittedFlows),
+      SemanticCheckpointProfileId.ConfiguredTask,
+    ),
+    undefined,
+  );
+  assert.equal(
+    resolveAdmittedCheckedProcessGraph(
+      withRootOwnership(
+        nodes,
+        [...admittedFlows, flow("ConfiguredToStart", configured.id, start.id)],
+      ),
+      SemanticCheckpointProfileId.ConfiguredTask,
     ),
     undefined,
   );

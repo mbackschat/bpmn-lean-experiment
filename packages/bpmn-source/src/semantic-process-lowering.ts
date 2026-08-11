@@ -38,6 +38,7 @@ import {
   operationId,
 } from "./semantic-process-identifiers.js";
 import { lowerTerminateEndEvent } from "./terminate-end-event-lowering.js";
+import { lowerConfiguredTask } from "./configured-task-lowering.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -239,6 +240,8 @@ function lowerNode(
               },
             },
       });
+    case CheckedNodeKind.ConfiguredTask:
+      return [lowerConfiguredTask(node, source)];
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:

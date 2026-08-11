@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented current pre-release contract.** The registered capability catalog includes the independently reviewed, closure-reviewed, and evidence-closed Message Start capability.
+**Implemented current pre-release contract.** The registered capability catalog remains the product authority. A separate unregistered configured Task checkpoint now exercises the same structural-plus-profile admission boundary without entering that product catalog.
 
 ## Scope
 
@@ -20,7 +20,7 @@ For every currently selected profile, source and program admission require:
 4. exact checked-source-to-program lowering equality before Lean evaluation;
 5. capsule-local closure, enabledness, and stable-state resumability evidence for each newly reachable structure.
 
-The profile capability names kinds and cardinalities, not complete node IDs, Sequence Flow IDs, or one full model path. The Timer/User Task and Message/User Task composition profiles therefore permit both finite acyclic linear orders selected by graph facts and their exact operation multisets; production code contains no whole-topology predicate for either profile. Each retained end-to-end scenario selects the new mechanism before the User Task, while focused source, Lean, and TypeScript checks also cover the reverse order so the broader structural admission is not accidental.
+The reusable program capability names kinds and cardinalities, not complete node IDs, Sequence Flow IDs, or one full model path. The Timer/User Task and Message/User Task composition profiles therefore permit both finite acyclic linear orders selected by graph facts and their exact operation multisets; production code contains no whole-topology predicate for either profile. The unregistered configured Task checkpoint is deliberately narrower at checked-source admission: its capsule selects one arbitrary-ID Start-to-configured-to-User-to-End topology and exact descriptor while its lowered `awaitEffect` program continues through the reusable structural graph and operation-cardinality validators. This source restriction does not become the general meaning of Task or `awaitEffect`.
 
 The closest unsupported claim is arbitrary serial composition. Admission does not infer an unbounded grammar, repeated Timer mechanisms, cycles beyond the exact registered resumption-bounded User Task profile, Standard Loop Characteristics, Multi-Instance, arbitrary graph cardinalities, or general BPMN Process Execution Conformance.
 
@@ -51,6 +51,8 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | CIB Seven embedded Sub-Process Error propagation (`cibseven-2.2.0-subprocess-error-propagation-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `throwError`, three `reachNoneEnd`, two `completeScope` |
 | BPMN called Process Call Activity (`bpmn-2.0.2-called-process-call-activity-draft`) | 2 | one `initiate`, one `invokeProcess`, two `awaitUserTask`, two `reachNoneEnd`, one `returnProcess`, one `completeScope` |
 | BPMN interrupting Sub-Process boundary Timer (`bpmn-2.0.2-subprocess-boundary-timer-draft`) | 2 | one `initiate`, one `enterBoundedScope`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
+
+The unregistered checkpoint `bpmn-2.0.2-bpmn-lean-configured-task-effect-draft` admits one definition scope with one `initiate`, one existing `awaitEffect`, one `awaitUserTask`, one `reachNoneEnd`, and one `completeScope`. Its checked multiset contains one distinct `configuredTask`, not `serviceTask`; the selected descriptor is Activity/Probe, mappings are empty, the BPMN Error route is null, and whole-graph acyclicity remains mandatory. It is intentionally absent from the registered-profile table until checkpoint approval and atomic artifact graduation.
 
 Two registered profiles share one operation multiset, and that is the contract rather than a duplicate row. The preserve-enabled successor to the CIB Seven User Task profile admits Diagram Interchange, pools, lanes, artifacts, and documentation that its predecessor rejects, and executes exactly the same program. A differing multiset would mean preserved notation had reached the executed partition, so agreement between these two rows is what [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md) claims and not an omission. Which source each profile admits is decided by the preservation capability, which is disjoint from the operation multiset this table records.
 

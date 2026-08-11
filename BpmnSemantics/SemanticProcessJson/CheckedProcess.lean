@@ -139,6 +139,16 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.receiveTask
           ⟨← stringField json "id"⟩
           (← decodeMessageChannel (← field json "channel")))
+  | "configuredTask" =>
+      requireObjectShape json ["descriptor", "id", "kind"]
+      let descriptor ← decodeEffectDescriptor (← field json "descriptor")
+      if descriptor.protocol ≠ "urn:bpmn-lean:effect-protocol:activity-v1" ||
+          descriptor.operation ≠ "urn:bpmn-lean:effect-operation:probe-v1" then
+        throw "configuredTask requires the exact Probe effect descriptor"
+      pure
+        (.configuredTask
+          ⟨← decodeNonemptyStringField json "id"⟩
+          descriptor)
   | "serviceTask" =>
       requireObjectShape json
         ["bpmnErrorRoute", "descriptor", "id", "inputMappings", "kind",

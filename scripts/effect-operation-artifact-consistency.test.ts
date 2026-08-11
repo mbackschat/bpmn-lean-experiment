@@ -13,6 +13,7 @@ import {
   verifyEffectOperationBindings,
 } from "./effect-operation-artifact-consistency.ts";
 import type {
+  CheckedNodeKind,
   MappingExpressionKind,
   SemanticOriginKind,
 } from "../packages/semantic-core/src/index.ts";
@@ -98,4 +99,40 @@ test("rejects every Service Task effect binding drift", () => {
       /effect identity|effect descriptor|input mappings|output mappings|BPMN Error route/u,
     );
   }
+});
+
+test("binds a Configured Task only to the neutral empty effect specialization", () => {
+  const artifacts = serviceTaskDefinitionArtifacts();
+  artifacts.checkedProcess.nodes[1] = {
+    kind: "configuredTask" as CheckedNodeKind.ConfiguredTask,
+    id: "ServiceTask_Record",
+    descriptor: {
+      protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+      operation: "urn:bpmn-lean:effect-operation:probe-v1",
+    },
+  };
+  assert.doesNotThrow(() =>
+    verifyEffectOperationBindings(
+      artifacts.checkedProcess,
+      artifacts.semanticProcess,
+    )
+  );
+
+  requireAwaitEffect(
+    artifacts.semanticProcess.operations[1],
+  ).effect.inputMappings.push({
+    target: "forbidden",
+    expression: {
+      kind: "stringLiteral" as MappingExpressionKind.StringLiteral,
+      value: "forbidden",
+    },
+  });
+  assert.throws(
+    () =>
+      verifyEffectOperationBindings(
+        artifacts.checkedProcess,
+        artifacts.semanticProcess,
+      ),
+    /input mappings/u,
+  );
 });

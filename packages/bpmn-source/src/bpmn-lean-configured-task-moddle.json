@@ -1,0 +1,23 @@
+{
+  "name": "BpmnLean",
+  "uri": "urn:bpmn-lean:bpmn:extensions:v1",
+  "prefix": "bpmnLean",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "types": [
+    {
+      "name": "TaskDefinition",
+      "superClass": [
+        "Element"
+      ],
+      "properties": [
+        {
+          "name": "type",
+          "type": "String",
+          "isAttr": true
+        }
+      ]
+    }
+  ]
+}

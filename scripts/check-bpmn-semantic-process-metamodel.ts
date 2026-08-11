@@ -7,13 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { parseStrictJson } from "./strict-json.ts";
 
-/**
- * The bounded CMOF facts this calibration re-derives from the normative file.
- *
- * Only the fields compared against `BPMN20.cmof` are decoded. The manifest also
- * carries provenance, coverage prose, and the compiler projection that this
- * check does not interpret.
- */
+/** The bounded machine-readable facts this calibration re-derives from OMG artifacts. */
 type ClassFact = Readonly<{
   name: string;
   directSuperClasses: ReadonlyArray<string>;
@@ -34,6 +28,7 @@ type MetamodelManifest = Readonly<{
   kind: string;
   extraction: string;
   source: Readonly<{ sha256: string }>;
+  schemaSource: Readonly<{ sha256: string }>;
   coverage: Readonly<{ status: string }>;
   compilerProjection: Readonly<{
     terminateEventDefinitionType: string;
@@ -56,6 +51,10 @@ const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
 const cmofPath = process.env["BPMN_CMOF_PATH"] ?? path.join(
   externalRoot,
   "omg-bpmn-2.0.2/machine-readable/BPMN20.cmof",
+);
+const semanticXsdPath = path.join(
+  externalRoot,
+  "omg-bpmn-2.0.2/machine-readable/Semantic.xsd",
 );
 
 function requireRecord(
@@ -155,6 +154,13 @@ function decodeMetamodelManifest(text: string): MetamodelManifest {
         "manifest.source",
       ),
     },
+    schemaSource: {
+      sha256: requiredMember(
+        requireRecord(record["schemaSource"], "manifest.schemaSource"),
+        "sha256",
+        "manifest.schemaSource",
+      ),
+    },
     coverage: {
       status: requiredMember(
         requireRecord(record["coverage"], "manifest.coverage"),
@@ -190,20 +196,37 @@ try {
   );
   process.exit(1);
 }
+try {
+  await access(semanticXsdPath);
+} catch {
+  console.error(
+    `BPMN normative Semantic XSD is absent at ${semanticXsdPath}; run ./scripts/setup-external-sources.sh verify or set BPMN_EXTERNAL_ROOT`,
+  );
+  process.exit(1);
+}
 
 const manifest = decodeMetamodelManifest(await readFile(manifestPath, "utf8"));
-assert.equal(manifest.kind, "boundedCmofFactManifest");
-assert.equal(manifest.extraction, "bounded-cmof-fact-extraction");
+assert.equal(manifest.kind, "boundedBpmnMetamodelFactManifest");
+assert.equal(manifest.extraction, "bounded-machine-readable-fact-extraction");
 const cmofBytes = await readFile(cmofPath);
 const actualSha256 = createHash("sha256").update(cmofBytes).digest("hex");
 assert.equal(actualSha256, manifest.source.sha256);
+const semanticXsdBytes = await readFile(semanticXsdPath);
+const actualSchemaSha256 = createHash("sha256")
+  .update(semanticXsdBytes)
+  .digest("hex");
+assert.equal(actualSchemaSha256, manifest.schemaSource.sha256);
 
-function xpath(expression: string): string {
-  return execFileSync("xmllint", ["--xpath", expression, cmofPath], {
+function xpathIn(sourcePath: string, expression: string): string {
+  return execFileSync("xmllint", ["--xpath", expression, sourcePath], {
     cwd: projectRoot,
     encoding: "utf8",
     timeout: 5_000,
   }).trim();
+}
+
+function xpath(expression: string): string {
+  return xpathIn(cmofPath, expression);
 }
 
 function elementById(id: string): string {
@@ -240,7 +263,79 @@ assert.equal(
   "the compiler Terminate Event Definition type must derive from the calibrated CMOF class",
 );
 
-for (const propertyFact of manifest.properties) {
+const extensionElementsFacts = manifest.properties.filter(
+  ({ owner, name }) => owner === "BaseElement" && name === "extensionElements",
+);
+assert.equal(
+  extensionElementsFacts.length,
+  1,
+  "the bounded manifest must contain one BaseElement.extensionElements schema fact",
+);
+const extensionElementsFact = extensionElementsFacts[0];
+assert.deepEqual(extensionElementsFact, {
+  owner: "BaseElement",
+  name: "extensionElements",
+  type: "ExtensionElements",
+  lower: 0,
+  upper: 1,
+  containment: true,
+});
+
+const xsdBaseElementExtension =
+  '//*[local-name()="complexType" and @name="tBaseElement"]' +
+  '/*[local-name()="sequence"]/*[local-name()="element" and @ref="extensionElements"]';
+assert.equal(
+  xpathIn(semanticXsdPath, `string(${xsdBaseElementExtension}/@minOccurs)`),
+  String(extensionElementsFact?.lower),
+  "Semantic XSD lower multiplicity changed for BaseElement.extensionElements",
+);
+assert.equal(
+  xpathIn(semanticXsdPath, `string(${xsdBaseElementExtension}/@maxOccurs)`),
+  String(extensionElementsFact?.upper),
+  "Semantic XSD upper multiplicity changed for BaseElement.extensionElements",
+);
+assert.equal(
+  xpathIn(
+    semanticXsdPath,
+    'string(//*[local-name()="element" and @name="extensionElements"]/@type)',
+  ),
+  `t${extensionElementsFact?.type}`,
+  "Semantic XSD type changed for BaseElement.extensionElements",
+);
+const xsdExtensionWildcard =
+  '//*[local-name()="complexType" and @name="tExtensionElements"]' +
+  '/*[local-name()="sequence"]/*[local-name()="any"]';
+assert.deepEqual(
+  {
+    namespace: xpathIn(
+      semanticXsdPath,
+      `string(${xsdExtensionWildcard}/@namespace)`,
+    ),
+    processContents: xpathIn(
+      semanticXsdPath,
+      `string(${xsdExtensionWildcard}/@processContents)`,
+    ),
+    minOccurs: xpathIn(
+      semanticXsdPath,
+      `string(${xsdExtensionWildcard}/@minOccurs)`,
+    ),
+    maxOccurs: xpathIn(
+      semanticXsdPath,
+      `string(${xsdExtensionWildcard}/@maxOccurs)`,
+    ),
+  },
+  {
+    namespace: "##other",
+    processContents: "lax",
+    minOccurs: "0",
+    maxOccurs: "unbounded",
+  },
+  "Semantic XSD extensionElements wildcard changed",
+);
+
+for (const propertyFact of manifest.properties.filter(
+  ({ owner, name }) => owner !== "BaseElement" || name !== "extensionElements",
+)) {
   const id = `${propertyFact.owner}-${propertyFact.name}`;
   const directType = attribute(id, "type");
   const nestedType =
@@ -276,6 +371,7 @@ for (const propertyFact of manifest.properties) {
 console.log(
   `BPMN_SEMANTIC_PROCESS_METAMODEL_CHECK ${JSON.stringify({
     sourceSha256: actualSha256,
+    schemaSha256: actualSchemaSha256,
     classes: manifest.classes.length,
     properties: manifest.properties.length,
     coverage: manifest.coverage.status,

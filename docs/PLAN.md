@@ -256,7 +256,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: implement and integrate the configured Task first semantic checkpoint, then commit its immutable green target and submit the generated packet verbatim for context-cold semantic-checkpoint review before registration or live evidence.** Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
+**Next action: commit the integrated configured Task first semantic checkpoint and submit the generated packet verbatim for context-cold semantic-checkpoint review before registration or live evidence.** The exact extension source, distinct checked node, existing-effect lowering, strict contracts, independent Lean/core execution, and preservation guards are integration-green. Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

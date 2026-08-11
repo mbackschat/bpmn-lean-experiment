@@ -10,6 +10,7 @@ import {
 import {
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
+import { importCompiledBpmnGraph } from "./compiled-moddle-graph.ts";
 
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 
@@ -96,4 +97,40 @@ test("ignores element-like text inside XML comments", async () => {
   const result = await compile(commented, SemanticProfileId.TimerStart);
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
+});
+
+test("rejects repeated extensionElements after observing zero-warning singleton collapse", async () => {
+  const source = await readFile(
+    new URL("./fixtures/configured-task.bpmn", import.meta.url),
+    "utf8",
+  );
+  const container = [
+    "      <bpmn:extensionElements>",
+    '        <bpmnLean:taskDefinition type="urn:bpmn-lean:task-handler:probe-v1" />',
+    "      </bpmn:extensionElements>",
+  ].join("\n");
+  const repeated = source.replace(container, `${container}\n${container}`);
+  assert.notEqual(repeated, source);
+
+  const imported = await importCompiledBpmnGraph(
+    repeated,
+    limits.parserDeadlineMs,
+  );
+  assert.equal(imported.warnings.length, 0);
+  assert.equal(
+    [...imported.located.keys()].filter(
+      ({ $type }) => $type === "bpmn:ExtensionElements",
+    ).length,
+    1,
+  );
+
+  const result = await compile(
+    repeated,
+    "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+  );
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  assert.match(
+    result.diagnostics[0]?.evidence ?? "",
+    /source contains 2 BaseElement\.extensionElements.*retained 1/u,
+  );
 });

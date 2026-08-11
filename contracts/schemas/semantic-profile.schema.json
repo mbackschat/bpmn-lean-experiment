@@ -228,24 +228,46 @@
         ],
         "properties": {
           "source": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "implementation",
-              "delegateExpression"
-            ],
-            "properties": {
-              "implementation": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "implementation",
+                  "delegateExpression"
+                ],
+                "properties": {
+                  "implementation": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "delegateExpression": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
               },
-              "delegateExpression": {
-                "type": "string",
-                "minLength": 1
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "taskDefinitionNamespace",
+                  "taskDefinitionType"
+                ],
+                "properties": {
+                  "taskDefinitionNamespace": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "taskDefinitionType": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
               }
-            }
+            ]
           },
           "descriptor": {
             "type": "object",

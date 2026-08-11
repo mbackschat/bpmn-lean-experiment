@@ -20,6 +20,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .receiveTask id _
+  | .configuredTask id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveMerge id
@@ -75,7 +76,8 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
       some { source := attachedToRef, target := id }
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .userTask .. | .intermediateCatchTimerEvent ..
-  | .intermediateCatchMessageEvent .. | .receiveTask .. | .serviceTask ..
+  | .intermediateCatchMessageEvent .. | .receiveTask .. | .configuredTask ..
+  | .serviceTask ..
   | .parallelGateway .. | .exclusiveGateway ..
   | .exclusiveMerge ..
   | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
@@ -105,7 +107,7 @@ def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .boundaryErrorEvent .. | .timerBoundaryEvent ..
   | .intermediateCatchTimerEvent .. | .intermediateCatchMessageEvent ..
-  | .receiveTask .. | .serviceTask .. | .parallelGateway ..
+  | .receiveTask .. | .configuredTask .. | .serviceTask .. | .parallelGateway ..
   | .exclusiveMerge .. | .exclusiveGateway ..
   | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
   | .eventBasedGateway .. | .errorEndEvent .. | .terminateEndEvent ..

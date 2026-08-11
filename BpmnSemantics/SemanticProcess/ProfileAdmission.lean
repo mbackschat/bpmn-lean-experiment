@@ -26,6 +26,7 @@ private structure ShapeCardinalities where
   messages : Nat := 0
   receiveTasks : Nat := 0
   timers : Nat := 0
+  configuredTasks : Nat := 0
   effects : Nat := 0
   duplicates : Nat := 0
   synchronizes : Nat := 0
@@ -77,6 +78,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with messages := counts.messages + 1 }
     | .receiveTask .. =>
         { counts with receiveTasks := counts.receiveTasks + 1 }
+    | .configuredTask .. =>
+        { counts with configuredTasks := counts.configuredTasks + 1 }
     | .serviceTask .. => { counts with effects := counts.effects + 1 }
     | .parallelGateway _ .diverging =>
         { counts with duplicates := counts.duplicates + 1 }
@@ -144,6 +147,10 @@ private def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) :
 /-- Runtime-frozen profile identity used only by the owner-approved semantic checkpoint. Product registration remains outside this Lean lane. -/
 def terminateEndCheckpointProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-terminate-end-event-draft"⟩
+
+/-- Runtime-frozen configured Task identity for the owner-approved Lean checkpoint only. -/
+def configuredTaskCheckpointProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-bpmn-lean-configured-task-effect-draft"⟩
 
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   if profile = "bpmn-2.0.2-message-start-event-draft" then
@@ -223,6 +230,9 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (2,
       { starts := 2, embeddedScopes := 1, userTasks := 3,
         duplicates := 1, terminateEnds := 1, ends := 2 })
+  else if profile = configuredTaskCheckpointProfileId.value then
+    some (1,
+      { starts := 1, configuredTasks := 1, userTasks := 1, ends := 1 })
   else none
 
 private def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
@@ -305,7 +315,43 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
     some (2, withScopeCompletions 2
       { initiates := 1, scopeEntries := 1, userTasks := 3,
         duplicates := 1, scopeTerminations := 1, ends := 2 })
+  else if profile = configuredTaskCheckpointProfileId.value then
+    some (1, withScopeCompletions 1
+      { initiates := 1, effects := 1, userTasks := 1, ends := 1 })
   else none
+
+private def configuredTaskDescriptorValid (descriptor : EffectDescriptor) : Bool :=
+  descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
+    descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1"
+
+private def exactUncheckedEdge (source : CheckedProcess)
+    (sourceId targetId : NodeId) : Bool :=
+  source.sequenceFlows.any fun flow =>
+    decide (flow.sourceId = sourceId && flow.targetId = targetId) &&
+      flow.condition.isNone
+
+private def configuredTaskCheckedPayloadValid (source : CheckedProcess) : Bool :=
+  if source.identity.semanticProfile = configuredTaskCheckpointProfileId then
+    match source.nodes.filterMap fun
+        | .noneStartEvent id => some id
+        | _ => none,
+      source.nodes.filterMap fun
+        | .configuredTask id descriptor => some (id, descriptor)
+        | _ => none,
+      source.nodes.filterMap fun
+        | .userTask id _ => some id
+        | _ => none,
+      source.nodes.filterMap fun
+        | .noneEndEvent id => some id
+        | _ => none with
+    | [startId], [(configuredId, descriptor)], [userId], [endId] =>
+        configuredTaskDescriptorValid descriptor &&
+          source.sequenceFlows.length = 3 &&
+          exactUncheckedEdge source startId configuredId &&
+          exactUncheckedEdge source configuredId userId &&
+          exactUncheckedEdge source userId endId
+    | _, _, _, _ => false
+  else true
 
 /-- Closed graph-policy capability. Every pre-cycle profile retains whole-graph acyclicity; only the exact cycle profile selects the User Task resumption cut. -/
 inductive ProfileGraphPolicy where
@@ -325,7 +371,8 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   match checkedShape? source.identity.semanticProfile.value with
   | some (scopeCount, shape) =>
       source.definitionScopes.length = scopeCount &&
-        nodeCardinalities source.nodes = shape
+        nodeCardinalities source.nodes = shape &&
+        configuredTaskCheckedPayloadValid source
   | none => false
 
 private def operationPayloadCapabilitiesValid (profile : String)
@@ -344,6 +391,14 @@ private def operationPayloadCapabilitiesValid (profile : String)
   else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     operations.all fun
       | .mergeExclusive _ _ inputs _ => inputs.length = 3
+      | _ => true
+  else if profile = configuredTaskCheckpointProfileId.value then
+    operations.all fun
+      | .awaitEffect _ origin _ _ effect route =>
+          origin.elementId = effect.elementId &&
+            configuredTaskDescriptorValid effect.descriptor &&
+            effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
+            route.isNone
       | _ => true
   else true
 

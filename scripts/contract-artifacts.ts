@@ -9,6 +9,7 @@ import {
   verifyCanonicalDefinitionOrder,
   verifyDefinitionReferences,
 } from "./contract-artifact-consistency.ts";
+import { verifyConfiguredTaskProfileBinding } from "./configured-task-profile-consistency.ts";
 export { compareCanonicalStrings } from "./contract-artifact-consistency.ts";
 import {
   artifactCases,
@@ -71,6 +72,7 @@ type SemanticProfileBase = Readonly<{
     relationships: ReadonlyArray<string>;
   }>;
   observations: ReadonlyArray<string>;
+  effectBindings?: unknown;
 }>;
 
 type CibSemanticProfile = SemanticProfileBase & Readonly<{
@@ -418,6 +420,7 @@ function verifyProfile(
   profile: SemanticProfile,
 ): void {
   validateWith(validator, profileSchemaId, "profile", profile);
+  verifyConfiguredTaskProfileBinding(profile);
   for (const relationshipId of profile.bpmn.relationships) {
     if (!registeredRelationshipIds.has(relationshipId)) {
       throw new Error(

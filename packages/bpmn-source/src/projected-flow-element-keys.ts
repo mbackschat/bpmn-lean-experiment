@@ -45,6 +45,7 @@ export const ProjectedFlowElementShape = Object.freeze({
   EmbeddedSubProcess: "embeddedSubProcess",
   StandardSequenceFlow: "standardSequenceFlow",
   GenericServiceTask: "genericServiceTask",
+  ConfiguredTask: "configuredTask",
   ParallelGateway: "parallelGateway",
   ExclusiveOrInclusiveGateway: "exclusiveOrInclusiveGateway",
   EventBasedGateway: "eventBasedGateway",
@@ -79,6 +80,9 @@ export const projectedFlowElementKeys = Object.freeze({
   ]),
   [ProjectedFlowElementShape.GenericServiceTask]: Object.freeze([
     "$type", "id", "name", "implementation",
+  ]),
+  [ProjectedFlowElementShape.ConfiguredTask]: Object.freeze([
+    "$type", "id", "name", "extensionElements",
   ]),
   [ProjectedFlowElementShape.ParallelGateway]: Object.freeze([
     "$type", "id", "name", "gatewayDirection",
@@ -218,6 +222,8 @@ function genericShapes(
       return [ProjectedFlowElementShape.StandardSequenceFlow];
     case bpmnTypes.serviceTaskType:
       return [ProjectedFlowElementShape.GenericServiceTask];
+    case bpmnTypes.taskType:
+      return [ProjectedFlowElementShape.ConfiguredTask];
     case bpmnTypes.parallelGatewayType:
       return [ProjectedFlowElementShape.ParallelGateway];
     case bpmnTypes.exclusiveGatewayType:

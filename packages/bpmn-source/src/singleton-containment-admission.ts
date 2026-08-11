@@ -19,7 +19,7 @@ export type ExactContainmentCardinality = Readonly<{
 }>;
 
 type SingletonContainmentSpec = Readonly<{
-  ownerType: string;
+  ownerType: string | null;
   property: string;
   xmlLocalName: string;
 }>;
@@ -58,7 +58,7 @@ export function firstContainmentCardinalityMismatch(
     );
     const projectedOccurrences = [...elements.keys()].filter(
       (element) =>
-        element.$type === spec.ownerType &&
+        (spec.ownerType === null || element.$type === spec.ownerType) &&
         asElement(element[spec.property]) !== undefined,
     ).length;
     if (sourceOccurrences !== projectedOccurrences) {
@@ -98,6 +98,12 @@ function singletonContainmentSpec(
   property: string,
 ): SingletonContainmentSpec | undefined {
   switch (`${owner}.${property}`) {
+    case "BaseElement.extensionElements":
+      return {
+        ownerType: null,
+        property,
+        xmlLocalName: property,
+      };
     case "SequenceFlow.conditionExpression":
       return {
         ownerType: metamodelManifest.compilerProjection.sequenceFlowType,

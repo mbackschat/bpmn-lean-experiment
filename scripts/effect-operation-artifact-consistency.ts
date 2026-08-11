@@ -6,6 +6,7 @@ import { isDeepStrictEqual } from "node:util";
 import type {
   BpmnErrorRoute,
   CheckedNode,
+  CheckedNodeKind,
   CheckedProcess,
   SemanticOperation,
   SemanticOperationKind,
@@ -20,7 +21,9 @@ type AwaitEffectOperation = Extract<
 
 type EffectSourceNode = Extract<
   CheckedNode,
-  Readonly<{ kind: "serviceTask" }>
+  Readonly<{
+    kind: CheckedNodeKind.ServiceTask | CheckedNodeKind.ConfiguredTask;
+  }>
 >;
 
 export function verifyEffectOperationBindings(
@@ -33,7 +36,7 @@ export function verifyEffectOperationBindings(
   );
   const sourceNodes = checkedProcess.nodes.filter(
     (node): node is EffectSourceNode =>
-      node.kind === "serviceTask",
+      node.kind === "serviceTask" || node.kind === "configuredTask",
   );
   if (operations.length !== sourceNodes.length) {
     throw new Error(
@@ -59,7 +62,10 @@ function verifyEffectOperationBinding(
   const checkedNode = checkedProcess.nodes.find(
     ({ id }) => id === operation.origin.elementId,
   );
-  if (checkedNode?.kind !== "serviceTask") {
+  if (
+    checkedNode?.kind !== "serviceTask" &&
+    checkedNode?.kind !== "configuredTask"
+  ) {
     throw new Error(
       `operation ${operation.id} has no exact checked BPMN effect origin`,
     );
@@ -76,7 +82,7 @@ function verifyEffectOperationBinding(
 
   if (!isDeepStrictEqual(
     operation.effect.inputMappings,
-    checkedNode.inputMappings,
+    checkedNode.kind === "serviceTask" ? checkedNode.inputMappings : [],
   )) {
     throw new Error(
       `operation ${operation.id} input mappings differ from its checked BPMN origin`,
@@ -84,14 +90,16 @@ function verifyEffectOperationBinding(
   }
   if (!isDeepStrictEqual(
     operation.effect.outputMappings,
-    checkedNode.outputMappings,
+    checkedNode.kind === "serviceTask" ? checkedNode.outputMappings : [],
   )) {
     throw new Error(
       `operation ${operation.id} output mappings differ from its checked BPMN origin`,
     );
   }
 
-  const expectedRoute = expectedServiceTaskRoute(checkedNode, semanticProcess);
+  const expectedRoute = checkedNode.kind === "serviceTask"
+    ? expectedServiceTaskRoute(checkedNode, semanticProcess)
+    : null;
   if (!isDeepStrictEqual(operation.bpmnErrorRoute, expectedRoute)) {
     throw new Error(
       `operation ${operation.id} BPMN Error route differs from its checked BPMN origin`,

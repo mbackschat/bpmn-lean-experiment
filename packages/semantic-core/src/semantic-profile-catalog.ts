@@ -40,3 +40,9 @@ export const SemanticProfileId = Object.freeze({
   UserTaskPreservedNotation:
     "bpmn-2.0.2-user-task-preserved-notation-draft",
 } as const);
+
+/** Runtime-frozen capabilities admitted only while a semantic checkpoint is under review. */
+export const SemanticCheckpointProfileId = Object.freeze({
+  ConfiguredTask:
+    "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+} as const);

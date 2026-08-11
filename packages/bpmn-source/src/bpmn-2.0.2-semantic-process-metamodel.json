@@ -1,17 +1,22 @@
 {
-  "kind": "boundedCmofFactManifest",
-  "extraction": "bounded-cmof-fact-extraction",
+  "kind": "boundedBpmnMetamodelFactManifest",
+  "extraction": "bounded-machine-readable-fact-extraction",
   "source": {
     "specification": "OMG BPMN 2.0.2",
     "artifact": "BPMN20.cmof",
     "sha256": "72f5bf035da7bea80dc53131a22e6ba466789abd7437532e64abd3a7cff20139"
+  },
+  "schemaSource": {
+    "specification": "OMG BPMN 2.0.2",
+    "artifact": "Semantic.xsd",
+    "sha256": "c4318842f7d2bbc262d7954c9452c501db16f0868eac0b8732ec5d7fb384d9a7"
   },
   "coverage": {
     "status": "partial",
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, Error, UserTask, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, Error, Task, UserTask, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, ExtensionElements, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
@@ -22,7 +27,7 @@
       "StartEvent.isInterrupting default",
       "Gateway.gatewayDirection type and default",
       "Definitions.expressionLanguage default, FormalExpression.language, SequenceFlow.conditionExpression, ExclusiveGateway.default, InclusiveGateway.default, and EventBasedGateway instantiate and type",
-      "BaseElement.id and Definitions.rootElements identity and containment",
+      "BaseElement.id and singleton extensionElements plus Definitions.rootElements identity and containment",
       "CallActivity.calledElementRef target and bounds",
       "BoundaryEvent attachment and interrupting default",
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
@@ -51,6 +56,8 @@
     "terminateEventDefinitionType": "bpmn:TerminateEventDefinition",
     "errorType": "bpmn:Error",
     "formalExpressionType": "bpmn:FormalExpression",
+    "taskType": "bpmn:Task",
+    "extensionElementsType": "bpmn:ExtensionElements",
     "userTaskType": "bpmn:UserTask",
     "receiveTaskType": "bpmn:ReceiveTask",
     "serviceTaskType": "bpmn:ServiceTask",
@@ -280,6 +287,14 @@
       "lower": 1,
       "upper": 1,
       "containment": false
+    },
+    {
+      "owner": "BaseElement",
+      "name": "extensionElements",
+      "type": "ExtensionElements",
+      "lower": 0,
+      "upper": 1,
+      "containment": true
     },
     {
       "owner": "Definitions",

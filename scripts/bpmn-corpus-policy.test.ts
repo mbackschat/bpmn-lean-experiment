@@ -83,3 +83,26 @@ test("the CMOF calibration fails rather than skipping missing evidence", () => {
   assert.match(result.stderr, /setup-external-sources\.sh verify/u);
   assert.doesNotMatch(result.stdout, /skipped/iu);
 });
+
+test("the Semantic XSD calibration fails rather than skipping missing evidence", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/check-bpmn-semantic-process-metamodel.ts"],
+    {
+      cwd: projectRoot,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        BPMN_CMOF_PATH: path.resolve(
+          projectRoot,
+          "../oss/omg-bpmn-2.0.2/machine-readable/BPMN20.cmof",
+        ),
+        BPMN_EXTERNAL_ROOT: path.join(tmpdir(), "absent-bpmn-corpus"),
+      },
+    },
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /normative Semantic XSD is absent/u);
+  assert.doesNotMatch(result.stdout, /skipped/iu);
+});

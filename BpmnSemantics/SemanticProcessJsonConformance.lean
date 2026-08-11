@@ -26,6 +26,10 @@ private def checkedProcessAccepted (contents : String) : Bool :=
   | .ok _ => true
   | .error _ => false
 
+private def checkedNodeDocument (node : String) : String :=
+  "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[" ++
+    node ++ "],\"sequenceFlows\":[]}"
+
 private def programAccepted (contents : String) : Bool :=
   match parseWireJson contents >>= decodeProgram with
   | .ok _ => true
@@ -135,7 +139,15 @@ theorem checked_node_shapes_reject_missing_extra_and_malformed_fields :
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"\",\"kind\":\"terminateEndEvent\"}],\"sequenceFlows\":[]}" = false ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"end\",\"kind\":\"terminateEndEvent\",\"unexpected\":true}],\"sequenceFlows\":[]}" = false ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":1,\"kind\":\"terminateEndEvent\"}],\"sequenceFlows\":[]}" = false ∧
-    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"end\",\"id\":\"end\",\"kind\":\"terminateEndEvent\"}],\"sequenceFlows\":[]}" = false := by
+    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"end\",\"id\":\"end\",\"kind\":\"terminateEndEvent\"}],\"sequenceFlows\":[]}" = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"id\":\"task\",\"kind\":\"configuredTask\"}") = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"configuredTask\",\"unexpected\":true}") = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":false,\"id\":\"task\",\"kind\":\"configuredTask\"}") = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"\",\"kind\":\"configuredTask\"}") = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"id\":\"task\",\"kind\":\"configuredTask\"}") = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"serviceTask\"}") = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:wrong-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"configuredTask\"}") = false ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"\",\"protocol\":\"\"},\"id\":\"task\",\"kind\":\"configuredTask\"}") = false := by
   native_decide
 
 theorem checked_node_exact_shapes_are_accepted :
@@ -143,7 +155,8 @@ theorem checked_node_exact_shapes_are_accepted :
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"m\",\"kind\":\"exclusiveMerge\"}],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"channel\":{\"kind\":\"operationMessage\",\"interfaceId\":\"i\",\"interfaceOperationId\":\"o\",\"messageId\":\"m\"},\"id\":\"start\",\"kind\":\"messageStartEvent\"}],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"durationLiteral\":\"PT1S\",\"id\":\"start\",\"kind\":\"timerStartEvent\"}],\"sequenceFlows\":[]}" = true ∧
-    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"end\",\"kind\":\"terminateEndEvent\"}],\"sequenceFlows\":[]}" = true := by
+    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"end\",\"kind\":\"terminateEndEvent\"}],\"sequenceFlows\":[]}" = true ∧
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"configuredTask\"}") = true := by
   native_decide
 
 theorem semantic_operation_exact_shapes_are_accepted :

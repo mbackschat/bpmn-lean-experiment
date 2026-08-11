@@ -73,6 +73,12 @@ import {
 import {
   terminateEndSourcePropertiesValid,
 } from "./terminate-end-event-source.js";
+import {
+  configuredTaskProjectionPolicyForProfile,
+} from "./configured-task-source.js";
+import type {
+  ConfiguredTaskProjectionPolicy,
+} from "./configured-task-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
@@ -104,6 +110,8 @@ export function compileCheckedProcess(
   sourceOverlay: SourceOverlayIdentity | null,
 ): CheckedCompilationProjection {
   const capability = preservationCapability(semanticProfile);
+  const configuredTaskPolicy =
+    configuredTaskProjectionPolicyForProfile(semanticProfile);
   const definitions = asElement(rootElement);
   if (
     definitions === undefined ||
@@ -195,7 +203,7 @@ export function compileCheckedProcess(
   }
 
   const { nodes: sourceNodes, flows: sourceFlows, unexecuted } =
-    partitionScopedElements(scoped.elements);
+    partitionScopedElements(scoped.elements, configuredTaskPolicy);
   classification.push(...unexecutedFlowElementRejections(unexecuted));
   const flowKeyRejections = projectedFlowElementKeyRejections(
     definitions,
@@ -234,6 +242,7 @@ export function compileCheckedProcess(
     definitions,
     selection,
     capability,
+    configuredTaskPolicy,
   );
   const nodeScopes = projectOwnership(
     sourceNodes,
@@ -321,6 +330,7 @@ export function compileCheckedProcess(
  */
 function partitionScopedElements(
   elements: ReadonlyArray<ScopedSourceElement>,
+  configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
 ): Readonly<{
   nodes: ReadonlyArray<ScopedSourceElement>;
   flows: ReadonlyArray<ScopedSourceElement>;
@@ -330,7 +340,7 @@ function partitionScopedElements(
   const flows: ScopedSourceElement[] = [];
   const unexecuted: ScopedSourceElement[] = [];
   for (const scoped of elements) {
-    if (isProjectableNodeType(scoped.element.$type)) {
+    if (isProjectableNodeType(scoped.element.$type, configuredTaskPolicy)) {
       nodes.push(scoped);
     } else if (scoped.element.$type === bpmnTypes.sequenceFlowType) {
       flows.push(scoped);

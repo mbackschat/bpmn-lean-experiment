@@ -2,9 +2,9 @@
 
 ## Status
 
-**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, the evidence-closed Message Start Event specification, the registered Timer Start Event capability, and the registered Terminate End capability. The registered Message Start and Timer Start capabilities each implement one exact top-level Start Event through a separate checked node, IL initiation operation, and start stimulus. The Terminate capability adds identity-only checked source and a no-output containing-scope operation without adding a public command or observation field.
+**Implemented draft contract.** This document owns the project-authored checked BPMN graph, Semantic Process intermediate language, bounded lowering, operational meanings, proof boundary, and growth rules used by the sequential User Task, balanced two-branch parallel, Intermediate Catch Timer, direct payload-free Intermediate Catch Message, payload-free and mapped Service Task effects, interrupting boundary Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway selected-branch synchronization, bounded Event-Based Gateway Message/Timer deferred choice, ordinary embedded Sub-Process completion, direct-parent Sub-Process Error propagation, bounded called-Process Call Activity, the evidence-closed resumption-bounded cyclic-control-flow specification, the evidence-closed Message Start Event specification, the registered Timer Start Event capability, the registered Terminate End capability, and the unregistered configured Task semantic checkpoint. The configured Task retains a distinct checked constructor and lowers to the existing neutral effect operation without widening runtime or public contracts.
 
-The implemented language slice is deliberately bounded to the approved none Start Event, one exact top-level Message Start Event, one exact top-level `PT1S` Timer Start Event in its registered profile, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, one identity-only Terminate End under its registered profile, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
+The implemented language slice is deliberately bounded to the approved none Start Event, one exact top-level Message Start Event, one exact top-level `PT1S` Timer Start Event in its registered profile, User Task, exact `PT1S` Intermediate Catch Timer Event, one directly addressed payload-free Intermediate Catch Message Event, one exact non-instantiating Exclusive Event-Based Gateway configuration containing those Message and Timer catches, three profile-mapped Service Task source shapes, one exact versioned configured Task extension at its unregistered checkpoint, one exact attached interrupting Service Task Error route, one exact-code Error End Event with a direct interrupting boundary handler on its enclosing embedded Sub-Process, one identity-only Terminate End under its registered profile, diverging and converging Parallel Gateways, one exact divergent Exclusive Gateway shape under Simple Boolean v1, one identity-only converging Exclusive Gateway shape within the evidence-closed cycle profile, one exact structured Inclusive split/task/join region under the same expression language, one level of embedded Sub-Process scope, one exact in-document called-Process Call Activity, and none End Event semantics. This specification does not claim a universal lowering for BPMN 2.0.2.
 
 The topology-specific executable representation and evaluator path are absent. No parallel production representation, compatibility reader, or delegated topology evaluator is permitted.
 
@@ -152,6 +152,12 @@ type CheckedServiceTask = DeepReadonly<{
   bpmnErrorRoute: CheckedBpmnErrorRoute | null;
 }>;
 
+type CheckedConfiguredTask = DeepReadonly<{
+  kind: "configuredTask";
+  id: string;
+  descriptor: EffectDescriptor;
+}>;
+
 type CheckedNode = DeepReadonly<
   | {
       kind: "noneStartEvent";
@@ -214,6 +220,7 @@ type CheckedNode = DeepReadonly<
       >;
     }
   | CheckedServiceTask
+  | CheckedConfiguredTask
   | {
       kind: "parallelGateway";
       id: string;
@@ -590,6 +597,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
 | exact payload-free direct-Message Receive Task | `awaitMessage` with Receive Task identity and the resolved direct Message arm; no Interface or Operation is synthesized |
 | exact payload-free Service Task source shape | `awaitEffect` with the registered neutral Activity/probe descriptor and empty mappings |
+| exact configured Task extension checkpoint | `awaitEffect` with the Activity/probe descriptor, empty mappings, no BPMN Error route, and endpoint-derived control places; distinct checked Task identity is retained before lowering |
 | bounded mapped-success Service Task source shape | `awaitEffect` with the registered neutral Activity/mapped-success descriptor, one literal input, and one local-reference output mapping |
 | bounded mapped-boundary-Error Service Task source shape | `awaitEffect` with the registered neutral Activity/mapped-boundary-error descriptor, one literal/local-reference mapping pair, and one committed `bpmnErrorRoute` |
 | exact-code Error End Event with one direct enclosing Sub-Process boundary Error | `throwError` with the throwing Error identity and the checked, resolved interrupting handler |
@@ -669,7 +677,7 @@ The semantic evaluator receives one explicit stimulus at a time and does not def
 
 `awaitEffect` is enabled when its input control place contains at least one token and no occurrence for that firing already exists. Firing consumes exactly one input token, evaluates the admitted pure input mappings, and commits one effect occurrence containing full identity, descriptor, immutable arguments, output mappings, and the output control place.
 
-The payload-free Service Task has empty mappings and accepts only the empty successful result. The mapped-success slice evaluates one admitted string literal into the one source-named Activity-local argument. A matching successful `completeEffect` accepts only the exact typed local patch required by the active operation. It applies the operation's source-named output mapping to Process scope, removes the effect wait and Activity-local state, adds one normal output token, and resumes closure. A malformed patch or mismatched occurrence rejects with exact state preservation.
+The payload-free Service Task and configured Task checkpoint have empty mappings and accept only the empty successful result. The configured source remains distinct through checked admission and specializes to the same neutral Activity/probe operation. The mapped-success slice evaluates one admitted string literal into the one source-named Activity-local argument. A matching successful `completeEffect` accepts only the exact typed local patch required by the active operation. It applies the operation's source-named output mapping to Process scope, removes the effect wait and Activity-local state, adds one normal output token, and resumes closure. A malformed patch or mismatched occurrence rejects with exact state preservation.
 
 The mapped-boundary-Error slice extends the same operation with one immutable exact-code Error route and extends variable values with a closed `string`/`null` union. A matching `bpmnError` result carries a validated Activity-local patch and optional non-empty message. Under the selected CIB-specific profile, the evaluator atomically installs the patch, applies the program-owned output mapping, removes the effect wait and Activity-local state, abandons the normal output, adds the boundary-route token, and resumes closure. An occurrence mismatch, non-matching Error code, or malformed patch rejects with exact state preservation. The Error route stays definition-only; code and message do not enter canonical state.
 
@@ -847,6 +855,7 @@ The maintained implementation supports exactly:
 - one finite acyclic linear composition containing exactly one exact `PT1S` Intermediate Catch Timer Event and one User Task under the profile-parameterized admission specification;
 - one directly addressed payload-free Intermediate Catch Message Event plus one User Task in either finite acyclic linear order under the profile-parameterized admission specification;
 - one exact Service Task binding under its single-token success-only effect capsule;
+- one unregistered exact configured Task extension in the linear Start-to-configured-to-User-to-End checkpoint, retained as distinct checked source and lowered to the existing payload-free Activity/probe effect operation;
 - one bounded mapped-success Service Task with arbitrary exact source identities, one literal string input, and one local-reference output mapping;
 - one bounded mapped-boundary-Error Service Task with arbitrary exact source identities, the same mapping forms, and one attached exact-code interrupting Error route;
 - diverging and converging Parallel Gateways under the recorded direction and arity restrictions;

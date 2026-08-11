@@ -74,6 +74,12 @@ import {
   projectErrorEndEvent,
 } from "./subprocess-error-source.js";
 import { projectTerminateEndEvent } from "./terminate-end-event-source.js";
+import {
+  projectConfiguredTask,
+} from "./configured-task-source.js";
+import type {
+  ConfiguredTaskProjectionPolicy,
+} from "./configured-task-source.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
@@ -86,6 +92,7 @@ export function projectCheckedNodes(
   definitions: ElementRecord,
   rootSelection: RootDefinitionSelection,
   capability: PreservationCapability | undefined,
+  configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
 ): ReadonlyArray<CheckedNode> | undefined {
   const projected = elements.map((source) => {
     const element = executedProjectionView(source, capability);
@@ -152,6 +159,10 @@ export function projectCheckedNodes(
         );
       case bpmnTypes.serviceTaskType:
         return projectServiceTask(element, definitions, id);
+      case bpmnTypes.taskType:
+        return configuredTaskPolicy === undefined
+          ? undefined
+          : projectConfiguredTask(element, id, configuredTaskPolicy);
       case bpmnTypes.parallelGatewayType: {
         const direction = classifyGateway(element, id, flows);
         return direction === undefined
@@ -252,8 +263,12 @@ export function projectCheckedSequenceFlows(
     : undefined;
 }
 
-export function isProjectableNodeType(type: unknown): boolean {
-  return [
+export function isProjectableNodeType(
+  type: unknown,
+  configuredTaskPolicy?: ConfiguredTaskProjectionPolicy,
+): boolean {
+  return (configuredTaskPolicy !== undefined &&
+      type === configuredTaskPolicy.taskType) || [
     bpmnTypes.startEventType,
     bpmnTypes.subProcessType,
     bpmnTypes.boundaryEventType,

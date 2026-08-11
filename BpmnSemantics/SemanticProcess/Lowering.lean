@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.LoweringIdentity
+import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
 import BpmnSemantics.SemanticProcess.TimerStartLowering
 import BpmnSemantics.SemanticProcess.TerminateEndLowering
 
@@ -348,6 +349,13 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
         { elementId := id, channel }, scopeId)
+  | .configuredTask id descriptor =>
+      lowerConfiguredTask?
+        (checkedNodeScopeId? source id)
+        id
+        descriptor
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
   | .serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitEffect

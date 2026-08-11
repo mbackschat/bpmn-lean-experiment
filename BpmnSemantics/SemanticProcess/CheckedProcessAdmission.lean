@@ -230,6 +230,10 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
         | .operationMessage .. => false
         | .directMessage .. => channel.identifiersNonempty) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .configuredTask id descriptor =>
+      descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
+        descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1" &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1
   | .serviceTask id descriptor inputMappings outputMappings route =>
       (descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
         ((descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1" &&

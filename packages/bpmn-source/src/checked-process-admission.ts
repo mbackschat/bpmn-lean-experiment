@@ -19,6 +19,9 @@ import {
 import type {
   CheckedProcessGraph,
 } from "./checked-process-graph-admission.js";
+import {
+  hasSelectedConfiguredTaskTopology,
+} from "./configured-task-checked-admission.js";
 
 const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
@@ -51,6 +54,7 @@ export function isAdmittedCheckedProcess(
     hasSelectedCyclicTopology(semanticProfile, graph) &&
     hasSelectedInclusivePairing(semanticProfile, graph) &&
     hasSelectedEventRaceTopology(semanticProfile, graph) &&
+    hasSelectedConfiguredTaskTopology(semanticProfile, graph) &&
     hasSelectedTerminateTopology(
       semanticProfile,
       graph,

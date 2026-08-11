@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved for implementation after independent cold proposal review; not implemented.** This proposal selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive.
+**First semantic checkpoint implemented and integration-green; independent checkpoint review pending.** The unregistered checkpoint selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive. Profile/scenario registration and live Temporal evidence remain paused until checkpoint approval.
 
 ## Independent cold-review receipt
 
@@ -285,31 +285,31 @@ The owner inventory was mechanically derived with `node scripts/what-binds.ts`. 
 
 | Owner | Headroom to 600 nonblank lines | Required consequence |
 |---|---:|---|
-| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 365 | Add the distinct configured Task constructor only. |
-| [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 558 | Add the checkpoint and later registered profile identity without changing prior values. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 41 | Extract checked/program shape catalogs first, then add exact configured-node and existing-effect cardinalities plus descriptor detail. |
-| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 537 | Keep the new profile whole-graph acyclic. |
-| [moddle adapter](../../packages/bpmn-source/src/moddle-adapter.ts) | 444 | Register one package-local extension descriptor through the standard constructor option. |
-| [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 210 | Derive the closed profile-aware projection policy before partitioning and preserve the exact non-selected-profile Task diagnostic. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 219 | Accept the same closed projection policy and delegate selected `bpmn:Task` values to a new cohesive configured source reader. |
-| [projected-key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 323 | Add the exact `Task` plus `extensionElements` key shape. |
-| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 280 | Add both unavoidable configured-node switches and `1 -> 1` ownership. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 150 | Add exact cardinality and Start-to-configured-to-User-to-End topology, not cardinality alone. |
-| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 58 | Delegate one configured arm to a new cohesive lowerer; do not grow the near-limit generic test owner. |
-| [singleton containment admission](../../packages/bpmn-source/src/singleton-containment-admission.ts) | 475 | Consume the inherited `BaseElement.extensionElements` upper bound before parser projection can erase a duplicate. |
+| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 358 | Add the distinct configured Task constructor only. |
+| [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 553 | Add the checkpoint and later registered profile identity without changing prior values. |
+| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 481 | Extract checked/program shape catalogs first, then add exact configured-node and existing-effect cardinalities plus descriptor detail. |
+| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 533 | Keep the new profile whole-graph acyclic. |
+| [moddle adapter](../../packages/bpmn-source/src/moddle-adapter.ts) | 441 | Register one package-local extension descriptor through the standard constructor option. |
+| [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 200 | Derive the closed profile-aware projection policy before partitioning and preserve the exact non-selected-profile Task diagnostic. |
+| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 204 | Accept the same closed projection policy and delegate selected `bpmn:Task` values to a new cohesive configured source reader. |
+| [projected-key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 317 | Add the exact `Task` plus `extensionElements` key shape. |
+| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 279 | Add both unavoidable configured-node switches and `1 -> 1` ownership. |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 146 | Add exact cardinality and Start-to-configured-to-User-to-End topology, not cardinality alone. |
+| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 55 | Delegate one configured arm to a new cohesive lowerer; do not grow the near-limit generic test owner. |
+| [singleton containment admission](../../packages/bpmn-source/src/singleton-containment-admission.ts) | 469 | Consume the inherited `BaseElement.extensionElements` upper bound before parser projection can erase a duplicate. |
 | [source compiler](../../packages/bpmn-source/src/compile.ts) | 236 | Keep the shared raw containment check before checked compilation and pass no raw XML into projectors. |
-| [metamodel checker](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 340 | Calibrate the Task, extension wildcard, and `BaseElement.extensionElements` upper-bound facts actually consumed. |
-| [projected-key test](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 154 | Register the new projector and prefix-independent exact-key behavior. |
-| [singleton-containment test](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | 514 | Add the duplicate `extensionElements` discriminator to the existing parser-erasure oracle. |
+| [metamodel checker](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 247 | Calibrate the Task, extension wildcard, and `BaseElement.extensionElements` upper-bound facts actually consumed. |
+| [projected-key test](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 152 | Register the new projector and prefix-independent exact-key behavior. |
+| [singleton-containment test](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | 480 | Add the duplicate `extensionElements` discriminator to the existing parser-erasure oracle. |
 
 The new focused source test owns the complete positive/negative matrix, including the same bytes under a non-selected profile retaining the exact `unsupportedElementType` diagnostic. The shared singleton-containment test owns the repeated-container parser-erasure discriminator. [Semantic Process lowering tests](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) already use 571/600 nonblank lines and [the BPMN-source package integration test](../../packages/bpmn-source/test/bpmn-source.test.ts) uses 506/600, so neither receives the feature matrix.
 
 | Owner | Headroom to 600 nonblank lines | Required consequence |
 |---|---:|---|
-| [artifact consistency](../../scripts/contract-artifact-consistency.ts) | 0 | Extract before change; leave orchestration only. |
-| [contract artifact projection](../../scripts/contract-artifacts.ts) | 16 | Add only the exhaustive classifier arm; extract any additional responsibility. |
+| [artifact consistency](../../scripts/contract-artifact-consistency.ts) | 50 | Extract before change; leave orchestration only. |
+| [contract artifact projection](../../scripts/contract-artifacts.ts) | 13 | Add only the exhaustive classifier arm; extract any additional responsibility. |
 | [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 385 | Register the one product-neutral extension scenario with no CIB target. |
-| [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 61 | Keep existing shared tests; add configured effect-origin/profile tests in a new cohesive owner. |
+| [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 101 | Keep existing shared tests; add configured effect-origin/profile tests in a new cohesive owner. |
 | [pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 24 | Put configured cases in a capsule-owned module and add only one import/spread. |
 | [pipeline test](../../packages/differential/test/pipeline.test.ts) | 123 | Update only the exact ordered inventory and end-to-end assertion. |
 | [pipeline catalog test](../../packages/differential/test/pipeline-catalog.test.ts) | 246 | Lock additive profile/case classification and meaningful mutation. |
@@ -321,14 +321,14 @@ Strict [checked-process schema](../../contracts/schemas/checked-process.schema.j
 
 | Owner | Headroom to 600 nonblank lines | Required consequence |
 |---|---:|---|
-| [semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 122 | Add distinct checked configured Task only; the operation union stays unchanged. |
-| [checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 357 | Decode the exact configured node and descriptor strictly. |
-| [JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 437 | Add exact/missing/extra/empty/duplicate/mismatch facts at the existing controlled decision boundary. |
-| [checked graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 466 | Add configured `1 -> 1` arity and reachability classification. |
-| [checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 286 | Count one configured Task separately from Service Task and other Tasks. |
-| [lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 76 | Delegate one configured lowering specialization; add no unrelated proof. |
-| [profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 256 | Require checked configured count 1 while the program count remains effect 1 and User Task 1. |
-| [conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 583 | Import one independently buildable configured Task conformance owner. |
+| [semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 120 | Add distinct checked configured Task only; the operation union stays unchanged. |
+| [checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 347 | Decode the exact configured node and descriptor strictly. |
+| [JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 425 | Add exact/missing/extra/empty/duplicate/mismatch facts at the existing controlled decision boundary. |
+| [checked graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 464 | Add configured `1 -> 1` arity and reachability classification. |
+| [checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 282 | Count one configured Task separately from Service Task and other Tasks. |
+| [lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 68 | Delegate one configured lowering specialization; add no unrelated proof. |
+| [profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 205 | Require checked configured count 1 while the program count remains effect 1 and User Task 1. |
+| [conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 582 | Import one independently buildable configured Task conformance owner. |
 
 New `BpmnSemantics/ConfiguredTaskConformance.lean` proves the binding, distinctness, lowering specialization, effect/User-Task closure, refusal, normalized Service Task comparison, and mutations. The frozen direct checked-source experiment remains unsupported and receives explicit fail-closed arms in [decomposition](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) at 171/600, [transition](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) at 313/600, [coverage](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) at 251/600, [graph](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) at 86/600, and [chain](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) at 195/600. Scenario, Admission, and Frontier use non-exhaustive facts and need no feature edit unless the post-widening sweep proves otherwise.
 

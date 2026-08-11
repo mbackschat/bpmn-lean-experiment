@@ -51,6 +51,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .serviceTask id _ _ _ _ =>
       (incomingFlows source id).length = 1 &&
         (outgoingFlows source id).length = 1
+  | .configuredTask .. => false
   | .embeddedSubProcess _ _
   | .callActivity _ _
   | .boundaryErrorEvent ..

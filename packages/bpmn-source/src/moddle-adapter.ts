@@ -1,5 +1,9 @@
 import { BpmnModdle } from "bpmn-moddle";
 
+import configuredTaskModdle from "./bpmn-lean-configured-task-moddle.json" with {
+  type: "json",
+};
+
 import {
   locateContainedElements,
   locatedElement,
@@ -28,7 +32,7 @@ export async function importBpmnGraph(
   xml: string,
   deadlineMs: number,
 ): Promise<ImportedBpmnGraph> {
-  const moddle = new BpmnModdle();
+  const moddle = new BpmnModdle({ bpmnLean: configuredTaskModdle });
   const result = await withDeadline(
     () => moddle.fromXML(xml),
     deadlineMs,

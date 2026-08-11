@@ -152,6 +152,7 @@ function hasSelectedArity(
     case CheckedNodeKind.IntermediateCatchMessageEvent:
     case CheckedNodeKind.ReceiveTask:
     case CheckedNodeKind.ServiceTask:
+    case CheckedNodeKind.ConfiguredTask:
       return incoming === 1 && outgoing === 1;
     case CheckedNodeKind.BoundaryErrorEvent:
     case CheckedNodeKind.TimerBoundaryEvent:

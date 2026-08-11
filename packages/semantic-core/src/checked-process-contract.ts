@@ -34,6 +34,7 @@ export enum CheckedNodeKind {
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
   ReceiveTask = "receiveTask",
   ServiceTask = "serviceTask",
+  ConfiguredTask = "configuredTask",
   ParallelGateway = "parallelGateway",
   ExclusiveMerge = "exclusiveMerge",
   ExclusiveGateway = "exclusiveGateway",
@@ -91,6 +92,12 @@ type CheckedServiceTask = DeepReadonly<{
   inputMappings: VariableMapping[];
   outputMappings: VariableMapping[];
   bpmnErrorRoute: CheckedBpmnErrorRoute | null;
+}>;
+
+type CheckedConfiguredTask = DeepReadonly<{
+  kind: CheckedNodeKind.ConfiguredTask;
+  id: string;
+  descriptor: EffectDescriptor;
 }>;
 
 export type CheckedNode =
@@ -171,6 +178,7 @@ export type CheckedNode =
       >;
     }>
   | CheckedServiceTask
+  | CheckedConfiguredTask
   | DeepReadonly<{
       kind: CheckedNodeKind.ParallelGateway;
       id: string;

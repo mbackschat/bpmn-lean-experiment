@@ -78,6 +78,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .intermediateCatchTimerEvent _ _ => none
   | .intermediateCatchMessageEvent _ _ => none
   | .receiveTask _ _ => none
+  | .configuredTask _ _ => none
   | .serviceTask _ _ _ _ _ => none
   | .embeddedSubProcess _ _ => none
   | .callActivity _ _ => none
@@ -144,6 +145,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | intermediateCatchMessageEvent id channel =>
       simp [fireNode?] at result
   | receiveTask id channel =>
+      simp [fireNode?] at result
+  | configuredTask id descriptor =>
       simp [fireNode?] at result
   | serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
       simp [fireNode?] at result
