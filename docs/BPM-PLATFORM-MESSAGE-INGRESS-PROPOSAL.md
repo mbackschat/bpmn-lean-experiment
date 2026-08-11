@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved; first-green checkpoint implemented and pending independent semantic review.** The committed checkpoint adds the exact deployed-definition capability, strict public publication contract, shared SQLite schema epoch, durable retry and deduplication lifecycle, and handle-free direct Workflow-start host boundary. HTTP routes, server composition, UI, and live/browser evidence remain paused through checkpoint approval. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
+**Owner-approved; first-green semantic checkpoint approved, downstream evidence active.** The committed checkpoint adds the exact deployed-definition capability, strict public publication contract, shared SQLite schema epoch, durable retry and deduplication lifecycle, and handle-free direct Workflow-start host boundary. Independent review approved target `8f3c7c1` with no findings. HTTP routes, server composition, UI, and live/browser evidence are now the active closure lanes. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
@@ -305,5 +305,5 @@ The nearest unsupported claim is that a matching retained Memo independently est
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `4223ded` | `fork-turns-none` | `approve-with-required-edits` | `ce180a9` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `8f3c7c1` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
