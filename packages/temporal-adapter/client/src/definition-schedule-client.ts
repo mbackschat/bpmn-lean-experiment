@@ -315,7 +315,7 @@ function projectDescription(
         month: calendar.month,
         year: calendar.year,
         dayOfWeek: calendar.dayOfWeek,
-        comment: calendar.comment,
+        comment: normalizeOptionalSdkText(calendar.comment),
       })),
       intervalsCount: description.spec.intervals?.length ?? 0,
       skippedCalendarsCount: description.spec.skip?.length ?? 0,
@@ -394,6 +394,11 @@ function countTypedSearchAttributes(
     return value?.length ?? 0;
   }
   return value.getAll().length;
+}
+
+/** Proto decoding materializes an omitted optional string as the neutral empty value. */
+function normalizeOptionalSdkText(value: string | undefined): string | undefined {
+  return value === "" ? undefined : value;
 }
 
 function projectExecutionAction(

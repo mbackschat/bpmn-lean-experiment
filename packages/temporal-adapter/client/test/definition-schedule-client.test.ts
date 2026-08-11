@@ -50,8 +50,10 @@ test("describes, pauses, and deletes by Schedule identity without returning a ha
   ]);
   assert.equal(description.scheduleId, "schedule-42");
   assert.equal(description.spec.startAtEpochMs, dueAtEpochMs);
+  assert.equal(description.spec.calendars[0]?.comment, undefined);
   assert.equal(description.info.nextActionEpochMs[0], dueAtEpochMs);
   assert.equal(description.action.retry?.maximumAttempts, 1);
+  assert.equal(description.action.priorityConfigured, false);
   assert.equal(JSON.stringify(description).includes(privateHandleSentinel), false);
 });
 
@@ -83,7 +85,7 @@ function rawDescription(scheduleId: string): unknown {
         month: exact("JANUARY"),
         year: exact(2030),
         dayOfWeek: [{ start: "SUNDAY", end: "SATURDAY", step: 1 }],
-        comment: undefined,
+        comment: "",
       }],
       intervals: [],
       skip: [],
@@ -108,6 +110,7 @@ function rawDescription(scheduleId: string): unknown {
       workflowExecutionTimeout: undefined,
       workflowRunTimeout: undefined,
       workflowTaskTimeout: undefined,
+      priority: {},
     },
     policies: {
       overlap: "SKIP",
