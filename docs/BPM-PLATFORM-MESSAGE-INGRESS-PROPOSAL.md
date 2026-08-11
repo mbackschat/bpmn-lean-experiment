@@ -125,10 +125,10 @@ The publication repository stores the complete immutable request and definition 
 ```text
 reserved -> starting -> accepted
                     \-> indeterminate
-                    \-> integrityFailure
+reserved | starting | accepted | indeterminate -> integrityFailure
 ```
 
-`reserved` proves that no host call has been attempted. A compare-and-set to `starting` commits before any possibly transmitted start RPC. `accepted` and `indeterminate` are durable public tombstones, except that a later matching retained description may promote `indeterminate` to `accepted`. Internal `integrityFailure` is a durable non-public tombstone whose `PUT` and `GET` both return `500/internalFailure`. No state transitions back to `reserved` or otherwise becomes dispatchable after `starting`.
+`reserved` proves that no host call has been attempted. A compare-and-set to `starting` commits before any possibly transmitted start RPC. `accepted` and `indeterminate` are durable no-dispatch public terminal states, except that a later matching retained description may promote `indeterminate` to `accepted` and revalidation of any stored state may invalidate it to internal `integrityFailure`. `integrityFailure` is a durable non-public tombstone whose `PUT` and `GET` both return `500/internalFailure`. No state transitions back to `reserved` or otherwise becomes dispatchable after `starting`.
 
 The repository uses a new cohesive SQLite owner and table. `publication_id` is the primary key; semantic Process-instance identity and private Workflow address are independently unique. Definition and capability values are copied into the row. The implementation uses immediate transactions and compare-and-set transitions, but no database transaction remains open across a Product 1 or Temporal call.
 
@@ -140,7 +140,7 @@ The exact algorithm is:
 2. Run semantic and Temporal host admission against the exact `TriggerMessageStart` stimulus and program before reservation. Rejection returns `422` with zero publication rows and zero Workflow calls; stored-definition drift is an integrity failure.
 3. Begin an immediate transaction. If `publicationId` exists, require complete immutable public-request equality, then independently validate every stored private derived value and continue from its existing state. A changed public field is conflict; private drift is integrity failure. Otherwise generate and persist the semantic instance, command, private Workflow address, intent-marker protocol version, and digest in `reserved`, then commit.
 4. A `reserved` reconciler may compare-and-set to `starting`, commit, and perform exactly one direct start call. This is the only dispatch edge.
-5. Successful start acceptance moves `starting -> accepted`. `WorkflowExecutionAlreadyStartedError`, timeout, cancellation, transport failure, or another error after invocation does not establish success or authorize another start; reconcile by describing the existing private Workflow address without a Worker.
+5. A production-constructor failure before SDK invocation moves `starting -> integrityFailure` and returns `500` without a Workflow call. Successful start acceptance moves `starting -> accepted`. `WorkflowExecutionAlreadyStartedError`, timeout, cancellation, transport failure, or another error after SDK invocation does not establish success or authorize another start; reconcile by describing the existing private Workflow address without a Worker.
 6. A retained description whose Workflow type, task queue, semantic instance address, intent-marker protocol, and Memo digest all match moves `starting` or `indeterminate` to `accepted` under the separately tested constructor invariant. A divergent retained description moves to internal `integrityFailure`.
 7. `WorkflowNotFoundError` from an available describe call after the start may have been transmitted moves `starting -> indeterminate`, or leaves `indeterminate` unchanged. Any other describe failure leaves `starting` or `indeterminate` unchanged and returns `500`; unavailable evidence is not absence. A future `GET` or identical `PUT` may promote the item if the matching execution becomes describable, but it may not create another execution.
 8. Startup reconciles every `reserved`, `starting`, and `indeterminate` row before the HTTP server listens. It may dispatch only `reserved`; it applies the same describe-only rule to `starting` and `indeterminate`.
@@ -155,6 +155,7 @@ This state machine is intentionally at-most-once after the dispatch boundary. It
 | Existing publication with changed public request fields | existing row unchanged | no | `409/conflict` |
 | Stored generated identity, address, protocol, or digest drift | `integrityFailure` | no | `500/internalFailure` |
 | Reservation or `reserved -> starting` commit fails | no row or prior `reserved` row | only a later successful `reserved -> starting` CAS | `500/internalFailure` |
+| Production constructor fails before SDK invocation | `integrityFailure` | no | `500/internalFailure` |
 | Start returns success and `accepted` persistence succeeds | `accepted` | no | first resource `201`, identical retry `200` |
 | Start returns success but `accepted` persistence fails | prior `starting` row | no | `500/internalFailure`; later describe-only reconciliation |
 | Start throws `WorkflowExecutionAlreadyStartedError`, timeout, cancellation, transport, or another post-invocation error | `starting` | no | continue immediately to describe; otherwise the applicable describe result below |
@@ -216,6 +217,7 @@ The exact growing owners and mechanically measured headroom are:
 | `packages/engine-api/src/definition-capabilities.ts` | Add exact Message Start capability projection. | `30/600` | 20 guards, 1 registry |
 | `packages/engine-api/src/index.ts` | Export the new Product 1 operation. | `111/600` | 20 guards, 1 registry |
 | `packages/temporal-adapter/client/src/definition-start-client.ts` | Retain the shared branded lazy runtime only. | `136/600` | 20 guards, 1 registry |
+| `packages/temporal-adapter/client/package.json` | Export the selected `message-start` client subpath. | declarative manifest | 21 guards, 1 registry |
 | `platform/foundation/engine-gateway/src/index.ts` | Compose the new host and export its closed contract. | `186/600` | 33 guards, 3 registries |
 | `platform/foundation/engine-gateway/src/definition-schedule-gateway.ts` | Relinquish generic capability mapping; retain Schedule behavior. | `261/600` | 28 guards, 3 registries |
 | `platform/contracts/src/definitions.ts` | Widen public definition capabilities. | `95/600` | 28 guards, 2 registries |
@@ -226,6 +228,7 @@ The exact growing owners and mechanically measured headroom are:
 | `platform/modules/definitions/src/definition-public-values.ts` | Project complete public capabilities. | `36/600` | 28 guards, 3 registries |
 | `platform/modules/definitions/src/sqlite-definition-repository.ts` | Invoke the shared database epoch and retain definition rows. | `309/600` | 28 guards, 3 registries |
 | `platform/modules/definitions/src/sqlite-definition-schedule-repository.ts` | Invoke the shared epoch and decode widened embedded snapshots. | `574/600` | 28 guards, 3 registries |
+| `platform/modules/definitions/src/index.ts` | Export the publication service, repository, routes, contracts, and shared schema error. | `65/600` | 33 guards, 3 registries |
 | `platform/apps/server/src/composition.ts` | Wire publication recovery before listen. | `114/600` | 28 guards, 3 registries |
 | `platform/apps/web/src/definitions-api.ts` | Use extracted exact-definition comparison. | `276/600` | 28 guards, 3 registries |
 | `platform/apps/web/src/definition-schedule-api.ts` | Use extracted exact-definition comparison. | `269/600` | 28 guards, 3 registries |
@@ -238,7 +241,7 @@ The exact new cohesive source owners are:
 - Public contract: `platform/contracts/src/message-start-publications.ts`, `message-start-publication-decoders.ts`, `message-start-publication-routes.ts`, and their runtime and type-test partners, each bound by 28 guards and two registries.
 - Definitions module: `platform/modules/definitions/src/database-schema-epoch.ts`, `message-start-publication-contracts.ts`, `message-start-publication-values.ts`, `message-start-publication-service.ts`, `sqlite-message-start-publication-repository.ts`, `message-start-publication-http-routes.ts`, and their focused service, SQLite, and HTTP tests, each bound by 28 guards and three registries.
 - Web: one focused exact-definition comparison owner and test, then separate HTTP-only publication client, panel, and tests under `platform/apps/web`; each platform path is bound by 28 guards and three registries.
-- Showcase: `showcase/m2-message-start-ingress/package.json` is bound by 8 guards and one registry; its production host, live test, and browser test paths are each bound by 3 guards and `showcase/README.md`; that README itself is bound by 13 guards.
+- Showcase: `showcase/m2-message-start-ingress/README.md` is bound by 13 guards and one registry; `package.json` by 8 and one; `tsconfig.json` by 6 and one; `test/http-support.ts` and `test/temporal-support.ts` by 4 and one each; and `playwright.config.ts`, `src/host.ts`, `test/m2-message-start-ingress.test.ts`, and `e2e/message-start-ingress.spec.ts` by 3 and one each.
 - Governance: this proposal is bound by 31 guards and `docs/README.md`.
 
 The schedule repository has 26 lines of measured headroom, so its only feature edit is the shared epoch invocation and widened decoder use; a larger change requires extraction. The Workflow, Worker, protocol start stimulus, semantic core, checked graph, IL, and Lean files do not change. Product 2 never imports the Temporal client directly. Before adding a third web client, the duplicated exact-definition comparison is extracted and tested rather than copied again.

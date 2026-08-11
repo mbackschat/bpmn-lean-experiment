@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close the published Message Start ingress proposal review for M2.** Context-cold review of immutable target `4223ded` retained the one-target, no-fanout, at-most-once account and required bounded corrections to Memo evidence, the SQLite schema epoch, the closed failure matrix, and owner inventory. The corrections are committed; obtain the exact reviewer's warm audit before implementation. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
+1. **Active: close the published Message Start ingress proposal review for M2.** Context-cold review of immutable target `4223ded` retained the one-target, no-fanout, at-most-once account. Its first warm audit closed the Memo and SQLite epoch findings and retained two narrow corrections to lifecycle reachability and integration-path inventory. Commit those corrections and obtain the exact reviewer's second warm audit before implementation. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: send the committed Product 2 Message Start ingress correction target to the exact cold reviewer for warm audit.** The correction narrows Memo to a private intent marker plus a separately tested constructor invariant, adds a construction-time SQLite epoch, maps every start/describe/persistence result, and records exact owner bindings. Implementation remains paused through proposal approval.
+**Next action: commit the two retained Product 2 Message Start ingress corrections and send the target to the exact reviewer for its second warm audit.** Extend private-integrity invalidation to every revalidated stored state, classify pre-SDK constructor failure, and add the Temporal-client export, definitions index, and exact showcase support/config bindings. Implementation remains paused through proposal approval.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
