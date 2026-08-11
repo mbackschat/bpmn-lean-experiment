@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11 after renewed proposal correction audit `d21c2e3`; corrected semantic checkpoint independently approved at `9e811e6`.** The checkpoint admits omitted and parser-safe XSD-false `false` and `0` as structurally equivalent ordinary embedded Sub-Process inputs with distinct exact source identities, while retaining the reviewed true-valued exclusions and conforming lexical deferrals below. Registration, differential evidence, and live Temporal evidence may now resume. The profile is not yet registered or evidence-closed. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
+**Implementation and evidence are complete; closure review is pending.** Owner approval followed renewed proposal correction audit `d21c2e3`, and corrected semantic checkpoint `9e811e6` was independently approved before registration or durable evidence advanced. Registration commit `86ea992` graduated the exact standards-only profile, three answer-free scenarios, runnable example, and differential cases. Temporal evidence commit `c92cd27` added the Worker-replacement, stale-refusal, global-cancellation-mutation, history, and replay witnesses. The checkpoint admits omitted and parser-safe XSD-false `false` and `0` as structurally equivalent ordinary embedded Sub-Process inputs with distinct exact source identities, while retaining the reviewed true-valued exclusions and conforming lexical deferrals below. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
 
 ## Independent cold-review receipt
 
@@ -42,13 +42,13 @@ The proposal adds `BPMN-TERMINATE-END-01` to the [BPMN requirement ledger](../BP
 
 - Ledger citation lock for `BPMN-TERMINATE-END-01`: Clauses 10.5.6, 13.2, 13.3.4, and 13.5.6 plus Table 12.22
 
-The future profile and all three registered scenarios must carry that same complete normative citation set, including Clause 13.5.6 rather than inferring nested non-interference from the representative topology.
+The registered profile and all three registered scenarios carry that same complete normative citation set, including Clause 13.5.6 rather than inferring nested non-interference from the representative topology.
 
 ## CIB relationship
 
 No new CIB relationship, probe, profile delta, or retained result is selected. The pinned CIB implementation cancels concurrent executions in the current flow scope before ending that scope, which agrees with the normative account, but the standard is sufficiently precise and the project does not need CIB-specific public evidence to choose the semantics. Registered scenarios therefore have `cib: null`.
 
-The future profile reuses `CIB-AGR-0001`, `CIB-AGR-0002`, `CIB-AGR-0003`, `CIB-AGR-0007`, and `CIB-OP-0001` only for the already-reviewed sequential User Task, active-task, parallel, ordinary Sub-Process completion, and occurrence-mapping surfaces. None of those relationships is Terminate evidence, and no new Terminate relationship is added.
+The registered profile reuses `CIB-AGR-0001`, `CIB-AGR-0002`, `CIB-AGR-0003`, `CIB-AGR-0007`, and `CIB-OP-0001` only for the already-reviewed sequential User Task, active-task, parallel, ordinary Sub-Process completion, and occurrence-mapping surfaces. None of those relationships is Terminate evidence, and no new Terminate relationship is added.
 
 The CIB source remains selection research only. It is not semantic authority, a runtime dependency, or a reason to copy PVM cancellation machinery. If implementation uncovers an observable CIB result that differs from this account, work stops for classification before any compatibility profile is added.
 
@@ -79,7 +79,7 @@ The primary semantic negative applies a global-cancellation mutation to the nest
 
 ## Exact source profile
 
-One immutable standards-only profile is proposed as `bpmn-2.0.2-terminate-end-event-draft`. It admits one BPMN document with:
+One immutable standards-only profile is registered as `bpmn-2.0.2-terminate-end-event-draft`. It admits one BPMN document with:
 
 - one private executable top-level Process;
 - one ordinary embedded Sub-Process on the root line, followed by one Outer User Task and one root None End Event;
@@ -307,11 +307,11 @@ Pre-release replace-in-place policy applies. Checked-node and Semantic Process o
 
 Existing None End, Error End, `reachNoneEnd`, `completeScope`, regional Error/Timer cancellation, runtime state, canonical observations, and all pre-existing artifacts gain no field and retain exact serialized bytes. No retained cross-version Temporal history corpus exists, so cross-version replay remains unclaimed.
 
-The semantic checkpoint uses a separate runtime-frozen `SemanticCheckpointProfileId.TerminateEnd` catalog entry rather than product-registering the profile early. Graduation atomically moves the same literal into `SemanticProfileId`, removes the checkpoint-only catalog, and adds the required runnable product example. This preserves the current product-profile and product-example guards without hiding an implementation prerequisite.
+The semantic checkpoint used a separate runtime-frozen `SemanticCheckpointProfileId.TerminateEnd` catalog entry rather than product-registering the profile early. Registration commit `86ea992` atomically moved the same literal into `SemanticProfileId`, removed the checkpoint-only catalog, and added the required runnable product example. This preserved the product-profile and product-example guards without hiding an implementation prerequisite.
 
 ### Owners this implementation grows
 
-The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [document reviewability](../../scripts/document-reviewability.test.ts) rechecks each figure. A fresh Red measurement governs extraction before implementation.
+The owner inventory was mechanically derived with `node scripts/what-binds.ts`; [document reviewability](../../scripts/document-reviewability.test.ts) rechecks each figure. Implementation is complete, so these figures are closure-audit records rather than permission for further growth.
 
 | Owner | Headroom to 600 nonblank lines | Consequence |
 |---|---:|---|
@@ -373,7 +373,7 @@ Existing focused test owners also change where their exhaustive inventories wide
 | [metamodel-default admission](../../packages/bpmn-source/test/metamodel-default-admission.test.ts) | 436 | Retain registry-wide omitted/default equivalence as the graduation oracle. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 61 | Reject origin, input, scope, and output drift. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 30 | Extract a termination characterization owner rather than crowding this test. |
-| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 379 | Require at least one runnable example when the checkpoint-only profile graduates. |
+| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 379 | Require at least one runnable example for the registered profile. |
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 246 | Lock additive profiles, cases, standards-only targets, and mutations. |
 
 The seven experiment owners above are the current repository-built exhaustive consumers found by the checked-node and operation discriminant sweep. No experiment gains Terminate semantics. The implementation repeats the sweep after the unions widen and treats any new consumer as part of the same atomic change.
@@ -412,7 +412,7 @@ The nearest realistic counterexample is a Terminate End in a called child Proces
 
 Meaningful mutations are: terminate the root instead of the containing scope; remove only tokens; retain one wait family; erase unrelated parent work or Process variables; emit the parent token directly; remove the selected occurrence before `completeScope`; skip the aggregate End-count increment; expose a stable half-terminated state; infer cancellation from Event History; and omit one atomic registration. Each must reach a semantic, public, artifact, proof, or durable-host discriminator.
 
-At closure, [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) records commit-bounded code and documentation churn against Sub-Process Error propagation, the nearest completed increment that changed checked source, regional cancellation, Lean, TypeScript, strict wires, registered evidence, and Temporal Worker-replacement hosting.
+The implementation range `3b368a2..c92cd27` adds `3689` and removes `199` code lines, and adds `111` and removes `76` documentation lines. The approved nearest comparator is Sub-Process Error propagation at `+3370/-398` code and `+218/-133` documentation because both increments change checked source, regional cancellation, Lean, TypeScript, strict wires, registered evidence, and Temporal Worker-replacement hosting. Code additions rose by `319`, about 9.5%, while documentation additions fell by `107`, about 49.1%. The code increase establishes complete represented-owner-family cancellation, root and nested proof boundaries, three answer-free scenario and differential discriminators, and a test-owned durable global-cancellation mutation. Removing any of those mechanisms would weaken the reviewed claim, so no removable code process weight is manufactured. The existing metamodel-default guard exposed the explicit-false source contradiction before registration, while proposal and checkpoint corrections stayed inside the governed review cycle; no new process-assessment entry is warranted. [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) owns the durable measurement.
 
 ## Stop conditions
 
@@ -432,7 +432,7 @@ Stop and return to research or owner decision if:
 
 ## Owner decisions after review
 
-Owner approval is requested for these exact decisions:
+Owner approval covers these exact decisions:
 
 1. Select the nested parallel Trigger/Sibling witness and a reusable root-capable containing-scope termination operation.
 2. Add identity-only `TerminateEndEvent` and no-output `TerminateScope` variants while preserving existing End, cancellation, and completion values byte-for-byte.
