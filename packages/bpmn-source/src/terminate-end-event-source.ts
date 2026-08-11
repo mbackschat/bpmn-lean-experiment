@@ -43,7 +43,7 @@ export function projectTerminateEndEvent(
     : undefined;
 }
 
-/** The selected source profile requires omission of the Sub-Process kind discriminator. */
+/** The selected source profile requires one ordinary, non-Event Sub-Process. */
 export function terminateEndSourcePropertiesValid(
   elements: ReadonlyArray<ScopedSourceElement>,
   semanticProfile: string,
@@ -56,11 +56,11 @@ export function terminateEndSourcePropertiesValid(
   );
   return subProcesses.length === 1 &&
     subProcesses.every(({ element }) =>
-      !Object.hasOwn(element, "triggeredByEvent")
+      element.triggeredByEvent === undefined || element.triggeredByEvent === false
     );
 }
 
-/** Raw/imported cardinality lock for the one inline definition selected by this checkpoint. */
+/** Raw/imported cardinality lock for the one inline definition selected by this profile. */
 export function terminateEndContainmentCardinalities(
   semanticProfile: string,
 ): ReadonlyArray<ExactContainmentCardinality> {

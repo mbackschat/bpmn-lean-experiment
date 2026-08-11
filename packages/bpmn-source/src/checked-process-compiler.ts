@@ -190,7 +190,7 @@ export function compileCheckedProcess(
   if (!terminateEndSourcePropertiesValid(scoped.elements, semanticProfile)) {
     return unsupported(
       classification,
-      "The Terminate End checkpoint requires one ordinary embedded Sub-Process with no explicit scope-kind property.",
+      "The Terminate End profile requires one ordinary embedded Sub-Process whose triggeredByEvent value resolves to false.",
     );
   }
 

@@ -100,6 +100,58 @@ test("derives Terminate origin, input, and scope only from arbitrary admitted id
   );
 });
 
+test("admits parser-safe false Sub-Process values with equal structure and distinct identity", async () => {
+  const xml = await readFile(sourceUrl, "utf8");
+  const omitted = requireAccepted(await compile(new TextEncoder().encode(xml)));
+  for (const lexeme of ["false", "0"]) {
+    const explicitSource = xml.replace(
+      '<bpmn:subProcess id="SubProcess_Work">',
+      `<bpmn:subProcess id="SubProcess_Work" triggeredByEvent="${lexeme}">`,
+    );
+    assert.notEqual(explicitSource, xml);
+    const explicitBytes = new TextEncoder().encode(explicitSource);
+    const explicit = requireAccepted(await compile(explicitBytes));
+
+    assert.notEqual(
+      explicit.checkedProcess.identity.sourceSha256,
+      omitted.checkedProcess.identity.sourceSha256,
+    );
+    assert.deepEqual(
+      Array.from(explicit.copyExactBytes()),
+      Array.from(explicitBytes),
+    );
+    assert.deepEqual(
+      {
+        ...explicit.checkedProcess,
+        identity: omitted.checkedProcess.identity,
+      },
+      omitted.checkedProcess,
+    );
+    assert.deepEqual(
+      {
+        ...explicit.semanticProcess,
+        identity: omitted.semanticProcess.identity,
+      },
+      omitted.semanticProcess,
+    );
+  }
+});
+
+test("rejects canonical and parser-hostile true-valued Event Sub-Processes", async () => {
+  const xml = await readFile(sourceUrl, "utf8");
+  for (const lexeme of ["true", "1"]) {
+    const mutation = xml.replace(
+      '<bpmn:subProcess id="SubProcess_Work">',
+      `<bpmn:subProcess id="SubProcess_Work" triggeredByEvent="${lexeme}">`,
+    );
+    assert.notEqual(mutation, xml);
+    assert.equal(
+      (await compile(new TextEncoder().encode(mutation))).status,
+      BpmnCompilationStatus.Rejected,
+    );
+  }
+});
+
 test("lowers the reusable root checked representation without registering a root source profile", () => {
   const checked = {
     kind: CheckedProcessKind.CheckedProcess,
@@ -213,10 +265,6 @@ function terminateSourceMutations(xml: string): Readonly<Record<string, string>>
     "outgoing flow": xml.replace(
       "      <bpmn:sequenceFlow id=\"Flow_SiblingToEnd\"",
       '      <bpmn:sequenceFlow id="Flow_TerminateToSiblingEnd" sourceRef="End_Terminate" targetRef="End_Sibling" />\n      <bpmn:sequenceFlow id="Flow_SiblingToEnd"',
-    ),
-    "explicit nested scope property": xml.replace(
-      '<bpmn:subProcess id="SubProcess_Work">',
-      '<bpmn:subProcess id="SubProcess_Work" triggeredByEvent="false">',
     ),
     "mixed End definitions": xml.replace(
       definition,
