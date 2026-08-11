@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11; the first green semantic checkpoint is implemented and independently approved after correction audit `d7140a9`. Registration found and the owner approved one source-profile correction: omitted `triggeredByEvent` and explicit `triggeredByEvent="false"` are equivalent metamodel-default spellings for the ordinary embedded Sub-Process. This material correction requires a new context-cold review before closure. The profile is not evidence-closed.** The checkpoint implements the exact source, checked graph, no-output IL operation, independent Lean and TypeScript semantics, strict schemas, exact artifact binding, and passive Temporal host admission selected below. Profile registration, answer-free scenarios, differential evidence, live Temporal refinement, closure review, and graduation remain open. Approval covers exactly the selected account, public contract, required evidence, and exclusions below. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
+**Proposal correction under independent review.** The owner-approved first green semantic checkpoint is independently approved after correction audit `d7140a9`, but it implements only omission of `triggeredByEvent`. Registration exposed a material source-profile correction: omission and the parser-safe XSD-false values `false` and `0` should select the same ordinary embedded Sub-Process. That correction is proposed here, is not implemented by the approved checkpoint, and receives renewed owner approval only after its proposal review closes. A new first-green admission/profile checkpoint and cold semantic-checkpoint review must close before registration, differential, or live Temporal evidence resumes. The profile is not registered or evidence-closed. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
 
 ## Independent cold-review receipt
 
@@ -87,11 +87,11 @@ One immutable standards-only profile is proposed as `bpmn-2.0.2-terminate-end-ev
 - exactly one inline TerminateEventDefinition on the Terminate End Event;
 - exactly one conditionless incoming Sequence Flow and no outgoing Sequence Flow on each End Event;
 - exactly the topology shown above, with distinct canonical Sequence Flow identities and one level of embedded scope;
-- the ordinary embedded Sub-Process may omit `triggeredByEvent` or spell the metamodel default explicitly as `triggeredByEvent="false"`; both forms have identical admission and projection, while `true` remains rejected as an Event Sub-Process;
+- the ordinary embedded Sub-Process may omit `triggeredByEvent` or use the parser-safe XSD-false values `false` or `0`; all three select the same structural source projection, while their distinct exact XML bytes retain distinct source digests;
 - no referenced EventDefinition, second EventDefinition, payload, data input, input set, Data Association, extension element, parser warning, additional root element, Event Sub-Process, Transaction, boundary Event, Call Activity, loop, compensation, or foreign executable content;
 - arbitrary well-formed source identifiers. No fixture identity or product name participates in admission.
 
-Missing, repeated, referenced, extra-property, wrong-kind, wrongly placed, incoming-arity, outgoing-flow, nested-scope, Event-Sub-Process `triggeredByEvent="true"`, or mixed-End-definition mutations reject. Omitted and explicit-false `triggeredByEvent` inputs compile to the same checked graph and IL. A root-level exact Terminate End remains conforming but deferred from source-profile registration; the generic checked and IL representation must still support a direct root witness.
+Missing, repeated, referenced, extra-property, wrong-kind, wrongly placed, incoming-arity, outgoing-flow, nested-scope, true-valued Event-Sub-Process `triggeredByEvent`, or mixed-End-definition mutations reject. Canonical `true` and parser-hostile but XSD-valid `1` are independent negatives. The existing raw Boolean-lexeme guard conservatively rejects other parser-ambiguous encodings before moddle projection. Omitted, `false`, and `0` inputs produce equal checked structural projections and executable IL structures after excluding source identity, while exact bytes and their `sourceSha256` values remain distinct and correct. A root-level exact Terminate End remains conforming but deferred from source-profile registration; the generic checked and IL representation must still support a direct root witness.
 
 The profile capability fixes the exact node and operation multiset. Reusable graph admission retains reference closure, producer and consumer ownership, legal arity, reachability, co-reachability, whole-graph acyclicity, one root completion, and one child completion. The existing compilation dispatches remain unchanged.
 
@@ -152,7 +152,7 @@ Canonical observation publishes only the resulting existing state: Trigger and S
 
 | Rule ID | Proposition |
 |---|---|
-| `TEND-SOURCE-01` | The selected source has one exact nested Terminate End Event with one inline empty TerminateEventDefinition, `1 -> 0` Sequence Flow arity, and no payload, reference, extension, or unsupported scope property. |
+| `TEND-SOURCE-01` | The selected source has one exact nested Terminate End Event with one inline empty TerminateEventDefinition, `1 -> 0` Sequence Flow arity, and no payload, reference, extension, or unsupported scope property. Omitted, `false`, and `0` `triggeredByEvent` values select equal structural projections with distinct exact source identities; true-valued `true` and `1` reject as Event Sub-Processes. |
 | `TEND-LOWER-01` | Lowering preserves End Event identity, exact incoming control place, and exact containing definition scope while producing no continuation output. |
 | `TEND-REGION-01` | Firing `terminateScope` consumes its one offered token, removes every other live owner in the selected scope-occurrence subtree, retains the selected occurrence quiescent, preserves unrelated state and monotonic history, and increments the existing aggregate `endOccurrences` count once while retaining the exact End Event only in operation origin. |
 | `TEND-NESTED-01` | Terminating the representative child scope enables its existing `completeScope`, which continues the parent exactly once and leaves Outer as the only enabled interaction. |
@@ -220,7 +220,7 @@ Because this capsule adds no host mechanism, it does not justify a second genera
 
 | Rule | BPMN/profile evidence | Lean | TypeScript | Temporal | Separating negative or mutation |
 |---|---|---|---|---|---|
-| `TEND-SOURCE-01` | Exact XSD-valid nested source and malformed-source matrix | Exact checked admission | Independent projection and admission | Exact compiled program | Definition cardinality, reference, payload, placement, and arity mutations |
+| `TEND-SOURCE-01` | Exact XSD-valid nested source, omitted/`false`/`0` default equivalence, and malformed-source matrix | Exact checked admission | Equal structural checked/IL projection with distinct source identities | Exact compiled program and bytes | Definition cardinality, reference, payload, placement, arity, canonical-true, and parser-hostile-`1` mutations |
 | `TEND-LOWER-01` | Validated endpoints and scope forest | Exact checked-to-IL equality | Independent lowering equality | Compiled program identity | Input, scope, origin, and synthetic-output drift |
 | `TEND-REGION-01` | Containing-scope normative account | Relation, evaluator soundness, owner-family removal and preservation laws | Independent state transformation and mutation | Query after committed Update | Global cancellation and incomplete-clearing mutations |
 | `TEND-NESTED-01` | Embedded Sub-Process continuation | Exact child completion and one parent token | Independent exact state | Only Outer after Worker replacement | Direct parent-output and double-completion mutations |
@@ -327,6 +327,7 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 219 | Delegate exact Terminate End projection without changing None/Error branches. |
 | [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 149 | Add exact profile multiset and scope policy. |
 | [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 280 | Recognize Terminate End as a `1 -> 0` sink. |
+| [Terminate End source reader](../../packages/bpmn-source/src/terminate-end-event-source.ts) | 530 | Resolve omission and parser-safe false values to the ordinary Sub-Process proposition while retaining the Event Sub-Process exclusion. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 58 | Delegate to a new cohesive Terminate lowering owner. |
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 0 | Extract an End/termination consistency owner before adding semantic checks. |
 | [contract artifact projection](../../scripts/contract-artifacts.ts) | 16 | Add only an exhaustive classifier arm; extract any new projection responsibility. |
@@ -368,6 +369,8 @@ Existing focused test owners also change where their exhaustive inventories wide
 |---|---:|---|
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 154 | Register the exact projector in the closed consumer matrix. |
 | [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 312 | Lock `1 -> 0`, nested scope, and synthetic completion edges. |
+| [Terminate End source characterization](../../packages/bpmn-source/test/terminate-end-event-source.test.ts) | 383 | Lock omitted/`false`/`0` structural equivalence, distinct source identity, and true-valued lexical negatives before registration. |
+| [metamodel-default admission](../../packages/bpmn-source/test/metamodel-default-admission.test.ts) | 436 | Retain registry-wide omitted/default equivalence as the graduation oracle. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 61 | Reject origin, input, scope, and output drift. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 30 | Extract a termination characterization owner rather than crowding this test. |
 | [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 429 | Require at least one runnable example when the checkpoint-only profile graduates. |
@@ -386,6 +389,7 @@ The profile, three scenarios, BPMN fixture, runnable product example, and differ
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Cover every new union arm and reject malformed exact shapes. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind End Event origin, input, containing scope, and absent output to lowering. |
 | [projected keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Close the shared projection consumer inventory. |
+| [Terminate source characterization](../../packages/bpmn-source/test/terminate-end-event-source.test.ts) and [metamodel-default admission](../../packages/bpmn-source/test/metamodel-default-admission.test.ts) | Separate raw Boolean-lexeme safety from resolved false-value equivalence, preserve exact source digests, and keep registration-wide defaults aligned. |
 | [frozen cyclic baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation.test.ts) | Preserve every pre-M2 source, profile, checked, IL, and registry-origin value. |
 | [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts), and [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Land profile, runnable example, scenarios, targets, and ordered inventories atomically. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | Admit passive termination closure and reject unsupported host shapes. |

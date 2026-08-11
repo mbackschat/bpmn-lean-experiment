@@ -52,7 +52,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
-**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End has an independently approved semantic checkpoint and an owner-approved metamodel-default correction that requires a new context-cold review; registration, live Temporal evidence, and closure remain active. The configured generic Task remains absent.
+**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End has an independently approved omission-only semantic checkpoint. Its metamodel-default correction is in renewed proposal review and must reach a new first-green admission/profile checkpoint plus cold review before registration or evidence work resumes. The configured generic Task remains absent.
 
 This is the milestone that must be preceded by the decided-fixture cost review recorded below.
 
@@ -148,7 +148,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: register and evidence Terminate End Event.** The semantic checkpoint is independently approved after correction audit `d7140a9`. Registration exposed and the owner approved the BPMN metamodel-default equivalence of omitted and explicit `triggeredByEvent="false"`; `true` remains excluded. Atomically register the profile, three answer-free scenarios, runnable product example, and differential cases, add the existing-Update Worker-replacement, stale-refusal, history, replay, and global-cancellation mutation witness, then submit the material source-profile correction and closure evidence to a new context-cold review.
+1. **Active: review and checkpoint the Terminate End metamodel-default correction.** The independently approved `d7140a9` checkpoint admits only omitted `triggeredByEvent`. Close the renewed proposal review, record renewed owner approval, implement parser-safe XSD-false `false` and `0` admission with true-valued `true` and `1` negatives, and submit that first-green admission/profile target to a new context-cold semantic-checkpoint review. Only after approval may the profile, three answer-free scenarios, runnable product example, differential cases, and live Worker-replacement/global-cancellation evidence land before closure.
 
 ## Approved decisions
 
@@ -253,7 +253,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: complete the atomic Terminate End registration, approved metamodel-default correction, differential cases, and disjoint live Temporal evidence lane; integrate them, run the complete closure gate, record cost and reflection, and submit the closure target for a new context-cold review.** Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
+**Next action: close the renewed Terminate End proposal review, create and cold-review the corrected admission/profile checkpoint, then resume atomic registration, differential, and live Temporal evidence before the complete closure gate.** Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
