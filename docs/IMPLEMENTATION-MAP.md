@@ -114,6 +114,10 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - A strict one-target Message Start publication wire contract with pending, accepted, and indeterminate public states, complete exact-version and channel identity, accepted-only Process-instance exposure, and no private host identity
 - A shared pre-release SQLite schema epoch plus an exact publication repository and lifecycle that commit `starting` before host dispatch, never redispatch after that boundary, reconcile retained match or absence without a Worker, and preserve stable integrity and indeterminate tombstones across restart
 - A narrow direct Message Start engine host and Temporal client subpath that recompile and admit exact stored bytes, bind the persisted private intent marker to the production request constructor, start with explicit duplicate/conflict/no-retry policies, and expose only closed matching, missing, divergent, or unavailable retained results
+- Production server composition of the Message Start publication repository, startup reconciliation, stable domain-separated private identities, canonical Process Workflow addressing behind Product 1, strict global PUT/GET routes, reverse-order cleanup, and no Product 2 Temporal import
+- An HTTP-only exact-version Message Start publication client and panel that preserve the complete Interface Operation-addressed channel, accept only status-consistent public receipts, generate an editable publication identity, refresh one immutable publication, and expose a Process instance only after acceptance
+- A live M2 direct-ingress witness that deploys two exact versions with different Interface Operations, discards the first HTTP response, restarts the platform against the same SQLite store, proves one Worker-absent version-1 Workflow and zero Schedules or fanout, completes under a replacement Worker, checks exact terminal state and history, replays, recursively excludes private facts, and separates direct Workflow start from publication
+- An M2 browser witness that creates both exact Message Start versions, reselects version 1, displays the complete operation-addressed capability, publishes the UI-generated public identity, refreshes the accepted receipt, and displays only the version-1 public Process instance
 - A strict one-shot definition-schedule wire contract and Fetch-compatible API over `(processId, version, scheduleId)`, with whole-second activation, derived due time, closed status/list/error unions, stable listing, immutable retry, and no private host identity
 - An exact SQLite schedule repository and lifecycle service that reserve immutable definition, capability, semantic instance, Schedule, and configured Workflow-base facts before network work; reconcile create-response loss, startup recovery, pause-confirmed cancellation, action-won races, and terminal cleanup; and never resolve latest definition
 - A narrow engine Schedule host and Temporal client subpath that prepare, create or compare, inspect, pause, and delete the selected one-action policy while keeping Schedule descriptions, SDK handles, and returned execution Workflow/Run identities private
@@ -131,7 +135,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata
-- public Message Start ingress HTTP routes, server composition, UI, live/browser evidence, and instance search
+- Process-instance search and every cross-instance read model
 
 ### A12 Workflows downstream adoption
 
@@ -433,7 +437,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow
 - Message payloads, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
-- public Message ingress router, definition-version fanout, or accepted-but-response-lost start receipt
+- Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
 - patch branches
 - legacy representation fallback

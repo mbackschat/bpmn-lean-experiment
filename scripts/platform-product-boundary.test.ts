@@ -264,11 +264,20 @@ test("allows only the exact M2 evidence owner to fetch history", () => {
         path: "showcase/m2-definition-scheduling/src/host.ts",
         source: "await handle.fetchHistory();",
       },
+      {
+        path: "showcase/m2-message-start-ingress/test/m2-message-start-ingress.test.ts",
+        source: "await handle.fetchHistory();",
+      },
+      {
+        path: "showcase/m2-message-start-ingress/test/temporal-support.ts",
+        source: "await handle.fetchHistory();",
+      },
     ]),
     [
       "showcase/m2-definition-scheduling/src/host.ts: Temporal Event History API reference fetchHistory",
       "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts: Temporal Event History API reference getWorkflowExecutionHistory",
       "showcase/m2-definition-scheduling/test/temporal-support.ts: Temporal Event History API reference fetchHistory",
+      "showcase/m2-message-start-ingress/test/temporal-support.ts: Temporal Event History API reference fetchHistory",
     ],
   );
 });

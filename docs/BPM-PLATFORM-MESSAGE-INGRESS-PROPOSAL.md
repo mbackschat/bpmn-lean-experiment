@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved; first-green semantic checkpoint approved, downstream evidence active.** The committed checkpoint adds the exact deployed-definition capability, strict public publication contract, shared SQLite schema epoch, durable retry and deduplication lifecycle, and handle-free direct Workflow-start host boundary. Independent review approved target `8f3c7c1` with no findings. HTTP routes, server composition, UI, and live/browser evidence are now the active closure lanes. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
+**Owner-approved; complete implementation and evidence green, pending closure review.** The exact public PUT/GET routes, production server composition, HTTP-only exact-version UI, live response-loss and Worker-replacement witness, and browser acceptance extend the approved first-green checkpoint without changing its contract. Independent review approved checkpoint target `8f3c7c1` with no findings. The complete repository gate, cost/reflection record, and guarded warm closure review remain before graduation. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
 

@@ -317,10 +317,14 @@ const temporalHistoryApiNames = new Set([
   "WorkflowExecutionHistory",
 ]);
 
+const approvedTemporalHistoryEvidencePaths = new Set([
+  "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts",
+  "showcase/m2-message-start-ingress/test/m2-message-start-ingress.test.ts",
+]);
+
 function isApprovedTemporalHistoryEvidence(relativePath: string, apiName: string): boolean {
-  return relativePath ===
-      "showcase/m2-definition-scheduling/test/m2-definition-scheduling.test.ts" &&
-    apiName === "fetchHistory";
+  return apiName === "fetchHistory" &&
+    approvedTemporalHistoryEvidencePaths.has(relativePath);
 }
 
 const PlatformOwnerKind = {
