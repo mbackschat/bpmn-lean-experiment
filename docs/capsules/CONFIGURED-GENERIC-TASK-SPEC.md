@@ -1,8 +1,8 @@
-# Configured Task extension proposal
+# Configured Task extension specification
 
 ## Status
 
-**Implementation and evidence complete; governed closure review pending.** The registered profile selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. Exact source, checked/IL binding, Lean/core execution, answer-free artifacts, differential mutation, live Temporal Worker-replacement/history/replay evidence, and the retained CIB pass-through exclusion trace are green. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** The registered profile selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. Exact source, checked/IL binding, Lean/core execution, answer-free artifacts, differential mutation, live Temporal Worker-replacement/history/replay evidence, and the retained CIB pass-through exclusion trace are green. Plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, and a new Temporal host primitive remain excluded.
 
 ## Independent cold-review receipt
 
@@ -10,9 +10,7 @@
 |---|---|---|---|---|
 | Proposal | `add8367` | `fork-turns-none` | `approve-with-required-edits` | `19591d3` |
 | Semantic checkpoint | `929ebd1` | `fork-turns-none` | `approve-with-required-edits` | `85d42aa` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
-
-The context-cold proposal review of `add8367` required four bounded corrections: occurrence-only effect-completion refusal, profile-aware Task classification, raw duplicate-`extensionElements` guarding, and consistent classification of the CIB trace as exclusion evidence. The same reviewer approved correction `19591d3`; the selected semantic account, public contract, exclusions, and evidence strategy did not change. The context-cold semantic-checkpoint review of `929ebd1` found no semantic defect and required three bounded evidence and ownership corrections: maintained XSD validation of the configured fixture, an executable direct Semantic XSD override, and exact profile-catalog and shape-owner prose. The same reviewer approved correction `85d42aa` without changing the selected account, public contract, exclusions, or evidence strategy.
+| Closure | `e1f81ca` | `fork-turns-none` | `approve-with-required-edits` | `8959a0c` |
 
 ## Question
 
@@ -22,9 +20,9 @@ The recommendation is **yes, under the exact extension, descriptor, topology, pr
 
 ## Selection basis
 
-[PLAN.md](../PLAN.md#ordered-work) selects the configured Task extension as the final M2 base-element capsule. The prior M2 increments already close resumption-bounded cycles, Message Start, Timer Start, and Terminate End. This increment supplies the remaining explicit external-work form without adding data semantics, a new public interaction family, or another Temporal adapter architecture.
+The configured Task extension was the final M2 base-element capsule after resumption-bounded cycles, Message Start, Timer Start, and Terminate End. It supplies the remaining explicit external-work form without adding data semantics, a new public interaction family, or another Temporal adapter architecture.
 
-The earlier [minimal-engine research](../research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md#37-abstract-task-and-configured-task-extension) correctly preferred explicit engine configuration for useful external work but incorrectly described a plain `bpmn:task` as semantically underspecified and prohibited no-op execution. BPMN 2.0.2 Clause 13.3.3 instead gives Abstract Task an exact conceptual meaning: it completes upon activation and is not executed by an IT system. This proposal corrects that research statement before selecting a distinct executable extension.
+The earlier [minimal-engine research](../research/MINIMAL-USEFUL-BPMN-ENGINE-RESEARCH.md#37-abstract-task-and-configured-task-extension) correctly preferred explicit engine configuration for useful external work but incorrectly described a plain `bpmn:task` as semantically underspecified and prohibited no-op execution. BPMN 2.0.2 Clause 13.3.3 instead gives Abstract Task an exact conceptual meaning: it completes upon activation and is not executed by an IT system. This specification retains that corrected boundary while selecting a distinct executable extension.
 
 ## Normative basis and forward-compatible boundary
 
@@ -39,7 +37,7 @@ BPMN 2.0.2 is authoritative for the standard Task and extension boundaries.
 Two requirements therefore remain separate:
 
 1. `BPMN-ABSTRACT-TASK-01` records the standard immediate-completion behavior of an unextended `bpmn:task`. It remains conforming but deferred and `unsupported` in this bounded M2 profile.
-2. `BPMN-TASK-EXTENSION-01` records one exact project-defined extended Task type that waits for external effect completion. It remains `unsupported` until implementation and closure evidence graduate this proposal.
+2. `BPMN-TASK-EXTENSION-01` records one exact project-defined extended Task type that waits for external effect completion. The exact registered slice is `supported`; every other extension remains unsupported.
 
 The representation preserves this distinction permanently. Later admission of plain Abstract Task can lower to immediate control continuation without changing the checked or runtime meaning of a configured Task already accepted here. Other configured Task types can receive distinct profile bindings without changing this one.
 
@@ -74,7 +72,7 @@ The primary semantic negative replaces the configured wait with pass-through beh
 
 ## Exact source profile
 
-One immutable product-neutral BPMN-extension profile is proposed as `bpmn-2.0.2-bpmn-lean-configured-task-effect-draft`. Its identifier names both the BPMN baseline and the project extension, so the configured behavior cannot be mistaken for bare BPMN semantics. It admits one private executable Process containing the exact representative topology and one configured Task with this extension:
+One immutable product-neutral BPMN-extension profile is registered as `bpmn-2.0.2-bpmn-lean-configured-task-effect-draft`. Its identifier names both the BPMN baseline and the project extension, so the configured behavior cannot be mistaken for bare BPMN semantics. It admits one private executable Process containing the exact representative topology and one configured Task with this extension:
 
 ```xml
 <bpmn:task id="ConfiguredTask_Probe">
@@ -194,8 +192,6 @@ Checked non-laws are:
 - evaluator soundness does not establish host delivery, retry, fairness, or liveness outside the finite scenario;
 - structural equality after normalized lowering does not erase exact checked-source, definition, or occurrence identity.
 
-The first Lean change repeats the one-CPU, no-swap, 3 GiB Linux admission audit before further proof growth. macOS uses Docker only for the hard process-tree memory limit; native Linux may use equivalent cgroup controls directly.
-
 ## Temporal hosting and refinement preflight
 
 No new durable ingress, wait, Timer, Signal, Child Workflow, cancellation, or projection mechanism is required. Manual Process start reaches existing `openEffects`; the Workflow schedules the existing Activity transport for the exact descriptor; successful Activity material is converted to the existing `CompleteEffect` stimulus; the later User Task uses the existing Update boundary.
@@ -273,74 +269,17 @@ Primary common-mode risks are:
 
 Separating evidence uses arbitrary source IDs, alternate prefixes with the same URI, wrong namespaces and handler types, independently constructed checked/program values, exact artifact mutations, normalized configured-versus-Service lowering comparison, pass-through public-state mutation, Worker replacement, Activity history/replay, and the frozen baseline oracle.
 
-The nearest realistic unsupported claim is a second configured Task type with payload and result mappings. That requires a versioned handler binding and data contract, not a wider string field. This proposal neither blocks nor silently selects it.
+The nearest realistic unsupported claim is a second configured Task type with payload and result mappings. That requires a versioned handler binding and data contract, not a wider string field. This specification neither blocks nor silently selects it.
 
 ## Versioning consequences
 
 Pre-release replace-in-place policy applies. The checked-node union, importer extension descriptor, and semantic-profile source union widen atomically across strict schemas, Lean and TypeScript decoders, exhaustive switches, source projection, checked graph admission, lowering, artifact consistency, profile/scenario registries, product examples, differential evidence, Temporal preflight, and frozen experiments. The Semantic Process operation, runtime state, stimulus, result, and public observation wire contracts do not change. Adding the descriptor is additive because this namespace was previously rejected under every profile; changing projection for bytes and profile identity already admitted by an existing compiler would require a new compiler/importer identity.
 
-### Owners this implementation grows
-
-The owner inventory was mechanically derived with `node scripts/what-binds.ts`. Two extractions are mandatory before feature growth: [semantic profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) has only 41 lines of headroom and must move cohesive checked/program shape catalogs into narrow owners; [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) is exactly 600/600 and must move all `awaitEffect` origin checks into a cohesive effect-operation artifact verifier. Existing Service Task checks move intact and remain covered by the same guards.
-
-| Owner | Headroom to 600 nonblank lines | Required consequence |
-|---|---:|---|
-| [checked-process contract](../../packages/semantic-core/src/checked-process-contract.ts) | 358 | Add the distinct configured Task constructor only. |
-| [profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 556 | Add the checkpoint and later registered profile identity without changing prior values. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 487 | Extract checked/program shape catalogs first, then add exact configured-node and existing-effect cardinalities plus descriptor detail. |
-| [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 536 | Keep the new profile whole-graph acyclic. |
-| [moddle adapter](../../packages/bpmn-source/src/moddle-adapter.ts) | 441 | Register one package-local extension descriptor through the standard constructor option. |
-| [checked-process compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 200 | Derive the closed profile-aware projection policy before partitioning and preserve the exact non-selected-profile Task diagnostic. |
-| [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 204 | Accept the same closed projection policy and delegate selected `bpmn:Task` values to a new cohesive configured source reader. |
-| [projected-key inventory](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 317 | Add the exact `Task` plus `extensionElements` key shape. |
-| [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 279 | Add both unavoidable configured-node switches and `1 -> 1` ownership. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 146 | Add exact cardinality and Start-to-configured-to-User-to-End topology, not cardinality alone. |
-| [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 55 | Delegate one configured arm to a new cohesive lowerer; do not grow the near-limit generic test owner. |
-| [singleton containment admission](../../packages/bpmn-source/src/singleton-containment-admission.ts) | 469 | Consume the inherited `BaseElement.extensionElements` upper bound before parser projection can erase a duplicate. |
-| [source compiler](../../packages/bpmn-source/src/compile.ts) | 236 | Keep the shared raw containment check before checked compilation and pass no raw XML into projectors. |
-| [metamodel checker](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 247 | Calibrate the Task, extension wildcard, and `BaseElement.extensionElements` upper-bound facts actually consumed. |
-| [projected-key test](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 152 | Register the new projector and prefix-independent exact-key behavior. |
-| [singleton-containment test](../../packages/bpmn-source/test/singleton-containment-admission.test.ts) | 480 | Add the duplicate `extensionElements` discriminator to the existing parser-erasure oracle. |
-
-The new focused source test owns the complete positive/negative matrix, including the same bytes under a non-selected profile retaining the exact `unsupportedElementType` diagnostic. The shared singleton-containment test owns the repeated-container parser-erasure discriminator. [Semantic Process lowering tests](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) already use 571/600 nonblank lines and [the BPMN-source package integration test](../../packages/bpmn-source/test/bpmn-source.test.ts) uses 506/600, so neither receives the feature matrix.
-
-| Owner | Headroom to 600 nonblank lines | Required consequence |
-|---|---:|---|
-| [artifact consistency](../../scripts/contract-artifact-consistency.ts) | 50 | Extract before change; leave orchestration only. |
-| [contract artifact projection](../../scripts/contract-artifacts.ts) | 13 | Add only the exhaustive classifier arm; extract any additional responsibility. |
-| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 381 | Register the one product-neutral extension scenario with no CIB target. |
-| [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 101 | Keep existing shared tests; add configured effect-origin/profile tests in a new cohesive owner. |
-| [pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 20 | Put configured cases in a capsule-owned module and add only one import/spread. |
-| [pipeline test](../../packages/differential/test/pipeline.test.ts) | 122 | Update only the exact ordered inventory and end-to-end assertion. |
-| [pipeline catalog test](../../packages/differential/test/pipeline-catalog.test.ts) | 197 | Lock additive profile/case classification and meaningful mutation. |
-| [product-example guard](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 346 | Require one runnable example using the existing Probe handler and trailing User Task plan. |
-
-The new `effect-operation-artifact-consistency.ts` accepts only checked `serviceTask | configuredTask` origins. It compares element identity, descriptor, mappings, and Error route. Configured Task requires empty maps and a null route; Service Task keeps its exact current descriptor, mapping, and route rules. A second new `configured-task-profile-consistency.ts` proves the exact namespace/type-to-Probe binding because schema shape alone cannot establish that selected value.
-
-Strict [checked-process schema](../../contracts/schemas/checked-process.schema.json) and [semantic-profile schema](../../contracts/schemas/semantic-profile.schema.json) change atomically but are declarative JSON rather than hand-written source headroom owners. The bounded BPMN metamodel manifest adds the consumed `BaseElement.extensionElements` cardinality fact. The local moddle descriptor, configured source reader/lowerer/tests, effect-origin verifier, profile-consistency verifier, pipeline cases, and live witness are cohesive new owners and begin below 600.
-
-| Owner | Headroom to 600 nonblank lines | Required consequence |
-|---|---:|---|
-| [semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 120 | Add distinct checked configured Task only; the operation union stays unchanged. |
-| [checked decoder](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 347 | Decode the exact configured node and descriptor strictly. |
-| [JSON conformance](../../BpmnSemantics/SemanticProcessJsonConformance.lean) | 425 | Add exact/missing/extra/empty/duplicate/mismatch facts at the existing controlled decision boundary. |
-| [checked graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 464 | Add configured `1 -> 1` arity and reachability classification. |
-| [checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 282 | Count one configured Task separately from Service Task and other Tasks. |
-| [lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 68 | Delegate one configured lowering specialization; add no unrelated proof. |
-| [profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 205 | Require checked configured count 1 while the program count remains effect 1 and User Task 1. |
-| [conformance executable](../../BpmnSemantics/ConformanceMain.lean) | 582 | Import one independently buildable configured Task conformance owner. |
-
-New `BpmnSemantics/ConfiguredTaskConformance.lean` proves the binding, distinctness, lowering specialization, effect/User-Task closure, refusal, normalized Service Task comparison, and mutations. The frozen direct checked-source experiment remains unsupported and receives explicit fail-closed arms in [decomposition](../../BpmnSemantics/Experiments/CheckedSourceDecomposition.lean) at 171/600, [transition](../../BpmnSemantics/Experiments/CheckedSourceTransition.lean) at 313/600, [coverage](../../BpmnSemantics/Experiments/CheckedSourceCoverage.lean) at 251/600, [graph](../../BpmnSemantics/Experiments/CheckedSourceGraph.lean) at 86/600, and [chain](../../BpmnSemantics/Experiments/CheckedSourceChain.lean) at 195/600. Scenario, Admission, and Frontier use non-exhaustive facts and need no feature edit unless the post-widening sweep proves otherwise.
-
-No production Temporal owner changes. Existing [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts), Workflow, Activity, runner, evidence, and effect-probe owners already host the exact `awaitEffect` plus passive User Task shape. The feature adds only a focused live witness and example/catalog registration; touching Workflow code merely for this source family is a stop condition.
-
-The profile, one scenario, BPMN fixture, product example, and differential case register atomically in [profiles](../../profiles/README.md), [scenarios](../../scenarios/README.md), [semantic-core](../../packages/semantic-core/README.md), [BPMN source](../../packages/bpmn-source/README.md), [shared contracts](../../contracts/README.md), [differential](../../packages/differential/README.md), and [Temporal adapter](../../packages/temporal-adapter/README.md). Closure also updates the IL, admission, testing, implementation-map, lifecycle, plan, capsule-cost, root README, and both documentation registries. The independent review treats any exhaustive owner missing from this inventory as a required edit.
-
 ### Guards and oracles
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Recompute owner figures and require proposal routing. |
+| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep specification routing, lifecycle status, and the graduated filename contract aligned. |
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep the two Task requirements, citations, dispositions, and capsule aligned. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Cover the new checked/profile shapes and reject malformed exact values. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind configured origin, descriptor, endpoints, empty mappings, and absent Error route without weakening Service Task. |
@@ -358,11 +297,11 @@ The profile, one scenario, BPMN fixture, product example, and differential case 
 
 ## Epistemic closure and cost boundary
 
-Closure may establish only one exact configured Task extension, its profile binding to the existing Probe effect descriptor, distinct checked identity, neutral lowering, finite effect/User-Task execution, registered answer-free evidence, and existing Activity refinement. It does not establish plain Abstract Task support, a general Task handler system, another descriptor, data, failures, retries as semantics, CIB compatibility, Product 2 work queues, or Process Execution Conformance.
+This specification establishes only one exact configured Task extension, its profile binding to the existing Probe effect descriptor, distinct checked identity, neutral lowering, finite effect/User-Task execution, registered answer-free evidence, and existing Activity refinement. It does not establish plain Abstract Task support, a general Task handler system, another descriptor, data, failures, retries as semantics, CIB compatibility, Product 2 work queues, or Process Execution Conformance.
 
 Meaningful mutations are: erase the configured checked kind; accept a plain Task; accept another namespace or handler type; alter the descriptor; swap endpoints; add mappings or an Error route; bypass the effect; expose the User Task early; drop effect completion; leak source configuration publicly; execute without an Activity; and omit one atomic registration. Each must reach a source, artifact, semantic, public, proof, or durable-host discriminator.
 
-At closure, [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) records commit-bounded code and documentation churn against the Service Task effect capsule, the nearest completed increment that uses the same neutral effect runtime and Temporal Activity host. The reflection must explain the cost of preserving a distinct checked-source Task type while reusing the IL/runtime mechanism.
+[CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) records the commit-bounded code and documentation churn against the Service Task effect capsule, the nearest completed increment that uses the same neutral effect runtime and Temporal Activity host, and explains the cost of preserving a distinct checked-source Task type while reusing the IL/runtime mechanism.
 
 ## Stop conditions
 
@@ -377,16 +316,4 @@ Stop and return to research or owner decision if:
 - the pass-through mutation cannot reach a public durable discriminator;
 - existing Service Task artifact checks, source/profile bytes, or the frozen baseline must weaken;
 - any A12 or unreviewed CIB behavior becomes necessary;
-- an owner would cross 600 nonblank lines without a cohesive extraction, or the first Lean change cannot pass the one-CPU, no-swap, 3 GiB resource audit.
-
-## Owner decisions after review
-
-Owner approval is requested for these exact decisions:
-
-1. Preserve BPMN Abstract Task as conforming immediate completion but defer its admission, and select one distinct versioned configured Task extension for external work.
-2. Register one standard `bpmn-moddle` descriptor for namespace `urn:bpmn-lean:bpmn:extensions:v1`, element `taskDefinition`, and type `urn:bpmn-lean:task-handler:probe-v1`, with prefix-independent expanded-name matching.
-3. Add a distinct checked configured Task plus a closed configured-Task source arm in existing profile `effectBindings`, then lower only the exact binding to existing Probe `awaitEffect` with empty mappings and no Error route.
-4. Add no new IL operation, runtime transition, stimulus, state, observation, handler transport, or Temporal mechanism.
-5. Use a proved Lean specialization, one conditional semantic checkpoint review, and exact closure/resumption/refusal laws.
-6. Register one product-neutral answer-free extension scenario with `cib: null`, reuse the existing Probe Activity handler, and require pass-through plus descriptor-binding mutations and focused Worker-replacement/history/replay evidence.
-7. Keep Abstract Task admission, other configured types, payload/data/Error/retry/incident semantics, CIB compatibility, Product 2 work queues, and A12 outside the capsule.
+- an implementation owner would cross 600 nonblank lines without a cohesive extraction, or Lean conformance could no longer build within the one-CPU, no-swap, 3 GiB resource bound.

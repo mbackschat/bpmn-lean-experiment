@@ -24,7 +24,7 @@ The profile, byte-identical answer-free scenario, product example, and one `cib:
 
 The live Temporal witness proves the effect-only wait, replaces the Worker during the active Activity attempt, reconciles the same transport key, publishes and completes the trailing User Task, reaches the exact terminal core state, inspects Activity history, excludes new host mechanisms, and replays. A test-owned effect bypass exposes the trailing User Task early and reaches the public discriminator.
 
-Pinned CIB passes through the extension to that User Task with zero jobs and incidents; this trace is retained only as an exclusion oracle and creates no CIB target or relationship. Implementation and evidence are complete pending closure review.
+Pinned CIB passes through the extension to that User Task with zero jobs and incidents; this trace is retained only as an exclusion oracle and creates no CIB target or relationship. The exact selected slice is closure-reviewed, evidence-closed, and graduated.
 
 **What it does not do.** One generic standards profile admits the complete selected notation set and no other does. `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them, under [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md); every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume one data-only source overlay, but it can name only an existing profile-owned effect descriptor and exact inert expanded-name loci; it adds no engine operation or source reader.
 
