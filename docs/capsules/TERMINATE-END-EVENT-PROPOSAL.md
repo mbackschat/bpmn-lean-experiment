@@ -2,14 +2,14 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11 after renewed proposal correction audit `d21c2e3`.** The independently approved `d7140a9` semantic checkpoint implements only omission of `triggeredByEvent`. This corrected proposal additionally selects parser-safe XSD-false `false` and `0` as structurally equivalent ordinary embedded Sub-Process inputs with distinct exact source identities, and retains the reviewed true-valued exclusions and conforming lexical deferrals below. A new first-green admission/profile checkpoint and cold semantic-checkpoint review must close before registration, differential, or live Temporal evidence resumes. The profile is not registered or evidence-closed. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
+**Owner-approved on 2026-08-11 after renewed proposal correction audit `d21c2e3`; corrected semantic checkpoint independently approved at `9e811e6`.** The checkpoint admits omitted and parser-safe XSD-false `false` and `0` as structurally equivalent ordinary embedded Sub-Process inputs with distinct exact source identities, while retaining the reviewed true-valued exclusions and conforming lexical deferrals below. Registration, differential evidence, and live Temporal evidence may now resume. The profile is not yet registered or evidence-closed. This proposal selects one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation needed by that witness. It does not select Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, or another BPMN End Event family.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `5370d32` | `fork-turns-none` | `approve-with-required-edits` | `d21c2e3` |
-| Semantic checkpoint | `6e6a3da` | `fork-turns-none` | `approve-with-required-edits` | `d7140a9` |
+| Semantic checkpoint | `9e811e6` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 ## Question

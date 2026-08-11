@@ -52,7 +52,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
-**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End has an independently approved omission-only semantic checkpoint and an owner-approved metamodel-default correction after proposal audit `d21c2e3`. The correction must reach a new first-green admission/profile checkpoint plus cold review before registration or evidence work resumes. The configured generic Task remains absent.
+**Engine capsules.** Compositional admission with cycles, replacing the topological-sort acyclicity check in [graph admission](../packages/semantic-core/src/semantic-process-graph-admission.ts); and the four base elements the research marks essential. Message Start and Timer Start are closed. Terminate End has an independently approved corrected admission/profile checkpoint at `9e811e6`; registration, differential evidence, and live Temporal evidence are the active closure lanes. The configured generic Task remains absent.
 
 This is the milestone that must be preceded by the decided-fixture cost review recorded below.
 
@@ -115,7 +115,7 @@ Ordered by the milestone that first needs it, not by size. Each is absent today 
 1. [Resumption-bounded compositional admission with cycles](capsules/CYCLIC-CONTROL-FLOW-SPEC.md), closed for M2.
 2. [Message Start Event](capsules/MESSAGE-START-EVENT-SPEC.md), closed for M2.
 3. [Timer Start Event](capsules/TIMER-START-EVENT-SPEC.md), closed for M2.
-4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), owner-approved for the metamodel-default correction after audit `d21c2e3` and active at its corrected first-green admission/profile checkpoint; registration and Temporal evidence resume only after that checkpoint is cold-reviewed, and the configured generic Task remains unselected.
+4. [Terminate End Event](capsules/TERMINATE-END-EVENT-PROPOSAL.md), corrected admission/profile checkpoint independently approved at `9e811e6`; registration, differential evidence, and live Temporal evidence are active, and the configured generic Task remains unselected.
 4. The value domain beyond string and null — M3.
 5. E2: User Task assignment and form metadata as an admission capability and a public projection — M3.
 6. Cancellation beyond the direct-parent regional case, and incidents as a semantic outcome — M4.
@@ -148,7 +148,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: implement and review the corrected Terminate End admission/profile checkpoint.** The independently approved `d7140a9` checkpoint admits only omitted `triggeredByEvent`; renewed proposal correction audit `d21c2e3` approved parser-safe XSD-false `false` and `0` admission with true-valued `true` and `1` negatives. Implement that source correction and submit its first-green target to a new context-cold semantic-checkpoint review. Only after approval may the profile, three answer-free scenarios, runnable product example, differential cases, and live Worker-replacement/global-cancellation evidence land before closure.
+1. **Active: close Terminate End registration and evidence.** Corrected semantic checkpoint `9e811e6` independently approved parser-safe XSD-false `false` and `0` admission with true-valued `true` and `1` negatives. Land the profile, three answer-free scenarios, runnable product example, differential cases, and live Worker-replacement/global-cancellation evidence, then complete the target-bound gate and closure review.
 
 ## Approved decisions
 
@@ -253,7 +253,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: create and context-cold review the corrected Terminate End admission/profile checkpoint, then resume atomic registration, differential, and live Temporal evidence before the complete closure gate.** Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
+**Next action: land Terminate End registration, differential evidence, and live Temporal evidence, then run the complete closure gate and submit the immutable closure target for review.** Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
