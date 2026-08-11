@@ -61,10 +61,37 @@ test("publishes the exact version-1 Message Start capability after version 2 exi
   await expect(result).toContainText("Publication accepted");
   await expect(result).toContainText(publicationId);
   await expect(result).toContainText(`${processId}, version 1`);
-  await expect(result.getByText(/^[0-9a-f]{8}-[0-9a-f-]{27}$/u)).toBeVisible();
+  const processInstance = result
+    .getByText("Process instance", { exact: true })
+    .locator("..")
+    .locator("code");
+  await expect(processInstance).toBeVisible();
+  const processInstanceId = requireDistinctProcessInstance(
+    await processInstance.textContent(),
+    publicationId,
+  );
+  expect(processInstanceId).toMatch(
+    /^bpmn-platform-message-start-instance-sha256:[0-9a-f]{64}$/u,
+  );
+  expect(() => requireDistinctProcessInstance(publicationId, publicationId)).toThrow(
+    /must differ from the publication identity/u,
+  );
   await expect(result).not.toContainText("version 2");
   await expect(result).not.toContainText(/workflow|run id|task queue|memo|command|checked|program/iu);
 });
+
+function requireDistinctProcessInstance(
+  rendered: string | null,
+  publicationId: string,
+): string {
+  if (rendered === null || rendered.length === 0) {
+    throw new TypeError("accepted publication must render a Process instance identity");
+  }
+  if (rendered === publicationId) {
+    throw new TypeError("Process instance identity must differ from the publication identity");
+  }
+  return rendered;
+}
 
 async function deploy(page: Page, processId: string, source: string): Promise<void> {
   await page.locator('input[name="source"]').setInputFiles({

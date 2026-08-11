@@ -179,7 +179,8 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     ) as TemporalHistory;
     assertWorkerAbsentHistory(absentHistory);
     const startArguments = workflowStartArguments(absentHistory);
-    assertVersionOneStart(startArguments, versionOne.value.source.sha256, versionOneOperation);
+    assertVersionStart(startArguments, versionOne.value.source.sha256, versionOneOperation);
+    assertNoSemanticInstanceFanout([startArguments]);
 
     await withDeadline(platform.close(), operationDeadlineMs, "response-loss platform close");
     platform = undefined;
@@ -287,18 +288,23 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     replayRunner = undefined;
 
     const directPublicationId = `direct-start-${token}`;
-    const directWorkflowId = `direct-message-start-mutation-${token}`;
+    const directWorkflowId = `direct-message-start-version-2-mutation-${token}`;
     const directWorkflowsBefore = await listWorkflowExecutions(environment.client);
     const directSchedulesBefore = await listScheduleIds(environment.client);
+    const fanoutArguments = replaceExactStringValues(startArguments, new Map([
+      [versionOne.value.source.id, versionTwo.value.source.id],
+      [versionOne.value.source.sha256, versionTwo.value.source.sha256],
+      [versionOneOperation, versionTwoOperation],
+    ]));
     await withDeadline(
       environment.client.workflow.start(bpmnProcessWorkflowType, {
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [directStartInput(startArguments[0], directPublicationId), startArguments[1]],
+        args: [fanoutArguments[0], fanoutArguments[1]],
       }),
       operationDeadlineMs,
-      "direct Workflow-start mutation",
+      "additional matching-version Workflow-start mutation",
     );
     const directExecution = await waitForOnlyNewWorkflow(
       environment.client,
@@ -306,6 +312,21 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     );
     assert.equal(directExecution.workflowId, directWorkflowId);
     assert.deepEqual(await listScheduleIds(environment.client), directSchedulesBefore);
+    const directHistory = await withDeadline(
+      processHandle(environment.client.workflow, directExecution).fetchHistory(),
+      operationDeadlineMs,
+      "additional matching-version Workflow history",
+    ) as TemporalHistory;
+    const recordedFanoutArguments = workflowStartArguments(directHistory);
+    assertVersionStart(
+      recordedFanoutArguments,
+      versionTwo.value.source.sha256,
+      versionTwoOperation,
+    );
+    assert.throws(
+      () => assertNoSemanticInstanceFanout([startArguments, recordedFanoutArguments]),
+      /semantic Process instance fanout/u,
+    );
     const missing = await getMissingMessageStartPublication(origin, directPublicationId);
     publicCaptures.push(missing);
     assert.equal(missing.value.error.code, PublicApiErrorCode.NotFound);
@@ -422,7 +443,7 @@ function sourceRevision(
     );
 }
 
-function assertVersionOneStart(
+function assertVersionStart(
   args: readonly [unknown, unknown],
   sourceSha256: string,
   interfaceOperationId: string,
@@ -436,14 +457,44 @@ function assertVersionOneStart(
   assert.equal(identity.sourceSha256, sourceSha256);
 }
 
-function directStartInput(value: unknown, identity: string): Record<string, unknown> {
-  const start = requireRecord(value, "Message Start stimulus");
-  assert.equal(start.kind, "triggerMessageStart");
-  return {
-    ...start,
-    commandId: `${identity}-command`,
-    instanceId: `${identity}-instance`,
-  };
+function assertNoSemanticInstanceFanout(
+  starts: readonly (readonly [unknown, unknown])[],
+): void {
+  const instances = new Set<string>();
+  for (const [stimulus] of starts) {
+    const start = requireRecord(stimulus, "Message Start stimulus");
+    const instanceId = start.instanceId;
+    if (typeof instanceId !== "string" || instanceId.length === 0) {
+      throw new TypeError("Message Start stimulus needs a semantic Process instance identity");
+    }
+    if (instances.has(instanceId)) {
+      throw new TypeError(`semantic Process instance fanout: ${instanceId}`);
+    }
+    instances.add(instanceId);
+  }
+}
+
+function replaceExactStringValues<Value>(
+  value: Value,
+  replacements: ReadonlyMap<string, string>,
+): Value {
+  if (typeof value === "string") {
+    return (replacements.get(value) ?? value) as Value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((candidate) =>
+      replaceExactStringValues(candidate, replacements)
+    ) as Value;
+  }
+  if (typeof value !== "object" || value === null) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, candidate]) => [
+      key,
+      replaceExactStringValues(candidate, replacements),
+    ]),
+  ) as Value;
 }
 
 function assertPublicResponsesHidePrivateFacts(
