@@ -1,8 +1,8 @@
-# BPM platform Message Start ingress proposal
+# BPM platform Message Start ingress specification
 
 ## Status
 
-**Owner-approved; complete implementation, evidence, and cost reflection are ready for closure review.** The exact public PUT/GET routes, production server composition, HTTP-only exact-version UI, live response-loss and Worker-replacement witness, and browser acceptance extend the approved first-green checkpoint without changing its contract. Independent review approved checkpoint target `8f3c7c1` with no findings. The target-bound complete repository and M2 showcase gates plus guarded warm closure review remain before graduation. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** The exact public PUT/GET routes, production server composition, HTTP-only exact-version UI, live response-loss and Worker-replacement witness, and browser acceptance implement the approved contract without changing BPMN meaning. Closure target `f13b01f` passed the complete repository and M2 showcase gates; the checkpoint reviewer approved correction targets `9e9a3a3` and `875b1e5`. The increment changes no semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
@@ -208,46 +208,6 @@ The smallest executable refinement witness keeps the Worker absent, accepts one 
 
 The existing Message Start semantic, Lean, differential, and direct Temporal evidence remain regression floors. They are not counted as evidence that Product 2 routing, persistence, retry, or public receipts are correct.
 
-## Package ownership and headroom
-
-The exact growing owners and mechanically measured headroom are:
-
-| Path | Responsibility | Current owner bound | `what-binds` |
-|---|---|---:|---:|
-| `packages/engine-api/src/definition-capabilities.ts` | Add exact Message Start capability projection. | `30/600` | 20 guards, 1 registry |
-| `packages/engine-api/src/index.ts` | Export the new Product 1 operation. | `111/600` | 20 guards, 1 registry |
-| `packages/temporal-adapter/client/src/definition-start-client.ts` | Retain the shared branded lazy runtime only. | `136/600` | 20 guards, 1 registry |
-| `packages/temporal-adapter/client/package.json` | Export the selected `message-start` client subpath. | declarative manifest | 21 guards, 1 registry |
-| `platform/foundation/engine-gateway/src/index.ts` | Compose the new host and export its closed contract. | `186/600` | 33 guards, 3 registries |
-| `platform/foundation/engine-gateway/src/definition-schedule-gateway.ts` | Relinquish generic capability mapping; retain Schedule behavior. | `261/600` | 28 guards, 3 registries |
-| `platform/contracts/src/definitions.ts` | Widen public definition capabilities. | `95/600` | 28 guards, 2 registries |
-| `platform/contracts/src/deployed-definition-decoder.ts` | Decode exact `{ messageStarts, timerStarts }`. | `124/600` | 28 guards, 2 registries |
-| `platform/contracts/src/index.ts` | Export new public contracts. | `12/600` | 33 guards, 2 registries |
-| `platform/modules/definitions/src/contracts.ts` | Widen internal capability and repository contracts. | `146/600` | 28 guards, 3 registries |
-| `platform/modules/definitions/src/definition-capabilities.ts` | Own strict capability clone, equality, and JSON encoding. | `75/600` | 28 guards, 3 registries |
-| `platform/modules/definitions/src/definition-public-values.ts` | Project complete public capabilities. | `36/600` | 28 guards, 3 registries |
-| `platform/modules/definitions/src/sqlite-definition-repository.ts` | Invoke the shared database epoch and retain definition rows. | `309/600` | 28 guards, 3 registries |
-| `platform/modules/definitions/src/sqlite-definition-schedule-repository.ts` | Invoke the shared epoch and decode widened embedded snapshots. | `574/600` | 28 guards, 3 registries |
-| `platform/modules/definitions/src/index.ts` | Export the publication service, repository, routes, contracts, and shared schema error. | `65/600` | 33 guards, 3 registries |
-| `platform/apps/server/src/composition.ts` | Wire publication recovery before listen. | `114/600` | 28 guards, 3 registries |
-| `platform/apps/web/src/definitions-api.ts` | Use extracted exact-definition comparison. | `276/600` | 28 guards, 3 registries |
-| `platform/apps/web/src/definition-schedule-api.ts` | Use extracted exact-definition comparison. | `269/600` | 28 guards, 3 registries |
-| `platform/apps/web/src/app.tsx` | Compose the exact-version publication panel. | `224/600` | 28 guards, 3 registries |
-
-The exact new cohesive source owners are:
-
-- Product 1 and Temporal: `packages/engine-api/src/definition-message-start.ts`, `packages/temporal-adapter/client/src/message-start-client.ts`, and their same-named focused tests, each bound by 20 guards and one package registry.
-- Engine gateway: `platform/foundation/engine-gateway/src/definition-capabilities.ts`, `platform/foundation/engine-gateway/src/definition-message-start-gateway.ts`, and `platform/foundation/engine-gateway/test/definition-message-start-gateway.test.ts`, each bound by 28 guards and three registries.
-- Public contract: `platform/contracts/src/message-start-publications.ts`, `message-start-publication-decoders.ts`, `message-start-publication-routes.ts`, and their runtime and type-test partners, each bound by 28 guards and two registries.
-- Definitions module: `platform/modules/definitions/src/database-schema-epoch.ts`, `message-start-publication-contracts.ts`, `message-start-publication-values.ts`, `message-start-publication-service.ts`, `sqlite-message-start-publication-repository.ts`, `message-start-publication-http-routes.ts`, and their focused service, SQLite, and HTTP tests, each bound by 28 guards and three registries.
-- Web: one focused exact-definition comparison owner and test, then separate HTTP-only publication client, panel, and tests under `platform/apps/web`; each platform path is bound by 28 guards and three registries.
-- Showcase: `showcase/m2-message-start-ingress/README.md` is bound by 13 guards and one registry; `package.json` by 8 and one; `tsconfig.json` by 6 and one; `test/http-support.ts` and `test/temporal-support.ts` by 4 and one each; and `playwright.config.ts`, `src/host.ts`, `test/m2-message-start-ingress.test.ts`, and `e2e/message-start-ingress.spec.ts` by 3 and one each.
-- Governance: this proposal is bound by 31 guards and `docs/README.md`.
-
-The schedule repository has 26 lines of measured headroom, so its only feature edit is the shared epoch invocation and widened decoder use; a larger change requires extraction. The Workflow, Worker, protocol start stimulus, semantic core, checked graph, IL, and Lean files do not change. Product 2 never imports the Temporal client directly. Before adding a third web client, the duplicated exact-definition comparison is extracted and tested rather than copied again.
-
-Source hygiene, Product 1/Product 2 and Temporal package boundaries, pre-release architecture, exact schema/contract guards, project configuration, documentation reviewability, review policy, Markdown links, and verification entrypoint coverage are mandatory.
-
 ## Required, optional, and excluded functionality
 
 Required:
@@ -275,13 +235,11 @@ Excluded:
 - new BPMN source admission, semantic profile, checked graph, IL operation, core transition, public semantic observation, Workflow implementation, Lean proof, CIB relationship, or A12 behavior;
 - instance search, which remains the final M2 platform increment.
 
-## Acceptance and stop conditions
+## Acceptance and reopen conditions
 
-The proposal may enter implementation only after context-cold approval. Because it changes a public wire contract, stored capability schema, admission capability, and Temporal refinement claim, the first green Product 1 capability plus public contract, durable lifecycle, and host client is committed as a semantic checkpoint and sent to a new context-cold reviewer before UI and live evidence continue.
+The maintained acceptance boundary is the complete repository gate, the M2 live and browser showcase gates, the stable rule matrix above, and the exact implemented and absent status in [IMPLEMENTATION-MAP.md](IMPLEMENTATION-MAP.md). The closure evidence must retain an exact production-derived version-2 fanout mutation and a field-specific browser oracle for the distinct Process-instance identity.
 
-The increment closes only after the complete repository gate, cost/reflection record, exact-status updates, closure review, and graduation from `-PROPOSAL.md` to `-SPEC.md`. A warm closure review is eligible only when the approved checkpoint reviewer, descendant target, continuity manifest, and unchanged account, public contract, exclusions, and evidence strategy satisfy the guarded rule.
-
-Stop and reopen this proposal if the direct client cannot provide Worker-independent exact retained description, if Product 1 cannot preserve the complete channel without exposing the program, if a no-redispatch tombstone cannot be persisted before recovery, or if the product requires unbounded retry-transparent accepted receipts. That stronger requirement needs an explicitly approved retained Schedule or router/Child-Workflow coordinator and is not a local retry change.
+Reopen this specification if the direct client cannot provide Worker-independent exact retained description, if Product 1 cannot preserve the complete channel without exposing the program, if a no-redispatch tombstone cannot be persisted before recovery, or if the product requires unbounded retry-transparent accepted receipts. That stronger requirement needs an explicitly approved retained Schedule or router/Child-Workflow coordinator and is not a local retry change.
 
 ## Common-mode risks and nearest unsupported claim
 
@@ -306,4 +264,4 @@ The nearest unsupported claim is that a matching retained Memo independently est
 |---|---|---|---|---|
 | Proposal | `4223ded` | `fork-turns-none` | `approve-with-required-edits` | `ce180a9` |
 | Semantic checkpoint | `8f3c7c1` | `fork-turns-none` | `approve` | `not-required` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `f13b01f` | `checkpoint-reviewer-warm` | `approve-with-required-edits` | `875b1e5` |
