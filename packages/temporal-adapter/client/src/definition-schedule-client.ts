@@ -5,6 +5,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   ScheduleAlreadyRunning,
+  ScheduleNotFoundError,
   ScheduleOverlapPolicy,
 } from "@temporalio/client";
 import type {
@@ -275,16 +276,23 @@ export function pauseTemporalDefinitionSchedule(
   );
 }
 
-export function deleteTemporalDefinitionSchedule(
+export async function deleteTemporalDefinitionSchedule(
   client: TemporalDefinitionScheduleClient,
   scheduleId: string,
 ): Promise<void> {
   requireNonempty(scheduleId, "scheduleId");
-  return withDeadline(
-    scheduleClientOf(client).schedule.getHandle(scheduleId).delete(),
-    operationDeadlineMs,
-    "Timer Start Schedule deletion",
-  );
+  try {
+    await withDeadline(
+      scheduleClientOf(client).schedule.getHandle(scheduleId).delete(),
+      operationDeadlineMs,
+      "Timer Start Schedule deletion",
+    );
+  } catch (error) {
+    if (error instanceof ScheduleNotFoundError) {
+      return;
+    }
+    throw error;
+  }
 }
 
 function scheduleClientOf(

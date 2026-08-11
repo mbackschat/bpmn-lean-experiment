@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { ScheduleNotFoundError } from "@temporalio/client";
+
 import {
   deleteTemporalDefinitionSchedule,
   describeTemporalDefinitionSchedule,
@@ -51,6 +53,20 @@ test("describes, pauses, and deletes by Schedule identity without returning a ha
   assert.equal(description.info.nextActionEpochMs[0], dueAtEpochMs);
   assert.equal(description.action.retry?.maximumAttempts, 1);
   assert.equal(JSON.stringify(description).includes(privateHandleSentinel), false);
+});
+
+test("treats an already-absent Schedule as completed idempotent deletion", async () => {
+  const client = {
+    schedule: {
+      getHandle: (scheduleId: string) => ({
+        delete: async () => {
+          throw new ScheduleNotFoundError("Schedule not found", scheduleId);
+        },
+      }),
+    },
+  } as unknown as TemporalDefinitionScheduleClient;
+
+  await deleteTemporalDefinitionSchedule(client, "schedule-deleted");
 });
 
 function rawDescription(scheduleId: string): unknown {

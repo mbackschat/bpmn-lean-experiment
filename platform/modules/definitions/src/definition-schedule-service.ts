@@ -77,12 +77,22 @@ export class DefinitionScheduleService {
     const loaded = await this.#loadDefinition(reference);
     const timerStart = await this.#validateDefinition(loaded);
     const dueAt = deriveScheduleDueAt(activationAt, timerStart.durationMs);
-    if (previous !== null) {
-      requireSameScheduleIntent(previous, loaded.definition, timerStart, activationAt, dueAt);
+    const current = this.#dependencies.schedules.get(reference);
+    if (previous !== null && current === null) {
+      throw new DefinitionScheduleIntegrityError(
+        "reserved schedule disappeared during definition validation",
+      );
     }
-    const reservation = previous === null
+    if (current !== null) {
+      requireSameScheduleIntent(current, loaded.definition, timerStart, activationAt, dueAt);
+    } else if (Date.parse(activationAt) <= this.#dependencies.now()) {
+      throw new DefinitionScheduleValidationError(
+        "activationAt must still be in the future after definition validation",
+      );
+    }
+    const reservation = current === null
       ? this.#reserve(reference, loaded.definition, timerStart, activationAt, dueAt)
-      : { inserted: false, record: previous };
+      : { inserted: false, record: current };
     requireSameScheduleIntent(
       reservation.record,
       loaded.definition,

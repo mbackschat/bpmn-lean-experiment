@@ -83,6 +83,27 @@ test("accepted response lost after action exhaustion persists one started instan
   assert.equal(fixture.schedules.records.size, 1);
 });
 
+test("restart completes terminal cleanup after a successful delete response is lost", async () => {
+  const fixture = createFixture();
+  fixture.host.createResults.push({
+    phase: DefinitionScheduleHostPhase.Started,
+    executionWorkflowId: "opaque-workflow",
+    firstRunId: "opaque-first-run",
+  });
+  fixture.host.failNextDeleteAfterSuccess = true;
+
+  await assert.rejects(
+    fixture.service.put({ ...reference(), activationAt }),
+    /delete response lost/u,
+  );
+  assert.equal(fixture.schedules.get(reference())?.cleanupComplete, false);
+
+  await fixture.restartedService().reconcileAll();
+
+  assert.equal(fixture.schedules.get(reference())?.cleanupComplete, true);
+  assert.equal(fixture.host.deleteCalls.length, 2);
+});
+
 test("changed activation under one public key conflicts without a Schedule host call", async () => {
   const fixture = createFixture();
   await fixture.service.put({ ...reference(), activationAt });
@@ -128,6 +149,34 @@ test("rejects malformed, non-whole-second, noncanonical, and past activation bef
     assert.equal(fixture.host.validationCalls.length, 0, candidate);
     assert.deepEqual(fixture.host.scheduleCalls, [], candidate);
   }
+});
+
+test("rejects a derived due instant outside the public four-digit year domain", async () => {
+  const fixture = createFixture();
+  const lastPublicSecond = "9999-12-31T23:59:59.000Z";
+
+  await assert.rejects(
+    fixture.service.put({ ...reference(), activationAt: lastPublicSecond }),
+    (error: unknown) => error instanceof DefinitionScheduleValidationError,
+  );
+
+  assert.equal(fixture.host.validationCalls.length, 1);
+  assert.deepEqual(fixture.host.scheduleCalls, []);
+  assert.equal(fixture.schedules.get(reference()), null);
+});
+
+test("rechecks future activation after asynchronous definition validation", async () => {
+  const fixture = createFixture();
+  fixture.host.beforeValidationResult = () => fixture.setNow(activationAt);
+
+  await assert.rejects(
+    fixture.service.put({ ...reference(), activationAt }),
+    (error: unknown) => error instanceof DefinitionScheduleValidationError,
+  );
+
+  assert.equal(fixture.host.validationCalls.length, 1);
+  assert.deepEqual(fixture.host.scheduleCalls, []);
+  assert.equal(fixture.schedules.get(reference()), null);
 });
 
 test("started host action wins a cancellation race and remains privately addressed", async () => {
@@ -435,6 +484,8 @@ class MemoryHost implements DefinitionScheduleHost {
   readonly inspectResults: DefinitionScheduleHostResult[] = [];
   readonly pauseResults: DefinitionScheduleHostResult[] = [];
   failNextPause = false;
+  failNextDeleteAfterSuccess = false;
+  beforeValidationResult: (() => void) | null = null;
   paused = false;
 
   readonly definition: DefinitionMetadata;
@@ -448,6 +499,8 @@ class MemoryHost implements DefinitionScheduleHost {
       ...request,
       bytes: Uint8Array.from(request.bytes),
     });
+    this.beforeValidationResult?.();
+    this.beforeValidationResult = null;
     return this.validationResults.shift() ?? {
       status: "accepted" as const,
       source: structuredClone(this.definition.source),
@@ -492,6 +545,10 @@ class MemoryHost implements DefinitionScheduleHost {
   async delete(request: DefinitionScheduleHostRequest): Promise<void> {
     this.scheduleCalls.push("delete");
     this.deleteCalls.push(structuredClone(request));
+    if (this.failNextDeleteAfterSuccess) {
+      this.failNextDeleteAfterSuccess = false;
+      throw new Error("delete response lost");
+    }
   }
 }
 

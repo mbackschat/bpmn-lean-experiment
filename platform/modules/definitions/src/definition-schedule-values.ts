@@ -4,6 +4,9 @@ import type {
   DefinitionTimerStartCapability,
 } from "./contracts.js";
 import {
+  decodeCanonicalWholeSecondUtcInstant,
+} from "@bpmn-lean/platform-contracts";
+import {
   equalDefinitionStartCapabilities,
 } from "./definition-capabilities.js";
 import {
@@ -81,29 +84,23 @@ export function deriveScheduleDueAt(
     throw new DefinitionScheduleValidationError("derived schedule due instant is out of range");
   }
   try {
-    return new Date(dueMs).toISOString();
+    return decodeCanonicalWholeSecondUtcInstant(
+      new Date(dueMs).toISOString(),
+      "dueAt",
+    );
   } catch {
     throw new DefinitionScheduleValidationError("derived schedule due instant is out of range");
   }
 }
 
 export function requireWholeSecondActivation(value: string): string {
-  if (typeof value !== "string" || !value.endsWith(".000Z")) {
+  try {
+    return decodeCanonicalWholeSecondUtcInstant(value, "activationAt");
+  } catch {
     throw new DefinitionScheduleValidationError(
       "activationAt must be a canonical whole-second UTC instant",
     );
   }
-  const timestamp = Date.parse(value);
-  let canonical: string;
-  try {
-    canonical = new Date(timestamp).toISOString();
-  } catch {
-    throw new DefinitionScheduleValidationError("activationAt is out of range");
-  }
-  if (canonical !== value) {
-    throw new DefinitionScheduleValidationError("activationAt must be canonical");
-  }
-  return value;
 }
 
 export function projectDefinitionSchedule(
