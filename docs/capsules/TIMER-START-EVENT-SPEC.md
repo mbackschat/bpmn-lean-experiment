@@ -1,8 +1,8 @@
-# Timer Start Event proposal
+# Timer Start Event specification
 
 ## Status
 
-**Implementation and evidence are complete; independent closure review is pending.** Checkpoint target `7ac0307` received `approve-with-required-edits`; correction `ba3bbf8` closed the stale IL contract and missing XSD regression binding. Commit `8aa0cc3` atomically registered the profile, answer-free scenario and differential evidence, and runnable example. Proposal correction target `1c5c702` received `approve-with-required-edits`; final correction `71fa032` closed the opaque returned-identity, witness-ordering, review-status, and registered-status findings. The owner approved that corrected decision, and commit `61b9bb7` completed the live one-action Schedule evidence through the service-returned execution identity. Product 2 scheduling remains excluded. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
+**Implemented, closure-reviewed, evidence-closed, and graduated.** This specification defines one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, one fresh private executable Process instance, and one-action Temporal Schedule refinement through the service-returned execution identity. Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, and a public scheduling API remain excluded.
 
 ## Independent cold-review receipt
 
@@ -10,19 +10,13 @@
 |---|---|---|---|---|
 | Proposal | `1c5c702` | `fork-turns-none` | `approve-with-required-edits` | `71fa032` |
 | Semantic checkpoint | `7ac0307` | `fork-turns-none` | `approve-with-required-edits` | `ba3bbf8` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `fb8929e` | `fork-turns-none` | `approve-with-required-edits` | `d27308c` |
 
 The Schedule execution-identity proposal correction used two warm audit rounds; `71fa032` is the final correction target.
 
-## Question
+## Contract
 
-May one exact top-level Timer Start Event instantiate one new Process when its resolved `PT1S` timer occurrence fires, then enter the existing sequential User Task lifecycle without turning Temporal Schedule state or Product 2 deployment policy into BPMN semantic state?
-
-The recommendation is **yes, under the exact source, semantic, host, and evidence boundary below**. The semantic core receives one resolved timer occurrence. The later Product 2 scheduling increment will own schedule creation, exact definition-version binding, activation, deactivation, retry, and operator controls.
-
-## Selection basis
-
-[PLAN.md](../PLAN.md#ordered-work) resumes M2 selection after closing cyclic control flow and Message Start Event. The remaining engine candidates are Timer Start Event, Terminate End Event, and a configured generic Task. Timer Start is selected because it is the most frequent remaining mechanism in the pinned CIB Seven breadth corpus, reuses the established timer and triggered-start boundaries, and directly unlocks the next Product 2 definition-scheduling increment. Terminate End opens scope-wide cancellation, while generic Task still lacks a selected execution binding.
+One exact top-level Timer Start Event instantiates one new Process when its resolved `PT1S` timer occurrence fires, then enters the existing sequential User Task lifecycle without turning Temporal Schedule state or Product 2 deployment policy into BPMN semantic state. The semantic core receives one resolved timer occurrence. Product 2 owns later schedule creation, exact definition-version binding, activation, deactivation, retry, and operator controls.
 
 The existing [Intermediate Catch Timer specification](INTERMEDIATE-CATCH-TIMER-SPEC.md) already owns exact `PT1S` lexical admission and normalization to 1000 milliseconds. Reusing that duration representation is correct. Reusing its `awaitTimer`, `openTimers`, or `FireTimer` lifecycle would be wrong because no Process instance exists before a top-level Timer Start occurrence.
 
@@ -39,11 +33,11 @@ BPMN 2.0.2 is the semantic authority for this standards-only capsule.
 - Clause 13.2 retains the Process token and completion account after the Start Event produces outgoing control.
 - Clause 13.5.1 owns the Process-level Start Event execution context.
 
-The normative CMOF and XSD `StartEvent`, `CatchEvent`, `TimerEventDefinition`, `FormalExpression`, `SequenceFlow`, `timeDate`, `timeCycle`, `timeDuration`, and `isInterrupting` facts constrain source structure. Table 10.84 describes Timer Start using a time-date or cycle, while Table 10.101 explicitly permits `timeDuration` whenever the trigger is a Timer. This proposal reads Table 10.101 as permitting the exact duration form and treats the origin from which that duration is scheduled as a host activation detail, not Process runtime state. BPMN does not standardize deployment-time schedule objects, schedule identifiers, version replacement, catch-up windows, overlap policy, or operator controls. Those are host and product policy.
+The normative CMOF and XSD `StartEvent`, `CatchEvent`, `TimerEventDefinition`, `FormalExpression`, `SequenceFlow`, `timeDate`, `timeCycle`, `timeDuration`, and `isInterrupting` facts constrain source structure. Table 10.84 describes Timer Start using a time-date or cycle, while Table 10.101 explicitly permits `timeDuration` whenever the trigger is a Timer. This specification reads Table 10.101 as permitting the exact duration form and treats the origin from which that duration is scheduled as a host activation detail, not Process runtime state. BPMN does not standardize deployment-time schedule objects, schedule identifiers, version replacement, catch-up windows, overlap policy, or operator controls. Those are host and product policy.
 
 The standard permits time-date and cycle expressions, multiple Start Events, multiple outgoing Sequence Flows, Event Sub-Process starts, and broader expression languages. This profile defers those conforming cases. Its checked and IL representations retain exact Start Event identity, timer definition, and all outputs so later coverage can broaden admission without reinterpreting programs accepted here.
 
-The proposal adds `BPMN-TIMER-START-01` to the [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md). It remains `unsupported` until implementation and closure evidence graduate this proposal.
+The [BPMN requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) records `BPMN-TIMER-START-01` as supported within this exact specification and evidence boundary.
 
 - Ledger citation lock for `BPMN-TIMER-START-01`: Clauses 10.5.2, 10.5.5, 10.5.6, 13.2, and 13.5.1 plus Tables 10.84 and 10.101
 
@@ -211,7 +205,7 @@ Pre-Schedule admission and post-Schedule action integrity are distinct boundarie
 
 ## Definition scheduling boundary
 
-Product 2 scheduling is the next platform increment after this engine capsule closes. It is not part of this proposal's semantic implementation.
+Product 2 scheduling is outside this engine specification and remains a later platform increment.
 
 The later public contract must consume an engine-published Timer Start capability projection. Product 2 may not inspect private checked graphs or IL. That projection must contain only the information required to create an exact schedule, including immutable definition version and Start Event identity, and must not publish semantic implementation values.
 
@@ -316,15 +310,11 @@ Pre-release replace-in-place policy applies. Checked-node, Semantic Process oper
 
 Existing `startProcess`, `triggerMessageStart`, `initiate`, `initiateMessage`, `awaitTimer`, `FireTimer`, runtime state, canonical observations, and all pre-existing artifacts gain no field and retain exact serialized bytes. No retained cross-version Temporal history corpus exists, so cross-version replay remains unclaimed.
 
-### Owners this implementation grows
-
-Implementation is complete and no source owner may grow before closure review. The closure remains bound to the exact [Timer Start semantic owner](../../packages/semantic-core/src/semantic-process-timer-start.ts), [Timer Start source owner](../../packages/bpmn-source/src/timer-start-event-source.ts), [Lean Timer Start semantics](../../BpmnSemantics/SemanticProcess/TimerStart.lean), and [live Schedule witness](../../packages/temporal-adapter/testkit/test/timer-start-temporal.test.ts). The executable inventories and size checks below remain authoritative; proposal-only estimates are deliberately not retained as a second source of truth.
-
-### Guards and oracles
+## Guards and oracles
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Require proposal owner/guard routing and remove proposal-only headroom inventory at graduation. |
+| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep the specification registered and free of proposal-only owner/headroom inventory. |
 | [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep `BPMN-TIMER-START-01`, citation, disposition, and capsule aligned. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Cover every new union arm and reject malformed exact shapes. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind checked Start Event origin/duration/outputs to the lowered operation. |
@@ -343,17 +333,13 @@ Implementation is complete and no source owner may grow before closure review. T
 | [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Bind each governed review to immutable targets and routed sections. |
 | [Markdown links](../../scripts/markdown-links.test.ts) | Resolve every owner, guard, requirement, and evidence link. |
 
-## Epistemic closure and cost boundary
+## Evidence boundary
 
-Closure may establish only one exact top-level `PT1S` Timer Start profile, its independent Lean and TypeScript semantics, and one-action Temporal Schedule refinement. It does not establish general timer expressions, recurring schedules, definition activation policy, CIB compatibility, Product 2 scheduling, or full Process Execution Conformance.
+This specification establishes only one exact top-level `PT1S` Timer Start profile, its independent Lean and TypeScript semantics, and one-action Temporal Schedule refinement. It does not establish general timer expressions, recurring schedules, definition activation policy, CIB compatibility, Product 2 scheduling, or full Process Execution Conformance.
 
 The nearest realistic counterexample is an active recurring schedule whose bound definition receives a newer deployed version. A resolver that silently switches to latest changes the executable program without changing the schedule identity. The selected exact-version boundary makes that behavior rejectable later instead of treating it as an implementation detail.
 
 Meaningful mutations are: treat Timer Start as manual start; compare no Start Event ID; normalize a non-`PT1S` expression; impose Timer Start's FormalExpression rule on an existing boundary reader; lower a stale output; open a runtime Timer; invoke Workflow start directly instead of the Schedule action; mutate the stored action after pre-Schedule admission; treat the configured base as the service execution identity; leak Schedule ID into observation; and omit one atomic registration. Each reaches a public, semantic, artifact, or durable-host discriminator.
-
-The commit-bounded range `fa79688..61b9bb7` adds `3711` and removes `141` nonblank code lines, and adds `149` and removes `98` nonblank documentation lines. Against Message Start Event, the approved nearest comparator at `+3584/-138` code and `+165/-97` documentation, code additions rose by `127` or about `3.5%`, while documentation additions fell by `16` or about `9.7%`. [CAPSULE-COST-LEDGER.md](../CAPSULE-COST-LEDGER.md) retains the exact measurement and consequence. No removable code process weight exists without weakening the reviewed claim: the increase is the new Temporal Schedule service boundary, opaque returned execution identity, Worker-absence observation, and action/direct-start mutations. The implementation otherwise reuses the existing triggered-root semantics, User Task lifecycle, strict wire machinery, Workflow implementation, replay support, and standards-only differential lane.
-
-The fixed closure self-assessment found one recurrence of the existing sibling-correction mechanism: the registered-status sweep corrected the named owners but initially left [the Temporal adapter guide](../../packages/temporal-adapter/README.md) calling Timer Start checkpoint-only. The proposal correction reviewer found that guide, while the cold closure reviewer found further omissions in the runnable contract, maintained IL obligations, and implementation-map inventories. [PROCESS-ASSESSMENT-LEDGER.md](../PROCESS-ASSESSMENT-LEDGER.md) retains these as one registration-status sweep instance rather than creating duplicates. Bounds, evidence reading, measurement dimensions, executable/prose substitutions, and newly stated rules produced no different finding.
 
 ## Stop conditions
 
@@ -369,17 +355,3 @@ Stop and return to research or owner decision if:
 - the frozen baseline changes or atomic registration guards cannot accept exactly one new profile and scenario;
 - any A12 or unreviewed CIB behavior becomes necessary;
 - an owner would cross 600 nonblank lines without a cohesive extraction, or the first Lean change cannot pass the one-CPU, no-swap, 3 GiB resource audit.
-
-## Owner decisions after review
-
-Owner approval is requested for these exact decisions:
-
-1. Select one top-level exact-`PT1S` Timer Start Event with `0 -> 1` arity and the linear User Task witness.
-2. Add separate `TimerStartEvent`, `InitiateTimer`, and `TriggerTimerStart` variants while preserving None, Message, and Intermediate Catch Timer values byte-for-byte.
-3. Treat the semantic input as one resolved Timer Start occurrence carrying exact Process, semantic instance, and Start Event identity, with no schedule or due-time field.
-4. Use a test-owned one-action Temporal Schedule for durable hosting, with an exact semantic-instance-derived configured Workflow-ID base, a service-returned execution Workflow ID used for subsequent addressing, no Workflow Timer or Signal, and Worker-absence and replay evidence.
-5. Keep Product 2 schedule API, lifecycle, and exact-version enforcement in the next platform increment while preserving exact compiled-program identity through this engine capsule.
-6. Use a proved Lean lane and require a conditional semantic checkpoint before registered evidence and live Temporal work.
-7. Keep Timer Start standards-only with no new CIB relationship or A12 dependency.
-
-The owner approved decisions 1 through 7 on 2026-08-11 and authorized implementation from reviewed correction target `eaaf944`. The owner separately approved corrected decision 4 at final reviewed correction target `71fa032` and authorized the live Schedule evidence lane.
