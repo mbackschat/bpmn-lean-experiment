@@ -48,7 +48,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 ### M2 — the file runs its real shape
 
-**Status: in progress.** Work is paused after the resumption-bounded cyclic-control-flow, Message Start Event, and Timer Start Event increments were implemented, closure-reviewed, evidence-closed, and graduated. Terminate End Event, the configured generic Task, and the platform increments remain unselected.
+**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, and Timer Start Event increments are implemented, closure-reviewed, evidence-closed, and graduated. Terminate End Event is the active increment; the configured generic Task and the platform increments remain unselected.
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
@@ -147,7 +147,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Paused: leave the next M2 increment unselected.** Timer Start is graduated. Do not begin Terminate End Event, the configured generic Task, Product 2 definition scheduling, message ingress, or instance search until the owner resumes M2 selection.
+1. **Active: specify Terminate End Event.** Select the smallest forward-compatible scope-termination account that distinguishes root completion from nested containing-scope termination, completes the Temporal hosting/refinement preflight, and passes a context-cold proposal review before implementation.
 
 ## Approved decisions
 
@@ -252,9 +252,9 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: remain paused after graduating the [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md).** The next M2 increment is intentionally unselected. Do not add Product 2 scheduling, recurrence, calendar forms, activation policy, public schedule management, Terminate End Event, the configured generic Task, message ingress, instance search, or another semantic family until the owner resumes selection.
+**Next action: prepare the Terminate End Event proposal.** Use the normative BPMN account and existing scope-cancellation mechanisms to define one smallest complete, forward-compatible slice, including the Temporal hosting/refinement preflight and exact preservation obligations. Commit the immutable proposal target and obtain the required context-cold proposal review before implementation. Do not begin the configured generic Task, Product 2 scheduling, message ingress, instance search, or another semantic family while this increment is active.
 
-**No technical, governance, or environmental blocker remains.** This is an intentional owner-requested pause, not a blocked state. The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
+**No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
 **Last verified commands:** the complete Timer Start closure verifier passed at clean immutable target `fb8929e` in 190.02 seconds with log SHA-256 `9eedaf374a43e915321dfc239a82a550d7522da068d6aa792c3ec52460abefe4` and replayed 40 live histories. The live one-action Schedule witness passed with a ten-event replayable history, Worker absence through the due occurrence, opaque service-returned Workflow/Run addressing, one exhausted action, and the reviewed negative/mutation matrix; service-reported history bytes remain run-specific. Closure correction `d27308c` passes the focused documentation/review suite 42/42, what-binds, and diff checks, and the same cold reviewer approved it without remaining findings. The mandatory Linux/arm64 admission audit passed with Lean 4.31.0 under one CPU, a 3 GiB memory-and-swap ceiling with effective swap disabled, and no OOM: 44.64 seconds wall, 2,668,168 KiB maximum RSS, and 2,980,679,680 bytes cgroup peak. The complete platform M1 gate passed in 14.53 seconds, the registered M1 showcase passed in 9.11 seconds, and the infrastructure gate passed 220/220 in 38.18 seconds.
 
