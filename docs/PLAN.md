@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close and graduate Product 2 Message Start ingress, then begin instance search.** Context-cold review approved semantic checkpoint `8f3c7c1` with no findings. The descendant implementation now contains the exact public contract, shared SQLite epoch, durable no-redispatch lifecycle, handle-free host client, strict HTTP/server and UI surfaces, plus green live Temporal and browser evidence. Run the complete gate, record cost and reflection, obtain guarded warm closure review from the checkpoint reviewer, and graduate the proposal. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
+1. **Active: close and graduate Product 2 Message Start ingress, then begin instance search.** Context-cold review approved semantic checkpoint `8f3c7c1` with no findings. The descendant implementation now contains the exact public contract, shared SQLite epoch, durable no-redispatch lifecycle, handle-free host client, strict HTTP/server and UI surfaces, green live Temporal and browser evidence, and the commit-bounded cost reflection. Run the complete repository and M2 showcase gates, obtain guarded warm closure review from the checkpoint reviewer, and graduate the proposal. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit the complete Product 2 Message Start ingress evidence target, run the complete repository and M2 showcase gates, record cost/reflection, and obtain guarded warm closure review from the approved checkpoint reviewer.** The selected account, public contract, exclusions, and evidence strategy remain unchanged from independently approved checkpoint `8f3c7c1`.
+**Next action: commit the Product 2 Message Start ingress closure target, run the complete repository and M2 showcase gates, and obtain guarded warm closure review from the approved checkpoint reviewer.** The live and browser witnesses are green, the cost/reflection row is recorded, and the selected account, public contract, exclusions, and evidence strategy remain unchanged from independently approved checkpoint `8f3c7c1`.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

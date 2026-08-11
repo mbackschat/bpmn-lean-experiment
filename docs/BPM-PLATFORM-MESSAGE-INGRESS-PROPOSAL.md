@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved; complete implementation and evidence green, pending closure review.** The exact public PUT/GET routes, production server composition, HTTP-only exact-version UI, live response-loss and Worker-replacement witness, and browser acceptance extend the approved first-green checkpoint without changing its contract. Independent review approved checkpoint target `8f3c7c1` with no findings. The complete repository gate, cost/reflection record, and guarded warm closure review remain before graduation. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
+**Owner-approved; complete implementation, evidence, and cost reflection are ready for closure review.** The exact public PUT/GET routes, production server composition, HTTP-only exact-version UI, live response-loss and Worker-replacement witness, and browser acceptance extend the approved first-green checkpoint without changing its contract. Independent review approved checkpoint target `8f3c7c1` with no findings. The target-bound complete repository and M2 showcase gates plus guarded warm closure review remain before graduation. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
