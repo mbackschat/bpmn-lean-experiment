@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  SemanticCheckpointProfileId,
   SemanticOperationKind,
   SemanticProfileId,
   isWellFormedSemanticProcessProgram,
@@ -16,10 +15,10 @@ import {
   terminateRootScopeId,
 } from "./terminate-end-event-fixture.ts";
 
-test("admits the exact checkpoint-only checked and IL multisets", () => {
+test("admits the exact registered checked and IL multisets", () => {
   assert.equal(
     profileAllowsCheckedProcessShape(
-      SemanticCheckpointProfileId.TerminateEnd,
+      SemanticProfileId.TerminateEnd,
       terminateCheckedNodes,
       2,
     ),
@@ -29,9 +28,9 @@ test("admits the exact checkpoint-only checked and IL multisets", () => {
   assert.equal(terminateOperation().origin.elementId, "EndEvent_Terminate");
   assert.equal(
     new Set<string>(Object.values(SemanticProfileId)).has(
-      SemanticCheckpointProfileId.TerminateEnd,
+      "bpmn-2.0.2-terminate-end-event-draft",
     ),
-    false,
+    true,
   );
 });
 

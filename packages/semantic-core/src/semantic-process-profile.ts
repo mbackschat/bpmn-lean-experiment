@@ -5,15 +5,9 @@ import {
 import type { CheckedNode } from "./checked-process-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation } from "./semantic-process-contract.js";
-import {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 
-export {
-  SemanticCheckpointProfileId,
-  SemanticProfileId,
-} from "./semantic-profile-catalog.js";
+export { SemanticProfileId } from "./semantic-profile-catalog.js";
 
 /**
  * Checks the exact operation capability selected by one reviewed profile.
@@ -283,7 +277,7 @@ function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
       ]);
-    case SemanticCheckpointProfileId.TerminateEnd:
+    case SemanticProfileId.TerminateEnd:
       return nestedChecked([
         start,
         CheckedNodeKind.EmbeddedSubProcess,
@@ -516,7 +510,7 @@ function requiredProgramShape(
           SemanticOperationKind.CompleteScope,
         ],
       };
-    case SemanticCheckpointProfileId.TerminateEnd:
+    case SemanticProfileId.TerminateEnd:
       return {
         definitionScopeCount: 2,
         operationKinds: [

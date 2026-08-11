@@ -1,0 +1,77 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-terminate-end-event-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-containing-scope-terminate-end-event",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.5.6",
+      "Clause 13.2",
+      "Clause 13.3.4",
+      "Clause 13.5.6",
+      "Table 12.22"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "embedded-sub-process",
+      "parallel-gateway-divergence",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "terminate-end-event",
+      "containing-scope-termination",
+      "sub-process-continuation-after-termination",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0007",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-terminate-end-event-compatibility-claim",
+    "root-level-terminate-end-source-profile",
+    "event-sub-processes",
+    "transactions-and-cancel-events",
+    "compensation",
+    "call-activity-termination-propagation",
+    "terminate-all-extensions",
+    "multi-instance-cancellation",
+    "arbitrary-scope-depth",
+    "arbitrary-graph-topology",
+    "public-cancel-command",
+    "termination-receipt-and-cancelled-work-audit",
+    "temporal-cancellation-api-semantics",
+    "product-2-cancellation-api",
+    "configured-generic-task",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

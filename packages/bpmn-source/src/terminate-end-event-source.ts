@@ -1,6 +1,6 @@
 import {
   CheckedNodeKind,
-  SemanticCheckpointProfileId,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type { CheckedNode } from "@bpmn-lean/semantic-core";
 
@@ -48,7 +48,7 @@ export function terminateEndSourcePropertiesValid(
   elements: ReadonlyArray<ScopedSourceElement>,
   semanticProfile: string,
 ): boolean {
-  if (semanticProfile !== SemanticCheckpointProfileId.TerminateEnd) {
+  if (semanticProfile !== SemanticProfileId.TerminateEnd) {
     return true;
   }
   const subProcesses = elements.filter(
@@ -64,7 +64,7 @@ export function terminateEndSourcePropertiesValid(
 export function terminateEndContainmentCardinalities(
   semanticProfile: string,
 ): ReadonlyArray<ExactContainmentCardinality> {
-  return semanticProfile === SemanticCheckpointProfileId.TerminateEnd
+  return semanticProfile === SemanticProfileId.TerminateEnd
     ? [{
         property: "ThrowEvent.eventDefinitions[TerminateEventDefinition]",
         projectedType: bpmnTypes.terminateEventDefinitionType,

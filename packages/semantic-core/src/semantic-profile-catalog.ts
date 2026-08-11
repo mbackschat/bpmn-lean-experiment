@@ -10,6 +10,7 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.0.0-mapped-success-service-task-draft",
   MessageStart: "bpmn-2.0.2-message-start-event-draft",
   TimerStart: "bpmn-2.0.2-timer-start-event-draft",
+  TerminateEnd: "bpmn-2.0.2-terminate-end-event-draft",
   EmbeddedSubProcessCompletion:
     "cibseven-2.2.0-embedded-subprocess-completion-draft",
   SubProcessBoundaryTimer:
@@ -38,9 +39,4 @@ export const SemanticProfileId = Object.freeze({
   UserTaskCycle: "bpmn-2.0.2-user-task-cycle-draft",
   UserTaskPreservedNotation:
     "bpmn-2.0.2-user-task-preserved-notation-draft",
-} as const);
-
-/** Runtime-frozen capabilities admitted only while a semantic checkpoint is under review. */
-export const SemanticCheckpointProfileId = Object.freeze({
-  TerminateEnd: "bpmn-2.0.2-terminate-end-event-draft",
 } as const);

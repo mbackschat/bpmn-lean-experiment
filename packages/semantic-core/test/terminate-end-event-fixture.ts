@@ -1,9 +1,9 @@
 import {
   CheckedNodeKind,
   GatewayDirection,
-  SemanticCheckpointProfileId,
   SemanticOperationKind,
   SemanticOriginKind,
+  SemanticProfileId,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   StimulusKind,
@@ -51,7 +51,7 @@ export const terminateProgram = {
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: SemanticCheckpointProfileId.TerminateEnd,
+    semanticProfile: SemanticProfileId.TerminateEnd,
     sourceId: "terminate-end-event-process",
     sourceOverlay: null,
     sourceSha256:

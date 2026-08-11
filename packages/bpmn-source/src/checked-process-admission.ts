@@ -2,7 +2,6 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
-  SemanticCheckpointProfileId,
   SemanticProfileId,
   SimpleBooleanExpressionLanguage,
   profileAllowsCheckedProcessShape,
@@ -65,7 +64,7 @@ function hasSelectedTerminateTopology(
   graph: CheckedProcessGraph,
   nodeScopes: ReadonlyMap<string, string>,
 ): boolean {
-  if (semanticProfile !== SemanticCheckpointProfileId.TerminateEnd) {
+  if (semanticProfile !== SemanticProfileId.TerminateEnd) {
     return true;
   }
   const only = <Kind extends CheckedNodeKind>(

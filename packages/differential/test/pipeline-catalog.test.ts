@@ -34,6 +34,9 @@ import {
   timerStartPipelineCases,
 } from "./timer-start-pipeline-cases.ts";
 import {
+  terminateEndPipelineCases,
+} from "./terminate-end-pipeline-cases.ts";
+import {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import {
@@ -150,6 +153,56 @@ test("registers Timer Start atomically as one standards-only exact-semantic case
       temporalRelation: TemporalCaseRelation.ExactSemantic,
     }],
   );
+});
+
+test("registers Terminate End atomically as three standards-only exact-semantic cases", () => {
+  assert.deepEqual(
+    terminateEndPipelineCases.map(
+      ({ id, cib, temporalRelation }) => ({ id, cib, temporalRelation }),
+    ),
+    [
+      {
+        id: "terminate-end-event-trigger-first",
+        cib: null,
+        temporalRelation: TemporalCaseRelation.ExactSemantic,
+      },
+      {
+        id: "terminate-end-event-sibling-first",
+        cib: null,
+        temporalRelation: TemporalCaseRelation.ExactSemantic,
+      },
+      {
+        id: "terminate-end-event-stale-sibling-after-termination",
+        cib: null,
+        temporalRelation: TemporalCaseRelation.ExactSemantic,
+      },
+    ],
+  );
+});
+
+test("makes every Terminate End regional-cancellation mutation reach its declared disagreement", async () => {
+  const contexts = await loadAndCompileCases(terminateEndPipelineCases);
+  const results = runCoreTargets(contexts).results;
+
+  for (const context of contexts) {
+    const result = results.get(context.scenario.id);
+    assert.ok(result !== undefined);
+    const mutated = mutableClone(result);
+    context.pipelineCase.injectMutation(mutated);
+
+    const comparison = compareTargetResults(
+      { target: DifferentialTarget.SemanticCore, result },
+      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+    );
+    assert.equal(comparison.kind, ComparisonKind.Disagreement);
+    if (comparison.kind !== ComparisonKind.Disagreement) {
+      throw new Error("Terminate End mutation did not create a disagreement");
+    }
+    assert.deepEqual(
+      comparison.disagreement,
+      context.pipelineCase.expectedInjectedDisagreement,
+    );
+  }
 });
 
 test("makes the Timer Start instance-identity mutation reach its declared disagreement", async () => {

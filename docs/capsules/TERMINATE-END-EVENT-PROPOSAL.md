@@ -320,20 +320,20 @@ The owner inventory is mechanically derived with `node scripts/what-binds.ts`; [
 | [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 201 | Add the no-output `terminateScope` operation. |
 | [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 133 | Validate input, scope, and canonical identity or delegate before the limit. |
 | [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 99 | Add the synthetic completion edge through a cohesive extracted owner if fresh growth approaches the limit. |
-| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 35 | Split the catalog/capability responsibility before profile growth crosses 600. |
+| [profile capability](../../packages/semantic-core/src/semantic-process-profile.ts) | 41 | Split the catalog/capability responsibility before profile growth crosses 600. |
 | [runtime dispatcher](../../packages/semantic-core/src/semantic-process-runtime.ts) | 233 | Add only one delegated operation arm. |
 | [scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 484 | Own shared subtree classification and selected-root-retaining cancellation. |
 | [projected flow-element keys](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 323 | Add the exact Terminate End projection key set consumed by the shared projector guard. |
 | [checked-element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 219 | Delegate exact Terminate End projection without changing None/Error branches. |
-| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 149 | Add exact profile multiset and scope policy. |
+| [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 150 | Add exact profile multiset and scope policy. |
 | [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 280 | Recognize Terminate End as a `1 -> 0` sink. |
 | [Terminate End source reader](../../packages/bpmn-source/src/terminate-end-event-source.ts) | 530 | Resolve omission and parser-safe false values to the ordinary Sub-Process proposition while retaining the Event Sub-Process exclusion. |
 | [Semantic Process lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 58 | Delegate to a new cohesive Terminate lowering owner. |
 | [contract artifact consistency](../../scripts/contract-artifact-consistency.ts) | 0 | Extract an End/termination consistency owner before adding semantic checks. |
 | [contract artifact projection](../../scripts/contract-artifacts.ts) | 16 | Add only an exhaustive classifier arm; extract any new projection responsibility. |
-| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 397 | Register standards-only scenarios with no CIB target. |
+| [contract artifact cases](../../scripts/contract-artifact-cases.ts) | 385 | Register standards-only scenarios with no CIB target. |
 | [bounded CMOF calibration](../../scripts/check-bpmn-semantic-process-metamodel.ts) | 340 | Verify the newly consumed normative `TerminateEventDefinition` class before source admission uses it. |
-| [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 28 | Put cases in a capsule-owned module and add only catalog registration. |
+| [differential pipeline cases](../../packages/differential/test/pipeline-cases.ts) | 24 | Put cases in a capsule-owned module and add only catalog registration. |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 397 | Classify `terminateScope` as a passive internal operation. |
 | [test mutation Workflows](../../packages/temporal-adapter/testkit/src/branch-bypass-mutation-workflows.ts) | 512 | Add a cohesive global-cancellation mutation or extract a termination mutation owner. |
 | [Lean semantic contract](../../BpmnSemantics/SemanticProcessContract.lean) | 122 | Add checked and IL variants without widening old values. |
@@ -369,12 +369,12 @@ Existing focused test owners also change where their exhaustive inventories wide
 |---|---:|---|
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | 154 | Register the exact projector in the closed consumer matrix. |
 | [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts) | 312 | Lock `1 -> 0`, nested scope, and synthetic completion edges. |
-| [Terminate End source characterization](../../packages/bpmn-source/test/terminate-end-event-source.test.ts) | 383 | Lock omitted/`false`/`0` structural equivalence, distinct source identity, and true-valued lexical negatives before registration. |
+| [Terminate End source characterization](../../packages/bpmn-source/test/terminate-end-event-source.test.ts) | 338 | Lock omitted/`false`/`0` structural equivalence, distinct source identity, and true-valued lexical negatives before registration. |
 | [metamodel-default admission](../../packages/bpmn-source/test/metamodel-default-admission.test.ts) | 436 | Retain registry-wide omitted/default equivalence as the graduation oracle. |
 | [definition artifact negatives](../../scripts/contract-definition-artifacts.test.ts) | 61 | Reject origin, input, scope, and output drift. |
 | [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) | 30 | Extract a termination characterization owner rather than crowding this test. |
-| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 429 | Require at least one runnable example when the checkpoint-only profile graduates. |
-| [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 295 | Lock additive profiles, cases, standards-only targets, and mutations. |
+| [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts) | 379 | Require at least one runnable example when the checkpoint-only profile graduates. |
+| [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | 246 | Lock additive profiles, cases, standards-only targets, and mutations. |
 
 The seven experiment owners above are the current repository-built exhaustive consumers found by the checked-node and operation discriminant sweep. No experiment gains Terminate semantics. The implementation repeats the sweep after the unions widen and treats any new consumer as part of the same atomic change.
 

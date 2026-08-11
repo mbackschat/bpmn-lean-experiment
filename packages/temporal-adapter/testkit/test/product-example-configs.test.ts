@@ -39,6 +39,7 @@ const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const exampleRoot = path.join(projectRoot, "examples/temporal-mvp");
 const registeredProfiles = Object.values(SemanticProfileId);
 const timerStartProfileId = "bpmn-2.0.2-timer-start-event-draft";
+const terminateEndProfileId = "bpmn-2.0.2-terminate-end-event-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -116,6 +117,56 @@ test("registers Timer Start with one exact runnable product example", async () =
         startEventId: "TimerStart_PT1S",
       },
     }],
+  );
+});
+
+test("registers Terminate End with one exact manual-start product example", async () => {
+  assert.equal(registeredProfiles.includes(terminateEndProfileId), true);
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) => path.basename(file) === "terminate-end-event.json")
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  assert.deepEqual(
+    {
+      semanticProfile: config.bpmn.semanticProfile,
+      process: config.process,
+      interactions: config.interactions,
+      start: createRunnableMvpStartStimulus(config, {
+        processId: "Process_TerminateEnd",
+      }),
+    },
+    {
+      semanticProfile: terminateEndProfileId,
+      process: {
+        instanceId: "MvpExample_terminate_end_event_1",
+        initialVariables: [],
+      },
+      interactions: [
+        {
+          kind: "completeUserTaskInstance",
+          elementId: "UserTask_Trigger",
+          delayMs: 250,
+          inputVariableNames: [],
+          submittedValues: [],
+        },
+        {
+          kind: "completeUserTaskInstance",
+          elementId: "UserTask_Outer",
+          delayMs: 250,
+          inputVariableNames: [],
+          submittedValues: [],
+        },
+      ],
+      start: {
+        kind: "startProcess",
+        commandId: "mvp-start:MvpExample_terminate_end_event_1",
+        processId: "Process_TerminateEnd",
+        instanceId: "MvpExample_terminate_end_event_1",
+        initialVariables: [],
+      },
+    },
   );
 });
 

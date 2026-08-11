@@ -7,8 +7,8 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
-  SemanticCheckpointProfileId,
   SemanticOperationKind,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import {
   TemporalHostCapabilityResultKind,
@@ -26,7 +26,7 @@ test("classifies containing-scope termination as passive internal closure", asyn
     sourceId: "terminate-end-host-admission",
     expectedSha256: undefined,
     sourceOverlay: null,
-    semanticProfile: SemanticCheckpointProfileId.TerminateEnd,
+    semanticProfile: SemanticProfileId.TerminateEnd,
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   });
   assert.equal(compilation.status, BpmnCompilationStatus.Accepted);

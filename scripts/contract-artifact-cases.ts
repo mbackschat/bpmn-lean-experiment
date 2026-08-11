@@ -194,6 +194,18 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/timer-start-event/scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/terminate-end-event/trigger-first.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/terminate-end-event/sibling-first.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/terminate-end-event/stale-sibling-after-termination.scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

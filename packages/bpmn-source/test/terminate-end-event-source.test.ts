@@ -1,4 +1,4 @@
-/** Locks the exact nested Terminate End Event source checkpoint. */
+/** Locks the exact registered nested Terminate End Event source profile. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -16,10 +16,10 @@ import type {
   BpmnCompilationResult,
   CheckedProcess,
 } from "@bpmn-lean/bpmn-source";
-import { SemanticCheckpointProfileId } from "@bpmn-lean/semantic-core";
+import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 
 const sourceUrl = new URL("./fixtures/terminate-end-event.bpmn", import.meta.url);
-const semanticProfile = SemanticCheckpointProfileId.TerminateEnd;
+const semanticProfile = SemanticProfileId.TerminateEnd;
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 
 async function compile(bytes: Uint8Array): Promise<BpmnCompilationResult> {
@@ -40,7 +40,7 @@ function requireAccepted(result: BpmnCompilationResult): AcceptedBpmnCompilation
   return result;
 }
 
-test("compiles and lowers the exact nested Terminate End Event source checkpoint", async () => {
+test("compiles and lowers the exact registered nested Terminate End Event source", async () => {
   const bytes = await readFile(sourceUrl);
   const result = requireAccepted(await compile(bytes));
 

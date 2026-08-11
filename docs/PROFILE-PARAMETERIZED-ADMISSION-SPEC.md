@@ -45,6 +45,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN Intermediate Catch Message (`bpmn-2.0.2-intermediate-catch-message-draft`) | 1 | one `initiate`, one `awaitMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Message Start Event (`bpmn-2.0.2-message-start-event-draft`) | 1 | one `initiateMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Timer Start Event (`bpmn-2.0.2-timer-start-event-draft`) | 1 | one `initiateTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
+| BPMN nested Terminate End Event (`bpmn-2.0.2-terminate-end-event-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `terminateScope`, two `reachNoneEnd`, two `completeScope` |
 | CIB Seven Message-addressed Receive Task (`cibseven-2.2.0-message-addressed-receive-task-draft`) | 1 | one `initiate`, one `awaitMessage`, one `reachNoneEnd`, one `completeScope` |
 | CIB Seven ordinary embedded Sub-Process completion (`cibseven-2.2.0-embedded-subprocess-completion-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, three `reachNoneEnd`, two `completeScope` |
 | CIB Seven embedded Sub-Process Error propagation (`cibseven-2.2.0-subprocess-error-propagation-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `throwError`, three `reachNoneEnd`, two `completeScope` |
