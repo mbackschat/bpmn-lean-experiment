@@ -50,7 +50,7 @@ This is the owner's original acceptance condition. The preserve-enabled profile 
 
 ### M2 — the file runs its real shape
 
-**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, and Terminate End Event increments are implemented, closure-reviewed, evidence-closed, and graduated. The [configured Task extension proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) is independently reviewed and owner-approved; its first semantic checkpoint is active, while the platform increments remain behind the M2 engine exit gate.
+**Status: in progress.** The resumption-bounded cyclic-control-flow, Message Start Event, Timer Start Event, and Terminate End Event increments are implemented, closure-reviewed, evidence-closed, and graduated. The [configured Task extension proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) has an independently approved semantic checkpoint; atomic registration, differential evidence, and live Temporal reuse evidence are active, while the platform increments remain behind the M2 engine exit gate.
 
 **Demo.** A third-party model with a loop and a real start trigger executes, rather than only the acyclic shapes the current admission accepts.
 
@@ -151,7 +151,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: implement the configured Task first semantic checkpoint.** The owner-approved [proposal](capsules/CONFIGURED-GENERIC-TASK-PROPOSAL.md) selects the forward-compatible account, exact extension, separating fixture, proved Lean lane, and Temporal reuse preflight. Implement the disjoint semantic-core, BPMN-source, and Lean mechanisms, integrate the shared strict contracts and artifact guards, run the complete applicable checkpoint gate once, commit the immutable green target, and obtain context-cold semantic-checkpoint review before registration or live evidence.
+1. **Active: close configured Task registration and evidence.** The independently approved semantic checkpoint retains the exact extension, distinct checked identity, existing-effect lowering, strict contracts, and proved Lean account. Register the profile, answer-free scenario, product example, and differential case atomically; add the retained CIB pass-through exclusion trace and focused live Temporal Activity/Worker-replacement/history/replay witness; then complete the closure evidence, cost record, full gate, and governed closure review.
 
 ## Approved decisions
 
@@ -256,7 +256,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit the integrated configured Task first semantic checkpoint and submit the generated packet verbatim for context-cold semantic-checkpoint review before registration or live evidence.** The exact extension source, distinct checked node, existing-effect lowering, strict contracts, independent Lean/core execution, and preservation guards are integration-green. Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
+**Next action: register the approved configured Task checkpoint atomically and add its differential, retained CIB exclusion, and live Temporal reuse evidence.** Semantic-checkpoint target `929ebd1` returned approve-with-required-edits; correction `85d42aa` closed maintained fixture validation, the direct Semantic XSD override, and exact profile-owner documentation, and the same reviewer approved the correction. Product 2 scheduling, message ingress, instance search, and other semantic families remain behind the M2 engine exit gate.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 

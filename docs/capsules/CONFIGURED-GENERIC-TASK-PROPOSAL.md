@@ -2,17 +2,17 @@
 
 ## Status
 
-**First semantic checkpoint implemented and integration-green; independent checkpoint review pending.** The unregistered checkpoint selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive. Profile/scenario registration and live Temporal evidence remain paused until checkpoint approval.
+**First semantic checkpoint independently approved; registration and evidence active.** The unregistered checkpoint selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. It does not select plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, or a new Temporal host primitive. Profile/scenario registration, differential evidence, the retained CIB exclusion trace, and live Temporal reuse evidence are now the active closure lanes.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `add8367` | `fork-turns-none` | `approve-with-required-edits` | `19591d3` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `929ebd1` | `fork-turns-none` | `approve-with-required-edits` | `85d42aa` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The context-cold proposal review of `add8367` required four bounded corrections: occurrence-only effect-completion refusal, profile-aware Task classification, raw duplicate-`extensionElements` guarding, and consistent classification of the CIB trace as exclusion evidence. The same reviewer approved correction `19591d3`; the selected semantic account, public contract, exclusions, and evidence strategy did not change.
+The context-cold proposal review of `add8367` required four bounded corrections: occurrence-only effect-completion refusal, profile-aware Task classification, raw duplicate-`extensionElements` guarding, and consistent classification of the CIB trace as exclusion evidence. The same reviewer approved correction `19591d3`; the selected semantic account, public contract, exclusions, and evidence strategy did not change. The context-cold semantic-checkpoint review of `929ebd1` found no semantic defect and required three bounded evidence and ownership corrections: maintained XSD validation of the configured fixture, an executable direct Semantic XSD override, and exact profile-catalog and shape-owner prose. The same reviewer approved correction `85d42aa` without changing the selected account, public contract, exclusions, or evidence strategy.
 
 ## Question
 
