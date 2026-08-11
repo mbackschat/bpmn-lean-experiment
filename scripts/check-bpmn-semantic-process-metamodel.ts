@@ -52,7 +52,7 @@ const cmofPath = process.env["BPMN_CMOF_PATH"] ?? path.join(
   externalRoot,
   "omg-bpmn-2.0.2/machine-readable/BPMN20.cmof",
 );
-const semanticXsdPath = path.join(
+const semanticXsdPath = process.env["BPMN_SEMANTIC_XSD_PATH"] ?? path.join(
   externalRoot,
   "omg-bpmn-2.0.2/machine-readable/Semantic.xsd",
 );
@@ -200,7 +200,7 @@ try {
   await access(semanticXsdPath);
 } catch {
   console.error(
-    `BPMN normative Semantic XSD is absent at ${semanticXsdPath}; run ./scripts/setup-external-sources.sh verify or set BPMN_EXTERNAL_ROOT`,
+    `BPMN normative Semantic XSD is absent at ${semanticXsdPath}; run ./scripts/setup-external-sources.sh verify or set BPMN_SEMANTIC_XSD_PATH`,
   );
   process.exit(1);
 }

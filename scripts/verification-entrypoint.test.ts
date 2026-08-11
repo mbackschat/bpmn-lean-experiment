@@ -202,6 +202,15 @@ test("default verification XSD-validates the Timer Start fixture", async () => {
   );
 });
 
+test("default verification XSD-validates the Configured Task fixture", async () => {
+  const source = await readFile(verifyScriptPath, "utf8");
+
+  assert.match(
+    source,
+    /packages\/bpmn-source\/test\/fixtures\/configured-task\.bpmn/u,
+  );
+});
+
 test("default verification builds and executes the checked-source proof experiment", async () => {
   await assertLineOccursOnce(
     verifyScriptPath,

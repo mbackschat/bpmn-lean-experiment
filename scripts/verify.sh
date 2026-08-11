@@ -7,6 +7,7 @@ cd "$project_root"
 
 representative_bpmn_path="scenarios/user-task-discovery-completion/process.bpmn"
 timer_start_bpmn_path="packages/bpmn-source/test/fixtures/timer-start-event.bpmn"
+configured_task_bpmn_path="packages/bpmn-source/test/fixtures/configured-task.bpmn"
 
 ./scripts/doctor.sh verify
 echo "A12_ADOPTION_EVIDENCE status=not-run command=./scripts/test-a12-adoption.sh"
@@ -16,7 +17,8 @@ echo "A12_ADOPTION_EVIDENCE status=not-run command=./scripts/test-a12-adoption.s
 
 ./scripts/validate-bpmn-xml.sh \
   "$representative_bpmn_path" \
-  "$timer_start_bpmn_path"
+  "$timer_start_bpmn_path" \
+  "$configured_task_bpmn_path"
 
 ./scripts/lake.sh build
 ./scripts/lake.sh test

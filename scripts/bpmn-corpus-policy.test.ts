@@ -59,6 +59,7 @@ test("defaults executable consumers to the external corpus with explicit overrid
   assert.match(validator, /BPMN_XSD_PATH/u);
   assert.match(validator, /BPMN_EXTERNAL_ROOT/u);
   assert.match(metamodelCheck, /BPMN_CMOF_PATH/u);
+  assert.match(metamodelCheck, /BPMN_SEMANTIC_XSD_PATH/u);
   assert.match(metamodelCheck, /BPMN_EXTERNAL_ROOT/u);
   assert.match(referenceReadme, /\.\.\/\.\.\/\.\.\/\.\.\/oss\/omg-bpmn-2\.0\.2/u);
   assert.match(referenceReadme, /scripts\/fetch-bpmn-corpus\.sh/u);
@@ -97,7 +98,7 @@ test("the Semantic XSD calibration fails rather than skipping missing evidence",
           projectRoot,
           "../oss/omg-bpmn-2.0.2/machine-readable/BPMN20.cmof",
         ),
-        BPMN_EXTERNAL_ROOT: path.join(tmpdir(), "absent-bpmn-corpus"),
+        BPMN_SEMANTIC_XSD_PATH: path.join(tmpdir(), "absent-semantic.xsd"),
       },
     },
   );
@@ -105,4 +106,28 @@ test("the Semantic XSD calibration fails rather than skipping missing evidence",
   assert.equal(result.status, 1);
   assert.match(result.stderr, /normative Semantic XSD is absent/u);
   assert.doesNotMatch(result.stdout, /skipped/iu);
+});
+
+test("the Semantic XSD calibration honors its direct source override", () => {
+  const externalCorpusRoot = path.resolve(
+    projectRoot,
+    "../oss/omg-bpmn-2.0.2/machine-readable",
+  );
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/check-bpmn-semantic-process-metamodel.ts"],
+    {
+      cwd: projectRoot,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        BPMN_CMOF_PATH: path.join(externalCorpusRoot, "BPMN20.cmof"),
+        BPMN_EXTERNAL_ROOT: path.join(tmpdir(), "absent-bpmn-corpus"),
+        BPMN_SEMANTIC_XSD_PATH: path.join(externalCorpusRoot, "Semantic.xsd"),
+      },
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /BPMN_SEMANTIC_PROCESS_METAMODEL_CHECK/u);
 });
