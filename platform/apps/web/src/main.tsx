@@ -5,6 +5,7 @@ import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 
 import { App } from "./app";
+import { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import { DefinitionApiClient } from "./definitions-api";
 import "./styles.css";
 
@@ -14,8 +15,9 @@ if (container === null) {
 }
 
 const api = new DefinitionApiClient(window.location.origin);
+const scheduleApi = new DefinitionScheduleApiClient(window.location.origin);
 createRoot(container).render(
   <StrictMode>
-    <App api={api} />
+    <App api={api} scheduleApi={scheduleApi} />
   </StrictMode>,
 );

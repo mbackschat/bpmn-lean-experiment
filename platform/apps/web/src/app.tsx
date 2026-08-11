@@ -8,14 +8,17 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import { DefinitionDiagram } from "./definition-diagram";
+import { DefinitionSchedulePanel } from "./definition-schedule-panel";
 import { DefinitionStartPanel } from "./definition-start-panel";
+import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
 
 export type AppProps = Readonly<{
   api: DefinitionApiClient;
+  scheduleApi: DefinitionScheduleApiClient;
 }>;
 
-export function App({ api }: AppProps) {
+export function App({ api, scheduleApi }: AppProps) {
   const [definitions, setDefinitions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [versions, setVersions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [selected, setSelected] = useState<DeployedDefinitionVersion | null>(null);
@@ -176,8 +179,13 @@ export function App({ api }: AppProps) {
           </section>
         ) : (
           <div className="selected-definition">
+            <DefinitionSchedulePanel
+              key={`schedule:${selected.processId}:${selected.version}`}
+              api={scheduleApi}
+              definition={selected}
+            />
             <DefinitionStartPanel
-              key={`${selected.processId}:${selected.version}`}
+              key={`start:${selected.processId}:${selected.version}`}
               api={api}
               definition={selected}
             />
