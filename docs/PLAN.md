@@ -153,7 +153,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: specify and implement M2 definition scheduling for registered Timer Start.** Reuse the engine's closure-reviewed one-action Schedule boundary while giving Product 2 an explicit definition-version schedule lifecycle through its public contract. This is selected before message ingress because the exact Timer Start host mechanism and opaque execution identity are already evidenced; published Message Start routing still requires an independent delivery, retry, and fanout contract. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
+1. **Active: review and implement [M2 definition scheduling](BPM-PLATFORM-DEFINITION-SCHEDULING-PROPOSAL.md) for registered Timer Start.** Reuse the engine's closure-reviewed one-action Schedule boundary while giving Product 2 an explicit exact-version lifecycle through its public contract. This is selected before message ingress because the exact Timer Start host mechanism and opaque execution identity are already evidenced; published Message Start routing still requires an independent delivery, retry, and fanout contract. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
 
 ## Approved decisions
 
@@ -258,7 +258,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: create the bounded Product 2 definition-scheduling proposal for the registered Timer Start profile.** Read the public platform contract, concrete platform architecture, production lifecycle specification, Timer Start specification, and Temporal Schedule evidence before selecting the API and lifecycle. Preserve exact definition-version binding, keep service execution identity opaque, and exclude recurrence, silent latest-version retargeting, broker/message routing, instance search, and new BPMN semantics from this first platform increment.
+**Next action: commit and run the context-cold proposal review for the bounded [Product 2 definition-scheduling proposal](BPM-PLATFORM-DEFINITION-SCHEDULING-PROPOSAL.md).** Bind the review to its immutable target, correct every required finding through the same reviewer, then record the owner approval that this session authorizes without pausing and begin red/green implementation. Preserve exact definition-version binding, keep service execution identity opaque, and exclude recurrence, silent latest-version retargeting, broker/message routing, instance search, and new BPMN semantics from this first platform increment.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
