@@ -10,7 +10,9 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 **Current closure boundary.** The standards-only Message Start capability is registered, closure-reviewed, and evidence-closed with its exact top-level operation-addressed source, complete checked and `initiateMessage` channel identity, answer-free scenario, product example, isolated differential case, and direct Temporal Worker-absence/history/replay witness. No public broker route, definition-version fanout, retry-transparent publication receipt, or Product 2 message-ingress API exists.
 
-**Current Timer Start boundary.** The independently approved standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, closes in two unique internal steps to the existing User Task wait, and is admitted as passive by the Temporal host boundary. Its profile, answer-free scenario, product example, and differential case are registered. The approved live Schedule lane retains the semantic-instance-derived configured base separately from the opaque service-returned execution Workflow ID and first Run ID. Product 2 scheduling remains excluded from the engine capsule.
+**Current Timer Start boundary.** The independently approved standards-only Timer Start capability admits an exact top-level `PT1S` Timer Start Event, preserves Start Event and duration identity through checked source and `initiateTimer`, executes an exact-target start stimulus in Lean and the TypeScript core, and closes in two unique internal steps to the existing User Task wait. Its profile, answer-free scenario, product example, and differential case are registered.
+
+The live one-action Temporal Schedule witness keeps the Worker absent through the due occurrence, retains the semantic-instance-derived configured base separately from the opaque service-returned execution Workflow ID and first Run ID, completes through that returned identity, inspects the exhausted Schedule and ten-event history, and replays. Closure review remains pending. Product 2 scheduling remains excluded from the engine capsule.
 
 **What it does not do.** One generic standards profile admits the complete selected notation set and no other does. `bpmn-2.0.2-user-task-preserved-notation-draft` retains Diagram Interchange, pools, lanes, artifacts, and documentation without executing them, under [the preserve-only admission specification](PRESERVE-ONLY-ADMISSION-SPEC.md); every other standards profile rejects that set through an exact key allowlist. The two product-neutral mapped Service Task profiles may consume one data-only source overlay, but it can name only an existing profile-owned effect descriptor and exact inert expanded-name loci; it adds no engine operation or source reader.
 
@@ -192,7 +194,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - approved gap interpretations beyond the reviewed slices
 - confirmed deviations beyond the visible `CIB-DEV-0001` candidate
 - multiple or mixed Message Start Events, payload, external publication routing, definition-version fanout, or retry-transparent start receipt
-- Timer Start live one-action Schedule evidence and Product 2 schedule lifecycle or version activation
+- Product 2 Timer Start schedule lifecycle, version activation, public management, recurrence, and calendar forms
 
 ### Runtime scoped data
 
@@ -383,6 +385,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - canonical Process start and completion data, effect transport, public enabled-interaction and task-detail projection, validated terminal receipts, and the repository command's strict external-runtime configuration
 - one live product example per distinct host mechanism, with reused mechanisms checked without a Temporal service and optional time-skipping calibration outside default verification
 - direct `client.start` hosting for exact registered Message Start identity through the ordinary Workflow start input, with wrong Interface Operation rejection before Workflow creation, service acceptance while no Worker polls, later User Task completion, no Signal Event, exact history replay, and a test-owned Signal-With-Start discriminator
+- test-owned one-action Temporal Schedule hosting for the registered Timer Start profile, with pre-Schedule zero-create refusal, Worker absence through the due occurrence, an exact stored Workflow-ID base kept distinct from the opaque service-returned Workflow/Run identity, base-as-execution refusal, exact downstream User Task completion, ten-event history inspection, action exhaustion, stored-action and direct-start mutations, and replay
 
 #### Explicitly absent
 
@@ -421,6 +424,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - Query, Update, Signal, durable-Timer, Activity, result-recovery, replay, and cleanup evidence for each applicable host mechanism
 - definition, provenance, admission, semantic-state, projection, host-bypass, and evidence mutations, including one required semantic disagreement per registered case
 - exact Message Start agreement across Lean, the core, and Temporal with CIB absent, plus Interface Operation, instance-identity, and Signal-With-Start discriminators
+- exact Timer Start agreement across Lean, the core, and Temporal with CIB absent, plus Start Event/instance-identity, stored-action, direct-start, and returned-execution-identity discriminators
 - isolated target execution, complete fetched-history replay, cleanup, timings, and feedback budgets
 
 #### Explicitly absent
@@ -506,7 +510,7 @@ One nearest boundary per family. The owning capsule holds the full exclusion set
 
 - **Call Activity:** a second or repeated invocation of the same called Process. Deployment or version and tenant resolution, mappings, per-instance data, recursion, exceptional completion, cancellation, and Temporal Child Workflow identity stay outside. See [the capsule](capsules/CALL-ACTIVITY-SPEC.md).
 - **Message Start:** one external publication matching multiple independent Message Start Events or definition versions. Routing, fanout, selected-start identity, and retry-transparent exactly-once policy stay outside. See [the capsule](capsules/MESSAGE-START-EVENT-SPEC.md).
-- **Timer Start:** one external resolved occurrence for the exact top-level registered `PT1S` profile is implemented with answer-free scenario, runnable example, differential evidence, and an approved opaque returned-identity Schedule evidence contract. The live one-action witness and closure review remain. Recurrence, calendar forms, multiple starts, Schedule lifecycle, Product 2 scheduling, and silent latest-definition retargeting stay outside. See the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md).
+- **Timer Start:** one external resolved occurrence for the exact top-level registered `PT1S` profile is implemented with answer-free scenario, runnable example, differential evidence, and a live one-action Schedule witness using the opaque service-returned execution identity. Closure review remains. Recurrence, calendar forms, multiple starts, Schedule lifecycle, Product 2 scheduling, and silent latest-definition retargeting stay outside. See the [proposal](capsules/TIMER-START-EVENT-PROPOSAL.md).
 - **Receive Task:** an addressless or operation-addressed, instantiating, data-bearing, correlated, or repeated Receive Task. See [the capsule](capsules/RECEIVE-TASK-MESSAGE-SPEC.md).
 - **Sub-Process boundary Timer:** a deadline on a Sub-Process holding more than one child task. That is where this profile's single-child coincidence between the child's last consumed token and scope quiescence stops holding, so the withdrawal rule stated over quiescence becomes separately falsifiable rather than accidentally correct. See [the capsule](capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md).
 - **Non-interrupting boundary Timer:** a deadline that fires more than once, which `timeCycle` admits and Table 10.91 contemplates. A second firing makes the element-identity-to-activation join ambiguous, so a capsule admitting repetition must add the occurrence record rather than inherit the argument. See [the capsule](capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md).
