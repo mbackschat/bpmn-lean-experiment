@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: review the published Message Start ingress proposal for M2.** Immutable proposal target `4223ded` selects one exact deployed definition and complete registered Message Start channel, no fanout, durable at-most-once dispatch, accepted and truthful indeterminate receipts, and no Temporal identity exposure or new BPMN semantics. Obtain context-cold approval before implementation. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
+1. **Active: close the published Message Start ingress proposal review for M2.** Context-cold review of immutable target `4223ded` retained the one-target, no-fanout, at-most-once account and required bounded corrections to Memo evidence, the SQLite schema epoch, the closed failure matrix, and owner inventory. Commit those corrections and obtain the exact reviewer's warm audit before implementation. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: submit immutable Product 2 published Message Start ingress proposal target `4223ded` to context-cold review.** The proposal binds one global publication identity to an exact deployed definition version and complete registered Message Start channel, excludes fanout, and records the retention-gap result: after any possibly transmitted start call, absence never authorizes redispatch and the durable public result remains `indeterminate` unless an exact retained Workflow description proves acceptance. Implementation remains paused through proposal approval.
+**Next action: commit the Product 2 Message Start ingress proposal corrections and send the correction target to the exact cold reviewer for warm audit.** The correction narrows Memo to a private intent marker plus a separately tested constructor invariant, adds a construction-time SQLite epoch, maps every start/describe/persistence result, and records exact owner bindings. Implementation remains paused through proposal approval.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
