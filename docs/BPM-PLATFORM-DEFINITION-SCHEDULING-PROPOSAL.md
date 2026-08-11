@@ -2,7 +2,7 @@
 
 ## Status
 
-**Owner-approved on 2026-08-11; the first-green public-contract and lifecycle checkpoint is implemented and pending independent review.** This proposal selects the smallest Product 2 definition-scheduling increment for the registered Timer Start profile. The checkpoint publishes the engine capability, strict platform wire contract, exact persisted lifecycle, handle-free Schedule gateway, public HTTP routes, and server composition. The UI, live Schedule race witness, and M2 showcase remain paused. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem. The proposal cold review returned `approve-with-required-edits`; two bounded correction rounds closed every finding, and the same reviewer approved final correction `e2814a5`.
+**Owner-approved on 2026-08-11; the first-green public-contract and lifecycle checkpoint is independently approved, and closure implementation is active.** This proposal selects the smallest Product 2 definition-scheduling increment for the registered Timer Start profile. The checkpoint publishes the engine capability, strict platform wire contract, exact persisted lifecycle, handle-free Schedule gateway, public HTTP routes, and server composition. The UI, live Schedule race witness, and M2 showcase are the authorized closure lanes. The increment changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, or Lean theorem. The proposal cold review returned `approve-with-required-edits`; two bounded correction rounds closed every finding, and the same reviewer approved final correction `e2814a5`. The semantic checkpoint review of `5a0f087` returned `approve-with-required-edits`; correction `6c52442` closed every finding, and the same reviewer approved it.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md) owns semantic and host-refinement meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
@@ -297,7 +297,7 @@ The approval set is:
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `a4fd274` | `fork-turns-none` | `approve-with-required-edits` | `e2814a5` |
-| Semantic checkpoint | `5a0f087` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `5a0f087` | `fork-turns-none` | `approve-with-required-edits` | `6c52442` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The cold review of `a4fd274` returned `approve-with-required-edits` across five bounded findings. First correction `5e5c89e` closed the root mechanisms but left three phase and response contradictions. Second correction `e2814a5` closed those residuals, and the same reviewer approved it without another finding.
+The cold review of `a4fd274` returned `approve-with-required-edits` across five bounded findings. First correction `5e5c89e` closed the root mechanisms but left three phase and response contradictions. Second correction `e2814a5` closed those residuals, and the same reviewer approved it without another finding. The semantic checkpoint review of `5a0f087` found four bounded lifecycle and ownership defects. Correction `6c52442` closed them, and the same reviewer approved the correction without another finding.

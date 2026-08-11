@@ -4,7 +4,7 @@ This document is the sole detailed owner of current implementation, proof, evide
 
 ## Current claim
 
-**Two products, two end-to-end floors implemented.** The BPMN execution engine executes a bounded but broad slice of BPMN 2.0.2 across twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has an owner-approved contract, a tracked modular-monolith architecture, executable product and dependency guards, and a closed M1 definition-deployment showcase over the HTTP-only workspace, exact-version Temporal start, and a real production Worker. Its M2 definition-scheduling public-contract and lifecycle checkpoint is implemented and pending independent review; later absences are recorded under [BPM platform](#bpm-platform) below.
+**Two products, two end-to-end floors implemented.** The BPMN execution engine executes a bounded but broad slice of BPMN 2.0.2 across twenty closed semantic capsules. The [BPM platform](BPM-PLATFORM-PROPOSAL.md) has an owner-approved contract, a tracked modular-monolith architecture, executable product and dependency guards, and a closed M1 definition-deployment showcase over the HTTP-only workspace, exact-version Temporal start, and a real production Worker. Its M2 definition-scheduling public-contract and lifecycle checkpoint is independently approved; later absences are recorded under [BPM platform](#bpm-platform) below.
 
 **What the engine does.** Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably. Closed families are Parallel fork/join, Exclusive Gateway over a project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, Call Activity, embedded Sub-Process completion and Error propagation, Intermediate Catch Timer and Message, Message-addressed Receive Task, Service Task effects, scoped runtime data, User Task start and completion data, and three boundary-Timer loci including one non-interrupting. Each capsule owns its own meaning and exclusions; this document owns only their status.
 
@@ -124,7 +124,7 @@ A separate preservation oracle keeps the payload-free Service Task profile and B
 - the cross-product projection agreement test that [PROJECT-DESIGN.md](PROJECT-DESIGN.md#one-repository-for-products-1-and-2) obligates; internal platform and cross-product import directions are guarded
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - the two engine changes the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary) records as prerequisites: publicly recoverable transitions and token positions, and a profile admission capability plus public projection for User Task assignment and form metadata
-- the definition-schedule web panel, live Temporal Schedule cancellation/refinement witness, and M2 definition-scheduling showcase; these remain paused at the first-green checkpoint
+- the definition-schedule web panel, live Temporal Schedule cancellation/refinement witness, and M2 definition-scheduling showcase; these are the active closure lanes after checkpoint approval
 - published Message Start ingress and instance search
 
 ### A12 Workflows downstream adoption
