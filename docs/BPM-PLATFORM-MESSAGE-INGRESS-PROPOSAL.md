@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft, not approved, and not implemented.** This proposal selects the smallest Product 2 published Message Start ingress for M2. It adds an exact deployed-definition capability, one-target publication resource, durable retry and deduplication lifecycle, handle-free direct Workflow-start host boundary, HTTP-only UI, and independent live evidence. It changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
+**Owner-approved and ready for implementation.** This proposal selects the smallest Product 2 published Message Start ingress for M2. It adds an exact deployed-definition capability, one-target publication resource, durable retry and deduplication lifecycle, handle-free direct Workflow-start host boundary, HTTP-only UI, and independent live evidence. It changes no BPMN meaning, semantic profile, checked graph, Semantic Process IL, runtime state, command, observation, Workflow definition, or Lean theorem.
 
 The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
@@ -304,6 +304,6 @@ The nearest unsupported claim is that a matching retained Memo independently est
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `4223ded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `4223ded` | `fork-turns-none` | `approve-with-required-edits` | `ce180a9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

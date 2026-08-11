@@ -155,7 +155,7 @@ A12 Workflows is product 3, owned by A12 under EUPL-1.2 and out of scope in this
 
 Incomplete items only. Each carries a status label that [the plan-shape guard](../scripts/plan-status-consistency.test.ts) reads.
 
-1. **Active: close the published Message Start ingress proposal review for M2.** Context-cold review of immutable target `4223ded` retained the one-target, no-fanout, at-most-once account. Its first warm audit closed the Memo and SQLite epoch findings and retained two narrow corrections to lifecycle reachability and integration-path inventory. Its second warm audit closed those substantive findings and retained one exact HTTP wording correction; obtain the owner-authorized third narrow audit before implementation. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
+1. **Active: implement the approved published Message Start ingress first-green checkpoint for M2.** Context-cold review of immutable target `4223ded` retained the one-target, no-fanout, at-most-once account. Three bounded warm audits closed Memo authority, SQLite epoch, lifecycle reachability, integration inventory, and exact HTTP status wording. Implement Product 1 capability projection, the public contract, durable lifecycle, and handle-free host client, then obtain the required semantic checkpoint review before UI or live evidence. Instance search follows because its durable cross-instance index must be designed with the platform read-model boundary rather than inferred from engine Event History.
 
 ## Approved decisions
 
@@ -260,7 +260,7 @@ Stop for owner direction if:
 
 ## Exact resume point
 
-**Next action: commit the exact Product 2 Message Start ingress HTTP wording correction and send it to the same reviewer for the owner-authorized third narrow warm audit.** The correction states the existing public-state `200`, integrity-failure `500`, and unknown-resource `404` split without changing lifecycle or implementation scope. Implementation remains paused through proposal approval.
+**Next action: implement and commit the approved Product 2 Message Start ingress first-green checkpoint.** Begin with separating Red tests for exact Message Start capability projection, the closed public publication contract, SQLite epoch and durable no-redispatch lifecycle, and the handle-free direct-start host request. UI, browser, and live evidence remain paused through checkpoint approval.
 
 **No technical, governance, or environmental blocker remains.** The earlier approval of concrete `@temporalio/client@1.21.0` Product 2 reachability and the no-umbrella Temporal subsystem package layout remains binding.
 
