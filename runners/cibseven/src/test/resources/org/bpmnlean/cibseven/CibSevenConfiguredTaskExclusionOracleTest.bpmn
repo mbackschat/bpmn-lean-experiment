@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmnLean="urn:bpmn-lean:bpmn:extensions:v1"
+  id="Definitions_ConfiguredTask"
+  targetNamespace="urn:bpmn-lean:configured-task">
+  <bpmn:process id="Process_ConfiguredTask" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToConfigured</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="ConfiguredTask_Probe">
+      <bpmn:extensionElements>
+        <bpmnLean:taskDefinition type="urn:bpmn-lean:task-handler:probe-v1" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToConfigured</bpmn:incoming>
+      <bpmn:outgoing>Flow_ConfiguredToUser</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="UserTask_Review" name="Review">
+      <bpmn:incoming>Flow_ConfiguredToUser</bpmn:incoming>
+      <bpmn:outgoing>Flow_UserToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_UserToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToConfigured" sourceRef="StartEvent_1" targetRef="ConfiguredTask_Probe" />
+    <bpmn:sequenceFlow id="Flow_ConfiguredToUser" sourceRef="ConfiguredTask_Probe" targetRef="UserTask_Review" />
+    <bpmn:sequenceFlow id="Flow_UserToEnd" sourceRef="UserTask_Review" targetRef="EndEvent_1" />
+  </bpmn:process>
+</bpmn:definitions>
