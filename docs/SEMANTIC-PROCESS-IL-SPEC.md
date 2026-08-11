@@ -856,7 +856,7 @@ The sequential User Task, balanced parallel, Intermediate Catch Timer, Timer/Use
 The following remain unsupported:
 
 - general BPMN 2.0.2 import or conformance;
-- event subtypes beyond the admitted none Start, exact top-level payload-free Message Start, exact normal-flow and Event-Based-Gateway-configured `PT1S` Intermediate Catch Timer, exact normal-flow and Event-Based-Gateway-configured payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
+- event subtypes beyond the admitted none Start, exact top-level payload-free Message Start, exact top-level `PT1S` Timer Start, exact normal-flow and Event-Based-Gateway-configured `PT1S` Intermediate Catch Timer, exact normal-flow and Event-Based-Gateway-configured payload-free Intermediate Catch Message, exact attached interrupting Error route, and none End Events;
 - other timer forms, other Message forms, Message payloads, key-based or global correlation, modeled Message throw, Message Flow, boundary Events beyond the exact Task-attached and Sub-Process-attached Error slices, catch-all or unmatched Errors, handler search beyond one direct parent, Error payloads, Intermediate Throw Errors, signals as BPMN semantics, escalation, cancellation Events, compensation, and terminate semantics;
 - arbitrary Sub-Process nesting, Call Activities outside the exact two-Process empty-data normal-return slice, external/deployed called definitions, Global Tasks, recursion, repeated/concurrent calls, transactions, event Sub-Processes, and exceptional scope cancellation or event propagation beyond the exact direct-parent Error slice;
 - converging or mixed data-based Exclusive Gateways outside the exact identity-only cycle merge, missing-default or non-binary Exclusive routing, Inclusive Gateways outside the exact paired structured region, general Inclusive reachability, complex gateways, and Event-Based Gateways outside the exact non-instantiating Message/`PT1S` Timer profile;
@@ -872,14 +872,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, Message Start, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, and bounded Call Activity exact-source fixtures lower deterministically;
+- sequential, Message Start, Timer Start, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, and bounded Call Activity exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, exact-target Message Start admission/initiation/refusal/observation, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, and bounded called-Process invocation/return separating witnesses;
+- the independent TypeScript evaluator passes sequential, exact-target Message Start admission/initiation/refusal/observation, exact-target Timer Start admission/initiation/refusal/observation/closure, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, and bounded called-Process invocation/return separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

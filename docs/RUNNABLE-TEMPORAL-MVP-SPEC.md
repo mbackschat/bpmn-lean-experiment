@@ -23,7 +23,7 @@ The supported subset is explicit. A document outside its named profile returns t
 One documented non-test command accepts:
 
 - a BPMN XML file path, a source identity, a selected semantic-profile identity, and exact byte and parser-deadline limits;
-- one closed Process-start configuration: the existing semantic instance plus initial closed string/null Process variables, or an exact Message Start Event identity and operation-addressed channel;
+- one closed Process-start configuration: the existing semantic instance plus initial closed string/null Process variables, an exact Message Start Event identity and operation-addressed channel, or an exact Timer Start Event identity;
 - a Temporal address, Namespace, Task Queue, and identity;
 - a declared interaction plan;
 - declared deterministic effect handlers.
