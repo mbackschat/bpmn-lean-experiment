@@ -18,6 +18,10 @@ const admittedSource = new URL(
   "../../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,
 );
+const timerStartSource = new URL(
+  "../../../../scenarios/timer-start-event/process.bpmn",
+  import.meta.url,
+);
 const semanticProfile = "bpmn-2.0.2-user-task-preserved-notation-draft";
 
 test("compiles exact third-party bytes through the only product-2 engine boundary", async () => {
@@ -38,6 +42,27 @@ test("compiles exact third-party bytes through the only product-2 engine boundar
   assert.equal(result.source.id, "uploaded-review-process");
   assert.equal(result.definition.processId, "Process_SequentialUserTask");
   assert.equal(result.definition.semanticProfile, semanticProfile);
+  assert.deepEqual(result.startCapabilities, { timerStarts: [] });
+});
+
+test("maps the Timer Start capability into a platform-owned gateway value", async () => {
+  const gateway = new BpmnEngineGateway({
+    maxSourceBytes: 1_048_576,
+    parserDeadlineMs: 1_000,
+    temporalClient: fakeClient([]),
+    temporalTaskQueue: "m1-start-queue",
+  });
+  const result = await gateway.compileDefinition({
+    bytes: await readFile(timerStartSource),
+    sourceId: "uploaded-timer-start-process",
+    semanticProfile: "bpmn-2.0.2-timer-start-event-draft",
+    expectedSha256: undefined,
+  });
+
+  assert.equal(result.status, DefinitionCompilationStatus.Accepted);
+  assert.deepEqual(result.startCapabilities, {
+    timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
+  });
 });
 
 test("starts through the exact gateway boundary without exposing the SDK handle", async () => {

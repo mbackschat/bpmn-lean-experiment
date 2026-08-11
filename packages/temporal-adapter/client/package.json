@@ -9,6 +9,10 @@
     "./definition-start": {
       "types": "./dist/definition-start-client.d.ts",
       "import": "./dist/definition-start-client.js"
+    },
+    "./definition-schedule": {
+      "types": "./dist/definition-schedule-client.d.ts",
+      "import": "./dist/definition-schedule-client.js"
     }
   },
   "types": "./dist/index.d.ts",
@@ -16,7 +20,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "test": "pnpm build && node --test --test-concurrency=1 test/*.test.ts"
   },
   "dependencies": {
     "@bpmn-lean/semantic-core": "workspace:*",

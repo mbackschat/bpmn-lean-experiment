@@ -94,11 +94,16 @@ test("permits only explicitly named narrow engine entry points through the gatew
       path: "platform/foundation/engine-gateway/src/start.ts",
       source: 'import { start } from "@bpmn-lean/temporal-client/definition-start";',
     },
+    {
+      path: "platform/foundation/engine-gateway/src/schedule.ts",
+      source: 'import { schedule } from "@bpmn-lean/temporal-client/definition-schedule";',
+    },
   ] as const;
   assert.deepEqual(
     assessPlatformProductBoundary(gatewaySources, { packageRoots }),
     [
       "platform/foundation/engine-gateway/src/compile.ts: engine internal import @bpmn-lean/engine-api",
+      "platform/foundation/engine-gateway/src/schedule.ts: engine internal import @bpmn-lean/temporal-client/definition-schedule",
       "platform/foundation/engine-gateway/src/start.ts: engine internal import @bpmn-lean/temporal-client/definition-start",
     ],
   );
@@ -108,6 +113,7 @@ test("permits only explicitly named narrow engine entry points through the gatew
       {
         allowedEngineImports: new Set([
           "@bpmn-lean/engine-api",
+          "@bpmn-lean/temporal-client/definition-schedule",
           "@bpmn-lean/temporal-client/definition-start",
         ]),
         packageRoots,
@@ -133,19 +139,20 @@ test("permits only explicitly named narrow engine entry points through the gatew
   assert.deepEqual(
     assessPlatformProductBoundary(
       [{
-        path: "platform/apps/server/src/start.ts",
-        source: gatewaySources[1].source,
+        path: "platform/apps/server/src/schedule.ts",
+        source: gatewaySources[2].source,
       }],
       {
         allowedEngineImports: new Set([
           "@bpmn-lean/engine-api",
+          "@bpmn-lean/temporal-client/definition-schedule",
           "@bpmn-lean/temporal-client/definition-start",
         ]),
         packageRoots,
       },
     ),
     [
-      "platform/apps/server/src/start.ts: public engine import outside engine gateway @bpmn-lean/temporal-client/definition-start",
+      "platform/apps/server/src/schedule.ts: public engine import outside engine gateway @bpmn-lean/temporal-client/definition-schedule",
     ],
   );
 });
@@ -264,6 +271,7 @@ test("keeps tracked and pending sources and manifests inside the product boundar
     assessPlatformProductBoundary(repository.sources, {
       allowedEngineImports: new Set([
         "@bpmn-lean/engine-api",
+        "@bpmn-lean/temporal-client/definition-schedule",
         "@bpmn-lean/temporal-client/definition-start",
       ]),
       packageRoots: repository.packageRoots,

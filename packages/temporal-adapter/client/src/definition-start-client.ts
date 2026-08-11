@@ -9,9 +9,10 @@ import type {
   StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  Client,
   Connection,
-  WorkflowClient,
 } from "@temporalio/client";
+import type { WorkflowClient } from "@temporalio/client";
 
 import {
   BpmnProcessStartResultKind,
@@ -52,7 +53,7 @@ export type TemporalDefinitionStartResult =
       }>;
     }>;
 
-/** Owns one lazy, reused SDK connection and its concrete Workflow client. */
+/** Owns one lazy, reused SDK connection and the concrete client for Workflow and Schedule calls. */
 export class LazyTemporalClientRuntime {
   readonly client: TemporalDefinitionStartClient;
   readonly #connection: Connection;
@@ -64,7 +65,7 @@ export class LazyTemporalClientRuntime {
       address: snapshot.address,
       connectTimeout: snapshot.connectTimeoutMs,
     });
-    this.client = new WorkflowClient({
+    this.client = new Client({
       connection: this.#connection,
       namespace: snapshot.namespace,
     }) as unknown as TemporalDefinitionStartClient;
@@ -92,7 +93,7 @@ export async function startBpmnProcessWithoutHandle(
   options: Readonly<{ taskQueue: string }>,
 ): Promise<TemporalDefinitionStartResult> {
   const started = await startBpmnProcessWithHandle(
-    client as unknown as WorkflowClient,
+    workflowClientOf(client),
     start,
     semanticProcess,
     options,
@@ -111,6 +112,15 @@ export async function startBpmnProcessWithoutHandle(
     default:
       return assertNever(started);
   }
+}
+
+function workflowClientOf(
+  client: TemporalDefinitionStartClient,
+): WorkflowClient {
+  const concrete = client as unknown as Readonly<{
+    workflow?: WorkflowClient;
+  }>;
+  return concrete.workflow ?? client as unknown as WorkflowClient;
 }
 
 function snapshotOptions(

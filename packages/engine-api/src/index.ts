@@ -16,6 +16,13 @@ import type {
 } from "@bpmn-lean/bpmn-source";
 import type { DeepReadonly } from "@bpmn-lean/semantic-core";
 
+import {
+  engineDefinitionStartCapabilities,
+} from "./definition-capabilities.js";
+import type {
+  EngineDefinitionStartCapabilities,
+} from "./definition-capabilities.js";
+
 export const EngineDefinitionCompilationStatus = {
   Accepted: "accepted",
   Rejected: "rejected",
@@ -45,6 +52,7 @@ export type EngineAcceptedDefinitionCompilation = DeepReadonly<{
   source: BpmnSourceIdentity;
   diagnostics: readonly [];
   definition: EngineDefinitionIdentity;
+  startCapabilities: EngineDefinitionStartCapabilities;
 }>;
 
 export type EngineRejectedDefinitionCompilation = DeepReadonly<{
@@ -89,6 +97,9 @@ export async function compileBpmnDefinition(
           processId: compilation.semanticProcess.processId,
           semanticProfile: compilation.semanticProcess.identity.semanticProfile,
         },
+        startCapabilities: engineDefinitionStartCapabilities(
+          compilation.semanticProcess,
+        ),
       };
     case BpmnCompilationStatus.Rejected:
       return {
@@ -107,3 +118,5 @@ function assertNever(value: never): never {
 }
 
 export * from "./definition-start.js";
+export * from "./definition-capabilities.js";
+export * from "./definition-schedule.js";

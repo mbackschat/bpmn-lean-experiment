@@ -12,6 +12,15 @@ import type {
 import {
   createLazyTemporalClientRuntime,
 } from "@bpmn-lean/temporal-client/definition-start";
+
+import {
+  BpmnDefinitionScheduleGateway,
+  mapDefinitionStartCapabilities,
+} from "./definition-schedule-gateway.js";
+import type {
+  BpmnDefinitionScheduleGatewayOptions,
+  DefinitionStartCapabilities,
+} from "./definition-schedule-gateway.js";
 import type {
   LazyTemporalClientRuntime,
   TemporalDefinitionStartClient,
@@ -19,7 +28,12 @@ import type {
 
 export const DefinitionCompilationStatus = EngineDefinitionCompilationStatus;
 
-export type DefinitionCompilationResult = EngineDefinitionCompilationResult;
+export type DefinitionCompilationResult =
+  | (Omit<
+      Extract<EngineDefinitionCompilationResult, { status: "accepted" }>,
+      "startCapabilities"
+    > & Readonly<{ startCapabilities: DefinitionStartCapabilities }>)
+  | Extract<EngineDefinitionCompilationResult, { status: "rejected" }>;
 
 export const DefinitionStartStatus = EngineDefinitionStartStatus;
 
@@ -92,13 +106,32 @@ export class BpmnEngineGateway
   compileDefinition(
     request: DefinitionCompilationRequest,
   ): Promise<DefinitionCompilationResult> {
-    return compileBpmnDefinition({
+    return this.compileAndMapDefinition(request);
+  }
+
+  private async compileAndMapDefinition(
+    request: DefinitionCompilationRequest,
+  ): Promise<DefinitionCompilationResult> {
+    const result = await compileBpmnDefinition({
       ...request,
       limits: {
         maxBytes: this.limits.maxSourceBytes,
         parserDeadlineMs: this.limits.parserDeadlineMs,
       },
     });
+    switch (result.status) {
+      case EngineDefinitionCompilationStatus.Accepted:
+        return {
+          ...result,
+          startCapabilities: mapDefinitionStartCapabilities(
+            result.startCapabilities,
+          ),
+        };
+      case EngineDefinitionCompilationStatus.Rejected:
+        return result;
+      default:
+        return assertNever(result);
+    }
   }
 
   startDefinitionVersion(
@@ -119,6 +152,7 @@ export class BpmnEngineGateway
 /** Composition-facing owner of one gateway and its lazy Temporal connection lifecycle. */
 export class BpmnEngineGatewayRuntime {
   readonly gateway: BpmnEngineGateway;
+  readonly scheduleHost: BpmnDefinitionScheduleGateway;
   readonly #temporalRuntime: LazyTemporalClientRuntime;
 
   constructor(options: BpmnEngineGatewayRuntimeOptions) {
@@ -137,12 +171,25 @@ export class BpmnEngineGatewayRuntime {
       temporalClient: this.#temporalRuntime.client,
       temporalTaskQueue: snapshot.temporalTaskQueue,
     });
+    this.scheduleHost = new BpmnDefinitionScheduleGateway({
+      maxSourceBytes: snapshot.maxSourceBytes,
+      parserDeadlineMs: snapshot.parserDeadlineMs,
+      temporalClient: this.#temporalRuntime.client as unknown as
+        BpmnDefinitionScheduleGatewayOptions["temporalClient"],
+      temporalTaskQueue: snapshot.temporalTaskQueue,
+    });
   }
 
   close(): Promise<void> {
     return this.#temporalRuntime.close();
   }
 }
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported engine gateway result: ${String(value)}`);
+}
+
+export * from "./definition-schedule-gateway.js";
 
 export function createBpmnEngineGatewayRuntime(
   options: BpmnEngineGatewayRuntimeOptions,

@@ -192,7 +192,7 @@ async function assessProduct2TemporalDependencies(
       }
       if (
         isEngineGatewaySource &&
-        specifier === "@bpmn-lean/temporal-client/definition-start"
+        allowedProduct2TemporalClientImports.has(specifier)
       ) {
         continue;
       }
@@ -202,6 +202,11 @@ async function assessProduct2TemporalDependencies(
     }
   }
 }
+
+const allowedProduct2TemporalClientImports = new Set([
+  "@bpmn-lean/temporal-client/definition-schedule",
+  "@bpmn-lean/temporal-client/definition-start",
+]);
 
 async function assessWorkflowSafeSources(
   repositoryRoot: string,

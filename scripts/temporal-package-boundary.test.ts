@@ -118,7 +118,10 @@ test("permits only the concrete client through the Product 2 engine gateway", as
   });
   await writeFile(
     path.join(root, "platform", "apps", "server", "src", "direct.ts"),
-    'import { WorkflowClient } from "@temporalio/client";\n',
+    [
+      'import { WorkflowClient } from "@temporalio/client";',
+      'import { schedule } from "@bpmn-lean/temporal-client/definition-schedule";',
+    ].join("\n"),
   );
   await mkdir(
     path.join(root, "platform", "foundation", "engine-gateway", "src"),
@@ -126,14 +129,20 @@ test("permits only the concrete client through the Product 2 engine gateway", as
   );
   await writeFile(
     path.join(root, "platform", "foundation", "engine-gateway", "src", "worker.ts"),
-    'import { Worker } from "@bpmn-lean/temporal-worker";\n',
+    [
+      'import { Worker } from "@bpmn-lean/temporal-worker";',
+      'import { schedule } from "@bpmn-lean/temporal-client/definition-schedule";',
+      'import { broad } from "@bpmn-lean/temporal-client";',
+    ].join("\n"),
   );
 
   assert.deepEqual(await assessTemporalPackageBoundary(root), [
     "platform/apps/server/package.json: Product 2 Temporal dependency @bpmn-lean/temporal-client is allowed only in platform/foundation/engine-gateway/package.json",
     "platform/apps/server/src/direct.ts: forbidden Product 2 Temporal SDK import @temporalio/client",
+    "platform/apps/server/src/direct.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-client/definition-schedule",
     "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal SDK dependency @temporalio/client",
     "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal dependency @bpmn-lean/temporal-worker",
+    "platform/foundation/engine-gateway/src/worker.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-client",
     "platform/foundation/engine-gateway/src/worker.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-worker",
   ]);
 });

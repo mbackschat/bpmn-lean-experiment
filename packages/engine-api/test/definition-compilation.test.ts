@@ -15,6 +15,10 @@ const admittedSource = new URL(
   "../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,
 );
+const timerStartSource = new URL(
+  "../../../scenarios/timer-start-event/process.bpmn",
+  import.meta.url,
+);
 const limits = {
   maxBytes: 1_048_576,
   parserDeadlineMs: 1_000,
@@ -35,6 +39,24 @@ test("projects accepted source identity without exposing engine representations"
   assert.match(result.source.sha256, /^[0-9a-f]{64}$/u);
   assert.equal(result.definition.processId, "Process_SequentialUserTask");
   assert.equal(result.definition.semanticProfile, semanticProfile);
+  assert.deepEqual(result.startCapabilities, { timerStarts: [] });
+  assert.equal("checkedProcess" in result, false);
+  assert.equal("semanticProcess" in result, false);
+});
+
+test("projects the admitted Timer Start identity and normalized duration", async () => {
+  const result = await compileBpmnDefinition({
+    bytes: await readFile(timerStartSource),
+    sourceId: "third-party-timer-start-process",
+    semanticProfile: "bpmn-2.0.2-timer-start-event-draft",
+    expectedSha256: undefined,
+    limits,
+  });
+
+  assert.equal(result.status, EngineDefinitionCompilationStatus.Accepted);
+  assert.deepEqual(result.startCapabilities, {
+    timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
+  });
   assert.equal("checkedProcess" in result, false);
   assert.equal("semanticProcess" in result, false);
 });
