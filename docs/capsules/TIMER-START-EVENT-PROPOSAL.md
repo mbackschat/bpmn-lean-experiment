@@ -2,7 +2,7 @@
 
 ## Status
 
-**Correction review pending; fresh owner approval is required before live work resumes.** The owner approved the original proposal on 2026-08-11, and the corrected first green semantic checkpoint is independently approved. Checkpoint target `7ac0307` received `approve-with-required-edits`; correction `ba3bbf8` closed the stale IL contract and missing XSD regression binding. Commit `8aa0cc3` atomically registered the profile, answer-free scenario and differential evidence, and runnable example. The live one-action Temporal Schedule witness then proved that the pinned service returns an execution Workflow ID distinct from the configured semantic-instance-derived base ID. The proposed correction below consumes that opaque service-returned execution identity instead of incorrectly treating the configured base as the execution ID. Live evidence and closure remain paused until the correction is independently reviewed and the owner approves it. Product 2 scheduling remains excluded. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
+**Owner-approved on 2026-08-11; the corrected semantic checkpoint and Schedule execution-identity contract are independently approved.** Checkpoint target `7ac0307` received `approve-with-required-edits`; correction `ba3bbf8` closed the stale IL contract and missing XSD regression binding. Commit `8aa0cc3` atomically registered the profile, answer-free scenario and differential evidence, and runnable example. Proposal correction target `1c5c702` received `approve-with-required-edits`; final correction `71fa032` closed the opaque returned-identity, witness-ordering, review-status, and registered-status findings. The owner approved that corrected decision and authorized live evidence implementation. Product 2 scheduling remains excluded. This proposal selects one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, and one fresh private executable Process instance. It does not select Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, or a public scheduling API.
 
 ## Independent cold-review receipt
 
@@ -11,6 +11,8 @@
 | Proposal | `1c5c702` | `fork-turns-none` | `approve-with-required-edits` | `71fa032` |
 | Semantic checkpoint | `7ac0307` | `fork-turns-none` | `approve-with-required-edits` | `ba3bbf8` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The Schedule execution-identity proposal correction used two warm audit rounds; `71fa032` is the final correction target.
 
 ## Question
 
@@ -482,4 +484,4 @@ Owner approval is requested for these exact decisions:
 6. Use a proved Lean lane and require a conditional semantic checkpoint before registered evidence and live Temporal work.
 7. Keep Timer Start standards-only with no new CIB relationship or A12 dependency.
 
-The owner approved decisions 1 through 7 on 2026-08-11 and authorized implementation from reviewed correction target `eaaf944`. Decision 4 above now contains a material correction to the configured-base versus service-returned execution identity boundary. That corrected decision requires an independent cold review and fresh owner approval before the live Schedule lane resumes.
+The owner approved decisions 1 through 7 on 2026-08-11 and authorized implementation from reviewed correction target `eaaf944`. The owner separately approved corrected decision 4 at final reviewed correction target `71fa032` and authorized the live Schedule evidence lane.
