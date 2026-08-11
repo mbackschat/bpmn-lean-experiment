@@ -108,6 +108,30 @@ const start = Object.freeze({
   initialVariables: [],
 } as const);
 
+const effectId = Object.freeze({
+  processInstanceId: start.instanceId,
+  elementId: "ConfiguredTask_Probe",
+  activation: 1,
+} as const);
+
+const effectCompletion = Object.freeze({
+  kind: StimulusKind.CompleteEffect,
+  commandId: "complete-effect",
+  effectId,
+  result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
+} as const);
+
+const userTaskCompletion = Object.freeze({
+  kind: StimulusKind.CompleteUserTaskInstance,
+  commandId: "complete-user-task",
+  taskId: {
+    processInstanceId: start.instanceId,
+    elementId: "UserTask_Review",
+    activation: 1,
+  },
+  submittedValues: [],
+} as const);
+
 test("admits only the exact configured checked and program shape", () => {
   assert.equal(
     profileAllowsCheckedProcessShape(configuredTaskProfile, configuredNodes, 1),
@@ -200,40 +224,71 @@ test("specializes existing effect completion and occurrence-only refusal", () =>
   assert.equal(projectOpenEffects(started.state).length, 1);
   assert.equal(projectOpenUserTasks(started.state).length, 0);
 
-  const effectId = {
-    processInstanceId: start.instanceId,
-    elementId: "ConfiguredTask_Probe",
-    activation: 1,
-  };
   const refused = applyStimulus(configuredProgram, started.state, {
-    kind: StimulusKind.CompleteEffect,
+    ...effectCompletion,
     commandId: "wrong-effect",
     effectId: { ...effectId, activation: 2 },
-    result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
   });
   assert.equal(refused.outcome, CommandOutcome.Rejected);
   assert.deepEqual(refused.state, started.state);
 
-  const effectCompleted = applyStimulus(configuredProgram, started.state, {
-    kind: StimulusKind.CompleteEffect,
-    commandId: "complete-effect",
-    effectId,
-    result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
-  });
+  const effectCompleted = applyStimulus(
+    configuredProgram,
+    started.state,
+    effectCompletion,
+  );
   assert.equal(effectCompleted.outcome, CommandOutcome.Committed);
   assert.equal(projectOpenEffects(effectCompleted.state).length, 0);
   assert.equal(projectOpenUserTasks(effectCompleted.state).length, 1);
 
-  const completed = applyStimulus(configuredProgram, effectCompleted.state, {
-    kind: StimulusKind.CompleteUserTaskInstance,
-    commandId: "complete-user-task",
-    taskId: {
-      processInstanceId: start.instanceId,
-      elementId: "UserTask_Review",
-      activation: 1,
-    },
-    submittedValues: [],
-  });
+  const completed = applyStimulus(
+    configuredProgram,
+    effectCompleted.state,
+    userTaskCompletion,
+  );
   assert.equal(completed.outcome, CommandOutcome.Committed);
+  assert.equal(completed.state.control.kind, ControlStateKind.Completed);
+});
+
+test("locks exact configured Task closure limits and one-smaller overflow", () => {
+  assert.equal(
+    applyStimulus(configuredProgram, initialState, start, 1)
+      .internalStepBoundExceeded,
+    true,
+  );
+  const started = applyStimulus(configuredProgram, initialState, start, 2);
+  assert.equal(started.internalStepBoundExceeded, false);
+  assert.equal(projectOpenEffects(started.state).length, 1);
+
+  assert.equal(
+    applyStimulus(configuredProgram, started.state, effectCompletion, 0)
+      .internalStepBoundExceeded,
+    true,
+  );
+  const effectCompleted = applyStimulus(
+    configuredProgram,
+    started.state,
+    effectCompletion,
+    1,
+  );
+  assert.equal(effectCompleted.internalStepBoundExceeded, false);
+  assert.equal(projectOpenUserTasks(effectCompleted.state).length, 1);
+
+  assert.equal(
+    applyStimulus(
+      configuredProgram,
+      effectCompleted.state,
+      userTaskCompletion,
+      1,
+    ).internalStepBoundExceeded,
+    true,
+  );
+  const completed = applyStimulus(
+    configuredProgram,
+    effectCompleted.state,
+    userTaskCompletion,
+    2,
+  );
+  assert.equal(completed.internalStepBoundExceeded, false);
   assert.equal(completed.state.control.kind, ControlStateKind.Completed);
 });

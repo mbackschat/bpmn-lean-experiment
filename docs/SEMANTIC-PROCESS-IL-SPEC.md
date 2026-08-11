@@ -896,14 +896,14 @@ The following remain unsupported:
 This contract remains valid only while:
 
 - the checked graph and Semantic Process program have current schemas and adversarial contract tests;
-- sequential, Message Start, Timer Start, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, bounded Call Activity, and registered Terminate End exact-source fixtures lower deterministically;
+- sequential, Message Start, Timer Start, parallel, timer, Timer/User Task composition, Intermediate Catch Message, payload-free effect, registered configured Task, mapped-success, mapped-boundary-Error, Simple Boolean Exclusive Gateway, structured Inclusive Gateway, bounded Event-Based Gateway, ordinary embedded Sub-Process, Sub-Process Error propagation, bounded Call Activity, and registered Terminate End exact-source fixtures lower deterministically;
 - the topology-specific executable IR and evaluator path are removed atomically;
 - no IL operation delegates to a retained topology-specific evaluator;
 - invalid source and invalid program mutations fail in their correct result classes;
 - Lean checks exact lowering equality before evaluation;
 - the targeted preservation statement or discriminator for each material capsule remains explicit and its achieved proof status is reported exactly;
 - Lean evaluator soundness is checked;
-- the independent TypeScript evaluator passes sequential, exact-target Message Start admission/initiation/refusal/observation, exact-target Timer Start admission/initiation/refusal/observation/closure, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, bounded called-Process invocation/return, and registered containing-scope termination separating witnesses;
+- the independent TypeScript evaluator passes sequential, exact-target Message Start admission/initiation/refusal/observation, exact-target Timer Start admission/initiation/refusal/observation/closure, parallel, timer, Timer/User Task composition, direct Message subscription/delivery, payload-free effect, configured Task descriptor/closure/refusal/continuation, mapped-success data/mapping, mapped-boundary-Error, Simple Boolean conditional-choice, structured Inclusive selected-branch synchronization, bounded Event-Based Gateway arming/winner/withdrawal/refusal, ordinary child-scope quiescence/completion, direct-parent Error interruption, bounded called-Process invocation/return, and registered containing-scope termination separating witnesses;
 - the CIB lane still consumes exact XML and retained evidence remains content-bound;
 - the Temporal lane consumes only admitted current Semantic Process programs;
 - canonical observations contain no expected answers, future commands, host identifiers, or collection-order artifacts;

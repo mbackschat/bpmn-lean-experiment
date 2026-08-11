@@ -223,9 +223,9 @@ The existing Service Task retry, reconciliation, accepted-but-response-lost, and
 | `CTASK-LOWER-01` | Checked/IL artifact pair | Endpoint and normalized-shape theorems | Independent lowerer | Exact program preflight | Checked-kind collapse and endpoint swap |
 | `CTASK-WAIT-01` | Representative profile | Initial closure theorem | Direct core witness | Query before Activity result | Pass-through mutation exposes User Task early |
 | `CTASK-COMPLETE-01` | Answer-free scenario | Effect then User Task closure | Direct core witness and differential | Activity then Update | Dropped effect completion or output mutation |
-| `CTASK-REFUSE-01` | Exact occurrence contract | State-identity refusal | State-identity refusal | Stale/duplicate durable command | Wrong element, activation, or instance identity |
+| `CTASK-REFUSE-01` | Exact occurrence contract | State-identity refusal | State-identity refusal | No public effect-completion ingress | Wrong element, activation, or instance identity |
 | `CTASK-OBSERVE-01` | Existing observation schema | Normalized Service Task comparison | Full canonical comparison | Query projection | Private extension/handler field leak |
-| `CTASK-CLOSURE-01` | Exact program cardinality | Exact limits, overflow, enabledness, resumption | Same finite closures | Stable waits in scenario | One-smaller limits and extra enabled operation |
+| `CTASK-CLOSURE-01` | Exact program cardinality | Exact limits, overflow, enabledness, resumption | Exact 2/1 start, 1/0 effect, and 2/1 User Task limits | Stable waits in scenario | One-smaller limits and extra enabled operation |
 | `CTASK-HOST-01` | Non-null Temporal relation, `cib: null` | Not a host theorem | Existing effect host preflight | Worker replacement, history, replay | CIB pass-through diagnostic and Temporal pass-through mutation |
 
 ## Runtime-only constructs
